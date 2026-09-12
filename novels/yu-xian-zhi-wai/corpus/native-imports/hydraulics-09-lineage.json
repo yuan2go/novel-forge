@@ -1,0 +1,178 @@
+{
+  "import_job_id": "source-import:4fdda093-cd24-40d3-aacc-b092b1d44ebb",
+  "snapshot": {
+    "manifest": {
+      "format": "html",
+      "checksum": "sha256:f76eb48742611cd0b765f508233669d2928dae0aaa07d2064c4279144182340a",
+      "metadata": {
+        "parser": {
+          "fields": {
+            "text": "text"
+          },
+          "format": "html",
+          "layout": "SINGLE_WORK",
+          "filters": {},
+          "version": "corpus-parser.v3",
+          "encoding": "utf-8",
+          "constants": {
+            "title": "11.2: How Delta P Describes Hydraulic Resistance",
+            "author": "Jessy Haid / Northeast Wisconsin Technical College",
+            "work_id": "hydraulics-09"
+          },
+          "completeness": "EXCERPT",
+          "records_path": "item",
+          "normalization": {
+            "version": "chinese-longform.v2",
+            "boundaries": [],
+            "expected_toc": [],
+            "segmentation": "EXPLICIT",
+            "toc_evidence": "",
+            "unicode_form": "NFC",
+            "max_unit_bytes": 2000000,
+            "min_body_chars": 80,
+            "work_completion": "UNKNOWN",
+            "external_work_ids": [],
+            "heading_max_chars": 100,
+            "candidate_threshold": 0.8,
+            "duplicate_body_min_chars": 128
+          },
+          "expected_units": 1,
+          "work_key_encoding": "VALUE",
+          "html_body_selector": ".mt-content-container",
+          "html_remove_selectors": [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            "noscript"
+          ]
+        },
+        "source": {
+          "kind": "LOCAL",
+          "files": [
+            {
+              "path": "hydraulics-09.html",
+              "parser": null,
+              "checksum": "sha256:5b8353af0894e1f6bb8f6c13b4c82658cfa070f0bf31f97a110381f85c070c31",
+              "size_bytes": null
+            }
+          ],
+          "split": "",
+          "config": "",
+          "exclude": [
+            ".git/**",
+            "**/.git/**",
+            ".DS_Store"
+          ],
+          "include": [
+            "*",
+            "**/*"
+          ],
+          "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-09.html",
+          "revision": ""
+        },
+        "ingestion_manifest_hash": "sha256:212e3ada2a39d3e89b013ea7466c7de9ecf6d69f94b3bdc6ead65f3bf60e66f7"
+      },
+      "origin_uri": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-09.html",
+      "schema_version": "corpus-dataset-manifest.v1",
+      "adapter_profile": "LOCAL",
+      "external_version": "sha256:f76eb48742611cd0b765f508233669d2928dae0aaa07d2064c4279144182340a",
+      "adapter_contract_version": "corpus-adapters.v1"
+    },
+    "rights_id": "corpus-rights:a861649c874e8707810bab20bc49debcd9b77ca65394561223714d003b4cac3d",
+    "source_id": "corpus-source:735f9593d904053f8cf4e11cadca1c883bda6b390cd0c6c610af548b8a4eaeb0",
+    "created_at": "2026-09-12T10:17:36.896299+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "acquisition": {
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-09.html",
+      "checksum": "sha256:f76eb48742611cd0b765f508233669d2928dae0aaa07d2064c4279144182340a",
+      "acquired_at": "2026-09-12T10:17:36.757017+00:00",
+      "receipt_ref": "48703cef-9e62-4796-8cdc-8498c61db8b3",
+      "repository_snapshot_asset_version_id": null
+    },
+    "snapshot_id": "corpus-snapshot:6a5d0d948335837e226a811ede87d6824622312ed6f59b2adb133e9b9ca2f506",
+    "revision_number": 1,
+    "previous_snapshot_id": null,
+    "created_by_operation_id": "04164a12-6b70-44a5-b598-1648a076386d",
+    "repository_snapshot_asset_version_id": null
+  },
+  "rights": {
+    "rights_id": "corpus-rights:a861649c874e8707810bab20bc49debcd9b77ca65394561223714d003b4cac3d",
+    "source_id": "corpus-source:735f9593d904053f8cf4e11cadca1c883bda6b390cd0c6c610af548b8a4eaeb0",
+    "created_at": "2026-09-12T10:17:36.848299+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "declaration": {
+      "scope": "ALL_WORKS_IN_SNAPSHOT",
+      "action": "declare_rights",
+      "source_id": "corpus-source:735f9593d904053f8cf4e11cadca1c883bda6b390cd0c6c610af548b8a4eaeb0",
+      "work_grants": {},
+      "allowed_uses": [
+        "LOCAL_PROCESSING",
+        "SOURCE_ANALYSIS",
+        "ABSTRACT_GENERATION"
+      ],
+      "restrictions": [],
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/11%3A_Fluid_Friction/11.02%3A_How_Delta_P_Describes_Hydraulic_Resistance",
+        "sha256:5b8353af0894e1f6bb8f6c13b4c82658cfa070f0bf31f97a110381f85c070c31",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-09.html"
+      ],
+      "dataset_license": "CC-BY-4.0",
+      "denied_purposes": [],
+      "allowed_purposes": [
+        "PRODUCTION_REFERENCE"
+      ],
+      "underlying_rights": "LICENSED",
+      "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+      "previous_rights_id": null,
+      "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+    },
+    "revision_number": 1,
+    "previous_rights_id": null,
+    "created_by_operation_id": "d7084b0a-4773-4898-9ba0-2177e59989b0"
+  },
+  "editions": [
+    {
+      "title": "hydraulics-09",
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-09.html",
+      "checksum": "sha256:ea805e8b1a19f746c95e389e0d01121e31f7ffe906d38f6f73dcde958a503df8",
+      "metadata": {
+        "parser": "corpus-parser.v3",
+        "unit_count": 1,
+        "completeness": "EXCERPT"
+      },
+      "source_id": "corpus-source:735f9593d904053f8cf4e11cadca1c883bda6b390cd0c6c610af548b8a4eaeb0",
+      "created_at": "2026-09-12T10:17:37.047746+00:00",
+      "edition_id": "corpus-edition:e2d3fbf74a9d534fe407c4321b268706bd41c75e795480471b2f64ff9b9f4746",
+      "project_id": "first-novel-pilot-20260912",
+      "snapshot_id": "corpus-snapshot:6a5d0d948335837e226a811ede87d6824622312ed6f59b2adb133e9b9ca2f506",
+      "book_source_id": "corpus-book:8500a6bb9e00e3e703ceac93bb8bbf14bdd8561f38bdeb9707141d63a2ad7839",
+      "external_edition_id": "source-edition",
+      "created_by_operation_id": "435b0a8f-3acd-4413-bda8-f27f1acba41b",
+      "bridge": {
+        "evidence": {
+          "scope": "CONTENT_AND_LINEAGE_ONLY",
+          "completeness": "EXCERPT",
+          "manifest_hash": "sha256:212e3ada2a39d3e89b013ea7466c7de9ecf6d69f94b3bdc6ead65f3bf60e66f7",
+          "parsed_blob_id": "025af1fb-4ce9-5853-a7cc-08d31363bd40",
+          "knowledge_approved": false,
+          "acquisition_effect_id": "48703cef-9e62-4796-8cdc-8498c61db8b3"
+        },
+        "rights_id": "corpus-rights:a861649c874e8707810bab20bc49debcd9b77ca65394561223714d003b4cac3d",
+        "created_at": "2026-09-12T10:17:37.40483+00:00",
+        "edition_id": "corpus-edition:e2d3fbf74a9d534fe407c4321b268706bd41c75e795480471b2f64ff9b9f4746",
+        "project_id": "first-novel-pilot-20260912",
+        "parser_hash": "sha256:f81d6e8bb2b48be6bbc6e01efc206b56e4d6c37f5990e18fc484892417449bc4",
+        "policy_version": "corpus-use-policy.v1",
+        "normalized_hash": "sha256:e487b188b79229c7d3d042494ad287226e6b76731ea9ccd39bdf1234b8931fda",
+        "source_document_id": "source-document:first-novel-pilot-20260912:0d948ce0666708018493a7f58a637f2e092cd3f089643b0a2795eeb8e5c3cdf4",
+        "source_transform_id": "source-transform:first-novel-pilot-20260912:02e1168b86179ddf02bd99d21b18a32c54bdbf14b1bb7a3f852ec05c38cde09a",
+        "created_by_operation_id": "e1c65b13-ba3d-4fe0-aa31-f38619f90ac0",
+        "source_work_asset_version_id": "03e84748-a1b7-479d-a2da-e90bd254b480"
+      }
+    }
+  ],
+  "page_limit": 50,
+  "next_after": null
+}

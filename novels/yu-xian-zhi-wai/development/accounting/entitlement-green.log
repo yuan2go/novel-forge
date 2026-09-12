@@ -1,0 +1,218 @@
+..FF.......                                                              [100%]
+=================================== FAILURES ===================================
+_ test_source_runtime_identity_binds_entitlement_account_and_never_invents_price _
+
+    def test_source_runtime_identity_binds_entitlement_account_and_never_invents_price():
+        from novel_forge.modules.provider_qualification.source_binding import source_runtime_identity
+        evidence = provider_receipt()
+        evidence["cost"] = entitlement_cost()
+        evidence["cost"]["model"] = evidence["model_id"]
+        identity = source_runtime_identity(evidence)
+>       assert identity["accounting_scope"]["account_identity_ref"] == "account:source-fixture"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'accounting_scope'
+
+tests/unit/test_source_runtime_qualification.py:117: KeyError
+_ test_d0_entitlement_cost_unknown_is_valid_but_usage_unknown_and_fake_price_are_not _
+
+cls = <class 'novel_forge.modules.provider_qualification.domain.D0LiveQualificationEvidence'>
+payload = {'schema_version': 'd0-live-qualification-evidence.v1', 'release_sha': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'im...sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'source_operation_id': 'source:fixture', ...}
+
+    @classmethod
+    def from_mapping(
+        cls, payload: Mapping[str, Any]
+    ) -> "D0LiveQualificationEvidence":
+        if payload.get("fixture_protocol_only") is not False:
+            raise ValueError("fixture evidence cannot qualify a real Provider")
+        if payload.get("real_model_call") is not True:
+            raise ValueError("live qualification requires a real model call")
+        if payload.get("schema_version") != "d0-live-qualification-evidence.v1":
+            raise ValueError("live qualification evidence schema is unsupported")
+        allowed = set(cls.__dataclass_fields__)
+        unexpected = sorted(set(payload) - allowed)
+        if unexpected:
+            raise ValueError(
+                "live qualification evidence has unsupported fields: "
+                + ", ".join(unexpected)
+            )
+        required_text = (
+            "release_sha",
+            "implementation_identity",
+            "source_operation_id",
+            "external_effect_id",
+            "request_object_ref",
+            "response_object_ref",
+            "auth_profile_ref",
+            "provider",
+            "backend_id",
+            "model",
+            "model_version",
+            "route_snapshot_id",
+            "route_snapshot_hash",
+            "prompt_version",
+            "prompt_hash",
+            "instruction_version",
+            "instruction_hash",
+            "skill_version",
+            "skill_hash",
+            "request_hash",
+            "response_hash",
+            "provider_execution_id",
+            "provider_request_identity",
+        )
+        text_values = {
+            name: str(payload.get(name) or "").strip() for name in required_text
+        }
+        if not all(text_values.values()):
+            raise ValueError("live qualification evidence identity is incomplete")
+        if not _GIT_SHA.fullmatch(text_values["release_sha"]):
+            raise ValueError("live qualification release SHA is invalid")
+        for name in (
+            "implementation_identity",
+            "route_snapshot_hash",
+            "prompt_hash",
+            "instruction_hash",
+            "skill_hash",
+            "request_hash",
+            "response_hash",
+        ):
+            if not _SHA256.fullmatch(text_values[name]):
+                raise ValueError(f"live qualification {name} is invalid")
+        mappings: dict[str, dict[str, Any]] = {}
+        for name in (
+            "usage",
+            "cost",
+            "latency",
+            "controlled_failure",
+            "recovery",
+        ):
+            value = payload.get(name)
+            if not isinstance(value, Mapping):
+                raise ValueError(f"live qualification {name} evidence is missing")
+            mappings[name] = dict(value)
+        usage = mappings["usage"]
+        if (
+            usage.get("measurement") != "MEASURED"
+            or not isinstance(usage.get("total_tokens"), int)
+            or isinstance(usage.get("total_tokens"), bool)
+            or int(usage["total_tokens"]) <= 0
+        ):
+            raise ValueError("live qualification requires measured Provider usage")
+        cost = mappings["cost"]
+        try:
+>           amount = Decimal(str(cost.get("amount") or ""))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           decimal.InvalidOperation: [<class 'decimal.ConversionSyntax'>]
+
+../novel-forge-knowledge-closure/src/novel_forge/modules/provider_qualification/domain.py:247: InvalidOperation
+
+The above exception was the direct cause of the following exception:
+
+    def test_d0_entitlement_cost_unknown_is_valid_but_usage_unknown_and_fake_price_are_not():
+        from novel_forge.modules.provider_qualification import D0LiveQualificationEvidence
+        payload = live_payload(entitlement_cost())
+>       evidence = D0LiveQualificationEvidence.from_mapping(payload)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_source_runtime_qualification.py:129: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'novel_forge.modules.provider_qualification.domain.D0LiveQualificationEvidence'>
+payload = {'schema_version': 'd0-live-qualification-evidence.v1', 'release_sha': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'im...sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'source_operation_id': 'source:fixture', ...}
+
+    @classmethod
+    def from_mapping(
+        cls, payload: Mapping[str, Any]
+    ) -> "D0LiveQualificationEvidence":
+        if payload.get("fixture_protocol_only") is not False:
+            raise ValueError("fixture evidence cannot qualify a real Provider")
+        if payload.get("real_model_call") is not True:
+            raise ValueError("live qualification requires a real model call")
+        if payload.get("schema_version") != "d0-live-qualification-evidence.v1":
+            raise ValueError("live qualification evidence schema is unsupported")
+        allowed = set(cls.__dataclass_fields__)
+        unexpected = sorted(set(payload) - allowed)
+        if unexpected:
+            raise ValueError(
+                "live qualification evidence has unsupported fields: "
+                + ", ".join(unexpected)
+            )
+        required_text = (
+            "release_sha",
+            "implementation_identity",
+            "source_operation_id",
+            "external_effect_id",
+            "request_object_ref",
+            "response_object_ref",
+            "auth_profile_ref",
+            "provider",
+            "backend_id",
+            "model",
+            "model_version",
+            "route_snapshot_id",
+            "route_snapshot_hash",
+            "prompt_version",
+            "prompt_hash",
+            "instruction_version",
+            "instruction_hash",
+            "skill_version",
+            "skill_hash",
+            "request_hash",
+            "response_hash",
+            "provider_execution_id",
+            "provider_request_identity",
+        )
+        text_values = {
+            name: str(payload.get(name) or "").strip() for name in required_text
+        }
+        if not all(text_values.values()):
+            raise ValueError("live qualification evidence identity is incomplete")
+        if not _GIT_SHA.fullmatch(text_values["release_sha"]):
+            raise ValueError("live qualification release SHA is invalid")
+        for name in (
+            "implementation_identity",
+            "route_snapshot_hash",
+            "prompt_hash",
+            "instruction_hash",
+            "skill_hash",
+            "request_hash",
+            "response_hash",
+        ):
+            if not _SHA256.fullmatch(text_values[name]):
+                raise ValueError(f"live qualification {name} is invalid")
+        mappings: dict[str, dict[str, Any]] = {}
+        for name in (
+            "usage",
+            "cost",
+            "latency",
+            "controlled_failure",
+            "recovery",
+        ):
+            value = payload.get(name)
+            if not isinstance(value, Mapping):
+                raise ValueError(f"live qualification {name} evidence is missing")
+            mappings[name] = dict(value)
+        usage = mappings["usage"]
+        if (
+            usage.get("measurement") != "MEASURED"
+            or not isinstance(usage.get("total_tokens"), int)
+            or isinstance(usage.get("total_tokens"), bool)
+            or int(usage["total_tokens"]) <= 0
+        ):
+            raise ValueError("live qualification requires measured Provider usage")
+        cost = mappings["cost"]
+        try:
+            amount = Decimal(str(cost.get("amount") or ""))
+        except InvalidOperation as exc:
+>           raise ValueError("live qualification cost amount is invalid") from exc
+E           ValueError: live qualification cost amount is invalid
+
+../novel-forge-knowledge-closure/src/novel_forge/modules/provider_qualification/domain.py:249: ValueError
+=========================== short test summary info ============================
+FAILED tests/unit/test_source_runtime_qualification.py::test_source_runtime_identity_binds_entitlement_account_and_never_invents_price
+FAILED tests/unit/test_source_runtime_qualification.py::test_d0_entitlement_cost_unknown_is_valid_but_usage_unknown_and_fake_price_are_not
+2 failed, 9 passed in 0.31s
+...........                                                              [100%]
+11 passed in 0.26s
+......................                                                   [100%]
+22 passed in 0.99s

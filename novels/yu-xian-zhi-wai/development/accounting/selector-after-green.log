@@ -1,0 +1,6 @@
+{"benchmark": "exact_allow_only_30_cards_shared_source_binding", "cards": 30, "connections": 1, "elapsed_ms": 17.647, "evidence_class": "SYNTHETIC_PROTOCOL_ONLY"}
+..
+2 passed in 3.27s
+{"benchmark": "exact_allow_only_30_cards_shared_source_binding", "cards": 30, "connections": 1, "elapsed_ms": 16.841, "evidence_class": "SYNTHETIC_PROTOCOL_ONLY"}
+..
+2 passed in 3.23s

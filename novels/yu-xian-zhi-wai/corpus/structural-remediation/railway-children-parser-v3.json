@@ -1,0 +1,191 @@
+{
+  "version": "corpus-parser.v3",
+  "format": "txt",
+  "constants": {
+    "work_id": "railway-children",
+    "title": "The Railway Children",
+    "author": "E. Nesbit (1858–1924)"
+  },
+  "normalization": {
+    "version": "chinese-longform.v2",
+    "segmentation": "EXPLICIT",
+    "min_body_chars": 80,
+    "boundaries": [
+      {
+        "start": 0,
+        "end": 1597,
+        "title": "Publisher identity, front matter and rights",
+        "kind": "AUTHOR_NOTE",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 1597,
+        "end": 25452,
+        "title": "Chapter I. The beginning of things.",
+        "kind": "CHAPTER",
+        "number": 1,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 25452,
+        "end": 54930,
+        "title": "Chapter II. Peter's coal-mine.",
+        "kind": "CHAPTER",
+        "number": 2,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 54930,
+        "end": 81001,
+        "title": "Chapter III. The old gentleman.",
+        "kind": "CHAPTER",
+        "number": 3,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 81001,
+        "end": 110100,
+        "title": "Chapter IV. The engine-burglar.",
+        "kind": "CHAPTER",
+        "number": 4,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 110100,
+        "end": 130983,
+        "title": "Chapter V. Prisoners and captives.",
+        "kind": "CHAPTER",
+        "number": 5,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 130983,
+        "end": 153003,
+        "title": "Chapter VI. Saviours of the train.",
+        "kind": "CHAPTER",
+        "number": 6,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 153003,
+        "end": 179066,
+        "title": "Chapter VII. For valour.",
+        "kind": "CHAPTER",
+        "number": 7,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 179066,
+        "end": 201954,
+        "title": "Chapter VIII. The amateur firemen.",
+        "kind": "CHAPTER",
+        "number": 8,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 201954,
+        "end": 227172,
+        "title": "Chapter IX. The pride of Perks.",
+        "kind": "CHAPTER",
+        "number": 9,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 227172,
+        "end": 248738,
+        "title": "Chapter X. The terrible secret.",
+        "kind": "CHAPTER",
+        "number": 10,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 248738,
+        "end": 276876,
+        "title": "Chapter XI. The hound in the red jersey.",
+        "kind": "CHAPTER",
+        "number": 11,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 276876,
+        "end": 298429,
+        "title": "Chapter XII. What Bobbie brought home.",
+        "kind": "CHAPTER",
+        "number": 12,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 298429,
+        "end": 322895,
+        "title": "Chapter XIII. The hound's grandfather.",
+        "kind": "CHAPTER",
+        "number": 13,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 322895,
+        "end": 344437,
+        "title": "Chapter XIV. The End.",
+        "kind": "CHAPTER",
+        "number": 14,
+        "volume": "",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      },
+      {
+        "start": 344437,
+        "end": 363344,
+        "title": "Project Gutenberg license and trailing metadata",
+        "kind": "AUTHOR_NOTE",
+        "path": "railway-children.txt",
+        "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+        "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+      }
+    ],
+    "work_completion": "FINISHED"
+  },
+  "completeness": "COMPLETE",
+  "expected_units": 16
+}

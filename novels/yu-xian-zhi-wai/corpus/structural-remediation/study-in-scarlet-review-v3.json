@@ -1,0 +1,26 @@
+{
+  "action": "review_processing",
+  "processing_id": "corpus-processing:ec7b67d2329e1a71eb7bca842126987c05545982c1dcffc7971735b4d2318f18",
+  "previous_id": null,
+  "decisions": [
+    {
+      "issue_id": "sha256:e6d33132817b7a2ca87add1fb82222e3e8597796f25b7292a8fce2827b6329f7",
+      "resolution": "MARK_NON_BODY",
+      "reason": "Operator/AI-assisted structural inspection: publisher identity, contents and dedication/preface before the first body/volume boundary; preserve bytes/rights and exclude this exact occurrence; not independent human review or Card approval",
+      "evidence_refs": [
+        "file:///Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet.txt#sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497:utf8-bytes=0-1650",
+        "file:///Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-remediation/study-in-scarlet-volume-boundaries-v3-inspect-output.json#sha256:ad726cb6b6eb915e7778801dc42735b49db2e965634a011b263d6e9510b4d99a"
+      ]
+    },
+    {
+      "issue_id": "sha256:cfe94f4d42b69ca3d4af443912b665c7d562f34bce2047509f267fb8157bbea1",
+      "resolution": "MARK_NON_BODY",
+      "reason": "Operator/AI-assisted structural inspection: end marker, license and trailing project metadata; preserve bytes/rights and exclude this exact occurrence; not independent human review or Card approval",
+      "evidence_refs": [
+        "file:///Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet.txt#sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497:utf8-bytes=249872-268777",
+        "file:///Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-remediation/study-in-scarlet-volume-boundaries-v3-inspect-output.json#sha256:ad726cb6b6eb915e7778801dc42735b49db2e965634a011b263d6e9510b4d99a"
+      ]
+    }
+  ],
+  "reason": "Operator/AI-assisted exact-byte structural exclusion only; no rights transfer, independent human claim or Card approval"
+}

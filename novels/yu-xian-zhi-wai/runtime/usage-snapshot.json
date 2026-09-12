@@ -1,0 +1,46 @@
+{
+  "schema_version": "pilot-usage-audit.v1",
+  "evidence_class": "READ_ONLY_POSTGRESQL_SNAPSHOT",
+  "project_id": "first-novel-pilot-20260912",
+  "captured_at": "2026-09-12T10:55:29.590397+00:00",
+  "implementation_sha": "085eceaaa1311ef8a4c80e75a4d75421293b7c8f",
+  "provider_usage": {
+    "calls_used_or_reserved": 0,
+    "conservative_tokens": 0,
+    "recorded_actual_tokens": 0,
+    "unmeasured_reservations": 0,
+    "unmeasured_reserved_tokens": 0
+  },
+  "effects": [
+    {
+      "provider": "local_file_object_store",
+      "model": "",
+      "capability": "object_store.put",
+      "status": "SUCCEEDED",
+      "count": 359
+    },
+    {
+      "provider": "corpus_acquisition",
+      "model": "",
+      "capability": "source.remote.fetch",
+      "status": "SUCCEEDED",
+      "count": 20
+    }
+  ],
+  "operations": {
+    "FAILED_RETRYABLE": 2,
+    "SUCCEEDED": 185
+  },
+  "counts": {
+    "authority_mkaos_knowledge_candidate": 0,
+    "authority_mkaos_knowledge_card": 0,
+    "authority_book": 0,
+    "authority_budget_reservation": 0
+  },
+  "new_provider_calls": 0,
+  "new_model_tokens": 0,
+  "new_provider_monetary_cost": "NOT_INCURRED_NO_INVOCATIONS",
+  "proposed_entitlement_cost_measurement": "UNKNOWN_IF_RUN",
+  "previous_task_unknown_usage": "SEPARATE_PROJECT_NOT_RETRIED_NOT_REUSED",
+  "independent_human_review": "NOT_REVIEWED"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "hydraulics-01",
+  "requested_url": "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/02%3A_Power_Units/2.01%3A_Operation_of_a_Hydraulic_Power_Unit",
+  "resolved_url": "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/02%3A_Power_Units/2.01%3A_Operation_of_a_Hydraulic_Power_Unit",
+  "format": "html",
+  "status": "ACQUIRED",
+  "sha256": "135ee4179252987221dfcc000e72ee49ce3ed1b6d339d3ac65339d8b702c80f3",
+  "bytes": 136652,
+  "acquired_utc": "2026-09-12T10:11:50Z",
+  "etag": null,
+  "last_modified": null,
+  "raw_path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-01.html"
+}

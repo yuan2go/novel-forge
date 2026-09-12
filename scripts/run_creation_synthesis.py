@@ -46,6 +46,7 @@ from scripts.creation_pilot import (
     authorize_execution,
     freeze_routes,
     prepare_pilot_book,
+    pilot_stop_cursor,
 )
 from scripts.run_world_production_smoke import (
     drive,
@@ -118,6 +119,10 @@ def main(argv=None):
         parser.error(
             "creation and Formation policies must have the same bounded target"
         )
+    try:
+        pilot_cursor = pilot_stop_cursor(policy, book_target=formation_policy["target_chapters"])
+    except ValueError as exc:
+        parser.error(str(exc))
     repo = Path(__file__).resolve().parents[1]
     source_sha = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=repo, text=True
@@ -138,6 +143,9 @@ def main(argv=None):
         "creation_policy": policy,
         "knowledge_access_policy": knowledge_access,
         "formation_policy": formation_policy,
+        "book_target_chapter_count": formation_policy["target_chapters"],
+        "pilot_stop_after_chapter": pilot_cursor,
+        "full_book_completion": "NOT_PROVEN",
         "brief_input_hash": "sha256:"
         + hashlib.sha256(
             json.dumps(brief, sort_keys=True, ensure_ascii=False).encode()
@@ -179,12 +187,7 @@ def main(argv=None):
             require_disposable_database_name(
                 connection.execute("SELECT current_database()").fetchone()[0]
             )
-        settings = IndustrialSettings(
-            root=str(args.root),
-            environment=values["NOVEL_FORGE_ENVIRONMENT"],
-            storage_authority="postgresql",
-            database_url=database_url,
-        )
+        settings = IndustrialSettings.from_env(values, root=args.root)
         resolver = build_trusted_principal_resolver(env=values)
         principal = resolver.resolve_api_principal()
         principal.require("book.authority.execute", args.project_id)
@@ -497,9 +500,10 @@ def main(argv=None):
             maximum_ticks=80,
             deadline=deadline,
             stop_after_chapter=stop_after,
+            pilot_stop_after_chapter=pilot_cursor,
         )
         report["real_provider"] = "EXECUTED_SEE_RECEIPTS"
-        return 0 if report["status"] == "ACCEPTED_TARGET_REACHED" else 2
+        return 0 if report["status"] in {"ACCEPTED_TARGET_REACHED", "PILOT_ACCEPTED_CURSOR_REACHED"} else 2
     except Exception as exc:
         report.update(
             status="BLOCKED",

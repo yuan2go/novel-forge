@@ -1,0 +1,200 @@
+{
+  "action": "revise_curated_corpus",
+  "corpus_key": "first-novel-next",
+  "title": "First novel next source selection",
+  "purpose": "PRODUCTION_REFERENCE",
+  "filters": {
+    "work_ids": [
+      "corpus-canonical-work:a9f71c9c6554db8efa95e71a2ea6426cbf25b064464fb70314fac58e9f2b65d3",
+      "corpus-canonical-work:173a2aba9336bf37c290fa7f782490f7d8ab4e4cec3a9f8bda460349828c07f2",
+      "corpus-canonical-work:35d3d65a95115a59cc34913a1516e717f2faed19997653ff5778ec259345b15f",
+      "corpus-canonical-work:5f5d2b7b7224af0e84ea90c22a1e56f02cbf6b798c4db705268f8f95a56e7255"
+    ]
+  },
+  "candidate_limit": 30,
+  "reason": "Operator source selection only; not knowledge approval or paid-call authorization.",
+  "previous_id": "corpus-curated-revision:6a629ce0052a5fb292fb562093b164022083829ff199b5743329e68e719c25b0",
+  "state": "FROZEN",
+  "choices": [
+    {
+      "processing_id": "corpus-processing:c42d79acae82a7a4f46370922312a782e42b3318ab1e0412fad776b32e6fefe1",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/02%3A_Power_Units/2.01%3A_Operation_of_a_Hydraulic_Power_Unit",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-01.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:672d56d442253a1ed83387f7565182b1dc6a5ab22d6e0f23ba34067870040d24",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/05%3A_Pumps/5.01%3A_Flow_Rate_and_Its_Measurement",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-02.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:705d77a8d60b81ba6b22279f79220fd22335ede0e29d1038ef9f0c62bd1a6bbb",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/05%3A_Pumps/5.02%3A_Types_of_Flowmeters_and_Their_Operation",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-03.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:219f09699eb45ea0b9dac312e767e338835e8e1e5200272ea502443619740a4b",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/09%3A_Pressure_and_Cylinder_Force/9.01%3A_How_to_Calculate_the_Force_Output_of_an_Hydraulic_Cylinder_in_Extention_(Pushing)",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-04.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:a6b7cd4537afe792e4b2192946bf65d6a606ca037e8d3c6a13586647fd56b367",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/09%3A_Pressure_and_Cylinder_Force/9.02%3A_How_to_Calculate_the_Force_Output_of_an_Hydraulic_Cylinder_in_Retraction_(Pulling)",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-05.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:b6cbd2cfe6a04a0c3b184b910d108c08c76e5c43e5ca34b0728befd1b27391ed",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/10%3A_Pascal's_Law_and_Force_Multiplication/10.01%3A_Pascals_Law_and_Its_Significance_in_Hydraulics",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-06.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:2a3eb4c808d9c63d877e1ff0328401143814cd81acf774f08b23cce85290a9de",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/10%3A_Pascal's_Law_and_Force_Multiplication/10.02%3A_How_Force_Is_Multiplied_Using_Pascals_Law",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-07.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:570b62038e9b9e4dca6e78be58add941fc74dc89ae40c3d2d6c652a684dfe4d5",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/11%3A_Fluid_Friction/11.01%3A_Two_Types_of_Resistance_in_a_Hydraulic_System",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-08.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:0cb64d77f20aed4e2df8992382ae0cf257f04908ecb90bee4db6caa1c0092afc",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Known psi/kPa contradiction: quarantine.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/11%3A_Fluid_Friction/11.02%3A_How_Delta_P_Describes_Hydraulic_Resistance",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-09.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:c831377e9df6554caa5fb9a2be40699a8c98a258abe34eb613476765097ce437",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/12%3A_Pressure/12.01%3A_Pressure_in_a_Hydraulic_System",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-10.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:511d682e68d2b98e48b8462e7c7572c96ca66647943b4e07eafbd51c5bba16fe",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/12%3A_Pressure/12.02%3A_Pulling_Suction_of_a_Fluid",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-11.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/13%3A_Relief_Valves/13.01%3A_Function_and_Application_of_a_Relief_Valve",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-12.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:55f3e8c6122e47d9b298ab56c39f0d549acd53c7c268dbead1ab7550c9ed3aba",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/13%3A_Relief_Valves/13.02%3A_Operation_of_a_Direct-Acting_Relief_Valve_and_Its_Schematic_Symbol",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-13.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7",
+      "selected": true,
+      "reason": "Selected text-only mechanism / continuous original fiction window; evidence and assumptions require Source review",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/14%3A_Check_Valves/14.01%3A_Check_Valves_in_Hydraulic_Systems",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-14.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:02a0124e2c3e9607d924d6df0c98183e4f6265e437b61a6eda50e8f1e35abeb9",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/14%3A_Check_Valves/14.02%3A_Types_of_Check_Valves_and_Their_Operation",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-15.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210",
+      "selected": true,
+      "reason": "Selected text-only mechanism / continuous original fiction window; evidence and assumptions require Source review",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/15%3A_Flow_Control_Valves/15.01%3A_The_Function_of_a_Flow_Control_Valve",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-16.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:b91afb73fadbb26e62cc4b55b06782b842d0532fae865aaa6e5ec36bf704078a",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/15%3A_Flow_Control_Valves/15.02%3A_Operation_of_a_Flow_Control_Valve_and_its_Scematic_Symbol",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-17.html"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:e48ee1359efae10153db4d90b5ea48ef15163aa400654e2782916b4df50583a7",
+      "selected": true,
+      "reason": "Selected text-only mechanism / continuous original fiction window; evidence and assumptions require Source review",
+      "evidence_refs": [
+        "https://www.gutenberg.org/cache/epub/1874/pg1874.txt",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children.txt"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:4cd6aae2092680c63b07daca35dde7642190d7ee1a1ea06f031d0373e3b1f633",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://www.gutenberg.org/cache/epub/558/pg558.txt",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps.txt"
+      ]
+    },
+    {
+      "processing_id": "corpus-processing:18c38de58b2bcb46a728c577c295061d5d763e0ac56c88afe1b3053a84ec81e4",
+      "selected": false,
+      "reason": "Outside first bounded analysis; preserve acquisition. Visual content or unrelated current scope not qualified for analysis.",
+      "evidence_refs": [
+        "https://www.gutenberg.org/cache/epub/244/pg244.txt",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet.txt"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+In earlier sections, we discussed how hydraulic actuators convert fluid pressure into mechanical force to perform useful work. The fundamental principle behind this capability is
+Pascal’s Law
+, discovered in the 17
+th
+century by French mathematician and physicist
+Blaise Pascal
+.
+Pascal's Law (Stated)
+Pressure applied to a confined fluid is transmitted undiminished in all directions and acts with equal force on equal areas and at perpendicularly to the surface.
+Let’s break this down:
+Confined fluid
+means the fluid is trapped—it cannot escape or move freely because it's completely enclosed.
+Undiminished
+means the pressure doesn’t weaken or reduce as it moves through the fluid.
+The pressure acts
+equally
+in all directions and
+perpendicularly
+(at right angles) to the walls of the container.
+Visualizing Pascal’s Law
+Figure \(\PageIndex{1}\): Diagram of Pascal's Law in action. As the load (the stopper) presses into a sealed bottle of fluid, the fluid pressure spreads evenly outward against the walls of the bottle and the stopper.
+Imagine pressing down on a stopper inside a sealed bottle full of fluid. The force you apply compresses the fluid inside. Since the fluid cannot escape, the pressure spreads evenly throughout the entire fluid volume, pushing outward against the walls of the bottle and back up on the stopper. That same pressure exists everywhere inside the bottle and acts in all directions.
+Why This Is Important in Hydraulics
+Pascal’s Law is the foundation for
+hydraulic leverage
+—a principle that allows us to use a small input force to create a much larger output force. This makes it possible to move heavy loads using relatively compact equipment. You’ll learn more about force multiplication in the next section.
+Another important result of Pascal’s Law is that
+hydraulic actuators produce full force immediately upon movement
+. Since pressure is constant throughout the confined system, the moment a valve opens that feeds an actuator, full pressure is available at the cylinder or motor. This gives hydraulics a major advantage over other systems like electric motors, which may struggle under high starting loads or may stall if overloaded.
+Hydraulics also has the unique ability to be
+stalled at full pressure indefinitely
+without damaging system components. This is particularly useful in applications where loads must be held stationary under heavy force, like lifting arms, presses, or jacks.
+Pascal’s Law influences pressure gauge placement in a circuit. Since pressure is the same throughout the confined fluid, a gauge placed anywhere in the pressure line will read the same value, assuming the line is not obstructed and the fluid is not flowing through a pressure-reducing device.

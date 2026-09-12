@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/runtime/restore_isolated_infrastructure.py", line 12, in <module>
+    if command and 'uvicorn' not in command:raise RuntimeError('Refusing to stop an unexpected API process')
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Refusing to stop an unexpected API process

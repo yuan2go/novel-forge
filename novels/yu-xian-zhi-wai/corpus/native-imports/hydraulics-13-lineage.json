@@ -1,0 +1,178 @@
+{
+  "import_job_id": "source-import:c97ba847-2361-416d-bc99-b03cd624c9c5",
+  "snapshot": {
+    "manifest": {
+      "format": "html",
+      "checksum": "sha256:e23e08eeda05435bd4ef0e9cb38ccbe7069269e7a6d71c0a3758ce1c237ace40",
+      "metadata": {
+        "parser": {
+          "fields": {
+            "text": "text"
+          },
+          "format": "html",
+          "layout": "SINGLE_WORK",
+          "filters": {},
+          "version": "corpus-parser.v3",
+          "encoding": "utf-8",
+          "constants": {
+            "title": "13.2: Operation of a Direct-Acting Relief Valve and Its Schematic Symbol",
+            "author": "Jessy Haid / Northeast Wisconsin Technical College",
+            "work_id": "hydraulics-13"
+          },
+          "completeness": "EXCERPT",
+          "records_path": "item",
+          "normalization": {
+            "version": "chinese-longform.v2",
+            "boundaries": [],
+            "expected_toc": [],
+            "segmentation": "EXPLICIT",
+            "toc_evidence": "",
+            "unicode_form": "NFC",
+            "max_unit_bytes": 2000000,
+            "min_body_chars": 80,
+            "work_completion": "UNKNOWN",
+            "external_work_ids": [],
+            "heading_max_chars": 100,
+            "candidate_threshold": 0.8,
+            "duplicate_body_min_chars": 128
+          },
+          "expected_units": 1,
+          "work_key_encoding": "VALUE",
+          "html_body_selector": ".mt-content-container",
+          "html_remove_selectors": [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            "noscript"
+          ]
+        },
+        "source": {
+          "kind": "LOCAL",
+          "files": [
+            {
+              "path": "hydraulics-13.html",
+              "parser": null,
+              "checksum": "sha256:b2f9f5ca01a7196fac33a5b75ca20aa56a9776882e9a3ee44d4ffa4ce98a2984",
+              "size_bytes": null
+            }
+          ],
+          "split": "",
+          "config": "",
+          "exclude": [
+            ".git/**",
+            "**/.git/**",
+            ".DS_Store"
+          ],
+          "include": [
+            "*",
+            "**/*"
+          ],
+          "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-13.html",
+          "revision": ""
+        },
+        "ingestion_manifest_hash": "sha256:4294f7af287e589ded8994f285067c27081e579d0592d73fd50bf336ac6fa282"
+      },
+      "origin_uri": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-13.html",
+      "schema_version": "corpus-dataset-manifest.v1",
+      "adapter_profile": "LOCAL",
+      "external_version": "sha256:e23e08eeda05435bd4ef0e9cb38ccbe7069269e7a6d71c0a3758ce1c237ace40",
+      "adapter_contract_version": "corpus-adapters.v1"
+    },
+    "rights_id": "corpus-rights:ae533171200687e98b36d25f01fc028cede7bd358e2759218ef7f0b08979a7d8",
+    "source_id": "corpus-source:e6247ce6871c0e1fb9886f60e2ea13c91ef1a0287faddca7eb20ce968d07d1a5",
+    "created_at": "2026-09-12T10:17:49.582261+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "acquisition": {
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-13.html",
+      "checksum": "sha256:e23e08eeda05435bd4ef0e9cb38ccbe7069269e7a6d71c0a3758ce1c237ace40",
+      "acquired_at": "2026-09-12T10:17:49.446846+00:00",
+      "receipt_ref": "fd7329ef-3673-4675-b1e2-afd9fdab96b7",
+      "repository_snapshot_asset_version_id": null
+    },
+    "snapshot_id": "corpus-snapshot:7f8e398fb91f7270b9d83232a6d4bbe10808caaaa377078b5518431cb8ec1520",
+    "revision_number": 1,
+    "previous_snapshot_id": null,
+    "created_by_operation_id": "fa0d0624-eb2e-48cd-a473-064b48c0d710",
+    "repository_snapshot_asset_version_id": null
+  },
+  "rights": {
+    "rights_id": "corpus-rights:ae533171200687e98b36d25f01fc028cede7bd358e2759218ef7f0b08979a7d8",
+    "source_id": "corpus-source:e6247ce6871c0e1fb9886f60e2ea13c91ef1a0287faddca7eb20ce968d07d1a5",
+    "created_at": "2026-09-12T10:17:49.53622+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "declaration": {
+      "scope": "ALL_WORKS_IN_SNAPSHOT",
+      "action": "declare_rights",
+      "source_id": "corpus-source:e6247ce6871c0e1fb9886f60e2ea13c91ef1a0287faddca7eb20ce968d07d1a5",
+      "work_grants": {},
+      "allowed_uses": [
+        "LOCAL_PROCESSING",
+        "SOURCE_ANALYSIS",
+        "ABSTRACT_GENERATION"
+      ],
+      "restrictions": [],
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/13%3A_Relief_Valves/13.02%3A_Operation_of_a_Direct-Acting_Relief_Valve_and_Its_Schematic_Symbol",
+        "sha256:b2f9f5ca01a7196fac33a5b75ca20aa56a9776882e9a3ee44d4ffa4ce98a2984",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-13.html"
+      ],
+      "dataset_license": "CC-BY-4.0",
+      "denied_purposes": [],
+      "allowed_purposes": [
+        "PRODUCTION_REFERENCE"
+      ],
+      "underlying_rights": "LICENSED",
+      "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+      "previous_rights_id": null,
+      "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+    },
+    "revision_number": 1,
+    "previous_rights_id": null,
+    "created_by_operation_id": "5058a7e9-b923-4cb3-b5f1-22dd1c6a0634"
+  },
+  "editions": [
+    {
+      "title": "hydraulics-13",
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-13.html",
+      "checksum": "sha256:c5facb7e71257f5ac2841202526d72aed297ce675ef739f94361da02a1c12431",
+      "metadata": {
+        "parser": "corpus-parser.v3",
+        "unit_count": 1,
+        "completeness": "EXCERPT"
+      },
+      "source_id": "corpus-source:e6247ce6871c0e1fb9886f60e2ea13c91ef1a0287faddca7eb20ce968d07d1a5",
+      "created_at": "2026-09-12T10:17:49.723908+00:00",
+      "edition_id": "corpus-edition:e11e478e4624eed140a5c6974ac8403ebe0398544ebfe3b1415a50a2d744fd5a",
+      "project_id": "first-novel-pilot-20260912",
+      "snapshot_id": "corpus-snapshot:7f8e398fb91f7270b9d83232a6d4bbe10808caaaa377078b5518431cb8ec1520",
+      "book_source_id": "corpus-book:010014a03c33281a1f5ad2e42b2e4fde262edccab98efcb3f68af2644b5f8bb1",
+      "external_edition_id": "source-edition",
+      "created_by_operation_id": "09aa86aa-fe95-4c8b-82ef-48b8bd261ca7",
+      "bridge": {
+        "evidence": {
+          "scope": "CONTENT_AND_LINEAGE_ONLY",
+          "completeness": "EXCERPT",
+          "manifest_hash": "sha256:4294f7af287e589ded8994f285067c27081e579d0592d73fd50bf336ac6fa282",
+          "parsed_blob_id": "d22ae58e-57cb-5e83-927b-fc69f6e12c72",
+          "knowledge_approved": false,
+          "acquisition_effect_id": "fd7329ef-3673-4675-b1e2-afd9fdab96b7"
+        },
+        "rights_id": "corpus-rights:ae533171200687e98b36d25f01fc028cede7bd358e2759218ef7f0b08979a7d8",
+        "created_at": "2026-09-12T10:17:50.079659+00:00",
+        "edition_id": "corpus-edition:e11e478e4624eed140a5c6974ac8403ebe0398544ebfe3b1415a50a2d744fd5a",
+        "project_id": "first-novel-pilot-20260912",
+        "parser_hash": "sha256:18d9c22f101f9b6152fbd2c3a04b2f6e6de7a87c586f7eaea15b522aa0a5a0ed",
+        "policy_version": "corpus-use-policy.v1",
+        "normalized_hash": "sha256:31fc6e8160c7b88f67ebbd3909301a0c2c36e8569338bf0c99422823154694ba",
+        "source_document_id": "source-document:first-novel-pilot-20260912:97549d465275758beb4cb160605bc537fdf8f6cd460e76be21aa6947e4c4bca3",
+        "source_transform_id": "source-transform:first-novel-pilot-20260912:83c4317a42f165330893fec4548c81bbf4fd43581cae58dd8b211ca14cbecdea",
+        "created_by_operation_id": "51eb5df3-b2b6-41f5-91aa-ac595841ce0f",
+        "source_work_asset_version_id": "661650a5-55a7-4d85-8764-8e7f9d61e6f9"
+      }
+    }
+  ],
+  "page_limit": 50,
+  "next_after": null
+}

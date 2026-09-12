@@ -1,0 +1,60 @@
+{
+  "status": "AWAITING_PACKAGE_SPECIFIC_AUTHORIZATION",
+  "existing_grant": "/Volumes/DevSSD/Development/Workspace/task-data/WP-CORPUS-REAL-EXECUTION-01/r1/authorization.json",
+  "existing_grant_sha256": "bb953946cb4037144ee4bfeaa76ce1ff96f5fdc1f005fcfa36c920608625df14",
+  "applicable_to_new_task": false,
+  "reason": "RESEARCH only; production planning/writing and scope expansion forbidden; unresolved previous result retained",
+  "proposed_route": {
+    "backend": "codex_cli",
+    "model": "gpt-6-astra",
+    "reasoning": "xhigh",
+    "account_home": "/Users/yuan/.codex-claude",
+    "accounting": "ACCOUNT_ENTITLEMENT"
+  },
+  "proposed_shared_limit": {
+    "calls": 480,
+    "observable_tokens": 12000000,
+    "concurrency": 1,
+    "source": {
+      "calls": 60,
+      "tokens": 1500000
+    },
+    "A": {
+      "calls": 180,
+      "tokens": 4500000
+    },
+    "B": {
+      "calls": 180,
+      "tokens": 4500000
+    },
+    "shared_repairs_recovery": {
+      "calls": 60,
+      "tokens": 1500000
+    }
+  },
+  "approved": false,
+  "real_calls": 0,
+  "card_approval": "EXACT_VERSION_REVIEW_REQUIRED",
+  "suggested_partition": {
+    "status": "PENDING_AUTHORIZATION",
+    "scope": "Source + independent A/B Books + reviews/revisions/recovery",
+    "total_calls": 480,
+    "total_observable_tokens": 12000000,
+    "project_a_including_source": {
+      "calls": 270,
+      "tokens": 6750000,
+      "source_calls_included": 60,
+      "a_calls_included": 180,
+      "repair_calls_included": 30
+    },
+    "project_b": {
+      "calls": 210,
+      "tokens": 5250000,
+      "b_calls_included": 180,
+      "repair_calls_included": 30
+    },
+    "automatic_transfer": false,
+    "unknown_cli_overhead": "UNKNOWN",
+    "money": "UNKNOWN"
+  }
+}

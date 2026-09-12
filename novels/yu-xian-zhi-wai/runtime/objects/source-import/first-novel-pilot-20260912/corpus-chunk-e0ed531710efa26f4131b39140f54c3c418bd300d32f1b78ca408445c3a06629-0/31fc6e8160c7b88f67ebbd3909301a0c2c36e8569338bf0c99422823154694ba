@@ -1,0 +1,41 @@
+There are two common designs of relief valves used in hydraulic applications:
+direct-acting relief valves
+and
+pilot-operated relief valves
+(which will be covered in later sections). While their fundamental function is the same —opening at a preset pressure to divert excess fluid back to the reservoir— their internal construction and operation differ.
+Figure \(\PageIndex{1}\): Diagrams of a poppet type, spool type, and ball type direct-acting relief valve.
+A
+direct-acting relief valve
+consists of a valve body with two ports: an
+inlet
+and an
+outlet
+. Inside the body can be a
+movable poppet
+(or dart),
+spool
+or
+ball
+that is held in a closed position by a spring. When pressure at the inlet rises to a critical level, the force overcomes the spring tension, pushing the poppet off its seat and allowing fluid to flow through the outlet, thereby reducing system pressure.
+Figure \(\PageIndex{2}\): Diagrams of a direct-acting relief valve when the valve is closed and open.
+The opening pressure of the valve can be adjusted by modifying the compression of the spring. This adjustability is crucial for setting the appropriate system pressure limits based on the hydraulic circuit’s requirements.
+Schematic Symbol Interpretation
+Figure \(\PageIndex{3}\): Schematic representation of a direct-acting relief valve.
+The schematic representation of a direct-acting relief valve is identical to that of a
+pilot-operated relief valve
+. Key elements of the symbol include:
+A
+normally closed
+valve (shown as a disconnected arrow between the inlet and outlet).
+A
+pilot line
+(dashed line) that senses pressure and initiates valve opening.
+A
+spring symbol,
+indicating that the valve remains closed until pressure reaches a set threshold.
+An
+angled arrow through the spring
+, signifying that the pressure setting is adjustable.
+The pilot line connected to the inlet, meaning the valve reacts solely to the
+inlet (upstream) pressure
+.

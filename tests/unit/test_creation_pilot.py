@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -68,13 +70,20 @@ def test_six_chapter_inputs_freeze_sources_and_do_not_invent_card_approval(tmp_p
     assert not (tmp_path / "unbound/allow-only.json").exists()
     for name, digest in report["files"].items():
         assert digest == "sha256:" + hashlib.sha256((tmp_path / "unbound" / name).read_bytes()).hexdigest()
-    prepare(tmp_path / "bound", ["exact-approved-version"])
+    bound = prepare(tmp_path / "bound", ["exact-approved-version"], target_book_id="planned-treatment-book")
     policy = json.loads((tmp_path / "bound/allow-only.json").read_text())
     assert policy["allowed_knowledge_card_asset_version_ids"] == ["exact-approved-version"]
     creation = json.loads((tmp_path / "bound/creation.json").read_text())
     assert creation["profiles"]["production_profile"]["content"]["target_chapter_count"] == 6
     assert creation["chapter_group_execution"]["maximum_chapters"] == 3
     assert creation["future_plan_change"]["after_chapter"] == 3
+    assert bound["analysis_target"]["target_book_id"] == "planned-treatment-book"
+    assert bound["analysis_target"]["intended_use"] == "ABSTRACT_GENERATION"
+    for name in ("professional", "fiction"):
+        imported = json.loads((tmp_path / "bound" / f"{name}-import.json").read_text())
+        assert imported["purpose"] == "PRODUCTION_REFERENCE"
+        assert imported["rights"]["allowed_purposes"] == ["PRODUCTION_REFERENCE"]
+        assert "ABSTRACT_GENERATION" in imported["rights"]["allowed_uses"]
     from novel_forge.modules.command_kernel.errors import KernelError
     with pytest.raises(KernelError):
         prepare(tmp_path / "empty", [])
@@ -85,6 +94,56 @@ def test_blind_export_does_not_turn_missing_prose_into_review_material(tmp_path)
     with pytest.raises(ValueError, match="six exact accepted chapters"):
         blind_export(tmp_path / "a", tmp_path / "b", tmp_path / "output")
     assert not (tmp_path / "output").exists()
+
+
+@pytest.mark.parametrize("long_goal", [False, True], ids=["bounded-target", "long-novel-pilot"])
+def test_creation_cursor_closes_accepted_group_without_dispatching_next_chapter(monkeypatch, long_goal):
+    from scripts import run_world_production_smoke as runner
+    monkeypatch.setattr(runner, "RuntimeJobAuthority", lambda _database: None)
+    book = {"project_id": "p", "book_id": "b", "book_run_id": "run", "state": "CANON_COMMITTED",
+            "target_chapter_count": 180 if long_goal else 6, "accepted_through_chapter": 6}
+    group = {"group_run_id": "second-group", "state": "CLOSURE_PENDING", "chapter_end": 6}
+    closed, paused, events = [], [], []
+    def close(identity, **_kw):
+        closed.append(identity)
+        group["state"] = "COMPLETED"
+        return group
+    def pause(identity, **_kw):
+        paused.append(identity)
+        book["state"] = "PAUSED"
+        return book
+    composition = SimpleNamespace(
+        principal="operator", authority=SimpleNamespace(database_url="not-connected", require=lambda _id: dict(book), pause=pause),
+        query=SimpleNamespace(active_chapter_group_run_id=lambda **_kw: "" if closed else "second-group"),
+        chapter_groups=SimpleNamespace(require=lambda _id: dict(group), close=close),
+    )
+    chapter = Mock()
+    options = {"pilot_stop_after_chapter": 6} if long_goal else {}
+    for _ in range(2):
+        result = runner.drive(composition=composition, chapter=chapter, book_run_id="run", worker="worker",
+                              events=events.append, maximum_ticks=2, deadline=0, **options)
+        assert result == ("PILOT_ACCEPTED_CURSOR_REACHED" if long_goal else "ACCEPTED_TARGET_REACHED")
+    assert closed == ["second-group"]
+    assert paused == (["run"] if long_goal else [])
+    assert book["target_chapter_count"] == (180 if long_goal else 6)
+    assert book["accepted_through_chapter"] == 6
+    chapter.scheduler.assert_not_called()
+
+
+@pytest.mark.parametrize("cursor", [-1, True, 6.0, "6", 180, 181])
+def test_pilot_cursor_cannot_replace_or_exceed_full_novel_goal(cursor):
+    from scripts.creation_pilot import pilot_stop_cursor
+    with pytest.raises(ValueError):
+        pilot_stop_cursor({"pilot_stop_after_chapter": cursor}, book_target=180)
+
+
+def test_pilot_cursor_and_future_change_are_separate_frozen_boundaries():
+    from scripts.creation_pilot import pilot_stop_cursor
+    policy = {"pilot_stop_after_chapter": 6, "future_plan_change": {"after_chapter": 3}}
+    assert pilot_stop_cursor(policy, book_target=180) == 6
+    assert pilot_stop_cursor({}, book_target=180) == 0
+    with pytest.raises(ValueError, match="precede"):
+        pilot_stop_cursor({"pilot_stop_after_chapter": 3, "future_plan_change": {"after_chapter": 3}}, book_target=180)
 
 
 @pytest.mark.parametrize(
@@ -146,3 +205,55 @@ def test_han_length_policy_counts_unicode_and_cannot_be_overridden_by_model_pass
     assert dimension["gate_status"] == status
     assert dimension["calibration_status"] == "DETERMINISTIC"
     assert dimension["evidence_locations"][0]["observed"] == count
+
+
+def test_custom_pilot_input_freeze_preserves_rights_and_does_not_invent_sources(tmp_path):
+    import hashlib
+    import json
+    from scripts.prepare_knowledge_closure import main
+    source = tmp_path / 'custom'
+    source.mkdir()
+    manifest = {'purpose': 'PRODUCTION_REFERENCE', 'rights': {'evidence_refs': ['rights:operator-declared']}}
+    (source / 'real-import.json').write_text(json.dumps(manifest))
+    (source / 'creation.json').write_text(json.dumps({'pilot_stop_after_chapter': 6}))
+    destination = tmp_path / 'frozen'
+    assert main(['prepare', '--input-dir', str(source), '--output', str(destination), '--target-book-id', 'treatment-book']) == 0
+    assert (destination / 'real-import.json').read_bytes() == (source / 'real-import.json').read_bytes()
+    assert not (destination / 'professional-import.json').exists()
+    assert not (destination / 'fiction-import.json').exists()
+    frozen = json.loads((destination / 'freeze.json').read_text())
+    assert frozen['input_directory'] == str(source.resolve())
+    assert frozen['analysis_target']['target_book_id'] == 'treatment-book'
+    assert frozen['files']['real-import.json'] == 'sha256:' + hashlib.sha256((source / 'real-import.json').read_bytes()).hexdigest()
+
+
+@pytest.mark.parametrize('pilot,boundary,accepted', [(True, 6, 6), (False, 3, 3), (False, 3, 4)])
+def test_frozen_cursor_blocks_group_crossing_without_dispatch(monkeypatch, pilot, boundary, accepted):
+    from scripts import run_world_production_smoke as runner
+    monkeypatch.setattr(runner, 'RuntimeJobAuthority', lambda _database: None)
+    book = {'project_id': 'p', 'book_id': 'b', 'book_run_id': 'run', 'state': 'CANON_COMMITTED',
+            'target_chapter_count': 180, 'accepted_through_chapter': accepted}
+    group = {'group_run_id': 'crossing', 'state': 'CHAPTER_RUNNING', 'chapter_start': boundary - 1,
+             'chapter_end': boundary + 1}
+    def reconcile(*_args, **_kwargs):
+        group['state'] = 'READY'
+        return group
+    def pause(*_args, **_kwargs):
+        book['state'] = 'PAUSED'
+        return book
+    composition = SimpleNamespace(
+        principal='operator', authority=SimpleNamespace(database_url='none', require=lambda _id: dict(book), pause=pause),
+        query=SimpleNamespace(active_chapter_group_run_id=lambda **_kw: 'crossing',
+            active_plan_covering_chapter=lambda **_kw: {'asset_version_id': 'crossing-plan', 'content': {'chapter_range': [boundary-1, boundary+1]}}),
+        chapter_groups=SimpleNamespace(require=lambda _id: dict(group), reconcile_and_accept=reconcile),
+    )
+    chapter = Mock()
+    expected = 'PILOT_CURSOR_PARTIAL_GROUP_BLOCKED' if pilot else 'FUTURE_PLAN_CHANGE_SCOPE_BLOCKED' if accepted == boundary else 'FUTURE_PLAN_CHANGE_CURSOR_PASSED'
+    result = runner.drive(composition=composition, chapter=chapter, book_run_id='run', worker='worker', events=lambda _event: None,
+                          maximum_ticks=1, deadline=0, **{'pilot_stop_after_chapter' if pilot else 'stop_after_chapter': boundary})
+    assert result == expected
+    assert book['state'] == 'PAUSED'
+    assert book['accepted_through_chapter'] == accepted and book['target_chapter_count'] == 180
+    chapter.scheduler.assert_not_called()
+    if pilot:
+        assert group['state'] == 'READY'

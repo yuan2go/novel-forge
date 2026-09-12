@@ -1,0 +1,10 @@
+#!/Users/yuan/projects/novel-forge-first-novel-pilot/.venv/bin/python
+from pathlib import Path
+import os,json
+root=Path(__file__).resolve().parent
+repo=Path('/Users/yuan/projects/novel-forge-first-novel-pilot')
+env=os.environ|json.loads((root/'local-environment.json').read_text())
+env['PYTHONPATH']=str(repo/'src')+':'+str(repo)
+env['NOVEL_FORGE_MKAOS_AUTHORITY_WORKER_ID']='first-novel-pilot-mkaos-worker'
+os.chdir(repo)
+os.execve(str(repo/'.venv/bin/python'),[str(repo/'.venv/bin/python'),'-m','novel_forge.workers.mkaos_authority'],env)

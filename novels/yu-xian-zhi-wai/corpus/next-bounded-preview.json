@@ -1,0 +1,982 @@
+{
+  "revision_id": "corpus-curated-revision:927d2676f810a138e226734cd13a2445ae0f08a3e9aa727f92cceebe4e488fbf",
+  "consumption_admission": {
+    "schema_version": "source-consumption-admission.v1",
+    "intended_use": "ABSTRACT_GENERATION",
+    "project_id": "first-novel-pilot-20260912",
+    "workspace_id": "first-novel-pilot-workspace",
+    "target_book_id": "first-novel-pilot-a",
+    "source_use_admitted": true,
+    "generation_consumption_allowed": false,
+    "book_status": "PENDING_BOOK_CREATION",
+    "knowledge_status": "PENDING_CARD_REVIEW",
+    "target_card_selection_status": "PENDING_CARD_SELECTION_AND_BOOK_POLICY_CHECK",
+    "source_evidence": [
+      {
+        "processing_id": "corpus-processing:1a7a7548aa10a53acf994cc65f856d47640ad8f977be5ff9fbbbeaf2edf44fdf",
+        "edition_id": "corpus-edition:4a939f173a873d5c87a8a664dc22bb10d9f9988ceaa893200d2e148080edeebd",
+        "membership_id": "corpus-membership:7979ec0d693e14d6d8295996d5208ddeadece1ac92db50fd0e4e94da6d3f53cb",
+        "source_id": "corpus-source:fe14e7ab661dcc05cebf92ff079170e0f88b760d2e79a5dbc78828822e54ea85",
+        "snapshot_id": "corpus-snapshot:afce73dfba6a039e59c30a89f22e90b04c4551c89e251434bac970881e79fbe3",
+        "rights_id": "corpus-rights:0cd8aafcbae0dee7cd0c4030f75b6b33796b41ec7f93f2eaf4b53111a60eac03",
+        "external_work_id": "railway-children",
+        "purpose": "PRODUCTION_REFERENCE",
+        "use": "ABSTRACT_GENERATION",
+        "policy_version": "corpus-use-policy.v1",
+        "rights_declaration_hash": "sha256:b5f1af2e65df18e2c9801e3e79e4735473f8b410e228c421aa467e4d2303ca25"
+      },
+      {
+        "processing_id": "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7",
+        "edition_id": "corpus-edition:955cf6fe0b01c4a3ace3ff24e5ee6c6780e8c2e8762b684fa7a7fa7f2130ccbf",
+        "membership_id": "corpus-membership:64b5dbdcda2b0f5a3fb1aebd0c2cc7facbb890f677771a10b78184a778d36d3f",
+        "source_id": "corpus-source:3ab50e9424533a9422d394cb707e4f02f9e79a02fab800c949657484b83f9071",
+        "snapshot_id": "corpus-snapshot:97bc3f3cb2e0da63044c97a3be409cd1ad14964cf7d2643c91fa3609148f9349",
+        "rights_id": "corpus-rights:d1125f802a2cfe26cc96dc912fe351b40a27b1d634009227a55f29946dbf29c2",
+        "external_work_id": "hydraulics-14",
+        "purpose": "PRODUCTION_REFERENCE",
+        "use": "ABSTRACT_GENERATION",
+        "policy_version": "corpus-use-policy.v1",
+        "rights_declaration_hash": "sha256:35cf3231e0f067114a1956c35cedebfb3e3663d906aecdc636db8ca86dc47dc7"
+      },
+      {
+        "processing_id": "corpus-processing:8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210",
+        "edition_id": "corpus-edition:b646935bb4aea147423035ca4f866ce3e0b38e9d7018d6a180544b1e1b50a008",
+        "membership_id": "corpus-membership:78f3fee04c3152a1bacfea44f85ddac22f73c7ff3014138a4045d039f2af5943",
+        "source_id": "corpus-source:df72939b80e323c6a22c5ab33deec6e8d6ff7908ef52a9aab41836a47f3a0029",
+        "snapshot_id": "corpus-snapshot:acf2674c4d571fd2a4067eb0320c7a12319c7792a47fb3698f33ba7690278c72",
+        "rights_id": "corpus-rights:c8d96f755a41aef1606e985696d113e9bd30c55077e001e7da783fd24243c788",
+        "external_work_id": "hydraulics-16",
+        "purpose": "PRODUCTION_REFERENCE",
+        "use": "ABSTRACT_GENERATION",
+        "policy_version": "corpus-use-policy.v1",
+        "rights_declaration_hash": "sha256:a810ae7844c018fcc14fdfd631bd200246a8c65c205c95b10ecdfb0c57de53c3"
+      }
+    ],
+    "book_policy_evidence": []
+  },
+  "reading_plans": {
+    "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7": {
+      "contract": {
+        "version": "chapter-reading.v1",
+        "processing_id": "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7",
+        "first_unit_version_id": "source-unit-version:322b078635521ffb8d50101169b5b9b12a03badb48962da12ab98253da101450",
+        "last_unit_version_id": "source-unit-version:322b078635521ffb8d50101169b5b9b12a03badb48962da12ab98253da101450",
+        "context_before": 0,
+        "context_after": 0,
+        "max_chapters": 1,
+        "max_input_bytes_per_chapter": 12000,
+        "max_total_input_bytes": 12000,
+        "max_repairs": 1,
+        "dimensions": [
+          "core_concept",
+          "causal_constraints",
+          "assumption",
+          "misuse_risk",
+          "source_reliability",
+          "review_check"
+        ]
+      },
+      "edition_id": "corpus-edition:955cf6fe0b01c4a3ace3ff24e5ee6c6780e8c2e8762b684fa7a7fa7f2130ccbf",
+      "processing_id": "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7",
+      "source_work_asset_version_id": "028183e4-9921-417d-8ffa-1bb18a6d17da",
+      "source_transform_id": "source-transform:first-novel-pilot-20260912:d9272c181f5aeab270f20fb8c925cbad3160b5b3023344c5980a0e15337671e8",
+      "assessment_hash": "sha256:d5b9725244d00e23ba6fa39f5323de67b825e81015e9175d6a9e7e94a8600016",
+      "review_id": null,
+      "member": {
+        "evidence": {
+          "reason": "Selected bounded text mechanism / continuous original fiction window; not knowledge approval",
+          "purpose": "PRODUCTION_REFERENCE",
+          "coverage": "EXCERPT",
+          "language": "en",
+          "selected": true,
+          "review_id": null,
+          "rights_id": "corpus-rights:d1125f802a2cfe26cc96dc912fe351b40a27b1d634009227a55f29946dbf29c2",
+          "characters": 2421,
+          "genre_tags": [
+            "professional",
+            "hydraulics"
+          ],
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/14%3A_Check_Valves/14.01%3A_Check_Valves_in_Hydraulic_Systems",
+            "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-14.html"
+          ],
+          "membership_id": "corpus-membership:64b5dbdcda2b0f5a3fb1aebd0c2cc7facbb890f677771a10b78184a778d36d3f",
+          "processing_id": "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7",
+          "assessment_hash": "sha256:d5b9725244d00e23ba6fa39f5323de67b825e81015e9175d6a9e7e94a8600016",
+          "structure_usable": true,
+          "relation_versions": [],
+          "canonical_revision_id": "corpus-canonical-revision:cc965bd8a25daba71f498700fac84c8d1819701f8c37dd74e1789e30543e1be2"
+        },
+        "edition_id": "corpus-edition:955cf6fe0b01c4a3ace3ff24e5ee6c6780e8c2e8762b684fa7a7fa7f2130ccbf",
+        "project_id": "first-novel-pilot-20260912",
+        "revision_id": "corpus-curated-revision:927d2676f810a138e226734cd13a2445ae0f08a3e9aa727f92cceebe4e488fbf",
+        "processing_id": "corpus-processing:a75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7"
+      },
+      "units": [
+        {
+          "kind": "chapter",
+          "title": "14.1: Check Valves in Hydraulic Systems",
+          "status": "AVAILABLE",
+          "ordinal": 1,
+          "metadata": {
+            "volume": "",
+            "raw_blob_id": "6805d8c4-4d74-5ad6-b133-0b81a2f3d09a",
+            "declared_order": 1,
+            "normalization_evidence": {
+              "steps": [
+                "STRICT_DECODE",
+                "NEWLINE_LF",
+                "NFC"
+              ],
+              "precision": "STRUCTURED_LOCATOR",
+              "raw_text_changed": false,
+              "normalized_utf8_bytes": 2429,
+              "normalized_unicode_length": 2421
+            },
+            "normalized_unicode_end": 2421,
+            "normalized_unicode_start": 0,
+            "original_offset_semantics": "HTML_SELECTOR"
+          },
+          "line_count": 49,
+          "raw_file_hash": "sha256:c3788aa09a97c8df0dd2705e20c2149c5f122f390f45a66df9f789ec370da0c2",
+          "source_locator": {
+            "path": "hydraulics-14.html",
+            "field": "text",
+            "record": 1,
+            "selector": ".mt-content-container",
+            "offset_kind": "HTML_SELECTOR",
+            "container_path": null,
+            "original_byte_offset": null
+          },
+          "source_unit_id": "source-unit:0c06bd0d7c201f4ddbdfb66f2ce1c305ebc6a409a5a2b7d0ae06df044fae9321",
+          "character_count": 2421,
+          "normalized_byte_end": 2429,
+          "normalized_byte_start": 0,
+          "original_content_hash": "sha256:51c0215ae925364fe50ca3cd494246636a52599cd01c33d659a664e1c375a120",
+          "source_unit_version_id": "source-unit-version:322b078635521ffb8d50101169b5b9b12a03badb48962da12ab98253da101450",
+          "normalized_content_hash": "sha256:51c0215ae925364fe50ca3cd494246636a52599cd01c33d659a664e1c375a120",
+          "source_work_asset_version_id": "028183e4-9921-417d-8ffa-1bb18a6d17da",
+          "role": "TARGET",
+          "chunks": [
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:d9272c181f5aeab270f20fb8c925cbad3160b5b3023344c5980a0e15337671e8:0:v1",
+              "chunk_index": 0,
+              "content_hash": "sha256:51c0215ae925364fe50ca3cd494246636a52599cd01c33d659a664e1c375a120",
+              "byte_size": 2429,
+              "source_byte_start": 0,
+              "source_byte_end": 2429
+            }
+          ]
+        }
+      ],
+      "excluded_structural_units": [],
+      "coverage_claim": "SELECTED_CONTIGUOUS_UNITS_ONLY",
+      "outside_range": "NOT_READ",
+      "tool_access": "DENY_FILESYSTEM_SHELL_WEB_MCP",
+      "identity": "sha256:52c9934630ea208fca69cb4778f7ae2913ce0996457119e74c38a18c91a4c531"
+    },
+    "corpus-processing:8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210": {
+      "contract": {
+        "version": "chapter-reading.v1",
+        "processing_id": "corpus-processing:8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210",
+        "first_unit_version_id": "source-unit-version:2e613bdeed5b5d3dd515d494fefb58ed181dbef6e1ba26444a003ba200183bfd",
+        "last_unit_version_id": "source-unit-version:2e613bdeed5b5d3dd515d494fefb58ed181dbef6e1ba26444a003ba200183bfd",
+        "context_before": 0,
+        "context_after": 0,
+        "max_chapters": 1,
+        "max_input_bytes_per_chapter": 12000,
+        "max_total_input_bytes": 12000,
+        "max_repairs": 1,
+        "dimensions": [
+          "core_concept",
+          "causal_constraints",
+          "assumption",
+          "misuse_risk",
+          "source_reliability",
+          "review_check"
+        ]
+      },
+      "edition_id": "corpus-edition:b646935bb4aea147423035ca4f866ce3e0b38e9d7018d6a180544b1e1b50a008",
+      "processing_id": "corpus-processing:8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210",
+      "source_work_asset_version_id": "eae99576-7288-4213-985e-bf51ff7d35b4",
+      "source_transform_id": "source-transform:first-novel-pilot-20260912:ace92c053360e28010991700da23712540ea8cb3d815080c3efa07dbdd7cecb8",
+      "assessment_hash": "sha256:cd851c9c82459ea32a7be929412a07d5468fcd0d67c17dd374f18f23701d4932",
+      "review_id": null,
+      "member": {
+        "evidence": {
+          "reason": "Selected bounded text mechanism / continuous original fiction window; not knowledge approval",
+          "purpose": "PRODUCTION_REFERENCE",
+          "coverage": "EXCERPT",
+          "language": "en",
+          "selected": true,
+          "review_id": null,
+          "rights_id": "corpus-rights:c8d96f755a41aef1606e985696d113e9bd30c55077e001e7da783fd24243c788",
+          "characters": 880,
+          "genre_tags": [
+            "professional",
+            "hydraulics"
+          ],
+          "evidence_refs": [
+            "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/15%3A_Flow_Control_Valves/15.01%3A_The_Function_of_a_Flow_Control_Valve",
+            "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-16.html"
+          ],
+          "membership_id": "corpus-membership:78f3fee04c3152a1bacfea44f85ddac22f73c7ff3014138a4045d039f2af5943",
+          "processing_id": "corpus-processing:8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210",
+          "assessment_hash": "sha256:cd851c9c82459ea32a7be929412a07d5468fcd0d67c17dd374f18f23701d4932",
+          "structure_usable": true,
+          "relation_versions": [],
+          "canonical_revision_id": "corpus-canonical-revision:cc965bd8a25daba71f498700fac84c8d1819701f8c37dd74e1789e30543e1be2"
+        },
+        "edition_id": "corpus-edition:b646935bb4aea147423035ca4f866ce3e0b38e9d7018d6a180544b1e1b50a008",
+        "project_id": "first-novel-pilot-20260912",
+        "revision_id": "corpus-curated-revision:927d2676f810a138e226734cd13a2445ae0f08a3e9aa727f92cceebe4e488fbf",
+        "processing_id": "corpus-processing:8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210"
+      },
+      "units": [
+        {
+          "kind": "chapter",
+          "title": "15.1: The Function of a Flow Control Valve",
+          "status": "AVAILABLE",
+          "ordinal": 1,
+          "metadata": {
+            "volume": "",
+            "raw_blob_id": "d005d467-6d0a-57d6-a23b-16dae3063f18",
+            "declared_order": 1,
+            "normalization_evidence": {
+              "steps": [
+                "STRICT_DECODE",
+                "NEWLINE_LF",
+                "NFC"
+              ],
+              "precision": "STRUCTURED_LOCATOR",
+              "raw_text_changed": false,
+              "normalized_utf8_bytes": 881,
+              "normalized_unicode_length": 880
+            },
+            "normalized_unicode_end": 880,
+            "normalized_unicode_start": 0,
+            "original_offset_semantics": "HTML_SELECTOR"
+          },
+          "line_count": 26,
+          "raw_file_hash": "sha256:1d018b71860e09de6c6878a2c5dc43ee180c15f68797bce2a72f1188657d5f2c",
+          "source_locator": {
+            "path": "hydraulics-16.html",
+            "field": "text",
+            "record": 1,
+            "selector": ".mt-content-container",
+            "offset_kind": "HTML_SELECTOR",
+            "container_path": null,
+            "original_byte_offset": null
+          },
+          "source_unit_id": "source-unit:bae1d5d77498e733e10d9948f3651ba5ae398ab341de5cbfe574333bd2f5cc21",
+          "character_count": 880,
+          "normalized_byte_end": 881,
+          "normalized_byte_start": 0,
+          "original_content_hash": "sha256:e40515d97cb97120e1c2918acc58a74c368c3dd34a557466e84f04ea07e860cf",
+          "source_unit_version_id": "source-unit-version:2e613bdeed5b5d3dd515d494fefb58ed181dbef6e1ba26444a003ba200183bfd",
+          "normalized_content_hash": "sha256:e40515d97cb97120e1c2918acc58a74c368c3dd34a557466e84f04ea07e860cf",
+          "source_work_asset_version_id": "eae99576-7288-4213-985e-bf51ff7d35b4",
+          "role": "TARGET",
+          "chunks": [
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:ace92c053360e28010991700da23712540ea8cb3d815080c3efa07dbdd7cecb8:0:v1",
+              "chunk_index": 0,
+              "content_hash": "sha256:e40515d97cb97120e1c2918acc58a74c368c3dd34a557466e84f04ea07e860cf",
+              "byte_size": 881,
+              "source_byte_start": 0,
+              "source_byte_end": 881
+            }
+          ]
+        }
+      ],
+      "excluded_structural_units": [],
+      "coverage_claim": "SELECTED_CONTIGUOUS_UNITS_ONLY",
+      "outside_range": "NOT_READ",
+      "tool_access": "DENY_FILESYSTEM_SHELL_WEB_MCP",
+      "identity": "sha256:ac988849dbe2f62a11d6e9e6aa2fa1d30237de2e086cd00e67c7e9fb8c178b99"
+    },
+    "corpus-processing:1a7a7548aa10a53acf994cc65f856d47640ad8f977be5ff9fbbbeaf2edf44fdf": {
+      "contract": {
+        "version": "chapter-reading.v1",
+        "processing_id": "corpus-processing:1a7a7548aa10a53acf994cc65f856d47640ad8f977be5ff9fbbbeaf2edf44fdf",
+        "first_unit_version_id": "source-unit-version:9d2997ff931bbc750738394488b439fb88f44da76916d7dcb338f03d923cbca3",
+        "last_unit_version_id": "source-unit-version:e84ae8a27da26a347395fc7bfd5574550210221752f9eec4744da8e7749ac3f5",
+        "context_before": 1,
+        "context_after": 1,
+        "max_chapters": 6,
+        "max_input_bytes_per_chapter": 120000,
+        "max_total_input_bytes": 600000,
+        "max_repairs": 1,
+        "dimensions": [
+          "character_choice_cost",
+          "information_gap",
+          "foreshadowing_payoff",
+          "conflict",
+          "emotion_curve",
+          "chapter_hook",
+          "point_of_view"
+        ]
+      },
+      "edition_id": "corpus-edition:4a939f173a873d5c87a8a664dc22bb10d9f9988ceaa893200d2e148080edeebd",
+      "processing_id": "corpus-processing:1a7a7548aa10a53acf994cc65f856d47640ad8f977be5ff9fbbbeaf2edf44fdf",
+      "source_work_asset_version_id": "919d497c-8d9c-4926-9002-4be0150f7732",
+      "source_transform_id": "source-transform:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178",
+      "assessment_hash": "sha256:0797a98e0299985cf807323a537599f2295c27c744c4351504202c5538bd647a",
+      "review_id": null,
+      "member": {
+        "evidence": {
+          "reason": "Selected bounded text mechanism / continuous original fiction window; not knowledge approval",
+          "purpose": "PRODUCTION_REFERENCE",
+          "coverage": "UNKNOWN",
+          "language": "en",
+          "selected": true,
+          "review_id": null,
+          "rights_id": "corpus-rights:0cd8aafcbae0dee7cd0c4030f75b6b33796b41ec7f93f2eaf4b53111a60eac03",
+          "characters": 326064,
+          "genre_tags": [
+            "fiction",
+            "narrative-craft"
+          ],
+          "evidence_refs": [
+            "https://www.gutenberg.org/cache/epub/1874/pg1874.txt",
+            "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children.txt"
+          ],
+          "membership_id": "corpus-membership:7979ec0d693e14d6d8295996d5208ddeadece1ac92db50fd0e4e94da6d3f53cb",
+          "processing_id": "corpus-processing:1a7a7548aa10a53acf994cc65f856d47640ad8f977be5ff9fbbbeaf2edf44fdf",
+          "assessment_hash": "sha256:0797a98e0299985cf807323a537599f2295c27c744c4351504202c5538bd647a",
+          "structure_usable": true,
+          "relation_versions": [],
+          "canonical_revision_id": "corpus-canonical-revision:5f5eff23607d6e9aa4839c7bb3a333ea626393d6cd934f28b9466d2a3c589592"
+        },
+        "edition_id": "corpus-edition:4a939f173a873d5c87a8a664dc22bb10d9f9988ceaa893200d2e148080edeebd",
+        "project_id": "first-novel-pilot-20260912",
+        "revision_id": "corpus-curated-revision:927d2676f810a138e226734cd13a2445ae0f08a3e9aa727f92cceebe4e488fbf",
+        "processing_id": "corpus-processing:1a7a7548aa10a53acf994cc65f856d47640ad8f977be5ff9fbbbeaf2edf44fdf"
+      },
+      "units": [
+        {
+          "kind": "chapter",
+          "title": "Chapter I. The beginning of things.",
+          "status": "AVAILABLE",
+          "ordinal": 2,
+          "metadata": {
+            "volume": "",
+            "raw_blob_id": "e585ba3e-b9d1-5417-9a88-da5a2ea994d1",
+            "declared_order": 2,
+            "normalization_evidence": {
+              "steps": [
+                "STRICT_DECODE",
+                "NEWLINE_LF",
+                "NFC"
+              ],
+              "precision": "UNIT_BYTES",
+              "raw_text_changed": true,
+              "normalized_utf8_bytes": 23299,
+              "normalized_unicode_length": 22763
+            },
+            "normalized_unicode_end": 22763,
+            "normalized_unicode_start": 0,
+            "original_offset_semantics": "RAW_DECODED_UNIT"
+          },
+          "line_count": 556,
+          "raw_file_hash": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+          "source_locator": {
+            "path": "railway-children.txt",
+            "field": "text",
+            "record": 2,
+            "encoding": "utf-8",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 25452,
+            "original_byte_offset": 1597
+          },
+          "source_unit_id": "source-unit:d136c17f09511e4a29972afba6f6bf7e4d7aa32fc2a20fc28fba04801b382425",
+          "character_count": 22763,
+          "normalized_byte_end": 23299,
+          "normalized_byte_start": 0,
+          "original_content_hash": "sha256:c9f7cee41f0e18672435e289f35bd2ba5844529340d22084e110a00458b16ec0",
+          "source_unit_version_id": "source-unit-version:308e9703728129d818fe8d7e3bad914e4121b6be1df7e75a4a184af909bfefbb",
+          "normalized_content_hash": "sha256:b7b991f1a2a2709df02e83acb681100a7b13126aa0c8fafd966487c61b42021a",
+          "source_work_asset_version_id": "919d497c-8d9c-4926-9002-4be0150f7732",
+          "role": "ALLOWED_CONTEXT",
+          "chunks": [
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:0:v1",
+              "chunk_index": 0,
+              "content_hash": "sha256:b99aaf5acd8fa5d10e97b980e4d8fbaf682604ff82d22c8149f98c89561cc2d5",
+              "byte_size": 11999,
+              "source_byte_start": 0,
+              "source_byte_end": 11999
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:1:v1",
+              "chunk_index": 1,
+              "content_hash": "sha256:19c6ab011bc50ba277f6ee952a42884a81b6680d60195867f90df2a3f7bfb836",
+              "byte_size": 11300,
+              "source_byte_start": 11999,
+              "source_byte_end": 23299
+            }
+          ]
+        },
+        {
+          "kind": "chapter",
+          "title": "Chapter II. Peter's coal-mine.",
+          "status": "AVAILABLE",
+          "ordinal": 3,
+          "metadata": {
+            "volume": "",
+            "raw_blob_id": "e585ba3e-b9d1-5417-9a88-da5a2ea994d1",
+            "declared_order": 3,
+            "normalization_evidence": {
+              "steps": [
+                "STRICT_DECODE",
+                "NEWLINE_LF",
+                "NFC"
+              ],
+              "precision": "UNIT_BYTES",
+              "raw_text_changed": true,
+              "normalized_utf8_bytes": 28796,
+              "normalized_unicode_length": 28136
+            },
+            "normalized_unicode_end": 50901,
+            "normalized_unicode_start": 22765,
+            "original_offset_semantics": "RAW_DECODED_UNIT"
+          },
+          "line_count": 682,
+          "raw_file_hash": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+          "source_locator": {
+            "path": "railway-children.txt",
+            "field": "text",
+            "record": 3,
+            "encoding": "utf-8",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 54930,
+            "original_byte_offset": 25452
+          },
+          "source_unit_id": "source-unit:79f4d17489b13e3c1905ad28a111d976ed62e9feb9ee699ce1affdd546a8daf4",
+          "character_count": 28136,
+          "normalized_byte_end": 52097,
+          "normalized_byte_start": 23301,
+          "original_content_hash": "sha256:6e05aeab0891604a181cef647335392a6f0501c0a3435272d725d86ae52cfae5",
+          "source_unit_version_id": "source-unit-version:9d2997ff931bbc750738394488b439fb88f44da76916d7dcb338f03d923cbca3",
+          "normalized_content_hash": "sha256:b8d159f4b524c630c3a8a4cf189b2a26f4146826204892cefd62f57e87fa0c31",
+          "source_work_asset_version_id": "919d497c-8d9c-4926-9002-4be0150f7732",
+          "role": "TARGET",
+          "chunks": [
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:2:v1",
+              "chunk_index": 2,
+              "content_hash": "sha256:5a14120c37a0eb5f5f6fda8a3052fdfb72b379b7de3935f76bb7eb8aadd285ee",
+              "byte_size": 11917,
+              "source_byte_start": 23299,
+              "source_byte_end": 35216
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:3:v1",
+              "chunk_index": 3,
+              "content_hash": "sha256:b75ad77b0c777c205a9a0ed8e3646340a714d605a84f9b21fe269378bf4c7e10",
+              "byte_size": 11609,
+              "source_byte_start": 35216,
+              "source_byte_end": 46825
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:4:v1",
+              "chunk_index": 4,
+              "content_hash": "sha256:234029718a9e12f642b58280ab08c335f643952eee137ecbf5efb5d5c8bc5830",
+              "byte_size": 5272,
+              "source_byte_start": 46825,
+              "source_byte_end": 52097
+            }
+          ]
+        },
+        {
+          "kind": "chapter",
+          "title": "Chapter III. The old gentleman.",
+          "status": "AVAILABLE",
+          "ordinal": 4,
+          "metadata": {
+            "volume": "",
+            "raw_blob_id": "e585ba3e-b9d1-5417-9a88-da5a2ea994d1",
+            "declared_order": 4,
+            "normalization_evidence": {
+              "steps": [
+                "STRICT_DECODE",
+                "NEWLINE_LF",
+                "NFC"
+              ],
+              "precision": "UNIT_BYTES",
+              "raw_text_changed": true,
+              "normalized_utf8_bytes": 25481,
+              "normalized_unicode_length": 24883
+            },
+            "normalized_unicode_end": 75786,
+            "normalized_unicode_start": 50903,
+            "original_offset_semantics": "RAW_DECODED_UNIT"
+          },
+          "line_count": 590,
+          "raw_file_hash": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+          "source_locator": {
+            "path": "railway-children.txt",
+            "field": "text",
+            "record": 4,
+            "encoding": "utf-8",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 81001,
+            "original_byte_offset": 54930
+          },
+          "source_unit_id": "source-unit:4aa5da293f57e1f126ff79366c622e0d54f72f40a6183d1186f1d62211398132",
+          "character_count": 24883,
+          "normalized_byte_end": 77580,
+          "normalized_byte_start": 52099,
+          "original_content_hash": "sha256:27d3bd9ed3100e88ef840ec867b11256c5a6411704cbf219be8946bc0f373cc8",
+          "source_unit_version_id": "source-unit-version:8d186286c2e18418506447c510abbf2eb697c385edf99e9193349bf690b7f9f7",
+          "normalized_content_hash": "sha256:438c35cf88b207ce17567bcc9aab20367707b028a49a56f5878d29317313e880",
+          "source_work_asset_version_id": "919d497c-8d9c-4926-9002-4be0150f7732",
+          "role": "TARGET",
+          "chunks": [
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:5:v1",
+              "chunk_index": 5,
+              "content_hash": "sha256:e1a04139a3711562284cf17115c893a6cc7f5a51a7280a836decfe471f2b639c",
+              "byte_size": 11789,
+              "source_byte_start": 52097,
+              "source_byte_end": 63886
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:6:v1",
+              "chunk_index": 6,
+              "content_hash": "sha256:247de5a3cf1c8683a17cf10a4a59bccd046212c8e92b85338a9e96a6f6ccfe06",
+              "byte_size": 11953,
+              "source_byte_start": 63886,
+              "source_byte_end": 75839
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:7:v1",
+              "chunk_index": 7,
+              "content_hash": "sha256:5f30e3af21d1109bd1a0d97b7460c438f9a77f9ebe10144753fbed15de37e481",
+              "byte_size": 1741,
+              "source_byte_start": 75839,
+              "source_byte_end": 77580
+            }
+          ]
+        },
+        {
+          "kind": "chapter",
+          "title": "Chapter IV. The engine-burglar.",
+          "status": "AVAILABLE",
+          "ordinal": 5,
+          "metadata": {
+            "volume": "",
+            "raw_blob_id": "e585ba3e-b9d1-5417-9a88-da5a2ea994d1",
+            "declared_order": 5,
+            "normalization_evidence": {
+              "steps": [
+                "STRICT_DECODE",
+                "NEWLINE_LF",
+                "NFC"
+              ],
+              "precision": "UNIT_BYTES",
+              "raw_text_changed": true,
+              "normalized_utf8_bytes": 28461,
+              "normalized_unicode_length": 27945
+            },
+            "normalized_unicode_end": 103733,
+            "normalized_unicode_start": 75788,
+            "original_offset_semantics": "RAW_DECODED_UNIT"
+          },
+          "line_count": 638,
+          "raw_file_hash": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+          "source_locator": {
+            "path": "railway-children.txt",
+            "field": "text",
+            "record": 5,
+            "encoding": "utf-8",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 110100,
+            "original_byte_offset": 81001
+          },
+          "source_unit_id": "source-unit:299022130b2475c67f4ad965ad97393e9667b43dd6a45601a89f7a824b0091a7",
+          "character_count": 27945,
+          "normalized_byte_end": 106043,
+          "normalized_byte_start": 77582,
+          "original_content_hash": "sha256:5207e69db4eda551017bcc938a150f627168ae3d06d2310112d908c1d8fcf1a6",
+          "source_unit_version_id": "source-unit-version:fc6bb5b24ffac2bcdea5d0569a5e940465a1f343a5597b558d1115269782f1dd",
+          "normalized_content_hash": "sha256:38db4728a23f8a4980371d7d2804ae7c475946d828dfe16851587bcbba7a483f",
+          "source_work_asset_version_id": "919d497c-8d9c-4926-9002-4be0150f7732",
+          "role": "TARGET",
+          "chunks": [
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:8:v1",
+              "chunk_index": 8,
+              "content_hash": "sha256:1d3fc0b8c01669dbbf1e8f6518b464b337d2dc965ef6113be7df28754ef85671",
+              "byte_size": 11527,
+              "source_byte_start": 77580,
+              "source_byte_end": 89107
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:9:v1",
+              "chunk_index": 9,
+              "content_hash": "sha256:64689630dba13d5d8660e8994a871318468f55ea20dc83bdb3006e9226a5e274",
+              "byte_size": 11832,
+              "source_byte_start": 89107,
+              "source_byte_end": 100939
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:10:v1",
+              "chunk_index": 10,
+              "content_hash": "sha256:7f35a2aa6eaf6096627092704542244a927d2bdbd9c9a0fa2e22bd72beb05a45",
+              "byte_size": 5104,
+              "source_byte_start": 100939,
+              "source_byte_end": 106043
+            }
+          ]
+        },
+        {
+          "kind": "chapter",
+          "title": "Chapter V. Prisoners and captives.",
+          "status": "AVAILABLE",
+          "ordinal": 6,
+          "metadata": {
+            "volume": "",
+            "raw_blob_id": "e585ba3e-b9d1-5417-9a88-da5a2ea994d1",
+            "declared_order": 6,
+            "normalization_evidence": {
+              "steps": [
+                "STRICT_DECODE",
+                "NEWLINE_LF",
+                "NFC"
+              ],
+              "precision": "UNIT_BYTES",
+              "raw_text_changed": true,
+              "normalized_utf8_bytes": 20426,
+              "normalized_unicode_length": 19966
+            },
+            "normalized_unicode_end": 123701,
+            "normalized_unicode_start": 103735,
+            "original_offset_semantics": "RAW_DECODED_UNIT"
+          },
+          "line_count": 457,
+          "raw_file_hash": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+          "source_locator": {
+            "path": "railway-children.txt",
+            "field": "text",
+            "record": 6,
+            "encoding": "utf-8",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 130983,
+            "original_byte_offset": 110100
+          },
+          "source_unit_id": "source-unit:992e58d7430dddfaeb74949f4a7d89d0cb631f9266eef839b8099ae098b7a414",
+          "character_count": 19966,
+          "normalized_byte_end": 126471,
+          "normalized_byte_start": 106045,
+          "original_content_hash": "sha256:35ac763f1a16155343e693eaaafd9ee62a093d01506c37b80f57cbca258d5350",
+          "source_unit_version_id": "source-unit-version:0892296886f80704cdd4233c072273b3ee2943dc8fc1c78f7809ed2d9fff1373",
+          "normalized_content_hash": "sha256:4c640d93421fecf32e2ecefec4711a4f46be5815b862e69e0dfbad063621fd21",
+          "source_work_asset_version_id": "919d497c-8d9c-4926-9002-4be0150f7732",
+          "role": "TARGET",
+          "chunks": [
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:11:v1",
+              "chunk_index": 11,
+              "content_hash": "sha256:c730ae121dce788dd2f9f95939bb753918965a096e2a594e897d8b42076a8c13",
+              "byte_size": 11905,
+              "source_byte_start": 106043,
+              "source_byte_end": 117948
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:12:v1",
+              "chunk_index": 12,
+              "content_hash": "sha256:12c2fe64451b23fd30ae31625e47130790a5e79c6965563c9e0ebccf13e9056c",
+              "byte_size": 8523,
+              "source_byte_start": 117948,
+              "source_byte_end": 126471
+            }
+          ]
+        },
+        {
+          "kind": "chapter",
+          "title": "Chapter VI. Saviours of the train.",
+          "status": "AVAILABLE",
+          "ordinal": 7,
+          "metadata": {
+            "volume": "",
+            "raw_blob_id": "e585ba3e-b9d1-5417-9a88-da5a2ea994d1",
+            "declared_order": 7,
+            "normalization_evidence": {
+              "steps": [
+                "STRICT_DECODE",
+                "NEWLINE_LF",
+                "NFC"
+              ],
+              "precision": "UNIT_BYTES",
+              "raw_text_changed": true,
+              "normalized_utf8_bytes": 21516,
+              "normalized_unicode_length": 20960
+            },
+            "normalized_unicode_end": 144663,
+            "normalized_unicode_start": 123703,
+            "original_offset_semantics": "RAW_DECODED_UNIT"
+          },
+          "line_count": 504,
+          "raw_file_hash": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+          "source_locator": {
+            "path": "railway-children.txt",
+            "field": "text",
+            "record": 7,
+            "encoding": "utf-8",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 153003,
+            "original_byte_offset": 130983
+          },
+          "source_unit_id": "source-unit:b3cb27396aab1f2dad96ba4764f23b780697654f578fe31de6dab712521cb735",
+          "character_count": 20960,
+          "normalized_byte_end": 147989,
+          "normalized_byte_start": 126473,
+          "original_content_hash": "sha256:2d33240668bf50febe6fc2d49e3b911eff7c1b6ebdb0d79249539986de4c0791",
+          "source_unit_version_id": "source-unit-version:ade20af176d37b3f45d1ac8d0c586cdc7beb09a71bb694931d31edbe3b4602dc",
+          "normalized_content_hash": "sha256:a4b4ef008e699f111a0ebf665c22c2eda730a4d021cb480cc7ac3b610ceacded",
+          "source_work_asset_version_id": "919d497c-8d9c-4926-9002-4be0150f7732",
+          "role": "TARGET",
+          "chunks": [
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:13:v1",
+              "chunk_index": 13,
+              "content_hash": "sha256:b694e4b267b38b54714e341a542179a315b943fe77cf8b870db9e56cdd3c5ae4",
+              "byte_size": 11550,
+              "source_byte_start": 126471,
+              "source_byte_end": 138021
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:14:v1",
+              "chunk_index": 14,
+              "content_hash": "sha256:56ba4642a349c2d048df2430e21815507313ef7ae7353e7bebf8ae3f1ebf0629",
+              "byte_size": 9968,
+              "source_byte_start": 138021,
+              "source_byte_end": 147989
+            }
+          ]
+        },
+        {
+          "kind": "chapter",
+          "title": "Chapter VII. For valour.",
+          "status": "AVAILABLE",
+          "ordinal": 8,
+          "metadata": {
+            "volume": "",
+            "raw_blob_id": "e585ba3e-b9d1-5417-9a88-da5a2ea994d1",
+            "declared_order": 8,
+            "normalization_evidence": {
+              "steps": [
+                "STRICT_DECODE",
+                "NEWLINE_LF",
+                "NFC"
+              ],
+              "precision": "UNIT_BYTES",
+              "raw_text_changed": true,
+              "normalized_utf8_bytes": 25479,
+              "normalized_unicode_length": 24797
+            },
+            "normalized_unicode_end": 169462,
+            "normalized_unicode_start": 144665,
+            "original_offset_semantics": "RAW_DECODED_UNIT"
+          },
+          "line_count": 584,
+          "raw_file_hash": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+          "source_locator": {
+            "path": "railway-children.txt",
+            "field": "text",
+            "record": 8,
+            "encoding": "utf-8",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 179066,
+            "original_byte_offset": 153003
+          },
+          "source_unit_id": "source-unit:1db99419a2f0035030274935ca38c7e9f82ca458b5ea89bbb298c31abef4548f",
+          "character_count": 24797,
+          "normalized_byte_end": 173470,
+          "normalized_byte_start": 147991,
+          "original_content_hash": "sha256:4cff1fe76ecfb3bd192d22cb95a1a85bcad511704b891fa286d3891ebb3fe8f6",
+          "source_unit_version_id": "source-unit-version:e84ae8a27da26a347395fc7bfd5574550210221752f9eec4744da8e7749ac3f5",
+          "normalized_content_hash": "sha256:387b878f0831b674020573cef3da6a4ce884a715a1a7901a0cbf7016e1d34bf0",
+          "source_work_asset_version_id": "919d497c-8d9c-4926-9002-4be0150f7732",
+          "role": "TARGET",
+          "chunks": [
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:15:v1",
+              "chunk_index": 15,
+              "content_hash": "sha256:6adc05f80aa88cbb045703cc847a5572ee434c9b41b512c4482d049428110d29",
+              "byte_size": 11884,
+              "source_byte_start": 147989,
+              "source_byte_end": 159873
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:16:v1",
+              "chunk_index": 16,
+              "content_hash": "sha256:d499c41563eff001b9b96c969c646c2cfc7b0aaa8ea822de1e51abcee3268ee2",
+              "byte_size": 11843,
+              "source_byte_start": 159873,
+              "source_byte_end": 171716
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:17:v1",
+              "chunk_index": 17,
+              "content_hash": "sha256:1d68376a7779e44bd00906431e3aab07920fea01f1d58ce2643bf63eab7b6227",
+              "byte_size": 1754,
+              "source_byte_start": 171716,
+              "source_byte_end": 173470
+            }
+          ]
+        },
+        {
+          "kind": "chapter",
+          "title": "Chapter VIII. The amateur firemen.",
+          "status": "AVAILABLE",
+          "ordinal": 9,
+          "metadata": {
+            "volume": "",
+            "raw_blob_id": "e585ba3e-b9d1-5417-9a88-da5a2ea994d1",
+            "declared_order": 9,
+            "normalization_evidence": {
+              "steps": [
+                "STRICT_DECODE",
+                "NEWLINE_LF",
+                "NFC"
+              ],
+              "precision": "UNIT_BYTES",
+              "raw_text_changed": true,
+              "normalized_utf8_bytes": 22354,
+              "normalized_unicode_length": 21710
+            },
+            "normalized_unicode_end": 191174,
+            "normalized_unicode_start": 169464,
+            "original_offset_semantics": "RAW_DECODED_UNIT"
+          },
+          "line_count": 534,
+          "raw_file_hash": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+          "source_locator": {
+            "path": "railway-children.txt",
+            "field": "text",
+            "record": 9,
+            "encoding": "utf-8",
+            "precision": "UNIT_BYTES",
+            "offset_kind": "RAW_DECODED_UNIT",
+            "container_path": null,
+            "original_byte_end": 201954,
+            "original_byte_offset": 179066
+          },
+          "source_unit_id": "source-unit:b3e394602b9dd8f84b05836c26c23d32548dbeff3b1ba77afd9c49afda27cb91",
+          "character_count": 21710,
+          "normalized_byte_end": 195826,
+          "normalized_byte_start": 173472,
+          "original_content_hash": "sha256:63f0504f4e7b8c57d3e305ae7f8b078132e7c193a4f91073b364aaa8f7021a7b",
+          "source_unit_version_id": "source-unit-version:a5ba8f558545099ba581a75833d571e792c674e9a0e395e183afdcfde9504dfc",
+          "normalized_content_hash": "sha256:dba28051c4f633420c8afe4bea52d2c193bde36222c7a7464806477ab9dde320",
+          "source_work_asset_version_id": "919d497c-8d9c-4926-9002-4be0150f7732",
+          "role": "ALLOWED_CONTEXT",
+          "chunks": [
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:18:v1",
+              "chunk_index": 18,
+              "content_hash": "sha256:5c697b6596806eedbdd371175999313c845f6d08baa56ba4546029c531767404",
+              "byte_size": 11931,
+              "source_byte_start": 173470,
+              "source_byte_end": 185401
+            },
+            {
+              "asset_version_id": "source-chunk:first-novel-pilot-20260912:3439e1a6aa284c256cc27f94fd08912af59eb7acd67eaa451f1aef4a388fc178:19:v1",
+              "chunk_index": 19,
+              "content_hash": "sha256:fbbb87bf2eb50260463a4e79bdffb31a808994f9f8a4b24717f4f8bb447fd615",
+              "byte_size": 10425,
+              "source_byte_start": 185401,
+              "source_byte_end": 195826
+            }
+          ]
+        }
+      ],
+      "excluded_structural_units": [],
+      "coverage_claim": "SELECTED_CONTIGUOUS_UNITS_ONLY",
+      "outside_range": "NOT_READ",
+      "tool_access": "DENY_FILESYSTEM_SHELL_WEB_MCP",
+      "identity": "sha256:ea791af37f7520ab79d982f523abc84efe0562161459aaf61ccc5bc7dd6572c2"
+    }
+  },
+  "target_chapters": 8,
+  "planned_calls_without_repairs": 28,
+  "planned_calls_with_object_repairs": 50,
+  "runtime": {
+    "version": "source-reading-runtime.v3",
+    "input_evidence_version": "source-actual-input.v1",
+    "provider": "scripted_provider_v2",
+    "model": "scripted_provider_v2-quality_source_originality",
+    "route_hash": "sha256:10b1f2f47da72b10f6d93e5c7a6f60eb4feac9b8fad8519899994841d7f9cdd8",
+    "policy_hash": "sha256:f5850f84b7b5efbe4e8e8d19b49e7ad83e52a574384db3b15552cd9bd7fb65b5",
+    "schemas_hash": "sha256:b9d66960ede846f37c2f6358acb160df4e264faf2d37f55458afc63f9faa3357",
+    "classifier_hash": "sha256:e0f50aa6f5503304a19165edc696519dbe77b75a12bad86bebe7eac4850ddb15",
+    "skills": {
+      "anti-copy-abstraction": "sha256:574222188fe361af4530d1b50b3ab71cd00dfe788c852e05419fc9ccc7893515",
+      "classic-literary-depth-analysis": "sha256:55a22fd03ae6410f8d0e8148a6feccf424d24fcb50ce7dc5305d1a008b6733b2",
+      "hot-novel-business-deconstruction": "sha256:7feaaf6da55d30956f953f4b12228729dacb18bf4d4ebdf505727b625f77dcdf",
+      "hot-novel-deconstruction": "sha256:3844f7152f4d1bd1c2b5a8b95c916abb5d44d8a26e0c84800bdf6a7e38270cdb",
+      "multidisciplinary-knowledge": "sha256:ef27e852557903648f86d5a7bd11b595bce4ab859690d9b60597183350f983ef",
+      "platform-strategy-os": "sha256:5aff23f16416c66dc03dea781aac7922f35752e9e8e7e54003627b8fa1e61a43",
+      "published-fiction-craft-analysis": "sha256:ffcbead275b93bff7942dd72bf1c142f37ab94d88dc13b4865822a64f2dafdae"
+    },
+    "output_token_reserve": 4096,
+    "timeout_seconds": 300,
+    "provider_max_attempts": 2,
+    "local_process_timeout_seconds": 135,
+    "budget_contract_hash": "sha256:cfd2fce49a3bc63f39571ca3fe44c9b8252c70645404a18c6a2fafced1c292af"
+  },
+  "prepared_source_checks": {
+    "state": "VERIFIED",
+    "chunks": 22,
+    "bytes": 199136,
+    "model_input_state": "NOT_SENT"
+  },
+  "execution_blockers": [],
+  "requested_budget": {
+    "max_calls": 50,
+    "max_tokens": 1250000,
+    "shared_by": [
+      "classification",
+      "observation",
+      "review",
+      "revision",
+      "synthesis",
+      "extraction",
+      "retry"
+    ]
+  },
+  "authorization": {
+    "status": "AUTHORIZATION_REQUIRED",
+    "declared_reference": null,
+    "reference_is_not_verification": true
+  },
+  "stop_conditions": [
+    "CURRENT_AUTHORIZATION_CHANGED",
+    "INPUT_OR_RUNTIME_CHANGED",
+    "TOTAL_CALL_OR_TOKEN_BUDGET_EXHAUSTED",
+    "REPAIR_ALLOWANCE_EXHAUSTED",
+    "UNKNOWN_PROVIDER_OUTCOME"
+  ],
+  "hidden_backend_usage": "NOT_OBSERVED",
+  "token_preview_limit": "Later-stage inputs depend on returned observations; every final request requires native token admission.",
+  "model_calls": 0,
+  "paid_authorization": "NOT_GRANTED_BY_PREVIEW",
+  "input_token_accounting": "FINAL_MATERIALIZED_PROVIDER_REQUEST_REQUIRED",
+  "state": "PREVIEW_ONLY"
+}

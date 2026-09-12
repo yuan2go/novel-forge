@@ -1,0 +1,7 @@
+{
+  "import_job_id": "source-import:c97ba847-2361-416d-bc99-b03cd624c9c5",
+  "operation_id": "c97ba847-2361-416d-bc99-b03cd624c9c5",
+  "manifest_hash": "sha256:4294f7af287e589ded8994f285067c27081e579d0592d73fd50bf336ac6fa282",
+  "replayed": false,
+  "mode": "IMPORT"
+}

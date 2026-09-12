@@ -1,0 +1,3474 @@
+{
+  "contract_version": "book-chapter-group-lineage.v1",
+  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+  "book_run_id": "book-run:c968e773-b77e-4dfd-839f-131d5047a566",
+  "accepted_through_chapter": 6,
+  "groups": [
+    {
+      "group_run_id": "chapter-group-run:5f332b7a-bac3-4a37-85e2-60d89c4519ba",
+      "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+      "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+      "book_run_id": "book-run:c968e773-b77e-4dfd-839f-131d5047a566",
+      "root_operation_id": "5f332b7a-bac3-4a37-85e2-60d89c4519ba",
+      "group_plan_version_id": "authority-output:81954baa-68f6-4984-ba10-16ae00d56ff0:story_planning.candidate:v1",
+      "volume_plan_version_id": "authority-output:687d6a62-c1f3-4aee-920f-c095763d07d1:story_planning.candidate:v1",
+      "state": "COMPLETED",
+      "accepted_through_chapter": 3,
+      "chapter_range": [
+        1,
+        3
+      ],
+      "plan": {
+        "asset_version_id": "authority-output:81954baa-68f6-4984-ba10-16ae00d56ff0:story_planning.candidate:v1",
+        "content_hash": "sha256:91a78a141cd4686ebefe44f5dcd9668b4cff27d024a3ca654e3e00db56b44270",
+        "content": {
+          "turn": "ally defects",
+          "type": "PlanningGenerationCandidate",
+          "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+          "trigger": "evidence arrives",
+          "objective": "Governed objective for chapter-group:containing:1",
+          "cost_range": [
+            "social",
+            "material"
+          ],
+          "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+          "contract_id": "contract:chapter-group:containing:1",
+          "logical_key": "chapter-group:containing:1",
+          "local_climax": "public choice",
+          "world_deltas": [],
+          "chapter_range": [
+            1,
+            3
+          ],
+          "emotion_curve": [
+            "doubt",
+            "pressure",
+            "resolve"
+          ],
+          "frozen_inputs": [
+            {
+              "role": "arc_plans",
+              "asset_type": "planning_generation_candidate",
+              "content_hash": "sha256:fe26dc36b911fdc0f9385c72257ee4e062938d149ac29d48dd64989f792d27b4",
+              "asset_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+            },
+            {
+              "role": "book_plan",
+              "asset_type": "planning_generation_candidate",
+              "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+              "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1"
+            },
+            {
+              "role": "story_state",
+              "asset_type": "story_state_snapshot",
+              "content_hash": "sha256:fee2ad8c049d6ef124c35e8e73537fde11f02d2975cfac457e35b57a0e2ae216",
+              "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:initial_story_state:v1"
+            },
+            {
+              "role": "volume_plan",
+              "asset_type": "planning_generation_candidate",
+              "content_hash": "sha256:43d92570db1f96fdac1b6aa502d66cbccd2db2792fa4d87615cda81d72d2d7c9",
+              "asset_version_id": "authority-output:687d6a62-c1f3-4aee-920f-c095763d07d1:story_planning.candidate:v1"
+            },
+            {
+              "role": "reader_state",
+              "asset_type": "reader_state",
+              "content_hash": "sha256:5b1963d0a1f69028dbc239b570058fdd4c9d37109ed441b9c104ec2559225b27",
+              "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:reader_state:v1"
+            },
+            {
+              "role": "quality_trend",
+              "asset_type": "quality_trend",
+              "content_hash": "sha256:a481b8a24fca11dd78257e3693cccedb038dc98a2ab95f94f51cceacd3d6ba00",
+              "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:quality_trend:v1"
+            },
+            {
+              "role": "canon_snapshot",
+              "asset_type": "canon_snapshot",
+              "content_hash": "sha256:ea01432f4e1656107910284bf547a630221dc31b3093f276c2ce07b6e36b7ba2",
+              "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:canon_snapshot:v1"
+            },
+            {
+              "role": "previous_chapter_group_outcome",
+              "asset_type": "previous_chapter_group_outcome",
+              "content_hash": "sha256:07f31d2877d5d1093c225d6a807fdc68469f89313acbee72cabc9da42b8e12f1",
+              "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:previous_chapter_group_outcome:v1"
+            },
+            {
+              "role": "related_arc:1",
+              "asset_type": "planning_generation_candidate",
+              "content_hash": "sha256:5abe8ee083cce4941e6a756709f44b92eb52c5d44560c490dcf88765b4db41f5",
+              "asset_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+            }
+          ],
+          "planning_scope": "CHAPTER_GROUP",
+          "schema_version": "story_design.authority.v1",
+          "entry_state_ref": "story-state:entry",
+          "exit_state_spec": {
+            "summary": "the governed objective advances"
+          },
+          "local_objective": "Turn private doubt into public commitment",
+          "primary_arc_ids": [
+            "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+          ],
+          "quality_targets": {
+            "minimum": 80
+          },
+          "required_events": [],
+          "character_deltas": [],
+          "forbidden_events": [],
+          "hard_constraints": [],
+          "planning_horizon": "TACTICAL",
+          "required_payoffs": [],
+          "soft_constraints": [],
+          "arc_contributions": [],
+          "budget_policy_ref": "planning-budget:v1",
+          "candidate_payload": {
+            "turn": "ally defects",
+            "trigger": "evidence arrives",
+            "objective": "Governed objective for chapter-group:containing:1",
+            "cost_range": [
+              "social",
+              "material"
+            ],
+            "contract_id": "contract:chapter-group:containing:1",
+            "logical_key": "chapter-group:containing:1",
+            "local_climax": "public choice",
+            "world_deltas": [],
+            "chapter_range": [
+              1,
+              3
+            ],
+            "emotion_curve": [
+              "doubt",
+              "pressure",
+              "resolve"
+            ],
+            "entry_state_ref": "story-state:entry",
+            "exit_state_spec": {
+              "summary": "the governed objective advances"
+            },
+            "local_objective": "Turn private doubt into public commitment",
+            "primary_arc_ids": [
+              "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+            ],
+            "quality_targets": {
+              "minimum": 80
+            },
+            "required_events": [],
+            "character_deltas": [],
+            "forbidden_events": [],
+            "hard_constraints": [],
+            "planning_horizon": "TACTICAL",
+            "required_payoffs": [],
+            "soft_constraints": [],
+            "arc_contributions": [],
+            "budget_policy_ref": "planning-budget:v1",
+            "forbidden_payoffs": [],
+            "parent_version_id": "authority-output:687d6a62-c1f3-4aee-920f-c095763d07d1:story_planning.candidate:v1",
+            "realization_level": "DETAILED",
+            "secondary_arc_ids": [
+              "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+            ],
+            "world_realization": [
+              {
+                "world_id": "world:primary",
+                "state_ref": {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "story_state_snapshot",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "WORLD_STATE",
+                  "content_hash": "sha256:fee2ad8c049d6ef124c35e8e73537fde11f02d2975cfac457e35b57a0e2ae216",
+                  "authority_role": "story_state",
+                  "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:initial_story_state:v1",
+                  "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+                },
+                "visibility": "PARTIAL",
+                "accessibility": "RESTRICTED",
+                "invariant_refs": [
+                  {
+                    "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                    "freshness": "CURRENT",
+                    "asset_type": "planning_generation_candidate",
+                    "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                    "domain_type": "WORLD_INVARIANT",
+                    "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                    "authority_role": "book_plan",
+                    "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                    "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+                  }
+                ],
+                "structure_refs": [
+                  {
+                    "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                    "freshness": "CURRENT",
+                    "asset_type": "planning_generation_candidate",
+                    "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                    "domain_type": "WORLD_STRUCTURE",
+                    "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                    "authority_role": "book_plan",
+                    "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                    "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+                  }
+                ],
+                "realization_level": "DETAILED",
+                "narrative_relevance": "CURRENT"
+              }
+            ],
+            "antagonist_actions": [
+              "isolate",
+              "expose"
+            ],
+            "canon_dependencies": [],
+            "commitment_contract": [
+              {
+                "level": "HARD_CONSTRAINT",
+                "statement": "preserve the accepted causal spine",
+                "commitment_id": "commitment:chapter-group:containing:1:causal-anchor"
+              },
+              {
+                "level": "OPEN_DESIGN_SPACE",
+                "statement": "elaborate only at the current narrative horizon",
+                "commitment_id": "commitment:chapter-group:containing:1:elaboration"
+              }
+            ],
+            "constraint_envelope": {
+              "type": "PlanningConstraintEnvelope",
+              "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+              "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+              "planning_scope": "CHAPTER_GROUP",
+              "arc_working_set": {
+                "type": "ArcWorkingSet",
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "capacity": {
+                  "source": "POLICY_DEFAULT",
+                  "maximum_active_arcs": 3,
+                  "narrative_load_policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725"
+                },
+                "candidates": [
+                  {
+                    "score": 0,
+                    "reasons": [
+                      "LEGAL_ARC_BASELINE"
+                    ],
+                    "eligible": true,
+                    "current_phase": "",
+                    "obligation_debt": {
+                      "due_ids": [],
+                      "due_count": 0,
+                      "stale_ids": [],
+                      "overdue_ids": [],
+                      "stale_count": 0,
+                      "violated_ids": [],
+                      "overdue_count": 0
+                    },
+                    "dormant_chapters": 0,
+                    "lifecycle_status": "READY",
+                    "payoff_readiness": "NOT_READY",
+                    "dependency_states": {},
+                    "cadence_preference": "",
+                    "observation_status": "NOT_MATERIALIZED",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                    "checkpoint_decision": "NOT_EVALUATED",
+                    "dependency_blockers": [],
+                    "target_window_status": "UNKNOWN",
+                    "target_progress_units": 1,
+                    "cumulative_progress_units": 0,
+                    "last_material_progress_chapter": 0
+                  },
+                  {
+                    "score": 0,
+                    "reasons": [
+                      "LEGAL_ARC_BASELINE"
+                    ],
+                    "eligible": true,
+                    "current_phase": "",
+                    "obligation_debt": {
+                      "due_ids": [],
+                      "due_count": 0,
+                      "stale_ids": [],
+                      "overdue_ids": [],
+                      "stale_count": 0,
+                      "violated_ids": [],
+                      "overdue_count": 0
+                    },
+                    "dormant_chapters": 0,
+                    "lifecycle_status": "READY",
+                    "payoff_readiness": "NOT_READY",
+                    "dependency_states": {},
+                    "cadence_preference": "",
+                    "observation_status": "NOT_MATERIALIZED",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1",
+                    "checkpoint_decision": "NOT_EVALUATED",
+                    "dependency_blockers": [],
+                    "target_window_status": "UNKNOWN",
+                    "target_progress_units": 1,
+                    "cumulative_progress_units": 0,
+                    "last_material_progress_chapter": 0
+                  }
+                ],
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "reader_intent": {},
+                "policy_version": "accepted-reality-arc-working-set-v1",
+                "target_chapter": 1,
+                "accepted_reality": {
+                  "actual_only": true,
+                  "narrative_state": {
+                    "content_hash": "sha256:fee2ad8c049d6ef124c35e8e73537fde11f02d2975cfac457e35b57a0e2ae216",
+                    "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:initial_story_state:v1",
+                    "state_kind_counts": {},
+                    "accepted_through_chapter": 0
+                  },
+                  "projection_hash": "",
+                  "projection_set_id": "",
+                  "accepted_through_chapter": 0,
+                  "source_story_state_asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:initial_story_state:v1"
+                },
+                "contract_version": "arc-working-set-v1",
+                "planning_horizon": {
+                  "scope": "CHAPTER",
+                  "chapter": 1
+                },
+                "authority_boundary": {
+                  "selection_is_future_intent": true,
+                  "actual_progress_requires_accepted_chapter_outcome": true
+                },
+                "working_set_digest": "sha256:32d357baef181fa302985e67ec3eb5147ce9511cdf11fce1dcd2e0afba02cda9",
+                "schedule_correction": {
+                  "status": "NO_GROUP_CADENCE",
+                  "added_arc_plan_version_ids": [
+                    "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                    "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  ],
+                  "removed_arc_plan_version_ids": []
+                },
+                "selected_contributions": [
+                  {
+                    "role": "PRIMARY",
+                    "score": 0,
+                    "action": "ADVANCE",
+                    "reason_codes": [
+                      "LEGAL_ARC_BASELINE"
+                    ],
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "role": "SECONDARY",
+                    "score": 0,
+                    "action": "ADVANCE",
+                    "reason_codes": [
+                      "LEGAL_ARC_BASELINE"
+                    ],
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ],
+                "deferred_arc_plan_version_ids": []
+              },
+              "envelope_digest": "sha256:8d5e8d3776acb27ac65067ab5bfc78adb7f7ce1f7a237bc61d2f7239079cb7ff",
+              "parent_versions": [
+                {
+                  "role": "arc_plans",
+                  "asset_type": "planning_generation_candidate",
+                  "content_hash": "sha256:fe26dc36b911fdc0f9385c72257ee4e062938d149ac29d48dd64989f792d27b4",
+                  "asset_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "role": "book_plan",
+                  "asset_type": "planning_generation_candidate",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1"
+                },
+                {
+                  "role": "canon_snapshot",
+                  "asset_type": "canon_snapshot",
+                  "content_hash": "sha256:ea01432f4e1656107910284bf547a630221dc31b3093f276c2ce07b6e36b7ba2",
+                  "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:canon_snapshot:v1"
+                },
+                {
+                  "role": "previous_chapter_group_outcome",
+                  "asset_type": "previous_chapter_group_outcome",
+                  "content_hash": "sha256:07f31d2877d5d1093c225d6a807fdc68469f89313acbee72cabc9da42b8e12f1",
+                  "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:previous_chapter_group_outcome:v1"
+                },
+                {
+                  "role": "quality_trend",
+                  "asset_type": "quality_trend",
+                  "content_hash": "sha256:a481b8a24fca11dd78257e3693cccedb038dc98a2ab95f94f51cceacd3d6ba00",
+                  "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:quality_trend:v1"
+                },
+                {
+                  "role": "reader_state",
+                  "asset_type": "reader_state",
+                  "content_hash": "sha256:5b1963d0a1f69028dbc239b570058fdd4c9d37109ed441b9c104ec2559225b27",
+                  "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:reader_state:v1"
+                },
+                {
+                  "role": "related_arc:1",
+                  "asset_type": "planning_generation_candidate",
+                  "content_hash": "sha256:5abe8ee083cce4941e6a756709f44b92eb52c5d44560c490dcf88765b4db41f5",
+                  "asset_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                },
+                {
+                  "role": "story_state",
+                  "asset_type": "story_state_snapshot",
+                  "content_hash": "sha256:fee2ad8c049d6ef124c35e8e73537fde11f02d2975cfac457e35b57a0e2ae216",
+                  "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:initial_story_state:v1"
+                },
+                {
+                  "role": "volume_plan",
+                  "asset_type": "planning_generation_candidate",
+                  "content_hash": "sha256:43d92570db1f96fdac1b6aa502d66cbccd2db2792fa4d87615cda81d72d2d7c9",
+                  "asset_version_id": "authority-output:687d6a62-c1f3-4aee-920f-c095763d07d1:story_planning.candidate:v1"
+                }
+              ],
+              "contract_version": "planning-constraint-envelope-v2",
+              "change_governance": {
+                "requires_evidence": true,
+                "preserve_executed_history": true,
+                "wider_scope_requires_new_plan_change": true
+              },
+              "prohibited_outcomes": [],
+              "inherited_invariants": [],
+              "required_obligations": [],
+              "narrative_load_policy": {
+                "type": "NarrativeLoadPolicy",
+                "limits": {
+                  "max_active_arcs": 3,
+                  "max_new_concepts": 4,
+                  "max_dormant_arc_age": 30,
+                  "max_open_obligations": 12,
+                  "max_payoff_congestion": 3,
+                  "max_overdue_obligations": 0,
+                  "max_major_state_transitions": 8,
+                  "max_character_appearance_gap": 10
+                },
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "policy_id": "canonical-production-narrative-load",
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725",
+                "source_role": "production_profile",
+                "policy_version": 1,
+                "contract_version": "narrative-load-policy-v1",
+                "governed_overrides": [],
+                "source_content_hash": "sha256:9b3603a27da91ff49c3d6f68d88a1f81e28de1e3c0ab80797cc2babba0406ced",
+                "source_asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:production_profile:v1"
+              },
+              "permitted_change_scope": "CHAPTER_GROUP",
+              "accepted_state_boundary": {
+                "future_plan_only": true,
+                "accepted_through_chapter": 0
+              },
+              "generation_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0",
+              "generator_operation_name": "chapter_group_plan.generate",
+              "narrative_load_projection": {
+                "type": "NarrativeLoadProjection",
+                "status": "MEASURED",
+                "metrics": {
+                  "active_arc_count": 0,
+                  "dormant_arc_max_age": 0,
+                  "narrative_debt_score": 0,
+                  "open_obligation_count": 0,
+                  "payoff_congestion_count": 0,
+                  "overdue_obligation_count": 0,
+                  "character_appearance_max_gap": 0
+                },
+                "contract_version": "narrative-load-projection-v2",
+                "open_obligation_ids": [],
+                "overdue_obligation_ids": [],
+                "accepted_through_chapter": 0
+              },
+              "narrative_load_policy_lineage": {
+                "type": "NarrativeLoadPolicyLineage",
+                "policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725",
+                "inherited_from": [
+                  {
+                    "role": "arc_plans",
+                    "content_hash": "sha256:fe26dc36b911fdc0f9385c72257ee4e062938d149ac29d48dd64989f792d27b4",
+                    "asset_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "role": "book_plan",
+                    "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                    "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1"
+                  },
+                  {
+                    "role": "related_arc:1",
+                    "content_hash": "sha256:5abe8ee083cce4941e6a756709f44b92eb52c5d44560c490dcf88765b4db41f5",
+                    "asset_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  },
+                  {
+                    "role": "volume_plan",
+                    "content_hash": "sha256:43d92570db1f96fdac1b6aa502d66cbccd2db2792fa4d87615cda81d72d2d7c9",
+                    "asset_version_id": "authority-output:687d6a62-c1f3-4aee-920f-c095763d07d1:story_planning.candidate:v1"
+                  }
+                ],
+                "contract_version": "narrative-load-policy-lineage-v1",
+                "frozen_by_generation_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+              }
+            },
+            "context_profile_ref": "planning-context:v1",
+            "information_release": [
+              "hidden cost"
+            ],
+            "relationship_deltas": [],
+            "character_realization": [
+              {
+                "reach": "CURRENT_SEGMENT",
+                "scope": "CHAPTER_GROUP",
+                "state_ref": {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "story_state_snapshot",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "CHARACTER_STATE",
+                  "content_hash": "sha256:fee2ad8c049d6ef124c35e8e73537fde11f02d2975cfac457e35b57a0e2ae216",
+                  "authority_role": "story_state",
+                  "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:initial_story_state:v1",
+                  "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+                },
+                "character_id": "protagonist",
+                "identity_ref": {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "planning_generation_candidate",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "CHARACTER_IDENTITY",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "authority_role": "book_plan",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                  "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+                },
+                "trajectory_ref": {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "planning_generation_candidate",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "CHARACTER_TRAJECTORY",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "authority_role": "book_plan",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                  "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+                },
+                "realization_level": "DETAILED",
+                "narrative_relevance": "CURRENT"
+              }
+            ],
+            "narrative_event_chain": [
+              {
+                "action": "confront the institutional resistance",
+                "causes": [],
+                "decision": "accept a visible cost instead of retreating",
+                "event_id": "realization:chapter-group:1:event:1",
+                "required": true,
+                "slice_id": "realization:chapter:1",
+                "actor_ref": "protagonist",
+                "motivation": "preserve agency while protecting the witness",
+                "resistance": "the opposition converts private risk into public loss",
+                "consequence": "the decision creates the next irreversible pressure",
+                "disclosures": [
+                  "fact:hidden-cost"
+                ],
+                "state_deltas": [
+                  {
+                    "to_state": "COMMITTED",
+                    "entity_id": "protagonist:accountability",
+                    "from_state": "DENIAL",
+                    "state_kind": "character_arc"
+                  }
+                ],
+                "preconditions": [
+                  "the preceding pressure remains unresolved"
+                ],
+                "chapter_number": 1,
+                "next_event_ids": [
+                  "realization:chapter-group:1:event:2"
+                ],
+                "arc_contributions": [
+                  "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                  "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                ],
+                "knowledge_boundary": {
+                  "actor_knows": [
+                    "fact:public-risk"
+                  ],
+                  "reader_may_learn": [
+                    "fact:hidden-cost"
+                  ],
+                  "forbidden_disclosures": [
+                    "fact:future-antagonist-plan"
+                  ]
+                },
+                "obligation_actions": [
+                  "promise:choice:ADVANCE"
+                ],
+                "irreversible_change": "the choice becomes witnessed and costly"
+              },
+              {
+                "action": "confront the institutional resistance",
+                "causes": [
+                  "realization:chapter-group:1:event:1"
+                ],
+                "decision": "accept a visible cost instead of retreating",
+                "event_id": "realization:chapter-group:1:event:2",
+                "required": true,
+                "slice_id": "realization:chapter:2",
+                "actor_ref": "protagonist",
+                "motivation": "preserve agency while protecting the witness",
+                "resistance": "the opposition converts private risk into public loss",
+                "consequence": "the decision creates the next irreversible pressure",
+                "disclosures": [
+                  "fact:hidden-cost"
+                ],
+                "state_deltas": [
+                  {
+                    "to_state": "CONSEQUENT",
+                    "entity_id": "protagonist:accountability",
+                    "from_state": "COMMITTED",
+                    "state_kind": "character_arc"
+                  }
+                ],
+                "preconditions": [
+                  "the preceding pressure remains unresolved"
+                ],
+                "chapter_number": 2,
+                "next_event_ids": [
+                  "realization:chapter-group:1:event:3"
+                ],
+                "arc_contributions": [
+                  "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                  "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                ],
+                "knowledge_boundary": {
+                  "actor_knows": [
+                    "fact:public-risk"
+                  ],
+                  "reader_may_learn": [
+                    "fact:hidden-cost"
+                  ],
+                  "forbidden_disclosures": [
+                    "fact:future-antagonist-plan"
+                  ]
+                },
+                "obligation_actions": [
+                  "promise:choice:ADVANCE"
+                ],
+                "irreversible_change": "the choice becomes witnessed and costly"
+              },
+              {
+                "action": "confront the institutional resistance",
+                "causes": [
+                  "realization:chapter-group:1:event:2"
+                ],
+                "decision": "accept a visible cost instead of retreating",
+                "event_id": "realization:chapter-group:1:event:3",
+                "required": true,
+                "slice_id": "realization:chapter:3",
+                "actor_ref": "protagonist",
+                "motivation": "preserve agency while protecting the witness",
+                "resistance": "the opposition converts private risk into public loss",
+                "consequence": "the decision creates the next irreversible pressure",
+                "disclosures": [
+                  "fact:hidden-cost"
+                ],
+                "state_deltas": [
+                  {
+                    "to_state": "OWNED",
+                    "entity_id": "protagonist:accountability",
+                    "from_state": "CONSEQUENT",
+                    "state_kind": "character_arc"
+                  }
+                ],
+                "preconditions": [
+                  "the preceding pressure remains unresolved"
+                ],
+                "chapter_number": 3,
+                "next_event_ids": [],
+                "arc_contributions": [
+                  "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                  "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                ],
+                "knowledge_boundary": {
+                  "actor_knows": [
+                    "fact:public-risk"
+                  ],
+                  "reader_may_learn": [
+                    "fact:hidden-cost"
+                  ],
+                  "forbidden_disclosures": [
+                    "fact:future-antagonist-plan"
+                  ]
+                },
+                "obligation_actions": [
+                  "promise:choice:ADVANCE"
+                ],
+                "irreversible_change": "the choice becomes witnessed and costly"
+              }
+            ],
+            "narrative_segment_ref": {
+              "segment_id": "narrative-segment:1",
+              "volume_plan_version_id": "authority-output:687d6a62-c1f3-4aee-920f-c095763d07d1:story_planning.candidate:v1"
+            },
+            "resistance_escalation": [
+              "denial",
+              "countermove"
+            ],
+            "chapter_function_matrix": [
+              {
+                "arc_cadence": [
+                  {
+                    "action": "ADVANCE",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "action": "TOUCH",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ],
+                "ending_hook": "door closes",
+                "reward_action": "partial payoff",
+                "chapter_number": 1,
+                "promise_action": "advance",
+                "primary_function": "setup",
+                "foreshadow_action": "plant",
+                "narrative_density": "MEDIUM",
+                "reader_experience": {
+                  "reward_mode": "DISCOVERY",
+                  "target_emotion": "rising pressure"
+                },
+                "obligation_actions": [
+                  {
+                    "action": "ADVANCE",
+                    "due_chapter": 3,
+                    "obligation_id": "promise:choice"
+                  }
+                ],
+                "prohibited_outcomes": [
+                  "silent reset"
+                ],
+                "secondary_functions": [
+                  "character pressure"
+                ],
+                "required_state_delta": {
+                  "summary": "commitment advances"
+                },
+                "required_arc_contributions": [
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ]
+              },
+              {
+                "arc_cadence": [
+                  {
+                    "action": "ADVANCE",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "action": "TOUCH",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ],
+                "ending_hook": "ally defects",
+                "reward_action": "partial payoff",
+                "chapter_number": 2,
+                "promise_action": "advance",
+                "primary_function": "reversal",
+                "foreshadow_action": "plant",
+                "narrative_density": "HIGH",
+                "reader_experience": {
+                  "reward_mode": "DISCOVERY",
+                  "target_emotion": "rising pressure"
+                },
+                "obligation_actions": [
+                  {
+                    "action": "ADVANCE",
+                    "due_chapter": 4,
+                    "obligation_id": "promise:choice"
+                  }
+                ],
+                "prohibited_outcomes": [
+                  "silent reset"
+                ],
+                "secondary_functions": [
+                  "character pressure"
+                ],
+                "required_state_delta": {
+                  "summary": "commitment advances"
+                },
+                "required_arc_contributions": [
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ]
+              },
+              {
+                "arc_cadence": [
+                  {
+                    "action": "PAYOFF",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "action": "TOUCH",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ],
+                "ending_hook": "cost arrives",
+                "reward_action": "partial payoff",
+                "chapter_number": 3,
+                "promise_action": "advance",
+                "primary_function": "payoff",
+                "foreshadow_action": "plant",
+                "narrative_density": "HIGH",
+                "reader_experience": {
+                  "reward_mode": "PAYOFF",
+                  "target_emotion": "costly relief"
+                },
+                "obligation_actions": [
+                  {
+                    "action": "PAYOFF",
+                    "due_chapter": 3,
+                    "obligation_id": "promise:choice"
+                  }
+                ],
+                "prohibited_outcomes": [
+                  "silent reset"
+                ],
+                "secondary_functions": [
+                  "character pressure"
+                ],
+                "required_state_delta": {
+                  "summary": "commitment advances"
+                },
+                "required_arc_contributions": [
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ]
+              }
+            ],
+            "required_arc_contributions": [
+              "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+              "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+            ],
+            "arc_checkpoint_expectations": [
+              {
+                "expectation": "choice advances",
+                "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+              },
+              {
+                "expectation": "choice advances",
+                "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+              }
+            ],
+            "narrative_search_projection": {
+              "assumptions": [
+                "branch 3 preserves the frozen parent boundary"
+              ],
+              "future_options": [
+                "branch 3 can escalate through relationship pressure",
+                "branch 3 can pivot through world consequence"
+              ],
+              "narrative_risks": [
+                "branch 3 may compress one later payoff window"
+              ],
+              "repetition_keys": [
+                "fixture-causal-strategy-3"
+              ],
+              "contract_version": "narrative-search-projection.v1",
+              "selection_summary": "fixture branch 3 balances causal pressure and optionality",
+              "strategy_fingerprint": "chapter_group_plan.generate:chapter-group:containing:1:causal-strategy-3",
+              "creative_intelligence": {
+                "arc_momentum": 0.76,
+                "setup_payoff": 0.76,
+                "reader_promise": 0.76,
+                "reversal_reveal": 0.76,
+                "character_agency": 0.8,
+                "pacing_variation": 0.76,
+                "pattern_diversity": 0.76,
+                "world_consequence": 0.76,
+                "future_optionality": 0.8,
+                "conflict_escalation": 0.76,
+                "emotional_progression": 0.76,
+                "relationship_evolution": 0.76,
+                "choice_cost_consequence": 0.8
+              },
+              "irreversible_decisions": [
+                "branch 3 commits the public cost"
+              ],
+              "projected_consequences": [
+                "branch 3 turns pressure into an accepted-state choice"
+              ],
+              "narrative_opportunities": [
+                "branch 3 opens a distinct convergence path"
+              ]
+            },
+            "narrative_architecture_version": "canonical-narrative-v1"
+          },
+          "forbidden_payoffs": [],
+          "parent_version_id": "authority-output:687d6a62-c1f3-4aee-920f-c095763d07d1:story_planning.candidate:v1",
+          "realization_level": "DETAILED",
+          "secondary_arc_ids": [
+            "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+          ],
+          "world_realization": [
+            {
+              "world_id": "world:primary",
+              "state_ref": {
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "freshness": "CURRENT",
+                "asset_type": "story_state_snapshot",
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "domain_type": "WORLD_STATE",
+                "content_hash": "sha256:fee2ad8c049d6ef124c35e8e73537fde11f02d2975cfac457e35b57a0e2ae216",
+                "authority_role": "story_state",
+                "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:initial_story_state:v1",
+                "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+              },
+              "visibility": "PARTIAL",
+              "accessibility": "RESTRICTED",
+              "invariant_refs": [
+                {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "planning_generation_candidate",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "WORLD_INVARIANT",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "authority_role": "book_plan",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                  "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+                }
+              ],
+              "structure_refs": [
+                {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "planning_generation_candidate",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "WORLD_STRUCTURE",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "authority_role": "book_plan",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                  "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+                }
+              ],
+              "realization_level": "DETAILED",
+              "narrative_relevance": "CURRENT"
+            }
+          ],
+          "antagonist_actions": [
+            "isolate",
+            "expose"
+          ],
+          "canon_dependencies": [],
+          "execution_evidence": {
+            "attempt_id": "04ca4b56-37f6-460e-a8be-ff1e969e2113",
+            "operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0",
+            "fencing_token": 1,
+            "commit_authority": "STORY_DESIGN_AUTHORITY",
+            "cost_receipt_ref": "authority-asset-version:cbd8f323-b7db-4af6-938d-6a214ed5de7e",
+            "route_snapshot_id": "production_execution/routes/3bb12d070c944ab211a2",
+            "usage_receipt_ref": "authority-asset-version:4cc68692-f930-406e-bc0c-89ff75608bdf",
+            "input_manifest_ref": "production_execution/inputs/3bb12d070c944ab211a2",
+            "context_bundle_hash": "sha256:6e3a0888cd47dfe798a6cc479c7496943c9324cd1746b1c212cd6398e4cf427a",
+            "output_manifest_ref": "authority-asset-version:d204d14e-0d8f-4c73-9db8-ab17c6bf972d",
+            "production_verified": false,
+            "external_receipt_ref": "5525c9f9-0fca-4794-a904-f58f15408769",
+            "real_provider_proven": false,
+            "fixture_protocol_only": true,
+            "external_effect_backed": true,
+            "validation_manifest_ref": "authority-asset-version:805e074f-5157-4bca-a6c4-7f53f1d831cc",
+            "capability_execution_ref": "202a923b-3470-54dc-8e39-1f467bc07c7e",
+            "capability_execution_hash": "sha256:26b5d38b4d197ad6eb80ca3645889933accfc791aa94812ea7e2d7b8d50d9d59",
+            "capability_runtime_binding_ref": "sha256:b30d63d409a2b0442aa0b6485b1f10ae75924f0e7efd1f507a056240784a5a75",
+            "capability_runtime_binding_hash": "sha256:25c9824bd5ee190280c8c6a3f3a322223ce04c40f41e124fe319bde201b8c597",
+            "context_bundle_asset_version_id": "90ec55c5-a247-40b8-923c-549b6c4b117c",
+            "capability_pack_attempt_snapshot_id": "sha256:b30d63d409a2b0442aa0b6485b1f10ae75924f0e7efd1f507a056240784a5a75",
+            "production_execution_gateway_backed": true,
+            "capability_pack_attempt_snapshot_hash": "sha256:25c9824bd5ee190280c8c6a3f3a322223ce04c40f41e124fe319bde201b8c597",
+            "narrative_intelligence_selection_digest": "sha256:b75ca796fbca8da01602cb9cfa7caef980c1abfab315f9faee7649028313275e"
+          },
+          "commitment_contract": [
+            {
+              "level": "HARD_CONSTRAINT",
+              "statement": "preserve the accepted causal spine",
+              "commitment_id": "commitment:chapter-group:containing:1:causal-anchor"
+            },
+            {
+              "level": "OPEN_DESIGN_SPACE",
+              "statement": "elaborate only at the current narrative horizon",
+              "commitment_id": "commitment:chapter-group:containing:1:elaboration"
+            }
+          ],
+          "constraint_envelope": {
+            "type": "PlanningConstraintEnvelope",
+            "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+            "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+            "planning_scope": "CHAPTER_GROUP",
+            "arc_working_set": {
+              "type": "ArcWorkingSet",
+              "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+              "capacity": {
+                "source": "POLICY_DEFAULT",
+                "maximum_active_arcs": 3,
+                "narrative_load_policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725"
+              },
+              "candidates": [
+                {
+                  "score": 0,
+                  "reasons": [
+                    "LEGAL_ARC_BASELINE"
+                  ],
+                  "eligible": true,
+                  "current_phase": "",
+                  "obligation_debt": {
+                    "due_ids": [],
+                    "due_count": 0,
+                    "stale_ids": [],
+                    "overdue_ids": [],
+                    "stale_count": 0,
+                    "violated_ids": [],
+                    "overdue_count": 0
+                  },
+                  "dormant_chapters": 0,
+                  "lifecycle_status": "READY",
+                  "payoff_readiness": "NOT_READY",
+                  "dependency_states": {},
+                  "cadence_preference": "",
+                  "observation_status": "NOT_MATERIALIZED",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                  "checkpoint_decision": "NOT_EVALUATED",
+                  "dependency_blockers": [],
+                  "target_window_status": "UNKNOWN",
+                  "target_progress_units": 1,
+                  "cumulative_progress_units": 0,
+                  "last_material_progress_chapter": 0
+                },
+                {
+                  "score": 0,
+                  "reasons": [
+                    "LEGAL_ARC_BASELINE"
+                  ],
+                  "eligible": true,
+                  "current_phase": "",
+                  "obligation_debt": {
+                    "due_ids": [],
+                    "due_count": 0,
+                    "stale_ids": [],
+                    "overdue_ids": [],
+                    "stale_count": 0,
+                    "violated_ids": [],
+                    "overdue_count": 0
+                  },
+                  "dormant_chapters": 0,
+                  "lifecycle_status": "READY",
+                  "payoff_readiness": "NOT_READY",
+                  "dependency_states": {},
+                  "cadence_preference": "",
+                  "observation_status": "NOT_MATERIALIZED",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1",
+                  "checkpoint_decision": "NOT_EVALUATED",
+                  "dependency_blockers": [],
+                  "target_window_status": "UNKNOWN",
+                  "target_progress_units": 1,
+                  "cumulative_progress_units": 0,
+                  "last_material_progress_chapter": 0
+                }
+              ],
+              "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+              "reader_intent": {},
+              "policy_version": "accepted-reality-arc-working-set-v1",
+              "target_chapter": 1,
+              "accepted_reality": {
+                "actual_only": true,
+                "narrative_state": {
+                  "content_hash": "sha256:fee2ad8c049d6ef124c35e8e73537fde11f02d2975cfac457e35b57a0e2ae216",
+                  "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:initial_story_state:v1",
+                  "state_kind_counts": {},
+                  "accepted_through_chapter": 0
+                },
+                "projection_hash": "",
+                "projection_set_id": "",
+                "accepted_through_chapter": 0,
+                "source_story_state_asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:initial_story_state:v1"
+              },
+              "contract_version": "arc-working-set-v1",
+              "planning_horizon": {
+                "scope": "CHAPTER",
+                "chapter": 1
+              },
+              "authority_boundary": {
+                "selection_is_future_intent": true,
+                "actual_progress_requires_accepted_chapter_outcome": true
+              },
+              "working_set_digest": "sha256:32d357baef181fa302985e67ec3eb5147ce9511cdf11fce1dcd2e0afba02cda9",
+              "schedule_correction": {
+                "status": "NO_GROUP_CADENCE",
+                "added_arc_plan_version_ids": [
+                  "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                  "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                ],
+                "removed_arc_plan_version_ids": []
+              },
+              "selected_contributions": [
+                {
+                  "role": "PRIMARY",
+                  "score": 0,
+                  "action": "ADVANCE",
+                  "reason_codes": [
+                    "LEGAL_ARC_BASELINE"
+                  ],
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "role": "SECONDARY",
+                  "score": 0,
+                  "action": "ADVANCE",
+                  "reason_codes": [
+                    "LEGAL_ARC_BASELINE"
+                  ],
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ],
+              "deferred_arc_plan_version_ids": []
+            },
+            "envelope_digest": "sha256:8d5e8d3776acb27ac65067ab5bfc78adb7f7ce1f7a237bc61d2f7239079cb7ff",
+            "parent_versions": [
+              {
+                "role": "arc_plans",
+                "asset_type": "planning_generation_candidate",
+                "content_hash": "sha256:fe26dc36b911fdc0f9385c72257ee4e062938d149ac29d48dd64989f792d27b4",
+                "asset_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+              },
+              {
+                "role": "book_plan",
+                "asset_type": "planning_generation_candidate",
+                "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1"
+              },
+              {
+                "role": "canon_snapshot",
+                "asset_type": "canon_snapshot",
+                "content_hash": "sha256:ea01432f4e1656107910284bf547a630221dc31b3093f276c2ce07b6e36b7ba2",
+                "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:canon_snapshot:v1"
+              },
+              {
+                "role": "previous_chapter_group_outcome",
+                "asset_type": "previous_chapter_group_outcome",
+                "content_hash": "sha256:07f31d2877d5d1093c225d6a807fdc68469f89313acbee72cabc9da42b8e12f1",
+                "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:previous_chapter_group_outcome:v1"
+              },
+              {
+                "role": "quality_trend",
+                "asset_type": "quality_trend",
+                "content_hash": "sha256:a481b8a24fca11dd78257e3693cccedb038dc98a2ab95f94f51cceacd3d6ba00",
+                "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:quality_trend:v1"
+              },
+              {
+                "role": "reader_state",
+                "asset_type": "reader_state",
+                "content_hash": "sha256:5b1963d0a1f69028dbc239b570058fdd4c9d37109ed441b9c104ec2559225b27",
+                "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:reader_state:v1"
+              },
+              {
+                "role": "related_arc:1",
+                "asset_type": "planning_generation_candidate",
+                "content_hash": "sha256:5abe8ee083cce4941e6a756709f44b92eb52c5d44560c490dcf88765b4db41f5",
+                "asset_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+              },
+              {
+                "role": "story_state",
+                "asset_type": "story_state_snapshot",
+                "content_hash": "sha256:fee2ad8c049d6ef124c35e8e73537fde11f02d2975cfac457e35b57a0e2ae216",
+                "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:initial_story_state:v1"
+              },
+              {
+                "role": "volume_plan",
+                "asset_type": "planning_generation_candidate",
+                "content_hash": "sha256:43d92570db1f96fdac1b6aa502d66cbccd2db2792fa4d87615cda81d72d2d7c9",
+                "asset_version_id": "authority-output:687d6a62-c1f3-4aee-920f-c095763d07d1:story_planning.candidate:v1"
+              }
+            ],
+            "contract_version": "planning-constraint-envelope-v2",
+            "change_governance": {
+              "requires_evidence": true,
+              "preserve_executed_history": true,
+              "wider_scope_requires_new_plan_change": true
+            },
+            "prohibited_outcomes": [],
+            "inherited_invariants": [],
+            "required_obligations": [],
+            "narrative_load_policy": {
+              "type": "NarrativeLoadPolicy",
+              "limits": {
+                "max_active_arcs": 3,
+                "max_new_concepts": 4,
+                "max_dormant_arc_age": 30,
+                "max_open_obligations": 12,
+                "max_payoff_congestion": 3,
+                "max_overdue_obligations": 0,
+                "max_major_state_transitions": 8,
+                "max_character_appearance_gap": 10
+              },
+              "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+              "policy_id": "canonical-production-narrative-load",
+              "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+              "policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725",
+              "source_role": "production_profile",
+              "policy_version": 1,
+              "contract_version": "narrative-load-policy-v1",
+              "governed_overrides": [],
+              "source_content_hash": "sha256:9b3603a27da91ff49c3d6f68d88a1f81e28de1e3c0ab80797cc2babba0406ced",
+              "source_asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:production_profile:v1"
+            },
+            "permitted_change_scope": "CHAPTER_GROUP",
+            "accepted_state_boundary": {
+              "future_plan_only": true,
+              "accepted_through_chapter": 0
+            },
+            "generation_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0",
+            "generator_operation_name": "chapter_group_plan.generate",
+            "narrative_load_projection": {
+              "type": "NarrativeLoadProjection",
+              "status": "MEASURED",
+              "metrics": {
+                "active_arc_count": 0,
+                "dormant_arc_max_age": 0,
+                "narrative_debt_score": 0,
+                "open_obligation_count": 0,
+                "payoff_congestion_count": 0,
+                "overdue_obligation_count": 0,
+                "character_appearance_max_gap": 0
+              },
+              "contract_version": "narrative-load-projection-v2",
+              "open_obligation_ids": [],
+              "overdue_obligation_ids": [],
+              "accepted_through_chapter": 0
+            },
+            "narrative_load_policy_lineage": {
+              "type": "NarrativeLoadPolicyLineage",
+              "policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725",
+              "inherited_from": [
+                {
+                  "role": "arc_plans",
+                  "content_hash": "sha256:fe26dc36b911fdc0f9385c72257ee4e062938d149ac29d48dd64989f792d27b4",
+                  "asset_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "role": "book_plan",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1"
+                },
+                {
+                  "role": "related_arc:1",
+                  "content_hash": "sha256:5abe8ee083cce4941e6a756709f44b92eb52c5d44560c490dcf88765b4db41f5",
+                  "asset_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                },
+                {
+                  "role": "volume_plan",
+                  "content_hash": "sha256:43d92570db1f96fdac1b6aa502d66cbccd2db2792fa4d87615cda81d72d2d7c9",
+                  "asset_version_id": "authority-output:687d6a62-c1f3-4aee-920f-c095763d07d1:story_planning.candidate:v1"
+                }
+              ],
+              "contract_version": "narrative-load-policy-lineage-v1",
+              "frozen_by_generation_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+            }
+          },
+          "context_profile_ref": "planning-context:v1",
+          "information_release": [
+            "hidden cost"
+          ],
+          "relationship_deltas": [],
+          "character_realization": [
+            {
+              "reach": "CURRENT_SEGMENT",
+              "scope": "CHAPTER_GROUP",
+              "state_ref": {
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "freshness": "CURRENT",
+                "asset_type": "story_state_snapshot",
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "domain_type": "CHARACTER_STATE",
+                "content_hash": "sha256:fee2ad8c049d6ef124c35e8e73537fde11f02d2975cfac457e35b57a0e2ae216",
+                "authority_role": "story_state",
+                "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:initial_story_state:v1",
+                "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+              },
+              "character_id": "protagonist",
+              "identity_ref": {
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "freshness": "CURRENT",
+                "asset_type": "planning_generation_candidate",
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "domain_type": "CHARACTER_IDENTITY",
+                "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                "authority_role": "book_plan",
+                "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+              },
+              "trajectory_ref": {
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "freshness": "CURRENT",
+                "asset_type": "planning_generation_candidate",
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "domain_type": "CHARACTER_TRAJECTORY",
+                "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                "authority_role": "book_plan",
+                "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                "frozen_by_operation_id": "81954baa-68f6-4984-ba10-16ae00d56ff0"
+              },
+              "realization_level": "DETAILED",
+              "narrative_relevance": "CURRENT"
+            }
+          ],
+          "narrative_event_chain": [
+            {
+              "action": "confront the institutional resistance",
+              "causes": [],
+              "decision": "accept a visible cost instead of retreating",
+              "event_id": "realization:chapter-group:1:event:1",
+              "required": true,
+              "slice_id": "realization:chapter:1",
+              "actor_ref": "protagonist",
+              "motivation": "preserve agency while protecting the witness",
+              "resistance": "the opposition converts private risk into public loss",
+              "consequence": "the decision creates the next irreversible pressure",
+              "disclosures": [
+                "fact:hidden-cost"
+              ],
+              "state_deltas": [
+                {
+                  "to_state": "COMMITTED",
+                  "entity_id": "protagonist:accountability",
+                  "from_state": "DENIAL",
+                  "state_kind": "character_arc"
+                }
+              ],
+              "preconditions": [
+                "the preceding pressure remains unresolved"
+              ],
+              "chapter_number": 1,
+              "next_event_ids": [
+                "realization:chapter-group:1:event:2"
+              ],
+              "arc_contributions": [
+                "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+              ],
+              "knowledge_boundary": {
+                "actor_knows": [
+                  "fact:public-risk"
+                ],
+                "reader_may_learn": [
+                  "fact:hidden-cost"
+                ],
+                "forbidden_disclosures": [
+                  "fact:future-antagonist-plan"
+                ]
+              },
+              "obligation_actions": [
+                "promise:choice:ADVANCE"
+              ],
+              "irreversible_change": "the choice becomes witnessed and costly"
+            },
+            {
+              "action": "confront the institutional resistance",
+              "causes": [
+                "realization:chapter-group:1:event:1"
+              ],
+              "decision": "accept a visible cost instead of retreating",
+              "event_id": "realization:chapter-group:1:event:2",
+              "required": true,
+              "slice_id": "realization:chapter:2",
+              "actor_ref": "protagonist",
+              "motivation": "preserve agency while protecting the witness",
+              "resistance": "the opposition converts private risk into public loss",
+              "consequence": "the decision creates the next irreversible pressure",
+              "disclosures": [
+                "fact:hidden-cost"
+              ],
+              "state_deltas": [
+                {
+                  "to_state": "CONSEQUENT",
+                  "entity_id": "protagonist:accountability",
+                  "from_state": "COMMITTED",
+                  "state_kind": "character_arc"
+                }
+              ],
+              "preconditions": [
+                "the preceding pressure remains unresolved"
+              ],
+              "chapter_number": 2,
+              "next_event_ids": [
+                "realization:chapter-group:1:event:3"
+              ],
+              "arc_contributions": [
+                "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+              ],
+              "knowledge_boundary": {
+                "actor_knows": [
+                  "fact:public-risk"
+                ],
+                "reader_may_learn": [
+                  "fact:hidden-cost"
+                ],
+                "forbidden_disclosures": [
+                  "fact:future-antagonist-plan"
+                ]
+              },
+              "obligation_actions": [
+                "promise:choice:ADVANCE"
+              ],
+              "irreversible_change": "the choice becomes witnessed and costly"
+            },
+            {
+              "action": "confront the institutional resistance",
+              "causes": [
+                "realization:chapter-group:1:event:2"
+              ],
+              "decision": "accept a visible cost instead of retreating",
+              "event_id": "realization:chapter-group:1:event:3",
+              "required": true,
+              "slice_id": "realization:chapter:3",
+              "actor_ref": "protagonist",
+              "motivation": "preserve agency while protecting the witness",
+              "resistance": "the opposition converts private risk into public loss",
+              "consequence": "the decision creates the next irreversible pressure",
+              "disclosures": [
+                "fact:hidden-cost"
+              ],
+              "state_deltas": [
+                {
+                  "to_state": "OWNED",
+                  "entity_id": "protagonist:accountability",
+                  "from_state": "CONSEQUENT",
+                  "state_kind": "character_arc"
+                }
+              ],
+              "preconditions": [
+                "the preceding pressure remains unresolved"
+              ],
+              "chapter_number": 3,
+              "next_event_ids": [],
+              "arc_contributions": [
+                "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+              ],
+              "knowledge_boundary": {
+                "actor_knows": [
+                  "fact:public-risk"
+                ],
+                "reader_may_learn": [
+                  "fact:hidden-cost"
+                ],
+                "forbidden_disclosures": [
+                  "fact:future-antagonist-plan"
+                ]
+              },
+              "obligation_actions": [
+                "promise:choice:ADVANCE"
+              ],
+              "irreversible_change": "the choice becomes witnessed and costly"
+            }
+          ],
+          "narrative_segment_ref": {
+            "segment_id": "narrative-segment:1",
+            "volume_plan_version_id": "authority-output:687d6a62-c1f3-4aee-920f-c095763d07d1:story_planning.candidate:v1"
+          },
+          "resistance_escalation": [
+            "denial",
+            "countermove"
+          ],
+          "chapter_function_matrix": [
+            {
+              "arc_cadence": [
+                {
+                  "action": "ADVANCE",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "action": "TOUCH",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ],
+              "ending_hook": "door closes",
+              "reward_action": "partial payoff",
+              "chapter_number": 1,
+              "promise_action": "advance",
+              "primary_function": "setup",
+              "foreshadow_action": "plant",
+              "narrative_density": "MEDIUM",
+              "reader_experience": {
+                "reward_mode": "DISCOVERY",
+                "target_emotion": "rising pressure"
+              },
+              "obligation_actions": [
+                {
+                  "action": "ADVANCE",
+                  "due_chapter": 3,
+                  "obligation_id": "promise:choice"
+                }
+              ],
+              "prohibited_outcomes": [
+                "silent reset"
+              ],
+              "secondary_functions": [
+                "character pressure"
+              ],
+              "required_state_delta": {
+                "summary": "commitment advances"
+              },
+              "required_arc_contributions": [
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ]
+            },
+            {
+              "arc_cadence": [
+                {
+                  "action": "ADVANCE",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "action": "TOUCH",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ],
+              "ending_hook": "ally defects",
+              "reward_action": "partial payoff",
+              "chapter_number": 2,
+              "promise_action": "advance",
+              "primary_function": "reversal",
+              "foreshadow_action": "plant",
+              "narrative_density": "HIGH",
+              "reader_experience": {
+                "reward_mode": "DISCOVERY",
+                "target_emotion": "rising pressure"
+              },
+              "obligation_actions": [
+                {
+                  "action": "ADVANCE",
+                  "due_chapter": 4,
+                  "obligation_id": "promise:choice"
+                }
+              ],
+              "prohibited_outcomes": [
+                "silent reset"
+              ],
+              "secondary_functions": [
+                "character pressure"
+              ],
+              "required_state_delta": {
+                "summary": "commitment advances"
+              },
+              "required_arc_contributions": [
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ]
+            },
+            {
+              "arc_cadence": [
+                {
+                  "action": "PAYOFF",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "action": "TOUCH",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ],
+              "ending_hook": "cost arrives",
+              "reward_action": "partial payoff",
+              "chapter_number": 3,
+              "promise_action": "advance",
+              "primary_function": "payoff",
+              "foreshadow_action": "plant",
+              "narrative_density": "HIGH",
+              "reader_experience": {
+                "reward_mode": "PAYOFF",
+                "target_emotion": "costly relief"
+              },
+              "obligation_actions": [
+                {
+                  "action": "PAYOFF",
+                  "due_chapter": 3,
+                  "obligation_id": "promise:choice"
+                }
+              ],
+              "prohibited_outcomes": [
+                "silent reset"
+              ],
+              "secondary_functions": [
+                "character pressure"
+              ],
+              "required_state_delta": {
+                "summary": "commitment advances"
+              },
+              "required_arc_contributions": [
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ]
+            }
+          ],
+          "generator_operation_name": "chapter_group_plan.generate",
+          "required_arc_contributions": [
+            "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+            "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+          ],
+          "arc_checkpoint_expectations": [
+            {
+              "expectation": "choice advances",
+              "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+            },
+            {
+              "expectation": "choice advances",
+              "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+            }
+          ],
+          "narrative_search_projection": {
+            "assumptions": [
+              "branch 3 preserves the frozen parent boundary"
+            ],
+            "future_options": [
+              "branch 3 can escalate through relationship pressure",
+              "branch 3 can pivot through world consequence"
+            ],
+            "narrative_risks": [
+              "branch 3 may compress one later payoff window"
+            ],
+            "repetition_keys": [
+              "fixture-causal-strategy-3"
+            ],
+            "contract_version": "narrative-search-projection.v1",
+            "selection_summary": "fixture branch 3 balances causal pressure and optionality",
+            "strategy_fingerprint": "chapter_group_plan.generate:chapter-group:containing:1:causal-strategy-3",
+            "creative_intelligence": {
+              "arc_momentum": 0.76,
+              "setup_payoff": 0.76,
+              "reader_promise": 0.76,
+              "reversal_reveal": 0.76,
+              "character_agency": 0.8,
+              "pacing_variation": 0.76,
+              "pattern_diversity": 0.76,
+              "world_consequence": 0.76,
+              "future_optionality": 0.8,
+              "conflict_escalation": 0.76,
+              "emotional_progression": 0.76,
+              "relationship_evolution": 0.76,
+              "choice_cost_consequence": 0.8
+            },
+            "irreversible_decisions": [
+              "branch 3 commits the public cost"
+            ],
+            "projected_consequences": [
+              "branch 3 turns pressure into an accepted-state choice"
+            ],
+            "narrative_opportunities": [
+              "branch 3 opens a distinct convergence path"
+            ]
+          },
+          "narrative_architecture_version": "canonical-narrative-v1",
+          "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+        }
+      },
+      "chapters": [
+        {
+          "chapter_number": 1,
+          "chapter_plan_version_id": "authority-output:d8b547a9-fab9-4a31-894d-b983e0a195c6:story_planning.candidate:v1",
+          "chapter_request_id": "chapter-request:e11baaa83210fe61070904b6be20421466c65a15c85fb194944dd21a34ebcec7",
+          "child_root_operation_id": "90e69b2e-0601-425e-8de9-4351844e4470",
+          "status": "ACCEPTED",
+          "acceptance_operation_id": "198cb70d-7619-4404-b76a-27365b73551e",
+          "chapter_outcome_version_id": "authority-output:198cb70d-7619-4404-b76a-27365b73551e:chapter.outcome:v1",
+          "acceptance_id": "chapter-acceptance:728d2c843dd2b6e03501df5fade41e74e9c1a8e79eb2c40a1a6ed44d75b73cb2",
+          "acceptance_status": "COMMITTED",
+          "story_state_asset_version_id": "authority-output:198cb70d-7619-4404-b76a-27365b73551e:chapter.story_state:v1",
+          "canon_snapshot_asset_version_id": "authority-output:198cb70d-7619-4404-b76a-27365b73551e:chapter.canon.current:v1"
+        },
+        {
+          "chapter_number": 2,
+          "chapter_plan_version_id": "authority-output:d9dee64b-1064-4d73-aa95-e1ecf4cc60a8:story_planning.candidate:v1",
+          "chapter_request_id": "chapter-request:53cfe2d0cde32424ad2808b1126b8e7ed516afaa794e98e016a5e2b66009e472",
+          "child_root_operation_id": "0276fa63-5ca7-4770-99d1-e36d3a4b0cdb",
+          "status": "ACCEPTED",
+          "acceptance_operation_id": "3ab4a263-4ebc-4412-a4fc-60120f601f64",
+          "chapter_outcome_version_id": "authority-output:3ab4a263-4ebc-4412-a4fc-60120f601f64:chapter.outcome:v1",
+          "acceptance_id": "chapter-acceptance:52a7dabc8fe28837d35db8e90b3fe90b9b35601b354a1d7b6fd8471893811055",
+          "acceptance_status": "COMMITTED",
+          "story_state_asset_version_id": "authority-output:3ab4a263-4ebc-4412-a4fc-60120f601f64:chapter.story_state:v1",
+          "canon_snapshot_asset_version_id": "authority-output:3ab4a263-4ebc-4412-a4fc-60120f601f64:chapter.canon.current:v1"
+        },
+        {
+          "chapter_number": 3,
+          "chapter_plan_version_id": "authority-output:aba54bb0-a0ce-4eaf-9f8f-0635bbaa2e97:story_planning.candidate:v1",
+          "chapter_request_id": "chapter-request:ce1894e9c32e8df478582b8f22a57ab5333b7816fb713a10d1a20a1e48bd7836",
+          "child_root_operation_id": "f65019f7-7cb8-4eed-b4b5-bea8370d5fc3",
+          "status": "ACCEPTED",
+          "acceptance_operation_id": "120763ee-4530-47e5-9505-77faaa0599f0",
+          "chapter_outcome_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.outcome:v1",
+          "acceptance_id": "chapter-acceptance:a355de16fe1b33b71900a26d33d7b1059bdce0b6e25f3f4ac671e42e94db2aa6",
+          "acceptance_status": "COMMITTED",
+          "story_state_asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.story_state:v1",
+          "canon_snapshot_asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.canon.current:v1"
+        }
+      ]
+    },
+    {
+      "group_run_id": "chapter-group-run:2b966ddb-ce59-437e-b93c-92e926c8bb85",
+      "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+      "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+      "book_run_id": "book-run:c968e773-b77e-4dfd-839f-131d5047a566",
+      "root_operation_id": "2b966ddb-ce59-437e-b93c-92e926c8bb85",
+      "group_plan_version_id": "authority-output:dc0c6646-78d9-4281-afb5-685ab8bac130:story_planning.candidate:v1",
+      "volume_plan_version_id": "authority-output:5d5af15d-e0bd-4f36-9abe-1676263b0608:story_planning.candidate:v1",
+      "state": "COMPLETED",
+      "accepted_through_chapter": 6,
+      "chapter_range": [
+        4,
+        6
+      ],
+      "plan": {
+        "asset_version_id": "authority-output:dc0c6646-78d9-4281-afb5-685ab8bac130:story_planning.candidate:v1",
+        "content_hash": "sha256:ca0220309387684002e010a9562e779d1635bdbed30b4cbcd6ea7b3be4bb2ae5",
+        "content": {
+          "turn": "ally defects",
+          "type": "PlanningGenerationCandidate",
+          "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+          "trigger": "evidence arrives",
+          "objective": "Governed objective for chapter-group:containing:4 adjusted by governed change evidence",
+          "cost_range": [
+            "social",
+            "material"
+          ],
+          "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+          "contract_id": "contract:chapter-group:containing:4",
+          "logical_key": "chapter-group:containing:4",
+          "local_climax": "public choice",
+          "world_deltas": [],
+          "chapter_range": [
+            4,
+            6
+          ],
+          "emotion_curve": [
+            "doubt",
+            "pressure",
+            "resolve"
+          ],
+          "frozen_inputs": [
+            {
+              "role": "arc_plans",
+              "asset_type": "planning_generation_candidate",
+              "content_hash": "sha256:fe26dc36b911fdc0f9385c72257ee4e062938d149ac29d48dd64989f792d27b4",
+              "asset_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+            },
+            {
+              "role": "book_plan",
+              "asset_type": "planning_generation_candidate",
+              "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+              "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1"
+            },
+            {
+              "role": "story_state",
+              "asset_type": "story_state_snapshot",
+              "content_hash": "sha256:6270abd8b8d38ac730c13ac1364000184e7f6c3ec8da162783833e6f28f8161b",
+              "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.story_state:v1"
+            },
+            {
+              "role": "volume_plan",
+              "asset_type": "planning_generation_candidate",
+              "content_hash": "sha256:347f95fa2a06d3969497ccd6f68e05db794b9dc00534a043e5ca3cdcd068ee4c",
+              "asset_version_id": "authority-output:5d5af15d-e0bd-4f36-9abe-1676263b0608:story_planning.candidate:v1"
+            },
+            {
+              "role": "reader_state",
+              "asset_type": "reader_state",
+              "content_hash": "sha256:5b1963d0a1f69028dbc239b570058fdd4c9d37109ed441b9c104ec2559225b27",
+              "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:reader_state:v1"
+            },
+            {
+              "role": "quality_trend",
+              "asset_type": "quality_trend",
+              "content_hash": "sha256:a481b8a24fca11dd78257e3693cccedb038dc98a2ab95f94f51cceacd3d6ba00",
+              "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:quality_trend:v1"
+            },
+            {
+              "role": "canon_snapshot",
+              "asset_type": "canon_snapshot",
+              "content_hash": "sha256:57fca40e9b523a911130eee9828d1a6aee67cfd40758f0fc681b3e35856ccad3",
+              "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.canon.current:v1"
+            },
+            {
+              "role": "previous_chapter_group_outcome",
+              "asset_type": "previous_chapter_group_outcome",
+              "content_hash": "sha256:07f31d2877d5d1093c225d6a807fdc68469f89313acbee72cabc9da42b8e12f1",
+              "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:previous_chapter_group_outcome:v1"
+            },
+            {
+              "role": "related_arc:1",
+              "asset_type": "planning_generation_candidate",
+              "content_hash": "sha256:5abe8ee083cce4941e6a756709f44b92eb52c5d44560c490dcf88765b4db41f5",
+              "asset_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+            }
+          ],
+          "planning_scope": "CHAPTER_GROUP",
+          "schema_version": "story_design.authority.v1",
+          "entry_state_ref": "story-state:entry",
+          "exit_state_spec": {
+            "summary": "the governed objective advances"
+          },
+          "local_objective": "Turn private doubt into public commitment",
+          "primary_arc_ids": [
+            "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+          ],
+          "quality_targets": {
+            "minimum": 80
+          },
+          "required_events": [],
+          "character_deltas": [],
+          "forbidden_events": [],
+          "hard_constraints": [],
+          "planning_horizon": "TACTICAL",
+          "required_payoffs": [],
+          "soft_constraints": [],
+          "arc_contributions": [],
+          "budget_policy_ref": "planning-budget:v1",
+          "candidate_payload": {
+            "turn": "ally defects",
+            "trigger": "evidence arrives",
+            "objective": "Governed objective for chapter-group:containing:4 adjusted by governed change evidence",
+            "cost_range": [
+              "social",
+              "material"
+            ],
+            "contract_id": "contract:chapter-group:containing:4",
+            "logical_key": "chapter-group:containing:4",
+            "local_climax": "public choice",
+            "world_deltas": [],
+            "chapter_range": [
+              4,
+              6
+            ],
+            "emotion_curve": [
+              "doubt",
+              "pressure",
+              "resolve"
+            ],
+            "entry_state_ref": "story-state:entry",
+            "exit_state_spec": {
+              "summary": "the governed objective advances"
+            },
+            "local_objective": "Turn private doubt into public commitment",
+            "primary_arc_ids": [
+              "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+            ],
+            "quality_targets": {
+              "minimum": 80
+            },
+            "required_events": [],
+            "character_deltas": [],
+            "forbidden_events": [],
+            "hard_constraints": [],
+            "planning_horizon": "TACTICAL",
+            "required_payoffs": [],
+            "soft_constraints": [],
+            "arc_contributions": [],
+            "budget_policy_ref": "planning-budget:v1",
+            "forbidden_payoffs": [],
+            "parent_version_id": "authority-output:5d5af15d-e0bd-4f36-9abe-1676263b0608:story_planning.candidate:v1",
+            "realization_level": "DETAILED",
+            "secondary_arc_ids": [
+              "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+            ],
+            "world_realization": [
+              {
+                "world_id": "world:primary",
+                "state_ref": {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "story_state_snapshot",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "WORLD_STATE",
+                  "content_hash": "sha256:6270abd8b8d38ac730c13ac1364000184e7f6c3ec8da162783833e6f28f8161b",
+                  "authority_role": "story_state",
+                  "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.story_state:v1",
+                  "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+                },
+                "visibility": "PARTIAL",
+                "accessibility": "RESTRICTED",
+                "invariant_refs": [
+                  {
+                    "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                    "freshness": "CURRENT",
+                    "asset_type": "planning_generation_candidate",
+                    "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                    "domain_type": "WORLD_INVARIANT",
+                    "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                    "authority_role": "book_plan",
+                    "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                    "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+                  }
+                ],
+                "structure_refs": [
+                  {
+                    "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                    "freshness": "CURRENT",
+                    "asset_type": "planning_generation_candidate",
+                    "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                    "domain_type": "WORLD_STRUCTURE",
+                    "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                    "authority_role": "book_plan",
+                    "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                    "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+                  }
+                ],
+                "realization_level": "DETAILED",
+                "narrative_relevance": "CURRENT"
+              }
+            ],
+            "antagonist_actions": [
+              "isolate",
+              "expose"
+            ],
+            "canon_dependencies": [],
+            "commitment_contract": [
+              {
+                "level": "HARD_CONSTRAINT",
+                "statement": "preserve the accepted causal spine",
+                "commitment_id": "commitment:chapter-group:containing:4:causal-anchor"
+              },
+              {
+                "level": "OPEN_DESIGN_SPACE",
+                "statement": "elaborate only at the current narrative horizon",
+                "commitment_id": "commitment:chapter-group:containing:4:elaboration"
+              }
+            ],
+            "constraint_envelope": {
+              "type": "PlanningConstraintEnvelope",
+              "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+              "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+              "planning_scope": "CHAPTER_GROUP",
+              "arc_working_set": {
+                "type": "ArcWorkingSet",
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "capacity": {
+                  "source": "POLICY_DEFAULT",
+                  "maximum_active_arcs": 3,
+                  "narrative_load_policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725"
+                },
+                "candidates": [
+                  {
+                    "score": 3,
+                    "reasons": [
+                      "STARVATION_PRESSURE"
+                    ],
+                    "eligible": true,
+                    "current_phase": "",
+                    "obligation_debt": {
+                      "due_ids": [],
+                      "due_count": 0,
+                      "stale_ids": [],
+                      "overdue_ids": [],
+                      "stale_count": 0,
+                      "violated_ids": [],
+                      "overdue_count": 0
+                    },
+                    "dormant_chapters": 3,
+                    "lifecycle_status": "ACTIVE",
+                    "payoff_readiness": "NOT_READY",
+                    "dependency_states": {},
+                    "cadence_preference": "",
+                    "observation_status": "NOT_OBSERVED",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                    "checkpoint_decision": "UNKNOWN",
+                    "dependency_blockers": [],
+                    "target_window_status": "UNKNOWN",
+                    "target_progress_units": 1,
+                    "cumulative_progress_units": 0,
+                    "last_material_progress_chapter": 0
+                  },
+                  {
+                    "score": 3,
+                    "reasons": [
+                      "STARVATION_PRESSURE"
+                    ],
+                    "eligible": true,
+                    "current_phase": "",
+                    "obligation_debt": {
+                      "due_ids": [],
+                      "due_count": 0,
+                      "stale_ids": [],
+                      "overdue_ids": [],
+                      "stale_count": 0,
+                      "violated_ids": [],
+                      "overdue_count": 0
+                    },
+                    "dormant_chapters": 3,
+                    "lifecycle_status": "ACTIVE",
+                    "payoff_readiness": "NOT_READY",
+                    "dependency_states": {},
+                    "cadence_preference": "",
+                    "observation_status": "NOT_OBSERVED",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1",
+                    "checkpoint_decision": "UNKNOWN",
+                    "dependency_blockers": [],
+                    "target_window_status": "UNKNOWN",
+                    "target_progress_units": 1,
+                    "cumulative_progress_units": 0,
+                    "last_material_progress_chapter": 0
+                  }
+                ],
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "reader_intent": {},
+                "policy_version": "accepted-reality-arc-working-set-v1",
+                "target_chapter": 4,
+                "accepted_reality": {
+                  "actual_only": true,
+                  "narrative_state": {
+                    "content_hash": "sha256:6270abd8b8d38ac730c13ac1364000184e7f6c3ec8da162783833e6f28f8161b",
+                    "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.story_state:v1",
+                    "state_kind_counts": {
+                      "arc_state": 0,
+                      "canon_fact": 4,
+                      "world_rule": 0,
+                      "plot_thread": 0,
+                      "power_state": 0,
+                      "world_state": 0,
+                      "payoff_event": 0,
+                      "reward_event": 0,
+                      "character_arc": 1,
+                      "faction_state": 0,
+                      "mystery_state": 0,
+                      "conflict_state": 0,
+                      "location_state": 0,
+                      "narrative_debt": 0,
+                      "reader_promise": 0,
+                      "resource_state": 0,
+                      "theme_movement": 0,
+                      "timeline_event": 0,
+                      "character_state": 0,
+                      "antagonist_state": 0,
+                      "character_belief": 0,
+                      "disclosure_event": 3,
+                      "foreshadow_state": 0,
+                      "reader_knowledge": 1,
+                      "consequence_state": 0,
+                      "relationship_state": 0,
+                      "character_knowledge": 0,
+                      "narrative_obligation": 0
+                    },
+                    "accepted_through_chapter": 3
+                  },
+                  "projection_hash": "sha256:497e92b3c21c25103511638eb276f1f1e632918556afb85f1fe09f0787f6f812",
+                  "projection_set_id": "longform-projection:16d62370701f42d09c44327d5deca7f86bfd919c4e9c9611dcd5ebb8024797c2",
+                  "accepted_through_chapter": 3,
+                  "source_story_state_asset_version_id": ""
+                },
+                "contract_version": "arc-working-set-v1",
+                "planning_horizon": {
+                  "scope": "CHAPTER",
+                  "chapter": 4
+                },
+                "authority_boundary": {
+                  "selection_is_future_intent": true,
+                  "actual_progress_requires_accepted_chapter_outcome": true
+                },
+                "working_set_digest": "sha256:6690a5791b1699da70ff3ba8f9ad44a7af1c61f9153868d5244d5b7075daed01",
+                "schedule_correction": {
+                  "status": "NO_GROUP_CADENCE",
+                  "added_arc_plan_version_ids": [
+                    "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                    "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  ],
+                  "removed_arc_plan_version_ids": []
+                },
+                "selected_contributions": [
+                  {
+                    "role": "PRIMARY",
+                    "score": 3,
+                    "action": "REACTIVATE",
+                    "reason_codes": [
+                      "STARVATION_PRESSURE"
+                    ],
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "role": "SECONDARY",
+                    "score": 3,
+                    "action": "REACTIVATE",
+                    "reason_codes": [
+                      "STARVATION_PRESSURE"
+                    ],
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ],
+                "deferred_arc_plan_version_ids": []
+              },
+              "envelope_digest": "sha256:491ec29fbc44e89289cfb17b091880b0c7f527760553ef60cb9fc5e33eaf71a4",
+              "parent_versions": [
+                {
+                  "role": "arc_plans",
+                  "asset_type": "planning_generation_candidate",
+                  "content_hash": "sha256:fe26dc36b911fdc0f9385c72257ee4e062938d149ac29d48dd64989f792d27b4",
+                  "asset_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "role": "book_plan",
+                  "asset_type": "planning_generation_candidate",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1"
+                },
+                {
+                  "role": "canon_snapshot",
+                  "asset_type": "canon_snapshot",
+                  "content_hash": "sha256:57fca40e9b523a911130eee9828d1a6aee67cfd40758f0fc681b3e35856ccad3",
+                  "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.canon.current:v1"
+                },
+                {
+                  "role": "previous_chapter_group_outcome",
+                  "asset_type": "previous_chapter_group_outcome",
+                  "content_hash": "sha256:07f31d2877d5d1093c225d6a807fdc68469f89313acbee72cabc9da42b8e12f1",
+                  "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:previous_chapter_group_outcome:v1"
+                },
+                {
+                  "role": "quality_trend",
+                  "asset_type": "quality_trend",
+                  "content_hash": "sha256:a481b8a24fca11dd78257e3693cccedb038dc98a2ab95f94f51cceacd3d6ba00",
+                  "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:quality_trend:v1"
+                },
+                {
+                  "role": "reader_state",
+                  "asset_type": "reader_state",
+                  "content_hash": "sha256:5b1963d0a1f69028dbc239b570058fdd4c9d37109ed441b9c104ec2559225b27",
+                  "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:reader_state:v1"
+                },
+                {
+                  "role": "related_arc:1",
+                  "asset_type": "planning_generation_candidate",
+                  "content_hash": "sha256:5abe8ee083cce4941e6a756709f44b92eb52c5d44560c490dcf88765b4db41f5",
+                  "asset_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                },
+                {
+                  "role": "story_state",
+                  "asset_type": "story_state_snapshot",
+                  "content_hash": "sha256:6270abd8b8d38ac730c13ac1364000184e7f6c3ec8da162783833e6f28f8161b",
+                  "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.story_state:v1"
+                },
+                {
+                  "role": "volume_plan",
+                  "asset_type": "planning_generation_candidate",
+                  "content_hash": "sha256:347f95fa2a06d3969497ccd6f68e05db794b9dc00534a043e5ca3cdcd068ee4c",
+                  "asset_version_id": "authority-output:5d5af15d-e0bd-4f36-9abe-1676263b0608:story_planning.candidate:v1"
+                }
+              ],
+              "contract_version": "planning-constraint-envelope-v2",
+              "change_governance": {
+                "requires_evidence": true,
+                "preserve_executed_history": true,
+                "wider_scope_requires_new_plan_change": true
+              },
+              "prohibited_outcomes": [],
+              "inherited_invariants": [],
+              "required_obligations": [],
+              "narrative_load_policy": {
+                "type": "NarrativeLoadPolicy",
+                "limits": {
+                  "max_active_arcs": 3,
+                  "max_new_concepts": 4,
+                  "max_dormant_arc_age": 30,
+                  "max_open_obligations": 12,
+                  "max_payoff_congestion": 3,
+                  "max_overdue_obligations": 0,
+                  "max_major_state_transitions": 8,
+                  "max_character_appearance_gap": 10
+                },
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "policy_id": "canonical-production-narrative-load",
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725",
+                "source_role": "production_profile",
+                "policy_version": 1,
+                "contract_version": "narrative-load-policy-v1",
+                "governed_overrides": [],
+                "source_content_hash": "sha256:9b3603a27da91ff49c3d6f68d88a1f81e28de1e3c0ab80797cc2babba0406ced",
+                "source_asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:production_profile:v1"
+              },
+              "permitted_change_scope": "CHAPTER_GROUP",
+              "accepted_state_boundary": {
+                "future_plan_only": true,
+                "accepted_through_chapter": 3
+              },
+              "generation_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130",
+              "generator_operation_name": "chapter_group_plan.generate",
+              "narrative_load_projection": {
+                "type": "NarrativeLoadProjection",
+                "status": "MEASURED",
+                "metrics": {
+                  "active_arc_count": 1,
+                  "dormant_arc_max_age": 0,
+                  "narrative_debt_score": 0,
+                  "open_obligation_count": 0,
+                  "payoff_congestion_count": 0,
+                  "overdue_obligation_count": 0,
+                  "character_appearance_max_gap": 0
+                },
+                "contract_version": "narrative-load-projection-v2",
+                "open_obligation_ids": [],
+                "overdue_obligation_ids": [],
+                "accepted_through_chapter": 3
+              },
+              "narrative_load_policy_lineage": {
+                "type": "NarrativeLoadPolicyLineage",
+                "policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725",
+                "inherited_from": [
+                  {
+                    "role": "arc_plans",
+                    "content_hash": "sha256:fe26dc36b911fdc0f9385c72257ee4e062938d149ac29d48dd64989f792d27b4",
+                    "asset_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "role": "book_plan",
+                    "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                    "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1"
+                  },
+                  {
+                    "role": "related_arc:1",
+                    "content_hash": "sha256:5abe8ee083cce4941e6a756709f44b92eb52c5d44560c490dcf88765b4db41f5",
+                    "asset_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  },
+                  {
+                    "role": "volume_plan",
+                    "content_hash": "sha256:347f95fa2a06d3969497ccd6f68e05db794b9dc00534a043e5ca3cdcd068ee4c",
+                    "asset_version_id": "authority-output:5d5af15d-e0bd-4f36-9abe-1676263b0608:story_planning.candidate:v1"
+                  }
+                ],
+                "contract_version": "narrative-load-policy-lineage-v1",
+                "frozen_by_generation_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+              }
+            },
+            "context_profile_ref": "planning-context:v1",
+            "information_release": [
+              "hidden cost"
+            ],
+            "relationship_deltas": [],
+            "character_realization": [
+              {
+                "reach": "CURRENT_SEGMENT",
+                "scope": "CHAPTER_GROUP",
+                "state_ref": {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "story_state_snapshot",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "CHARACTER_STATE",
+                  "content_hash": "sha256:6270abd8b8d38ac730c13ac1364000184e7f6c3ec8da162783833e6f28f8161b",
+                  "authority_role": "story_state",
+                  "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.story_state:v1",
+                  "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+                },
+                "character_id": "protagonist",
+                "identity_ref": {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "planning_generation_candidate",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "CHARACTER_IDENTITY",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "authority_role": "book_plan",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                  "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+                },
+                "trajectory_ref": {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "planning_generation_candidate",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "CHARACTER_TRAJECTORY",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "authority_role": "book_plan",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                  "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+                },
+                "realization_level": "DETAILED",
+                "narrative_relevance": "CURRENT"
+              }
+            ],
+            "narrative_event_chain": [
+              {
+                "action": "confront the institutional resistance",
+                "causes": [],
+                "decision": "accept a visible cost instead of retreating",
+                "event_id": "realization:chapter-group:4:event:1",
+                "required": true,
+                "slice_id": "realization:chapter:4",
+                "actor_ref": "protagonist",
+                "motivation": "preserve agency while protecting the witness",
+                "resistance": "the opposition converts private risk into public loss",
+                "consequence": "the decision creates the next irreversible pressure",
+                "disclosures": [
+                  "fact:hidden-cost"
+                ],
+                "state_deltas": [
+                  {
+                    "to_state": "COMMITTED",
+                    "entity_id": "protagonist:accountability",
+                    "from_state": "DENIAL",
+                    "state_kind": "character_arc"
+                  }
+                ],
+                "preconditions": [
+                  "the preceding pressure remains unresolved"
+                ],
+                "chapter_number": 4,
+                "next_event_ids": [
+                  "realization:chapter-group:4:event:2"
+                ],
+                "arc_contributions": [
+                  "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                  "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                ],
+                "knowledge_boundary": {
+                  "actor_knows": [
+                    "fact:public-risk"
+                  ],
+                  "reader_may_learn": [
+                    "fact:hidden-cost"
+                  ],
+                  "forbidden_disclosures": [
+                    "fact:future-antagonist-plan"
+                  ]
+                },
+                "obligation_actions": [
+                  "promise:choice:ADVANCE"
+                ],
+                "irreversible_change": "the choice becomes witnessed and costly"
+              },
+              {
+                "action": "confront the institutional resistance",
+                "causes": [
+                  "realization:chapter-group:4:event:1"
+                ],
+                "decision": "accept a visible cost instead of retreating",
+                "event_id": "realization:chapter-group:4:event:2",
+                "required": true,
+                "slice_id": "realization:chapter:5",
+                "actor_ref": "protagonist",
+                "motivation": "preserve agency while protecting the witness",
+                "resistance": "the opposition converts private risk into public loss",
+                "consequence": "the decision creates the next irreversible pressure",
+                "disclosures": [
+                  "fact:hidden-cost"
+                ],
+                "state_deltas": [
+                  {
+                    "to_state": "CONSEQUENT",
+                    "entity_id": "protagonist:accountability",
+                    "from_state": "COMMITTED",
+                    "state_kind": "character_arc"
+                  }
+                ],
+                "preconditions": [
+                  "the preceding pressure remains unresolved"
+                ],
+                "chapter_number": 5,
+                "next_event_ids": [
+                  "realization:chapter-group:4:event:3"
+                ],
+                "arc_contributions": [
+                  "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                  "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                ],
+                "knowledge_boundary": {
+                  "actor_knows": [
+                    "fact:public-risk"
+                  ],
+                  "reader_may_learn": [
+                    "fact:hidden-cost"
+                  ],
+                  "forbidden_disclosures": [
+                    "fact:future-antagonist-plan"
+                  ]
+                },
+                "obligation_actions": [
+                  "promise:choice:ADVANCE"
+                ],
+                "irreversible_change": "the choice becomes witnessed and costly"
+              },
+              {
+                "action": "confront the institutional resistance",
+                "causes": [
+                  "realization:chapter-group:4:event:2"
+                ],
+                "decision": "accept a visible cost instead of retreating",
+                "event_id": "realization:chapter-group:4:event:3",
+                "required": true,
+                "slice_id": "realization:chapter:6",
+                "actor_ref": "protagonist",
+                "motivation": "preserve agency while protecting the witness",
+                "resistance": "the opposition converts private risk into public loss",
+                "consequence": "the decision creates the next irreversible pressure",
+                "disclosures": [
+                  "fact:hidden-cost"
+                ],
+                "state_deltas": [
+                  {
+                    "to_state": "OWNED",
+                    "entity_id": "protagonist:accountability",
+                    "from_state": "CONSEQUENT",
+                    "state_kind": "character_arc"
+                  }
+                ],
+                "preconditions": [
+                  "the preceding pressure remains unresolved"
+                ],
+                "chapter_number": 6,
+                "next_event_ids": [],
+                "arc_contributions": [
+                  "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                  "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                ],
+                "knowledge_boundary": {
+                  "actor_knows": [
+                    "fact:public-risk"
+                  ],
+                  "reader_may_learn": [
+                    "fact:hidden-cost"
+                  ],
+                  "forbidden_disclosures": [
+                    "fact:future-antagonist-plan"
+                  ]
+                },
+                "obligation_actions": [
+                  "promise:choice:ADVANCE"
+                ],
+                "irreversible_change": "the choice becomes witnessed and costly"
+              }
+            ],
+            "narrative_segment_ref": {
+              "segment_id": "narrative-segment:1",
+              "volume_plan_version_id": "authority-output:5d5af15d-e0bd-4f36-9abe-1676263b0608:story_planning.candidate:v1"
+            },
+            "resistance_escalation": [
+              "denial",
+              "countermove"
+            ],
+            "chapter_function_matrix": [
+              {
+                "arc_cadence": [
+                  {
+                    "action": "ADVANCE",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "action": "TOUCH",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ],
+                "ending_hook": "door closes",
+                "reward_action": "partial payoff",
+                "chapter_number": 4,
+                "promise_action": "advance",
+                "primary_function": "setup",
+                "foreshadow_action": "plant",
+                "narrative_density": "MEDIUM",
+                "reader_experience": {
+                  "reward_mode": "DISCOVERY",
+                  "target_emotion": "rising pressure"
+                },
+                "obligation_actions": [
+                  {
+                    "action": "ADVANCE",
+                    "due_chapter": 6,
+                    "obligation_id": "promise:choice"
+                  }
+                ],
+                "prohibited_outcomes": [
+                  "silent reset"
+                ],
+                "secondary_functions": [
+                  "character pressure"
+                ],
+                "required_state_delta": {
+                  "summary": "commitment advances"
+                },
+                "required_arc_contributions": [
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ]
+              },
+              {
+                "arc_cadence": [
+                  {
+                    "action": "ADVANCE",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "action": "TOUCH",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ],
+                "ending_hook": "ally defects",
+                "reward_action": "partial payoff",
+                "chapter_number": 5,
+                "promise_action": "advance",
+                "primary_function": "reversal",
+                "foreshadow_action": "plant",
+                "narrative_density": "HIGH",
+                "reader_experience": {
+                  "reward_mode": "DISCOVERY",
+                  "target_emotion": "rising pressure"
+                },
+                "obligation_actions": [
+                  {
+                    "action": "ADVANCE",
+                    "due_chapter": 7,
+                    "obligation_id": "promise:choice"
+                  }
+                ],
+                "prohibited_outcomes": [
+                  "silent reset"
+                ],
+                "secondary_functions": [
+                  "character pressure"
+                ],
+                "required_state_delta": {
+                  "summary": "commitment advances"
+                },
+                "required_arc_contributions": [
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ]
+              },
+              {
+                "arc_cadence": [
+                  {
+                    "action": "PAYOFF",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "action": "TOUCH",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ],
+                "ending_hook": "cost arrives",
+                "reward_action": "partial payoff",
+                "chapter_number": 6,
+                "promise_action": "advance",
+                "primary_function": "payoff",
+                "foreshadow_action": "plant",
+                "narrative_density": "HIGH",
+                "reader_experience": {
+                  "reward_mode": "PAYOFF",
+                  "target_emotion": "costly relief"
+                },
+                "obligation_actions": [
+                  {
+                    "action": "PAYOFF",
+                    "due_chapter": 6,
+                    "obligation_id": "promise:choice"
+                  }
+                ],
+                "prohibited_outcomes": [
+                  "silent reset"
+                ],
+                "secondary_functions": [
+                  "character pressure"
+                ],
+                "required_state_delta": {
+                  "summary": "commitment advances"
+                },
+                "required_arc_contributions": [
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                  },
+                  {
+                    "contribution": "advance",
+                    "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                  }
+                ]
+              }
+            ],
+            "required_arc_contributions": [
+              "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+              "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+            ],
+            "arc_checkpoint_expectations": [
+              {
+                "expectation": "choice advances",
+                "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+              },
+              {
+                "expectation": "choice advances",
+                "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+              }
+            ],
+            "narrative_architecture_version": "canonical-narrative-v1"
+          },
+          "forbidden_payoffs": [],
+          "parent_version_id": "authority-output:5d5af15d-e0bd-4f36-9abe-1676263b0608:story_planning.candidate:v1",
+          "realization_level": "DETAILED",
+          "secondary_arc_ids": [
+            "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+          ],
+          "world_realization": [
+            {
+              "world_id": "world:primary",
+              "state_ref": {
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "freshness": "CURRENT",
+                "asset_type": "story_state_snapshot",
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "domain_type": "WORLD_STATE",
+                "content_hash": "sha256:6270abd8b8d38ac730c13ac1364000184e7f6c3ec8da162783833e6f28f8161b",
+                "authority_role": "story_state",
+                "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.story_state:v1",
+                "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+              },
+              "visibility": "PARTIAL",
+              "accessibility": "RESTRICTED",
+              "invariant_refs": [
+                {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "planning_generation_candidate",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "WORLD_INVARIANT",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "authority_role": "book_plan",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                  "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+                }
+              ],
+              "structure_refs": [
+                {
+                  "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                  "freshness": "CURRENT",
+                  "asset_type": "planning_generation_candidate",
+                  "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                  "domain_type": "WORLD_STRUCTURE",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "authority_role": "book_plan",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                  "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+                }
+              ],
+              "realization_level": "DETAILED",
+              "narrative_relevance": "CURRENT"
+            }
+          ],
+          "antagonist_actions": [
+            "isolate",
+            "expose"
+          ],
+          "canon_dependencies": [],
+          "execution_evidence": {
+            "attempt_id": "9bb534b2-fb31-49dd-85fa-2f5b55e4e66f",
+            "operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130",
+            "fencing_token": 1,
+            "commit_authority": "STORY_DESIGN_AUTHORITY",
+            "cost_receipt_ref": "authority-asset-version:bb8fa970-6d30-46a8-a027-9533f4d03726",
+            "route_snapshot_id": "production_execution/routes/97492b2321b2406bcdce",
+            "usage_receipt_ref": "authority-asset-version:29d58591-aa4e-4b9d-8620-3d34082ee9f4",
+            "input_manifest_ref": "production_execution/inputs/97492b2321b2406bcdce",
+            "context_bundle_hash": "sha256:5465697b0c50d22997aa8e5e19367f3585749e29eb4afef84cdd7cb13458e30f",
+            "output_manifest_ref": "authority-asset-version:374be0a2-139e-49d8-95e3-4946ca969a63",
+            "production_verified": false,
+            "external_receipt_ref": "08d7a081-f5fd-483e-8bba-cb9e758927cc",
+            "real_provider_proven": false,
+            "fixture_protocol_only": true,
+            "external_effect_backed": true,
+            "validation_manifest_ref": "authority-asset-version:1c4bde23-ee9e-4904-973a-5b9af67f86d5",
+            "capability_execution_ref": "94734150-48fc-5a38-9b3b-87b307fe93c2",
+            "capability_execution_hash": "sha256:712ba4eb60092a0b2e6c32850980b95a3c5410781596b4789223c9275c342549",
+            "capability_runtime_binding_ref": "sha256:c63c994e3978f2fe28d03529ca944557ef407292286078c6a1fa87d1516a17f9",
+            "capability_runtime_binding_hash": "sha256:25c9824bd5ee190280c8c6a3f3a322223ce04c40f41e124fe319bde201b8c597",
+            "context_bundle_asset_version_id": "cd00b89a-c2fa-46d3-8c8a-6cff7ba27ef6",
+            "capability_pack_attempt_snapshot_id": "sha256:c63c994e3978f2fe28d03529ca944557ef407292286078c6a1fa87d1516a17f9",
+            "production_execution_gateway_backed": true,
+            "capability_pack_attempt_snapshot_hash": "sha256:25c9824bd5ee190280c8c6a3f3a322223ce04c40f41e124fe319bde201b8c597",
+            "narrative_intelligence_selection_digest": "sha256:4c134fa63962904bba049e7311d616cd35d88ab9319f09e3af3f6115d210c472"
+          },
+          "commitment_contract": [
+            {
+              "level": "HARD_CONSTRAINT",
+              "statement": "preserve the accepted causal spine",
+              "commitment_id": "commitment:chapter-group:containing:4:causal-anchor"
+            },
+            {
+              "level": "OPEN_DESIGN_SPACE",
+              "statement": "elaborate only at the current narrative horizon",
+              "commitment_id": "commitment:chapter-group:containing:4:elaboration"
+            }
+          ],
+          "constraint_envelope": {
+            "type": "PlanningConstraintEnvelope",
+            "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+            "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+            "planning_scope": "CHAPTER_GROUP",
+            "arc_working_set": {
+              "type": "ArcWorkingSet",
+              "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+              "capacity": {
+                "source": "POLICY_DEFAULT",
+                "maximum_active_arcs": 3,
+                "narrative_load_policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725"
+              },
+              "candidates": [
+                {
+                  "score": 3,
+                  "reasons": [
+                    "STARVATION_PRESSURE"
+                  ],
+                  "eligible": true,
+                  "current_phase": "",
+                  "obligation_debt": {
+                    "due_ids": [],
+                    "due_count": 0,
+                    "stale_ids": [],
+                    "overdue_ids": [],
+                    "stale_count": 0,
+                    "violated_ids": [],
+                    "overdue_count": 0
+                  },
+                  "dormant_chapters": 3,
+                  "lifecycle_status": "ACTIVE",
+                  "payoff_readiness": "NOT_READY",
+                  "dependency_states": {},
+                  "cadence_preference": "",
+                  "observation_status": "NOT_OBSERVED",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                  "checkpoint_decision": "UNKNOWN",
+                  "dependency_blockers": [],
+                  "target_window_status": "UNKNOWN",
+                  "target_progress_units": 1,
+                  "cumulative_progress_units": 0,
+                  "last_material_progress_chapter": 0
+                },
+                {
+                  "score": 3,
+                  "reasons": [
+                    "STARVATION_PRESSURE"
+                  ],
+                  "eligible": true,
+                  "current_phase": "",
+                  "obligation_debt": {
+                    "due_ids": [],
+                    "due_count": 0,
+                    "stale_ids": [],
+                    "overdue_ids": [],
+                    "stale_count": 0,
+                    "violated_ids": [],
+                    "overdue_count": 0
+                  },
+                  "dormant_chapters": 3,
+                  "lifecycle_status": "ACTIVE",
+                  "payoff_readiness": "NOT_READY",
+                  "dependency_states": {},
+                  "cadence_preference": "",
+                  "observation_status": "NOT_OBSERVED",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1",
+                  "checkpoint_decision": "UNKNOWN",
+                  "dependency_blockers": [],
+                  "target_window_status": "UNKNOWN",
+                  "target_progress_units": 1,
+                  "cumulative_progress_units": 0,
+                  "last_material_progress_chapter": 0
+                }
+              ],
+              "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+              "reader_intent": {},
+              "policy_version": "accepted-reality-arc-working-set-v1",
+              "target_chapter": 4,
+              "accepted_reality": {
+                "actual_only": true,
+                "narrative_state": {
+                  "content_hash": "sha256:6270abd8b8d38ac730c13ac1364000184e7f6c3ec8da162783833e6f28f8161b",
+                  "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.story_state:v1",
+                  "state_kind_counts": {
+                    "arc_state": 0,
+                    "canon_fact": 4,
+                    "world_rule": 0,
+                    "plot_thread": 0,
+                    "power_state": 0,
+                    "world_state": 0,
+                    "payoff_event": 0,
+                    "reward_event": 0,
+                    "character_arc": 1,
+                    "faction_state": 0,
+                    "mystery_state": 0,
+                    "conflict_state": 0,
+                    "location_state": 0,
+                    "narrative_debt": 0,
+                    "reader_promise": 0,
+                    "resource_state": 0,
+                    "theme_movement": 0,
+                    "timeline_event": 0,
+                    "character_state": 0,
+                    "antagonist_state": 0,
+                    "character_belief": 0,
+                    "disclosure_event": 3,
+                    "foreshadow_state": 0,
+                    "reader_knowledge": 1,
+                    "consequence_state": 0,
+                    "relationship_state": 0,
+                    "character_knowledge": 0,
+                    "narrative_obligation": 0
+                  },
+                  "accepted_through_chapter": 3
+                },
+                "projection_hash": "sha256:497e92b3c21c25103511638eb276f1f1e632918556afb85f1fe09f0787f6f812",
+                "projection_set_id": "longform-projection:16d62370701f42d09c44327d5deca7f86bfd919c4e9c9611dcd5ebb8024797c2",
+                "accepted_through_chapter": 3,
+                "source_story_state_asset_version_id": ""
+              },
+              "contract_version": "arc-working-set-v1",
+              "planning_horizon": {
+                "scope": "CHAPTER",
+                "chapter": 4
+              },
+              "authority_boundary": {
+                "selection_is_future_intent": true,
+                "actual_progress_requires_accepted_chapter_outcome": true
+              },
+              "working_set_digest": "sha256:6690a5791b1699da70ff3ba8f9ad44a7af1c61f9153868d5244d5b7075daed01",
+              "schedule_correction": {
+                "status": "NO_GROUP_CADENCE",
+                "added_arc_plan_version_ids": [
+                  "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                  "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                ],
+                "removed_arc_plan_version_ids": []
+              },
+              "selected_contributions": [
+                {
+                  "role": "PRIMARY",
+                  "score": 3,
+                  "action": "REACTIVATE",
+                  "reason_codes": [
+                    "STARVATION_PRESSURE"
+                  ],
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "role": "SECONDARY",
+                  "score": 3,
+                  "action": "REACTIVATE",
+                  "reason_codes": [
+                    "STARVATION_PRESSURE"
+                  ],
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ],
+              "deferred_arc_plan_version_ids": []
+            },
+            "envelope_digest": "sha256:491ec29fbc44e89289cfb17b091880b0c7f527760553ef60cb9fc5e33eaf71a4",
+            "parent_versions": [
+              {
+                "role": "arc_plans",
+                "asset_type": "planning_generation_candidate",
+                "content_hash": "sha256:fe26dc36b911fdc0f9385c72257ee4e062938d149ac29d48dd64989f792d27b4",
+                "asset_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+              },
+              {
+                "role": "book_plan",
+                "asset_type": "planning_generation_candidate",
+                "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1"
+              },
+              {
+                "role": "canon_snapshot",
+                "asset_type": "canon_snapshot",
+                "content_hash": "sha256:57fca40e9b523a911130eee9828d1a6aee67cfd40758f0fc681b3e35856ccad3",
+                "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.canon.current:v1"
+              },
+              {
+                "role": "previous_chapter_group_outcome",
+                "asset_type": "previous_chapter_group_outcome",
+                "content_hash": "sha256:07f31d2877d5d1093c225d6a807fdc68469f89313acbee72cabc9da42b8e12f1",
+                "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:previous_chapter_group_outcome:v1"
+              },
+              {
+                "role": "quality_trend",
+                "asset_type": "quality_trend",
+                "content_hash": "sha256:a481b8a24fca11dd78257e3693cccedb038dc98a2ab95f94f51cceacd3d6ba00",
+                "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:quality_trend:v1"
+              },
+              {
+                "role": "reader_state",
+                "asset_type": "reader_state",
+                "content_hash": "sha256:5b1963d0a1f69028dbc239b570058fdd4c9d37109ed441b9c104ec2559225b27",
+                "asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:reader_state:v1"
+              },
+              {
+                "role": "related_arc:1",
+                "asset_type": "planning_generation_candidate",
+                "content_hash": "sha256:5abe8ee083cce4941e6a756709f44b92eb52c5d44560c490dcf88765b4db41f5",
+                "asset_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+              },
+              {
+                "role": "story_state",
+                "asset_type": "story_state_snapshot",
+                "content_hash": "sha256:6270abd8b8d38ac730c13ac1364000184e7f6c3ec8da162783833e6f28f8161b",
+                "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.story_state:v1"
+              },
+              {
+                "role": "volume_plan",
+                "asset_type": "planning_generation_candidate",
+                "content_hash": "sha256:347f95fa2a06d3969497ccd6f68e05db794b9dc00534a043e5ca3cdcd068ee4c",
+                "asset_version_id": "authority-output:5d5af15d-e0bd-4f36-9abe-1676263b0608:story_planning.candidate:v1"
+              }
+            ],
+            "contract_version": "planning-constraint-envelope-v2",
+            "change_governance": {
+              "requires_evidence": true,
+              "preserve_executed_history": true,
+              "wider_scope_requires_new_plan_change": true
+            },
+            "prohibited_outcomes": [],
+            "inherited_invariants": [],
+            "required_obligations": [],
+            "narrative_load_policy": {
+              "type": "NarrativeLoadPolicy",
+              "limits": {
+                "max_active_arcs": 3,
+                "max_new_concepts": 4,
+                "max_dormant_arc_age": 30,
+                "max_open_obligations": 12,
+                "max_payoff_congestion": 3,
+                "max_overdue_obligations": 0,
+                "max_major_state_transitions": 8,
+                "max_character_appearance_gap": 10
+              },
+              "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+              "policy_id": "canonical-production-narrative-load",
+              "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+              "policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725",
+              "source_role": "production_profile",
+              "policy_version": 1,
+              "contract_version": "narrative-load-policy-v1",
+              "governed_overrides": [],
+              "source_content_hash": "sha256:9b3603a27da91ff49c3d6f68d88a1f81e28de1e3c0ab80797cc2babba0406ced",
+              "source_asset_version_id": "fixture:project-cf163b89551944bc8d8bb3423b56f34e:production_profile:v1"
+            },
+            "permitted_change_scope": "CHAPTER_GROUP",
+            "accepted_state_boundary": {
+              "future_plan_only": true,
+              "accepted_through_chapter": 3
+            },
+            "generation_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130",
+            "generator_operation_name": "chapter_group_plan.generate",
+            "narrative_load_projection": {
+              "type": "NarrativeLoadProjection",
+              "status": "MEASURED",
+              "metrics": {
+                "active_arc_count": 1,
+                "dormant_arc_max_age": 0,
+                "narrative_debt_score": 0,
+                "open_obligation_count": 0,
+                "payoff_congestion_count": 0,
+                "overdue_obligation_count": 0,
+                "character_appearance_max_gap": 0
+              },
+              "contract_version": "narrative-load-projection-v2",
+              "open_obligation_ids": [],
+              "overdue_obligation_ids": [],
+              "accepted_through_chapter": 3
+            },
+            "narrative_load_policy_lineage": {
+              "type": "NarrativeLoadPolicyLineage",
+              "policy_hash": "sha256:2c49e928cd6fec069850de3b299f0358c267a5f79c8da67a8ddd66be7aadd725",
+              "inherited_from": [
+                {
+                  "role": "arc_plans",
+                  "content_hash": "sha256:fe26dc36b911fdc0f9385c72257ee4e062938d149ac29d48dd64989f792d27b4",
+                  "asset_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "role": "book_plan",
+                  "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                  "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1"
+                },
+                {
+                  "role": "related_arc:1",
+                  "content_hash": "sha256:5abe8ee083cce4941e6a756709f44b92eb52c5d44560c490dcf88765b4db41f5",
+                  "asset_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                },
+                {
+                  "role": "volume_plan",
+                  "content_hash": "sha256:347f95fa2a06d3969497ccd6f68e05db794b9dc00534a043e5ca3cdcd068ee4c",
+                  "asset_version_id": "authority-output:5d5af15d-e0bd-4f36-9abe-1676263b0608:story_planning.candidate:v1"
+                }
+              ],
+              "contract_version": "narrative-load-policy-lineage-v1",
+              "frozen_by_generation_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+            }
+          },
+          "context_profile_ref": "planning-context:v1",
+          "information_release": [
+            "hidden cost"
+          ],
+          "relationship_deltas": [],
+          "character_realization": [
+            {
+              "reach": "CURRENT_SEGMENT",
+              "scope": "CHAPTER_GROUP",
+              "state_ref": {
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "freshness": "CURRENT",
+                "asset_type": "story_state_snapshot",
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "domain_type": "CHARACTER_STATE",
+                "content_hash": "sha256:6270abd8b8d38ac730c13ac1364000184e7f6c3ec8da162783833e6f28f8161b",
+                "authority_role": "story_state",
+                "asset_version_id": "authority-output:120763ee-4530-47e5-9505-77faaa0599f0:chapter.story_state:v1",
+                "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+              },
+              "character_id": "protagonist",
+              "identity_ref": {
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "freshness": "CURRENT",
+                "asset_type": "planning_generation_candidate",
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "domain_type": "CHARACTER_IDENTITY",
+                "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                "authority_role": "book_plan",
+                "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+              },
+              "trajectory_ref": {
+                "book_id": "book:project-cf163b89551944bc8d8bb3423b56f34e",
+                "freshness": "CURRENT",
+                "asset_type": "planning_generation_candidate",
+                "project_id": "project-cf163b89551944bc8d8bb3423b56f34e",
+                "domain_type": "CHARACTER_TRAJECTORY",
+                "content_hash": "sha256:46ac3dfb036424f2448b897224b12b04d6cd40e41dc7c65b93c4a62632f3a1ab",
+                "authority_role": "book_plan",
+                "asset_version_id": "authority-output:982e2c1a-37c7-4ef4-bf77-20074dc295ae:story_planning.candidate:v1",
+                "frozen_by_operation_id": "dc0c6646-78d9-4281-afb5-685ab8bac130"
+              },
+              "realization_level": "DETAILED",
+              "narrative_relevance": "CURRENT"
+            }
+          ],
+          "narrative_event_chain": [
+            {
+              "action": "confront the institutional resistance",
+              "causes": [],
+              "decision": "accept a visible cost instead of retreating",
+              "event_id": "realization:chapter-group:4:event:1",
+              "required": true,
+              "slice_id": "realization:chapter:4",
+              "actor_ref": "protagonist",
+              "motivation": "preserve agency while protecting the witness",
+              "resistance": "the opposition converts private risk into public loss",
+              "consequence": "the decision creates the next irreversible pressure",
+              "disclosures": [
+                "fact:hidden-cost"
+              ],
+              "state_deltas": [
+                {
+                  "to_state": "COMMITTED",
+                  "entity_id": "protagonist:accountability",
+                  "from_state": "DENIAL",
+                  "state_kind": "character_arc"
+                }
+              ],
+              "preconditions": [
+                "the preceding pressure remains unresolved"
+              ],
+              "chapter_number": 4,
+              "next_event_ids": [
+                "realization:chapter-group:4:event:2"
+              ],
+              "arc_contributions": [
+                "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+              ],
+              "knowledge_boundary": {
+                "actor_knows": [
+                  "fact:public-risk"
+                ],
+                "reader_may_learn": [
+                  "fact:hidden-cost"
+                ],
+                "forbidden_disclosures": [
+                  "fact:future-antagonist-plan"
+                ]
+              },
+              "obligation_actions": [
+                "promise:choice:ADVANCE"
+              ],
+              "irreversible_change": "the choice becomes witnessed and costly"
+            },
+            {
+              "action": "confront the institutional resistance",
+              "causes": [
+                "realization:chapter-group:4:event:1"
+              ],
+              "decision": "accept a visible cost instead of retreating",
+              "event_id": "realization:chapter-group:4:event:2",
+              "required": true,
+              "slice_id": "realization:chapter:5",
+              "actor_ref": "protagonist",
+              "motivation": "preserve agency while protecting the witness",
+              "resistance": "the opposition converts private risk into public loss",
+              "consequence": "the decision creates the next irreversible pressure",
+              "disclosures": [
+                "fact:hidden-cost"
+              ],
+              "state_deltas": [
+                {
+                  "to_state": "CONSEQUENT",
+                  "entity_id": "protagonist:accountability",
+                  "from_state": "COMMITTED",
+                  "state_kind": "character_arc"
+                }
+              ],
+              "preconditions": [
+                "the preceding pressure remains unresolved"
+              ],
+              "chapter_number": 5,
+              "next_event_ids": [
+                "realization:chapter-group:4:event:3"
+              ],
+              "arc_contributions": [
+                "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+              ],
+              "knowledge_boundary": {
+                "actor_knows": [
+                  "fact:public-risk"
+                ],
+                "reader_may_learn": [
+                  "fact:hidden-cost"
+                ],
+                "forbidden_disclosures": [
+                  "fact:future-antagonist-plan"
+                ]
+              },
+              "obligation_actions": [
+                "promise:choice:ADVANCE"
+              ],
+              "irreversible_change": "the choice becomes witnessed and costly"
+            },
+            {
+              "action": "confront the institutional resistance",
+              "causes": [
+                "realization:chapter-group:4:event:2"
+              ],
+              "decision": "accept a visible cost instead of retreating",
+              "event_id": "realization:chapter-group:4:event:3",
+              "required": true,
+              "slice_id": "realization:chapter:6",
+              "actor_ref": "protagonist",
+              "motivation": "preserve agency while protecting the witness",
+              "resistance": "the opposition converts private risk into public loss",
+              "consequence": "the decision creates the next irreversible pressure",
+              "disclosures": [
+                "fact:hidden-cost"
+              ],
+              "state_deltas": [
+                {
+                  "to_state": "OWNED",
+                  "entity_id": "protagonist:accountability",
+                  "from_state": "CONSEQUENT",
+                  "state_kind": "character_arc"
+                }
+              ],
+              "preconditions": [
+                "the preceding pressure remains unresolved"
+              ],
+              "chapter_number": 6,
+              "next_event_ids": [],
+              "arc_contributions": [
+                "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+                "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+              ],
+              "knowledge_boundary": {
+                "actor_knows": [
+                  "fact:public-risk"
+                ],
+                "reader_may_learn": [
+                  "fact:hidden-cost"
+                ],
+                "forbidden_disclosures": [
+                  "fact:future-antagonist-plan"
+                ]
+              },
+              "obligation_actions": [
+                "promise:choice:ADVANCE"
+              ],
+              "irreversible_change": "the choice becomes witnessed and costly"
+            }
+          ],
+          "narrative_segment_ref": {
+            "segment_id": "narrative-segment:1",
+            "volume_plan_version_id": "authority-output:5d5af15d-e0bd-4f36-9abe-1676263b0608:story_planning.candidate:v1"
+          },
+          "resistance_escalation": [
+            "denial",
+            "countermove"
+          ],
+          "chapter_function_matrix": [
+            {
+              "arc_cadence": [
+                {
+                  "action": "ADVANCE",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "action": "TOUCH",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ],
+              "ending_hook": "door closes",
+              "reward_action": "partial payoff",
+              "chapter_number": 4,
+              "promise_action": "advance",
+              "primary_function": "setup",
+              "foreshadow_action": "plant",
+              "narrative_density": "MEDIUM",
+              "reader_experience": {
+                "reward_mode": "DISCOVERY",
+                "target_emotion": "rising pressure"
+              },
+              "obligation_actions": [
+                {
+                  "action": "ADVANCE",
+                  "due_chapter": 6,
+                  "obligation_id": "promise:choice"
+                }
+              ],
+              "prohibited_outcomes": [
+                "silent reset"
+              ],
+              "secondary_functions": [
+                "character pressure"
+              ],
+              "required_state_delta": {
+                "summary": "commitment advances"
+              },
+              "required_arc_contributions": [
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ]
+            },
+            {
+              "arc_cadence": [
+                {
+                  "action": "ADVANCE",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "action": "TOUCH",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ],
+              "ending_hook": "ally defects",
+              "reward_action": "partial payoff",
+              "chapter_number": 5,
+              "promise_action": "advance",
+              "primary_function": "reversal",
+              "foreshadow_action": "plant",
+              "narrative_density": "HIGH",
+              "reader_experience": {
+                "reward_mode": "DISCOVERY",
+                "target_emotion": "rising pressure"
+              },
+              "obligation_actions": [
+                {
+                  "action": "ADVANCE",
+                  "due_chapter": 7,
+                  "obligation_id": "promise:choice"
+                }
+              ],
+              "prohibited_outcomes": [
+                "silent reset"
+              ],
+              "secondary_functions": [
+                "character pressure"
+              ],
+              "required_state_delta": {
+                "summary": "commitment advances"
+              },
+              "required_arc_contributions": [
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ]
+            },
+            {
+              "arc_cadence": [
+                {
+                  "action": "PAYOFF",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "action": "TOUCH",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ],
+              "ending_hook": "cost arrives",
+              "reward_action": "partial payoff",
+              "chapter_number": 6,
+              "promise_action": "advance",
+              "primary_function": "payoff",
+              "foreshadow_action": "plant",
+              "narrative_density": "HIGH",
+              "reader_experience": {
+                "reward_mode": "PAYOFF",
+                "target_emotion": "costly relief"
+              },
+              "obligation_actions": [
+                {
+                  "action": "PAYOFF",
+                  "due_chapter": 6,
+                  "obligation_id": "promise:choice"
+                }
+              ],
+              "prohibited_outcomes": [
+                "silent reset"
+              ],
+              "secondary_functions": [
+                "character pressure"
+              ],
+              "required_state_delta": {
+                "summary": "commitment advances"
+              },
+              "required_arc_contributions": [
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+                },
+                {
+                  "contribution": "advance",
+                  "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+                }
+              ]
+            }
+          ],
+          "generator_operation_name": "chapter_group_plan.generate",
+          "required_arc_contributions": [
+            "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1",
+            "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+          ],
+          "arc_checkpoint_expectations": [
+            {
+              "expectation": "choice advances",
+              "arc_plan_version_id": "authority-output:4eb1bd15-17df-4a0c-bc73-e0b73e190c23:story_planning.candidate:v1"
+            },
+            {
+              "expectation": "choice advances",
+              "arc_plan_version_id": "authority-output:d1ae8806-9121-4088-8778-044dc3e8aae7:story_planning.candidate:v1"
+            }
+          ],
+          "narrative_architecture_version": "canonical-narrative-v1",
+          "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+        }
+      },
+      "chapters": [
+        {
+          "chapter_number": 4,
+          "chapter_plan_version_id": "authority-output:13ad3ca6-a702-48b3-8ccb-002c194172ad:story_planning.candidate:v1",
+          "chapter_request_id": "chapter-request:0c5642a64fb76355065fbd45bf224eaaf5fc12d47e97bcce2fa95620f762d780",
+          "child_root_operation_id": "e528a802-172a-4706-b33f-70e30a0b7186",
+          "status": "ACCEPTED",
+          "acceptance_operation_id": "5b355358-aa7b-463f-b9c0-f43c5d200e98",
+          "chapter_outcome_version_id": "authority-output:5b355358-aa7b-463f-b9c0-f43c5d200e98:chapter.outcome:v1",
+          "acceptance_id": "chapter-acceptance:b073a182d0ca9fb58850ad4c9c7d1c32cfaa967e9ea58d48a4bf91c1965cc0e7",
+          "acceptance_status": "COMMITTED",
+          "story_state_asset_version_id": "authority-output:5b355358-aa7b-463f-b9c0-f43c5d200e98:chapter.story_state:v1",
+          "canon_snapshot_asset_version_id": "authority-output:5b355358-aa7b-463f-b9c0-f43c5d200e98:chapter.canon.current:v1"
+        },
+        {
+          "chapter_number": 5,
+          "chapter_plan_version_id": "authority-output:45ba1726-afde-4208-b5b7-62f36d4c406d:story_planning.candidate:v1",
+          "chapter_request_id": "chapter-request:8b8b320df2b7fcc1fb8da45d163c4c399fea0d72bbeb8a09b1030efc90a9d787",
+          "child_root_operation_id": "2f9f5a9a-6508-4262-8ed3-eecc8bca5fb5",
+          "status": "ACCEPTED",
+          "acceptance_operation_id": "6f4dd584-2c10-41ec-b18b-f011960e2d38",
+          "chapter_outcome_version_id": "authority-output:6f4dd584-2c10-41ec-b18b-f011960e2d38:chapter.outcome:v1",
+          "acceptance_id": "chapter-acceptance:5e94dc9ccf96f8e3ae1a0bdfdb46ed51a194eab1b593601779af58c27f3da5dc",
+          "acceptance_status": "COMMITTED",
+          "story_state_asset_version_id": "authority-output:6f4dd584-2c10-41ec-b18b-f011960e2d38:chapter.story_state:v1",
+          "canon_snapshot_asset_version_id": "authority-output:6f4dd584-2c10-41ec-b18b-f011960e2d38:chapter.canon.current:v1"
+        },
+        {
+          "chapter_number": 6,
+          "chapter_plan_version_id": "authority-output:a02ecd50-84d8-4976-8227-eb8798109d91:story_planning.candidate:v1",
+          "chapter_request_id": "chapter-request:9b330b821b52baa2678e681a677576087cce85ab13f93b4d3e02f879f21dd9ea",
+          "child_root_operation_id": "bc81f6ad-62f6-4c0e-8971-780e18145de0",
+          "status": "ACCEPTED",
+          "acceptance_operation_id": "c10392bd-fa0b-4951-8c6b-cb2c27e07849",
+          "chapter_outcome_version_id": "authority-output:c10392bd-fa0b-4951-8c6b-cb2c27e07849:chapter.outcome:v1",
+          "acceptance_id": "chapter-acceptance:9662ac8eae47359844786c959347c048ce35a40f209c348624ac74141bfa21ba",
+          "acceptance_status": "COMMITTED",
+          "story_state_asset_version_id": "authority-output:c10392bd-fa0b-4951-8c6b-cb2c27e07849:chapter.story_state:v1",
+          "canon_snapshot_asset_version_id": "authority-output:c10392bd-fa0b-4951-8c6b-cb2c27e07849:chapter.canon.current:v1"
+        }
+      ]
+    }
+  ],
+  "offset": 0,
+  "limit": 500,
+  "has_more": false
+}

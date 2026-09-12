@@ -1,0 +1,96 @@
+{
+  "base_implementation_tree_sha": "sha256:76dd1182c6fcee8f093f2d59bb796617512312fed322925340f653cbe6b6b749",
+  "base_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "changed_implementation_paths": [
+    "config/production/first-novel-pilot/brief.json",
+    "config/production/first-novel-pilot/creation.json",
+    "config/production/first-novel-pilot/deny-all.json",
+    "config/production/first-novel-pilot/formation.json",
+    "scripts/creation_pilot.py",
+    "scripts/prepare_knowledge_closure.py",
+    "scripts/run_creation_synthesis.py",
+    "scripts/run_world_production_smoke.py",
+    "scripts/source_qualification.py",
+    "src/novel_forge/api/routers/book_authority.py",
+    "src/novel_forge/api/routers/source_import.py",
+    "src/novel_forge/cli/corpus.py",
+    "src/novel_forge/modules/book_authority/queries.py",
+    "src/novel_forge/modules/mkaos_authority/query.py",
+    "src/novel_forge/modules/provider_qualification/accounting.py",
+    "src/novel_forge/modules/provider_qualification/authority.py",
+    "src/novel_forge/modules/provider_qualification/domain.py",
+    "src/novel_forge/modules/provider_qualification/source_binding.py",
+    "src/novel_forge/modules/source_authority/consumption.py",
+    "src/novel_forge/modules/source_authority/curation.py",
+    "src/novel_forge/modules/source_import/analysis_query.py",
+    "src/novel_forge/modules/source_import/corpus_ingestion/curated_analysis.py",
+    "src/novel_forge/modules/source_import/corpus_ingestion/reading_scope.py",
+    "src/novel_forge/modules/source_import/corpus_ingestion/review_replay.py",
+    "src/novel_forge/modules/source_import/query.py",
+    "src/novel_forge/storage/source_import_repositories.py",
+    "tests/integration/operator_plan_change_support.py",
+    "tests/integration/test_core_functional_loops_postgres.py",
+    "tests/integration/test_corpus_consumption_admission_postgres.py",
+    "tests/integration/test_corpus_jobs_query_postgres.py",
+    "tests/integration/test_corpus_nonbody_reprocessing_postgres.py",
+    "tests/integration/test_creation_pilot_shared_project_postgres.py",
+    "tests/integration/test_knowledge_closure_helper_source_postgres.py",
+    "tests/integration/test_source_import_runtime_postgres.py",
+    "tests/integration/test_source_runtime_qualification_postgres.py",
+    "tests/unit/test_corpus_nonbody_review_replay.py",
+    "tests/unit/test_creation_export.py",
+    "tests/unit/test_creation_pilot.py",
+    "tests/unit/test_creation_runner_settings.py",
+    "tests/unit/test_source_consumption_intent.py",
+    "tests/unit/test_source_runtime_qualification.py"
+  ],
+  "checks": [
+    {
+      "exit_code": 0,
+      "gate": "repository-governance"
+    },
+    {
+      "exit_code": 0,
+      "gate": "focused-tests"
+    },
+    {
+      "exit_code": 0,
+      "gate": "canonical-exact-sha-p0"
+    }
+  ],
+  "focused_test_paths": [
+    "tests/integration/test_core_functional_loops_postgres.py",
+    "tests/integration/test_corpus_consumption_admission_postgres.py",
+    "tests/integration/test_corpus_jobs_query_postgres.py",
+    "tests/integration/test_corpus_nonbody_reprocessing_postgres.py",
+    "tests/integration/test_creation_pilot_shared_project_postgres.py",
+    "tests/integration/test_knowledge_closure_helper_source_postgres.py",
+    "tests/integration/test_source_import_runtime_postgres.py",
+    "tests/integration/test_source_runtime_qualification_postgres.py",
+    "tests/unit/test_corpus_nonbody_review_replay.py",
+    "tests/unit/test_creation_export.py",
+    "tests/unit/test_creation_pilot.py",
+    "tests/unit/test_creation_runner_settings.py",
+    "tests/unit/test_source_consumption_intent.py",
+    "tests/unit/test_source_runtime_qualification.py"
+  ],
+  "head_sha": "085eceaaa1311ef8a4c80e75a4d75421293b7c8f",
+  "implementation_changed": true,
+  "implementation_tree_sha": "sha256:eae3a827d86c05bab157f4bca38e3be53da858d98cf29eac6adbb60b9fe58da1",
+  "p0_evidence": {
+    "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/final-qualification/p0-backend-qualification-085eceaaa1311ef8a4c80e75a4d75421293b7c8f.json",
+    "sha256": "sha256:31efe48dce9bd12a38f52953fc0c0cd93ae5ff1533262811a17897b9ab2b3277"
+  },
+  "provider_evidence": [
+    {
+      "identity_status": "STALE",
+      "path": "architecture/live-evidence/real-provider-qualification-d978a35584e8c6784ac141f6ff69495fb123ea07.json",
+      "qualification_authority": "GOVERNED_PROVIDER_QUALIFICATION"
+    }
+  ],
+  "provider_qualification": "NOT_ASSESSED_BY_PR_GATE",
+  "qualification": "PASS_EXACT_SHA_P0",
+  "qualification_reason": "IMPLEMENTATION_CHANGED",
+  "schema_version": "novel-forge.pr-governance.v1",
+  "status": "PASS"
+}

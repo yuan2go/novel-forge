@@ -1,0 +1,115 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_____ test_frozen_cursor_blocks_group_crossing_without_dispatch[True-6-6] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10affb7a0>
+pilot = True, boundary = 6, accepted = 6
+
+    @pytest.mark.parametrize('pilot,boundary,accepted', [(True, 6, 6), (False, 3, 3), (False, 3, 4)])
+    def test_frozen_cursor_blocks_group_crossing_without_dispatch(monkeypatch, pilot, boundary, accepted):
+        from scripts import run_world_production_smoke as runner
+        monkeypatch.setattr(runner, 'RuntimeJobAuthority', lambda _database: None)
+        book = {'project_id': 'p', 'book_id': 'b', 'book_run_id': 'run', 'state': 'CANON_COMMITTED',
+                'target_chapter_count': 180, 'accepted_through_chapter': accepted}
+        group = {'group_run_id': 'crossing', 'state': 'CHAPTER_RUNNING', 'chapter_start': boundary - 1,
+                 'chapter_end': boundary + 1}
+        def reconcile(*_args, **_kwargs):
+            group['state'] = 'READY'
+            return group
+        def pause(*_args, **_kwargs):
+            book['state'] = 'PAUSED'
+            return book
+        composition = SimpleNamespace(
+            principal='operator', authority=SimpleNamespace(database_url='none', require=lambda _id: dict(book), pause=pause),
+            query=SimpleNamespace(active_chapter_group_run_id=lambda **_kw: 'crossing',
+                active_plan_covering_chapter=lambda **_kw: {'asset_version_id': 'crossing-plan', 'content': {'chapter_range': [boundary-1, boundary+1]}}),
+            chapter_groups=SimpleNamespace(require=lambda _id: dict(group), reconcile_and_accept=reconcile),
+        )
+        chapter = Mock()
+        expected = 'PILOT_CURSOR_PARTIAL_GROUP_BLOCKED' if pilot else 'FUTURE_PLAN_CHANGE_SCOPE_BLOCKED' if accepted == boundary else 'FUTURE_PLAN_CHANGE_CURSOR_PASSED'
+        result = runner.drive(composition=composition, chapter=chapter, book_run_id='run', worker='worker', events=lambda _event: None,
+                              maximum_ticks=1, deadline=0, **{'pilot_stop_after_chapter' if pilot else 'stop_after_chapter': boundary})
+>       assert result == expected
+E       AssertionError: assert 'PILOT_ACCEPT...URSOR_REACHED' == 'PILOT_CURSOR...GROUP_BLOCKED'
+E         
+E         - PILOT_CURSOR_PARTIAL_GROUP_BLOCKED
+E         + PILOT_ACCEPTED_CURSOR_REACHED
+
+tests/unit/test_creation_pilot.py:254: AssertionError
+_____ test_frozen_cursor_blocks_group_crossing_without_dispatch[False-3-3] _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b163680>
+pilot = False, boundary = 3, accepted = 3
+
+    @pytest.mark.parametrize('pilot,boundary,accepted', [(True, 6, 6), (False, 3, 3), (False, 3, 4)])
+    def test_frozen_cursor_blocks_group_crossing_without_dispatch(monkeypatch, pilot, boundary, accepted):
+        from scripts import run_world_production_smoke as runner
+        monkeypatch.setattr(runner, 'RuntimeJobAuthority', lambda _database: None)
+        book = {'project_id': 'p', 'book_id': 'b', 'book_run_id': 'run', 'state': 'CANON_COMMITTED',
+                'target_chapter_count': 180, 'accepted_through_chapter': accepted}
+        group = {'group_run_id': 'crossing', 'state': 'CHAPTER_RUNNING', 'chapter_start': boundary - 1,
+                 'chapter_end': boundary + 1}
+        def reconcile(*_args, **_kwargs):
+            group['state'] = 'READY'
+            return group
+        def pause(*_args, **_kwargs):
+            book['state'] = 'PAUSED'
+            return book
+        composition = SimpleNamespace(
+            principal='operator', authority=SimpleNamespace(database_url='none', require=lambda _id: dict(book), pause=pause),
+            query=SimpleNamespace(active_chapter_group_run_id=lambda **_kw: 'crossing',
+                active_plan_covering_chapter=lambda **_kw: {'asset_version_id': 'crossing-plan', 'content': {'chapter_range': [boundary-1, boundary+1]}}),
+            chapter_groups=SimpleNamespace(require=lambda _id: dict(group), reconcile_and_accept=reconcile),
+        )
+        chapter = Mock()
+        expected = 'PILOT_CURSOR_PARTIAL_GROUP_BLOCKED' if pilot else 'FUTURE_PLAN_CHANGE_SCOPE_BLOCKED' if accepted == boundary else 'FUTURE_PLAN_CHANGE_CURSOR_PASSED'
+        result = runner.drive(composition=composition, chapter=chapter, book_run_id='run', worker='worker', events=lambda _event: None,
+                              maximum_ticks=1, deadline=0, **{'pilot_stop_after_chapter' if pilot else 'stop_after_chapter': boundary})
+>       assert result == expected
+E       AssertionError: assert 'BOUNDED_TIME_EXHAUSTED' == 'FUTURE_PLAN_...SCOPE_BLOCKED'
+E         
+E         - FUTURE_PLAN_CHANGE_SCOPE_BLOCKED
+E         + BOUNDED_TIME_EXHAUSTED
+
+tests/unit/test_creation_pilot.py:254: AssertionError
+_____ test_frozen_cursor_blocks_group_crossing_without_dispatch[False-3-4] _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10affa120>
+pilot = False, boundary = 3, accepted = 4
+
+    @pytest.mark.parametrize('pilot,boundary,accepted', [(True, 6, 6), (False, 3, 3), (False, 3, 4)])
+    def test_frozen_cursor_blocks_group_crossing_without_dispatch(monkeypatch, pilot, boundary, accepted):
+        from scripts import run_world_production_smoke as runner
+        monkeypatch.setattr(runner, 'RuntimeJobAuthority', lambda _database: None)
+        book = {'project_id': 'p', 'book_id': 'b', 'book_run_id': 'run', 'state': 'CANON_COMMITTED',
+                'target_chapter_count': 180, 'accepted_through_chapter': accepted}
+        group = {'group_run_id': 'crossing', 'state': 'CHAPTER_RUNNING', 'chapter_start': boundary - 1,
+                 'chapter_end': boundary + 1}
+        def reconcile(*_args, **_kwargs):
+            group['state'] = 'READY'
+            return group
+        def pause(*_args, **_kwargs):
+            book['state'] = 'PAUSED'
+            return book
+        composition = SimpleNamespace(
+            principal='operator', authority=SimpleNamespace(database_url='none', require=lambda _id: dict(book), pause=pause),
+            query=SimpleNamespace(active_chapter_group_run_id=lambda **_kw: 'crossing',
+                active_plan_covering_chapter=lambda **_kw: {'asset_version_id': 'crossing-plan', 'content': {'chapter_range': [boundary-1, boundary+1]}}),
+            chapter_groups=SimpleNamespace(require=lambda _id: dict(group), reconcile_and_accept=reconcile),
+        )
+        chapter = Mock()
+        expected = 'PILOT_CURSOR_PARTIAL_GROUP_BLOCKED' if pilot else 'FUTURE_PLAN_CHANGE_SCOPE_BLOCKED' if accepted == boundary else 'FUTURE_PLAN_CHANGE_CURSOR_PASSED'
+        result = runner.drive(composition=composition, chapter=chapter, book_run_id='run', worker='worker', events=lambda _event: None,
+                              maximum_ticks=1, deadline=0, **{'pilot_stop_after_chapter' if pilot else 'stop_after_chapter': boundary})
+>       assert result == expected
+E       AssertionError: assert 'BOUNDED_TIME_EXHAUSTED' == 'FUTURE_PLAN_...CURSOR_PASSED'
+E         
+E         - FUTURE_PLAN_CHANGE_CURSOR_PASSED
+E         + BOUNDED_TIME_EXHAUSTED
+
+tests/unit/test_creation_pilot.py:254: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_creation_pilot.py::test_frozen_cursor_blocks_group_crossing_without_dispatch[True-6-6]
+FAILED tests/unit/test_creation_pilot.py::test_frozen_cursor_blocks_group_crossing_without_dispatch[False-3-3]
+FAILED tests/unit/test_creation_pilot.py::test_frozen_cursor_blocks_group_crossing_without_dispatch[False-3-4]
+3 failed, 24 deselected in 0.58s

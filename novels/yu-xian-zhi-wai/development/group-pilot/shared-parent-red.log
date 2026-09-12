@@ -1,0 +1,21 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_blind_groups_cannot_share_an_absorbed_parent_volume ___________
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-173/test_blind_groups_cannot_share0')
+
+    def test_blind_groups_cannot_share_an_absorbed_parent_volume(tmp_path):
+        from scripts.prepare_knowledge_closure import blind_export
+        _comparison_exports(tmp_path)
+        path = tmp_path / 'control/chapter-groups.json'
+        value = json.loads(path.read_text())
+        for group in value['groups']:
+            group['volume_plan_version_id'] = 'treatment:volume'
+        path.write_text(json.dumps(value))
+>       with pytest.raises(ValueError, match='share upper-level plans'):
+E       Failed: DID NOT RAISE ValueError
+
+tests/unit/test_creation_export.py:255: Failed
+=========================== short test summary info ============================
+FAILED tests/unit/test_creation_export.py::test_blind_groups_cannot_share_an_absorbed_parent_volume
+1 failed, 18 deselected in 0.45s

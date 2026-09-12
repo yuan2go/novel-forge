@@ -117,6 +117,7 @@ def analysis_job(repository: Any, sources: Any, job: dict, contract: dict) -> di
         "contract_version": contract["version"],
         "frozen_request": payload["requested_manifest"],
         "frozen_budget": payload["budget"],
+        "consumption_admission": payload.get("consumption_admission", {"intended_use": "SOURCE_ANALYSIS", "book_status": "NOT_REQUESTED", "generation_consumption_allowed": False}),
         **(
             {
                 "reading_plans": payload["reading_plans"],

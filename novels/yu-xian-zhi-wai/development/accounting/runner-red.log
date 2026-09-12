@@ -1,0 +1,26 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_source_qualification_entitlement_preview_requires_authorization_without_dispatch _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106a19850>
+
+    def test_source_qualification_entitlement_preview_requires_authorization_without_dispatch(monkeypatch):
+        from types import SimpleNamespace
+        from scripts import source_qualification
+        monkeypatch.setattr(source_qualification, "inspect_source_operation", lambda *args, **kwargs: {"status": "READY"})
+        monkeypatch.setenv("NOVEL_FORGE_CODEX_ACCOUNTING_MODE", "ACCOUNT_ENTITLEMENT")
+        result = source_qualification.run_source_qualification(
+            SimpleNamespace(database_url="unused", source_project_id="p", source_operation_id="op",
+                            source_capability="mkaos.knowledge.extract", execute=False),
+            root=None, commit_sha="a" * 40, implementation_identity="sha256:" + "b" * 64,
+        )
+>       assert result["status"] == "READY_FOR_AUTHORIZATION"
+E       AssertionError: assert 'BLOCKED_UNSU...FICATION_MODE' == 'READY_FOR_AUTHORIZATION'
+E         
+E         - READY_FOR_AUTHORIZATION
+E         + BLOCKED_UNSUPPORTED_QUALIFICATION_MODE
+
+tests/unit/test_source_runtime_qualification.py:151: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_source_runtime_qualification.py::test_source_qualification_entitlement_preview_requires_authorization_without_dispatch
+1 failed, 4 deselected in 0.62s

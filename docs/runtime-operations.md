@@ -915,6 +915,17 @@ project/workspace and Source principal described above. No model authorization i
 for this import/inspection sequence. The files describe synthetic resource/information
 models and original fiction, not validated real-world professional advice.
 
+The helper declares `PRODUCTION_REFERENCE` with explicit original-fixture rights for
+`LOCAL_PROCESSING`, `SOURCE_ANALYSIS` and `ABSTRACT_GENERATION`. Historical `RESEARCH`
+sources and curated revisions stay immutable. A real source needs its own exact license
+and purpose evidence; matching content or a repository license cannot supply those rights.
+Before authorizing analysis for a book, pass `--intended-use ABSTRACT_GENERATION
+--target-book-id "$BOOK"` to both `reading-preview` and `analyze` (the API uses the same
+field names). This checks current source rights, curated membership and Book scope/policy
+before admission and every dispatch. A declared Book may still be absent: the result
+reports `PENDING_BOOK_CREATION` and `PENDING_CARD_REVIEW`, never approval. Pure research
+without a target retains the existing `SOURCE_ANALYSIS` behavior.
+
 ```bash
 PYTHONPATH=src .venv/bin/python -m scripts.prepare_knowledge_closure prepare --output "$FROZEN_SOURCE_DIR"
 mkdir -p "$SOURCE_EVIDENCE"
@@ -948,7 +959,7 @@ for kind in professional fiction; do
 done
 jq -n --slurpfile p "$SOURCE_EVIDENCE/professional-work.json" --slurpfile f "$SOURCE_EVIDENCE/fiction-work.json" \
   '{action:"revise_curated_corpus",corpus_key:"knowledge-closure-sources",title:"Original closure fixtures",
-    purpose:"RESEARCH",filters:{work_ids:[$p[0].revisions[0].work_id,$f[0].revisions[0].work_id]},
+    purpose:"PRODUCTION_REFERENCE",filters:{work_ids:[$p[0].revisions[0].work_id,$f[0].revisions[0].work_id]},
     reason:"Inspected bounded fixture sources"}' > "$SOURCE_EVIDENCE/curate.json"
 novel-forge corpus curate --project-id "$PROJECT" --workspace-id "$WORKSPACE" \
   --decision "$SOURCE_EVIDENCE/curate.json" --run-key "$RUN-source-candidates" > "$SOURCE_EVIDENCE/curated.json"
@@ -1019,14 +1030,15 @@ PYTHONPATH=src:. .venv/bin/python -m scripts.run_real_provider_qualification \
 
 Without `--execute` this remains `NOT_RUN` / `READY_FOR_AUTHORIZATION` after preflight;
 missing credentials, accounting or release identity remain explicit preflight blockers.
-An account-entitlement configuration reports `BLOCKED_UNSUPPORTED_QUALIFICATION_MODE`;
-authorization alone cannot make that mode a supported D0 priced route. Preview records the
-required exact Provider/model/profile, account/runtime, purpose and shared total
-call/token/cost/repair fields without granting any allowance.
+Both `PRICED` and `ACCOUNT_ENTITLEMENT` are supported by the existing Source D0 path.
+Entitlement requires the exact authorization, account identity and immutable entitlement
+snapshot. Preview records the required Provider/model/profile, account/runtime, purpose
+and shared total call/token/cost/repair fields without granting any allowance.
 Add `--execute` only under existing explicit authorization for this Source stage and its
-total allowance. The existing D0 contract requires priced accounting with immutable
-pricing evidence; account-entitlement billing is rejected before dispatch, never silently
-converted. The probe consumes the original Source job budget. Native Kernel lease/fence
+total allowance. Priced accounting retains immutable pricing evidence. Account entitlement requires a
+settled reservation, measured usage and finite project call/token caps under the same
+authorization; monetary amounts remain null and `UNKNOWN`. Missing usage remains
+unqualified. The probe consumes the original Source job budget. Native Kernel lease/fence
 ownership prevents competition; active leases block takeover. A returned result is
 checkpointed, deliberately loses its immediate response, then reconciles the original
 receipt without resend. Unknown outcomes must recover the same operation. An ordinary
@@ -1146,13 +1158,73 @@ This creates `allow-only.json`; execution rechecks ownership, version, withdrawa
 and Book access. Do not give the control project any treatment plans. `DENY_ALL` removes
 external knowledge while retaining its own accepted Canon and memory.
 
+For a long-novel pilot, use `config/production/first-novel-pilot` through the same helper:
+
+```bash
+PYTHONPATH=src:. .venv/bin/python -m scripts.prepare_knowledge_closure prepare \
+  --input-dir config/production/first-novel-pilot --target-book-id "$TREATMENT_BOOK" \
+  --output "$FROZEN_PILOT_INPUTS"
+```
+
+An explicit input directory freezes existing files only; it never gives real materials
+the synthetic sample's CC0/OWNED declaration. The proposed brief has a 180-chapter
+direction and three broad volumes, with only the near window refined. Top-level
+`pilot_stop_after_chapter: 6` is frozen separately from the 180-chapter production and
+Formation targets. At that cursor the runner closes the completed ChapterGroup and
+pauses the Book; `full_book_completion` stays `NOT_PROVEN`. An intervention or pilot
+boundary inside a group blocks dispatch until a legal scope change resolves it.
+
+The native scope binds one Book to each workspace. Reuse the existing Source project
+and primary workspace for A; create an independent project/workspace for B. Initialization
+checks the existing project's active status and workspace ownership and preserves all
+source assets and ledger history. It never reassigns an already bound workspace.
+
+Partition the one authorized total into explicit project sublimits whose sum stays within
+that total. Include Source and A's design/reviews/repairs in A's sublimit, and B's
+corresponding work in B's sublimit. Freeze `NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT` and
+`NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT` for every process in its project. Do not give
+each project the full shared allowance, transfer unused budget automatically, or create a
+replacement project to reset usage. Book-specific ALLOW_ONLY/DENY_ALL separates external
+knowledge; both Books retain only their own Canon and independently generated upper plans.
+
+For a small real-material catalogue, save original files and individual license evidence,
+then admit each `analyze:false` manifest under a stable batch-prefixed run key. Use the
+existing import/run/status/lineage/pause/resume commands per item, so one failed item
+does not stop other imports. Reusing the exact key and manifest returns the existing job;
+changed inputs require a new key or native reprocessing of the acquired Edition.
+
+```bash
+novel-forge corpus jobs --project-id "$PROJECT" --run-key-prefix 'materials-01:' --limit 10
+novel-forge corpus jobs --project-id "$PROJECT" --run-key-prefix 'materials-01:' \
+  --status IMPORTED --after "$LAST_IMPORT_JOB_ID" --limit 10
+```
+
+The CLI returns `items` and `next_after`; continue until the cursor is empty. HTTP GET
+`/product/source-imports` accepts the same `after`, `status`, `source_type`,
+`run_key_prefix` and `limit` filters and retains its list response. Prefix matching is
+literal and applies only to Corpus import/preview run keys, never Git refs. Cursors must
+belong to the requested project. Preserve each native job and per-item lineage export in
+the operator catalogue; the catalogue is an input/export index, not another state store.
+Count bibliographic works separately from acquired sections and editions. An imported
+HTML section with unparsed diagrams or a contradictory formula is not automatically
+ready for knowledge extraction; record the limitation and exclude it from the first
+selection. Freeze the inspected subset through native canonical-work and curated-corpus
+commands before a bounded reading preview. Candidate approval remains a separate exact
+version decision by an authorized reviewer.
+
+For retained front matter or license blocks, inspect the exact processing, submit
+`MARK_NON_BODY` with its source spans, then reprocess the acquired Edition to produce
+excluded units. A review alone does not rewrite the processed text. Boundary changes
+must preserve original work/edition metadata; resegmentation retains new non-body
+findings for explicit review. Do not infer complete coverage from a usable structure.
+
 Before either real run, bind both arms to the same explicitly authorized backend, model,
 account, Prompt/Skill versions, word targets and revision budget. Supply the total call,
 token and monetary/account allowances through the existing Provider controls. The frozen
 manifest is `READY_FOR_AUTHORIZATION`; a preview, arbitrary authorization string or
 subscription availability supplies no grant. No deterministic seed is assumed.
 
-Execute the same runner command separately for the two project/Book identities, adding
+Execute the same runner command separately for the two Book identities, adding
 `--initialize --execute --expected-sha "$SHA" --authorization-ref "$AUTHORIZATION_REF"`
 and, for priced execution, `--authorized-total-usd "$ARM_AUTHORIZED_USD"`. Treatment uses
 `--knowledge-policy /tmp/kg-approved/allow-only.json`; control uses `deny-all.json`.
@@ -1203,8 +1275,19 @@ It reports bounded results explicitly; it cannot certify independent editorial a
 
 Blind export requires six exactly bound accepted manuscripts per arm, distinct Books and
 plans, matching frozen routes, targets and budgets, and the applied third-chapter change.
+`chapter-groups.json` comes from GET
+`/product/production/book-authority/runs/{run}/chapter-groups?offset=0&limit=100`.
+It binds actual Group runs and exact plan ranges to Chapter requests, normalized plans,
+committed Book acceptances and resulting Canon/StoryState. Two completed groups may
+share one Arc; multiple Arc versions never turn one group into two. Incomplete pages or
+acceptance lineage cannot qualify a comparison.
 It validates each accepted Context against the frozen Book knowledge policy and rejects
 external Card deliveries outside the treatment allowlist or inside the control arm.
+`knowledge-runtime-usage.json` binds deliveries to actual creative-request receipts;
+the private treatment status also checks located evidence against exact accepted prose.
+A whitelist or adoption claim alone leaves `TREATMENT_NOT_ESTABLISHED` and
+`CREATIVE_BENEFIT_NOT_EVALUABLE`. Recorded realization, fixture evidence and independent
+editorial judgment remain separate.
 It emits randomized chapter/arc packs and empty seven-axis forms for knowledge accuracy,
 natural integration, causality, character, pacing, voice and desire to continue. Keep the
 private mappings away from reviewers. Assign actual reviewers and collect their own

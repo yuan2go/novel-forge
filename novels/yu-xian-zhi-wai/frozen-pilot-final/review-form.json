@@ -1,0 +1,55 @@
+{
+  "status": "NOT_REVIEWED",
+  "reviewer_id": null,
+  "sample_token": null,
+  "scale": {
+    "minimum": 1,
+    "maximum": 5,
+    "unknown": "CANNOT_JUDGE"
+  },
+  "axes": {
+    "knowledge_accuracy": {
+      "score": null,
+      "chapter": null,
+      "quote": null,
+      "reason": null
+    },
+    "natural_integration": {
+      "score": null,
+      "chapter": null,
+      "quote": null,
+      "reason": null
+    },
+    "causality": {
+      "score": null,
+      "chapter": null,
+      "quote": null,
+      "reason": null
+    },
+    "character": {
+      "score": null,
+      "chapter": null,
+      "quote": null,
+      "reason": null
+    },
+    "pacing": {
+      "score": null,
+      "chapter": null,
+      "quote": null,
+      "reason": null
+    },
+    "voice": {
+      "score": null,
+      "chapter": null,
+      "quote": null,
+      "reason": null
+    },
+    "desire_to_continue": {
+      "score": null,
+      "chapter": null,
+      "quote": null,
+      "reason": null
+    }
+  },
+  "knowledge_accuracy_reference": "Use the same approved abstract mechanism reference sheet for both samples after prose-only evaluation; keep treatment identity hidden."
+}

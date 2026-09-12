@@ -1,0 +1,51 @@
+{
+  "purpose": "PRODUCTION_REFERENCE",
+  "analyze": false,
+  "source": {
+    "kind": "LOCAL",
+    "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-02.html",
+    "files": [
+      {
+        "path": "hydraulics-02.html",
+        "checksum": "sha256:8ea646393c49dea81f0c8384e9d0aac666742c0e65c16e64cf9b302636b63b4f"
+      }
+    ]
+  },
+  "parser": {
+    "version": "corpus-parser.v3",
+    "format": "html",
+    "html_body_selector": ".mt-content-container",
+    "constants": {
+      "work_id": "hydraulics-02",
+      "title": "5.1: Flow Rate and Its Measurement",
+      "author": "Jessy Haid / Northeast Wisconsin Technical College"
+    },
+    "normalization": {
+      "version": "chinese-longform.v2",
+      "segmentation": "EXPLICIT",
+      "min_body_chars": 80
+    },
+    "completeness": "EXCERPT",
+    "expected_units": 1
+  },
+  "rights": {
+    "dataset_license": "CC-BY-4.0",
+    "underlying_rights": "LICENSED",
+    "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained",
+    "scope": "ALL_WORKS_IN_SNAPSHOT",
+    "evidence_refs": [
+      "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/05%3A_Pumps/5.01%3A_Flow_Rate_and_Its_Measurement",
+      "sha256:8ea646393c49dea81f0c8384e9d0aac666742c0e65c16e64cf9b302636b63b4f",
+      "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-02.html"
+    ],
+    "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+    "allowed_purposes": [
+      "PRODUCTION_REFERENCE"
+    ],
+    "allowed_uses": [
+      "LOCAL_PROCESSING",
+      "SOURCE_ANALYSIS",
+      "ABSTRACT_GENERATION"
+    ]
+  }
+}

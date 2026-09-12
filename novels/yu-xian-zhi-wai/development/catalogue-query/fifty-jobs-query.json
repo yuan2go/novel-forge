@@ -1,0 +1,22 @@
+{
+  "evidence_class": "ISOLATED_POSTGRES_NATIVE_QUERY_FIXTURE",
+  "project_id": "corpus-1a6422b0-6b3d-46c7-91df-09cc2aa4fcbc",
+  "native_enqueued_jobs": 50,
+  "page_limit": 10,
+  "page_sizes": [
+    10,
+    10,
+    10,
+    10,
+    10,
+    0
+  ],
+  "business_query_count": 11,
+  "observed_cursor_execute_count": 17,
+  "elapsed_seconds": 0.040531500009819865,
+  "python_tracemalloc_current_bytes": 561182,
+  "python_tracemalloc_peak_bytes": 700523,
+  "external_effect_count": 0,
+  "provider_calls": 0,
+  "measurement_scope": "API pagination including terminal empty page; excludes admission, DB server memory and subprocess CLI"
+}

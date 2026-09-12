@@ -1,0 +1,2022 @@
+[
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "CHAPTER_PLAN_REQUIRED",
+      "action": "GENERATE_CHAPTER_GROUP",
+      "operation_id": "445c1cc5-3828-4b08-9cec-50e6629c8cdd",
+      "evidence_ref": "authority-output:445c1cc5-3828-4b08-9cec-50e6629c8cdd:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "CHAPTER_PLAN_REQUIRED",
+      "state": "CHAPTER_PLAN_REQUIRED",
+      "action": "FREEZE_CHAPTER_GROUP_PLAN",
+      "operation_id": "7ad41d47-f892-4d0a-a493-d87dab4bc9b0",
+      "evidence_ref": "authority-output:445c1cc5-3828-4b08-9cec-50e6629c8cdd:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "CHAPTER_PLAN_REQUIRED",
+      "state": "CHAPTER_PLAN_REQUIRED",
+      "action": "QUALIFY_NARRATIVE_REALIZATION",
+      "operation_id": "9023c523-053e-44bb-a51d-aed0ecb470f9",
+      "evidence_ref": "narrative-realization:baf8c7cb84462382249bf19738545bb4954b55badf836b4311e756802568cb79"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "CHAPTER_PLAN_REQUIRED",
+      "state": "CHAPTER_PLAN_REQUIRED",
+      "action": "START_CHAPTER_GROUP",
+      "operation_id": "9c96c13d-43a0-4ee4-ab43-627dc38e8229",
+      "evidence_ref": "chapter-group-run:9c96c13d-43a0-4ee4-ab43-627dc38e8229"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "CHAPTER_PLAN_REQUIRED",
+      "state": "READY",
+      "action": "GENERATE_CHAPTER_PLAN",
+      "operation_id": "7182ab91-5ac4-4ce7-9bab-6705b1e8f0db",
+      "evidence_ref": "authority-output:7182ab91-5ac4-4ce7-9bab-6705b1e8f0db:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "FREEZE_CHAPTER_PLAN",
+      "operation_id": "e11663b6-6fc9-45be-921f-a5dacb2d025c",
+      "evidence_ref": "authority-output:7182ab91-5ac4-4ce7-9bab-6705b1e8f0db:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "CHAPTER_SUBMITTED",
+      "action": "DISPATCH_CHAPTER",
+      "operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "evidence_ref": "chapter-request:dfaee35dd04593237b2bf734c01bfa89500592e0a56d72ab0675fd11c5ae6062"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "cd0cd169-fbf6-4dd0-8fb3-aa418d02fe2b",
+      "node": "plan",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "94a8f4ba-3920-4a07-8421-f631000f7621",
+      "node": "execution_intent",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "59f37241-c5f0-4b43-911e-d8e072683b32",
+      "node": "memo",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "80bc22e9-d6b0-4d85-836f-2225a73689c5",
+      "node": "retrieval",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "ad1d7892-f976-40ed-bdb2-5c7b552f0056",
+      "node": "context",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "0195ff0b-06de-41be-865d-4b21fe4fc4ed",
+      "node": "draft",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "602ca022-14a6-40fa-a6e9-606d10925efb",
+      "node": "review",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "6fb599f5-afbc-419b-b86e-3144249b1294",
+      "node": "revision",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "9a33051a-4d5c-48df-8cb1-1cb06a54e0ec",
+      "node": "rereview",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "2dc265cd-c606-45ba-8c82-598071e7e4bc",
+      "node": "best_candidate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "f0a84ca3-8e98-482c-a04d-614fe137bd58",
+      "node": "canon_extraction",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "990ee1d8-f647-4d14-8c8e-4e7cc2d1e739",
+      "node": "canon_proposal",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "4ce4bbec-8941-4c3e-89a2-aefa4de04219",
+      "node": "canon",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "3bfcb402-4905-44b9-b049-a1000b95acf7",
+      "node": "quality_structural",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "fc0d79cf-4600-43e1-9269-b7dc9e05f5a4",
+      "node": "quality_commercial",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "bf61c792-3146-4d50-b53d-ba690f6b1aad",
+      "node": "quality_source_originality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "d5fc4fdf-042e-444e-a737-096ee464c0a8",
+      "node": "quality_longform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "a055440f-b9fc-4354-8f9e-6fb1362ca68f",
+      "node": "quality_platform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "7f23ef65-767a-4611-b7a8-0a8bf880db17",
+      "node": "quality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "81292d9f-fe6d-4017-9241-d638a519ab28",
+      "node": "publish_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "RUNNING",
+      "operation_id": "a52cc876-c219-44f3-9f4f-7dbac4f1478b",
+      "node": "export",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "12abe94f-a4fc-4280-876e-6311e01b59e9",
+      "saga_id": "7cf7e4fc-762f-4811-b520-501c0018a6e9",
+      "saga_status": "SUCCEEDED",
+      "operation_id": "e6d517d8-13bc-40ea-992a-5471148830bc",
+      "node": "final_release_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "CHAPTER_SUBMITTED",
+      "state": "READY",
+      "action": "ACCEPT_CHAPTER",
+      "operation_id": "",
+      "evidence_ref": ""
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "UPDATE_CHECKPOINTS",
+      "operation_id": "",
+      "evidence_ref": "volume-checkpoint:4b7cb2421b442549ac3058b84b16054ba10973c22b8725ea1df20dc4235381e9"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "GENERATE_CHAPTER_PLAN",
+      "operation_id": "2822fc0d-61a0-4f7e-8a94-112b222466c3",
+      "evidence_ref": "authority-output:2822fc0d-61a0-4f7e-8a94-112b222466c3:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "FREEZE_CHAPTER_PLAN",
+      "operation_id": "1204e26e-5ddc-4e69-82b9-4dbe949d4a11",
+      "evidence_ref": "authority-output:2822fc0d-61a0-4f7e-8a94-112b222466c3:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "CHAPTER_SUBMITTED",
+      "action": "DISPATCH_CHAPTER",
+      "operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "evidence_ref": "chapter-request:7cebb229a6a6993cf8a95e541a46e6e08c4cb762ba49ebc55c1c5a7d5972b82f"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "864081e1-4169-41da-b098-4bf62d1485eb",
+      "node": "plan",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "83ea6777-e6c1-4e73-91d5-cf8ac6be1950",
+      "node": "execution_intent",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "378a0b14-1c85-4666-8973-4ae660f0b7ec",
+      "node": "memo",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "530324a0-a60e-42af-8c4b-6f433ed493a8",
+      "node": "retrieval",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "b027a6dd-9910-4532-89ae-11705c4f3b43",
+      "node": "context",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "bc895725-8007-44fd-b90a-a99c5bd5147c",
+      "node": "draft",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "f5edf1ee-d00e-4938-b756-7cb178b5e6f3",
+      "node": "review",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "eb4b5ae0-8d96-4f25-8342-5ab896201563",
+      "node": "revision",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "4ef0a16f-2581-49be-b076-6eab590d3c25",
+      "node": "rereview",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "d997a412-ac15-49c1-853d-3647344417e4",
+      "node": "best_candidate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "257b29de-1e24-484d-9daf-a5d80f9dec02",
+      "node": "canon_extraction",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "cedf44a4-9e5b-4b50-b797-8e96afba8720",
+      "node": "canon_proposal",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "983075ba-29bf-45d3-8ffa-245b82f60386",
+      "node": "canon",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "dd59ccf1-9362-49c4-bbe0-1a0b3b70006f",
+      "node": "quality_structural",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "67783bb6-d662-4949-a07f-300ce1339a56",
+      "node": "quality_commercial",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "0a93cb9b-70d3-4294-92e2-2576d14ad3fe",
+      "node": "quality_source_originality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "3600031e-bce6-46fa-9de3-9eab67729c31",
+      "node": "quality_longform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "ff6fc341-f64d-4ed2-b107-2976765abfc6",
+      "node": "quality_platform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "e7a5dfed-6328-494f-b008-150444432a61",
+      "node": "quality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "37d20a71-051b-414c-85f5-f3440ab7b41b",
+      "node": "publish_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "RUNNING",
+      "operation_id": "3e1ebfcf-ff5c-4a79-8209-6c048a0c332a",
+      "node": "export",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "dff241d5-2216-4d9f-93e4-425334ea3a36",
+      "saga_id": "46cbebac-cafa-4e79-857f-2a6e2629c138",
+      "saga_status": "SUCCEEDED",
+      "operation_id": "2a1c7ae1-1af7-4fb8-ba24-e59298f6f846",
+      "node": "final_release_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "CHAPTER_SUBMITTED",
+      "state": "READY",
+      "action": "ACCEPT_CHAPTER",
+      "operation_id": "",
+      "evidence_ref": ""
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "UPDATE_CHECKPOINTS",
+      "operation_id": "",
+      "evidence_ref": "volume-checkpoint:8bc84fceb292ad796e21e88df623bef26378fbd8433c6aaddc929f99012c2714"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "GENERATE_CHAPTER_PLAN",
+      "operation_id": "b3a19093-e041-44c1-a417-f6acf1b681ca",
+      "evidence_ref": "authority-output:b3a19093-e041-44c1-a417-f6acf1b681ca:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "FREEZE_CHAPTER_PLAN",
+      "operation_id": "0f38da44-988d-4de6-a965-eb33dec8d7eb",
+      "evidence_ref": "authority-output:b3a19093-e041-44c1-a417-f6acf1b681ca:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "CHAPTER_SUBMITTED",
+      "action": "DISPATCH_CHAPTER",
+      "operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "evidence_ref": "chapter-request:43b09075e65fffe59562051b8f1c9985489951236b2499129edeb3a87d2deac9"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "d3b46438-f4bc-423b-9843-20103779862d",
+      "node": "plan",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "964cf401-ae31-4aea-b589-34834d6edc23",
+      "node": "execution_intent",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "0e9de299-747d-46a7-a159-7ca293e53a49",
+      "node": "memo",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "8d4af02f-49fd-4d88-940a-d156a709daf6",
+      "node": "retrieval",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "84cfa279-3865-408b-960b-0af5f01b1984",
+      "node": "context",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "55609d72-3fc4-4cef-9b05-5df89ebd1b4a",
+      "node": "draft",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "7bbda252-9ea0-4a8a-914d-a6311a5f00c1",
+      "node": "review",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "a4e1c0e0-a434-4a06-9be6-1db3d5f52c89",
+      "node": "revision",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "577a11c2-f890-4b6a-a1ac-45de7528c884",
+      "node": "rereview",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "3c76683d-506d-4f4b-96c3-be13041af333",
+      "node": "best_candidate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "b621a032-1478-4a4e-a4b3-75f33d0a3f8b",
+      "node": "canon_extraction",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "470b7185-e56b-4ff2-bd90-2257475a5901",
+      "node": "canon_proposal",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "fb922177-2f0d-44c4-81b8-540ed7f1dc49",
+      "node": "canon",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "2ea4609d-10c5-42af-a584-b8f03ee942ef",
+      "node": "quality_structural",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "f8e40152-2d4b-4e49-8551-6496665c0fe9",
+      "node": "quality_commercial",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "6b054092-78b8-4628-b60c-c008bfa43546",
+      "node": "quality_source_originality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "6e3bc338-0345-410c-b117-69e56102199c",
+      "node": "quality_longform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "886782dd-6e6a-494e-9867-8797307b9250",
+      "node": "quality_platform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "e6573526-e618-446e-b7a3-3f278a1a16db",
+      "node": "quality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "bae71359-3b33-4cb5-8a7a-6f4ab389db5d",
+      "node": "publish_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "RUNNING",
+      "operation_id": "64f64cb7-6d99-486a-a3a8-80bcc971b88b",
+      "node": "export",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "b3340ee3-7ecb-4a93-9404-229abfafca8c",
+      "saga_id": "ec3cc928-56f6-4295-95cd-4c20bafb8d89",
+      "saga_status": "SUCCEEDED",
+      "operation_id": "0f5b389a-39ab-4e8f-a512-776b1834288e",
+      "node": "final_release_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "CHAPTER_SUBMITTED",
+      "state": "READY",
+      "action": "ACCEPT_CHAPTER",
+      "operation_id": "",
+      "evidence_ref": ""
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "UPDATE_CHECKPOINTS",
+      "operation_id": "",
+      "evidence_ref": "volume-checkpoint:95302daade19d324872855f9507cf9bde0c6bcdd69460789d80d8d4bd72a25b2"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "CLOSE_CHAPTER_GROUP",
+      "operation_id": "9c96c13d-43a0-4ee4-ab43-627dc38e8229",
+      "evidence_ref": "chapter-group-run:9c96c13d-43a0-4ee4-ab43-627dc38e8229"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "CHAPTER_PLAN_REQUIRED",
+      "action": "GENERATE_CHAPTER_GROUP",
+      "operation_id": "b6a0f5eb-675a-4d0e-94bc-310847fef6f9",
+      "evidence_ref": "authority-output:b6a0f5eb-675a-4d0e-94bc-310847fef6f9:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "FUTURE_PLAN_CHANGE_REQUIRED",
+    "accepted_through_chapter": 3,
+    "target_plan_version_id": "authority-output:b6a0f5eb-675a-4d0e-94bc-310847fef6f9:story_planning.candidate:v1",
+    "input_snapshot_id": "sha256:3080837f2f8fac7f412876bc8821ca14cf4243f198a3d79ccca0dc8fc1fb64e7",
+    "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928"
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "FREEZE_CHAPTER_GROUP_PLAN",
+      "operation_id": "e4643fa8-b792-4342-84dc-e88880334484",
+      "evidence_ref": "authority-output:c7b9a8f9-0fa9-429e-9e73-f23f7d0bfdd4:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "QUALIFY_NARRATIVE_REALIZATION",
+      "operation_id": "c13c3810-d06b-4b9b-8071-2c31e6399437",
+      "evidence_ref": "narrative-realization:f603c1fcb9790500af4ccc16d7ce91806ec25575951f56959c2dee930e2f5ea9"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "START_CHAPTER_GROUP",
+      "operation_id": "9863f47b-8ce3-477f-a2e6-d877a153b829",
+      "evidence_ref": "chapter-group-run:9863f47b-8ce3-477f-a2e6-d877a153b829"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "GENERATE_CHAPTER_PLAN",
+      "operation_id": "cc873e89-5852-4087-9b16-382aae0d7881",
+      "evidence_ref": "authority-output:cc873e89-5852-4087-9b16-382aae0d7881:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "FREEZE_CHAPTER_PLAN",
+      "operation_id": "9d35481d-edc6-4c6a-b44a-aca13a827820",
+      "evidence_ref": "authority-output:cc873e89-5852-4087-9b16-382aae0d7881:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "CHAPTER_SUBMITTED",
+      "action": "DISPATCH_CHAPTER",
+      "operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "evidence_ref": "chapter-request:fcb51a0990c4bc3177a807873391f780e8fb070f42baa82ef5c885e841c75250"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "366cac48-097d-4596-ad5d-05fd35ab6cb5",
+      "node": "plan",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "f4d59cba-7261-43dc-94ec-e4a197845313",
+      "node": "execution_intent",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "6abef15c-6ff1-4203-b028-6b64e9cbeb7d",
+      "node": "memo",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "972261e8-0a0f-4f53-91d6-b89fb164fad9",
+      "node": "retrieval",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "f47fb00b-8bfa-4a61-a6f1-71fc85790358",
+      "node": "context",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "6a36a2b7-9aec-4c53-91f6-799930476495",
+      "node": "draft",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "e6c1ac4a-60d3-4bb5-a890-263239852ac2",
+      "node": "review",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "4f2f209d-e5d8-479d-9a84-26ed7ea64127",
+      "node": "revision",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "c51a5ea2-4bbb-45e2-a795-0713e58e7911",
+      "node": "rereview",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "d554123f-6061-4f63-ab26-a5fc1597c193",
+      "node": "best_candidate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "34777fc0-0e49-41c7-9459-9e404afd62b1",
+      "node": "canon_extraction",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "d1677245-9a24-4672-ab68-154b89b8a010",
+      "node": "canon_proposal",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "04883c39-d040-455f-b551-290444f449ef",
+      "node": "canon",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "0389160c-6aec-4f26-b473-18fa3c930928",
+      "node": "quality_structural",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "ef2d5445-ad51-4bc1-beb7-159ee975be97",
+      "node": "quality_commercial",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "d15ae7c7-3bbf-4f7d-8862-611b84aeae7b",
+      "node": "quality_source_originality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "d579bb51-32ec-46fc-ac1f-666505602764",
+      "node": "quality_longform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "f1bf92e5-f227-48f9-a6b7-b6135e13536e",
+      "node": "quality_platform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "afa06cd5-5102-4848-be23-97c2bf0c93e2",
+      "node": "quality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "c3a4168a-6bd2-43e1-9dc6-421350ed02c4",
+      "node": "publish_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "RUNNING",
+      "operation_id": "5432c010-54c0-4c2b-b645-3f1d1447dd4f",
+      "node": "export",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "d1e16e91-5776-4444-a94b-106f0d0a5b22",
+      "saga_id": "5f4d4787-7876-45ca-b58a-05acb47d78f4",
+      "saga_status": "SUCCEEDED",
+      "operation_id": "b0d75134-8f67-4b68-b91c-90f7e8d0f81f",
+      "node": "final_release_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "CHAPTER_SUBMITTED",
+      "state": "READY",
+      "action": "ACCEPT_CHAPTER",
+      "operation_id": "",
+      "evidence_ref": ""
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "UPDATE_CHECKPOINTS",
+      "operation_id": "",
+      "evidence_ref": "volume-checkpoint:e5cdbcd3b0edf27d861dc2c367a4c09f206f70f0b78984a79313c0e44dcebe9a"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "GENERATE_CHAPTER_PLAN",
+      "operation_id": "49964b7d-2ce2-4fc2-90df-05238deca673",
+      "evidence_ref": "authority-output:49964b7d-2ce2-4fc2-90df-05238deca673:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "FREEZE_CHAPTER_PLAN",
+      "operation_id": "bc3a3d47-77e4-40c2-b816-9c4cd50b89ee",
+      "evidence_ref": "authority-output:49964b7d-2ce2-4fc2-90df-05238deca673:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "CHAPTER_SUBMITTED",
+      "action": "DISPATCH_CHAPTER",
+      "operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "evidence_ref": "chapter-request:49d06c09103e72247aa58844c6a47eab8d43fb435b1ee4e7fb20e0dd3693bf8b"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "2f26536c-351d-42b3-8037-8ddedf7065d3",
+      "node": "plan",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "0397c59c-3d26-4247-a663-6b678f7f3500",
+      "node": "execution_intent",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "6a0b9968-8cf3-4adb-844f-c7121e198878",
+      "node": "memo",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "875216f5-5e30-44a9-b305-71cbbb884fb4",
+      "node": "retrieval",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "2519893c-9c46-4d6b-af36-be002449bbed",
+      "node": "context",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "d93fecfb-f708-423a-8770-3e44ab4b1612",
+      "node": "draft",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "b8fbd093-e1e3-4f01-8632-37a3630576fc",
+      "node": "review",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "aec67b31-11b5-401c-a5fc-e0cb305af893",
+      "node": "revision",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "5a26e045-f1fd-42cf-b8a6-58a8173e2b5e",
+      "node": "rereview",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "0e9afbef-e3b2-4391-ac85-39515086b4b6",
+      "node": "best_candidate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "75eb51eb-1044-4fd2-b105-0978dd55ab82",
+      "node": "canon_extraction",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "b4e2b700-f233-43aa-a566-33be48f4ee28",
+      "node": "canon_proposal",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "e508b9d3-2bc4-4871-a5df-814e58e17727",
+      "node": "canon",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "fbb7d3ce-bc4c-4cf2-a3d0-9c7bf7c8a7f0",
+      "node": "quality_structural",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "779ec768-a452-4473-aa44-361d58e77899",
+      "node": "quality_commercial",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "ddca1848-8f8b-461b-a14a-f6d622e652bd",
+      "node": "quality_source_originality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "b7c34a9c-abf8-400d-bb45-12bec7de91b8",
+      "node": "quality_longform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "cd5c2871-32fd-4f30-ba7e-c09e9bd7ce32",
+      "node": "quality_platform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "4a634efa-9e22-4bf3-9e95-da1867cc3fa8",
+      "node": "quality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "a9729db3-d129-4cf8-a3fe-313af225ca04",
+      "node": "publish_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "RUNNING",
+      "operation_id": "59b1f810-90a6-49ee-a3f3-8d2180759418",
+      "node": "export",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "311d004e-9954-4a2a-8160-87a16832baa3",
+      "saga_id": "d9d965fa-2a85-4ac6-b478-067d1008421b",
+      "saga_status": "SUCCEEDED",
+      "operation_id": "4d942495-f685-475f-bfbd-8c396845cc17",
+      "node": "final_release_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "CHAPTER_SUBMITTED",
+      "state": "READY",
+      "action": "ACCEPT_CHAPTER",
+      "operation_id": "",
+      "evidence_ref": ""
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "UPDATE_CHECKPOINTS",
+      "operation_id": "",
+      "evidence_ref": "volume-checkpoint:65e1f118e5fdcb1ecf69062ae757775d54218f1732cffbcc27b83e7ad2e4603b"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "GENERATE_CHAPTER_PLAN",
+      "operation_id": "023d5122-815e-403d-8b72-d9786eff8963",
+      "evidence_ref": "authority-output:023d5122-815e-403d-8b72-d9786eff8963:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "READY",
+      "action": "FREEZE_CHAPTER_PLAN",
+      "operation_id": "cb43b1b6-a4fb-4817-8237-f0726bc27c3a",
+      "evidence_ref": "authority-output:023d5122-815e-403d-8b72-d9786eff8963:story_planning.candidate:v1"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "READY",
+      "state": "CHAPTER_SUBMITTED",
+      "action": "DISPATCH_CHAPTER",
+      "operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "evidence_ref": "chapter-request:8ad4037ee5580c2d29eacfd3451e312aa36f220219b65a11330886fe87156718"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "a9eca64e-9fe5-472e-9c30-018a23923645",
+      "node": "plan",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "d1fe4f22-1c38-4f18-9112-914e7d710da7",
+      "node": "execution_intent",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "ad8af13c-7f05-468e-9087-7cbc750eb528",
+      "node": "memo",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "182243eb-52e3-4402-b874-9712142241e4",
+      "node": "retrieval",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "8f38d1ec-af31-401c-958e-d9fc4b6fdeac",
+      "node": "context",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "20cd4e1e-2cd9-49f3-81e6-20b61cf2f4ee",
+      "node": "draft",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "54a9b776-66db-47a6-9ed3-5c4cff373b69",
+      "node": "review",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "3c6eccfe-7c50-4cea-ad2e-eda0e445cdf2",
+      "node": "revision",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "b43daab9-1ac1-4656-a7c0-2a05c690bcec",
+      "node": "rereview",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "8b4657d7-d195-4313-8171-0629e00455d1",
+      "node": "best_candidate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "f78ece22-304c-458c-a49c-fbce0a413c70",
+      "node": "canon_extraction",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "77a14f53-2332-41dc-b43b-8fc6385f226d",
+      "node": "canon_proposal",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "cc47df95-dcdd-4c78-9559-dc47961033b7",
+      "node": "canon",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "7d95cd0a-c559-4a05-9d77-70dcabe51c38",
+      "node": "quality_structural",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "221b1ea4-a9dc-40e0-92fc-2b16404d702f",
+      "node": "quality_commercial",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "45f652d6-e1d8-42b9-98ea-fb316940f57c",
+      "node": "quality_source_originality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "832d51ea-abd0-4c6c-9c9f-8b8a2285cb9f",
+      "node": "quality_longform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "287bcf5d-dd0c-4334-90a4-a8e1f8e6ab65",
+      "node": "quality_platform",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "9c84421f-75f4-4c97-9b03-797bba71b0b1",
+      "node": "quality",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "f8e238b7-6b1a-4acf-b854-7cc3600e0d7a",
+      "node": "publish_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "RUNNING",
+      "operation_id": "d6908fde-a729-414d-bc7f-91be969d0f09",
+      "node": "export",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "CHAPTER_TICK",
+    "result": {
+      "root_operation_id": "7fb2b786-38d5-49e2-8266-5b0b5c106d8e",
+      "saga_id": "9d960e67-5318-4dab-aac0-331dfdd7fd40",
+      "saga_status": "SUCCEEDED",
+      "operation_id": "ff95afc8-d18a-458c-ad4f-0965b73cc154",
+      "node": "final_release_gate",
+      "operation_status": "SUCCEEDED",
+      "recovery_mode": "fresh_attempt"
+    }
+  },
+  {
+    "kind": "BOOK_TICK",
+    "result": {
+      "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+      "previous_state": "CHAPTER_SUBMITTED",
+      "state": "READY",
+      "action": "ACCEPT_CHAPTER",
+      "operation_id": "",
+      "evidence_ref": ""
+    }
+  },
+  {
+    "kind": "ACCEPTED_GROUP_CLOSED",
+    "group_run_id": "chapter-group-run:9863f47b-8ce3-477f-a2e6-d877a153b829"
+  },
+  {
+    "kind": "PILOT_ACCEPTED_CURSOR_REACHED",
+    "book_run_id": "book-run:b07a6a55-704f-40ee-a2c3-0a2b09f62928",
+    "accepted_through_chapter": 6,
+    "target_chapter_count": 180,
+    "full_book_completion": "NOT_PROVEN"
+  }
+]

@@ -1,0 +1,10 @@
+Figure \(\PageIndex{2}\): Schematic representation of a flow control valve.
+A flow control valve regulates the speed of an actuator by controlling the flow rate of hydraulic fluid. The basic components of a flow control valve include:
+A valve body with inlet and outlet ports
+A tapered adjustment screw
+An adjustment knob
+An internal check valve poppet
+A small spring to assist the poppet function
+This valve can be configured to restrict flow in one direction while allowing near-unrestricted flow in the other. This is accomplished using the check valve in parallel with the variable orifice. The schematic symbol for this type of valve typically shows a variable restriction with a check valve in parallel, often drawn as a parallel line bypassing the orifice.
+Figure \(\PageIndex{1}\): Control valve schematic symbol and explanation.
+The control valve schematic symbol is drawn with a needle valve inline with the transmission lines and parallel will be a check valve. A second version provides a ghost line around the device to represent that both components are in the same valve body.

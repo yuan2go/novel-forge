@@ -1,0 +1,253 @@
+PYTHONPATH=src .venv/bin/python -m novel_forge.tools.pr_governance --repo-root . \
+		--base-sha "a1661483d68a3282b5a07f66ab7740c4b2a1f697" --profile "local" \
+		--output "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/final-qualification/pr-governance-$(git rev-parse HEAD).json"
+.venv/bin/python scripts/sync_claude_skills.py
+synced: /Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot/skills -> /Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot/.claude/skills
+copy: agent-loop-governance
+copy: analysis-to-asset-conversion
+copy: anti-copy-abstraction
+copy: canon-continuity-graph
+copy: chapter-outline
+copy: character-design
+copy: classic-literary-depth-analysis
+copy: context-builder-source-isolation
+copy: evidence-fact-verification
+copy: hot-novel-business-deconstruction
+copy: hot-novel-deconstruction
+copy: long-outline
+copy: longform-temporal-query
+copy: material-curation
+copy: mkaos-knowledge-asset-os
+copy: multi-scale-pacing
+copy: multidisciplinary-knowledge
+copy: narrative-beat-design
+copy: novel-os-engineering-audit
+copy: platform-strategy-os
+copy: project-planning
+copy: prose-generation
+copy: provider-runtime-policy
+copy: publish-release-gate-os
+copy: published-fiction-craft-analysis
+copy: quality-review
+copy: reader-feedback
+copy: review-issue-gate
+copy: skill-governance
+copy: topic-development
+copy: training-exercise
+copy: world-consequence-modeling
+copy: worldbuilding
+drift: agent-loop-governance
+drift: analysis-to-asset-conversion
+drift: anti-copy-abstraction
+drift: canon-continuity-graph
+drift: chapter-outline
+drift: character-design
+drift: classic-literary-depth-analysis
+drift: context-builder-source-isolation
+drift: evidence-fact-verification
+drift: hot-novel-business-deconstruction
+drift: hot-novel-deconstruction
+drift: long-outline
+drift: longform-temporal-query
+drift: material-curation
+drift: mkaos-knowledge-asset-os
+drift: multi-scale-pacing
+drift: multidisciplinary-knowledge
+drift: narrative-beat-design
+drift: novel-os-engineering-audit
+drift: platform-strategy-os
+drift: project-planning
+drift: prose-generation
+drift: provider-runtime-policy
+drift: publish-release-gate-os
+drift: published-fiction-craft-analysis
+drift: quality-review
+drift: reader-feedback
+drift: review-issue-gate
+drift: skill-governance
+drift: topic-development
+drift: training-exercise
+drift: world-consequence-modeling
+drift: worldbuilding
+PYTHONPATH=src .venv/bin/python -m novel_forge.tools.head_integrity --repo-root .
+{
+  "failed_required_imports": [],
+  "missing_exports": [],
+  "missing_import_targets": [],
+  "missing_registry_targets": [],
+  "missing_test_collection": [],
+  "scanned_python_files": 674,
+  "status": "PASS",
+  "tracked_file_count": 1928,
+  "untracked_required_paths": []
+}
+PYTHONPATH=src .venv/bin/python -m compileall -q src tests
+ruff check src/novel_forge/modules/agent_runtime src/novel_forge/modules/agent_collaboration src/novel_forge/modules/command_kernel src/novel_forge/modules/production_execution src/novel_forge/modules/chapter_authority
+All checks passed!
+PYTHONPATH=src .venv/bin/python scripts/check_ruff_ratchet.py --ruff ruff
+ruff-ratchet: PASS current=97 baseline=515 legacy_files=73
+PYTHONPATH=src .venv/bin/python scripts/check_module_manifest.py
+{
+  "checked": 39,
+  "items": [
+    "novel_forge",
+    "novel_forge.cli.authority",
+    "novel_forge.cli.migration",
+    "novel_forge.api.authority_app",
+    "novel_forge.infrastructure.production_execution_composition",
+    "novel_forge.storage.migrations.versions",
+    "novel_forge.modules.command_kernel",
+    "novel_forge.modules.agent_runtime",
+    "novel_forge.modules.agent_collaboration",
+    "novel_forge.modules.project_authority",
+    "novel_forge.modules.task_authority",
+    "novel_forge.modules.source_authority",
+    "novel_forge.modules.source_import",
+    "novel_forge.modules.mkaos_authority",
+    "novel_forge.modules.narrative_state",
+    "novel_forge.modules.chapter_authority",
+    "novel_forge.modules.authoring",
+    "novel_forge.modules.corrective_action",
+    "novel_forge.modules.book_authority",
+    "novel_forge.modules.book_design_authority",
+    "novel_forge.modules.production_execution",
+    "novel_forge.modules.story_design_authority",
+    "novel_forge.modules.story_planning_runtime",
+    "novel_forge.modules.hierarchical_planning",
+    "novel_forge.modules.chapter_group_authority",
+    "novel_forge.modules.plan_change_authority",
+    "novel_forge.modules.book_production",
+    "novel_forge.modules.book_replan",
+    "novel_forge.modules.reader_calibration",
+    "novel_forge.modules.reader_judge_authority",
+    "novel_forge.modules.book_followup_authority",
+    "novel_forge.modules.provider_control",
+    "novel_forge.modules.provider_qualification",
+    "novel_forge.modules.legacy_migration",
+    "novel_forge.modules.runtime_job",
+    "novel_forge.modules.capability_packs",
+    "novel_forge.modules.capability_pack_authority",
+    "novel_forge.modules.worldbuilding.dynamics",
+    "novel_forge.storage.database_runtime"
+  ],
+  "kind": "modules",
+  "status": "PASS"
+}
+PYTHONPATH=src .venv/bin/python scripts/check_migration_manifest.py
+{
+  "checked": 130,
+  "head": "20260912_0129_corpus_member_fk_indexes",
+  "kind": "migrations",
+  "status": "PASS"
+}
+PYTHONPATH=src .venv/bin/python scripts/check_worker_manifest.py
+{
+  "checked": 10,
+  "items": [
+    "agent-authority",
+    "chapter-authority",
+    "content-authority",
+    "source-authority",
+    "source-import",
+    "mkaos-authority",
+    "book-authority",
+    "book-followup-authority",
+    "outbox-authority",
+    "maintenance-runtime-group"
+  ],
+  "kind": "workers",
+  "status": "PASS"
+}
+PYTHONPATH=src .venv/bin/python scripts/check_required_test_manifest.py
+{
+  "error": "test reality inventory failed: current test has no production target: tests/unit/test_creation_runner_settings.py; test reality owner cannot be derived: tests/unit/test_creation_runner_settings.py",
+  "kind": "tests",
+  "status": "FAIL"
+}
+make[1]: *** [architecture-manifests-check] Error 1
+{
+  "base_implementation_tree_sha": "sha256:76dd1182c6fcee8f093f2d59bb796617512312fed322925340f653cbe6b6b749",
+  "base_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "changed_implementation_paths": [
+    "config/production/first-novel-pilot/brief.json",
+    "config/production/first-novel-pilot/creation.json",
+    "config/production/first-novel-pilot/deny-all.json",
+    "config/production/first-novel-pilot/formation.json",
+    "scripts/creation_pilot.py",
+    "scripts/prepare_knowledge_closure.py",
+    "scripts/run_creation_synthesis.py",
+    "scripts/run_world_production_smoke.py",
+    "scripts/source_qualification.py",
+    "src/novel_forge/api/routers/book_authority.py",
+    "src/novel_forge/api/routers/source_import.py",
+    "src/novel_forge/cli/corpus.py",
+    "src/novel_forge/modules/book_authority/queries.py",
+    "src/novel_forge/modules/mkaos_authority/query.py",
+    "src/novel_forge/modules/provider_qualification/accounting.py",
+    "src/novel_forge/modules/provider_qualification/authority.py",
+    "src/novel_forge/modules/provider_qualification/domain.py",
+    "src/novel_forge/modules/provider_qualification/source_binding.py",
+    "src/novel_forge/modules/source_authority/consumption.py",
+    "src/novel_forge/modules/source_authority/curation.py",
+    "src/novel_forge/modules/source_import/analysis_query.py",
+    "src/novel_forge/modules/source_import/corpus_ingestion/curated_analysis.py",
+    "src/novel_forge/modules/source_import/corpus_ingestion/reading_scope.py",
+    "src/novel_forge/modules/source_import/corpus_ingestion/review_replay.py",
+    "src/novel_forge/modules/source_import/query.py",
+    "src/novel_forge/storage/source_import_repositories.py",
+    "tests/integration/operator_plan_change_support.py",
+    "tests/integration/test_core_functional_loops_postgres.py",
+    "tests/integration/test_corpus_consumption_admission_postgres.py",
+    "tests/integration/test_corpus_jobs_query_postgres.py",
+    "tests/integration/test_corpus_nonbody_reprocessing_postgres.py",
+    "tests/integration/test_creation_pilot_shared_project_postgres.py",
+    "tests/integration/test_knowledge_closure_helper_source_postgres.py",
+    "tests/integration/test_source_import_runtime_postgres.py",
+    "tests/integration/test_source_runtime_qualification_postgres.py",
+    "tests/unit/test_corpus_nonbody_review_replay.py",
+    "tests/unit/test_creation_export.py",
+    "tests/unit/test_creation_pilot.py",
+    "tests/unit/test_creation_runner_settings.py",
+    "tests/unit/test_source_consumption_intent.py",
+    "tests/unit/test_source_runtime_qualification.py"
+  ],
+  "checks": [
+    {
+      "exit_code": 2,
+      "gate": "repository-governance"
+    }
+  ],
+  "error": "repository governance failed; qualification cannot PASS",
+  "focused_test_paths": [
+    "tests/integration/test_core_functional_loops_postgres.py",
+    "tests/integration/test_corpus_consumption_admission_postgres.py",
+    "tests/integration/test_corpus_jobs_query_postgres.py",
+    "tests/integration/test_corpus_nonbody_reprocessing_postgres.py",
+    "tests/integration/test_creation_pilot_shared_project_postgres.py",
+    "tests/integration/test_knowledge_closure_helper_source_postgres.py",
+    "tests/integration/test_source_import_runtime_postgres.py",
+    "tests/integration/test_source_runtime_qualification_postgres.py",
+    "tests/unit/test_corpus_nonbody_review_replay.py",
+    "tests/unit/test_creation_export.py",
+    "tests/unit/test_creation_pilot.py",
+    "tests/unit/test_creation_runner_settings.py",
+    "tests/unit/test_source_consumption_intent.py",
+    "tests/unit/test_source_runtime_qualification.py"
+  ],
+  "head_sha": "2c78a1dcf14b0b2df951a822f3a403b6b70baf0c",
+  "implementation_changed": true,
+  "implementation_tree_sha": "sha256:9feceb9fc8e1b4bdc24cff4843bb0c3c4e5bb4338b2bef11b7fe58966081413f",
+  "provider_evidence": [
+    {
+      "identity_status": "STALE",
+      "path": "architecture/live-evidence/real-provider-qualification-d978a35584e8c6784ac141f6ff69495fb123ea07.json",
+      "qualification_authority": "GOVERNED_PROVIDER_QUALIFICATION"
+    }
+  ],
+  "provider_qualification": "NOT_ASSESSED_BY_PR_GATE",
+  "qualification": "REQUIRED_EXACT_SHA_P0",
+  "qualification_reason": "IMPLEMENTATION_CHANGED",
+  "schema_version": "novel-forge.pr-governance.v1",
+  "status": "FAIL"
+}
+make: *** [pr-governance] Error 1

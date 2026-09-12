@@ -126,13 +126,29 @@ class SourceImportRepository(SourceImportOperationsRecords):
         return _job_row(row)
 
     def list_jobs(
-        self, *, project_id: str, status: str = "", limit: int = 100
+        self, *, project_id: str, status: str = "", limit: int = 100,
+        after: str = "", source_type: str = "", run_key_prefix: str = "",
     ) -> list[dict[str, Any]]:
         parameters: list[Any] = [project_id]
         status_clause = ""
         if status:
             status_clause = "AND status=%s"
             parameters.append(status)
+        if source_type:
+            status_clause += " AND source_type=%s"
+            parameters.append(source_type)
+        if run_key_prefix:
+            status_clause += """ AND EXISTS (
+                SELECT 1 FROM authority_operation o
+                WHERE o.operation_id=authority_source_import_job.discovery_operation_id
+                  AND o.project_id=authority_source_import_job.project_id
+                  AND o.definition_name='source.import.corpus.acquire'
+                  AND LEFT(o.causation_id, LENGTH(%s))=%s)"""
+            parameters.extend([run_key_prefix, run_key_prefix])
+        if after:
+            anchor = self.job(project_id=project_id, import_job_id=after)
+            status_clause += " AND (created_at<%s OR (created_at=%s AND import_job_id>%s))"
+            parameters.extend([anchor["created_at"], anchor["created_at"], after])
         parameters.append(limit)
         self.cursor.execute(
             f"""

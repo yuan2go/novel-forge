@@ -1,0 +1,89 @@
+{
+  "schema_version": "first-novel-pilot-accounting-engineering-evidence.v1",
+  "recorded_at": "2026-09-12T10:17:02.204415+00:00",
+  "baseline_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "head_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "worktree": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot",
+  "implementation_state": "UNCOMMITTED_SHARED_WORKTREE",
+  "files": {
+    "scripts/source_qualification.py": "sha256:067b01268bad74b450e9ac1f3c0184248b67384a4108bc888d9b769b1b400ea6",
+    "src/novel_forge/modules/provider_qualification/accounting.py": "sha256:2af0e751ded4c0b76e49d4dd53de79196c893f985c5eb5505bf9371bface10d9",
+    "src/novel_forge/modules/provider_qualification/domain.py": "sha256:952f4d20873a37e8107688de8f289967ead64e842bec07cf544fe652d3962e3f",
+    "src/novel_forge/modules/provider_qualification/authority.py": "sha256:ffeeed140f73eb8277074318d6ee382ced0396b81696228c11c2d1240c0268fd",
+    "src/novel_forge/modules/provider_qualification/source_binding.py": "sha256:98bf9f5623d11790154e9e557d9ad9a9eb413700c7fb4d0681bf417d207c2aa4",
+    "src/novel_forge/modules/mkaos_authority/query.py": "sha256:efc3c20e9ef6547a95595ac6e11615e1f7983671ad5ed7668cd09f665cfa7229",
+    "tests/unit/test_source_runtime_qualification.py": "sha256:a8515f688ddd308ab1ec8c9af0a2505741c93b9649780ae97fdd1ecaf50dde4e",
+    "tests/integration/test_source_runtime_qualification_postgres.py": "sha256:b0ad44e25fc411cba40c2a29801c93c8b2a0f53e780e140a2ec2516afa5a57e9",
+    "tests/integration/test_source_import_runtime_postgres.py": "sha256:059e505f6beb0b88adddb81d8d305e37159b7d1807d6d01504941737fbc81c37"
+  },
+  "evidence_class": "SYNTHETIC_PROTOCOL_AND_ISOLATED_POSTGRES_ONLY",
+  "real_model_calls": 0,
+  "credential_values_inspected": false,
+  "engineering": "EXECUTABLE",
+  "real_provider_execution": "NOT_RUN",
+  "human_knowledge_approval": "NOT_RUN",
+  "narrative_correctness": "NOT_PROVEN",
+  "preserved_boundaries": [
+    "PostgreSQL Authority and existing Kernel ExternalEffect/budget",
+    "same account/model/profile/release/capability/materialization/receipt frozen",
+    "ACCOUNT_ENTITLEMENT monetary amounts SQL NULL / UNKNOWN; no priced relabel or zero",
+    "finite shared project call/token caps and measured usage; missing usage remains unknown and unqualified",
+    "Source qualification does not approve knowledge or literary quality",
+    "revoked exact report rejects new selection and frozen Card recovery; no cached authority between transactions"
+  ],
+  "confirmed_defects": [
+    "Source D0 runner and evidence validator blocked configured ACCOUNT_ENTITLEMENT",
+    "Source qualification identity omitted entitlement account snapshot",
+    "frozen planning Card current check skipped qualification revocation",
+    "30 exact Card selection opened 31 connections for repeated Source qualification"
+  ],
+  "verification": [
+    {
+      "command": "PYTHONPATH=src:. .venv/bin/pytest -q tests/unit/test_source_runtime_qualification.py tests/unit/test_d0_provider_qualification.py tests/unit/test_real_provider_qualification_runner.py tests/unit/test_mkaos_authority_domain.py tests/unit/test_story_planning_runtime.py tests/unit/test_authority_production_preparation.py tests/unit/test_source_intelligence_execution_contracts.py tests/unit/test_source_intelligence_routing.py",
+      "result": "199 passed, 9 subtests passed",
+      "log": "unit-regression.log"
+    },
+    {
+      "command": "NOVEL_FORGE_DATABASE_URL=<isolated-accounting-test> PYTHONPATH=src:. .venv/bin/pytest -q -s tests/integration/test_source_runtime_qualification_postgres.py",
+      "result": "2 passed",
+      "log": "selector-after-green.log"
+    },
+    {
+      "command": "NOVEL_FORGE_DATABASE_URL=<isolated-accounting-test> PYTHONPATH=src:. .venv/bin/pytest -q tests/integration/test_d0_provider_qualification_authority_postgres.py tests/integration/test_mkaos_authority_postgres.py tests/integration/test_provider_budget_runtime_postgres.py tests/integration/test_provider_budget_scope_postgres.py tests/integration/test_source_import_runtime_postgres.py::SourceImportRuntimePostgresTests::test_source_qualification_uses_existing_stage_and_fixture_cannot_qualify",
+      "result": "31 passed, 13 subtests passed",
+      "log": "accounting-regression-postgres.log"
+    }
+  ],
+  "red_logs": [
+    "runner-red.log",
+    "selector-before-red.log"
+  ],
+  "development_logs": [
+    "entitlement-red.log",
+    "entitlement-green.log",
+    "entitlement-postgres.log"
+  ],
+  "development_log_limits": [
+    "Initial entitlement red/green attempt used shared venv editable path from old closure worktree; retained as development log only. Subsequent green and all recorded final commands explicitly set PYTHONPATH=src:.",
+    "Initial PostgreSQL test incorrectly expected HELD_UNKNOWN after native reconciliation had already settled its original reservation; fixed test placement before reconciliation and retained failure log."
+  ],
+  "selector_benchmark": {
+    "shape": "30 exact Card versions sharing one synthetic Source receipt/binding",
+    "before": {
+      "connections": 31,
+      "elapsed_ms": 126.9
+    },
+    "after": {
+      "connections": 1,
+      "elapsed_ms": 16.841
+    },
+    "scope": "single local bounded observation, not real-corpus performance proof"
+  },
+  "test_database": "novel_forge_accounting_test",
+  "not_run": [
+    "real Provider Source D0 scenario",
+    "real Source approval and corpus consumption",
+    "real creative production",
+    "complete applicable repository matrix, owned by root final validation"
+  ]
+}

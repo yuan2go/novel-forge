@@ -423,14 +423,20 @@ class SourceImportQuery:
         project_id: str,
         status: str = "",
         limit: int = 100,
+        after: str = "",
+        source_type: str = "",
+        run_key_prefix: str = "",
         principal: Principal | None = None,
     ) -> list[dict[str, Any]]:
         self._require(principal, project_id)
         if not 1 <= limit <= 500:
             raise ValueError("query limit must be within 1..500")
+        if any(len(value) > 200 for value in (after, source_type, run_key_prefix)):
+            raise ValueError("import filters must be at most 200 characters")
         with AuthorityUnitOfWork(self.database_url) as uow:
             rows = SourceImportRepository(uow.cursor).list_jobs(
-                project_id=project_id, status=status, limit=limit
+                project_id=project_id, status=status, limit=limit, after=after,
+                source_type=source_type, run_key_prefix=run_key_prefix,
             )
         return [_serializable(row) for row in rows]
 

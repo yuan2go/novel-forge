@@ -1,0 +1,26 @@
+{"analysis_job_id": "source-import:462e59d7-2cad-45ce-a4ff-4b79bbf8ec0e", "analysis_status": "AWAITING_GOVERNANCE", "candidate_asset_version_id": "knowledge-candidate:corpus-d6b243bf-82e3-4eca-b222-c0f33ae3978e:cb526393d00a50cdf4a8cc09fdfe1d9cdd1d793904280260349f9bf73731aca5:v1", "completed_source_stages": 18, "curated_revision_id": "corpus-curated-revision:04574a734b64b88dc075f29dc0c028e7bc67cc4b553998e2c35de3289a624f66", "evidence_class": "SCRIPTED_SOURCE_PROTOCOL_ONLY", "finite_scripted_call_ceiling": 120, "fixture_card_asset_version_id": "knowledge-card:corpus-d6b243bf-82e3-4eca-b222-c0f33ae3978e:62f75727926c6aa757f920f6886df80800e6776d51fad64dd001d0226bfc00df:v1", "helper_manifest_hash": "sha256:dfeda27eed5268d2858fb8e5fb511fd744a2ca1feda51acc0da0727edbb467f8", "import_job_id": "source-import:44b6f5b0-49b4-4449-b9bb-66a6f67f7784", "production_approval": "BLOCKED_FIXTURE_EVIDENCE", "real_d0_binding": "NOT_PROVEN", "real_provider_execution": "NOT_RUN", "sample": "professional", "settled_scripted_calls": 15}
+.{"analysis_job_id": "source-import:1d523133-8681-42f4-867e-cbdfae26d5bc", "analysis_status": "AWAITING_GOVERNANCE", "candidate_asset_version_id": "knowledge-candidate:corpus-60afee96-ee22-4a3f-910e-c520146e54cf:4e310a78452f45b30bb7b7d30f5e2340a0db62c8e9ec07093d4591709a5aeb8d:v1", "completed_source_stages": 60, "curated_revision_id": "corpus-curated-revision:581c69f2e9f675048b09d51b9bc67231b500f0bbe9f69deab61542bdf43c8279", "evidence_class": "SCRIPTED_SOURCE_PROTOCOL_ONLY", "finite_scripted_call_ceiling": 120, "fixture_card_asset_version_id": "knowledge-card:corpus-60afee96-ee22-4a3f-910e-c520146e54cf:7253c98a869fd0a47ec3856d94396b6f6d7ec3047088cdafc849d7fe23c2626b:v1", "helper_manifest_hash": "sha256:3558636ec0862e00605895d4df1e1feaa44ff9953c2b9f0e8a015c1e8acdea66", "import_job_id": "source-import:066d7c94-e5b5-4e12-bae3-f734cb9ef466", "production_approval": "BLOCKED_FIXTURE_EVIDENCE", "real_d0_binding": "NOT_PROVEN", "real_provider_execution": "NOT_RUN", "sample": "fiction", "settled_scripted_calls": 57}
+.
+=============================== warnings summary ===============================
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[professional-PROFESSIONAL_KNOWLEDGE-3]
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[fiction-WEB_NOVEL-6]
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot/src/novel_forge/api/authority_app.py:735: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[professional-PROFESSIONAL_KNOWLEDGE-3]
+tests/integration/test_knowledge_closure_helper_source_postgres.py::test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[fiction-WEB_NOVEL-6]
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2 passed, 4 warnings in 37.79s

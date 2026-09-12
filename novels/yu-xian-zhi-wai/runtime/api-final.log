@@ -1,0 +1,53 @@
+INFO:     Started server process [22639]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:51009 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54580 - "GET /product/source-imports?project_id=first-novel-pilot-20260912&limit=10&run_key_prefix=pilot-materials-&after= HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54582 - "GET /product/source-imports?project_id=first-novel-pilot-20260912&limit=10&run_key_prefix=pilot-materials-&after=source-import%3A8f8b2d21-a070-4f08-ba96-05669c146601 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54583 - "GET /product/source-imports?project_id=first-novel-pilot-20260912&limit=10&run_key_prefix=pilot-materials-&after=source-import%3A7c86095e-4c48-46f5-b9a3-d9b94367348d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54584 - "GET /product/source-imports/corpus/processing/corpus-processing%3Ac42d79acae82a7a4f46370922312a782e42b3318ab1e0412fad776b32e6fefe1?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54585 - "GET /product/source-imports/corpus/processing/corpus-processing%3Ac42d79acae82a7a4f46370922312a782e42b3318ab1e0412fad776b32e6fefe1/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54586 - "GET /product/source-imports/corpus/processing/corpus-processing%3A672d56d442253a1ed83387f7565182b1dc6a5ab22d6e0f23ba34067870040d24?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54587 - "GET /product/source-imports/corpus/processing/corpus-processing%3A672d56d442253a1ed83387f7565182b1dc6a5ab22d6e0f23ba34067870040d24/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54588 - "GET /product/source-imports/corpus/processing/corpus-processing%3A705d77a8d60b81ba6b22279f79220fd22335ede0e29d1038ef9f0c62bd1a6bbb?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54589 - "GET /product/source-imports/corpus/processing/corpus-processing%3A705d77a8d60b81ba6b22279f79220fd22335ede0e29d1038ef9f0c62bd1a6bbb/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54590 - "GET /product/source-imports/corpus/processing/corpus-processing%3A219f09699eb45ea0b9dac312e767e338835e8e1e5200272ea502443619740a4b?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54591 - "GET /product/source-imports/corpus/processing/corpus-processing%3A219f09699eb45ea0b9dac312e767e338835e8e1e5200272ea502443619740a4b/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54592 - "GET /product/source-imports/corpus/processing/corpus-processing%3Aa6b7cd4537afe792e4b2192946bf65d6a606ca037e8d3c6a13586647fd56b367?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54593 - "GET /product/source-imports/corpus/processing/corpus-processing%3Aa6b7cd4537afe792e4b2192946bf65d6a606ca037e8d3c6a13586647fd56b367/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54594 - "GET /product/source-imports/corpus/processing/corpus-processing%3Ab6cbd2cfe6a04a0c3b184b910d108c08c76e5c43e5ca34b0728befd1b27391ed?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54595 - "GET /product/source-imports/corpus/processing/corpus-processing%3Ab6cbd2cfe6a04a0c3b184b910d108c08c76e5c43e5ca34b0728befd1b27391ed/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54596 - "GET /product/source-imports/corpus/processing/corpus-processing%3A2a3eb4c808d9c63d877e1ff0328401143814cd81acf774f08b23cce85290a9de?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54597 - "GET /product/source-imports/corpus/processing/corpus-processing%3A2a3eb4c808d9c63d877e1ff0328401143814cd81acf774f08b23cce85290a9de/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54598 - "GET /product/source-imports/corpus/processing/corpus-processing%3A570b62038e9b9e4dca6e78be58add941fc74dc89ae40c3d2d6c652a684dfe4d5?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54599 - "GET /product/source-imports/corpus/processing/corpus-processing%3A570b62038e9b9e4dca6e78be58add941fc74dc89ae40c3d2d6c652a684dfe4d5/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54600 - "GET /product/source-imports/corpus/processing/corpus-processing%3A0cb64d77f20aed4e2df8992382ae0cf257f04908ecb90bee4db6caa1c0092afc?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54601 - "GET /product/source-imports/corpus/processing/corpus-processing%3A0cb64d77f20aed4e2df8992382ae0cf257f04908ecb90bee4db6caa1c0092afc/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54602 - "GET /product/source-imports/corpus/processing/corpus-processing%3Ac831377e9df6554caa5fb9a2be40699a8c98a258abe34eb613476765097ce437?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54603 - "GET /product/source-imports/corpus/processing/corpus-processing%3Ac831377e9df6554caa5fb9a2be40699a8c98a258abe34eb613476765097ce437/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54604 - "GET /product/source-imports/corpus/processing/corpus-processing%3A511d682e68d2b98e48b8462e7c7572c96ca66647943b4e07eafbd51c5bba16fe?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54605 - "GET /product/source-imports/corpus/processing/corpus-processing%3A511d682e68d2b98e48b8462e7c7572c96ca66647943b4e07eafbd51c5bba16fe/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54606 - "GET /product/source-imports/corpus/processing/corpus-processing%3Ac4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54607 - "GET /product/source-imports/corpus/processing/corpus-processing%3Ac4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54608 - "GET /product/source-imports/corpus/processing/corpus-processing%3A55f3e8c6122e47d9b298ab56c39f0d549acd53c7c268dbead1ab7550c9ed3aba?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54609 - "GET /product/source-imports/corpus/processing/corpus-processing%3A55f3e8c6122e47d9b298ab56c39f0d549acd53c7c268dbead1ab7550c9ed3aba/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54610 - "GET /product/source-imports/corpus/processing/corpus-processing%3Aa75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54611 - "GET /product/source-imports/corpus/processing/corpus-processing%3Aa75ebd42f636cb2d658f2ef7d40198c4dbf2d37473a48b86f3b8531b2ad48ba7/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54612 - "GET /product/source-imports/corpus/processing/corpus-processing%3A02a0124e2c3e9607d924d6df0c98183e4f6265e437b61a6eda50e8f1e35abeb9?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54613 - "GET /product/source-imports/corpus/processing/corpus-processing%3A02a0124e2c3e9607d924d6df0c98183e4f6265e437b61a6eda50e8f1e35abeb9/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54614 - "GET /product/source-imports/corpus/processing/corpus-processing%3A8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54615 - "GET /product/source-imports/corpus/processing/corpus-processing%3A8f3eb097d71a0db1b911cecf718f241ad4ab3fc10ed2a39ca21797f4dd9ce210/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54616 - "GET /product/source-imports/corpus/processing/corpus-processing%3Ab91afb73fadbb26e62cc4b55b06782b842d0532fae865aaa6e5ec36bf704078a?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54617 - "GET /product/source-imports/corpus/processing/corpus-processing%3Ab91afb73fadbb26e62cc4b55b06782b842d0532fae865aaa6e5ec36bf704078a/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54618 - "GET /product/source-imports/corpus/processing/corpus-processing%3A1a7a7548aa10a53acf994cc65f856d47640ad8f977be5ff9fbbbeaf2edf44fdf?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54619 - "GET /product/source-imports/corpus/processing/corpus-processing%3A1a7a7548aa10a53acf994cc65f856d47640ad8f977be5ff9fbbbeaf2edf44fdf/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54620 - "GET /product/source-imports/corpus/processing/corpus-processing%3A81eaa5c09d1f79b8404cd58c4f5f003f66d1d2299a6cb6c287245e37f67ef7b8?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54621 - "GET /product/source-imports/corpus/processing/corpus-processing%3A81eaa5c09d1f79b8404cd58c4f5f003f66d1d2299a6cb6c287245e37f67ef7b8/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54622 - "GET /product/source-imports/corpus/processing/corpus-processing%3A52c6f87961db06f67b3e498c01f65097d0f682612bfb987fb8d50913f5cbcce4?project_id=first-novel-pilot-20260912 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54623 - "GET /product/source-imports/corpus/processing/corpus-processing%3A52c6f87961db06f67b3e498c01f65097d0f682612bfb987fb8d50913f5cbcce4/chapters?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54624 - "GET /product/mkaos/knowledge-candidates?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54625 - "GET /product/mkaos/knowledge-cards?project_id=first-novel-pilot-20260912&limit=100 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22639]

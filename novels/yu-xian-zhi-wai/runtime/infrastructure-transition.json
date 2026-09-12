@@ -1,0 +1,12 @@
+{
+  "status": "COMPLETE",
+  "database_from": "novel_forge_first_novel_pilot",
+  "database_to": "novel_forge_first_novel_pilot_test",
+  "guard": "UNCHANGED",
+  "business_assets_rewritten": false,
+  "historical_external_receipts": "PRESERVED",
+  "new_calls": 0,
+  "new_object_backend": "minio",
+  "object_manifest": "object-restore.json",
+  "implementation_sha": "b500c677483541435d6b0551345b3c7ac348273a"
+}

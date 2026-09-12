@@ -1,0 +1,27 @@
+{
+  "schema_version": "pilot-readonly-health.v1",
+  "captured_at": "2026-09-12T12:27:37.855072+00:00",
+  "implementation_sha": "085eceaaa1311ef8a4c80e75a4d75421293b7c8f",
+  "read_only": true,
+  "new_provider_calls": 0,
+  "routes": [
+    {
+      "path": "/product/source-imports?project_id=first-novel-pilot-20260912&limit=10",
+      "http_status": 200,
+      "response_type": "list",
+      "count": 10
+    },
+    {
+      "path": "/product/mkaos/knowledge-candidates?project_id=first-novel-pilot-20260912",
+      "http_status": 200,
+      "response_type": "list",
+      "count": 0
+    },
+    {
+      "path": "/product/mkaos/knowledge-cards?project_id=first-novel-pilot-20260912",
+      "http_status": 200,
+      "response_type": "list",
+      "count": 0
+    }
+  ]
+}

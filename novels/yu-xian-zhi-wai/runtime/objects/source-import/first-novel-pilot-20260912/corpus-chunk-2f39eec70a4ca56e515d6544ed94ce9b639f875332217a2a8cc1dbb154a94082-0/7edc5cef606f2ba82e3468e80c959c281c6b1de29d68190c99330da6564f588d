@@ -1,0 +1,36 @@
+Understanding Flow Rate
+Flow rate refers to the
+amount of fluid moving past a specific point within a given time
+. It can be measured in terms of either
+weight or volume
+, but in hydraulics, volume is the most common unit of measurement.
+In the
+U.S. customary system
+, flow rate is typically measured in
+gallons per minute (gpm)
+.
+In the
+metric system
+, the standard unit is
+liters per minute (lpm)
+.
+Methods for Measuring Flow Rate
+Figure \(\PageIndex{1}\): Flow rate may be determined by timing how long it takes for a volume of fluid to flow past a specified point.
+One simple way to determine flow rate is by
+timing how long it takes to fill a container of known volume
+. For instance, if a pump fills a
+5-gallon bucket in one minute
+, its flow rate is
+5 gpm
+. While this method can be
+highly accurate
+, it is also
+messy and time-consuming
+.
+A more practical approach is to use a
+flowmeter
+, which provides a direct reading of flow rate. While flowmeters may not always be as precise as the
+container-and-stopwatch method
+, they offer
+convenience and efficiency
+for regular system monitoring.

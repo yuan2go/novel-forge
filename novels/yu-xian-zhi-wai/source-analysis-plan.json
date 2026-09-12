@@ -1,0 +1,66 @@
+{
+  "status": "READY_FOR_AUTHORIZATION",
+  "implementation_sha": "085eceaaa1311ef8a4c80e75a4d75421293b7c8f",
+  "shared_source_caps": {
+    "calls": 60,
+    "tokens": 1500000
+  },
+  "projects": {
+    "first-novel-pilot-20260912": {
+      "calls": 270,
+      "tokens": 6750000
+    },
+    "first-novel-control-20260912": {
+      "calls": 210,
+      "tokens": 5250000
+    }
+  },
+  "native_project_cap_env": [
+    "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT",
+    "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT"
+  ],
+  "source_stage_execution": "ONE_AT_A_TIME; qualify exact extraction through existing D0; no bulk scheduler before canary review",
+  "accounting": "PROPOSED_ACCOUNT_ENTITLEMENT; money UNKNOWN; no entitlement or allowance granted",
+  "source_jobs": [
+    {
+      "name": "canary",
+      "run_key": "first-novel-source-canary-v1",
+      "revision_id": "corpus-curated-revision:d7202836d9753903ba45e9f8ef3d4282696cdde7580f45c7c6cd92deee12bb10",
+      "reading_scope_path": "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/canary-reading-scopes.json",
+      "call_cap": 10,
+      "token_cap": 250000,
+      "planned_calls_without_repairs": 6,
+      "planned_calls_with_object_repairs": 10,
+      "target_units": 1,
+      "source_check": {
+        "state": "VERIFIED",
+        "chunks": 1,
+        "bytes": 730,
+        "model_input_state": "NOT_SENT"
+      },
+      "status": "NOT_RUN",
+      "authorization_ref": null
+    },
+    {
+      "name": "next",
+      "run_key": "first-novel-source-next-v1",
+      "revision_id": "corpus-curated-revision:927d2676f810a138e226734cd13a2445ae0f08a3e9aa727f92cceebe4e488fbf",
+      "reading_scope_path": "/Users/yuan/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/next-reading-scopes.json",
+      "call_cap": 50,
+      "token_cap": 1250000,
+      "planned_calls_without_repairs": 28,
+      "planned_calls_with_object_repairs": 50,
+      "target_units": 8,
+      "source_check": {
+        "state": "VERIFIED",
+        "chunks": 22,
+        "bytes": 199136,
+        "model_input_state": "NOT_SENT"
+      },
+      "status": "NOT_RUN",
+      "authorization_ref": null
+    }
+  ],
+  "card_versions": [],
+  "real_model_calls": 0
+}

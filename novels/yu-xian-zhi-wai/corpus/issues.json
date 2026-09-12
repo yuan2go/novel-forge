@@ -1,0 +1,132 @@
+[
+  {
+    "id": "hydraulics-01",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 2,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-01.html"
+  },
+  {
+    "id": "hydraulics-02",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 1,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-02.html"
+  },
+  {
+    "id": "hydraulics-03",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 2,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-03.html"
+  },
+  {
+    "id": "hydraulics-04",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 1,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-04.html"
+  },
+  {
+    "id": "hydraulics-05",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 1,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-05.html"
+  },
+  {
+    "id": "hydraulics-06",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 1,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-06.html"
+  },
+  {
+    "id": "hydraulics-07",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 1,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-07.html"
+  },
+  {
+    "id": "hydraulics-08",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 2,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-08.html"
+  },
+  {
+    "id": "hydraulics-09",
+    "code": "SOURCE_UNIT_CONTRADICTION",
+    "location": "500 psi calculation followed by \"This 500 kPa\"",
+    "status": "QUARANTINED_FROM_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-09.html"
+  },
+  {
+    "id": "hydraulics-10",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 2,
+    "tables": 1,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-10.html"
+  },
+  {
+    "id": "hydraulics-11",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 2,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-11.html"
+  },
+  {
+    "id": "hydraulics-13",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 3,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-13.html"
+  },
+  {
+    "id": "hydraulics-15",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 4,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-15.html"
+  },
+  {
+    "id": "hydraulics-17",
+    "code": "VISUAL_CONTEXT_NOT_PARSED",
+    "images": 2,
+    "tables": 0,
+    "status": "EXCLUDE_FROM_INITIAL_ANALYSIS",
+    "raw_preserved": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-17.html"
+  },
+  {
+    "id": "usgs-streamgaging",
+    "code": "ACQUISITION_HTTP_405",
+    "status": "NOT_ACQUIRED",
+    "url": "https://www.usgs.gov/water-science-school/science/how-does-usgs-collect-streamflow-data"
+  },
+  {
+    "id": "usgs-100-year-flood",
+    "code": "ACQUISITION_TLS_FAILURE",
+    "status": "NOT_ACQUIRED",
+    "url": "https://pubs.usgs.gov/gip/106/pdf/gip106.pdf"
+  },
+  {
+    "id": "openstax-college-physics-2e",
+    "code": "PURPOSE_NOT_GRANTED",
+    "status": "EXCLUDED",
+    "evidence": "https://openstax.org/books/college-physics-2e/pages/index",
+    "reason": "Current NC-SA license plus separate generative AI permission notice; do not infer production license from older names."
+  }
+]

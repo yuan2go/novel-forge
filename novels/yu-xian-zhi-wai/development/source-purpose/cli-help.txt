@@ -1,0 +1,63 @@
+usage: novel-forge corpus [-h] [--format {json,text}] --project-id PROJECT_ID
+                          [--workspace-id WORKSPACE_ID] [--manifest MANIFEST]
+                          [--reading-scopes READING_SCOPES]
+                          [--work-id WORK_ID] [--corpus-id CORPUS_ID]
+                          [--revision-id REVISION_ID]
+                          [--intended-use {SOURCE_ANALYSIS,ABSTRACT_GENERATION}]
+                          [--target-book-id TARGET_BOOK_ID]
+                          [--inspect-local-codex] [--max-calls MAX_CALLS]
+                          [--max-tokens MAX_TOKENS]
+                          [--authorization-ref AUTHORIZATION_REF]
+                          [--source SOURCE] [--run-key RUN_KEY]
+                          [--edition-id EDITION_ID]
+                          [--processing-id PROCESSING_ID]
+                          [--compare-to COMPARE_TO] [--decision DECISION]
+                          [--job-id JOB_ID] [--operation-id OPERATION_ID]
+                          [--chunk-id CHUNK_ID] [--byte-start BYTE_START]
+                          [--byte-end BYTE_END] [--after AFTER]
+                          [--status STATUS] [--source-type SOURCE_TYPE]
+                          [--run-key-prefix RUN_KEY_PREFIX] [--historical]
+                          [--limit LIMIT] [--max-stages MAX_STAGES]
+                          [--reason REASON]
+                          {work,jobs,curated,resolve-work,relate,curate,analyze,reading-preview,chapters,evidence,inspect,compare,discover,review,equivalence,reprocess,preview,import,run,status,results,targets,pause,resume,cancel,lineage}
+
+positional arguments:
+  {work,jobs,curated,resolve-work,relate,curate,analyze,reading-preview,chapters,evidence,inspect,compare,discover,review,equivalence,reprocess,preview,import,run,status,results,targets,pause,resume,cancel,lineage}
+
+options:
+  -h, --help            show this help message and exit
+  --format {json,text}
+  --project-id PROJECT_ID
+  --workspace-id WORKSPACE_ID
+  --manifest MANIFEST
+  --reading-scopes READING_SCOPES
+                        bounded JSON array of exact ChapterReadingScope
+                        requests
+  --work-id WORK_ID
+  --corpus-id CORPUS_ID
+  --revision-id REVISION_ID
+  --intended-use {SOURCE_ANALYSIS,ABSTRACT_GENERATION}
+  --target-book-id TARGET_BOOK_ID
+  --inspect-local-codex
+  --max-calls MAX_CALLS
+  --max-tokens MAX_TOKENS
+  --authorization-ref AUTHORIZATION_REF
+  --source SOURCE
+  --run-key RUN_KEY
+  --edition-id EDITION_ID
+  --processing-id PROCESSING_ID
+  --compare-to COMPARE_TO
+  --decision DECISION
+  --job-id JOB_ID
+  --operation-id OPERATION_ID
+  --chunk-id CHUNK_ID
+  --byte-start BYTE_START
+  --byte-end BYTE_END
+  --after AFTER
+  --status STATUS
+  --source-type SOURCE_TYPE
+  --run-key-prefix RUN_KEY_PREFIX
+  --historical
+  --limit LIMIT
+  --max-stages MAX_STAGES
+  --reason REASON

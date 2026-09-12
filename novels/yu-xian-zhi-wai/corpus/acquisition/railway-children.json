@@ -1,0 +1,13 @@
+{
+  "id": "railway-children",
+  "requested_url": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt",
+  "resolved_url": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt",
+  "format": "txt",
+  "status": "ACQUIRED",
+  "sha256": "8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+  "bytes": 363344,
+  "acquired_utc": "2026-09-12T10:12:13Z",
+  "etag": null,
+  "last_modified": "Tue, 01 Sep 2026 15:13:27 GMT",
+  "raw_path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children.txt"
+}

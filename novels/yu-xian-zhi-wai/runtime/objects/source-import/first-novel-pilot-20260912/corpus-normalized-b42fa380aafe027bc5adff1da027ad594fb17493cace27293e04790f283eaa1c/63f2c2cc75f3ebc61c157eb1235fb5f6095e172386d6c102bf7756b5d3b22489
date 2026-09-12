@@ -1,0 +1,32 @@
+While all check valves serve the same basic purpose of allowing flow in one direction and blocking it in the other, their
+internal design
+can vary. The three most common types of check valves used in hydraulic systems are:
+Figure \(\PageIndex{1}\): Three types of check valves: ball, poppet, and swing.
+Ball Check Valves
+Poppet Check Valves
+Swing Check Valves
+Figure \(\PageIndex{2}\): Schematic symbols with corresponding explanations.
+Despite their differences in design, these valves share the same
+schematic symbol
+, indicating their function remains consistent across various applications.
+Figure \(\PageIndex{3}\): Schematic representation of a poppet check valve.
+A
+poppet-style check valve
+provides a clear example of how these valves operate. Inside the valve body, a
+spring-loaded poppet
+rests against a
+seat
+, preventing flow in the checked direction. The spring is typically very light, meaning that only a
+small amount of pressure
+is needed to push the poppet off the seat and allow flow in the open direction.
+Figure \(\PageIndex{4}\): Schematic representation of a poppet check valve with blocked flow direction.
+However, when fluid attempts to move in the reverse direction, it pushes the
+poppet more firmly against the seat
+, completely blocking flow. This design ensures
+minimal leakage
+, with many check valves providing a near
+zero-leakage seal
+in the checked direction.
+Check valves, despite their small size, are indispensable in hydraulic circuits, contributing to both
+operational efficiency and system protection
+. By preventing unwanted flow conditions, they help maintain stable and controlled hydraulic performance.

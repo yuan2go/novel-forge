@@ -1,0 +1,356 @@
+{
+  "import_job_id": "source-import:0bad5e06-d70a-4537-8a63-b33bb3c8464a",
+  "snapshot": {
+    "manifest": {
+      "format": "txt",
+      "checksum": "sha256:e0db478696b288731a3c86842421b5d77efdd965b72a2cf52244fc64ddea3029",
+      "metadata": {
+        "parser": {
+          "fields": {
+            "text": "text"
+          },
+          "format": "txt",
+          "layout": "SINGLE_WORK",
+          "filters": {},
+          "version": "corpus-parser.v3",
+          "encoding": "utf-8",
+          "constants": {
+            "title": "A Study in Scarlet",
+            "author": "Arthur Conan Doyle (1859–1930)",
+            "work_id": "study-in-scarlet"
+          },
+          "completeness": "COMPLETE",
+          "records_path": "item",
+          "normalization": {
+            "version": "chinese-longform.v2",
+            "boundaries": [
+              {
+                "end": 1780,
+                "kind": "AUTHOR_NOTE",
+                "path": "study-in-scarlet.txt",
+                "start": 0,
+                "title": "Publisher identity, front matter and rights",
+                "number": null,
+                "volume": "",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 17929,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 1780,
+                "title": "CHAPTER I.",
+                "number": 1,
+                "volume": "Part I",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 38469,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 17929,
+                "title": "CHAPTER II.",
+                "number": 2,
+                "volume": "Part I",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 60914,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 38469,
+                "title": "CHAPTER III.",
+                "number": 3,
+                "volume": "Part I",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 75207,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 60914,
+                "title": "CHAPTER IV.",
+                "number": 4,
+                "volume": "Part I",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 89495,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 75207,
+                "title": "CHAPTER V.",
+                "number": 5,
+                "volume": "Part I",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 108420,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 89495,
+                "title": "CHAPTER VI.",
+                "number": 6,
+                "volume": "Part I",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 127485,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 108420,
+                "title": "CHAPTER VII.",
+                "number": 7,
+                "volume": "Part I",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 148743,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 127485,
+                "title": "CHAPTER I.",
+                "number": 1,
+                "volume": "Part II",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 163535,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 148743,
+                "title": "CHAPTER II.",
+                "number": 2,
+                "volume": "Part II",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 174232,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 163535,
+                "title": "CHAPTER III.",
+                "number": 3,
+                "volume": "Part II",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 193555,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 174232,
+                "title": "CHAPTER IV.",
+                "number": 4,
+                "volume": "Part II",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 213674,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 193555,
+                "title": "CHAPTER V.",
+                "number": 5,
+                "volume": "Part II",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 237851,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 213674,
+                "title": "CHAPTER VI.",
+                "number": 6,
+                "volume": "Part II",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 249872,
+                "kind": "CHAPTER",
+                "path": "study-in-scarlet.txt",
+                "start": 237851,
+                "title": "CHAPTER VII.",
+                "number": 7,
+                "volume": "Part II",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 268777,
+                "kind": "AUTHOR_NOTE",
+                "path": "study-in-scarlet.txt",
+                "start": 249872,
+                "title": "Project Gutenberg license and trailing metadata",
+                "number": null,
+                "volume": "",
+                "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+                "evidence": "https://www.gutenberg.org/cache/epub/244/pg244.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              }
+            ],
+            "expected_toc": [],
+            "segmentation": "EXPLICIT",
+            "toc_evidence": "",
+            "unicode_form": "NFC",
+            "max_unit_bytes": 2000000,
+            "min_body_chars": 80,
+            "work_completion": "FINISHED",
+            "external_work_ids": [],
+            "heading_max_chars": 100,
+            "candidate_threshold": 0.8,
+            "duplicate_body_min_chars": 128
+          },
+          "expected_units": 16,
+          "work_key_encoding": "VALUE",
+          "html_body_selector": "body",
+          "html_remove_selectors": [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            "noscript"
+          ]
+        },
+        "source": {
+          "kind": "LOCAL",
+          "files": [
+            {
+              "path": "study-in-scarlet.txt",
+              "parser": null,
+              "checksum": "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497",
+              "size_bytes": null
+            }
+          ],
+          "split": "",
+          "config": "",
+          "exclude": [
+            ".git/**",
+            "**/.git/**",
+            ".DS_Store"
+          ],
+          "include": [
+            "*",
+            "**/*"
+          ],
+          "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet.txt",
+          "revision": ""
+        },
+        "ingestion_manifest_hash": "sha256:07de355e5061c10ae7d72b93b9cdbcdbf3b41c594f4fd8a327ae2e25f864ae51"
+      },
+      "origin_uri": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet.txt",
+      "schema_version": "corpus-dataset-manifest.v1",
+      "adapter_profile": "LOCAL",
+      "external_version": "sha256:e0db478696b288731a3c86842421b5d77efdd965b72a2cf52244fc64ddea3029",
+      "adapter_contract_version": "corpus-adapters.v1"
+    },
+    "rights_id": "corpus-rights:110839f6d78d04f2e78b6026c531a7cdfa2fe3bedabda2f6855e5b7fb797e2d0",
+    "source_id": "corpus-source:93b9c24ab88ac4f4775b1796a808a193b2a19f4d8b6ddae2517cffcad04b2e25",
+    "created_at": "2026-09-12T10:18:14.661476+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "acquisition": {
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet.txt",
+      "checksum": "sha256:e0db478696b288731a3c86842421b5d77efdd965b72a2cf52244fc64ddea3029",
+      "acquired_at": "2026-09-12T10:18:14.523662+00:00",
+      "receipt_ref": "6d38e5b5-2e40-4e90-b217-4a4f3464708c",
+      "repository_snapshot_asset_version_id": null
+    },
+    "snapshot_id": "corpus-snapshot:434e25ee4c259704f224a7fa4495d2e99652690b4122f35181ad87ae8c955030",
+    "revision_number": 1,
+    "previous_snapshot_id": null,
+    "created_by_operation_id": "6355c49a-f613-4e14-a4a9-c0c98e89bb25",
+    "repository_snapshot_asset_version_id": null
+  },
+  "rights": {
+    "rights_id": "corpus-rights:110839f6d78d04f2e78b6026c531a7cdfa2fe3bedabda2f6855e5b7fb797e2d0",
+    "source_id": "corpus-source:93b9c24ab88ac4f4775b1796a808a193b2a19f4d8b6ddae2517cffcad04b2e25",
+    "created_at": "2026-09-12T10:18:14.61112+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "declaration": {
+      "scope": "ALL_WORKS_IN_SNAPSHOT",
+      "action": "declare_rights",
+      "source_id": "corpus-source:93b9c24ab88ac4f4775b1796a808a193b2a19f4d8b6ddae2517cffcad04b2e25",
+      "work_grants": {},
+      "allowed_uses": [
+        "LOCAL_PROCESSING",
+        "SOURCE_ANALYSIS",
+        "ABSTRACT_GENERATION"
+      ],
+      "restrictions": [],
+      "evidence_refs": [
+        "https://www.gutenberg.org/cache/epub/244/pg244.txt",
+        "https://www.gutenberg.org/ebooks/244",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet-catalogue.html",
+        "sha256:8bbec71f9fa9c2acc9afe9be70560ca5f65c1bc95ef5af8252e9097f8d012497"
+      ],
+      "dataset_license": "Project Gutenberg License; exact original English work public domain",
+      "denied_purposes": [],
+      "allowed_purposes": [
+        "PRODUCTION_REFERENCE"
+      ],
+      "underlying_rights": "PUBLIC_DOMAIN",
+      "copyright_boundary": "Original English works by authors deceased by 1940; Project Gutenberg USA public domain evidence preserved. No modern translation, trademark endorsement, protected expression, characters, scenes or distinctive plot combinations enter creation; abstract craft only after review.",
+      "previous_rights_id": null,
+      "underlying_license": ""
+    },
+    "revision_number": 1,
+    "previous_rights_id": null,
+    "created_by_operation_id": "9c5d4358-3e98-4f58-98a9-8f510aad6485"
+  },
+  "editions": [
+    {
+      "title": "study-in-scarlet",
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/study-in-scarlet.txt",
+      "checksum": "sha256:bd9d8b9dcf9a6b95789bee000a4a9104a7df45f476462592a1b2f5734f50ca07",
+      "metadata": {
+        "parser": "corpus-parser.v3",
+        "unit_count": 16,
+        "completeness": "REVIEW_REQUIRED"
+      },
+      "source_id": "corpus-source:93b9c24ab88ac4f4775b1796a808a193b2a19f4d8b6ddae2517cffcad04b2e25",
+      "created_at": "2026-09-12T10:18:15.074243+00:00",
+      "edition_id": "corpus-edition:ca543999291227320e06079d5c5043a11c999c47beb26a6a0504e79ad7758df5",
+      "project_id": "first-novel-pilot-20260912",
+      "snapshot_id": "corpus-snapshot:434e25ee4c259704f224a7fa4495d2e99652690b4122f35181ad87ae8c955030",
+      "book_source_id": "corpus-book:74d5ffbe68622936ae8c0fe5ad15e51bae2022e47cc9dccc0188f620560292c1",
+      "external_edition_id": "source-edition",
+      "created_by_operation_id": "41e54341-cfac-4458-8fa2-acc5d93e588e",
+      "bridge": {
+        "evidence": {
+          "scope": "CONTENT_AND_LINEAGE_ONLY",
+          "completeness": "REVIEW_REQUIRED",
+          "manifest_hash": "sha256:07de355e5061c10ae7d72b93b9cdbcdbf3b41c594f4fd8a327ae2e25f864ae51",
+          "parsed_blob_id": "d1ce5136-affd-5023-95dc-e15fd353c00a",
+          "knowledge_approved": false,
+          "acquisition_effect_id": "6d38e5b5-2e40-4e90-b217-4a4f3464708c"
+        },
+        "rights_id": "corpus-rights:110839f6d78d04f2e78b6026c531a7cdfa2fe3bedabda2f6855e5b7fb797e2d0",
+        "created_at": "2026-09-12T10:18:16.802472+00:00",
+        "edition_id": "corpus-edition:ca543999291227320e06079d5c5043a11c999c47beb26a6a0504e79ad7758df5",
+        "project_id": "first-novel-pilot-20260912",
+        "parser_hash": "sha256:403fee497dc8dcfa9fd8d251c8de735e379f3d1eba1a472a7c177c1bd104b995",
+        "policy_version": "corpus-use-policy.v1",
+        "normalized_hash": "sha256:72babd5f39561f8d04a9bd9f48d67eb5be13767e4f595237b6c6cc0360e7d38b",
+        "source_document_id": "source-document:first-novel-pilot-20260912:d64b4e43b89b2e70f8270eba1ff575886fafc8604e9dda6941127b98c1336026",
+        "source_transform_id": "source-transform:first-novel-pilot-20260912:3c7c18b01aabd760a66618177135d4c8eab84d68a1063ae86aa3c029699c3db8",
+        "created_by_operation_id": "243a62da-ec85-4550-bf8a-fa325270ec9a",
+        "source_work_asset_version_id": "8888b8d3-69ea-4335-8c60-f3c75ac97392"
+      }
+    }
+  ],
+  "page_limit": 50,
+  "next_after": null
+}

@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import unittest
+import time
+from unittest.mock import patch
 from dataclasses import replace
 from psycopg.errors import LockNotAvailable
 
@@ -11,8 +13,11 @@ from novel_forge.modules.provider_qualification import D0LiveQualificationEviden
 from novel_forge.modules.provider_qualification.domain import request_hash
 from novel_forge.modules.provider_qualification.source_binding import require_source_runtime_qualification
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.budget_runtime import BudgetReservationRequest, reserve_provider_budget, resolve_provider_budget_failure, settle_provider_budget
+from novel_forge.modules.provider_qualification.accounting import accounting_scope_from_cost, require_entitlement_budget
 from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, dispatch_external_effect, plan_external_effect, reconcile_external_effect
 from novel_forge.modules.mkaos_authority import MkaosAuthorityApplication
+from novel_forge.modules.mkaos_authority.query import MkaosAuthorityQuery
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier, insert_definition, insert_operation, seed_authority_project_book, transaction
 from tests.integration.test_d0_provider_qualification_authority_postgres import _ContractOnlyLiveGateway, _RecordingObjectStore
 from tests.integration import test_mkaos_authority_postgres as mkaos_fixture
@@ -26,6 +31,17 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
         ensure_migrated()
 
     def test_exact_source_qualification_receipt_approval_replay_and_revocation(self):
+        self._exercise_source_qualification(accounting_basis="PRICED")
+
+    def test_entitlement_qualification_unknown_cost_finite_budget_recovery_and_revocation(self):
+        self._exercise_source_qualification(accounting_basis="ACCOUNT_ENTITLEMENT")
+
+    def _exercise_source_qualification(self, *, accounting_basis):
+        cost = {"amount": "0.0001", "currency": "USD", "estimated": True,
+                "provider_billed": False, "pricing_snapshot_hash": "sha256:" + "3" * 64}
+        if accounting_basis == "ACCOUNT_ENTITLEMENT":
+            from tests.unit.test_source_runtime_qualification import entitlement_cost
+            cost = {**entitlement_cost(), "model": "gpt-5.6-sol"}
         project_id = identifier("d0-live-project")
         book_id = identifier("d0-live-book")
         workspace_id = f"workspace:{project_id}"
@@ -54,6 +70,7 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
                 "instruction_hash": "sha256:" + "e" * 64,
                 "skill_version": "skill:retrieval@1",
                 "skill_hash": "sha256:" + "f" * 64,
+                **({"accounting_scope": accounting_scope_from_cost(cost)} if accounting_basis == "ACCOUNT_ENTITLEMENT" else {}),
             }
         )
         command = D0QualificationCommand(
@@ -90,13 +107,6 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
             "input_tokens": 11,
             "output_tokens": 3,
             "total_tokens": 14,
-        }
-        cost = {
-            "amount": "0.0001",
-            "currency": "USD",
-            "estimated": True,
-            "provider_billed": False,
-            "pricing_snapshot_hash": "sha256:" + "3" * 64,
         }
         route_snapshot = {
             "route_snapshot_id": "route:retrieval@1",
@@ -191,6 +201,16 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
             provider_capability_profile=adapter.capability_profile.to_dict(),
         )
         provider_evidence["production_execution"]["execution_request"]["external_effect_id"] = str(effect["external_effect_id"])
+        reservation_id = ""
+        if accounting_basis == "ACCOUNT_ENTITLEMENT":
+            reservation = reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(
+                operation_id=source_operation_id, external_effect_id=effect["external_effect_id"],
+                project_id=project_id, stable_idempotency_key=f"{project_id}:budget",
+                provider="codex-cli", currency="UNKNOWN", estimated_amount=None, estimated_tokens=100,
+                accounting_basis=accounting_basis, cost_authorization_ref=cost["authorization_ref"],
+                call_caps={"project_total": 10}, token_caps={"project_total": 1000},
+            ))
+            reservation_id = reservation["reservation_id"]
         with self.assertRaisesRegex(KernelError, "recorded as unknown"):
             dispatch_external_effect(
                 DATABASE_URL,
@@ -199,7 +219,15 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
                 worker_id="d0-live-effect-worker",
                 lease_seconds=30,
                 adapter=adapter,
+                budget_reservation_id=reservation_id,
             )
+        if reservation_id:
+            held = resolve_provider_budget_failure(DATABASE_URL, reservation_id=reservation_id,
+                                                   project_id=project_id, external_state_unknown=True)
+            assert held["status"] == "HELD_UNKNOWN"
+            with transaction() as connection, self.assertRaisesRegex(ValueError, "exact account authorization"):
+                require_entitlement_budget(connection.cursor(), project_id=project_id,
+                                           effect_id=effect["external_effect_id"], cost=cost, usage=usage)
         reconciled = reconcile_external_effect(
             DATABASE_URL,
             context,
@@ -250,6 +278,16 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
             }
         )
 
+        if reservation_id:
+            settled = settle_provider_budget(DATABASE_URL, reservation_id=reservation_id, project_id=project_id,
+                                            actual_amount=None, actual_tokens=14,
+                                            evidence={"cost_status": "UNKNOWN", "provider_usage": usage, "provider_cost": cost})
+            assert settled["status"] == "SETTLED"
+            with self.assertRaisesRegex(ValueError, "accounting scope"):
+                authority.execute_live(replace(command, config=replace(config, accounting_scope={})), evidence)
+            with self.assertRaisesRegex(ValueError, "accounting scope"):
+                authority.execute_live(replace(command, config=replace(config, accounting_scope={**config.accounting_scope, "account_identity_ref": "account:other"})), evidence)
+
         with self.assertRaisesRegex(ValueError, "D0 route"):
             authority.execute_live(command, replace(evidence, backend_id="other"))
         result = authority.execute_live(command, evidence)
@@ -289,7 +327,47 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
         assert binding["report_asset_version_id"] == result["report_asset_version_id"]
         assert binding["scope"]["capability"] == "mkaos.knowledge.extract"
         assert binding["production_effect_proven"] is False
+        if reservation_id:
+            assert binding["scope"]["accounting_scope"] == accounting_scope_from_cost(cost)
+            assert binding["source_accounting_evidence"]["reservation_id"] == reservation_id
+            assert binding["source_accounting_evidence"]["actual_tokens"] == 14
+            assert binding["source_accounting_evidence"]["monetary_cost"] == "UNKNOWN"
+            with transaction() as connection:
+                assert connection.execute(
+                    "SELECT estimated_amount,reserved_amount,settled_amount,settled_cost_status FROM authority_budget_reservation WHERE reservation_id=%s",
+                    [reservation_id],
+                ).fetchone() == (None, None, None, "UNKNOWN")
+                report_content = connection.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s",
+                                                    [result["report_asset_version_id"]]).fetchone()[0]
+                assert report_content["accounting_scope"] == accounting_scope_from_cost(cost)
+                assert report_content["monetary_cost_observability"] == "UNKNOWN"
+                assert report_content["usage_observability"] == "MEASURED"
+                assert all(not value for value in report_content["non_claims"].values())
         assert require_source_runtime_qualification(DATABASE_URL, **kwargs, frozen=binding) == binding
+        selector_cards = self._selector_cards(project_id, workspace_id, source_definition, binding, provider_evidence["result"]) if reservation_id else []
+        if selector_cards:
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+            connections = []
+            class CountedUnitOfWork(AuthorityUnitOfWork):
+                def __enter__(self):
+                    connections.append(True)
+                    return super().__enter__()
+            start = time.monotonic()
+            with patch("novel_forge.modules.mkaos_authority.query.AuthorityUnitOfWork", CountedUnitOfWork), patch(
+                "novel_forge.modules.provider_qualification.source_binding.AuthorityUnitOfWork", CountedUnitOfWork,
+            ):
+                selected = MkaosAuthorityQuery(DATABASE_URL)._planning_cards(
+                    project_id=project_id, allowed_asset_version_ids=tuple(card[0] for card in selector_cards),
+                )
+            print(json.dumps({"benchmark": "exact_allow_only_30_cards_shared_source_binding", "cards": len(selected),
+                              "connections": len(connections), "elapsed_ms": round((time.monotonic()-start)*1000, 3),
+                              "evidence_class": "SYNTHETIC_PROTOCOL_ONLY"}, sort_keys=True))
+            assert len(selected) == 30
+            assert len(connections) == 1
+            assert all(card["runtime_qualification_current"] for card in selected)
+            MkaosAuthorityQuery(DATABASE_URL).require_planning_card_current(
+                project_id=project_id, asset_version_id=selector_cards[0][0], content_hash=selector_cards[0][1],
+            )
         candidate = {"workspace_id": workspace_id, "status": "NEEDS_REVIEW", "lifecycle": "CANDIDATE",
                      "eligibility": "PENDING_EVALUATION", "governance": "CLEAR",
                      "content": {"candidate": provider_evidence["result"], "execution_evidence": {
@@ -317,3 +395,37 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
             connection.cursor().execute("UPDATE authority_asset_version SET eligibility='REVOKED' WHERE asset_version_id=%s", [result["report_asset_version_id"]])
         with self.assertRaisesRegex(KernelError, "SOURCE_RUNTIME_QUALIFICATION_REQUIRED"):
             approval._require_approvable(candidate, **approval_kwargs, frozen_runtime_qualification=binding)
+        if selector_cards:
+            assert all(not card["runtime_qualification_current"] for card in MkaosAuthorityQuery(DATABASE_URL)._planning_cards(
+                project_id=project_id, allowed_asset_version_ids=tuple(card[0] for card in selector_cards),
+            ))
+            with self.assertRaisesRegex(KernelError, "PLANNING_NARRATIVE_INTELLIGENCE_DRIFT"):
+                MkaosAuthorityQuery(DATABASE_URL).require_planning_card_current(
+                    project_id=project_id, asset_version_id=selector_cards[0][0], content_hash=selector_cards[0][1],
+                )
+
+    def _selector_cards(self, project_id, workspace_id, definition_name, binding, abstract):
+        result = []
+        for index in range(30):
+            content = {"fixture_selector_identity": index, "abstract_content": abstract, "source_policy": {
+                "knowledge_card_context_eligible": True, "raw_source_expression_included": False,
+                "source_chunks_direct_context_eligible": False, "fixture_protocol_only": False,
+                "approval_class": "PRODUCTION", "production_context_eligible": True,
+                "provider_runtime_qualification": binding,
+            }}
+            version_id = mkaos_fixture.MkaosAuthorityPostgresTests._insert_asset_version(project_id, "knowledge_card", content)
+            candidate_id = mkaos_fixture.MkaosAuthorityPostgresTests._insert_asset_version(project_id, "knowledge_candidate", {"fixture": index})
+            decision_id = mkaos_fixture.MkaosAuthorityPostgresTests._insert_asset_version(project_id, "governance_decision", {"fixture": index})
+            operation_id = identifier("selector-fixture-approval")
+            with transaction() as connection:
+                insert_operation(connection.cursor(), operation_id=operation_id, definition_name=definition_name,
+                                 project_id=project_id, workspace_id=workspace_id, status="SUCCEEDED")
+                connection.execute(
+                    """INSERT INTO authority_mkaos_knowledge_card(knowledge_card_id,project_id,workspace_id,asset_version_id,
+                       candidate_asset_version_id,governance_decision_asset_version_id,created_by_operation_id,content_hash,status)
+                       SELECT asset_id,%s,%s,asset_version_id,%s,%s,%s,content_hash,'ACTIVE'
+                       FROM authority_asset_version WHERE asset_version_id=%s""",
+                    [project_id,workspace_id,candidate_id,decision_id,operation_id,version_id],
+                )
+            result.append((version_id, request_hash(content)))
+        return result

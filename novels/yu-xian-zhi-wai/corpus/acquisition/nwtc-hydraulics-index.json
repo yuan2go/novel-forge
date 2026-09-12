@@ -1,0 +1,13 @@
+{
+  "id": "nwtc-hydraulics-index",
+  "requested_url": "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_%28NWTC%29",
+  "resolved_url": "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_%28NWTC%29",
+  "format": "html",
+  "status": "ACQUIRED",
+  "sha256": "580b885334784814d0e211ffbe4c1a3ac8f06a02a180237d59badd7748205fce",
+  "bytes": 188074,
+  "acquired_utc": "2026-09-12T10:11:35Z",
+  "etag": null,
+  "last_modified": null,
+  "raw_path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/nwtc-hydraulics-index.html"
+}

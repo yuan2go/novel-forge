@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
@@ -40,6 +40,7 @@ class D0ProbeConfig:
     instruction_hash: str = ""
     skill_hash: str = ""
     schema_version: str = "d0-provider-probe-config.v1"
+    accounting_scope: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def from_mapping(cls, payload: Mapping[str, Any]) -> "D0ProbeConfig":
@@ -47,7 +48,7 @@ class D0ProbeConfig:
             "schema_version", "provider", "backend_id", "model_env",
             "model_version_env", "route_policy_version", "timeout_seconds",
             "auth_secret_ref", "capability", "prompt_version", "skill_version",
-            "prompt_hash", "instruction_version", "instruction_hash", "skill_hash",
+            "prompt_hash", "instruction_version", "instruction_hash", "skill_hash", "accounting_scope",
         }
         unexpected = sorted(set(payload) - allowed)
         if unexpected:
@@ -81,7 +82,11 @@ class D0ProbeConfig:
         timeout = payload.get("timeout_seconds")
         if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout <= 0:
             raise ValueError("D0 timeout_seconds must be positive")
-        return cls(**values, **optional_identity, timeout_seconds=timeout)
+        from .accounting import validate_accounting_scope
+        scope = payload.get("accounting_scope") or {}
+        if not isinstance(scope, Mapping):
+            raise ValueError("entitlement accounting scope must be an object")
+        return cls(**values, **optional_identity, timeout_seconds=timeout, accounting_scope=validate_accounting_scope(scope))
 
     @property
     def auth_environment_name(self) -> str:
@@ -243,14 +248,20 @@ class D0LiveQualificationEvidence:
         ):
             raise ValueError("live qualification requires measured Provider usage")
         cost = mappings["cost"]
-        try:
-            amount = Decimal(str(cost.get("amount") or ""))
-        except InvalidOperation as exc:
-            raise ValueError("live qualification cost amount is invalid") from exc
-        if amount < 0 or not str(cost.get("currency") or "").strip():
-            raise ValueError("live qualification cost evidence is invalid")
-        if not _SHA256.fullmatch(str(cost.get("pricing_snapshot_hash") or "")):
-            raise ValueError("live qualification pricing identity is invalid")
+        from .accounting import accounting_scope_from_cost
+        scope = accounting_scope_from_cost(cost)
+        if scope:
+            if text_values["provider"] != "codex-cli" or cost.get("model") != text_values["model"]:
+                raise ValueError("entitlement qualification must bind the exact Codex model")
+        else:
+            try:
+                amount = Decimal(str(cost.get("amount") if cost.get("amount") is not None else ""))
+            except InvalidOperation as exc:
+                raise ValueError("live qualification cost amount is invalid") from exc
+            if not amount.is_finite() or amount < 0 or not str(cost.get("currency") or "").strip():
+                raise ValueError("live qualification cost evidence is invalid")
+            if not _SHA256.fullmatch(str(cost.get("pricing_snapshot_hash") or "")):
+                raise ValueError("live qualification pricing identity is invalid")
         duration_ms = mappings["latency"].get("duration_ms")
         if (
             not isinstance(duration_ms, int)

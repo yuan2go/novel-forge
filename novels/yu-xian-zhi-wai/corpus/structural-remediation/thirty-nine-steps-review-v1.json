@@ -1,0 +1,26 @@
+{
+  "action": "review_processing",
+  "processing_id": "corpus-processing:4cd6aae2092680c63b07daca35dde7642190d7ee1a1ea06f031d0373e3b1f633",
+  "previous_id": null,
+  "decisions": [
+    {
+      "issue_id": "sha256:56ff42aa0087e2694508a40194d954a95335511ebea7246061bb835b95a756e7",
+      "resolution": "MARK_NON_BODY",
+      "reason": "Operator/AI-assisted structural inspection: publisher identity, table of contents and dedication/preface before the first body/volume boundary; retain source bytes and rights evidence, exclude this exact occurrence from analysis; not independent human review or knowledge approval",
+      "evidence_refs": [
+        "file:///Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps.txt#sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f:utf8-bytes=0-2161",
+        "file:///Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/thirty-nine-steps-inspect.json#sha256:5052a94d30ab689eae7c2a8e3f73d47e8050f0eafbc41d59fa6e34c522d78f54"
+      ]
+    },
+    {
+      "issue_id": "sha256:fdb104b01c0f3bec30882d20210a8a0e58644340da840e3a3dad21e61b831a4c",
+      "resolution": "MARK_NON_BODY",
+      "reason": "Operator/AI-assisted structural inspection: end marker, Project Gutenberg license and trailing project metadata; retain source bytes and rights evidence, exclude this exact occurrence from analysis; not independent human review or knowledge approval",
+      "evidence_refs": [
+        "file:///Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/thirty-nine-steps.txt#sha256:b0976c17f2861c14f2a0eca6fd72dcc611cbe2a49e8df26e80e951d55e3dd53f:utf8-bytes=223208-242116",
+        "file:///Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/native-imports/thirty-nine-steps-inspect.json#sha256:5052a94d30ab689eae7c2a8e3f73d47e8050f0eafbc41d59fa6e34c522d78f54"
+      ]
+    }
+  ],
+  "reason": "Operator/AI-assisted exact-byte structural exclusion of nonbody source units; no change to source rights and no Card approval"
+}

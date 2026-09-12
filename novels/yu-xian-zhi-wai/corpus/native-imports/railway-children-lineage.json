@@ -1,0 +1,356 @@
+{
+  "import_job_id": "source-import:c79e4030-a88f-41b8-ad80-89d2f723d184",
+  "snapshot": {
+    "manifest": {
+      "format": "txt",
+      "checksum": "sha256:f57a2adb2f5693491171c84c4e225629b709602479a13ff0770e15931c6b21dd",
+      "metadata": {
+        "parser": {
+          "fields": {
+            "text": "text"
+          },
+          "format": "txt",
+          "layout": "SINGLE_WORK",
+          "filters": {},
+          "version": "corpus-parser.v3",
+          "encoding": "utf-8",
+          "constants": {
+            "title": "The Railway Children",
+            "author": "E. Nesbit (1858–1924)",
+            "work_id": "railway-children"
+          },
+          "completeness": "COMPLETE",
+          "records_path": "item",
+          "normalization": {
+            "version": "chinese-longform.v2",
+            "boundaries": [
+              {
+                "end": 1597,
+                "kind": "AUTHOR_NOTE",
+                "path": "railway-children.txt",
+                "start": 0,
+                "title": "Publisher identity, front matter and rights",
+                "number": null,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 25452,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 1597,
+                "title": "Chapter I. The beginning of things.",
+                "number": 1,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 54930,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 25452,
+                "title": "Chapter II. Peter's coal-mine.",
+                "number": 2,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 81001,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 54930,
+                "title": "Chapter III. The old gentleman.",
+                "number": 3,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 110100,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 81001,
+                "title": "Chapter IV. The engine-burglar.",
+                "number": 4,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 130983,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 110100,
+                "title": "Chapter V. Prisoners and captives.",
+                "number": 5,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 153003,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 130983,
+                "title": "Chapter VI. Saviours of the train.",
+                "number": 6,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 179066,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 153003,
+                "title": "Chapter VII. For valour.",
+                "number": 7,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 201954,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 179066,
+                "title": "Chapter VIII. The amateur firemen.",
+                "number": 8,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 227172,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 201954,
+                "title": "Chapter IX. The pride of Perks.",
+                "number": 9,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 248738,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 227172,
+                "title": "Chapter X. The terrible secret.",
+                "number": 10,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 276876,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 248738,
+                "title": "Chapter XI. The hound in the red jersey.",
+                "number": 11,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 298429,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 276876,
+                "title": "Chapter XII. What Bobbie brought home.",
+                "number": 12,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 322895,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 298429,
+                "title": "Chapter XIII. The hound's grandfather.",
+                "number": 13,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 344437,
+                "kind": "CHAPTER",
+                "path": "railway-children.txt",
+                "start": 322895,
+                "title": "Chapter XIV. The End.",
+                "number": 14,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              },
+              {
+                "end": 363344,
+                "kind": "AUTHOR_NOTE",
+                "path": "railway-children.txt",
+                "start": 344437,
+                "title": "Project Gutenberg license and trailing metadata",
+                "number": null,
+                "volume": "",
+                "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+                "evidence": "https://www.gutenberg.org/cache/epub/1874/pg1874.txt; exact UTF-8 byte markers reviewed; front matter and license retained as nonchapter units"
+              }
+            ],
+            "expected_toc": [],
+            "segmentation": "EXPLICIT",
+            "toc_evidence": "",
+            "unicode_form": "NFC",
+            "max_unit_bytes": 2000000,
+            "min_body_chars": 80,
+            "work_completion": "FINISHED",
+            "external_work_ids": [],
+            "heading_max_chars": 100,
+            "candidate_threshold": 0.8,
+            "duplicate_body_min_chars": 128
+          },
+          "expected_units": 16,
+          "work_key_encoding": "VALUE",
+          "html_body_selector": "body",
+          "html_remove_selectors": [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            "noscript"
+          ]
+        },
+        "source": {
+          "kind": "LOCAL",
+          "files": [
+            {
+              "path": "railway-children.txt",
+              "parser": null,
+              "checksum": "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290",
+              "size_bytes": null
+            }
+          ],
+          "split": "",
+          "config": "",
+          "exclude": [
+            ".git/**",
+            "**/.git/**",
+            ".DS_Store"
+          ],
+          "include": [
+            "*",
+            "**/*"
+          ],
+          "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children.txt",
+          "revision": ""
+        },
+        "ingestion_manifest_hash": "sha256:38221a7fadad4e2fba78ef0e5cdaffeea927070c226bc18e9c637cb6d5b894ca"
+      },
+      "origin_uri": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children.txt",
+      "schema_version": "corpus-dataset-manifest.v1",
+      "adapter_profile": "LOCAL",
+      "external_version": "sha256:f57a2adb2f5693491171c84c4e225629b709602479a13ff0770e15931c6b21dd",
+      "adapter_contract_version": "corpus-adapters.v1"
+    },
+    "rights_id": "corpus-rights:0cd8aafcbae0dee7cd0c4030f75b6b33796b41ec7f93f2eaf4b53111a60eac03",
+    "source_id": "corpus-source:fe14e7ab661dcc05cebf92ff079170e0f88b760d2e79a5dbc78828822e54ea85",
+    "created_at": "2026-09-12T10:18:04.750157+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "acquisition": {
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children.txt",
+      "checksum": "sha256:f57a2adb2f5693491171c84c4e225629b709602479a13ff0770e15931c6b21dd",
+      "acquired_at": "2026-09-12T10:18:04.611027+00:00",
+      "receipt_ref": "18f26aa3-326e-409e-ad5e-03063639dda3",
+      "repository_snapshot_asset_version_id": null
+    },
+    "snapshot_id": "corpus-snapshot:afce73dfba6a039e59c30a89f22e90b04c4551c89e251434bac970881e79fbe3",
+    "revision_number": 1,
+    "previous_snapshot_id": null,
+    "created_by_operation_id": "a533a7b6-49c4-4687-9d85-96731851d12e",
+    "repository_snapshot_asset_version_id": null
+  },
+  "rights": {
+    "rights_id": "corpus-rights:0cd8aafcbae0dee7cd0c4030f75b6b33796b41ec7f93f2eaf4b53111a60eac03",
+    "source_id": "corpus-source:fe14e7ab661dcc05cebf92ff079170e0f88b760d2e79a5dbc78828822e54ea85",
+    "created_at": "2026-09-12T10:18:04.700015+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "declaration": {
+      "scope": "ALL_WORKS_IN_SNAPSHOT",
+      "action": "declare_rights",
+      "source_id": "corpus-source:fe14e7ab661dcc05cebf92ff079170e0f88b760d2e79a5dbc78828822e54ea85",
+      "work_grants": {},
+      "allowed_uses": [
+        "LOCAL_PROCESSING",
+        "SOURCE_ANALYSIS",
+        "ABSTRACT_GENERATION"
+      ],
+      "restrictions": [],
+      "evidence_refs": [
+        "https://www.gutenberg.org/cache/epub/1874/pg1874.txt",
+        "https://www.gutenberg.org/ebooks/1874",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children-catalogue.html",
+        "sha256:8050f391661c1c45bd65c9584b4f93dec46cfc07cc7352e2169899f1e664b290"
+      ],
+      "dataset_license": "Project Gutenberg License; exact original English work public domain",
+      "denied_purposes": [],
+      "allowed_purposes": [
+        "PRODUCTION_REFERENCE"
+      ],
+      "underlying_rights": "PUBLIC_DOMAIN",
+      "copyright_boundary": "Original English works by authors deceased by 1940; Project Gutenberg USA public domain evidence preserved. No modern translation, trademark endorsement, protected expression, characters, scenes or distinctive plot combinations enter creation; abstract craft only after review.",
+      "previous_rights_id": null,
+      "underlying_license": ""
+    },
+    "revision_number": 1,
+    "previous_rights_id": null,
+    "created_by_operation_id": "045fc4bd-2dea-4262-8e13-fe68a679aad6"
+  },
+  "editions": [
+    {
+      "title": "railway-children",
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/railway-children.txt",
+      "checksum": "sha256:3af53cd437934d70d6f1b9399bb7b7eca792003ac78f86f06791795e0ef26851",
+      "metadata": {
+        "parser": "corpus-parser.v3",
+        "unit_count": 16,
+        "completeness": "REVIEW_REQUIRED"
+      },
+      "source_id": "corpus-source:fe14e7ab661dcc05cebf92ff079170e0f88b760d2e79a5dbc78828822e54ea85",
+      "created_at": "2026-09-12T10:18:05.253874+00:00",
+      "edition_id": "corpus-edition:4a939f173a873d5c87a8a664dc22bb10d9f9988ceaa893200d2e148080edeebd",
+      "project_id": "first-novel-pilot-20260912",
+      "snapshot_id": "corpus-snapshot:afce73dfba6a039e59c30a89f22e90b04c4551c89e251434bac970881e79fbe3",
+      "book_source_id": "corpus-book:fd5ed2bdbb3a0ba66c4a5faef794272889fb745079f276ec1d84695e9fcf10d3",
+      "external_edition_id": "source-edition",
+      "created_by_operation_id": "335a7424-a5c8-461b-993e-b825ae611f43",
+      "bridge": {
+        "evidence": {
+          "scope": "CONTENT_AND_LINEAGE_ONLY",
+          "completeness": "REVIEW_REQUIRED",
+          "manifest_hash": "sha256:38221a7fadad4e2fba78ef0e5cdaffeea927070c226bc18e9c637cb6d5b894ca",
+          "parsed_blob_id": "aeda63f2-f674-5594-a765-14565fd269c5",
+          "knowledge_approved": false,
+          "acquisition_effect_id": "18f26aa3-326e-409e-ad5e-03063639dda3"
+        },
+        "rights_id": "corpus-rights:0cd8aafcbae0dee7cd0c4030f75b6b33796b41ec7f93f2eaf4b53111a60eac03",
+        "created_at": "2026-09-12T10:18:07.394703+00:00",
+        "edition_id": "corpus-edition:4a939f173a873d5c87a8a664dc22bb10d9f9988ceaa893200d2e148080edeebd",
+        "project_id": "first-novel-pilot-20260912",
+        "parser_hash": "sha256:4cf56d9246cf16db7b239887d3eb7d329ac5630f47d6caf42aab117c99eeb8a2",
+        "policy_version": "corpus-use-policy.v1",
+        "normalized_hash": "sha256:2fe1b5b35a6356abf874109e70c2c09b8f94118fd829db35307ea1fa42599b44",
+        "source_document_id": "source-document:first-novel-pilot-20260912:0d9b5645dc5efa07c855a81acf8fa0a95e43d5190b72331d209aa0c674620464",
+        "source_transform_id": "source-transform:first-novel-pilot-20260912:06fa586627fa91ba2c3246af5afa6662de0710cc11d9442e838a5d2ad05246f1",
+        "created_by_operation_id": "52f424eb-bab7-4865-a9e7-919626337c04",
+        "source_work_asset_version_id": "79741921-decd-421f-a448-2a6f2e2bb65a"
+      }
+    }
+  ],
+  "page_limit": 50,
+  "next_after": null
+}

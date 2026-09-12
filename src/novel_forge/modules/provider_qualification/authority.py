@@ -113,7 +113,7 @@ class D0QualificationAuthority:
                 "input": {
                     "project_id": command.project_id,
                     "workspace_id": command.workspace_id,
-                    "config": asdict(command.config),
+                    "config": {key: value for key, value in asdict(command.config).items() if key != "accounting_scope" or value},
                     "resolved_live_identity": {
                         "model": command.resolved_model,
                         "model_version": command.resolved_model_version,
@@ -212,6 +212,11 @@ class D0QualificationAuthority:
         command: D0QualificationCommand,
         evidence: D0LiveQualificationEvidence,
     ) -> dict[str, Any]:
+        from .accounting import accounting_scope_from_cost
+        D0LiveQualificationEvidence.from_mapping(evidence.to_dict())
+        accounting_scope = accounting_scope_from_cost(evidence.cost)
+        if accounting_scope != command.config.accounting_scope:
+            raise ValueError("live Provider accounting scope differs from the frozen D0 route")
         admitted = self.admit(command)
         operation_id = str(admitted["operation_id"])
         existing = self._existing_result(operation_id, command.project_id)
@@ -234,6 +239,10 @@ class D0QualificationAuthority:
         )
         report = {
             "schema_version": "d0-provider-probe-report.v3",
+            **({"accounting_scope": accounting_scope,
+                "accounting_evidence": provider["accounting_evidence"],
+                "usage_observability": "MEASURED",
+                "monetary_cost_observability": "UNKNOWN"} if accounting_scope else {}),
             "qualification_run_id": qualification_run_id,
             "status": "PASSED",
             "blocker": "",
@@ -811,8 +820,15 @@ class D0QualificationAuthority:
             )
         ):
             raise ValueError("live Provider latency evidence drifted")
+        from .accounting import require_entitlement_budget
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            accounting_evidence = require_entitlement_budget(
+                uow.cursor, project_id=command.project_id, effect_id=evidence.external_effect_id,
+                cost=evidence.cost, usage=evidence.usage,
+            )
         return {
             "provider_evidence": provider_evidence,
+            "accounting_evidence": accounting_evidence,
             "route_snapshot": route_snapshot,
             "profile": profile,
             "reconciliation_count": reconciliation_count,

@@ -139,41 +139,26 @@ class MkaosAuthorityQuery:
                 project_id, tuple(str(row[4]) for row in rows)
             )
             rows = [row for row in rows if str(row[4]) not in blocked]
-        keys = (
-            "knowledge_card_id",
-            "project_id",
-            "workspace_id",
-            "asset_version_id",
-            "candidate_asset_version_id",
-            "governance_decision_asset_version_id",
-            "created_by_operation_id",
-            "content_hash",
-            "card_status",
-            "lifecycle",
-            "eligibility",
-            "governance",
-            "content",
-            "operation_status",
-            "created_at",
-        )
-        cards = [dict(zip(keys, row, strict=True)) for row in rows]
-        from novel_forge.modules.provider_qualification.source_binding import require_source_runtime_qualification
-        from novel_forge.modules.provider_qualification.domain import request_hash
-        for card in cards:
-            content = card.get("content") or {}
-            binding = (content.get("source_policy") or {}).get("provider_runtime_qualification")
-            if binding:
-                try:
-                    require_source_runtime_qualification(
-                        self.database_url, project_id=project_id, workspace_id=card["workspace_id"],
-                        execution_asset_version_id=binding["execution_asset_version_id"],
-                        execution_content_hash=binding["execution_content_hash"],
-                        candidate_payload_hash=request_hash(content.get("abstract_content") or {}), frozen=binding,
-                    )
-                    card["runtime_qualification_current"] = True
-                except (KernelError, KeyError):
-                    card["runtime_qualification_current"] = False
-        return cards
+            keys = (
+                "knowledge_card_id",
+                "project_id",
+                "workspace_id",
+                "asset_version_id",
+                "candidate_asset_version_id",
+                "governance_decision_asset_version_id",
+                "created_by_operation_id",
+                "content_hash",
+                "card_status",
+                "lifecycle",
+                "eligibility",
+                "governance",
+                "content",
+                "operation_status",
+                "created_at",
+            )
+            cards = [dict(zip(keys, row, strict=True)) for row in rows]
+            _recheck_card_qualifications(self.database_url, project_id=project_id, cards=cards, cursor=uow.cursor)
+            return cards
 
     def list_candidates(
         self, *, project_id: str, status: str = "", limit: int = 100
@@ -307,8 +292,11 @@ class MkaosAuthorityQuery:
                 [project_id, asset_version_id],
             )
             row = uow.cursor.fetchone()
+            qualification_card = None
             if row is not None:
                 MkaosAuthorityRepository(uow.cursor).require_corpus_bridge(project_id, (str(row[4]),))
+                qualification_card = {"asset_version_id": str(row[3]), "workspace_id": str(row[2]), "content": row[12]}
+                _recheck_card_qualifications(self.database_url, project_id=project_id, cards=[qualification_card], cursor=uow.cursor)
         if row is None:
             raise KernelError(
                 "PLANNING_NARRATIVE_INTELLIGENCE_DRIFT",
@@ -332,6 +320,8 @@ class MkaosAuthorityQuery:
             "created_at",
         )
         card = dict(zip(keys, row, strict=True))
+        if qualification_card and "runtime_qualification_current" in qualification_card:
+            card["runtime_qualification_current"] = qualification_card["runtime_qualification_current"]
         access = (
             validate_book_knowledge_access_policy(
                 knowledge_access_policy,
@@ -696,6 +686,29 @@ def _canonical_hash(value: dict[str, Any]) -> str:
 def _validate(project_id: str, limit: int) -> None:
     if not project_id or limit < 1 or limit > 500:
         raise ValueError("project_id and a limit between 1 and 500 are required")
+
+
+def _recheck_card_qualifications(database_url: str, *, project_id: str,
+                                cards: list[dict[str, Any]], cursor: Any) -> None:
+    from novel_forge.modules.provider_qualification.source_binding import source_runtime_qualifications_current
+    from novel_forge.modules.provider_qualification.domain import request_hash
+    requests = {}
+    for card in cards:
+        content = card.get("content") or {}
+        binding = (content.get("source_policy") or {}).get("provider_runtime_qualification")
+        if binding:
+            card["runtime_qualification_current"] = False
+            if isinstance(binding, dict):
+                requests[str(card["asset_version_id"])] = {
+                    "workspace_id": card["workspace_id"],
+                    "execution_asset_version_id": binding.get("execution_asset_version_id"),
+                    "execution_content_hash": binding.get("execution_content_hash"),
+                    "candidate_payload_hash": request_hash(content.get("abstract_content") or {}), "frozen": binding,
+                }
+    current = source_runtime_qualifications_current(database_url, project_id=project_id, requests=requests, approval_cursor=cursor)
+    for card in cards:
+        if str(card["asset_version_id"]) in current:
+            card["runtime_qualification_current"] = current[str(card["asset_version_id"])]
 
 
 def _context_eligible_card(

@@ -1,0 +1,8 @@
+{
+  "container": "novel-forge-first-novel-pilot-objects",
+  "volume": "novel-forge-first-novel-pilot-objects-data",
+  "endpoint": "127.0.0.1:53906",
+  "retention": "KEEP_BUSINESS_DATA",
+  "status": "VERIFIED_ACTIVE_SAME_OBJECT_IDENTITIES",
+  "credentials_exported": false
+}

@@ -1,0 +1,178 @@
+{
+  "import_job_id": "source-import:36bb4ddb-8abc-4ec8-b4f5-869c74fdbd68",
+  "snapshot": {
+    "manifest": {
+      "format": "html",
+      "checksum": "sha256:2fb4d1caf8349f4866f01d30bd1a3195d3df9bde5a14f75ebb396336f8d29f4e",
+      "metadata": {
+        "parser": {
+          "fields": {
+            "text": "text"
+          },
+          "format": "html",
+          "layout": "SINGLE_WORK",
+          "filters": {},
+          "version": "corpus-parser.v3",
+          "encoding": "utf-8",
+          "constants": {
+            "title": "5.2: Types of Flowmeters and Their Operation",
+            "author": "Jessy Haid / Northeast Wisconsin Technical College",
+            "work_id": "hydraulics-03"
+          },
+          "completeness": "EXCERPT",
+          "records_path": "item",
+          "normalization": {
+            "version": "chinese-longform.v2",
+            "boundaries": [],
+            "expected_toc": [],
+            "segmentation": "EXPLICIT",
+            "toc_evidence": "",
+            "unicode_form": "NFC",
+            "max_unit_bytes": 2000000,
+            "min_body_chars": 80,
+            "work_completion": "UNKNOWN",
+            "external_work_ids": [],
+            "heading_max_chars": 100,
+            "candidate_threshold": 0.8,
+            "duplicate_body_min_chars": 128
+          },
+          "expected_units": 1,
+          "work_key_encoding": "VALUE",
+          "html_body_selector": ".mt-content-container",
+          "html_remove_selectors": [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            "noscript"
+          ]
+        },
+        "source": {
+          "kind": "LOCAL",
+          "files": [
+            {
+              "path": "hydraulics-03.html",
+              "parser": null,
+              "checksum": "sha256:8f41183a7a3ec1d3a098ad761f12743d10a7a444de7737d0f1273db3e4a442dd",
+              "size_bytes": null
+            }
+          ],
+          "split": "",
+          "config": "",
+          "exclude": [
+            ".git/**",
+            "**/.git/**",
+            ".DS_Store"
+          ],
+          "include": [
+            "*",
+            "**/*"
+          ],
+          "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-03.html",
+          "revision": ""
+        },
+        "ingestion_manifest_hash": "sha256:466e3d41bec964722ed4646914ecb32edd91461f532e31b598cc5cc10c56fdeb"
+      },
+      "origin_uri": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-03.html",
+      "schema_version": "corpus-dataset-manifest.v1",
+      "adapter_profile": "LOCAL",
+      "external_version": "sha256:2fb4d1caf8349f4866f01d30bd1a3195d3df9bde5a14f75ebb396336f8d29f4e",
+      "adapter_contract_version": "corpus-adapters.v1"
+    },
+    "rights_id": "corpus-rights:a87e6f7697c6cacc065278b0df1b8220a98ee473861c3031244daa3b39b01376",
+    "source_id": "corpus-source:5f0b1f229364ed315c557b6ddd0f3f8b04a4e96bc6b080278a51474787393917",
+    "created_at": "2026-09-12T10:17:17.052769+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "acquisition": {
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-03.html",
+      "checksum": "sha256:2fb4d1caf8349f4866f01d30bd1a3195d3df9bde5a14f75ebb396336f8d29f4e",
+      "acquired_at": "2026-09-12T10:17:16.857664+00:00",
+      "receipt_ref": "637f00f0-e673-45bf-844f-633361faf61e",
+      "repository_snapshot_asset_version_id": null
+    },
+    "snapshot_id": "corpus-snapshot:a97ab9aeb4ab9c7b0c734a72dfa3b4840526a4ea894faa4358504be9657145a0",
+    "revision_number": 1,
+    "previous_snapshot_id": null,
+    "created_by_operation_id": "efdae21e-f72c-40cb-a7b0-fd2bb0ae2cbc",
+    "repository_snapshot_asset_version_id": null
+  },
+  "rights": {
+    "rights_id": "corpus-rights:a87e6f7697c6cacc065278b0df1b8220a98ee473861c3031244daa3b39b01376",
+    "source_id": "corpus-source:5f0b1f229364ed315c557b6ddd0f3f8b04a4e96bc6b080278a51474787393917",
+    "created_at": "2026-09-12T10:17:16.987496+00:00",
+    "project_id": "first-novel-pilot-20260912",
+    "declaration": {
+      "scope": "ALL_WORKS_IN_SNAPSHOT",
+      "action": "declare_rights",
+      "source_id": "corpus-source:5f0b1f229364ed315c557b6ddd0f3f8b04a4e96bc6b080278a51474787393917",
+      "work_grants": {},
+      "allowed_uses": [
+        "LOCAL_PROCESSING",
+        "SOURCE_ANALYSIS",
+        "ABSTRACT_GENERATION"
+      ],
+      "restrictions": [],
+      "evidence_refs": [
+        "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/05%3A_Pumps/5.02%3A_Types_of_Flowmeters_and_Their_Operation",
+        "sha256:8f41183a7a3ec1d3a098ad761f12743d10a7a444de7737d0f1273db3e4a442dd",
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-03.html"
+      ],
+      "dataset_license": "CC-BY-4.0",
+      "denied_purposes": [],
+      "allowed_purposes": [
+        "PRODUCTION_REFERENCE"
+      ],
+      "underlying_rights": "LICENSED",
+      "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+      "previous_rights_id": null,
+      "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+    },
+    "revision_number": 1,
+    "previous_rights_id": null,
+    "created_by_operation_id": "81154d58-7848-4f95-b965-7683f8856065"
+  },
+  "editions": [
+    {
+      "title": "hydraulics-03",
+      "locator": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-03.html",
+      "checksum": "sha256:9fd8892420a1796a86f1f5b0c29183b11afd23b1d2fdb58d83118ac401be893b",
+      "metadata": {
+        "parser": "corpus-parser.v3",
+        "unit_count": 1,
+        "completeness": "EXCERPT"
+      },
+      "source_id": "corpus-source:5f0b1f229364ed315c557b6ddd0f3f8b04a4e96bc6b080278a51474787393917",
+      "created_at": "2026-09-12T10:17:17.213133+00:00",
+      "edition_id": "corpus-edition:1cfc2dd68051c7fdb7ae935d6abaee3b37edcd2f82ee57ec5fc6bd29090aefeb",
+      "project_id": "first-novel-pilot-20260912",
+      "snapshot_id": "corpus-snapshot:a97ab9aeb4ab9c7b0c734a72dfa3b4840526a4ea894faa4358504be9657145a0",
+      "book_source_id": "corpus-book:488a805c1f8f778c35816ef13779af17cff0ed84ad095d1a392575bb43259aab",
+      "external_edition_id": "source-edition",
+      "created_by_operation_id": "bc6d33e9-0e90-4683-b046-f98afc4dc413",
+      "bridge": {
+        "evidence": {
+          "scope": "CONTENT_AND_LINEAGE_ONLY",
+          "completeness": "EXCERPT",
+          "manifest_hash": "sha256:466e3d41bec964722ed4646914ecb32edd91461f532e31b598cc5cc10c56fdeb",
+          "parsed_blob_id": "0adeb70d-9dd8-5054-841f-7d22f38d4bca",
+          "knowledge_approved": false,
+          "acquisition_effect_id": "637f00f0-e673-45bf-844f-633361faf61e"
+        },
+        "rights_id": "corpus-rights:a87e6f7697c6cacc065278b0df1b8220a98ee473861c3031244daa3b39b01376",
+        "created_at": "2026-09-12T10:17:17.695706+00:00",
+        "edition_id": "corpus-edition:1cfc2dd68051c7fdb7ae935d6abaee3b37edcd2f82ee57ec5fc6bd29090aefeb",
+        "project_id": "first-novel-pilot-20260912",
+        "parser_hash": "sha256:291848dd33773e1ac2c69e654ca677b28715781e298ab3ca7499d28d3c906721",
+        "policy_version": "corpus-use-policy.v1",
+        "normalized_hash": "sha256:22a834ff4fa0a2876ba00c5bdbbb78669057e8e56ece7b6046169237871f9741",
+        "source_document_id": "source-document:first-novel-pilot-20260912:b7c940f5d1865bad8b8b501db95af52f063afbdb46e23763676ca34146d6e5af",
+        "source_transform_id": "source-transform:first-novel-pilot-20260912:ff5b19a2abcdf30ece3dcce3464bff0482a2589443845266c096b405610bfbc0",
+        "created_by_operation_id": "27543abe-5d4d-411c-8a5f-c59352996b40",
+        "source_work_asset_version_id": "14558df9-d564-44b3-bed9-79768506746a"
+      }
+    }
+  ],
+  "page_limit": 50,
+  "next_after": null
+}

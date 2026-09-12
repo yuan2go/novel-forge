@@ -1,0 +1,293 @@
+{
+  "import_job_id": "source-import:b0bca781-e9fc-468b-89b5-f35d211f8a89",
+  "project_id": "first-novel-pilot-20260912",
+  "workspace_id": "first-novel-pilot-workspace",
+  "source_type": "corpus_content",
+  "source_locator": {
+    "manifest": {
+      "budget": {
+        "version": "corpus-resource-policy.v1",
+        "max_files": 100,
+        "max_works": 100,
+        "concurrency": 1,
+        "max_records": 10000,
+        "max_retries": 2,
+        "memory_bytes": 256000000,
+        "max_file_bytes": 64000000,
+        "max_work_bytes": 16000000,
+        "max_chunk_bytes": 12000,
+        "max_total_bytes": 256000000,
+        "timeout_seconds": 60,
+        "max_record_bytes": 2000000,
+        "max_archive_ratio": 100,
+        "max_expanded_bytes": 512000000,
+        "max_units_per_work": 2000,
+        "min_free_disk_bytes": 256000000
+      },
+      "parser": {
+        "fields": {
+          "text": "text"
+        },
+        "format": "html",
+        "layout": "SINGLE_WORK",
+        "filters": {},
+        "version": "corpus-parser.v3",
+        "encoding": "utf-8",
+        "constants": {
+          "title": "9.2: How to Calculate the Force Output of an Hydraulic Cylinder in Retraction (Pulling)",
+          "author": "Jessy Haid / Northeast Wisconsin Technical College",
+          "work_id": "hydraulics-05"
+        },
+        "completeness": "EXCERPT",
+        "records_path": "item",
+        "normalization": {
+          "version": "chinese-longform.v2",
+          "boundaries": [],
+          "expected_toc": [],
+          "segmentation": "EXPLICIT",
+          "toc_evidence": "",
+          "unicode_form": "NFC",
+          "max_unit_bytes": 2000000,
+          "min_body_chars": 80,
+          "work_completion": "UNKNOWN",
+          "external_work_ids": [],
+          "heading_max_chars": 100,
+          "candidate_threshold": 0.8,
+          "duplicate_body_min_chars": 128
+        },
+        "expected_units": 1,
+        "work_key_encoding": "VALUE",
+        "html_body_selector": ".mt-content-container",
+        "html_remove_selectors": [
+          "script",
+          "style",
+          "nav",
+          "header",
+          "footer",
+          "noscript"
+        ]
+      },
+      "rights": {
+        "scope": "ALL_WORKS_IN_SNAPSHOT",
+        "allowed_uses": [
+          "LOCAL_PROCESSING",
+          "SOURCE_ANALYSIS",
+          "ABSTRACT_GENERATION"
+        ],
+        "evidence_refs": [
+          "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/09%3A_Pressure_and_Cylinder_Force/9.02%3A_How_to_Calculate_the_Force_Output_of_an_Hydraulic_Cylinder_in_Retraction_(Pulling)",
+          "sha256:dfe8793df493623882c62c95f302deec258023278af550d760deb5c8970e2f16",
+          "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-05.html"
+        ],
+        "dataset_license": "CC-BY-4.0",
+        "allowed_purposes": [
+          "PRODUCTION_REFERENCE"
+        ],
+        "underlying_rights": "LICENSED",
+        "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+        "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained"
+      },
+      "source": {
+        "kind": "LOCAL",
+        "files": [
+          {
+            "path": "hydraulics-05.html",
+            "parser": null,
+            "checksum": "sha256:dfe8793df493623882c62c95f302deec258023278af550d760deb5c8970e2f16",
+            "size_bytes": null
+          }
+        ],
+        "split": "",
+        "config": "",
+        "exclude": [
+          ".git/**",
+          "**/.git/**",
+          ".DS_Store"
+        ],
+        "include": [
+          "*",
+          "**/*"
+        ],
+        "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-05.html",
+        "revision": ""
+      },
+      "analyze": false,
+      "purpose": "PRODUCTION_REFERENCE",
+      "rights_id": null,
+      "source_id": null,
+      "schema_version": "corpus-ingestion-manifest.v1",
+      "adapter_version": "corpus-adapters.v1",
+      "previous_snapshot_id": null
+    }
+  },
+  "requested_ref": "sha256:5e15101cca0992a5722a0d2440e04df2c5c7cc7dd28a8e49c12e102df9859510",
+  "import_policy": {
+    "max_files": 20000,
+    "allow_git_lfs": false,
+    "exclude_globs": [
+      ".git/**",
+      "**/.git/**",
+      "node_modules/**",
+      "**/node_modules/**",
+      "**/__pycache__/**"
+    ],
+    "include_globs": [
+      "**/*",
+      "*"
+    ],
+    "allow_symlinks": false,
+    "max_file_bytes": 8000000,
+    "parser_profile": "generic-text.v1",
+    "policy_version": "source-import-policy.v1",
+    "max_chunk_bytes": 12000,
+    "source_work_key": "",
+    "allow_submodules": false,
+    "chunking_version": "source-structural-chunking.v1",
+    "corpus_registry_id": "",
+    "extension_allowlist": [
+      ".json",
+      ".jsonl",
+      ".markdown",
+      ".md",
+      ".text",
+      ".txt",
+      ".yaml",
+      ".yml"
+    ],
+    "corpus_registry_hash": "",
+    "max_repository_bytes": 500000000,
+    "normalization_version": "source-normalization.v1"
+  },
+  "import_policy_hash": "sha256:3f72a4483432fb102de77ae1039e70d360d8e96b21d73bb7c4ad875d45bc3bae",
+  "intelligence_policy": {
+    "min_margin": 0.12,
+    "classifier_id": "novel-forge.source-content-classifier",
+    "min_confidence": 0.72,
+    "policy_version": "source-intelligence-policy.v1",
+    "max_signal_bytes": 128000,
+    "max_sample_chunks": 3,
+    "classifier_version": "1.0",
+    "classifier_capability": "source.content.classify",
+    "sample_policy_version": "source-profile-sampling.v1",
+    "signal_schema_version": "source-profile-signals.v1",
+    "routing_policy_version": "source-analysis-routing.v2",
+    "classifier_prompt_version": "1.0",
+    "classifier_schema_version": "source-content-classification.v1",
+    "max_sample_bytes_per_chunk": 6000,
+    "logical_document_policy_version": "file-logical-document.v1"
+  },
+  "intelligence_policy_hash": "sha256:37c68b7b03a367b8bcc76ae81c93a3ed8a280e26d29b2d323bad5b5a00263d29",
+  "analysis_override": {},
+  "mode": "IMPORT",
+  "status": "IMPORTED",
+  "discovery_operation_id": "b0bca781-e9fc-468b-89b5-f35d211f8a89",
+  "repository_snapshot_asset_version_id": null,
+  "previous_snapshot_asset_version_id": null,
+  "counters": {},
+  "failure": {},
+  "created_at": "2026-09-12T10:17:23.328799+00:00",
+  "updated_at": "2026-09-12T10:17:25.067036+00:00",
+  "corpus_snapshot_id": "corpus-snapshot:070b1757d0ed8cca94e54a3a11426beb15977e2f9ee0a6ae21310158229c492a",
+  "corpus": {
+    "snapshot_id": "corpus-snapshot:070b1757d0ed8cca94e54a3a11426beb15977e2f9ee0a6ae21310158229c492a",
+    "acquisition": {
+      "stage": "ACQUIRED",
+      "children": [
+        {
+          "status": "READY",
+          "edition_id": "corpus-edition:5557fb690fefef369205f1b7e8e83c8dbf7fb55f627eed0066c7ac41d6af7aa5",
+          "operation_id": "7596c98e-5fbd-4d82-9464-63512b134f80"
+        }
+      ],
+      "rights_id": "corpus-rights:6fbb956316944d71ac1eb03f557a41601caed8b1cc1a324faf29545896c414ce",
+      "source_id": "corpus-source:7f8b58bd8ff31383e581d137699720061cfafe65ec7f54b0c1138645b5f0332a",
+      "work_count": 1,
+      "snapshot_id": "corpus-snapshot:070b1757d0ed8cca94e54a3a11426beb15977e2f9ee0a6ae21310158229c492a",
+      "actual_bytes": 130448,
+      "parsed_records": 1,
+      "verified_files": 1,
+      "analysis_called": false,
+      "acquisition_effect_id": "bae3bef2-46ca-44cc-9548-7be900808c27"
+    },
+    "content_imported": 1,
+    "content_blocked": 0,
+    "knowledge_approved_by_import": false,
+    "purpose": "PRODUCTION_REFERENCE",
+    "job_kind": "CONTENT_ACQUISITION",
+    "stage_results": [
+      {
+        "operation_id": "b0bca781-e9fc-468b-89b5-f35d211f8a89",
+        "kind": "DISCOVERY",
+        "status": "SUCCEEDED",
+        "result": {
+          "stage": "ACQUIRED",
+          "children": [
+            {
+              "status": "READY",
+              "edition_id": "corpus-edition:5557fb690fefef369205f1b7e8e83c8dbf7fb55f627eed0066c7ac41d6af7aa5",
+              "operation_id": "7596c98e-5fbd-4d82-9464-63512b134f80"
+            }
+          ],
+          "rights_id": "corpus-rights:6fbb956316944d71ac1eb03f557a41601caed8b1cc1a324faf29545896c414ce",
+          "source_id": "corpus-source:7f8b58bd8ff31383e581d137699720061cfafe65ec7f54b0c1138645b5f0332a",
+          "work_count": 1,
+          "snapshot_id": "corpus-snapshot:070b1757d0ed8cca94e54a3a11426beb15977e2f9ee0a6ae21310158229c492a",
+          "actual_bytes": 130448,
+          "parsed_records": 1,
+          "verified_files": 1,
+          "analysis_called": false,
+          "acquisition_effect_id": "bae3bef2-46ca-44cc-9548-7be900808c27"
+        },
+        "failure": {}
+      },
+      {
+        "operation_id": "7596c98e-5fbd-4d82-9464-63512b134f80",
+        "kind": "WORK",
+        "status": "SUCCEEDED",
+        "result": {
+          "stage": "CONTENT_IMPORTED",
+          "edition_id": "corpus-edition:5557fb690fefef369205f1b7e8e83c8dbf7fb55f627eed0066c7ac41d6af7aa5",
+          "unit_count": 1,
+          "chunk_count": 1,
+          "snapshot_id": "corpus-snapshot:070b1757d0ed8cca94e54a3a11426beb15977e2f9ee0a6ae21310158229c492a",
+          "completeness": "EXCERPT",
+          "processing_id": "corpus-processing:a6b7cd4537afe792e4b2192946bf65d6a606ca037e8d3c6a13586647fd56b367",
+          "source_work_id": "source-work:a7c8581dbca752ff36cacf0a93c2aabd7af08b05fd5b5284bcd0ee6a8f37c4c0",
+          "normalized_hash": "sha256:369f268fdfb7225f792868d8cca5e973e31099a813c0d3a2b42f8d6360125c9a",
+          "structure_usable": true,
+          "analysis_scheduled": false,
+          "knowledge_approved": false,
+          "source_document_id": "source-document:first-novel-pilot-20260912:b3c0ceb2d59d3388a3915aa3ec35574ba24b16f3e2cb7e81146ebb94d5b2126e",
+          "source_transform_id": "source-transform:first-novel-pilot-20260912:45a9f396bd190905e4c594bc55f2a1d13b87a30185d2635f11f783b6d5ac5a50",
+          "provider_model_calls": 0,
+          "source_asset_version_id": "source-document:first-novel-pilot-20260912:b3c0ceb2d59d3388a3915aa3ec35574ba24b16f3e2cb7e81146ebb94d5b2126e:v1",
+          "source_work_version_reused": false,
+          "invalidated_descendant_count": 0,
+          "source_work_asset_version_id": "9fa6ca40-bf9b-46a9-8b7f-b4e18f60d533",
+          "source_transform_asset_version_id": "source-transform:first-novel-pilot-20260912:45a9f396bd190905e4c594bc55f2a1d13b87a30185d2635f11f783b6d5ac5a50:v1"
+        },
+        "failure": {}
+      }
+    ]
+  },
+  "effective_status": "IMPORTED",
+  "work_counts": {
+    "SUCCEEDED": 2
+  },
+  "work_kind_counts": {
+    "DISCOVERY": 1,
+    "WORK": 1
+  },
+  "file_counts": {},
+  "downstream": {
+    "source_documents": 0,
+    "transforms": 0,
+    "content_profiles": 0,
+    "analysis_plans": 0,
+    "observations": 0,
+    "knowledge_candidates": 0,
+    "review_required": 0,
+    "knowledge_cards": 0,
+    "knowledge_packs": 0
+  }
+}

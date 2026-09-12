@@ -1,0 +1,10 @@
+{
+  "work_package": "WP-REAL-CORPUS-AND-FIRST-NOVEL-PILOT-01",
+  "baseline_sha": "a1661483d68a3282b5a07f66ab7740c4b2a1f697",
+  "original_workspace_head": "1493d392e70665b4b77184fb14dde1ff1d678202",
+  "original_workspace_git_dirty": false,
+  "worktree": "/Users/yuan/projects/novel-forge-first-novel-pilot",
+  "branch": "codex/real-corpus-first-novel-pilot-01",
+  "provider_calls": 0,
+  "authorization_status": "SEARCHING_EXISTING_EXPLICIT_GRANTS"
+}

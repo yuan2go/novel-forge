@@ -1,0 +1,112 @@
+How Pressure Is Distributed
+In hydraulic system analysis, you’ll often hear terms like
+“operating pressure”
+or
+“system pressure.”
+It’s important to understand what these terms actually mean. They do
+not
+refer to the pressure at every point in the hydraulic circuit. Instead, they refer specifically to the
+pressure at the pump outlet while the system is operating
+.
+This is why it is important to set pressure based on a gage located as close to the actuator as possible, as the pressure needed to create the force to complete the necessary work will be required at the actuator, not at the outlet of the pump. The pressure at the actuator will be less than the pressure out of the pump due to frictional losses along the way. If the system pressure is not set appropriately, there may not be enough pressure downstream at the actuator to complete the work needed.
+At other locations in the system, the pressure may vary anywhere from the operating pressure down to zero. This variation is due to pressure drops caused by friction and load as the fluid moves through components like hoses, valves, and actuators.
+How Pressure Changes Through the System
+In most systems, the
+highest pressure
+is found at the
+pump outlet
+. As oil flows through the circuit, that pressure begins to drop. This is due to two things:
+Frictional resistance
+from fittings, hoses, valves, and bends in the piping.
+Load resistance
+from actuators performing work, like lifting, pushing, or rotating a load.
+Eventually, the fluid completes its path and returns to the
+reservoir
+via the return line. By the time it reaches the reservoir, the pressure has dropped to its lowest value—
+essentially 0 psi
+.
+An important concept to remember is this:
+The pressure at any point in the system is equal to the sum of all the pressure drops downstream of that point.
+This means the pressure at any given point is determined by the components
+after
+it in the flow path, not before.
+Circuit Example – Pressure Distribution in Action
+Let’s walk through a basic hydraulic circuit to see this principle in real terms.
+In the circuit, the
+directional control valve
+has been shifted to extend the cylinder. As the fluid flows from the pump, through the control valve, into the cylinder, and finally back to the reservoir, each component introduces resistance that causes a pressure drop.
+Figure \(\PageIndex{1}\): Example of a basic hydraulic circuit.
+Below is a table that shows the pressure at various gauges along the circuit:
+Component
+Gauges Used
+Pressure Drop (ΔP)
+Hose No. 1
+Gage S - Gage A
+1000 psi - 980 psi =
+20 psi
+Directional Control Valve (P→A)
+Gage A - Gage B
+980 psi - 940 psi =
+40 psi
+Hose No. 2
+Gage B - Gage C
+940 psi - 920 psi =
+20 psi
+Cylinder (Load + Friction)
+Gage C - Gage D
+920 psi - 80 psi =
+840 psi
+Hose No. 3
+Gage D - Gage E
+80 psi - 60 psi =
+20 psi
+Directional Control Valve (B→T)
+Gage E - Gage F
+60 psi - 20 psi =
+40 psi
+Hose No. 4 (Return Line)
+Gage F - Gage R
+20 psi - 0 psi =
+20 psi
+Now, when you add up all those individual pressure drops, you get the full system pressure at the pump:
+20 + 40 + 20 + 840 + 20 + 40 + 20 = 1000 psi
+This confirms that the pump is working against the
+total resistance
+created by all downstream components in the flow path.
+Deadheading and Pressure Equalization
+Using the image above, when the cylinder reaches full extension and can no longer move, the flow of oil stops —this is called
+deadheading
+. Since the pump continues to produce flow but the oil has nowhere to go, pressure quickly rises. Since the relief valve is set to open at 1100 psi, the pressure will build to
+1100 psi
+, at which point the
+relief valve
+will open. The relief valve is designed to protect the system from overpressure by diverting excess fluid back to the reservoir. At this point, fluid is
+not flowing
+through the working circuit but rather through the relief valve, which changes how pressure is distributed.
+Figure \(\PageIndex{2}\): Deadheading example
+Due to
+Pascal’s Law
+, in a confined fluid where no flow is occurring,
+the pressure is equal at all points in that volume of fluid
+. In our circuit, that means the pressure is the same from the pump outlet through to the cap end of the cylinder. Specifically:
+Gauges
+S, A, B, and C
+all read the
+same pressure
+—1100 psi.
+These gauges are measuring the same body of stationary fluid, so their readings are identical.
+On the return side of the cylinder (rod end), the story is different. That volume of fluid is
+isolated
+from the high-pressure side by the
+cylinder piston
+. Since this side of the system is connected to the reservoir (and there’s no active flow), the pressure reads
+zero
+:
+Gauges
+D, E, F, and R
+all read
+0 psi
+.
+What this means is that when flow stops (e.g., deadheading),
+pressure equalizes
+in each isolated fluid volume, as described by Pascal’s Law. Understanding how pressure is distributed is essential and can help with system design, troubleshooting, and safe operation.

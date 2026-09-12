@@ -1,0 +1,51 @@
+{
+  "purpose": "PRODUCTION_REFERENCE",
+  "analyze": false,
+  "source": {
+    "kind": "LOCAL",
+    "location": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-14.html",
+    "files": [
+      {
+        "path": "hydraulics-14.html",
+        "checksum": "sha256:c3788aa09a97c8df0dd2705e20c2149c5f122f390f45a66df9f789ec370da0c2"
+      }
+    ]
+  },
+  "parser": {
+    "version": "corpus-parser.v3",
+    "format": "html",
+    "html_body_selector": ".mt-content-container",
+    "constants": {
+      "work_id": "hydraulics-14",
+      "title": "14.1: Check Valves in Hydraulic Systems",
+      "author": "Jessy Haid / Northeast Wisconsin Technical College"
+    },
+    "normalization": {
+      "version": "chinese-longform.v2",
+      "segmentation": "EXPLICIT",
+      "min_body_chars": 80
+    },
+    "completeness": "EXCERPT",
+    "expected_units": 1
+  },
+  "rights": {
+    "dataset_license": "CC-BY-4.0",
+    "underlying_rights": "LICENSED",
+    "underlying_license": "CC-BY-4.0: exact section by Jessy Haid / NWTC; page-specific license footer retained",
+    "scope": "ALL_WORKS_IN_SNAPSHOT",
+    "evidence_refs": [
+      "https://eng.libretexts.org/Courses/Northeast_Wisconsin_Technical_College/Fluids_2%3A_Basic_Hydraulics_(NWTC)/14%3A_Check_Valves/14.01%3A_Check_Valves_in_Hydraulic_Systems",
+      "sha256:c3788aa09a97c8df0dd2705e20c2149c5f122f390f45a66df9f789ec370da0c2",
+      "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot-evidence-20260912-a1661483/corpus/raw/hydraulics-14.html"
+    ],
+    "copyright_boundary": "Retain author/source/license attribution. Abstract mechanisms only after exact Candidate review; original prose and diagrams cannot enter fiction requests. Figures and table layout are retained in original HTML but not qualified as read text.",
+    "allowed_purposes": [
+      "PRODUCTION_REFERENCE"
+    ],
+    "allowed_uses": [
+      "LOCAL_PROCESSING",
+      "SOURCE_ANALYSIS",
+      "ABSTRACT_GENERATION"
+    ]
+  }
+}

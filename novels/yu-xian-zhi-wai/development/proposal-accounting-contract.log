@@ -1,0 +1,30 @@
+{
+  "errors": [],
+  "proposal_count": 3,
+  "proposals": [
+    {
+      "baseline_sha": "81ec8e55bcdf8be87fc07f92c5773de8135fd029",
+      "path": "architecture/proposals/classical-corpus-codex-validation.md",
+      "remaining_decisions": 0,
+      "remaining_work": 2,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "81ec8e55bcdf8be87fc07f92c5773de8135fd029",
+      "path": "architecture/proposals/industrial-novel-os-blueprint.md",
+      "remaining_decisions": 7,
+      "remaining_work": 0,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "030f350293f5fdb1ef633f1e90471188321c75f1",
+      "path": "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+      "remaining_decisions": 3,
+      "remaining_work": 4,
+      "status": "PARTIALLY_IMPLEMENTED"
+    }
+  ],
+  "retained_terminal_count": 0,
+  "schema_version": "novel-forge.proposal-lifecycle.v1",
+  "status": "PASS"
+}

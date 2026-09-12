@@ -71,12 +71,15 @@ def run_source_qualification(args: Any, *, root: Path, commit_sha: str, implemen
     scope = inspect_source_operation(args.database_url, project_id=args.source_project_id,
                                      operation_id=args.source_operation_id, capability=args.source_capability)
     if not args.execute:
-        priced = str(os.environ.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") or "PRICED").strip().upper() == "PRICED"
-        return {"result": "NOT_RUN", "status": "READY_FOR_AUTHORIZATION" if priced else "BLOCKED_UNSUPPORTED_QUALIFICATION_MODE", "scope": scope,
-                "blockers": [] if priced else ["D0_REQUIRES_EXISTING_EXACT_PRICED_ROUTE"],
+        basis = str(os.environ.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") or "PRICED").strip().upper()
+        supported = basis in {"PRICED", "ACCOUNT_ENTITLEMENT"}
+        return {"result": "NOT_RUN", "status": "READY_FOR_AUTHORIZATION" if supported else "BLOCKED_UNSUPPORTED_QUALIFICATION_MODE", "scope": scope,
+                "blockers": [] if supported else ["D0_ACCOUNTING_MODE_UNSUPPORTED"],
                 "provider_request_sent": False, "proof_scope": "EXACT_SOURCE_CAPABILITY_RUNTIME_ONLY",
-                "required_route_contract": {"accounting_basis": "PRICED", "capability": args.source_capability,
-                                            "account_entitlement_supported": False},
+                "required_route_contract": {"accounting_basis": basis, "capability": args.source_capability,
+                                            "account_entitlement_supported": True,
+                                            "monetary_cost": "UNKNOWN" if basis == "ACCOUNT_ENTITLEMENT" else "PRICING_SNAPSHOT_REQUIRED",
+                                            "finite_project_call_and_token_limits_required": basis == "ACCOUNT_ENTITLEMENT"},
                 "authorization_fields": ["exact Provider/model/profile and account/runtime identity",
                                          "Source extraction qualification purpose", "shared total call/token/cost and repair allowance"],
                 "qualification_execution": "NOT_RUN", "human_knowledge_approval": "NOT_RUN"}
@@ -94,9 +97,9 @@ def run_source_qualification(args: Any, *, root: Path, commit_sha: str, implemen
     worker_id = f"source-qualification:{args.source_operation_id}"
     env["NOVEL_FORGE_SOURCE_IMPORT_WORKER_ID"] = worker_id
     execution = build_production_execution_composition(settings, env=env)
-    if execution.cost_accounting_basis != "PRICED":
+    if execution.cost_accounting_basis not in {"PRICED", "ACCOUNT_ENTITLEMENT"}:
         execution.close()
-        raise ValueError("D0 qualification requires the existing priced accounting contract; account entitlement cannot be relabeled or dispatched as a priced probe")
+        raise ValueError("D0 qualification accounting mode is unsupported")
     route = execution.gateway.routes["quality_source_originality"]
     if (route.model_profile.model_provider, route.model_profile.model_id, route.model_profile.reasoning_effort) != (
         args.provider, args.model, args.reasoning_effort
@@ -156,6 +159,7 @@ def run_source_qualification(args: Any, *, root: Path, commit_sha: str, implemen
         "prompt_version": provider["prompt_version"], "prompt_hash": runtime["prompt_template"]["content_hash"],
         "instruction_version": runtime["system_instruction"]["version"], "instruction_hash": runtime["system_instruction"]["content_hash"],
         "skill_version": provider["skill_version"], "skill_hash": runtime["skill"]["content_hash"],
+        **({"accounting_scope": identity["accounting_scope"]} if identity.get("accounting_scope") else {}),
     })
     command = D0QualificationCommand(
         project_id=args.source_project_id, workspace_id=scope["workspace_id"], actor_id=worker_id,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import (
     CuratedAnalysisRequest,
     admit_curated_analysis,
@@ -58,6 +58,8 @@ class ChapterReadingPreviewRequest(BaseModel):
     max_tokens: int = Field(default=0, ge=0, le=100000000)
     authorization_ref: str = Field(default="", max_length=1000)
     inspect_local_codex: bool = False
+    intended_use: Literal["SOURCE_ANALYSIS", "ABSTRACT_GENERATION"] = "SOURCE_ANALYSIS"
+    target_book_id: str = Field(default="", max_length=512)
 
 
 def create_router(ctx: ProductRouterContext) -> APIRouter:
@@ -129,6 +131,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 max_calls=request.max_calls,
                 max_tokens=request.max_tokens,
                 authorization_ref=request.authorization_ref,
+                intended_use=request.intended_use,
+                target_book_id=request.target_book_id,
             )
         except (KernelError, ValueError) as exc:
             raise _http_error(exc) from exc
@@ -321,14 +325,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         project_id: str,
         status: str = "",
         limit: int = Query(default=100, ge=1, le=500),
+        after: str = Query(default="", max_length=200),
+        source_type: str = Query(default="", max_length=200),
+        run_key_prefix: str = Query(
+            default="", max_length=200,
+            description="Literal run-key prefix of Corpus import/preview acquisition jobs only",
+        ),
     ) -> list[dict[str, Any]]:
         principal = _authorize("source.authority.query", project_id)
-        return query.list_imports(
-            project_id=project_id,
-            status=status,
-            limit=limit,
-            principal=principal,
-        )
+        try:
+            return query.list_imports(
+                project_id=project_id, status=status, limit=limit, after=after,
+                source_type=source_type, run_key_prefix=run_key_prefix,
+                principal=principal,
+            )
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
 
     @router.get("/{import_job_id}")
     def import_status(import_job_id: str, project_id: str) -> dict[str, Any]:
