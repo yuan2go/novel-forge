@@ -43,6 +43,34 @@ def freeze_routes(routes: Any) -> dict[str, Any]:
     }
 
 
+def verify_future_plan_change(*, composition: Any, book_run_id: str, proposal_id: str,
+                              intervention: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    book = composition.authority.require(book_run_id)
+    proposal = composition.plan_change.require(proposal_id)
+    boundary = intervention.get("after_chapter")
+    if (type(boundary) is not int or boundary < 1
+        or proposal["project_id"] != book["project_id"] or proposal["book_id"] != book["book_id"]
+        or proposal["status"] != "ACTIVE" or proposal["source_type"] != "HUMAN_FEEDBACK"
+        or book["accepted_through_chapter"] < boundary):
+        raise ValueError("Continuation requires the owned ACTIVE future PlanChange at the frozen intervention")
+    query = AuthorityAssetQuery(composition.authority.database_url)
+    source = query.require(project_id=book["project_id"], asset_version_id=proposal["source_evidence_version_id"])
+    changed = query.require(project_id=book["project_id"], asset_version_id=proposal["proposed_asset_version_id"])
+    if (source.content.get("directive") != intervention.get("directive")
+        or source.content.get("accepted_through_chapter") != boundary
+        or source.content.get("book_id") != book["book_id"]
+        or not changed.content.get("chapter_range")
+        or changed.content["chapter_range"][0] <= boundary):
+        raise ValueError("Future change must preserve accepted history and implement the frozen directive")
+    resumed = composition.resume_after_plan_change(
+        book_run_id=book_run_id, proposal_id=proposal_id, principal=composition.principal,
+    )
+    return {"proposal_id": proposal_id, "source_asset_version_id": source.asset_version_id,
+            "proposed_asset_version_id": changed.asset_version_id,
+            "after_chapter": boundary, "result": resumed}
+
+
 def authorize_total(values: dict[str, str], amount: str, reference: str) -> str:
     if not amount or not reference.strip():
         raise ValueError(

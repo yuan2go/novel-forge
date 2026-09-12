@@ -652,3 +652,19 @@ def test_classification_sample_rejects_unbounded_or_invalid_identity() -> None:
             sample_hash="sha256:" + "a" * 64,
             position="BEGINNING",
         )
+
+
+def test_professional_reading_uses_mechanism_contract_with_existing_review_runtime():
+    from novel_forge.modules.source_import.corpus_ingestion.narrative_execution import narrative_strategy
+    from novel_forge.modules.source_import.corpus_ingestion.reading_scope import ChapterReadingScope
+    strategy = resolve_analysis_strategy(
+        SourceContentType.PROFESSIONAL_KNOWLEDGE,
+        registry=SourceMethodologyRegistry(SKILL_ROOT),
+        routing_policy_version="source-auto-routing.v2",
+    )
+    frozen = narrative_strategy(strategy)
+    assert frozen.analyzers[0].schema_version == "source-mechanism-observation.v2"
+    assert frozen.analyzers[0].skill_id == "multidisciplinary-knowledge"
+    assert frozen.mkaos_capability == strategy.mkaos_capability
+    scope = ChapterReadingScope(processing_id="processing", first_unit_version_id="section:1", last_unit_version_id="section:2", dimensions=("core_concept", "causal_constraints", "misuse_risk"))
+    assert scope.max_repairs == 1

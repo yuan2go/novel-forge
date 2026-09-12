@@ -40,6 +40,7 @@ from novel_forge.modules.runtime_job import RuntimeJobAuthority
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
     PlanningGenerationStatus,
+    StoryPlanningGenerationApplication,
     StoryPlanningGenerationCommand,
     canonical_hash,
 )
@@ -69,6 +70,7 @@ from tests.integration.migration_window_postgres_support import (
 )
 from tests.integration.test_core_functional_loops_postgres import (
     RELEASE_SHA,
+    _ExternalEffectPepFixturePlanningBinder,
     _activate_planning_pack,
     _principal,
     _seed_inputs,
@@ -179,10 +181,29 @@ def _qualification_planning_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
     if stage == "world_candidates.generate":
-        return {"disposition": "NO_OP", "reason": "This transport tests existing accepted orchestration without a new world intervention.", "candidates": []}
+        selection = (inputs.get("world_preparation") or {}).get("narrative_intelligence") or {}
+        output = {"disposition": "NO_OP", "reason": "This transport tests existing accepted orchestration without a new world intervention.", "candidates": []}
+        if selection.get("selected"):
+            output["knowledge_translations"] = [{
+                "knowledge_card_asset_version_id": item["knowledge_card_asset_version_id"], "content_hash": item["content_hash"],
+                "decision": "REJECT", "usage_role": "INSPIRATION", "rationale": "This fixture deliberately chooses no new world action.",
+                "prerequisite_resolution": "No mechanism is applied in this no-op stage.", "use_sites": [],
+            } for item in selection["selected"]]
+        return output
     if stage == "world_candidates.evaluate":
         return {"evaluations": []}
     payload = planning_fixture_response(stage, inputs)
+    selected = (inputs.get("narrative_intelligence") or {}).get("selected") or []
+    if selected:
+        realization = "The witness reveals the hidden cost publicly and loses the ally's protection through that same choice."
+        payload["objective"] += " " + realization
+        payload["knowledge_translations"] = [{
+            "knowledge_card_asset_version_id": item["knowledge_card_asset_version_id"], "content_hash": item["content_hash"],
+            "decision": "ADAPT", "usage_role": "MECHANISM",
+            "rationale": "The fixture places disclosure and relationship cost in one project-specific witnessed choice.",
+            "prerequisite_resolution": "The plan must establish the witness and ally relationship before disclosure; semantic applicability remains a fixture claim.",
+            "use_sites": [{"target_pointer": "/objective", "realization_excerpt": realization, "expected_application": "Disclosure causes loss of protection.", "preservation_requirements": ["The same choice must cause both consequences."], "verification_checks": ["Locate disclosure and the resulting loss of protection in the final prose."]}],
+        } for item in selected]
     command = dict(inputs.get("planning_command") or {})
     logical_key = str(command.get("logical_key") or "")
     if stage == "arc_plan.generate":
@@ -234,6 +255,31 @@ def _qualification_chapter_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
     payload = default_chapter_fixture_response(stage, inputs)
+    mechanism_prose = (
+        "The protagonist tells the witnesses the price of the ledger. "
+        "Hearing the public admission, the ally takes back the promised escort."
+    )
+    if stage == "draft" and (inputs.get("plan") or {}).get("knowledge_translations"):
+        scenes = payload.get("scene_artifacts") or []
+        if scenes:
+            scenes[0]["text"] += " " + mechanism_prose
+            payload["text"] = "\n\n".join(scene["text"] for scene in scenes)
+        else:
+            payload["text"] += " " + mechanism_prose
+    if stage in {"review", "rereview"}:
+        text = str((inputs.get("draft" if stage == "review" else "revision") or {}).get("text") or "")
+        targets = inputs.get("knowledge_review_targets") or []
+        if targets:
+            start = text.index(mechanism_prose)
+            payload["knowledge_checks"] = [{
+                "knowledge_card_asset_version_id": item["knowledge_card_asset_version_id"],
+                "status": "VERIFIED_IN_PROSE",
+                "reason": "Scripted fixture locates the public disclosure and its immediate loss of protection; not independent editorial proof.",
+                "evidence": {"start": start, "end": start + len(mechanism_prose), "quote": mechanism_prose},
+                "conditions_checked": ["The same witnessed public admission causes the ally to withdraw the promised escort."],
+                "exceptions_checked": ["The relationship cost is causally attached to the disclosure rather than a separate exposition scene."],
+                "issue_codes": [],
+            } for item in targets]
     if stage == "revision" and int(dict(inputs.get("draft") or {}).get("chapter") or 0) == 2:
         payoff_text = "By refusing the safe escape before the witnesses, the protagonist kept yesterday's public promise."
         scenes = payload.get("scene_artifacts") or []
@@ -577,6 +623,7 @@ def _seed_prequalified_narrative_card(
     semantic_family: str = "SCENE_INTERACTION",
     repetition_key: str = "witnessed-choice-multifunction",
     suffix: str = "primary",
+    usage_role: str = "INSPIRATION",
 ) -> str:
     """Freeze an upstream-governed Card as a qualification input snapshot.
 
@@ -601,6 +648,7 @@ def _seed_prequalified_narrative_card(
         "review_checks": ["Reject separate exposition-only scenes."],
         "copyright_boundaries": ["Mechanism only; no source sequence or expression."],
         "knowledge_kind": "NARRATIVE_INTELLIGENCE",
+        "usage_role": usage_role,
         "semantic_family": semantic_family,
         "mechanism": "Bind disclosure and relationship cost to one witnessed choice.",
         "applicability": ["A chapter must advance multiple active Arcs naturally."],
@@ -785,6 +833,9 @@ def test_planning_retry_freezes_narrative_intelligence_and_honors_revocation(
         assert len(frozen_usage) == 1
         assert frozen_usage[0]["knowledge_card_asset_version_id"] == first_card
         assert frozen_usage[0]["consumption_status"] == "CONTEXT_FROZEN"
+        assert frozen_usage[0]["usage_states"]["delivered"] is True
+        assert frozen_usage[0]["usage_states"]["claimed_adoption"] is False
+        assert frozen_usage[0]["delivery_receipts"][0]["status"] == "SUCCEEDED"
 
         second_card = _seed_prequalified_narrative_card(
             project_id=project_id,
@@ -830,6 +881,23 @@ def test_planning_retry_freezes_narrative_intelligence_and_honors_revocation(
             assert materialized_usage[0]["consumption_status"] == (
                 "FIXTURE_PROTOCOL_USED"
             )
+            assert materialized_usage[0]["usage_states"] == {
+                "selected": True, "delivered": True, "claimed_adoption": True,
+                "prose_verified": False, "independent_review_accepted": False,
+            }
+            assert materialized_usage[0]["knowledge_translations"][0]["decision"] == "ADAPT"
+            assert materialized_usage[0]["applicability_assessment"]["status"] == "UNKNOWN"
+            assert query.list_planning_usage(
+                project_id=project_id, book_id=book_id,
+                knowledge_card_asset_version_id=second_card, limit=1,
+            ) == []
+            from novel_forge.modules.mkaos_authority.trace import require_knowledge_trace
+
+            trace = require_knowledge_trace(
+                DATABASE_URL, project_id=project_id, book_id=book_id,
+                knowledge_card_asset_version_id=first_card,
+            )
+            assert trace["planning"][0]["knowledge_card_asset_version_id"] == first_card
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute(
                     """
@@ -856,11 +924,31 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
         _qualification_planning_response,
     )
     monkeypatch.setattr(
+        core_functional_fixture,
+        "planning_fixture_response",
+        _qualification_planning_response,
+    )
+    monkeypatch.setattr(
         authority_dependencies,
         "default_chapter_fixture_response",
         _qualification_chapter_response,
     )
     harness = CapabilityPackPostgresHarness("narrative-orchestration-qualification")
+    from copy import copy
+
+    chapter_pack = copy(harness)
+    chapter_pack.pack_id += "-chapter"
+    approved_chapter = chapter_pack.register_compile_approve(
+        "1.0.0", generation=1,
+        approval_scope=chapter_pack.approval_scope(
+            environments=("test",), runtime_profiles=("test",)
+        ), target_runtime_profile="test",
+    )
+    chapter_pack.register_agents(approved_chapter.compiled)
+    chapter_pack.activate(
+        chapter_pack.deploy(approved_chapter, environment="test", runtime_profile="test"),
+        environment="test",
+    )
     _activate_planning_pack(harness)
     project_id = harness.project_id
     workspace_id = harness.workspace_id
@@ -923,6 +1011,7 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "narrative-qualification-worker",
+            "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": chapter_pack.pack_id,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
         execution = build_production_execution_composition(settings, env=env, planning_fixture_factory=_qualification_planning_response)
@@ -936,7 +1025,13 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             env=env,
             chapter_application=chapter,
         )
-        planning = composition.planning
+        planning = StoryPlanningGenerationApplication(
+            DATABASE_URL,
+            execution_binder=_ExternalEffectPepFixturePlanningBinder(),
+            application_build_id="narrative-qualification-migration-fixture",
+            commit_sha=RELEASE_SHA,
+            allow_scripted_evaluation_fixture=True,
+        )
         activated: dict[str, str] = {}
         activated["book"] = _activate(
             planning=planning,
@@ -1011,8 +1106,21 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 activated["arc_countermove"],
             ),
         )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT asset_version_id,
+                       content->'execution_evidence'->'fixture_protocol_only'
+                FROM authority_asset_version WHERE asset_version_id=ANY(%s)
+                """,
+                [list(activated.values())],
+            )
+            assert dict(uow.cursor.fetchall()) == {
+                version_id: True for version_id in activated.values()
+            }
         narrative_card_version = _seed_prequalified_narrative_card(
-            project_id=project_id, workspace_id=workspace_id
+            project_id=project_id, workspace_id=workspace_id,
+            usage_role="MECHANISM",
         )
         initial_story, initial_canon = _seed_initial_narrative_pair(
             project_id=project_id,
@@ -1164,13 +1272,50 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             assert claim is not None
             return execute_book_coordination_claim(runtime_jobs, composition, claim)
 
+        delivery_checkpoints: list[dict[str, Any]] = []
+
+        class KnowledgeReceiptProcessLoss(BaseException):
+            pass
+
+        def interrupt_after_draft_receipt(point: str) -> None:
+            if point != "after_provider_success" or delivery_checkpoints:
+                return
+            delivered = MkaosAuthorityQuery(DATABASE_URL).list_runtime_usage(
+                project_id=project_id, book_id=book_id,
+                knowledge_card_asset_version_id=narrative_card_version,
+            )
+            pending = [item for item in delivered if item["consumer_definition_name"] == "chapter.draft.generate"
+                       and item["result_asset_version_id"] is None]
+            if not pending:
+                return
+            assert len(pending) == 1
+            assert pending[0]["consumer_status"] != "SUCCEEDED"
+            assert pending[0]["external_effect_status"] == "SUCCEEDED"
+            assert pending[0]["external_receipt_ids"]
+            delivery_checkpoints.extend(pending)
+            raise KnowledgeReceiptProcessLoss("Fixture loses its process after the receipt before candidate materialization.")
+
+        chapter._model_port.fault_injector = interrupt_after_draft_receipt
+
         def run_chapter(root_operation_id: str) -> None:
             scheduler = chapter.scheduler(principal=worker_principal)
             for _ in range(len(ChapterNode) * 2 + 4):
-                tick = scheduler.tick(
-                    project_id=project_id,
-                    root_operation_id=root_operation_id,
-                )
+                try:
+                    tick = scheduler.tick(
+                        project_id=project_id,
+                        root_operation_id=root_operation_id,
+                    )
+                except KnowledgeReceiptProcessLoss:
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute(
+                            """UPDATE authority_lease_acquisition
+                            SET expires_at=acquired_at + INTERVAL '1 millisecond'
+                            WHERE attempt_id=%s AND status='HELD'""",
+                            [delivery_checkpoints[0]["attempt_id"]],
+                        )
+                        uow.commit()
+                    scheduler.worker_id += ":recovered"
+                    continue
                 if tick.saga_status == "SUCCEEDED":
                     return
             raise AssertionError("Chapter Authority did not complete")
@@ -1653,8 +1798,18 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 for item in manifest["selected_inputs"]
             )
             assert all(item["provenance"] for item in manifest["compressible_context"])
-        assert len(intelligence_usage) == 3
-        assert sum(bool(row[2]) for row in intelligence_usage) == 1
+        from collections import Counter
+
+        assert Counter(row[0]["logical_key"] for row in intelligence_usage) == {
+            "chapter-group:1-3": 3, "chapter:1": 3, "chapter:2": 3, "chapter:3": 3,
+        }
+        assert Counter(row[0]["logical_key"] for row in intelligence_usage if row[2]) == {
+            "chapter-group:1-3": 1, "chapter:1": 3, "chapter:2": 3, "chapter:3": 3,
+        }
+        assert Counter(row[3]["stage"] for row in intelligence_usage) == {
+            "chapter_group_plan.generate": 3, "chapter_plan.generate": 3,
+            "world_candidates.generate": 3, "world_candidates.evaluate": 3,
+        }
         for usage in intelligence_usage:
             intelligence_context = dict(usage[0])
             intelligence_candidate = dict(usage[1])
@@ -1669,8 +1824,11 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 is True
             )
             provider_task_view = dict(usage[3])
+            knowledge_input = provider_task_view["input"]
+            if provider_task_view["stage"].startswith("world_candidates."):
+                knowledge_input = knowledge_input["world_preparation"]
             assert (
-                provider_task_view["input"]["narrative_intelligence"]["selected"][0][
+                knowledge_input["narrative_intelligence"]["selected"][0][
                     "knowledge_card_asset_version_id"
                 ]
                 == narrative_card_version
@@ -1685,19 +1843,85 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             for item in traced_usage
             if item["knowledge_card_asset_version_id"] == narrative_card_version
         ]
-        assert len(matching_usage) == 3
+        assert Counter(item["planning_stage"] for item in matching_usage) == {
+            "chapter_group_plan.generate": 3, "chapter_plan.generate": 3,
+        }
         assert {item["consumption_status"] for item in matching_usage} == {
             "FIXTURE_PROTOCOL_USED"
         }
         bound_usage = [item for item in matching_usage if item["plan_binding_id"]]
-        assert len(bound_usage) == 1
-        assert bound_usage[0]["plan_execution_scope"] == "FROZEN"
-        assert bound_usage[0]["plan_freshness"] == "CURRENT"
+        assert Counter(item["planning_stage"] for item in bound_usage) == {
+            "chapter_group_plan.generate": 1, "chapter_plan.generate": 3,
+        }
+        accepted_plan_ids = {
+            artifacts["chapter.plan"][2]["source_extensions"]["source_planning_candidate_asset_version_id"]
+            for artifacts in artifacts_by_chapter.values()
+        }
+        accepted_plan_usage = [item for item in bound_usage if item["candidate_asset_version_id"] in accepted_plan_ids]
+        assert len(accepted_plan_usage) == 3
+        assert Counter((item["plan_execution_scope"], item["plan_freshness"]) for item in accepted_plan_usage) == {("EXECUTED", "CURRENT"): 3}
+        assert [item["plan_execution_scope"] for item in bound_usage if item["planning_stage"] == "chapter_group_plan.generate"] == ["FROZEN"]
+        assert {item["candidate_asset_version_id"] for item in bound_usage
+                if item["planning_stage"] == "chapter_plan.generate"} == accepted_plan_ids
         assert context_runtime_usage
         assert all(str(row[3]) == "SUCCEEDED" for row in context_runtime_usage)
         assert any(
             str(row[2]) == "chapter.draft.generate" for row in context_runtime_usage
         )
+        from novel_forge.modules.mkaos_authority.trace import require_knowledge_trace
+
+        creative_trace = require_knowledge_trace(
+            DATABASE_URL, project_id=project_id, book_id=book_id,
+            knowledge_card_asset_version_id=narrative_card_version,
+        )
+        assert creative_trace["source_lineage"]["qualification_fixture_boundary"] == "UPSTREAM_SNAPSHOT_ONLY"
+        assert creative_trace["independent_editorial"] == "NOT_PROVEN"
+        assert len(creative_trace["prose"]) == 3
+        draft_deliveries = [item for item in creative_trace["delivered_requests"]
+                            if item["consumer_definition_name"] == "chapter.draft.generate"]
+        assert len(draft_deliveries) == 3
+        assert all(item["delivery_evidence_class"] == "FIXTURE_PROTOCOL_RECEIPT"
+                   and item["real_model_call"] is False
+                   and item["capability_materialization_asset_version_id"]
+                   and item["provider_context_view_hash"] for item in draft_deliveries)
+        assert len(delivery_checkpoints) == 1
+        recovered_delivery = next(item for item in draft_deliveries
+                                  if item["external_effect_id"] == delivery_checkpoints[0]["external_effect_id"])
+        assert recovered_delivery["consumer_status"] == "SUCCEEDED"
+        assert recovered_delivery["result_asset_version_id"]
+        assert recovered_delivery["external_receipt_ids"] == delivery_checkpoints[0]["external_receipt_ids"]
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT status, request_payload FROM authority_external_effect
+                WHERE external_effect_id=ANY(%s)
+                """,
+                [[item["external_effect_id"] for item in draft_deliveries]],
+            )
+            draft_requests = uow.cursor.fetchall()
+        assert len(draft_requests) == 3
+        for status, payload in draft_requests:
+            assert status == "SUCCEEDED"
+            translations = payload["input"]["plan"]["knowledge_translations"]
+            assert len(translations) == 1
+            assert translations[0]["knowledge_card_asset_version_id"] == narrative_card_version
+            assert translations[0]["usage_role"] == "MECHANISM"
+            assert translations[0]["decision"] == "ADAPT"
+        accepted_knowledge = {}
+        for chapter_trace in creative_trace["prose"]:
+            assert len(chapter_trace["cards"]) == 1
+            card_trace = chapter_trace["cards"][0]
+            assert card_trace["selected"]
+            assert card_trace["accepted"]["check"]["status"] == "VERIFIED_IN_PROSE"
+            assert card_trace["accepted"]["check"]["evidence_class"] == "FIXTURE_SEMANTIC_REVIEW"
+            assert card_trace["accepted"]["check"]["human_approved"] is False
+            assert card_trace["accepted"]["check"]["formal_proof"] is False
+            accepted_knowledge[chapter_trace["chapter_root_operation_id"]] = card_trace["accepted"]
+        for previous, following in zip(accepted_requests, accepted_requests[1:]):
+            next_refs = following[1]["context_version_refs"]
+            accepted_state = accepted_knowledge[str(previous[3])]["next_input_state"]
+            assert next_refs["story_state_snapshot_version"] == accepted_state["story_state_asset_version_id"]
+            assert next_refs["canon_snapshot_version"] == accepted_state["canon_snapshot_asset_version_id"]
 
         # Proof A: committed evidence creates rebuildable writer projections,
         # the lexical-first RetrievalResult consumes the accepted boundary, and

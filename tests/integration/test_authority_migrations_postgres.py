@@ -660,6 +660,54 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
             ).fetchall()
             self.assertEqual(missing, [])
 
+    def test_0128_corpus_member_index_repair_is_atomic_and_preserves_history(self) -> None:
+        from tests.integration.test_book_projection_repair_upgrade_postgres import _apply_through
+
+        _apply_through(self.test_url, "20260910_0128_corpus_operations")
+        repair = next(migration for migration in MIGRATIONS
+                      if migration.migration_id == "20260912_0129_corpus_member_fk_indexes")
+        coverage_sql = """
+            SELECT constraint_row.conrelid::regclass::text,
+                   ARRAY(SELECT attribute.attname::text
+                         FROM unnest(constraint_row.conkey) WITH ORDINALITY key(attnum,position)
+                         JOIN pg_attribute attribute ON attribute.attrelid=constraint_row.conrelid
+                           AND attribute.attnum=key.attnum ORDER BY key.position),
+                   EXISTS(SELECT 1 FROM pg_index index_row
+                          WHERE index_row.indrelid=constraint_row.conrelid
+                            AND index_row.indisvalid AND index_row.indpred IS NULL
+                            AND ARRAY(SELECT key.attnum FROM unnest(index_row.indkey) WITH ORDINALITY key(attnum,position)
+                                      WHERE key.position <= cardinality(constraint_row.conkey)
+                                      ORDER BY key.position)=constraint_row.conkey)
+            FROM pg_constraint constraint_row
+            WHERE constraint_row.contype='f' AND constraint_row.conrelid IN (
+                'authority_corpus_work_member'::regclass,'authority_corpus_curated_member'::regclass)
+            ORDER BY 1,2
+        """
+        expected_keys = {(table, columns) for table in (
+            "authority_corpus_work_member", "authority_corpus_curated_member") for columns in (
+                ("revision_id", "project_id"), ("processing_id", "project_id", "edition_id"))}
+        with psycopg.connect(self.test_url) as connection:
+            before = connection.execute("SELECT migration_id,applied_at FROM nf_schema_migrations ORDER BY migration_id").fetchall()
+            rows = connection.execute(coverage_sql).fetchall()
+            self.assertEqual({(table, tuple(columns)) for table, columns, covered in rows if not covered}, expected_keys)
+            with self.assertRaisesRegex(RuntimeError, "rollback corpus member indexes"):
+                with connection.transaction():
+                    for statement in repair.upgrade_statements:
+                        connection.execute(statement)
+                    self.assertTrue(all(covered for _, _, covered in connection.execute(coverage_sql)))
+                    raise RuntimeError("rollback corpus member indexes")
+            self.assertEqual(connection.execute(coverage_sql).fetchall(), rows)
+            self.assertEqual(connection.execute("SELECT migration_id,applied_at FROM nf_schema_migrations ORDER BY migration_id").fetchall(), before)
+        upgraded = run_migrations(self.test_url)
+        self.assertTrue(upgraded["ok"])
+        self.assertEqual(run_migrations(self.test_url), upgraded)
+        with psycopg.connect(self.test_url) as connection:
+            repaired = connection.execute(coverage_sql).fetchall()
+            self.assertEqual({(table, tuple(columns)) for table, columns, _ in repaired}, expected_keys)
+            self.assertTrue(all(covered for _, _, covered in repaired))
+            after = dict(connection.execute("SELECT migration_id,applied_at FROM nf_schema_migrations"))
+            self.assertTrue(all(after[revision] == applied_at for revision, applied_at in before))
+
     def test_0102_recovery_intent_requires_recovery_assessment_at_commit(
         self,
     ) -> None:

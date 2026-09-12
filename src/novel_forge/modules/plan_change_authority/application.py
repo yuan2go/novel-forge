@@ -178,6 +178,20 @@ class PostgresPlanChangeAuthority:
         self, command: PlanChangeProposalCommand, *, principal: Principal
     ) -> dict[str, Any]:
         principal.require("book.authority.execute", command.project_id)
+        if command.source_type is PlanChangeSource.HUMAN_FEEDBACK:
+            from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+            source = AuthorityAssetQuery(self.database_url).require(
+                project_id=command.project_id, asset_version_id=command.source_evidence_version_id,
+            )
+            if (
+                source.asset_type != "replan_request"
+                or source.content.get("contract_version") != "operator-planning-change-request.v1"
+                or source.content.get("authority_boundary") != "FUTURE_PLAN_PROPOSAL_ONLY"
+                or source.content.get("book_id") != command.book_id
+                or source.content.get("target_plan_version_id") != command.target_asset_version_id
+            ):
+                raise KernelError("PLAN_CHANGE_FEEDBACK_SCOPE_INVALID", "operator change evidence must bind this Book and target plan")
         target = self._target_binding(
             command.project_id,
             command.book_id,

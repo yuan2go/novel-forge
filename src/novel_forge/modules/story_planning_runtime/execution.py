@@ -43,6 +43,8 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
 )
 from novel_forge.modules.chapter_authority.provider_views import (
     build_provider_context_view,
+    compile_planning_provider_context,
+    planning_context_source_hash,
 )
 from novel_forge.modules.context_builder.domain import (
     ContextProfile,
@@ -274,13 +276,15 @@ def _planning_narrative_intelligence_need(
             },
         ),
         theme_tags=_selection_terms(sources, {"theme", "theme_tags"}),
-        hard_constraints=_selection_terms(
+        hard_constraints=_required_selection_terms(
             sources,
             {
                 "hard_constraints",
                 "constraints",
                 "forbidden_changes",
                 "prohibited_changes",
+                "forbidden_events",
+                "prohibited_outcomes",
             },
         ),
         recently_used_repetition_keys=_merge_selection_terms(
@@ -295,7 +299,78 @@ def _planning_narrative_intelligence_need(
             recent_repetition_keys,
         ),
         semantic_families=families,
+        required_card_asset_version_ids=_inherited_knowledge_versions(
+            selected_inputs, chapter=int((command.narrative_realization or {}).get("chapter_number") or 0)
+        ),
+        condition_sources={
+            str(item["role"]): item
+            for item in selected_inputs
+            if item.get("role") and isinstance(item.get("content"), Mapping)
+        },
     )
+
+
+def _inherited_knowledge_versions(selected_inputs: list[dict[str, Any]], *, chapter: int) -> tuple[str, ...]:
+    from novel_forge.modules.mkaos_authority.applicability import resolve_pointer
+
+    required: set[str] = set()
+    for source in selected_inputs:
+        content = source.get("content") or {}
+        for translation in content.get("knowledge_translations") or ():
+            if translation.get("decision") not in {"ADOPT", "ADAPT"} or translation.get("usage_role") not in {"MECHANISM", "CONSTRAINT", "REVIEW_CHECK"}:
+                continue
+            for site in translation.get("use_sites") or ():
+                pointer = str(site.get("target_pointer") or "")
+                in_scope = True
+                tokens = pointer.split("/")
+                if chapter:
+                    for length in range(2, len(tokens)):
+                        found, ancestor = resolve_pointer(content, "/".join(tokens[:length]))
+                        if found and isinstance(ancestor, Mapping) and ancestor.get("chapter_number") is not None and int(ancestor["chapter_number"]) != chapter:
+                            in_scope = False
+                if in_scope:
+                    required.add(translation["knowledge_card_asset_version_id"])
+                    break
+    return tuple(sorted(required))
+
+
+def _planning_knowledge_access(*, production_profile, selected, project_id, book_id):
+    policy = resolve_book_knowledge_access_policy(production_profile=production_profile, project_id=project_id, book_id=book_id)
+    for item in selected:
+        content = item.get("content") or {}
+        if item.get("role") == "production_profile" and "knowledge_access_policy" in content:
+            declared = resolve_book_knowledge_access_policy(production_profile=content, project_id=project_id, book_id=book_id)
+            if declared != policy:
+                raise KernelError("PLANNING_BOOK_KNOWLEDGE_POLICY_MISMATCH", "the frozen ProductionProfile and Book Authority declare different knowledge policies; reconcile the Book inputs before generation")
+    return policy
+
+
+def _required_selection_terms(sources: list[Any], keys: set[str]) -> tuple[str, ...]:
+    values: set[str] = set()
+
+    def collect(value: Any) -> None:
+        if isinstance(value, str) and value.strip():
+            values.add(value.strip())
+        elif isinstance(value, Mapping):
+            for item in value.values():
+                collect(item)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                collect(item)
+
+    def visit(value: Any) -> None:
+        if isinstance(value, Mapping):
+            for key, item in value.items():
+                if str(key).casefold() in keys:
+                    collect(item)
+                visit(item)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                visit(item)
+
+    for source in sources:
+        visit(source)
+    return tuple(sorted(values))
 
 
 def _selection_terms(
@@ -354,6 +429,10 @@ def _recent_activated_repetition_keys(
             if str(item.get("repetition_key") or "")
             and str(item.get("plan_binding_id") or "")
             and str(item.get("plan_freshness") or "") == "CURRENT"
+            and (
+                "usage_states" not in item
+                or bool((item.get("usage_states") or {}).get("claimed_adoption"))
+            )
         )
     )[:32]
 
@@ -3352,6 +3431,9 @@ class PostgresPlanningExecutionPreparer:
         )
         action = None
         if command.world_preparation_request:
+            knowledge_context, _ = self._context_bundle(
+                operation_id=operation_id, attempt_id=attempt_id, command=command, inputs=inputs
+            )
 
             def execute_stage(stage):
                 prepared = self._prepare_stage(**arguments, provider_stage=stage)
@@ -3366,7 +3448,8 @@ class PostgresPlanningExecutionPreparer:
                 )
 
             action = PlanningWorldPreparation(self).prepare(
-                operation_id=operation_id, command=command, execute_stage=execute_stage
+                operation_id=operation_id, command=command, execute_stage=execute_stage,
+                knowledge_selection=knowledge_context.content.get("narrative_intelligence") or {},
             )
         return self._prepare_stage(**arguments, world_action=action)
 
@@ -3520,6 +3603,12 @@ class PostgresPlanningExecutionPreparer:
         if provider_stage is not None:
             output_schema = dict(provider_stage.output_schema)
             output_schema_ref = f"schema:{stage_name}:v1"
+        else:
+            from .knowledge_translation import add_translation_contract
+
+            output_schema = add_translation_contract(
+                output_schema, context_document.content.get("narrative_intelligence") or {}
+            )
         context_selection = [
             {
                 "artifact_ref": f"asset-version:{context_document.asset_version_id}",
@@ -4500,8 +4589,9 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_LANGUAGE_CONTRACT_INVALID",
                 "Book Authority language contract must be an object",
             )
-        knowledge_access_policy = resolve_book_knowledge_access_policy(
+        knowledge_access_policy = _planning_knowledge_access(
             production_profile=production_profile,
+            selected=selected,
             project_id=command.project_id,
             book_id=command.book_id,
         )
@@ -4728,13 +4818,11 @@ class PostgresPlanningExecutionPreparer:
             else command.generator_operation_name
         )
         token_budget = int(content.get("token_budget") or 0)
-        provider_view = build_provider_context_view(
-            stage_name,
-            content,
-            {"world_preparation": dict(provider_stage.task)}
-            if provider_stage is not None
-            else {},
-        )
+        if provider_stage is None:
+            provider_view, projection_audit = compile_planning_provider_context(stage_name, content)
+        else:
+            provider_view = build_provider_context_view(stage_name, content, {"world_preparation": dict(provider_stage.task)})
+            projection_audit = {}
         accepted_state_boundary = provider_view.get("accepted_state_boundary")
         if not isinstance(accepted_state_boundary, Mapping):
             raise KernelError(
@@ -4788,7 +4876,7 @@ class PostgresPlanningExecutionPreparer:
                         f"{logical_kind}:{source_identity}"
                     ),
                     semantic_representation_identity=(
-                        f"provider-context-view-v2:{semantic_hash}"
+                        f"provider-context-view-v2:{logical_kind}:{semantic_hash}"
                     ),
                     safe_summary=rendered,
                     compression_method="authority_projection",
@@ -5021,7 +5109,10 @@ class PostgresPlanningExecutionPreparer:
             "provider_context_view": {
                 "contract_version": str(provider_view.get("contract_version") or ""),
                 "content_hash": canonical_hash(provider_view),
+                "compiled_view": provider_view,
+                "source_input_hash": planning_context_source_hash(content),
             },
+            "projection_audit": projection_audit,
             "effective_policy": compilation.effective_policy.to_dict(),
             "policy_compilation": dict(compilation.receipt),
             "selected_inputs": [

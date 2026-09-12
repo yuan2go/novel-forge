@@ -1,0 +1,34 @@
+{
+  "contract_version": "knowledge-closure-experiment.v1",
+  "purpose": "BOUNDED_ENGINEERING_AND_BLIND_EDITORIAL_COMPARISON",
+  "source_evidence_class": "ORIGINAL_SYNTHETIC_FIXTURE",
+  "source_files": [
+    "professional.jsonl",
+    "fiction.jsonl"
+  ],
+  "brief": "brief.json",
+  "formation_policy": "formation.json",
+  "creation_policy": "creation.json",
+  "chapters_per_arm": 6,
+  "minimum_chapter_groups": 2,
+  "groups": {
+    "A": {
+      "knowledge_mode": "ALLOW_ONLY",
+      "card_binding": "EXACT_APPROVED_VERSIONS_REQUIRED"
+    },
+    "B": {
+      "knowledge_policy": "deny-all.json",
+      "canon_and_memory": "NORMAL_BOOK_SCOPED"
+    }
+  },
+  "shared_plans_allowed": false,
+  "model_routes": "SAME_EXACT_AUTHORIZED_ROUTES_FROZEN_BEFORE_EXECUTION",
+  "prompt_skill": "SAME_IMPLEMENTATION_AND_CAPABILITY_PACK_HASHES",
+  "seed": {
+    "supported": false,
+    "reproducibility": "NOT_DETERMINISTIC"
+  },
+  "revision_budget": "SAME_FROZEN_CHAPTER_WORKFLOW_AND_AUTHORIZED_TOTAL_BUDGET",
+  "real_provider_execution": "NOT_RUN",
+  "human_editorial": "NOT_RUN"
+}

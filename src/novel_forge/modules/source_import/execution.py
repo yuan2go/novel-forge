@@ -186,12 +186,16 @@ class _SourceGatewayEffectAdapter:
                 f"Source PEP execution failed: {type(exc).__name__}: {exc}",
                 request_sent=request_sent,
             ) from exc
-        return _source_gateway_provider_result(
+        adapted = _source_gateway_provider_result(
             binding=self.binding,
             session=self.session,
             handle=handle,
             result=result,
         )
+        checkpoint = getattr(self.transport, "source_result_checkpoint", None)
+        if checkpoint is not None:
+            checkpoint(adapted)
+        return adapted
 
     def query(self, **kwargs: Any) -> ProviderResult:
         return self.execute(**kwargs)
@@ -472,11 +476,19 @@ class PostgresContentIntelligenceExecutionPort:
 
     def frozen_reading_runtime(self) -> dict[str, Any]:
         from .corpus_ingestion.narrative_contracts import (
-            NARRATIVE_POLICY,
-            narrative_schema,
-            review_schema,
+            NARRATIVE_POLICY, MECHANISM_POLICY,
+            narrative_schema, mechanism_observation_schema, review_schema,
         )
+        from .execution_contracts import grounded_knowledge_output_schema
 
+        schemas = {
+            "observation": narrative_schema(),
+            "mechanism_observation": mechanism_observation_schema(),
+            "review": review_schema(),
+            "classification": content_intelligence_output_schema(CLASSIFICATION_STAGE),
+            "extraction": content_intelligence_output_schema(MKAOS_STAGE),
+            "grounded_extraction": grounded_knowledge_output_schema(),
+        }
         route = self.transport.routes["quality_source_originality"]
         provider_schemas = {}
         if route.model_profile.model_provider == "codex-cli":
@@ -488,24 +500,19 @@ class PostgresContentIntelligenceExecutionPort:
                 "version": CODEX_SCHEMA_PROJECTION_VERSION,
                 "schema_hashes": {
                     name: _hash(codex_output_schema(schema))
-                    for name, schema in {
-                        "observation": narrative_schema(),
-                        "review": review_schema(),
-                        "classification": content_intelligence_output_schema(CLASSIFICATION_STAGE),
-                        "extraction": content_intelligence_output_schema(MKAOS_STAGE),
-                    }.items()
+                    for name, schema in schemas.items()
                 },
                 "remote_acceptance": "NOT_TESTED_BY_PREVIEW",
             }
         return {
             **({"provider_schemas": provider_schemas} if provider_schemas else {}),
-            "version": "source-reading-runtime.v2",
+            "version": "source-reading-runtime.v3",
             "input_evidence_version": "source-actual-input.v1",
             "provider": route.model_profile.model_provider,
             "model": route.model_profile.model_id,
             "route_hash": _hash(asdict(route)),
-            "policy_hash": _hash(NARRATIVE_POLICY),
-            "schemas_hash": _hash([narrative_schema(), review_schema()]),
+            "policy_hash": _hash([NARRATIVE_POLICY, MECHANISM_POLICY]),
+            "schemas_hash": _hash(schemas),
             "classifier_hash": SOURCE_CLASSIFIER_METHODOLOGY_HASH,
             "skills": {
                 key: self.methodology_registry.require(key).content_digest
@@ -712,6 +719,10 @@ class PostgresContentIntelligenceExecutionPort:
         narrative_context: dict[str, Any] | None = None,
         review_target: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        from .corpus_ingestion.narrative_contracts import (
+            MECHANISM_OBSERVATION_SCHEMA, MECHANISM_POLICY, mechanism_observation_schema,
+        )
+        structured = analyzer.schema_version == MECHANISM_OBSERVATION_SCHEMA
         analyzers = compound_analyzers or (analyzer,)
         compound = bool(compound_analyzers)
         if compound and (
@@ -827,6 +838,8 @@ class PostgresContentIntelligenceExecutionPort:
                     "sampling_manifest_hash": sampling_manifest_hash,
                 }
             )
+        if structured:
+            input_payload["observation_contract"] = MECHANISM_POLICY
         if narrative_context:
             from .corpus_ingestion.narrative_contracts import (
                 NARRATIVE_POLICY,
@@ -834,7 +847,7 @@ class PostgresContentIntelligenceExecutionPort:
                 review_schema,
             )
 
-            input_payload["narrative_contract"] = NARRATIVE_POLICY
+            input_payload["narrative_contract"] = MECHANISM_POLICY if structured else NARRATIVE_POLICY
             input_payload["reading_context"] = narrative_context
             if review_target is not None:
                 input_payload["review_target"] = review_target
@@ -886,11 +899,12 @@ class PostgresContentIntelligenceExecutionPort:
                 "generation_context_allowed": False,
             },
             output_schema=(
-                (review_schema() if review_target is not None else narrative_schema())
+                (review_schema() if review_target is not None else mechanism_observation_schema() if structured else narrative_schema())
                 if narrative_context
                 else (
                     compound_deconstruction_output_schema()
                     if compound
+                    else mechanism_observation_schema() if structured
                     else content_intelligence_output_schema(DECONSTRUCTION_STAGE)
                 )
             ),
@@ -933,6 +947,7 @@ class PostgresContentIntelligenceExecutionPort:
                 segments=source_segments,
                 lower_ids=lower_ids,
                 dimensions=narrative_context["dimensions"],
+                unit_bindings=tuple(narrative_context.get("unit_bindings", [])),
             )
             if not provider_output["findings"]:
                 log = self._execution_log(
@@ -955,6 +970,14 @@ class PostgresContentIntelligenceExecutionPort:
                         execution.get("provider_execution_reused")
                     ),
                 }
+        if structured and not narrative_context:
+            from .corpus_ingestion.narrative_contracts import validate_narrative
+            provider_output, supported_spans = validate_narrative(
+                provider_output, segments=source_segments, lower_ids=lower_ids,
+                dimensions=[analyzer.dimension],
+            )
+            if supported_spans:
+                evidence_spans = supported_spans
         if compound:
             requested_dimensions = tuple(item.dimension for item in analyzers)
             ordered_observations = _order_compound_observations(
@@ -1101,7 +1124,7 @@ class PostgresContentIntelligenceExecutionPort:
             "observation": observation,
             **(
                 {"evidence_spans": [item.to_dict() for item in evidence_spans]}
-                if narrative_context
+                if narrative_context or structured
                 else {}
             ),
             "execution_asset_version_id": log.asset_version_id,
@@ -1121,8 +1144,10 @@ class PostgresContentIntelligenceExecutionPort:
         observation: dict[str, Any],
         evidence_spans: tuple[KnowledgeEvidenceSpan, ...],
     ) -> dict[str, Any]:
-        if not observation:
-            raise ValueError("MKAOS execution requires one Observation")
+        if not observation or not observation.get("findings"):
+            raise ValueError("MKAOS execution requires a supported nonempty Observation")
+        from .execution_contracts import grounded_knowledge_output_schema
+        grounded = any("certainty" in f for f in observation["findings"])
         methodology = self.methodology_registry.require("anti-copy-abstraction")
         spec = _ExecutionSpec(
             kind="mkaos",
@@ -1145,6 +1170,10 @@ class PostgresContentIntelligenceExecutionPort:
                 "observation_hash": _hash(observation),
                 "abstraction_policy_version": abstraction_policy_version,
                 "evidence_manifest_hash": _evidence_manifest_hash(evidence_spans),
+                **({"abstraction_contract": {
+                    "version": "knowledge-grounded-abstraction.v2",
+                    "instruction": "Retain source-supported prerequisites, applicability, exceptions, failure conditions, misuse risks and uncertainty. Cite exact supplied finding codes. Do not strengthen epistemic claims, invent absent mechanisms or omit conditions to universalize a rule.",
+                }} if grounded else {}),
             },
             artifact_version_ids=(observation_asset_version_id,),
             context_contract={
@@ -1154,13 +1183,16 @@ class PostgresContentIntelligenceExecutionPort:
                 "source_expression_available": False,
                 "generation_context_allowed": False,
             },
-            output_schema=content_intelligence_output_schema(MKAOS_STAGE),
+            output_schema=grounded_knowledge_output_schema() if grounded else content_intelligence_output_schema(MKAOS_STAGE),
         )
         execution = self._execute(worker=worker, spec=spec)
         candidate = validate_content_intelligence_output(
             spec.stage, spec.output_schema, execution["result"]
         )
         candidate = validate_knowledge_candidate(candidate)
+        if grounded:
+            from .corpus_ingestion.narrative_contracts import validate_abstraction_lineage
+            validate_abstraction_lineage(candidate, observation)
         binding = {
             "schema_version": "mkaos-candidate-execution-binding.v1",
             "candidate_payload_hash": _hash(candidate),
@@ -2004,8 +2036,12 @@ class PostgresContentIntelligenceExecutionPort:
             "usage": dict(execution.get("usage") or {}),
             "cost": dict(execution.get("cost") or {}),
             "production_execution": dict(execution.get("production_execution") or {}),
+            "capability_runtime": dict(execution.get("capability_runtime") or {}),
             **domain_binding,
         }
+        if spec.kind == "mkaos" and content["real_provider_proven"] and not content["fixture_protocol_only"]:
+            from novel_forge.modules.provider_qualification.source_binding import source_runtime_identity
+            content["provider_runtime_qualification_scope"] = source_runtime_identity(execution)
         return self.writer.materialize_output(
             AuthorityAssetWriteCommand(
                 operation_id=worker.causation_id,

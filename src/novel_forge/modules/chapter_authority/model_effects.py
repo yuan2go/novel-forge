@@ -995,12 +995,6 @@ class ExternalEffectChapterModelPort:
                 recorder.record_compatibility_usage(request, stage=stage)
         completed = self.completed_effect_result(external_effect_id, request.project_id)
         if completed is not None:
-            self._validate_retrieval_result_contract(
-                stage=stage,
-                project_id=request.project_id,
-                external_effect_id=external_effect_id,
-                result=completed,
-            )
             if bool(effect.get("replayed")):
                 authorize = getattr(self.adapter, "for_recovery", None)
                 if callable(authorize):
@@ -1058,6 +1052,12 @@ class ExternalEffectChapterModelPort:
                 stage,
                 completed,
                 external_effect_id=external_effect_id,
+            )
+            self._validate_retrieval_result_contract(
+                stage=stage,
+                project_id=request.project_id,
+                external_effect_id=external_effect_id,
+                result=completed,
             )
             if frozen_work_order is not None and execution_binding is not None:
                 self.agent_binding_recorder.accept_candidate(
@@ -1176,12 +1176,6 @@ class ExternalEffectChapterModelPort:
         result = ModelProviderResult.from_evidence(
             dict(dispatched["provider_evidence"])
         )
-        self._validate_retrieval_result_contract(
-            stage=stage,
-            project_id=request.project_id,
-            external_effect_id=external_effect_id,
-            result=result,
-        )
         self.fault_injector("after_provider_success")
         actual_amount, actual_tokens, settlement_basis = _model_budget_settlement(
             result,
@@ -1217,6 +1211,12 @@ class ExternalEffectChapterModelPort:
             stage,
             result,
             external_effect_id=str(effect["external_effect_id"]),
+        )
+        self._validate_retrieval_result_contract(
+            stage=stage,
+            project_id=request.project_id,
+            external_effect_id=external_effect_id,
+            result=result,
         )
         if frozen_work_order is not None and execution_binding is not None:
             self.agent_binding_recorder.accept_candidate(
@@ -2114,6 +2114,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                 if "resolution_checks" in raw
                 else {}
             ),
+            **({"knowledge_checks": raw["knowledge_checks"]} if "knowledge_checks" in raw else {}),
         }
     if stage in {"memo", "canon_support"}:
         return dict(raw)

@@ -289,10 +289,15 @@ def validate_observation_payload(
             "one dimension Observation exceeds the bounded structured payload",
         )
     findings = observation.get("findings")
-    if not isinstance(findings, list) or not findings or len(findings) > 500:
+    if not isinstance(findings, list) or len(findings) > 500:
         raise KernelError(
             "DECONSTRUCTION_OBSERVATION_INVALID",
-            "observation findings must contain between 1 and 500 items",
+            "observation findings must contain at most 500 items",
+        )
+    if not findings and not str(observation.get("scope_limitations") or "").strip():
+        raise KernelError(
+            "DECONSTRUCTION_EMPTY_SCOPE_REQUIRED",
+            "empty findings require a bounded explanation, not forced knowledge",
         )
     confidence = observation.get("confidence")
     if (

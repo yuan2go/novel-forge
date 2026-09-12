@@ -7,9 +7,22 @@ from novel_forge.modules.source_authority.corpus import corpus_hash
 
 def materialized_input_manifest(inputs: dict, request: dict, policy: dict) -> dict:
     context = inputs.get("reading_context", {})
+    bindings = context.get("unit_bindings", [])
     segments = []
     for segment in inputs.get("source_segments", []):
         content = segment["content"].encode("utf-8")
+        ranges = [
+            {
+                **span,
+                "source_unit_version_id": unit["source_unit_version_id"],
+                "role": unit["role"],
+            }
+            for unit in bindings
+            for span in unit.get("chunk_ranges", [])
+            if span["source_chunk_asset_version_id"]
+            == segment["source_chunk_asset_version_id"]
+        ]
+        roles = {r["role"] for r in ranges}
         segments.append(
             {
                 "source_chunk_asset_version_id": segment[
@@ -19,7 +32,12 @@ def materialized_input_manifest(inputs: dict, request: dict, policy: dict) -> di
                 "byte_start": 0,
                 "byte_end": len(content),
                 "byte_size": len(content),
-                "role": "TARGET_TEXT",
+                "role": "TARGET_AND_SUPPORTING_CONTEXT"
+                if len(roles) > 1
+                else "SUPPORTING_CONTEXT"
+                if roles == {"ALLOWED_CONTEXT"}
+                else "TARGET_TEXT",
+                "unit_ranges": ranges,
             }
         )
     manifest = {
@@ -27,7 +45,16 @@ def materialized_input_manifest(inputs: dict, request: dict, policy: dict) -> di
         "reading_identity": context.get("reading_identity"),
         "processing_id": context.get("processing_id"),
         "source_transform_id": context.get("source_transform_id"),
-        "target_units": context.get("unit_versions", []),
+        "target_units": [
+            u["source_unit_version_id"] for u in bindings if u["role"] == "TARGET"
+        ]
+        if bindings
+        else context.get("unit_versions", []),
+        "supporting_units": [
+            u["source_unit_version_id"]
+            for u in bindings
+            if u["role"] == "ALLOWED_CONTEXT"
+        ],
         "unit_bindings": context.get("unit_bindings", []),
         "actual_text_inputs": segments,
         "lower_observation_inputs": [
@@ -49,7 +76,11 @@ def materialized_input_manifest(inputs: dict, request: dict, policy: dict) -> di
         "materialized_input_hash": corpus_hash(inputs),
         "request": request,
         "policy": policy,
-        "read_mode": "FULL_TARGET_UNIT_TEXT" if segments else "VERIFIED_OBSERVATIONS",
+        "read_mode": "FULL_TARGET_WITH_SUPPORTING_UNITS"
+        if segments and any(u["role"] == "ALLOWED_CONTEXT" for u in bindings)
+        else "FULL_TARGET_UNIT_TEXT"
+        if segments
+        else "VERIFIED_OBSERVATIONS",
         "understanding_claim": False,
     }
     manifest["manifest_hash"] = corpus_hash(manifest)
@@ -66,7 +97,8 @@ def receipt_input_evidence(records: list[dict], payload: dict) -> dict:
             "CONFIRMED_RETURNED"
             if returned
             else "UNKNOWN"
-            if record.get("external_state_unknown") or record.get("status")
+            if record.get("external_state_unknown")
+            or record.get("status")
             in {
                 "DISPATCHING",
                 "DISPATCHED",
@@ -111,6 +143,7 @@ def receipt_input_evidence(records: list[dict], payload: dict) -> dict:
             u["source_unit_version_id"]
             for u in plan["units"]
             if u["role"] == "ALLOWED_CONTEXT"
+            and u["source_unit_version_id"] not in latest.get("supporting_units", [])
         ],
         "understanding_claim": False,
         "input_state": "CONFIRMED_RETURNED"

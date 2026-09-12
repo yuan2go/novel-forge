@@ -1141,6 +1141,8 @@ class MkaosAuthorityApplication:
                     )
                     or "PRODUCTION"
                 ),
+                frozen_runtime_qualification=dict(payload.get("approval_contract") or {}).get("provider_runtime_qualification"),
+                qualification_cursor=uow.cursor,
             )
             if approval_contract != dict(payload.get("approval_contract") or {}):
                 raise KernelError(
@@ -1218,6 +1220,8 @@ class MkaosAuthorityApplication:
                     "review_class": approval_contract["review_class"],
                     "activation_scope": approval_contract["activation_scope"],
                     "approval_policy_version": approval_contract["policy_version"],
+                    **({"provider_runtime_qualification": approval_contract["provider_runtime_qualification"]}
+                       if "provider_runtime_qualification" in approval_contract else {}),
                     "fixture_protocol_only": candidate["content"][
                         "execution_evidence"
                     ]["proof"]["fixture_protocol_only"],
@@ -1713,6 +1717,8 @@ class MkaosAuthorityApplication:
         policy_version: str,
         reviewer_id: str,
         approval_class: str,
+        frozen_runtime_qualification: dict[str, Any] | None = None,
+        qualification_cursor: Any | None = None,
     ) -> dict[str, Any]:
         if candidate["workspace_id"] != workspace_id:
             raise KernelError(
@@ -1738,15 +1744,34 @@ class MkaosAuthorityApplication:
                 "fixture execution can prove the protocol but cannot activate a production KnowledgeCard",
             )
         if approval_class == "PRODUCTION":
-            if not proof.get("fixture_protocol_only") and not (
-                proof.get("real_provider_proven")
-                and proof.get("production_verified")
-            ):
-                raise KernelError(
-                    "MKAOS_EXECUTION_NOT_PRODUCTION_VERIFIED",
-                    "production activation requires verified real-provider execution evidence",
+            runtime_qualification = None
+            source_execution = False
+            if not proof.get("fixture_protocol_only"):
+                execution_ref = dict(candidate["content"].get("execution_evidence") or {})
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute(
+                        "SELECT content->>'schema_version' FROM authority_asset_version WHERE asset_version_id=%s",
+                        [str(execution_ref.get("asset_version_id") or "")],
+                    )
+                    schema = uow.cursor.fetchone()
+                    source_execution = bool(schema and schema[0] == "source-model-call-log.v1")
+            if not proof.get("fixture_protocol_only") and (source_execution or not (
+                proof.get("real_provider_proven") and proof.get("production_verified")
+            )):
+                if not proof.get("real_provider_proven"):
+                    raise KernelError("MKAOS_EXECUTION_NOT_PRODUCTION_VERIFIED", "production activation requires real-provider execution evidence")
+                from novel_forge.modules.provider_qualification.source_binding import require_source_runtime_qualification
+                execution = dict(candidate["content"].get("execution_evidence") or {})
+                runtime_qualification = require_source_runtime_qualification(
+                    self.database_url, project_id=project_id, workspace_id=workspace_id,
+                    execution_asset_version_id=str(execution.get("asset_version_id") or ""),
+                    execution_content_hash=str(execution.get("content_hash") or ""),
+                    candidate_payload_hash=_hash(candidate["content"]["candidate"]),
+                    frozen=frozen_runtime_qualification,
+                    approval_cursor=qualification_cursor,
                 )
             return {
+                **({"provider_runtime_qualification": runtime_qualification} if runtime_qualification else {}),
                 "schema_version": "mkaos-approval-contract.v1",
                 "approval_class": "PRODUCTION",
                 "review_class": "GOVERNANCE_REVIEW",

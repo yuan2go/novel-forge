@@ -533,6 +533,9 @@ def _planning_contract(
                     "arc_scope_volume_plan_version_ids": list(
                         command.arc_scope_volume_plan_version_ids
                     ),
+                    "related_arc_plan_version_ids": list(
+                        command.related_arc_plan_version_ids
+                    ),
                     "narrative_search_id": command.narrative_search_id,
                     "narrative_search_branch_key": (
                         command.narrative_search_branch_key
@@ -1402,6 +1405,7 @@ def _activate_plan_chain(
                 "creative_reject_dialogue",
                 "creative_reject_deleted",
                 "creative_reject_memo",
+                "operator_plan_change",
             )
         ],
     ],
@@ -1534,7 +1538,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
     generic = _seed_inputs(
         project_id,
         book_id,
-        target_chapter_count=3,
+        target_chapter_count=6 if autonomous_world == "operator_plan_change" else 3,
         world_foundation=approved_world,
         world_production_policy={"planning_window_chapters": 2}
         if autonomous_world == "preparation_expiry"
@@ -1650,6 +1654,9 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
         if str(autonomous_world).startswith("creative_reject_"):
             from tests.integration.creative_grounding_support import CreativeGroundingTransport
             native_transport = CreativeGroundingTransport(negative=str(autonomous_world).removeprefix("creative_reject_"))
+        if autonomous_world == "operator_plan_change":
+            from tests.integration.operator_plan_change_support import OperatorPlanChangeTransport
+            native_transport = OperatorPlanChangeTransport()
         execution = build_production_execution_composition(
             settings,
             env=env,
@@ -1821,7 +1828,8 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
         assert replay.opening_run_id == admission.opening_run_id
         assert replay.runtime_job_id == admission.runtime_job_id
         assert opening_run["lifecycle"] == "COMPLETE"
-        assert len(opened["search_ids"]) == 4
+        opening_search_count = 5 if autonomous_world == "operator_plan_change" else 4
+        assert len(opened["search_ids"]) == opening_search_count
         assert opened["book_design_version"] == generic["book_design"]
         assert snapshot.book_plan_version == opened["book_plan_version"]
         assert snapshot.current_volume_plan_version == opened["volume_plan_version"]
@@ -1838,7 +1846,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
                 """,
                 [project_id, book_id],
             )
-            assert uow.cursor.fetchone() == (4, 4)
+            assert uow.cursor.fetchone() == (opening_search_count, opening_search_count)
             uow.cursor.execute(
                 """
                 SELECT COUNT(*), COUNT(*) FILTER (WHERE candidate.status='SELECTED')
@@ -1849,7 +1857,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
                 """,
                 [project_id, book_id],
             )
-            assert uow.cursor.fetchone() == (12, 4)
+            assert uow.cursor.fetchone() == (opening_search_count * 3, opening_search_count)
             uow.cursor.execute(
                 """
                 SELECT COUNT(*),
@@ -1884,7 +1892,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
                     book_id,
                 ],
             )
-            assert uow.cursor.fetchone() == (12, 12, 3, True)
+            assert uow.cursor.fetchone() == (opening_search_count * 3, opening_search_count * 3, 3, True)
             uow.cursor.execute(
                 """
                 SELECT budget_contract_state,budget_scope_id,budget_scope_revision
@@ -1898,6 +1906,16 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
             assert budget_binding[0] == "BOUND"
             assert str(budget_binding[1]).startswith("budget-scope:")
             assert budget_binding[2] == 1
+
+        if autonomous_world == "operator_plan_change":
+            from tests.integration.operator_plan_change_support import execute_operator_plan_change_vertical
+            native_evidence = execute_operator_plan_change_vertical(
+                composition=composition, chapter=chapter_application, snapshot=snapshot,
+                settings=settings, authority_api=authority_api,
+            )
+            test_case.user_properties.append(("operator_plan_change_vertical", json.dumps(native_evidence, sort_keys=True)))
+            execution.close()
+            return
 
         if autonomous_world:
             from tests.integration.world_causal_production_support import (
@@ -3055,6 +3073,110 @@ def test_planning_repeated_provider_timeout_exhausts_one_bounded_effect(
     )
 
 
+def test_current_book_plan_portfolio_binds_six_production_effect_receipts() -> None:
+    from tests.integration.narrative_reality_vertical_support import (
+        NativeRealityTransportFixture,
+        compiled_world_fixture,
+    )
+
+    harness = CapabilityPackPostgresHarness("book-plan-portfolio-production")
+    _activate_planning_pack(harness)
+    project_id = harness.project_id
+    book_id = harness.book_ids[0]
+    approved_world = compiled_world_fixture()
+    for rule in approved_world["rules"]:
+        rule.update(enforcement="SOFT_CAUSAL", predicate=None)
+    generic = _seed_inputs(
+        project_id, book_id, target_chapter_count=6, world_foundation=approved_world
+    )
+    principal = _principal(project_id)
+    with tempfile.TemporaryDirectory(prefix="book-plan-portfolio-production-") as root:
+        settings = IndustrialSettings(
+            root=Path(__file__).resolve().parents[2],
+            environment="development",
+            storage_authority="postgresql",
+            database_url=DATABASE_URL,
+        )
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE": "true",
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "core-functional-loop-fixture",
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+            "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
+            "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+        }
+        execution = build_production_execution_composition(
+            settings, env=env,
+            planning_fixture_factory=NativeRealityTransportFixture().planning,
+        )
+        try:
+            chapter_application = build_chapter_authority_application(
+                settings, execution=execution, env=env
+            )
+            composition = build_book_production_composition(
+                settings, principal=principal, execution=execution,
+                env=env, chapter_application=chapter_application,
+            )
+            activated = _activate_plan_chain(
+                project_id=project_id,
+                workspace_id=harness.workspace_id,
+                book_id=book_id,
+                generic=generic,
+                principal=principal,
+                application=composition.planning,
+                multi_volume_arc=True,
+            )
+            assert len(activated) == 6
+        finally:
+            execution.close()
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT COUNT(DISTINCT snapshot.attempt_id),
+                   COUNT(DISTINCT effect.external_effect_id),
+                   COUNT(DISTINCT generation.operation_id) FILTER (
+                     WHERE version.content->'execution_evidence'->>'capability_pack_attempt_snapshot_id'
+                           = snapshot.snapshot_id
+                       AND COALESCE(version.content->'execution_evidence'->>'capability_execution_ref', '') <> ''
+                   ),
+                   COUNT(DISTINCT generation.operation_id) FILTER (
+                     WHERE version.content->'execution_evidence'->>'external_receipt_ref'
+                           = effect.external_effect_id
+                   )
+            FROM authority_story_planning_generation AS generation
+            JOIN authority_attempt AS attempt
+              ON attempt.operation_id=generation.operation_id
+            JOIN authority_attempt_capability_pack_snapshot AS snapshot
+              ON snapshot.attempt_id=attempt.attempt_id
+            JOIN authority_external_effect AS effect
+              ON effect.operation_id=generation.operation_id
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=generation.candidate_asset_version_id
+            WHERE generation.project_id=%s
+            """,
+            [project_id],
+        )
+        assert uow.cursor.fetchone() == (6, 6, 6, 6)
+        uow.cursor.execute(
+            """
+            SELECT
+              (SELECT COUNT(*)
+                 FROM authority_agent_work_order AS work_order
+                 JOIN authority_story_planning_generation AS generation
+                   ON generation.operation_id=work_order.operation_id
+                WHERE generation.project_id=%s),
+              (SELECT COUNT(*)
+                 FROM authority_agent_runtime_binding AS binding
+                 JOIN authority_story_planning_generation AS generation
+                   ON generation.operation_id=binding.operation_id
+                WHERE generation.project_id=%s)
+            """,
+            [project_id, project_id],
+        )
+        assert uow.cursor.fetchone() == (0, 0)
+
+
 @pytest.mark.parametrize(
     "runtime_path",
     (
@@ -3216,61 +3338,36 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         chapter_application=chapter_application,
     )
     worker_composition, worker_chapter_application = build_worker_runtime()
-    planning = composition.planning
+    migration_fixture_planning = StoryPlanningGenerationApplication(
+        DATABASE_URL,
+        execution_binder=_ExternalEffectPepFixturePlanningBinder(
+            target_chapter_count=6
+        ),
+        application_build_id="core-functional-loop-migration-fixture",
+        commit_sha=RELEASE_SHA,
+        allow_scripted_evaluation_fixture=True,
+    )
     activated = _activate_plan_chain(
         project_id=project_id,
         workspace_id=workspace_id,
         book_id=book_id,
         generic=generic,
         principal=principal,
-        application=planning,
+        application=migration_fixture_planning,
         multi_volume_arc=True,
     )
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
-            SELECT COUNT(DISTINCT snapshot.attempt_id),
-                   COUNT(DISTINCT effect.external_effect_id),
-                   COUNT(DISTINCT generation.operation_id) FILTER (
-                     WHERE version.content->'execution_evidence'->>'capability_pack_attempt_snapshot_id'
-                           = snapshot.snapshot_id
-                       AND COALESCE(version.content->'execution_evidence'->>'capability_execution_ref', '') <> ''
-                   ),
-                   COUNT(DISTINCT generation.operation_id) FILTER (
-                     WHERE version.content->'execution_evidence'->>'external_receipt_ref'
-                           = effect.external_effect_id
-                   )
-            FROM authority_story_planning_generation AS generation
-            JOIN authority_attempt AS attempt
-              ON attempt.operation_id=generation.operation_id
-            JOIN authority_attempt_capability_pack_snapshot AS snapshot
-              ON snapshot.attempt_id=attempt.attempt_id
-            JOIN authority_external_effect AS effect
-              ON effect.operation_id=generation.operation_id
-            JOIN authority_asset_version AS version
-              ON version.asset_version_id=generation.candidate_asset_version_id
-            WHERE generation.project_id=%s
+            SELECT asset_version_id,
+                   content->'execution_evidence'->'fixture_protocol_only'
+            FROM authority_asset_version WHERE asset_version_id=ANY(%s)
             """,
-            [project_id],
+            [list(activated.values())],
         )
-        assert uow.cursor.fetchone() == (6, 6, 6, 6)
-        uow.cursor.execute(
-            """
-            SELECT
-              (SELECT COUNT(*)
-                 FROM authority_agent_work_order AS work_order
-                 JOIN authority_story_planning_generation AS generation
-                   ON generation.operation_id=work_order.operation_id
-                WHERE generation.project_id=%s),
-              (SELECT COUNT(*)
-                 FROM authority_agent_runtime_binding AS binding
-                 JOIN authority_story_planning_generation AS generation
-                   ON generation.operation_id=binding.operation_id
-                WHERE generation.project_id=%s)
-            """,
-            [project_id, project_id],
-        )
-        assert uow.cursor.fetchone() == (0, 0)
+        assert dict(uow.cursor.fetchall()) == {
+            version_id: True for version_id in activated.values()
+        }
     book_record_id = f"fixture:{project_id}:book-record"
     book_record_version = f"{book_record_id}:v1"
     with transaction() as connection, connection.cursor() as cursor:

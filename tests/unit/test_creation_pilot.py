@@ -58,6 +58,35 @@ def test_account_entitlement_rejects_usd_or_wrong_authorization(amount, referenc
         )
 
 
+def test_six_chapter_inputs_freeze_sources_and_do_not_invent_card_approval(tmp_path):
+    import hashlib
+    import json
+    from scripts.prepare_knowledge_closure import prepare
+    report = prepare(tmp_path / "unbound")
+    assert report["real_provider_execution"] == "NOT_RUN"
+    assert report["arm_a_binding"] == "KNOWLEDGE_APPROVAL_AND_EXACT_VERSION_BINDING_REQUIRED"
+    assert not (tmp_path / "unbound/allow-only.json").exists()
+    for name, digest in report["files"].items():
+        assert digest == "sha256:" + hashlib.sha256((tmp_path / "unbound" / name).read_bytes()).hexdigest()
+    prepare(tmp_path / "bound", ["exact-approved-version"])
+    policy = json.loads((tmp_path / "bound/allow-only.json").read_text())
+    assert policy["allowed_knowledge_card_asset_version_ids"] == ["exact-approved-version"]
+    creation = json.loads((tmp_path / "bound/creation.json").read_text())
+    assert creation["profiles"]["production_profile"]["content"]["target_chapter_count"] == 6
+    assert creation["chapter_group_execution"]["maximum_chapters"] == 3
+    assert creation["future_plan_change"]["after_chapter"] == 3
+    from novel_forge.modules.command_kernel.errors import KernelError
+    with pytest.raises(KernelError):
+        prepare(tmp_path / "empty", [])
+
+
+def test_blind_export_does_not_turn_missing_prose_into_review_material(tmp_path):
+    from scripts.prepare_knowledge_closure import blind_export
+    with pytest.raises(ValueError, match="six exact accepted chapters"):
+        blind_export(tmp_path / "a", tmp_path / "b", tmp_path / "output")
+    assert not (tmp_path / "output").exists()
+
+
 @pytest.mark.parametrize(
     "text,status,count",
     [

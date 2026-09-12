@@ -275,7 +275,8 @@ class SourceImportOperationsRecords:
               'phase',w.result->'phase','phase_status',w.result->'phase_status','repair_round',w.result->'repair_round',
               'coverage',w.result->'coverage','review',w.result->'review','issues',w.result->'issues',
               'observation',w.result->'observation','validation_error',w.result->'validation_error',
-              'output_validation',w.result->'output_validation','semantic_review_status',w.result->'semantic_review_status') END
+              'output_validation',w.result->'output_validation','semantic_review_status',w.result->'semantic_review_status') END,
+            o.command_payload#>>'{payload,capability}'
             FROM binding b JOIN authority_source_import_work w ON w.operation_id=b.target
             JOIN authority_operation o USING(operation_id,project_id)
             WHERE (%s='' OR b.processing_id=%s) ORDER BY w.operation_id LIMIT %s""",
@@ -299,6 +300,7 @@ class SourceImportOperationsRecords:
                         "attempt_count",
                         "lease_acquisition_count",
                         "narrative",
+                        "capability",
                     ),
                     r,
                     strict=True,

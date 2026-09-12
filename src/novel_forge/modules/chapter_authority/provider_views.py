@@ -16,7 +16,6 @@ from novel_forge.modules.narrative_state import (
 
 _MAX_SEGMENTS = 24
 _MAX_FACTS_PER_SEGMENT = 32
-_MAX_SUMMARY_CHARACTERS = 1200
 _MAX_PROVIDER_CONTEXT_CHARACTERS = 65_536
 _MAX_PROVIDER_KNOWLEDGE_CHARACTERS = 65_536
 _STATE_ASSET_TYPES = {"story_state_snapshot", "canon_snapshot"}
@@ -48,8 +47,27 @@ _NARRATIVE_FOUNDATION_GENERATORS = {
     "CHARACTER_CAST": "character.cast.generate",
 }
 _REFERENCE_FIELD_SUFFIXES = ("_id", "_ids", "_ref", "_refs")
-_MAX_PLANNING_STRING_CHARACTERS = 2_000
-_MAX_PLANNING_LIST_ITEMS = 12
+_OPTIONAL_PLANNING_FIELDS = frozenset({
+    "soft_suggestions", "optional_guidance", "style_suggestions", "inspiration",
+})
+_REQUIRED_PLANNING_FIELDS = {
+    "hard_constraints": "HARD_CONSTRAINT",
+    "invariants": "HARD_CONSTRAINT",
+    "story_constraints": "HARD_CONSTRAINT",
+    "constraints": "HARD_CONSTRAINT",
+    "forbidden_events": "PROHIBITION",
+    "forbidden_payoffs": "PROHIBITION",
+    "prohibited_outcomes": "PROHIBITION",
+    "required_facts": "REQUIRED_FACT",
+    "required_fact_ids": "REQUIRED_FACT",
+    "required_payoffs": "DUE_OBLIGATION",
+    "due_obligations": "DUE_OBLIGATION",
+    "required_obligation_ids": "DUE_OBLIGATION",
+    "unresolved_obligation_ids": "DUE_OBLIGATION",
+    "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+    "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+    "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+}
 _RETRIEVAL_SELECTOR_KEYS = frozenset(
     {
         "entity_ids",
@@ -231,7 +249,21 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         expected_role = "WORLD_REASONER" if stage == "world_candidates.generate" else "DIRECTOR"
         if task.get("role") != expected_role:
             raise KernelError("WORLD_PROVIDER_ROLE_INVALID", "world stage cannot consume another role's context")
-        return _task(stage, world_preparation=_compact(task))
+        projected_task = deepcopy(dict(task))
+        for index, segment in enumerate(projected_task.get("planning_window") or []):
+            if "loss_records" not in segment:
+                continue
+            source_ref = projected_task.get("source_ref")
+            if not isinstance(source_ref, Mapping) or not source_ref.get("asset_version_id") or not source_ref.get("content_hash"):
+                raise KernelError("WORLD_PROVIDER_LOSS_SOURCE_REQUIRED", "World projection loss records require their frozen source asset")
+            audit = {key: segment.pop(key) for key in ("loss_records", "loss_sources") if key in segment}
+            segment["selection_loss_receipt"] = {
+                "source_ref": deepcopy(dict(source_ref)),
+                "json_pointer": f"/contract/planning_window/{index}",
+                "audit_hash": _projection_hash(audit),
+                "loss_record_count": len(audit["loss_records"]),
+            }
+        return _task(stage, world_preparation=_compact(projected_task))
     from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS, FOUNDATION_INPUT_ROLES, foundation_task
 
     if stage in FOUNDATION_GENERATORS:
@@ -380,10 +412,10 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             realization_contract=deepcopy(inputs.get("realization_contract")),
         )
     if stage == "review":
-        return _task(stage, chapter=_prose(inputs.get("draft")), creative_execution=deepcopy((inputs.get("draft") or {}).get("creative_execution") or {}))
+        return _task(stage, chapter=_prose(inputs.get("draft")), creative_execution=deepcopy((inputs.get("draft") or {}).get("creative_execution") or {}), knowledge_review_targets=deepcopy(inputs.get("knowledge_review_targets") or []))
     if stage == "revision":
         source = dict(inputs.get("draft") or {})
-        payload: dict[str, Any] = {"chapter": _prose(source), "creative_execution": deepcopy(source.get("creative_execution") or {})}
+        payload: dict[str, Any] = {"chapter": _prose(source), "creative_execution": deepcopy(source.get("creative_execution") or {}), "knowledge_checks": deepcopy((inputs.get("review") or {}).get("knowledge_checks") or [])}
         if source.get("realization_contract"):
             payload["chapter"].pop("text", None)
             payload["realization_contract"] = deepcopy(source["realization_contract"])
@@ -414,6 +446,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             revised_chapter=_prose(revision),
             creative_execution=deepcopy((revision or {}).get("creative_execution") or {}),
             prior_diagnoses=issues,
+            knowledge_review_targets=deepcopy(inputs.get("knowledge_review_targets") or []),
         )
     if stage == "canon_support":
         return _task(stage, final_candidate=_prose(inputs.get("revision")),
@@ -958,7 +991,7 @@ def build_provider_context_view(
                 "asset_version_id": str(raw.get("asset_version_id") or ""),
                 "asset_type": asset_type,
                 "narrative_function": str(raw.get("narrative_function") or ""),
-                "safe_summary": summary[:_MAX_SUMMARY_CHARACTERS],
+                "safe_summary": summary,
                 "structured_facts": [deepcopy(dict(item)) for item in selected_facts],
             }
         )
@@ -1330,8 +1363,13 @@ def _build_reader_outcome_context_view(
     return view
 
 
+def compile_planning_provider_context(stage: str, context_bundle: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    audit: dict[str, Any] = {}
+    return _build_planning_context_view(stage, context_bundle, projection_audit=audit), audit
+
+
 def _build_planning_context_view(
-    stage: str, context_bundle: Mapping[str, Any]
+    stage: str, context_bundle: Mapping[str, Any], *, projection_audit: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
 
     if context_bundle.get("schema_version") != "novelos.planning_context_bundle.v1":
@@ -1339,6 +1377,28 @@ def _build_planning_context_view(
             "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
             "Planning Provider Context requires the canonical Planning ContextBundle",
         )
+    frozen = (context_bundle.get("context_manifest") or {}).get("provider_context_view")
+    if isinstance(frozen, Mapping) and "compiled_view" in frozen:
+        view = frozen["compiled_view"]
+        loss_receipt = view.get("selection_explanation", {}).get("loss_receipt") if isinstance(view, Mapping) else None
+        audit = (context_bundle.get("context_manifest") or {}).get("projection_audit")
+        if (
+            not isinstance(view, Mapping)
+            or view.get("stage") != stage
+            or _projection_hash(view) != frozen.get("content_hash")
+            or planning_context_source_hash(context_bundle) != frozen.get("source_input_hash")
+            or (loss_receipt is not None and (
+                not isinstance(audit, Mapping)
+                or _projection_hash(audit) != loss_receipt.get("audit_hash")
+                or loss_receipt.get("source_input_hash") != frozen.get("source_input_hash")
+                or loss_receipt.get("json_pointer") != "/context_manifest/projection_audit"
+            ))
+        ):
+            raise KernelError(
+                "PROVIDER_CONTEXT_VIEW_IDENTITY_MISMATCH",
+                "frozen Planning projection or its semantic inputs changed",
+            )
+        return deepcopy(dict(view))
     raw_inputs = context_bundle.get("input_versions")
     if not isinstance(raw_inputs, list) or not raw_inputs:
         raise KernelError(
@@ -1351,7 +1411,7 @@ def _build_planning_context_view(
             "Planning frozen inputs exceed the bounded segment limit",
         )
     chapter = _planning_chapter(context_bundle)
-    selectors = _planning_selectors(raw_inputs, chapter=chapter)
+    selectors = _planning_selectors(raw_inputs, chapter=chapter, stage=stage)
     repair_context = context_bundle.get("repair_context")
     if repair_context is not None and not isinstance(repair_context, Mapping):
         raise KernelError(
@@ -1361,8 +1421,8 @@ def _build_planning_context_view(
     projected: list[dict[str, Any]] = []
     omitted_items = 0
     truncated_characters = 0
-    projected_inputs = () if repair_context is not None else raw_inputs
-    for raw in projected_inputs:
+    losses: list[dict[str, Any]] = []
+    for raw in raw_inputs:
         if not isinstance(raw, Mapping) or not isinstance(raw.get("content"), Mapping):
             raise KernelError(
                 "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
@@ -1374,6 +1434,8 @@ def _build_planning_context_view(
             content=raw["content"],
             chapter=chapter,
             selectors=selectors,
+            loss_records=losses,
+            source=raw,
         )
         omitted_items += omitted
         truncated_characters += truncated
@@ -1382,6 +1444,7 @@ def _build_planning_context_view(
                 "role": str(raw.get("role") or ""),
                 "asset_version_id": str(raw.get("asset_version_id") or ""),
                 "asset_type": str(raw.get("asset_type") or ""),
+                "content_hash": str(raw.get("content_hash") or ""),
                 "content": content,
             }
         )
@@ -1409,11 +1472,14 @@ def _build_planning_context_view(
             "included_segment_count": len(projected),
             "included_fact_count": 0,
             "omitted_segment_count": (
-                len(raw_inputs) if repair_context is not None else 0
+                len(raw_inputs) - len(projected)
             ),
             "omitted_fact_count": 0,
             "omitted_item_count": omitted_items,
             "truncated_character_count": truncated_characters,
+            "compiler_version": "scope-preserving-planning-context-v1",
+            "field_classes": {**_REQUIRED_PLANNING_FIELDS, **{field: "OPTIONAL_GUIDANCE" for field in sorted(_OPTIONAL_PLANNING_FIELDS)}},
+            "loss_records": losses,
             "maximum_segments": _MAX_SEGMENTS,
             "maximum_facts_per_segment": _MAX_FACTS_PER_SEGMENT,
             "maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS,
@@ -1442,6 +1508,8 @@ def _build_planning_context_view(
             content=source["content"],
             chapter=chapter,
             selectors=selectors,
+            loss_records=losses,
+            source=source,
         )
         repair_view = {
             "contract_version": str(repair_context.get("contract_version") or ""),
@@ -1457,21 +1525,103 @@ def _build_planning_context_view(
                 repair_context.get("failed_narrative_qualifications") or []
             ),
         }
-        bounded_repair, repair_omitted, repair_truncated = _bound_planning_value(
-            repair_view
-        )
-        view["repair_context"] = bounded_repair
-        view["selection_explanation"]["omitted_item_count"] += omitted + repair_omitted
-        view["selection_explanation"]["truncated_character_count"] += (
-            truncated + repair_truncated
-        )
-    if _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
+        view["repair_context"] = repair_view
+        view["selection_explanation"]["omitted_item_count"] += omitted
+        view["selection_explanation"]["truncated_character_count"] += truncated
+    token_budget = context_bundle.get("token_budget")
+    if token_budget is not None and (not isinstance(token_budget, int) or isinstance(token_budget, bool) or token_budget <= 0):
+        raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_INVALID", "Planning token budget must be a positive integer")
+    character_budget = min(_MAX_PROVIDER_CONTEXT_CHARACTERS, token_budget * 4) if token_budget is not None else _MAX_PROVIDER_CONTEXT_CHARACTERS
+    _compact_planning_loss_sources(view)
+    source_hash = planning_context_source_hash(context_bundle) if projection_audit is not None else ""
+    _prune_optional_planning_context(view, sources=raw_inputs, character_budget=character_budget, audit_source_hash=source_hash)
+    if projection_audit is not None:
+        view, audit = _planning_view_with_audit_receipt(view, source_input_hash=source_hash)
+        projection_audit.update(audit)
+    if _serialized_character_count(view) > character_budget:
         raise KernelError(
             "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
-            "projected Planning Provider Context exceeds its deterministic size boundary: "
+            "required Planning Provider Context exceeds its budget boundary; narrow the governed scope before sending: "
             + json.dumps({"total": _serialized_character_count(view), "segments": [{"role": item["role"], "characters": _serialized_character_count(item)} for item in projected], "repair": _serialized_character_count(view.get("repair_context", {})), "references": _serialized_character_count(view.get("realization_reference_contract", {}))}, sort_keys=True),
         )
     return view
+
+
+def _projection_hash(value: Any) -> str:
+    return "sha256:" + hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
+
+
+def planning_context_source_hash(context_bundle: Mapping[str, Any]) -> str:
+    return _projection_hash({key: value for key, value in context_bundle.items() if key not in {"context_manifest", "estimated_tokens"}})
+
+
+def _loss_record(source: Mapping[str, Any], *, path: str, value: Any, reason: str) -> dict[str, Any]:
+    return {
+        "asset_version_id": str(source.get("asset_version_id") or ""),
+        "source_content_hash": str(source.get("content_hash") or ""),
+        "role": str(source.get("role") or ""),
+        "path": path,
+        "reason": reason,
+        "removed_value_hash": _projection_hash(value),
+        "removed_item_count": len(value) if isinstance(value, (list, tuple)) else 1,
+        "removed_serialized_characters": _serialized_character_count(value),
+    }
+
+
+def _compact_planning_loss_sources(view: dict[str, Any]) -> None:
+    explanation = view["selection_explanation"]
+    sources = explanation.setdefault("loss_sources", [])
+    for loss in explanation["loss_records"]:
+        if "source_index" in loss:
+            continue
+        source = {key: loss.pop(key) for key in ("asset_version_id", "source_content_hash", "role")}
+        if source not in sources:
+            sources.append(source)
+        loss["source_index"] = sources.index(source)
+
+
+def _planning_view_with_audit_receipt(view: Mapping[str, Any], *, source_input_hash: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    compiled = deepcopy(dict(view))
+    explanation = compiled["selection_explanation"]
+    audit = {key: explanation.pop(key) for key in ("loss_sources", "loss_records")}
+    explanation["loss_receipt"] = {
+        "source_input_hash": source_input_hash,
+        "json_pointer": "/context_manifest/projection_audit",
+        "audit_hash": _projection_hash(audit),
+        "loss_record_count": len(audit["loss_records"]),
+    }
+    return compiled, audit
+
+
+def _prune_optional_planning_context(view: dict[str, Any], *, sources: Iterable[Mapping[str, Any]], character_budget: int, audit_source_hash: str = "") -> None:
+    source_by_id = {str(source.get("asset_version_id") or ""): source for source in sources}
+    optional: list[tuple[dict[str, Any], str, str, Mapping[str, Any]]] = []
+
+    def visit(value: Any, path: str, source: Mapping[str, Any]) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                child_path = path + "/" + str(key).replace("~", "~0").replace("/", "~1")
+                if key in _REQUIRED_PLANNING_FIELDS:
+                    continue
+                if key in _OPTIONAL_PLANNING_FIELDS:
+                    optional.append((value, key, child_path, source))
+                else:
+                    visit(child, child_path, source)
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                visit(child, f"{path}/{index}", source)
+
+    for segment in view["segments"]:
+        visit(segment["content"], "", source_by_id.get(segment["asset_version_id"], segment))
+    for parent, key, path, source in reversed(optional):
+        measured_view = _planning_view_with_audit_receipt(view, source_input_hash=audit_source_hash)[0] if audit_source_hash else view
+        if _serialized_character_count(measured_view) <= character_budget:
+            break
+        removed = parent.pop(key)
+        loss = _loss_record(source, path=path, value=removed, reason="OPTIONAL_CONTEXT_BUDGET")
+        view["selection_explanation"]["loss_records"].append(loss)
+        _compact_planning_loss_sources(view)
+        view["selection_explanation"]["omitted_item_count"] += loss["removed_item_count"]
 
 
 def _planning_accepted_through_chapter(
@@ -1533,7 +1683,7 @@ def _planning_chapter(context_bundle: Mapping[str, Any]) -> int:
 
 
 def _planning_selectors(
-    raw_inputs: Iterable[Mapping[str, Any]], *, chapter: int
+    raw_inputs: Iterable[Mapping[str, Any]], *, chapter: int, stage: str
 ) -> frozenset[str]:
     references: set[str] = set()
 
@@ -1565,16 +1715,8 @@ def _planning_selectors(
         content = raw.get("content")
         if not isinstance(content, Mapping):
             continue
-        if role == "chapter_group_plan" and chapter:
-            local = [
-                item
-                for item in content.get("chapter_function_matrix") or ()
-                if isinstance(item, Mapping)
-                and int(item.get("chapter_number") or 0) == chapter
-            ]
-            visit(local)
-        else:
-            visit(content)
+        projected, _, _ = _project_planning_content(stage=stage, role=role, content=content, chapter=chapter, selectors=frozenset())
+        visit(projected)
     return frozenset(references)
 
 
@@ -1584,8 +1726,11 @@ def project_world_planning_window(inputs: Iterable[Mapping[str, Any]], *, chapte
         content = deepcopy(item["content"])
         if item["role"] == "chapter_group_plan":
             content["chapter_function_matrix"] = [row for row in content.get("chapter_function_matrix", []) if chapter <= int(row["chapter_number"]) < chapter + window]
-        projected, omitted, truncated = _project_planning_content(stage="chapter_plan.generate", role=item["role"], content=content, chapter=0 if item["role"] == "chapter_group_plan" else chapter, selectors=frozenset())
-        result.append({"role": item["role"], "asset_version_id": item["asset_version_id"], "content_hash": item["content_hash"], "content": projected, "omitted_items": omitted, "truncated_characters": truncated})
+        losses: list[dict[str, Any]] = []
+        projected, omitted, truncated = _project_planning_content(stage="chapter_plan.generate", role=item["role"], content=content, chapter=0 if item["role"] == "chapter_group_plan" else chapter, selectors=frozenset(), loss_records=losses, source=item)
+        explanation = {"loss_records": losses}
+        _compact_planning_loss_sources({"selection_explanation": explanation})
+        result.append({"role": item["role"], "asset_version_id": item["asset_version_id"], "content_hash": item["content_hash"], "content": projected, "omitted_items": omitted, "truncated_characters": truncated, **explanation})
     return result
 
 
@@ -1596,6 +1741,8 @@ def _project_planning_content(
     content: Mapping[str, Any],
     chapter: int,
     selectors: frozenset[str],
+    loss_records: list[dict[str, Any]] | None = None,
+    source: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], int, int]:
     if role == "previous_chapter_outcome":
         return _compact(_pick(content, "chapter_number", "scene_outcomes", "arc_evidence", "realization_evidence", "reader_state_observations")), 0, 0
@@ -1668,11 +1815,25 @@ def _project_planning_content(
         )
 
     compacted = _compact(content)
+    omitted = 0
+
+    def record_loss(field: str, value: Any, reason: str) -> None:
+        nonlocal omitted
+        if value is None or value == "" or value == [] or value == {}:
+            return
+        omitted += len(value) if isinstance(value, (list, tuple)) else 1
+        if loss_records is not None:
+            loss_records.append(_loss_record(source or {"role": role}, path="/" + field, value=value, reason=reason))
+
     allowed_fields = _PLANNING_ROLE_FIELDS.get(role)
     if allowed_fields is not None:
+        admitted_fields = {*allowed_fields, *_REQUIRED_PLANNING_FIELDS, *_OPTIONAL_PLANNING_FIELDS}
+        for field, value in compacted.items():
+            if field not in admitted_fields:
+                record_loss(field, value, "OUTSIDE_TARGET_ROLE")
         compacted = {
             field: deepcopy(compacted[field])
-            for field in allowed_fields
+            for field in sorted(admitted_fields)
             if field in compacted
         }
     if role == "chapter_group_plan" and chapter:
@@ -1683,6 +1844,7 @@ def _project_planning_content(
             if isinstance(item, Mapping)
             and int(item.get("chapter_number") or 0) == chapter
         ]
+        record_loss("chapter_function_matrix", [item for item in matrix if item not in compacted["chapter_function_matrix"]], "OUTSIDE_NARRATIVE_SCOPE")
     for field in ("narrative_segments", "arc_segments"):
         values = compacted.get(field)
         if chapter and isinstance(values, list):
@@ -1692,15 +1854,9 @@ def _project_planning_content(
                 if isinstance(item, Mapping)
                 and _chapter_in_range(chapter, item.get("chapter_range"))
             ]
-            if local:
-                compacted[field] = local
-    bounded, omitted, truncated = _bound_planning_value(compacted)
-    if not isinstance(bounded, dict):
-        raise KernelError(
-            "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
-            f"Planning role {role} did not project to an object for {stage}",
-        )
-    return bounded, omitted, truncated
+            record_loss(field, [item for item in values if item not in local], "OUTSIDE_NARRATIVE_SCOPE")
+            compacted[field] = local
+    return compacted, omitted, 0
 
 
 def _chapter_in_range(chapter: int, value: Any) -> bool:
@@ -1709,37 +1865,6 @@ def _chapter_in_range(chapter: int, value: Any) -> bool:
         and len(value) == 2
         and int(value[0]) <= chapter <= int(value[1])
     )
-
-
-def _bound_planning_value(value: Any) -> tuple[Any, int, int]:
-    if isinstance(value, Mapping):
-        result: dict[str, Any] = {}
-        omitted = 0
-        truncated = 0
-        for key, item in value.items():
-            child, child_omitted, child_truncated = _bound_planning_value(item)
-            result[str(key)] = child
-            omitted += child_omitted
-            truncated += child_truncated
-        return result, omitted, truncated
-    if isinstance(value, (list, tuple)):
-        materialized = list(value)
-        result: list[Any] = []
-        omitted = max(0, len(materialized) - _MAX_PLANNING_LIST_ITEMS)
-        truncated = 0
-        for item in materialized[:_MAX_PLANNING_LIST_ITEMS]:
-            child, child_omitted, child_truncated = _bound_planning_value(item)
-            result.append(child)
-            omitted += child_omitted
-            truncated += child_truncated
-        return result, omitted, truncated
-    if isinstance(value, str) and len(value) > _MAX_PLANNING_STRING_CHARACTERS:
-        return (
-            value[:_MAX_PLANNING_STRING_CHARACTERS],
-            0,
-            len(value) - _MAX_PLANNING_STRING_CHARACTERS,
-        )
-    return deepcopy(value), 0, 0
 
 
 def build_provider_knowledge_view(

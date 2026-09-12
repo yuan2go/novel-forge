@@ -76,6 +76,94 @@ def _planning_card(index: int) -> dict[str, object]:
 
 
 class MkaosAuthorityDomainTests(unittest.TestCase):
+    def test_typed_applicability_checks_preserve_evidence_and_uncertainty(self) -> None:
+        card = _planning_card(0)
+        abstract = card["content"]["abstract_content"]
+        abstract.pop("applicability")
+        abstract.pop("failure_conditions")
+        contract = {
+            "schema_version": "knowledge-applicability.v1",
+            "usage_role": "MECHANISM",
+            "prerequisites": [{"condition_id": "water", "path": "/story_state/resources/water", "operator": "GTE", "value": 2}],
+            "exceptions": [{"condition_id": "contaminated", "path": "/story_state/contaminated", "operator": "EQ", "value": True}],
+            "hard_conflicts": [{"condition_id": "prohibition", "path": "/hard_constraints", "operator": "CONTAINS", "value": "No chemical extraction"}],
+        }
+        abstract["applicability_contract"] = contract
+
+        def select(state, hard=()):
+            return select_narrative_intelligence(NarrativeIntelligenceNeed(
+                scope="SCENE", target_stage="chapter_plan.generate", hard_constraints=hard,
+                condition_sources={"story_state": {"asset_version_id": "state:v7", "content_hash": "sha256:" + "d" * 64, "content": state}},
+            ), (card,))
+
+        applicable = select({"resources": {"water": 3}, "contaminated": False})["selected"][0]["applicability_assessment"]
+        self.assertEqual(applicable["status"], "APPLICABLE")
+        self.assertEqual(applicable["checks"][0]["source_asset_version_id"], "state:v7")
+        conditional = select({"resources": {"water": 1}, "contaminated": False})["selected"][0]["applicability_assessment"]
+        self.assertEqual(conditional["status"], "CONDITIONAL")
+        self.assertEqual(conditional["unmet_prerequisites"][0]["actual_value"], 1)
+        missing = select({})["selected"][0]["applicability_assessment"]
+        self.assertEqual(missing["checks"][0]["result"], "UNKNOWN")
+        exception = select({"resources": {"water": 3}, "contaminated": True})
+        self.assertEqual(exception["selected"], [])
+        self.assertEqual(exception["rejected"][0]["applicability_assessment"]["status"], "REJECTED")
+        conflict = select({"resources": {"water": 3}, "contaminated": False}, ("No chemical extraction",))
+        self.assertEqual(conflict["selected"], [])
+        self.assertEqual(conflict["rejected"][0]["applicability_assessment"]["rejection_reasons"], ["HARD_CONFLICTS:prohibition"])
+
+    def test_free_text_applicability_is_unknown_not_formal_proof(self) -> None:
+        card = _planning_card(1)
+        result = select_narrative_intelligence(NarrativeIntelligenceNeed(scope="SCENE", target_stage="chapter_plan.generate"), (card,))
+        assessment = result["selected"][0]["applicability_assessment"]
+        self.assertEqual(assessment["status"], "UNKNOWN")
+        self.assertEqual(assessment["usage_role"], "INSPIRATION")
+        self.assertTrue(all(item["method"] == "SEMANTIC_UNVERIFIED" for item in assessment["checks"]))
+
+    def test_required_parent_mechanism_survives_repetition_but_not_missing_version(self) -> None:
+        card = _planning_card(0)
+        need = NarrativeIntelligenceNeed(
+            scope="SCENE", target_stage="chapter_plan.generate",
+            recently_used_repetition_keys=("bounded-mechanism-0",),
+            required_card_asset_version_ids=("card:0:v1",),
+        )
+        selected = select_narrative_intelligence(need, (card,))["selected"]
+        self.assertEqual(selected[0]["knowledge_card_asset_version_id"], "card:0:v1")
+        with self.assertRaisesRegex(KernelError, "REQUIRED_KNOWLEDGE_UNAVAILABLE"):
+            select_narrative_intelligence(need, ())
+
+    def test_typed_predicates_reject_nonfinite_numbers_and_invalid_pointer_escape(self) -> None:
+        from novel_forge.modules.mkaos_authority.applicability import validate_applicability_contract
+
+        for value, path in ((float("nan"), "/state/water"), (float("inf"), "/state/water"), (1, "/state/bad~2key")):
+            with self.subTest(value=value, path=path), self.assertRaisesRegex(KernelError, "MKAOS_APPLICABILITY_INVALID"):
+                validate_applicability_contract({
+                    "schema_version": "knowledge-applicability.v1", "usage_role": "MECHANISM",
+                    "prerequisites": [{"condition_id": "water", "path": path, "operator": "GTE", "value": value}],
+                    "exceptions": [], "hard_conflicts": [],
+                })
+
+    def test_prose_assessment_never_launders_hidden_state_values_or_verdicts(self) -> None:
+        from novel_forge.modules.mkaos_authority.applicability import prose_applicability_view
+
+        view = prose_applicability_view({
+            "status": "APPLICABLE", "checks": [{"condition_id": "hidden-cognition", "path": "/story_state/character_knowledge/0/status", "method": "DETERMINISTIC_TYPED_PREDICATE", "group": "prerequisites", "result": "TRUE", "actual_value": "hidden truth", "source_asset_version_id": "state:v2"}],
+            "unmet_prerequisites": [], "exceptions": [],
+        })
+        self.assertNotIn("hidden truth", str(view))
+        self.assertEqual(view["status"], "UNKNOWN")
+        self.assertEqual(view["checks"][0]["result"], "UNKNOWN")
+        self.assertEqual(view["checks"][0]["source_asset_version_id"], "state:v2")
+
+    def test_required_constraints_and_source_identity_are_lossless(self) -> None:
+        from novel_forge.modules.story_planning_runtime.execution import _required_selection_terms
+
+        constraints = [f"constraint-{index}" for index in range(40)] + ["不得" * 700]
+        extracted = _required_selection_terms([{"hard_constraints": constraints}], {"hard_constraints"})
+        need = NarrativeIntelligenceNeed(scope="STORY", target_stage="book_plan.generate", hard_constraints=extracted, condition_sources={"story_state": {"asset_version_id": "state:v1", "content_hash": "hash", "content": {"private": "not duplicated"}}})
+        self.assertEqual(set(need.hard_constraints), set(constraints))
+        self.assertNotIn("private", str(need.to_dict()))
+        self.assertEqual(need.to_dict()["condition_sources"]["story_state"]["asset_version_id"], "state:v1")
+
     def test_experimental_approval_requires_exact_real_provider_scope(self) -> None:
         project_id = "project:experimental"
         workspace_id = "workspace:experimental"

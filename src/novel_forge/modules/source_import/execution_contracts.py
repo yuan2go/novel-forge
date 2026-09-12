@@ -378,6 +378,31 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
     raise ValueError(f"unsupported content-intelligence stage: {stage}")
 
 
+def grounded_knowledge_output_schema() -> dict[str, Any]:
+    schema = content_intelligence_output_schema(MKAOS_STAGE)
+    properties = {
+        key: {
+            "type": "array",
+            "maxItems": 32,
+            "items": {"type": "string", "minLength": 1, "maxLength": 2000},
+        }
+        for key in (
+            "preconditions",
+            "exceptions",
+            "misuse_risks",
+            "source_finding_codes",
+        )
+    }
+    properties["source_finding_codes"]["minItems"] = 1
+    properties["epistemic_status"] = {
+        "type": "string",
+        "enum": ["TEXT_EXPLICIT", "SUPPORTED_INFERENCE", "HYPOTHESIS", "UNKNOWN"],
+    }
+    schema["properties"].update(properties)
+    schema["required"].extend(properties)
+    return schema
+
+
 def content_intelligence_fixture_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -385,6 +410,8 @@ def content_intelligence_fixture_response(
     if stage == CLASSIFICATION_STAGE:
         return _classification_fixture(inputs)
     if stage == DECONSTRUCTION_STAGE:
+        if inputs.get("observation_contract"):
+            return _mechanism_fixture(inputs)
         evidence_ids = [
             str(item) for item in inputs.get("evidence_span_ids") or () if str(item)
         ]
@@ -474,7 +501,20 @@ def content_intelligence_fixture_response(
             "knowledge_status": "NOT_ABSTRACTED",
         }
     if stage == MKAOS_STAGE:
+        grounded = {}
+        if inputs.get("abstraction_contract"):
+            observation = inputs.get("observation") or {}
+            grounded = {
+                "preconditions": ["UNKNOWN"],
+                "exceptions": ["UNKNOWN"],
+                "misuse_risks": ["Scripted fixture establishes no real applicability."],
+                "epistemic_status": "UNKNOWN",
+                "source_finding_codes": [
+                    f["finding_code"] for f in observation.get("findings", [])
+                ],
+            }
         return {
+            **grounded,
             "concept_name": "Evidence-backed narrative mechanism",
             "discipline": "narrative_design",
             "abstract_principle": (
@@ -526,13 +566,29 @@ def validate_content_intelligence_output(
     output_schema: Mapping[str, Any],
     value: Mapping[str, Any],
 ) -> Mapping[str, Any]:
+    if (
+        stage == MKAOS_STAGE
+        and dict(output_schema) == grounded_knowledge_output_schema()
+    ):
+        from novel_forge.modules.chapter_authority.provider_output_contracts import (
+            validate_chapter_provider_output_against_schema,
+        )
+
+        return validate_chapter_provider_output_against_schema(
+            stage, output_schema, value
+        )
     if stage == DECONSTRUCTION_STAGE:
         from .corpus_ingestion.narrative_contracts import (
             narrative_schema,
             review_schema,
+            mechanism_observation_schema,
         )
 
-        if dict(output_schema) in (narrative_schema(), review_schema()):
+        if dict(output_schema) in (
+            narrative_schema(),
+            review_schema(),
+            mechanism_observation_schema(),
+        ):
             from novel_forge.modules.chapter_authority.provider_output_contracts import (
                 validate_chapter_provider_output_against_schema,
             )
@@ -1002,3 +1058,47 @@ __all__ = [
     "compound_deconstruction_output_schema",
     "validate_content_intelligence_output",
 ]
+
+
+def _mechanism_fixture(inputs: Mapping[str, Any]) -> dict[str, Any]:
+    from .corpus_ingestion.narrative_contracts import mechanism_observation_schema
+
+    segments = list(inputs.get("source_segments") or [])
+    supports = []
+    if segments:
+        item = segments[0]
+        text = item["content"][:200]
+        supports = [
+            {
+                "chunk_id": item["source_chunk_asset_version_id"],
+                "byte_start": 0,
+                "byte_end": len(text.encode("utf-8")),
+                "support_text": text,
+            }
+        ]
+    details = mechanism_observation_schema()["properties"]["findings"]["items"][
+        "properties"
+    ]["details"]["required"]
+    return {
+        "findings": [
+            {
+                "finding_code": "fixture.mechanism",
+                "statement": "Scripted mechanism contract evidence only; semantic correctness remains unproven.",
+                "dimension": inputs["analyzer"]["dimension"],
+                "certainty": "HYPOTHESIS",
+                "perspective": "ANALYST_INFERENCE",
+                "entity_ids": [],
+                "caused_by": [],
+                "causal_basis": "",
+                "details": {key: "UNKNOWN" for key in details},
+                "supports": supports,
+                "input_observation_asset_version_ids": list(
+                    inputs.get("input_observation_asset_version_ids") or []
+                ),
+            }
+        ],
+        "entities": [],
+        "confidence": 0.0,
+        "knowledge_status": "NOT_ABSTRACTED",
+        "scope_limitations": "Scripted contract fixture over the supplied bytes or lower observations only.",
+    }

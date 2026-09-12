@@ -15,6 +15,7 @@ def evaluate_review_result(
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
     prose_text: str | None = None,
+    knowledge_targets: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     if not project_id or not target_asset_version_id or not context_bundle_version_id:
         raise KernelError("REVIEW_INPUT_INVALID", "project, target and context versions are required")
@@ -32,12 +33,16 @@ def evaluate_review_result(
     if actionable and prose_text is None:
         raise KernelError("REVIEW_SOURCE_REQUIRED", "actionable review requires exact candidate prose")
     normalized: list[dict[str, Any]] = []
+    seen_codes: set[str] = set()
     for ordinal, item in enumerate(issues, start=1):
         code = str(item.get("code") or "").strip()
         severity = str(item.get("severity") or "").lower()
         message = str(item.get("message") or "").strip()
         if not code or severity not in {"blocking", "major", "minor"} or not message:
             raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "review issue is incomplete")
+        if code in seen_codes:
+            raise KernelError("REVIEW_ISSUE_IDENTITY_INVALID", "review issue codes must be unique so distinct diagnoses survive revision")
+        seen_codes.add(code)
         evidence = item.get("evidence", {}) if isinstance(item.get("evidence"), dict) else {}
         fingerprint = f"{project_id}:{target_asset_version_id}:{code}:{ordinal}".encode()
         normalized.append(
@@ -63,6 +68,15 @@ def evaluate_review_result(
     blocking_count = sum(item["severity"] == "blocking" for item in normalized)
     if decision == "PASSED" and blocking_count:
         raise KernelError("REVIEW_DECISION_CONFLICT", "PASSED review cannot contain blocking issues")
+    from .knowledge import validate_knowledge_checks
+    targets = list(knowledge_targets or [])
+    knowledge_checks = validate_knowledge_checks(
+        checks=result.get("knowledge_checks", []), targets=targets, issues=normalized,
+        text=str(prose_text or ""), target_asset_version_id=target_asset_version_id,
+        real_model_call=provider_evidence.get("real_model_call") is True,
+    )
+    if any(item["status"] == "MISAPPLIED" for item in knowledge_checks) and decision == "PASSED":
+        decision = "NEEDS_REVISION"
     return {
         "report_type": "ReviewReport",
         "project_id": project_id,
@@ -75,6 +89,9 @@ def evaluate_review_result(
         "blocking_issue_count": blocking_count,
         "provider_evidence": dict(provider_evidence),
         "review_contract_version": "review-domain-v2",
+        "knowledge_targets": targets,
+        "knowledge_checks": knowledge_checks,
+        "knowledge_target_text_hash": prose_hash(str(prose_text or "")),
         **({"diagnostic_contract_version": DIAGNOSTIC_CONTRACT, "target_text_hash": prose_hash(str(prose_text))} if actionable else {}),
     }
 
@@ -90,6 +107,7 @@ def evaluate_rereview_result(
     revision: dict[str, Any],
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
+    knowledge_targets: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     reviewed = evaluate_review_result(
         project_id=project_id,
@@ -99,6 +117,7 @@ def evaluate_rereview_result(
         result=result,
         provider_evidence=provider_evidence,
         prose_text=str(revision.get("text") or ""),
+        knowledge_targets=(knowledge_targets if knowledge_targets is not None else initial_review.get("knowledge_targets", [])),
     )
     claimed = set(revision.get("resolution_claimed_issue_codes", []))
     from .diagnostics import open_diagnoses, require_review_score

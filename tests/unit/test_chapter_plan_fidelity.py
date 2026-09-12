@@ -13,6 +13,21 @@ from novel_forge.modules.command_kernel.errors import KernelError
 class ChapterPlanFidelityTests(unittest.TestCase):
     def test_execution_contract_survives_normalization_and_provider_view(self) -> None:
         execution = {
+            "knowledge_translation_policy_version": "knowledge-grounded-selection-v2",
+            "knowledge_translations": [{
+                "knowledge_card_asset_version_id": "approved-card:v3",
+                "content_hash": "sha256:approved-v3",
+                "decision": "ADAPT", "usage_role": "MECHANISM",
+                "rationale": "Disclosing the cost removes the ally's protection.",
+                "prerequisite_resolution": "Establish the alliance before disclosure.",
+                "use_sites": [{
+                    "target_pointer": "/chapter_intent",
+                    "realization_excerpt": "costly public choice",
+                    "expected_application": "The ally withdraws protection after disclosure.",
+                    "preservation_requirements": ["Disclosure causes the loss."],
+                    "verification_checks": ["Locate disclosure and the loss in prose."],
+                }],
+            }],
             "chapter_intent": "Turn suspicion into a costly public choice.",
             "arc_schedule": [
                 {

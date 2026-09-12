@@ -1449,6 +1449,8 @@ class SourceImportApplication:
             source_segments=tuple(segments),
             input_observations=lower_inputs,
         )
+        if "evidence_spans" in executed:
+            spans = tuple(ObservationEvidenceSpan(**{k: v for k, v in item.items() if k != "evidence_span_id"}) for item in executed["evidence_spans"])
         observation = self.source_authority.execute_observation(
             CommitDeconstructionObservationCommand(
                 project_id=worker.project_id,
@@ -4017,6 +4019,8 @@ class SourceImportApplication:
             compound_analyzers=compound_analyzers,
             sampling_manifest=dict(task.get("sampling_manifest") or {}),
         )
+        if "evidence_spans" in executed:
+            spans = [ObservationEvidenceSpan(**{k: v for k, v in item.items() if k != "evidence_span_id"}) for item in executed["evidence_spans"]]
         if compound_analyzers:
             analyzer_by_dimension = {item.dimension: item for item in analyzers}
             observation_results = []
@@ -4124,6 +4128,8 @@ class SourceImportApplication:
                     ),
                     "analyzer_id": analyzer.analyzer_id,
                     "analyzer_contract_hash": analyzer.fingerprint,
+                    "has_findings": bool(executed["observation"]["findings"]),
+                    "knowledge_status": "PENDING_ABSTRACTION" if executed["observation"]["findings"] else "NO_APPLICABLE_FINDINGS",
                     "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
                 }
             ]
@@ -4148,6 +4154,11 @@ class SourceImportApplication:
                 status="SUCCEEDED",
                 result=result,
             )
+            self._complete_analysis_file_if_ready(
+                uow, repository=SourceImportRepository(uow.cursor), worker=worker,
+                job=job, payload=payload,
+            )
+            self._refresh_job(SourceImportRepository(uow.cursor), str(job["import_job_id"]), worker.project_id)
             uow.commit()
         return result
 
@@ -4159,6 +4170,8 @@ class SourceImportApplication:
         *,
         payload: dict[str, Any],
     ) -> None:
+        if observation.get("has_findings") is False:
+            return
         capability = str(payload["mkaos_capability"])
         abstraction_policy_version = str(payload["abstraction_policy_version"])
         mkaos_methodology = self.methodology_registry.require("anti-copy-abstraction")

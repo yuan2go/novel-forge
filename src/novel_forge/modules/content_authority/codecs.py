@@ -630,6 +630,23 @@ def _operator_authored_input(
     }
 
 
+def author_planning_change_request(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    content = _operator_authored_input(
+        request, asset_type="replan_request",
+        required_fields=("book_id", "target_plan_version_id", "directive", "preserved_invariants", "affected_scope"),
+    )
+    boundary = content.get("accepted_through_chapter")
+    if not isinstance(boundary, int) or isinstance(boundary, bool) or boundary < 0:
+        raise ValueError("Planning change requires its non-negative accepted boundary")
+    if content["affected_scope"] not in {"BOOK", "VOLUME", "ARC", "CHAPTER_GROUP", "CHAPTER"}:
+        raise ValueError("Planning change affected scope is unsupported")
+    if not isinstance(content["directive"], str) or not content["directive"].strip() or not isinstance(content["preserved_invariants"], list):
+        raise ValueError("Planning change requires a directive and preservation list")
+    return {**content, "contract_version": "operator-planning-change-request.v1",
+            "source_type": "HUMAN_FEEDBACK", "authority_boundary": "FUTURE_PLAN_PROPOSAL_ONLY",
+            "direct_plan_mutation_allowed": False, "canon_mutation_allowed": False}
+
+
 _BOOK_BOOTSTRAP_INPUT_SPECS: dict[str, tuple[str, tuple[str, ...], str]] = {
     "book.production_profile.author": (
         "production_profile",
@@ -1610,6 +1627,7 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
     name: ContentHandlerCodec(name, asset_type, output_key, binder)
     for name, asset_type, output_key, binder in (
         ("creative.brief.create", "creative_brief", "creative.brief", _creative_brief),
+        ("planning.change_request.author", "replan_request", "planning.change_request", author_planning_change_request),
         (
             "creative.candidates.evaluate",
             "candidate_evaluation",

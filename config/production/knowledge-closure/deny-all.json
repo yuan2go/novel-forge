@@ -1,0 +1,6 @@
+{
+  "policy_id": "knowledge-closure-control",
+  "policy_version": 1,
+  "mode": "DENY_ALL",
+  "allowed_knowledge_card_asset_version_ids": []
+}

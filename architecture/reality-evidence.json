@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260910_0128_corpus_operations",
+  "migration_head": "20260912_0129_corpus_member_fk_indexes",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4736,6 +4736,10 @@
         {
           "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
           "symbol": "dispatch_external_effect"
+        },
+        {
+          "path": "scripts/source_qualification.py",
+          "symbol": "run_source_qualification"
         }
       ],
       "domain_symbols": [
@@ -4746,6 +4750,10 @@
         {
           "path": "src/novel_forge/modules/provider_control/composition.py",
           "symbol": "build_provider_adapter_registry"
+        },
+        {
+          "path": "src/novel_forge/modules/provider_qualification/source_binding.py",
+          "symbol": "source_runtime_identity"
         }
       ],
       "commands_operations": [
@@ -4860,6 +4868,10 @@
         {
           "path": "src/novel_forge/cli/corpus.py",
           "symbol": "run_corpus_command"
+        },
+        {
+          "path": "src/novel_forge/api/routers/mkaos_authority.py",
+          "symbol": "create_router"
         }
       ],
       "application": [
@@ -4938,6 +4950,18 @@
         {
           "path": "src/novel_forge/api/authority_dependencies.py",
           "symbol": "build_source_import_application"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/trace.py",
+          "symbol": "require_knowledge_trace"
+        },
+        {
+          "path": "src/novel_forge/modules/provider_qualification/source_binding.py",
+          "symbol": "require_source_runtime_qualification"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/runtime_usage.py",
+          "symbol": "list_runtime_usage"
         }
       ],
       "domain_symbols": [
@@ -5016,6 +5040,10 @@
         {
           "path": "src/novel_forge/modules/source_import/corpus_ingestion/narrative_contracts.py",
           "symbol": "reconcile_review"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/applicability.py",
+          "symbol": "assess_applicability"
         }
       ],
       "commands_operations": [
@@ -5166,6 +5194,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260910_0128_corpus_operations.py",
           "id": "20260910_0128_corpus_operations",
           "locator": "MIGRATION_ID = '20260910_0128_corpus_operations'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260912_0129_corpus_member_fk_indexes.py",
+          "id": "20260912_0129_corpus_member_fk_indexes",
+          "locator": "MIGRATION_ID = \"20260912_0129_corpus_member_fk_indexes\""
         }
       ],
       "external_effects": {
@@ -5278,6 +5311,14 @@
         {
           "path": "tests/unit/test_corpus_ingestion_formats.py",
           "symbol": "test_epub_volume_scope_keeps_repeated_names_and_numbers_distinct"
+        },
+        {
+          "path": "tests/integration/test_source_runtime_qualification_postgres.py",
+          "symbol": "SourceRuntimeQualificationPostgresTests.test_exact_source_qualification_receipt_approval_replay_and_revocation"
+        },
+        {
+          "path": "tests/integration/test_narrative_orchestration_qualification_postgres.py",
+          "symbol": "test_accepted_reality_closes_three_chapter_orchestration_loop"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -5610,6 +5651,10 @@
         {
           "path": "src/novel_forge/modules/worldbuilding/continuation.py",
           "symbol": "decide_preparation"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/knowledge_translation.py",
+          "symbol": "validate_knowledge_translations"
         }
       ],
       "commands_operations": [
@@ -5838,6 +5883,10 @@
         {
           "path": "src/novel_forge/modules/book_replan/coordinator.py",
           "symbol": "BookReplanCoordinator"
+        },
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "symbol": "create_router"
         }
       ],
       "application": [
@@ -6612,6 +6661,14 @@
         {
           "path": "src/novel_forge/modules/review/diagnostics.py",
           "symbol": "validate_diagnosis"
+        },
+        {
+          "path": "src/novel_forge/modules/review/knowledge.py",
+          "symbol": "knowledge_review_targets"
+        },
+        {
+          "path": "src/novel_forge/modules/review/knowledge.py",
+          "symbol": "validate_knowledge_checks"
         }
       ],
       "commands_operations": [
@@ -7759,7 +7816,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:2b531528bd376286acb715bbc137fd70abdf6de86115089b45eab489ab43286a"
+    "implementation_tree_sha": "sha256:9907c885546fc173236b12dac40035125a088566f5d388667486146d7864fe84"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

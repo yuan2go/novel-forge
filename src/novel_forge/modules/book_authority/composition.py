@@ -68,6 +68,9 @@ class BookProductionComposition:
     def tick(self, book_run_id: str) -> BookProductionSupervisorTick:
         return self.supervisor.tick(book_run_id)
 
+    def resume_after_plan_change(self, *, book_run_id: str, proposal_id: str, principal: Principal) -> dict[str, object]:
+        return self.replan.resume_operator_plan_change(book_run_id=book_run_id, proposal_id=proposal_id, principal=principal)
+
     def open_book(self, request: OpenBookProductionRequest) -> BookOpeningAdmission:
         if self.opening is None:
             raise KernelError(

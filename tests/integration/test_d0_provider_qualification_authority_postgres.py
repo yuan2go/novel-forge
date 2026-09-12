@@ -176,7 +176,9 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
             # The fixture protocol persists both the synchronous basic receipt and
             # the reconciled unknown-after-send receipt. The cancelled probe has
             # no provider receipt, so replay must preserve exactly two receipts.
-            self.assertEqual(row, ("WAITING_GATE", 1, 3, 2))
+            self.assertEqual(row, ("SUCCEEDED", 1, 3, 2))
+            cursor.execute("SELECT lifecycle,eligibility,governance FROM authority_asset_version WHERE asset_version_id=%s", [result["report_asset_version_id"]])
+            self.assertEqual(cursor.fetchone(), ("ACTIVE", "INELIGIBLE", "CLEAR"))
             cursor.execute(
                 """
                 SELECT run.fixture_protocol_only, run.decision, run.sdk_max_retries,

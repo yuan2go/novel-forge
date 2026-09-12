@@ -792,3 +792,94 @@ def test_misleading_character_presentation_cannot_smuggle_known_truth(mode):
             },
         )
     assert caught.value.code == "WORLD_KNOWLEDGE_DISCLOSURE_DRIFT"
+
+
+def test_professional_card_translation_changes_native_world_resource_feasibility():
+    from novel_forge.modules.mkaos_authority.domain import (
+        NarrativeIntelligenceNeed, select_narrative_intelligence,
+    )
+    from novel_forge.modules.story_planning_runtime.knowledge_translation import (
+        validate_knowledge_translations,
+    )
+    from novel_forge.modules.worldbuilding.production_planning import (
+        compile_world_plan, WorldProductionPolicy,
+    )
+    from tests.unit.test_mkaos_authority_domain import _planning_card
+
+    card = _planning_card(0)
+    abstract = card["content"]["abstract_content"]
+    abstract.pop("applicability")
+    abstract.pop("failure_conditions")
+    abstract.update(
+        knowledge_kind="DOMAIN_INTELLIGENCE",
+        semantic_family="PROFESSIONAL_CAUSAL_MECHANISM",
+        discipline="resource_planning",
+        mechanism="Spend two supply units on travel while retaining one emergency unit.",
+        applicability_contract={
+            "schema_version": "knowledge-applicability.v1",
+            "usage_role": "MECHANISM",
+            "prerequisites": [{
+                "condition_id": "emergency-reserve",
+                "path": "/story_state/current_state/resource_state/0/state/balance",
+                "operator": "GTE", "value": 3,
+            }],
+            "exceptions": [], "hard_conflicts": [],
+        },
+    )
+    generated = generated_paths()
+    generated["candidates"][0]["transition"]["action"] = abstract["mechanism"]
+    generated["candidates"][0]["transition"]["requirements"][0]["value"] = abstract["applicability_contract"]["prerequisites"][0]["value"]
+    generated["knowledge_translations"] = [{
+        "knowledge_card_asset_version_id": card["asset_version_id"],
+        "content_hash": card["content_hash"],
+        "decision": "ADAPT", "usage_role": "MECHANISM",
+        "rationale": "Freeze the reserve threshold and travel expense in the causal transition.",
+        "prerequisite_resolution": "Check accepted stock; if below three, gather supplies before departure.",
+        "use_sites": [{
+            "target_pointer": "/candidates/0/transition/action",
+            "realization_excerpt": abstract["mechanism"],
+            "expected_application": "The typed supplies requirement is three and the post-travel balance is one.",
+            "preservation_requirements": ["Retain one supply unit after departure."],
+            "verification_checks": ["Departure cannot precede accepted preparation when stock is insufficient."],
+        }],
+    }]
+    for reserve, expected_assessment, expected_disposition in (
+        (3, "APPLICABLE", "ELIGIBLE"),
+        (2, "CONDITIONAL", "PREPARATION_REQUIRED"),
+    ):
+        reality = reality_state()
+        reality["current_state"]["resource_state"][0]["state"]["balance"] = reserve
+        before = deepcopy(reality)
+        selection = select_narrative_intelligence(NarrativeIntelligenceNeed(
+            scope="CHAPTER", target_stage="chapter_plan.generate",
+            condition_sources={"story_state": {
+                "asset_version_id": f"accepted-stock:{reserve}",
+                "content_hash": "sha256:" + str(reserve) * 64,
+                "content": reality,
+            }},
+        ), (card,))
+        assert selection["selected"][0]["applicability_assessment"]["status"] == expected_assessment
+        validate_knowledge_translations(generated, selection)
+        decoded = {key: value for key, value in generated.items() if key != "knowledge_translations"}
+        result = compile_world_plan(
+            reality=reality, generated=decoded, evaluation=evaluation(),
+            policy=WorldProductionPolicy(), chapter_number=2,
+            intent_version_id="intent:professional-reserve",
+        )
+        assert result["disposition"] == expected_disposition
+        assert result["authority"] == "PLANNING_PROPOSAL"
+        assert result["fact_mutation_allowed"] is False
+        assert reality == before
+        if reserve == 2:
+            assert result["causal_debts"][0]["status"] == "PREPARATION_REQUIRED"
+            assert result["selected_path_id"] == "gather-path"
+            assert result["preparation_schedule"][0]["chapter_number"] == 2
+            without_preparation = deepcopy(decoded)
+            without_preparation["candidates"][0]["preparation_paths"] = []
+            no_path_evaluation = evaluation()
+            no_path_evaluation["evaluations"][0]["preferred_path_id"] = ""
+            assert compile_world_plan(
+                reality=reality, generated=without_preparation,
+                evaluation=no_path_evaluation, policy=WorldProductionPolicy(),
+                chapter_number=2, intent_version_id="intent:professional-reserve",
+            )["disposition"] == "BLOCKED"

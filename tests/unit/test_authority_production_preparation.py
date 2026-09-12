@@ -147,6 +147,89 @@ def _asset(
 
 
 class ProductionPreparationTests(unittest.TestCase):
+    def test_preparation_revalidates_adoption_against_current_mechanism_inputs(self) -> None:
+        import json
+
+        for role, decision, reserve, expected in (
+            ("MECHANISM", "ADOPT", 2, "READY"),
+            ("MECHANISM", "ADOPT", 0, "BLOCKED"),
+            ("CONSTRAINT", "ADOPT", 0, "BLOCKED"),
+            ("MECHANISM", "ADOPT", None, "BLOCKED"),
+            ("MECHANISM", "ADAPT", 0, "READY"),
+            ("INSPIRATION", "ADOPT", 0, "READY"),
+        ):
+            with self.subTest(role=role, decision=decision, reserve=reserve):
+                assets = {kind: [_asset(kind)] for kind in (
+                    "chapter_plan", "style_policy", "quality_rubric", "platform_profile",
+                )}
+                world = replace(
+                    _asset("world_bible"), asset_version_id=f"world:{reserve}",
+                    content_hash=f"sha256:world:{reserve}",
+                    content={} if reserve is None else {"water_reserve": reserve},
+                )
+                assets["world_bible"] = [world]
+                card = replace(_asset("knowledge_card"), content={"abstract_content": {
+                    "concept_name": "Cooling consumes the reserve", "mechanism": "Water carries away heat.",
+                    "applicability_contract": {
+                        "schema_version": "knowledge-applicability.v1", "usage_role": role,
+                        "prerequisites": [{"condition_id": "water", "path": "/world_bible/water_reserve", "operator": "GT", "value": 0}],
+                        "exceptions": [], "hard_conflicts": [],
+                    },
+                }})
+                assets["knowledge_card"] = [card]
+                plan = assets["chapter_plan"][0]
+                translation = {
+                    "knowledge_card_asset_version_id": card.asset_version_id,
+                    "content_hash": card.content_hash, "decision": decision, "usage_role": role,
+                }
+                assets["chapter_plan"] = [replace(plan, content={**plan.content, "knowledge_translations": [translation]})]
+                result = ProductionPreparationService(_MultiResolver(assets)).prepare(
+                    ProductionPreparationRequest(project_id="project-1", workspace_id="workspace-1", book_id="book-1", chapter=1, idempotency_key=f"current:{role}:{decision}:{reserve}")
+                )
+                self.assertEqual(result.report.decision, expected)
+                if expected == "BLOCKED":
+                    self.assertIsNone(result.command)
+                    issue = result.report.blocked_assets[0]
+                    self.assertEqual(issue["code"], "KNOWLEDGE_TRANSLATION_ADOPTION_REQUIRES_REPLAN")
+                    self.assertEqual(issue["current_applicability_assessment"]["checks"][0]["source_asset_version_id"], world.asset_version_id)
+                else:
+                    candidate = next(item for item in result.command.context_candidates if item["asset_type"] == "knowledge_card")
+                    assessment = json.loads(candidate["safe_summary"])["applicability_assessment"]
+                    self.assertEqual(assessment["checks"][0]["source_content_hash"], world.content_hash)
+
+    def test_plan_adoption_is_required_protected_and_does_not_reselect_rejected_cards(self) -> None:
+        import json
+
+        assets = {kind: [_asset(kind)] for kind in ("chapter_plan", "style_policy", "quality_rubric", "platform_profile")}
+        card = replace(_asset("knowledge_card"), content={"abstract_content": {
+            "concept_name": "Costly cooling", "mechanism": "Cooling consumes the water reserve.",
+            "preconditions": ["Reserve exists and is uncontaminated."], "exceptions": ["Contamination makes this mechanism unsafe."],
+        }})
+        extra = replace(card, asset_id="extra", asset_version_id="extra:v1")
+        assets["knowledge_card"] = [extra, card]
+        plan = assets["chapter_plan"][0]
+        translation = {
+            "knowledge_card_asset_version_id": card.asset_version_id, "content_hash": card.content_hash,
+            "decision": "ADAPT", "usage_role": "MECHANISM", "rationale": "Cooling forces a costly choice.",
+            "prerequisite_resolution": "Verify the water supply first.",
+            "use_sites": [{"target_pointer": "/chapter_objective", "realization_excerpt": "Force a consequential choice.", "expected_application": "The water is spent.", "preservation_requirements": ["Preserve resource cost."], "verification_checks": ["Verify loss of water after cooling."]}],
+        }
+        assets["chapter_plan"] = [replace(plan, content={**plan.content, "knowledge_translations": [translation]})]
+        request = ProductionPreparationRequest(project_id="project-1", workspace_id="workspace-1", book_id="book-1", chapter=1, idempotency_key="translated")
+        result = ProductionPreparationService(_MultiResolver(assets)).prepare(request)
+        self.assertEqual(result.report.decision, "READY")
+        candidates = [item for item in result.command.context_candidates if item["asset_type"] == "knowledge_card"]
+        self.assertEqual([item["asset_version_id"] for item in candidates], [card.asset_version_id])
+        self.assertEqual(candidates[0]["context_class"], "PROTECTED")
+        rendered = json.loads(candidates[0]["safe_summary"])
+        self.assertEqual(rendered["translation"], translation)
+        self.assertEqual(rendered["preconditions"], ["Reserve exists and is uncontaminated."])
+        self.assertTrue(any(item["code"] == "KNOWLEDGE_NOT_ADOPTED_BY_CHAPTER_PLAN" for item in result.report.production_input_manifest["rejected_asset_versions"]))
+        assets["chapter_plan"] = [replace(plan, content={**plan.content, "knowledge_translations": [{**translation, "content_hash": "wrong"}]})]
+        drift = ProductionPreparationService(_MultiResolver(assets)).prepare(request)
+        self.assertEqual(drift.report.decision, "BLOCKED")
+        self.assertEqual(drift.report.blocked_assets[0]["code"], "KNOWLEDGE_TRANSLATION_VERSION_DRIFT")
+
     def test_book_allowlist_selects_exact_knowledge_card_versions(self) -> None:
         required = {
             kind: [_asset(kind)]

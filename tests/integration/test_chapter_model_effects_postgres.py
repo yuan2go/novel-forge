@@ -249,12 +249,13 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         )
 
     def _release_evidence(
-        self, project_id: str, *, with_mkaos: bool = False
+        self, project_id: str, *, with_mkaos: bool = False, scope_preseeded: bool = False, workspace_id: str = ""
     ) -> tuple[dict[str, object], ...]:
-        if with_mkaos:
+        workspace_id = workspace_id or f"workspace:{project_id}"
+        if with_mkaos and not scope_preseeded:
             seed_authority_project_book(
                 project_id=project_id,
-                workspace_id=f"workspace:{project_id}",
+                workspace_id=workspace_id,
                 book_id=f"book:{project_id}",
             )
         candidates: list[dict[str, object]] = [
@@ -419,6 +420,14 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     "asset_version_id": f"{project_id}:knowledge-pack-v1",
                     "asset_type": "knowledge_pack",
                     "project_id": project_id,
+                    "provenance": {
+                        "authority": "MKAOS",
+                        "knowledge_card_asset_version_ids": [f"{project_id}:knowledge-card:v1"],
+                        "knowledge_card_usages": [{
+                            "knowledge_card_asset_version_id": f"{project_id}:knowledge-card:v1",
+                            "usage_role": "CONSTRAINT",
+                        }],
+                    },
                     "safe_summary": "Use visible irreversible costs for public promises.",
                     "structured_facts": [
                         {
@@ -553,7 +562,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     [
                         pack_asset_id,
                         project_id,
-                        f"workspace:{project_id}",
+                        workspace_id,
                         pack_version_id,
                         f"{project_id}:chapter-plan-v1",
                         operation_id,
@@ -1053,14 +1062,49 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
     def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(
         self,
     ) -> None:
-        project_id = identifier("gateway-model-slice-project")
+        from tests.integration.capability_pack_postgres_support import CapabilityPackPostgresHarness
+
+        harness = CapabilityPackPostgresHarness("gateway-model-slice", release_sha="e" * 40)
+        approved = harness.register_compile_approve(
+            "1.0.0", generation=1,
+            approval_scope=harness.approval_scope(
+                environments=("test",), runtime_profiles=("test",)
+            ), target_runtime_profile="test",
+        )
+        harness.register_agents(approved.compiled)
+        harness.activate(
+            harness.deploy(approved, environment="test", runtime_profile="test"),
+            environment="test",
+        )
+        project_id = harness.project_id
         recovery_execution_id = ""
+
+        def pack_review_fixture(stage, inputs):
+            from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+
+            output = default_chapter_fixture_response(stage, inputs)
+            if stage not in {"review", "rereview"}:
+                return output
+            text = inputs["draft" if stage == "review" else "revision"]["text"]
+            quote = text if stage == "review" else "The protagonist gives up the only safe route home before the witnesses leave."
+            start = text.index(quote)
+            output["knowledge_checks"] = [{
+                "knowledge_card_asset_version_id": item["knowledge_card_asset_version_id"],
+                "status": "MISAPPLIED" if stage == "review" else "VERIFIED_IN_PROSE",
+                "reason": "Fixture checks whether the public choice names an actual lost option.",
+                "evidence": {"start": start, "end": start + len(quote), "quote": quote},
+                "conditions_checked": ["Public choice costs a concrete safe option."],
+                "exceptions_checked": [],
+                "issue_codes": ["COST_NOT_CONCRETE"] if stage == "review" else [],
+            } for item in inputs.get("knowledge_review_targets", [])]
+            return output
         with tempfile.TemporaryDirectory() as directory:
             settings = IndustrialSettings(
                 root=Path(directory), database_url=DATABASE_URL
             )
             env = {
                 "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": harness.pack_id,
                 "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
                 "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
                 "NOVEL_FORGE_REVISION_PROVIDER": "mock",
@@ -1070,15 +1114,15 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
                 "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
             }
-            execution = build_production_execution_composition(settings, env=env)
+            execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=pack_review_fixture)
             application = build_chapter_authority_application(
                 settings, execution=execution, env=env
             )
-            context_candidates = self._release_evidence(project_id, with_mkaos=True)
+            context_candidates = self._release_evidence(project_id, with_mkaos=True, scope_preseeded=True, workspace_id=harness.workspace_id)
             self._seed_intrinsic_semantic_commit_policy(project_id)
             chapter_request = SingleChapterRequest(
                 project_id=project_id,
-                workspace_id=f"workspace:{project_id}",
+                workspace_id=harness.workspace_id,
                 actor_id="chapter-gateway-worker",
                 chapter=1,
                 title="A Visible Gateway Cost",
@@ -1326,6 +1370,28 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         )
         self.assertEqual(len(selections), 1)
         self.assertEqual(len(usage), 11)
+        self.assertTrue(all(item["delivery_evidence_class"] == "FIXTURE_PROTOCOL_RECEIPT"
+                            and item["real_model_call"] is False
+                            and item["capability_materialization_asset_version_id"]
+                            and item["provider_context_view_hash"] for item in usage))
+        self.assertEqual(MkaosAuthorityQuery(DATABASE_URL).list_runtime_usage(
+            project_id=project_id, knowledge_card_asset_version_id="unrelated-card", limit=1,
+        ), [])
+        self.assertEqual(MkaosAuthorityQuery(DATABASE_URL).list_runtime_usage(
+            project_id=project_id, book_id="another-book", limit=1,
+        ), [])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT a.asset_type, v.content #>> '{knowledge_checks,0,usage_role}',
+                          v.content #>> '{knowledge_checks,0,status}'
+                FROM authority_asset a JOIN authority_asset_version v ON v.asset_id=a.asset_id
+                WHERE a.project_id=%s AND a.asset_type IN ('review_report','re_review_report')""",
+                [project_id],
+            )
+            self.assertEqual(set(cursor.fetchall()), {
+                ("review_report", "CONSTRAINT", "MISAPPLIED"),
+                ("re_review_report", "CONSTRAINT", "VERIFIED_IN_PROSE"),
+            })
         self.assertTrue(all(item["capability_id"] != "model.memo" for item in usage))
         self.assertTrue(all(item["attempt_id"] for item in usage))
         self.assertTrue(all(item["external_effect_id"] for item in usage))

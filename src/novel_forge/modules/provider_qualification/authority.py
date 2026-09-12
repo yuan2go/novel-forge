@@ -1101,7 +1101,7 @@ class D0QualificationAuthority:
                     schema_version=schema_version, logical_ref=logical_ref,
                     category="provider_qualification", output_key="provider.qualification.d0.report",
                     role="primary", content=report, expected_current_asset_version_id=None,
-                    reference_asset_ids=(), qualification_policy="d0-authority-evidence.v1",
+                    reference_asset_ids=(), qualification_policy="d0-authority-evidence.v1", eligibility="INELIGIBLE",
                     trace_id=command.trace_id, correlation_id=command.correlation_id,
                 )
             )

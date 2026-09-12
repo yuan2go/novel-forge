@@ -52,6 +52,96 @@ def test_formal_acceptance_resolves_retained_original_despite_historical_quality
     assert len(workspace["artifacts"]["history"]) == 8
 
 
+def test_knowledge_trace_keeps_selection_and_actual_accepted_prose_check_separate():
+    from novel_forge.modules.mkaos_authority.trace import workspace_knowledge_trace
+    workspace = accepted_workspace()
+    workspace["acceptance"].update(story_state_asset_version_id="state:v1", canon_snapshot_asset_version_id="canon:v1")
+    items = workspace["artifacts"]["history"]
+    context = next(item for item in items if item["asset_type"] == "context_bundle")
+    context["content"]["context_manifest"] = {"knowledge_usage": [{"knowledge_card_asset_version_id": "card:v1", "usage_role": "REFERENCE"}]}
+    context.update(document("context_bundle", "context", context["content"]))
+    review = next(item for item in items if item["asset_type"] == "re_review_report")
+    review["content"]["knowledge_checks"] = [{"knowledge_card_asset_version_id": "card:v1", "status": "NOT_USED", "target_text_hash": review["content"]["target_text_hash"]}]
+    review.update(document("re_review_report", "review", review["content"]))
+    workspace["artifacts"]["inputs"] = [context]
+    workspace["artifacts"]["diagnoses"] = [review]
+    trace = workspace_knowledge_trace(workspace)["cards"][0]
+    assert trace["selected"][0]["context_bundle_asset_version_id"] == "context"
+    assert trace["accepted"]["check"]["status"] == "NOT_USED"
+    assert trace["independent_editorial"] == "NOT_PROVEN"
+    review["content"]["knowledge_checks"][0]["target_text_hash"] = "wrong-prose"
+    review.update(document("re_review_report", "review", review["content"]))
+    with pytest.raises(KernelError, match="accepted prose"):
+        workspace_knowledge_trace(workspace)
+
+
+def test_six_chapter_blind_export_uses_only_acceptance_bound_text_and_leaves_forms_empty(tmp_path):
+    from scripts.prepare_knowledge_closure import blind_export
+    from novel_forge.modules.mkaos_authority.domain import resolve_book_knowledge_access_policy
+    for arm, mode in (("treatment", "ALLOW_ONLY"), ("control", "DENY_ALL")):
+        access = resolve_book_knowledge_access_policy(
+            production_profile={"knowledge_access_policy": {
+                "mode": mode, "allowed_knowledge_card_asset_version_ids": ["card:v1"] if mode == "ALLOW_ONLY" else [],
+            }}, project_id="p", book_id=arm,
+        )
+        folder = tmp_path / arm
+        folder.mkdir()
+        rows = []
+        for chapter in range(1, 7):
+            original = accepted_workspace()
+            identities = {item["asset_version_id"] for item in original["artifacts"]["history"]} | {"outcome", "plan", "original"}
+            def rewrite(value):
+                if isinstance(value, str):
+                    return f"{arm}:{chapter}:{value}" if value in identities else arm if value == "b" else value
+                if isinstance(value, list):
+                    return [rewrite(item) for item in value]
+                if isinstance(value, dict):
+                    return {key: rewrite(item) for key, item in value.items()}
+                return value
+            workspace = rewrite(original)
+            workspace["root_operation_id"] = f"{arm}:root:{chapter}"
+            workspace["acceptance"]["accepted_through_chapter"] = chapter
+            workspace["acceptance"]["acceptance_id"] = f"{arm}:accept:{chapter}"
+            workspace["acceptance"]["outcome"]["content"]["chapter_number"] = chapter
+            workspace["run"]["command"]["context_version_refs"] = {"arc_plan_versions": [f"{arm}:arc:{1 if chapter <= 3 else 2}"]}
+            context = next(item for item in workspace["artifacts"]["history"] if item["asset_type"] == "context_bundle")
+            context["content"]["knowledge_access_policy"] = access
+            for item in [workspace["acceptance"]["outcome"], *workspace["artifacts"]["history"]]:
+                item.update(document(item["asset_type"], item["asset_version_id"], item["content"]))
+            rows.append(workspace)
+        (folder / "chapter-workspaces.json").write_text(json.dumps(rows))
+        (folder / "creation-run.json").write_text(json.dumps({
+            "implementation_identity": "same-source", "brief_input_hash": "same-brief", "formation_policy": {"target_chapters": 6},
+            "frozen_configuration": {"models": {"review": "same-frozen-route"},
+                                     "creation_policy": {"profiles": {"production_profile": {"content": {"target_chapter_count": 6}}}},
+                                     "runtime_settings": {}, "cost_accounting": {"accounting_basis": "FIXTURE"}}, "book_id": arm, "project_id": "p",
+            "future_plan_change": {"after_chapter": 3, "result": {"snapshot_id": arm + ":changed-input"}},
+            "knowledge_access_policy": access,
+        }))
+    result = blind_export(tmp_path / "treatment", tmp_path / "control", tmp_path / "blind")
+    assert result["human_approval"] is False
+    for form in (tmp_path / "blind").glob("unassigned-reader-*/knowledge-review-form.json"):
+        value = json.loads(form.read_text())
+        assert value["status"] == "NOT_REVIEWED"
+        assert all(score is None for response in value["responses"] for score in response["scores"].values())
+    context_path = tmp_path / "control/chapter-workspaces.json"
+    original_export = context_path.read_text()
+    contaminated = json.loads(original_export)
+    context = next(item for item in contaminated[0]["artifacts"]["history"] if item["asset_type"] == "context_bundle")
+    context["content"]["context_manifest"] = {"knowledge_usage": [{"asset_type": "knowledge_card", "asset_version_id": "card:v1"}]}
+    context.update(document("context_bundle", context["asset_version_id"], context["content"]))
+    context_path.write_text(json.dumps(contaminated))
+    with pytest.raises(ValueError, match="forbidden external knowledge"):
+        blind_export(tmp_path / "treatment", tmp_path / "control", tmp_path / "contaminated-blind")
+    context_path.write_text(original_export)
+    report_path = tmp_path / "control/creation-run.json"
+    changed = json.loads(report_path.read_text())
+    changed["frozen_configuration"]["runtime_settings"] = {"NOVEL_FORGE_CHAPTER_PROVIDER_CAP": "100"}
+    report_path.write_text(json.dumps(changed))
+    with pytest.raises(ValueError, match="budgets"):
+        blind_export(tmp_path / "treatment", tmp_path / "control", tmp_path / "invalid-blind")
+
+
 @pytest.mark.parametrize("fault", ["missing_quality", "wrong_hash", "wrong_book", "old_candidate", "wrong_memo", "conflicting_version"])
 def test_accepted_export_rejects_incomplete_or_conflicting_evidence(fault):
     workspace = accepted_workspace()

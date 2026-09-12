@@ -156,7 +156,24 @@ class MkaosAuthorityQuery:
             "operation_status",
             "created_at",
         )
-        return [dict(zip(keys, row, strict=True)) for row in rows]
+        cards = [dict(zip(keys, row, strict=True)) for row in rows]
+        from novel_forge.modules.provider_qualification.source_binding import require_source_runtime_qualification
+        from novel_forge.modules.provider_qualification.domain import request_hash
+        for card in cards:
+            content = card.get("content") or {}
+            binding = (content.get("source_policy") or {}).get("provider_runtime_qualification")
+            if binding:
+                try:
+                    require_source_runtime_qualification(
+                        self.database_url, project_id=project_id, workspace_id=card["workspace_id"],
+                        execution_asset_version_id=binding["execution_asset_version_id"],
+                        execution_content_hash=binding["execution_content_hash"],
+                        candidate_payload_hash=request_hash(content.get("abstract_content") or {}), frozen=binding,
+                    )
+                    card["runtime_qualification_current"] = True
+                except (KernelError, KeyError):
+                    card["runtime_qualification_current"] = False
+        return cards
 
     def list_candidates(
         self, *, project_id: str, status: str = "", limit: int = 100
@@ -412,6 +429,7 @@ class MkaosAuthorityQuery:
         *,
         project_id: str,
         book_id: str = "",
+        knowledge_card_asset_version_id: str = "",
         limit: int = 100,
     ) -> list[dict[str, Any]]:
 
@@ -427,7 +445,23 @@ class MkaosAuthorityQuery:
                        candidate_output.asset_version_id,
                        candidate_version.content,
                        binding.binding_id, binding.execution_scope,
-                       binding.freshness, context_output.created_at
+                       binding.freshness, context_output.created_at,
+                       COALESCE((
+                           SELECT jsonb_agg(jsonb_build_object(
+                               'external_effect_id', effect.external_effect_id,
+                               'status', effect.status,
+                               'provider', effect.provider,
+                               'model_id', effect.model_id,
+                               'selection_digest', effect.request_payload #>> '{input,narrative_intelligence,selection_digest}'
+                           ))
+                           FROM authority_external_effect effect
+                           WHERE effect.operation_id=context_output.operation_id
+                             AND effect.project_id=context_asset.project_id
+                             AND effect.effect_type='model.invoke'
+                             AND effect.status='SUCCEEDED'
+                             AND effect.request_payload #>> '{input,narrative_intelligence,selection_digest}'=
+                                 context_version.content #>> '{narrative_intelligence,selection_digest}'
+                       ), '[]'::jsonb)
                 FROM authority_operation_output_asset AS context_output
                 JOIN authority_asset_version AS context_version
                   ON context_version.asset_version_id=
@@ -450,11 +484,18 @@ class MkaosAuthorityQuery:
                   AND context_version.content->>'schema_version'=
                       'novelos.planning_context_bundle.v1'
                   AND (%s='' OR context_version.content->>'book_id'=%s)
+                  AND (%s='' OR EXISTS (
+                      SELECT 1 FROM jsonb_array_elements(
+                          COALESCE(context_version.content->'narrative_intelligence'->'selected', '[]'::jsonb)
+                      ) AS selected_card
+                      WHERE selected_card->>'knowledge_card_asset_version_id'=%s
+                  ))
                 ORDER BY context_output.created_at DESC,
                          context_version.asset_version_id
                 LIMIT %s
                 """,
-                [project_id, book_id, book_id, min(limit, 50)],
+                [project_id, book_id, book_id, knowledge_card_asset_version_id,
+                 knowledge_card_asset_version_id, limit],
             )
             rows = uow.cursor.fetchall()
         usage: list[dict[str, Any]] = []
@@ -471,7 +512,13 @@ class MkaosAuthorityQuery:
             for item in selection.get("selected") or ():
                 if not isinstance(item, dict):
                     continue
+                if knowledge_card_asset_version_id and item.get("knowledge_card_asset_version_id") != knowledge_card_asset_version_id:
+                    continue
                 selected_content = dict(item.get("selected_content") or {})
+                translations = [
+                    translation for translation in candidate_content.get("knowledge_translations") or ()
+                    if isinstance(translation, dict) and translation.get("knowledge_card_asset_version_id") == item.get("knowledge_card_asset_version_id")
+                ]
                 usage.append(
                     {
                         "project_id": project_id,
@@ -494,6 +541,17 @@ class MkaosAuthorityQuery:
                         "plan_binding_id": str(row[7] or ""),
                         "plan_execution_scope": str(row[8] or ""),
                         "plan_freshness": str(row[9] or ""),
+                        "applicability_assessment": dict(item.get("applicability_assessment") or {}),
+                        "knowledge_translations": translations,
+                        "usage_states": {
+                            "selected": True,
+                            "delivered": bool(row[11]),
+                            "claimed_adoption": any(translation.get("decision") in {"ADOPT", "ADAPT"} for translation in translations),
+                            "prose_verified": False,
+                            "independent_review_accepted": False,
+                        },
+                        "usage_evidence_ceiling": "PLANNING_CLAIM_NOT_PROSE_VERIFICATION",
+                        "delivery_receipts": list(row[11] or []),
                         "consumption_status": (
                             "REAL_PROVIDER_CONSUMED"
                             if evidence.get("real_provider_proven") is True
@@ -595,144 +653,33 @@ class MkaosAuthorityQuery:
         }
 
     def list_runtime_usage(
-        self,
-        *,
-        project_id: str,
-        book_id: str = "",
-        target_capability_id: str = "",
-        result_asset_version_id: str = "",
-        limit: int = 100,
+        self, *, project_id: str, book_id: str = "",
+        target_capability_id: str = "", result_asset_version_id: str = "",
+        knowledge_card_asset_version_id: str = "", limit: int = 100,
     ) -> list[dict[str, Any]]:
+        from .runtime_usage import list_runtime_usage
+
         _validate(project_id, limit)
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT project_id, book_id,
-                       context_bundle_asset_version_id,
-                       context_build_operation_id,
-                       consumer_operation_id,
-                       consumer_definition_name,
-                       attempt_id, external_effect_id, provider, model_id,
-                       provider_request_id, capability_id,
-                       capability_pack_snapshot_id,
-                       capability_pack_id, capability_pack_version,
-                       result_asset_version_id, result_asset_type,
-                       target_capability_id, narrative_position, trace_id,
-                       knowledge_pack_id,
-                       knowledge_pack_asset_version_id,
-                       knowledge_card_asset_version_id,
-                       usage_role, frozen_weight,
-                       inclusion_reason, narrative_function, consumed_at
-                FROM authority_mkaos_runtime_usage_projection
-                WHERE project_id=%s
-                  AND (%s='' OR book_id=%s)
-                  AND (%s='' OR target_capability_id=%s)
-                  AND (%s='' OR result_asset_version_id=%s)
-                ORDER BY consumed_at DESC, context_bundle_asset_version_id,
-                         knowledge_pack_id, knowledge_card_asset_version_id
-                LIMIT %s
-                """,
-                [
-                    project_id,
-                    book_id,
-                    book_id,
-                    target_capability_id,
-                    target_capability_id,
-                    result_asset_version_id,
-                    result_asset_version_id,
-                    limit,
-                ],
-            )
-            rows = uow.cursor.fetchall()
-        keys = (
-            "project_id",
-            "book_id",
-            "context_bundle_asset_version_id",
-            "context_build_operation_id",
-            "consumer_operation_id",
-            "consumer_definition_name",
-            "attempt_id",
-            "external_effect_id",
-            "provider",
-            "model_id",
-            "provider_request_id",
-            "capability_id",
-            "capability_pack_snapshot_id",
-            "capability_pack_id",
-            "capability_pack_version",
-            "result_asset_version_id",
-            "result_asset_type",
-            "target_capability_id",
-            "narrative_position",
-            "trace_id",
-            "knowledge_pack_id",
-            "knowledge_pack_asset_version_id",
-            "knowledge_card_asset_version_id",
-            "usage_role",
-            "frozen_weight",
-            "inclusion_reason",
-            "narrative_function",
-            "consumed_at",
+        return list_runtime_usage(
+            self.database_url, project_id=project_id, book_id=book_id,
+            target_capability_id=target_capability_id,
+            result_asset_version_id=result_asset_version_id,
+            knowledge_card_asset_version_id=knowledge_card_asset_version_id, limit=limit,
         )
-        return [dict(zip(keys, row, strict=True)) for row in rows]
 
     def list_runtime_selections(
-        self,
-        *,
-        project_id: str,
-        book_id: str = "",
-        target_capability_id: str = "",
+        self, *, project_id: str, book_id: str = "",
+        target_capability_id: str = "", knowledge_card_asset_version_id: str = "",
         limit: int = 100,
     ) -> list[dict[str, Any]]:
+        from .runtime_usage import list_runtime_selections
+
         _validate(project_id, limit)
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT project_id, book_id,
-                       context_bundle_asset_version_id,
-                       context_build_operation_id, trace_id,
-                       target_capability_id, narrative_position,
-                       knowledge_pack_id,
-                       knowledge_pack_asset_version_id,
-                       knowledge_card_asset_version_id,
-                       usage_role, frozen_weight,
-                       inclusion_reason, narrative_function, selected_at
-                FROM authority_mkaos_runtime_selection_projection
-                WHERE project_id=%s
-                  AND (%s='' OR book_id=%s)
-                  AND (%s='' OR target_capability_id=%s)
-                ORDER BY selected_at DESC, context_bundle_asset_version_id,
-                         knowledge_pack_id, knowledge_card_asset_version_id
-                LIMIT %s
-                """,
-                [
-                    project_id,
-                    book_id,
-                    book_id,
-                    target_capability_id,
-                    target_capability_id,
-                    limit,
-                ],
-            )
-            rows = uow.cursor.fetchall()
-        keys = (
-            "project_id",
-            "book_id",
-            "context_bundle_asset_version_id",
-            "context_build_operation_id",
-            "trace_id",
-            "target_capability_id",
-            "narrative_position",
-            "knowledge_pack_id",
-            "knowledge_pack_asset_version_id",
-            "knowledge_card_asset_version_id",
-            "usage_role",
-            "frozen_weight",
-            "inclusion_reason",
-            "narrative_function",
-            "selected_at",
+        return list_runtime_selections(
+            self.database_url, project_id=project_id, book_id=book_id,
+            target_capability_id=target_capability_id,
+            knowledge_card_asset_version_id=knowledge_card_asset_version_id, limit=limit,
         )
-        return [dict(zip(keys, row, strict=True)) for row in rows]
 
 
 def _canonical_hash(value: dict[str, Any]) -> str:
@@ -754,6 +701,8 @@ def _validate(project_id: str, limit: int) -> None:
 def _context_eligible_card(
     card: dict[str, Any], access: dict[str, Any]
 ) -> bool:
+    if card.get("runtime_qualification_current") is False:
+        return False
     content = card.get("content")
     policy = content.get("source_policy") if isinstance(content, dict) else None
     if not (

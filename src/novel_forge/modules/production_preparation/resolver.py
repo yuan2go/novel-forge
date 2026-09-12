@@ -15,6 +15,15 @@ class PostgresProductionAssetResolver:
     def __init__(self, database_url: str) -> None:
         self.database_url = database_url
 
+    def require_current_knowledge(self, *, project_id, book_id, asset_version_id, content_hash, knowledge_access_policy) -> None:
+        from novel_forge.modules.mkaos_authority.query import MkaosAuthorityQuery
+
+        MkaosAuthorityQuery(self.database_url).require_planning_card_current(
+            project_id=project_id, book_id=book_id,
+            asset_version_id=asset_version_id, content_hash=content_hash,
+            knowledge_access_policy=knowledge_access_policy,
+        )
+
     def resolve_latest(
         self, *, project_id: str, asset_type: str
     ) -> ResolvedProductionAsset | None:

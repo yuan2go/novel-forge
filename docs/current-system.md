@@ -82,6 +82,32 @@ comparison groups from sharing cards through cache, summary or an upstream plan.
 
 ## Production mechanism choices
 
+Approved knowledge has a versioned applicability assessment (`APPLICABLE`,
+`CONDITIONAL`, `REJECTED`, `UNKNOWN`). Typed prerequisites, exceptions and hard conflicts
+use deterministic predicates against the frozen input versions; textual judgments retain
+uncertainty. These checks establish applicability to supplied inputs, not real-world truth.
+Planning, Formation and World Preparation must explicitly adopt, adapt or reject each
+selected Card. Adoption identifies a concrete candidate field, literal realization,
+prerequisite resolution and later verification/preservation requirements. Current Chapter
+preparation consumes only that plan's adopted exact Card versions, rechecks current
+governance/applicability and protects the translated mechanisms. It cannot independently
+reselect rejected project knowledge. Scoped inherited mechanisms survive repetition
+filtering; knowledge remains abstract evidence, never automatic Canon.
+
+Planning role projection preserves required scoped fields before Context budgeting. It
+records optional field pruning with paths, hashes and reasons; required overflow blocks
+before dispatch. Frozen compiled Provider views and semantic input hashes survive retry.
+Chapter Review and ReReview check delivered Card versions against the actual target text,
+mechanism conditions and exceptions. Missing promised mechanisms and unresolved hard
+constraints require actionable diagnoses. Review omission, higher scores and repeated
+issue codes cannot erase unresolved preservation requirements. Semantic model checks,
+scripted checks and independent human review retain distinct evidence ceilings.
+
+The existing MKAOS query, Chapter workspace and `authority-knowledge-trace` CLI expose
+selection, exact Provider delivery, planning adoption, candidate checks and the accepted
+manuscript binding separately. The trace is a read-only projection of existing assets,
+effects and Book Acceptance. No use-success state or additional knowledge store is added.
+
 The comparison reads executable workflows, enabled prompt sections and postprocessors
 at [InkOS 0910483](https://github.com/Narcooo/inkos/tree/091048383f411eb99948a8764f42b6fd13006f9b)
 and [bishu-novel 5f074b5](https://github.com/alikon-art/DeterminFlow-Plugins/tree/5f074b5a887a7e74a61d00206abb99c107b786c2/plugins/bishu-novel).

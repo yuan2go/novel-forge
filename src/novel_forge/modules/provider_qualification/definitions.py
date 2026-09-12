@@ -4,7 +4,7 @@ from typing import Any
 
 
 D0_OPERATION = "provider.qualification.d0"
-D0_DEFINITION_VERSION = "1.0.2"
+D0_DEFINITION_VERSION = "1.0.3"
 D0_HANDLER_KEY = "novel_forge.provider_qualification.d0"
 
 
@@ -72,10 +72,10 @@ def d0_operation_definition(*, application_build_id: str, commit_sha: str) -> di
             "sdk_max_retries": 0,
         },
         "completion_contract": {
-            "version": "provider.qualification.d0.completion.v1",
+            "version": "provider.qualification.d0.completion.v2",
             "required_asset_selectors": [
                 {
-                    "selector": "d0_report",
+                    "selector": "d0_provider_qualification_report",
                     "output_key": "provider.qualification.d0.report",
                     "role": "primary",
                     "lifecycle": "ACTIVE",
