@@ -2,7 +2,7 @@
   "contract_version": "author-input-routing-record.v1",
   "task": "WP-AUTHOR-GUIDED-TWELVE-CHAPTER-PRODUCTION-01",
   "author_input": "../../../config/production/author-guided-twelve/brief.json",
-  "design_version": "yu-xian-zhi-wai-author-v2-input-v4",
+  "design_version": "yu-xian-zhi-wai-author-v2-input-v5",
   "status": "AUTHOR_INPUT_NOT_NATIVE_GENERATION_OR_APPROVAL",
   "source_documents": [
     {
@@ -116,6 +116,7 @@
     "Exclude named future chapter actions from general voice generation",
     "First-arc private cause limited to chapters 1–24",
     "Book retains complete long direction; Volume/Arc see matching volume sections",
-    "Input v4 binds three-volume v2.1: Volume 2 ends with an unfavorable compensation exchange actually fulfilled, preserving distinct capabilities and consequences across volumes. Chapter fragments are unchanged."
+    "Input v4 binds three-volume v2.1: Volume 2 ends with an unfavorable compensation exchange actually fulfilled, preserving distinct capabilities and consequences across volumes. Chapter fragments are unchanged.",
+    "Input v5 uses the author revision source file as runtime provenance. The package identifier stays in archival rationale, outside active runtime configuration; all 33 selected spans are unchanged. Prior input v4 and its native registration remain historical inputs, with no Book, Provider call or budget reservation created."
   ]
 }

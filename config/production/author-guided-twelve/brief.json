@@ -25,9 +25,9 @@
     "contract_version": "author-design-input.v1",
     "project_id": "first-novel-pilot-20260912",
     "book_id": "first-novel-pilot-a",
-    "version": "yu-xian-zhi-wai-author-v2-input-v4",
+    "version": "yu-xian-zhi-wai-author-v2-input-v5",
     "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
-    "source_task": "WP-AUTHOR-GUIDED-TWELVE-CHAPTER-PRODUCTION-01",
+    "source_task": "novels/yu-xian-zhi-wai/current/group-a/revision-rationale.json",
     "documents": [
       {
         "path": "novels/yu-xian-zhi-wai/current/group-a/01-premise-and-world.md",

@@ -30,11 +30,11 @@ INPUTS="$NF_ROOT/config/production/author-guided-twelve"
   --production-budget "$FROZEN/experiment.json" --freeze-dir "$FROZEN" \
   --freeze-manifest-hash "$FREEZE_HASH" --project-id first-novel-pilot-20260912 \
   --book-id first-novel-pilot-a --workspace-id first-novel-pilot-workspace \
-  --root "$RUN_ROOT" --run-key yu-xian-zhi-wai-author-twelve-v1 \
+  --root "$RUN_ROOT" --run-key yu-xian-zhi-wai-author-twelve-v2 \
   --expected-sha "$VERIFIED_SHA" --evidence-dir "$EVIDENCE_ROOT/preview-v1"
 ```
 
-上面仅预览。加入`--register-input-only`并使用新evidence目录，通过已有Content Command登记精确作者输入，无Provider、原生设计生成或审批。后续沿用同一run key复用brief。完整源文用于追溯，Provider只获得角色和范围允许的片段；04不能送给正文。
+上面仅预览。加入`--register-input-only`并使用新evidence目录，通过已有Content Command登记精确作者输入，无Provider、原生设计生成或审批。后续沿用同一run key复用brief。当前输入v5使用v2运行键；v1运行键仅登记过旧v4输入，没有创建Book或消费模型额度。旧输入保留，项目、Book和预算合同身份不变，这次输入版本衔接不重置累计额度。完整源文用于追溯，Provider只获得角色和范围允许的片段；04不能送给正文。
 
 ## 授权与Source小样
 
