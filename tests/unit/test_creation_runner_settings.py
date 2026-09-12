@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
+from novel_forge.infrastructure.settings import IndustrialSettings
 
 
 @pytest.mark.parametrize('runner_name', ['run_creation_synthesis', 'run_world_production_smoke'])
@@ -49,6 +50,7 @@ def test_native_creation_runners_preserve_isolated_object_store_configuration(mo
     assert runner.main(args) == 2
     assert len(captured) == 1
     settings = captured[0]
+    assert isinstance(settings, IndustrialSettings)
     assert Path(settings.root) == (tmp_path / 'runtime').resolve()
     assert settings.database_url == values['NOVEL_FORGE_DATABASE_URL']
     assert settings.environment.value == 'production'
