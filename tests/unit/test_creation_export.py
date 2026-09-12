@@ -10,8 +10,8 @@ from novel_forge.modules.chapter_outcome.acceptance_contract import resolve_acce
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
-def document(kind, identity, content):
-    return {"project_id": "p", "asset_type": kind, "asset_version_id": identity,
+def document(kind, identity, content, *, project_id="p"):
+    return {"project_id": project_id, "asset_type": kind, "asset_version_id": identity,
             "content": content, "content_hash": "sha256:" + hashlib.sha256(json.dumps(content, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()}
 
 
@@ -77,11 +77,15 @@ def test_knowledge_trace_keeps_selection_and_actual_accepted_prose_check_separat
 
 def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=True):
     from novel_forge.modules.mkaos_authority.domain import resolve_book_knowledge_access_policy
-    for arm, mode in (("treatment", "ALLOW_ONLY"), ("control", "DENY_ALL")):
+    from tests.unit.test_creation_comparison import comparison_identities
+    comparison = comparison_identities(tmp_path, book_names=("treatment", "control"), target_chapters=6)
+    for index, (arm, mode) in enumerate((("treatment", "ALLOW_ONLY"), ("control", "DENY_ALL"))):
+        identity = comparison[index]
+        project_id = identity["project_id"]
         access = resolve_book_knowledge_access_policy(
             production_profile={"knowledge_access_policy": {
                 "mode": mode, "allowed_knowledge_card_asset_version_ids": ["card:v1"] if mode == "ALLOW_ONLY" else [],
-            }}, project_id="p", book_id=arm,
+            }}, project_id=project_id, book_id=arm,
         )
         folder = tmp_path / arm
         folder.mkdir()
@@ -91,7 +95,7 @@ def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=T
             identities = {item["asset_version_id"] for item in original["artifacts"]["history"]} | {"outcome", "plan", "original"}
             def rewrite(value):
                 if isinstance(value, str):
-                    return f"{arm}:{chapter}:{value}" if value in identities else arm if value == "b" else value
+                    return f"{arm}:{chapter}:{value}" if value in identities else arm if value == "b" else project_id if value == "p" else value
                 if isinstance(value, list):
                     return [rewrite(item) for item in value]
                 if isinstance(value, dict):
@@ -115,14 +119,14 @@ def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=T
             context = next(item for item in workspace["artifacts"]["history"] if item["asset_type"] == "context_bundle")
             context["content"]["knowledge_access_policy"] = access
             for item in [workspace["acceptance"]["outcome"], *workspace["artifacts"]["history"]]:
-                item.update(document(item["asset_type"], item["asset_version_id"], item["content"]))
+                item.update(document(item["asset_type"], item["asset_version_id"], item["content"], project_id=project_id))
             rows.append(workspace)
         (folder / "chapter-workspaces.json").write_text(json.dumps(rows))
         groups = []
         for start, end in group_ranges:
             plan = document("planning_generation_candidate", f"{arm}:group-plan:{start}", {"chapter_range": [start, end]})
             groups.append({
-                "group_run_id": f"{arm}:group:{start}", "project_id": "p", "book_id": arm,
+                "group_run_id": f"{arm}:group:{start}", "project_id": project_id, "book_id": arm,
                 "book_run_id": f"{arm}:book-run", "group_plan_version_id": plan["asset_version_id"],
                 "volume_plan_version_id": f"{arm}:volume", "root_operation_id": f"{arm}:group-root:{start}",
                 "chapter_range": [start, end], "accepted_through_chapter": end, "state": "COMPLETED", "plan": plan,
@@ -136,20 +140,17 @@ def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=T
                 } for n in range(start, end + 1)],
             })
         (folder / "chapter-groups.json").write_text(json.dumps({
-            "contract_version": "book-chapter-group-lineage.v1", "project_id": "p", "book_id": arm,
+            "contract_version": "book-chapter-group-lineage.v1", "project_id": project_id, "book_id": arm,
             "book_run_id": f"{arm}:book-run", "accepted_through_chapter": 6,
             "groups": groups, "offset": 0, "limit": 500, "has_more": False,
         }))
         for name in ("asset-export-status.json", "workspace-export-status.json"):
             (folder / name).write_text(json.dumps({"status": "COMPLETE", "errors": []}))
-        (folder / "creation-run.json").write_text(json.dumps({
-            "status": "ACCEPTED_TARGET_REACHED", "implementation_identity": "same-source", "brief_input_hash": "same-brief", "formation_policy": {"target_chapters": 6},
-            "frozen_configuration": {"models": {"review": "same-frozen-route"},
-                                     "creation_policy": {"profiles": {"production_profile": {"content": {"target_chapter_count": 6}}}},
-                                     "runtime_settings": {}, "cost_accounting": {"accounting_basis": "FIXTURE"}}, "book_id": arm, "project_id": "p", "book_run_id": f"{arm}:book-run",
-            "future_plan_change": {"after_chapter": 3, "result": {"snapshot_id": arm + ":changed-input"}},
-            "knowledge_access_policy": access,
-        }))
+        identity["frozen_configuration"]["creation_policy"]["profiles"]["production_profile"]["content"]["knowledge_access_policy"] = access
+        identity.update(status="ACCEPTED_TARGET_REACHED", book_run_id=f"{arm}:book-run",
+                        future_plan_change={"after_chapter": 3, "result": {"snapshot_id": arm + ":changed-input"}},
+                        knowledge_access_policy=access)
+        (folder / "creation-run.json").write_text(json.dumps(identity))
 
 
 def test_six_chapter_blind_export_uses_only_acceptance_bound_text_and_leaves_forms_empty(tmp_path):
@@ -157,6 +158,14 @@ def test_six_chapter_blind_export_uses_only_acceptance_bound_text_and_leaves_for
     _comparison_exports(tmp_path)
     result = blind_export(tmp_path / "treatment", tmp_path / "control", tmp_path / "blind")
     assert result["human_approval"] is False
+    comparison = json.loads((tmp_path / "blind/private/comparison-contract.json").read_text())
+    assert comparison["status"] == "COMPARABLE_RECORDED_OPPORTUNITY"
+    allocations = next(item for item in comparison["classified_differences"] if item["category"] == "PROJECT_AND_SOURCE_ALLOCATION")
+    assert allocations["A"]["project_total"]["calls"] == 270
+    assert allocations["B"]["project_total"]["calls"] == 210
+    assert allocations["A"]["creation_allocation"] == allocations["B"]["creation_allocation"]
+    assert comparison["real_provider_execution"] == "NOT_ESTABLISHED_BY_COMPARISON"
+    assert comparison["creative_benefit"] == "NOT_PROVEN"
     for form in (tmp_path / "blind").glob("unassigned-reader-*/knowledge-review-form.json"):
         value = json.loads(form.read_text())
         assert value["status"] == "NOT_REVIEWED"
@@ -166,14 +175,14 @@ def test_six_chapter_blind_export_uses_only_acceptance_bound_text_and_leaves_for
     contaminated = json.loads(original_export)
     context = next(item for item in contaminated[0]["artifacts"]["history"] if item["asset_type"] == "context_bundle")
     context["content"]["context_manifest"] = {"knowledge_usage": [{"asset_type": "knowledge_card", "asset_version_id": "card:v1"}]}
-    context.update(document("context_bundle", context["asset_version_id"], context["content"]))
+    context.update(document("context_bundle", context["asset_version_id"], context["content"], project_id=context["project_id"]))
     context_path.write_text(json.dumps(contaminated))
     with pytest.raises(ValueError, match="forbidden external knowledge"):
         blind_export(tmp_path / "treatment", tmp_path / "control", tmp_path / "contaminated-blind")
     context_path.write_text(original_export)
     report_path = tmp_path / "control/creation-run.json"
     changed = json.loads(report_path.read_text())
-    changed["frozen_configuration"]["runtime_settings"] = {"NOVEL_FORGE_CHAPTER_PROVIDER_CAP": "100"}
+    changed["frozen_configuration"]["runtime_settings"].update(NOVEL_FORGE_CHAPTER_PROVIDER_CAP="100")
     report_path.write_text(json.dumps(changed))
     with pytest.raises(ValueError, match="budgets"):
         blind_export(tmp_path / "treatment", tmp_path / "control", tmp_path / "invalid-blind")
@@ -308,18 +317,18 @@ def test_treatment_requires_creative_delivery_and_exact_accepted_prose_review(tm
     review = next(item for item in items if item['asset_type'] == 're_review_report')
     text = next(item for item in items if item['asset_version_id'] == 'treatment:1:chosen')['content']['text']
     context['content']['context_manifest'] = {'knowledge_usage': [{'knowledge_card_asset_version_id': 'card:v1', 'usage_role': 'REFERENCE'}]}
-    context.update(document('context_bundle', context['asset_version_id'], context['content']))
+    context.update(document('context_bundle', context['asset_version_id'], context['content'], project_id=context['project_id']))
     review['content']['knowledge_checks'] = [{
         'knowledge_card_asset_version_id': 'card:v1', 'status': 'NOT_OBSERVED' if mode == 'claimed' else 'VERIFIED_IN_PROSE',
         'target_text_hash': prose_hash(text), 'evidence_class': 'FIXTURE_SEMANTIC_REVIEW',
         'conditions_checked': ['fixture condition'], 'evidence': {'start': 0, 'end': 2, 'quote': text[:2]},
     }]
-    review.update(document('re_review_report', review['asset_version_id'], review['content']))
+    review.update(document('re_review_report', review['asset_version_id'], review['content'], project_id=review['project_id']))
     path.write_text(json.dumps(workspaces))
     (folder / 'knowledge-runtime-usage.json').write_text(json.dumps({
-        'contract_version': 'book-knowledge-runtime-export.v1', 'project_id': 'p', 'book_id': 'treatment',
+        'contract_version': 'book-knowledge-runtime-export.v1', 'project_id': workspace['project_id'], 'book_id': 'treatment',
         'book_run_id': 'treatment:book-run', 'status': 'COMPLETE', 'bounded': False,
-        'records': [{'project_id': 'p', 'book_id': 'treatment', 'knowledge_card_asset_version_id': 'card:v1',
+        'records': [{'project_id': workspace['project_id'], 'book_id': 'treatment', 'knowledge_card_asset_version_id': 'card:v1',
                      'context_bundle_asset_version_id': context['asset_version_id'], 'context_bundle_content_hash': context['content_hash'],
                      'consumer_definition_name': 'chapter.revision.review' if mode == 'review_only' else 'chapter.draft.generate',
                      'external_effect_status': 'SUCCEEDED', 'external_effect_id': 'fixture:effect',

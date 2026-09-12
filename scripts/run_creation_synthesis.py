@@ -57,6 +57,10 @@ from scripts.run_world_production_smoke import (
 )
 from novel_forge.modules.production_execution.security import redact_secret_text
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+from scripts.creation_freeze import load_frozen_inputs
+from scripts.creation_comparison import (
+    COMPARISON_RUNTIME_SETTINGS, validate_comparison_budget,
+)
 
 
 def main(argv=None):
@@ -65,6 +69,9 @@ def main(argv=None):
     parser.add_argument("--policy", type=Path, required=True)
     parser.add_argument("--formation-policy", type=Path, required=True)
     parser.add_argument("--knowledge-policy", type=Path, help="Exact approved Book knowledge access policy, frozen before Formation")
+    parser.add_argument("--comparison-budget", type=Path, help="Immutable creative experiment opportunity plan; native phase authorization is separate")
+    parser.add_argument("--freeze-dir", type=Path)
+    parser.add_argument("--freeze-manifest-hash", help="Pinned final-byte SHA-256 of freeze.json")
     parser.add_argument("--plan-change-proposal-id", default="", help="Owned ACTIVE future change required to continue past the configured intervention")
     parser.add_argument("--project-id", required=True)
     parser.add_argument(
@@ -94,14 +101,21 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not 1 <= args.max_seconds <= 7200:
         parser.error("max-seconds must be 1..7200")
-    brief, policy, formation_policy = (
-        json.loads(path.read_text())
-        for path in (args.brief, args.policy, args.formation_policy)
+    paths = {"brief": args.brief, "creation": args.policy, "formation": args.formation_policy}
+    if args.knowledge_policy:
+        paths["knowledge"] = args.knowledge_policy
+    if args.comparison_budget:
+        paths["budget"] = args.comparison_budget
+    documents, input_snapshot = load_frozen_inputs(
+        paths, freeze_dir=args.freeze_dir, expected_manifest_hash=args.freeze_manifest_hash,
+        required=args.comparison_budget is not None,
     )
+    brief, policy, formation_policy = (documents[key] for key in ("brief", "creation", "formation"))
+    comparison_budget = validate_comparison_budget(documents["budget"]) if args.comparison_budget else None
     from novel_forge.modules.mkaos_authority.domain import resolve_book_knowledge_access_policy
     profile = policy["profiles"]["production_profile"]["content"]
     if args.knowledge_policy:
-        profile["knowledge_access_policy"] = json.loads(args.knowledge_policy.read_text())
+        profile["knowledge_access_policy"] = documents["knowledge"]
     knowledge_access = resolve_book_knowledge_access_policy(
         production_profile=profile, project_id=args.project_id, book_id=args.book_id,
     )
@@ -140,6 +154,7 @@ def main(argv=None):
         "real_provider": "NOT_RUN",
         "human_editorial": "NOT_RUN",
         "longitudinal": "NOT_PROVEN",
+        "input_snapshot": input_snapshot,
         "creation_policy": policy,
         "knowledge_access_policy": knowledge_access,
         "formation_policy": formation_policy,
@@ -151,6 +166,8 @@ def main(argv=None):
             json.dumps(brief, sort_keys=True, ensure_ascii=False).encode()
         ).hexdigest(),
     }
+    if comparison_budget is not None:
+        report["comparison_budget"] = comparison_budget
     started_at = time.monotonic()
 
     def record(event):
@@ -161,6 +178,8 @@ def main(argv=None):
 
     execution = composition = None
     book_run_id = ""
+    database_url = ""
+    budget_binding = None
     try:
         if not args.execute:
             report["status"] = "CONFIGURATION_VALIDATED_NO_PROVIDER_CALL"
@@ -187,6 +206,13 @@ def main(argv=None):
             require_disposable_database_name(
                 connection.execute("SELECT current_database()").fetchone()[0]
             )
+        if comparison_budget is not None:
+            from novel_forge.modules.command_kernel.creative_budget_runtime import get_creative_budget
+            native_budget = get_creative_budget(database_url, args.project_id)
+            if native_budget["comparison_budget"] != comparison_budget:
+                raise ValueError("Native experiment budget differs from the frozen opportunity plan")
+            budget_binding = native_budget["budget_binding"]
+            report.update(native_budget)
         settings = IndustrialSettings.from_env(values, root=args.root)
         resolver = build_trusted_principal_resolver(env=values)
         principal = resolver.resolve_api_principal()
@@ -262,6 +288,18 @@ def main(argv=None):
                 }
             },
         }
+        if comparison_budget is not None:
+            frozen.update(
+                comparison_budget=comparison_budget,
+                input_snapshot=input_snapshot,
+                runtime_identity={
+                    "project_id": args.project_id, "book_id": args.book_id,
+                    "workspace_id": args.workspace_id, "run_key": args.run_key,
+                    "runtime_root": str(args.root.expanduser().resolve()),
+                    "provider_execution_root": str(Path(values["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).expanduser().resolve()),
+                },
+                runtime_settings={key: value for key, value in values.items() if key in COMPARISON_RUNTIME_SETTINGS},
+            )
         report["frozen_configuration"] = frozen
         report["stage"] = "PREPARATION"
         book = prepare_pilot_book(
@@ -274,6 +312,7 @@ def main(argv=None):
             title=formation_policy["title"],
             frozen=frozen,
             initialize=args.initialize,
+            budget_binding=budget_binding,
         )
         record(
             {"kind": "PREPARATION", "book_id": args.book_id, "version": book["version"]}
@@ -532,6 +571,17 @@ def main(argv=None):
         except Exception as exc:
             report["artifact_export_error"] = redact_secret_text(str(exc))
         try:
+            if comparison_budget is not None and database_url:
+                from novel_forge.modules.command_kernel.creative_budget_runtime import get_creative_budget
+                try:
+                    native_budget = get_creative_budget(database_url, args.project_id)
+                    if native_budget["comparison_budget"] != comparison_budget:
+                        raise ValueError("Native experiment budget changed during execution")
+                    report["budget_usage"] = native_budget["budget_usage"]
+                    report["budget_binding_at_export"] = native_budget["budget_binding"]
+                except Exception as exc:
+                    report["budget_export_error"] = redact_secret_text(str(exc))
+                    raise
             if composition is not None and book_run_id:
                 export(
                     composition=composition,

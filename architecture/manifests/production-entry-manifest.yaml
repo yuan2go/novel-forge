@@ -2,6 +2,15 @@
   "schema_version": "architecture-manifest.v1",
   "entries": [
     {
+      "name": "creative.experiment_budget.configure",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "configure_creative_budget",
+      "definition_factory": "novel_forge.modules.command_kernel.creative_budget_runtime:creative_budget_definitions"
+    },
+    {
       "name": "planning.causal.propose",
       "source": "src/novel_forge/api/routers/book_authority.py",
       "application_source": "src/novel_forge/modules/hierarchical_planning/causal_application.py",

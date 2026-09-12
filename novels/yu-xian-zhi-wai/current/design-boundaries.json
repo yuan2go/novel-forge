@@ -1,0 +1,63 @@
+{
+  "artifact_kind": "AUTHOR_DRAFT_PACKAGE",
+  "task": "WP-FIRST-NOVEL-CREATIVE-EXECUTION-01",
+  "title": "雨线之外",
+  "baseline_sha": "6b837069ab74996d434e8870edad8d6f30d1ce25",
+  "authorship": "Assistant-authored operator design draft in this task",
+  "native_asset_generation": "NOT_RUN",
+  "native_story_approval": "NOT_RUN",
+  "accepted_canon": false,
+  "provider_calls_by_this_design_subtask": 0,
+  "approved_card_versions_bound_to_this_author_package": [],
+  "default_runtime_context_admission": "DENY_UNTIL_EXISTING_AUTHORITY_PROJECTS_APPROVED_ROLE_AND_SCOPE",
+  "historical_frozen_inputs_modified": false,
+  "shared_neutral_inputs": [
+    "shared/neutral-brief.md"
+  ],
+  "group_a_only": [
+    "group-a/01-premise-and-world.md",
+    "group-a/02-characters.md",
+    "group-a/03-three-volume-direction.md",
+    "group-a/04-first-arc-author-only.md",
+    "group-a/05-six-chapter-scenes.md",
+    "group-a/06-voice-and-original-samples.md",
+    "group-a/source-adaptation.operator-only.md"
+  ],
+  "group_b_exclusions": [
+    "group-a/**",
+    "A-derived summaries, rewritten plans, voice examples and cached projections"
+  ],
+  "operator_only": [
+    "group-a/source-adaptation.operator-only.md"
+  ],
+  "author_hidden_presets": [
+    "group-a/04-first-arc-author-only.md",
+    "Other files' proposed character backstories and unobserved actions"
+  ],
+  "projection_rules": [
+    "Markdown author drafts are operator handoff, not native assets or current facts.",
+    "Keep future author intention, unobserved objective presets, character knowledge and reader knowledge separate.",
+    "Draft receives only approved current-scene role/scope projections; never the whole author truth table.",
+    "Before using a source-dependent mechanism, bind the exact approved Card and verify the book-specific equipment conditions through existing Formation/Planning/context gates.",
+    "The optional technical passage in chapter 2 scene 2 cannot enter production by way of this draft before that source approval and applicability check.",
+    "The nontechnical evidence-checking alternative is not evidence of successful professional knowledge use.",
+    "Chapter 4-6 changes depend on chapter 1-3 accepted evidence within each independent book; no forced shared segmented transport outcome.",
+    "After chapter 6, pause this production window while preserving unfulfilled requests, obligations and the unfinished book direction."
+  ],
+  "historical_inputs_read": [
+    "../frozen-pilot-final/brief.json",
+    "../frozen-pilot-final/creation.json",
+    "../frozen-pilot-final/formation.json",
+    "../corpus/selections.json",
+    "../corpus/canary-reading-scopes.json",
+    "../corpus/next-reading-scopes.json"
+  ],
+  "evidence_ceiling": {
+    "readable_author_design": "DELIVERED_DRAFT",
+    "material_fit": "OFFLINE_CONDITIONAL_ASSESSMENT",
+    "source_to_native_prose_traceability": "NOT_PROVEN_BY_THIS_PACKAGE",
+    "narrative_correctness": "AUTHOR_SELF_REVIEW_ONLY",
+    "creative_benefit": "NOT_PROVEN",
+    "independent_human_review": "NOT_RUN"
+  }
+}

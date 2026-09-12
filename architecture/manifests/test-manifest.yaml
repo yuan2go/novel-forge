@@ -8,6 +8,42 @@
   ],
   "classification_rules": [
     {
+      "id": "creation-comparison-contract",
+      "patterns": [
+        "tests/unit/test_creation_comparison.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "command-kernel",
+      "capability": "creation-comparison-contract",
+      "production_target": "scripts/creation_comparison.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "creation-frozen-request",
+      "patterns": [
+        "tests/unit/test_creation_runner_freeze.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-authority",
+      "capability": "creation-frozen-request",
+      "production_target": "scripts/run_creation_synthesis.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "creation-freeze-integrity",
+      "patterns": [
+        "tests/unit/test_creation_freeze.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-authority",
+      "capability": "creation-freeze-integrity",
+      "production_target": "scripts/creation_freeze.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
       "id": "corpus-ingestion-runtime",
       "patterns": [
         "tests/integration/test_corpus_ingestion_postgres.py"

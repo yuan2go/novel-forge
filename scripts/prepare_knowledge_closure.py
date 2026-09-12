@@ -1,21 +1,20 @@
 from __future__ import annotations
 
 import argparse
-from copy import deepcopy
 from dataclasses import asdict
-import hashlib
 import json
 from pathlib import Path
 import secrets
-import shutil
 
-from novel_forge.modules.mkaos_authority.domain import resolve_book_knowledge_access_policy, validate_book_knowledge_access_policy
+from novel_forge.modules.mkaos_authority.domain import validate_book_knowledge_access_policy
 from novel_forge.modules.review.knowledge import knowledge_review_targets
 from novel_forge.modules.reader_calibration.blind_export import (
     BlindComparisonSubject, BlindEvaluator, export_blind_evaluation_packs,
 )
 from novel_forge.modules.reader_calibration.domain import BlindScope, EvaluatorIdentityClass
 from scripts.compare_creation_exports import chapter_results
+from scripts.creation_comparison import validate_creation_comparison
+from scripts.creation_freeze import prepare_freeze, verify_freeze
 from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 
@@ -26,58 +25,9 @@ def _write(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n")
 
 
-def prepare(destination: Path, approved_versions: list[str] | None = None, *, target_book_id: str = "", input_dir: Path | None = None) -> dict:
-    source = (input_dir or Path(__file__).resolve().parents[1] / "config/production/knowledge-closure").resolve()
-    if not source.is_dir() or any(not path.is_file() for path in source.iterdir()):
-        raise ValueError("Freeze input directory must contain only explicit input files")
-    destination.mkdir(parents=True, exist_ok=False)
-    for path in sorted(source.iterdir()):
-        shutil.copyfile(path, destination / path.name)
-    for name, count in ((("professional", 3), ("fiction", 6)) if input_dir is None else ()):
-        _write(destination / f"{name}-import.json", {
-            "source": {"kind": "LOCAL", "location": str((destination / f"{name}.jsonl").resolve())},
-            "parser": {"version": "corpus-parser.v3", "format": "jsonl", "layout": "CHAPTER_ROWS",
-                       "normalization": {"version": "chinese-longform.v2", "segmentation": "EXPLICIT", "min_body_chars": 1},
-                       "fields": {"work_id": "book", "text": "text", "chapter_id": "chapter", "order": "order"},
-                       "completeness": "COMPLETE", "expected_units": count},
-            "purpose": "PRODUCTION_REFERENCE", "analyze": False,
-            "rights": {"dataset_license": "CC0-1.0", "scope": "ALL_WORKS_IN_SNAPSHOT",
-                       "underlying_rights": "OWNED", "allowed_purposes": ["PRODUCTION_REFERENCE"],
-                       "allowed_uses": ["LOCAL_PROCESSING", "SOURCE_ANALYSIS", "ABSTRACT_GENERATION"],
-                       "evidence_refs": ["repository:original-synthetic-knowledge-closure-fixture"],
-                       "copyright_boundary": "Original synthetic test material; abstract learning only; no real-world professional qualification"},
-        })
-    binding = "KNOWLEDGE_APPROVAL_AND_EXACT_VERSION_BINDING_REQUIRED"
-    if approved_versions is not None:
-        policy = {"policy_id": "knowledge-closure-treatment", "policy_version": 1,
-                  "mode": "ALLOW_ONLY", "allowed_knowledge_card_asset_version_ids": approved_versions}
-        resolve_book_knowledge_access_policy(production_profile={"knowledge_access_policy": policy},
-                                             project_id="configuration-check", book_id="configuration-check")
-        _write(destination / "allow-only.json", policy)
-        binding = "EXACT_VERSIONS_BOUND_AUTHORITY_RECHECK_REQUIRED"
-    review_form = {"status": "NOT_REVIEWED", "reviewer_id": None, "sample_token": None,
-                   "scale": {"minimum": 1, "maximum": 5, "unknown": "CANNOT_JUDGE"},
-                   "axes": {axis: {"score": None, "chapter": None, "quote": None, "reason": None} for axis in AXES},
-                   "knowledge_accuracy_reference": "Use the same approved abstract mechanism reference sheet for both samples after prose-only evaluation; keep treatment identity hidden."}
-    _write(destination / "review-form.json", review_form)
-    frozen = {"contract_version": "knowledge-closure-freeze.v1", "status": "READY_FOR_AUTHORIZATION",
-              "input_directory": str(source), "arm_a_binding": binding, "real_provider_execution": "NOT_RUN", "human_editorial": "NOT_RUN",
-              "analysis_target": {"intended_use": "ABSTRACT_GENERATION", "target_book_id": target_book_id,
-                                  "status": "PENDING_AUTHORITY_PREFLIGHT" if target_book_id else "TARGET_BOOK_ID_REQUIRED"},
-              "source_production_qualification": {
-                  "required_scope": "EXACT_SOURCE_CAPABILITY_D0",
-                  "supported_accounting_bases": ["PRICED", "ACCOUNT_ENTITLEMENT"],
-                  "account_entitlement": "EXACT_AUTHORIZATION_ACCOUNT_AND_ENTITLEMENT_SNAPSHOT_REQUIRED",
-                  "card_approval": "SEPARATE_GOVERNANCE_REVIEW_AND_AUTHORITY_RECHECK_REQUIRED",
-              },
-              "model_binding": "REQUIRED_AUTHORIZED_EXACT_ROUTE_FOR_BOTH_ARMS",
-              "required_authorization": ["provider/backend and exact model", "account identity and permitted purpose",
-                                         "total calls, input/output tokens and priced cost or explicit accounting basis",
-                                         "revision/retry allocation within the same total", "independent Books and upper plans; frozen project sublimits sum within the shared grant"],
-              "files": {path.name: "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
-                        for path in sorted(destination.iterdir()) if path.is_file()}}
-    _write(destination / "freeze.json", frozen)
-    return frozen
+def prepare(destination: Path, approved_versions: list[str] | None = None, *, target_book_id: str = "", input_dir: Path | None = None, input_names: list[str] | None = None) -> dict:
+    return prepare_freeze(destination, approved_versions, target_book_id=target_book_id,
+                          input_dir=input_dir, input_names=input_names)
 
 
 def _executed_groups(directory: Path, chapters: dict, identity: dict) -> list[dict]:
@@ -219,31 +169,7 @@ def blind_export(left: Path, right: Path, destination: Path) -> dict:
             or any(status.get("status") != "COMPLETE" or status.get("errors") != [] for status in statuses)
         ):
             raise ValueError("Blind comparison requires complete native evidence exports and a successful accepted cursor")
-    for field in ("implementation_identity", "brief_input_hash", "formation_policy"):
-        if not identities[0].get(field) or identities[0][field] != identities[1].get(field):
-            raise ValueError("Comparison frozen inputs differ: " + field)
-    frozen = [item.get("frozen_configuration", {}) for item in identities]
-    if not frozen[0].get("models") or frozen[0]["models"] != frozen[1].get("models"):
-        raise ValueError("Comparison requires identical frozen model, Prompt and Skill routes")
-    policies_without_knowledge = []
-    for item in frozen:
-        policy = deepcopy(item.get("creation_policy") or {})
-        if not policy:
-            raise ValueError("Comparison requires frozen creation and revision policies")
-        policy["profiles"]["production_profile"]["content"].pop("knowledge_access_policy", None)
-        policies_without_knowledge.append(policy)
-    if policies_without_knowledge[0] != policies_without_knowledge[1]:
-        raise ValueError("Comparison word targets, revision policy or future intervention differ")
-    for field in ("runtime_settings", "cost_accounting"):
-        values = [deepcopy(item.get(field)) for item in frozen]
-        if field == "cost_accounting":
-            for value in values:
-                if isinstance(value, dict):
-                    value.pop("authorization_ref", None)
-        if any(value is None for value in values) or values[0] != values[1]:
-            raise ValueError("Comparison frozen budgets or runtime settings differ: " + field)
-    if identities[0]["book_id"] == identities[1]["book_id"]:
-        raise ValueError("Comparison arms require independently created Books")
+    comparison = validate_creation_comparison(*identities)
     arc_sets = []
     group_sets = []
     for i, identity in enumerate(identities):
@@ -308,6 +234,7 @@ def blind_export(left: Path, right: Path, destination: Path) -> dict:
         })
         _write(private / f"{name}.json", [asdict(item) for item in pack.private_mapping])
     _write(private / "treatment-status.json", treatment)
+    _write(private / "comparison-contract.json", comparison)
     status = {"status": "EXPORTED_NOT_REVIEWED", "human_approval": False,
               **{key: treatment[key] for key in ("treatment_status", "treatment_delivery", "treatment_realization", "creative_benefit")},
               "treatment_evidence_classes": treatment["evidence_classes"]}
@@ -323,13 +250,19 @@ def main(argv=None):
     frozen.add_argument("--approved-card-versions", type=Path)
     frozen.add_argument("--target-book-id", default="")
     frozen.add_argument("--input-dir", type=Path)
+    frozen.add_argument("--input-names", nargs="+", help="Exact full set of explicit input file names")
+    verification = modes.add_parser("verify")
+    verification.add_argument("directory", type=Path)
+    verification.add_argument("--expected-manifest-hash")
     blind = modes.add_parser("blind")
     blind.add_argument("treatment", type=Path)
     blind.add_argument("control", type=Path)
     blind.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.action == "prepare":
-        result = prepare(args.output, json.loads(args.approved_card_versions.read_text()) if args.approved_card_versions else None, target_book_id=args.target_book_id, input_dir=args.input_dir)
+        result = prepare(args.output, json.loads(args.approved_card_versions.read_text()) if args.approved_card_versions else None, target_book_id=args.target_book_id, input_dir=args.input_dir, input_names=args.input_names)
+    elif args.action == "verify":
+        result = verify_freeze(args.directory, expected_manifest_hash=args.expected_manifest_hash)
     else:
         result = blind_export(args.treatment, args.control, args.output)
     print(json.dumps(result, ensure_ascii=False, indent=2))

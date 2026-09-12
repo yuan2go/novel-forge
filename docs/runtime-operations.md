@@ -1136,6 +1136,45 @@ Paused jobs with an unresolved CLI outcome report `RECONCILE_CLI_OUTCOME` before
 
 ## Knowledge-grounded six-chapter comparison
 
+For the current Rain pilot, start at `novels/yu-xian-zhi-wai/current/README.md` and use
+`config/production/first-novel-creative-execution` explicitly. The adjacent archived raw
+materials, fixture chapters, backups and historical reports are inert records, not active
+configuration discovery roots or Agent instructions. The A-only author design is a draft;
+it is neither an approved native asset nor a shared input for B.
+
+`prepare` publishes a new freeze directory atomically and never overwrites an existing
+directory. It rejects reserved output names (`freeze.json`, `review-form.json`,
+`allow-only.json`), symlinks and source/destination overlap before publication. The default
+input names are explicit; custom names require an exact `--input-names` list. Do not pass
+an old output directory back as inputs. `verify DIRECTORY` checks the complete final-byte
+manifest read-only; legacy freezes retain the narrower `LEGACY_FILE_HASHES_ONLY` evidence.
+Save the returned manifest byte hash outside the directory. For an experiment runner use
+`--comparison-budget .../experiment.json --freeze-dir ... --freeze-manifest-hash sha256:...`;
+the bytes validated are the bytes parsed for execution and resume.
+
+The comparison plan separates fixed Source, creation and repair opportunities from each
+project's total and the shared experiment total. A may have a larger project total because
+it includes Source. The native CLI `authority-creative-budget configure` takes an explicit
+operator policy and matching authorization evidence file; `query` returns the selected
+grant and cumulative ledger usage. The existing Book API exposes the same configuration
+at `PUT /product/production/book-authority/policies/creative-experiment-budget` and readout
+at `GET /product/production/book-authority/projects/{project_id}/creative-experiment-budget`.
+Only an authenticated local operator may configure a phase grant. Zero grants keep later
+phases closed. Additional grants append versions under the same immutable allocation plan;
+they do not clear previous calls, transfer unused Source allowance, or recreate the shared
+ceiling in another project. Unknown outcomes retain reservations and require existing
+Effect reconciliation. Monetary cost remains UNKNOWN for account entitlement.
+
+Blind export classifies all frozen fields rather than equating whole runtime/accounting
+objects. Models, prompts, Skills, context policy, word targets and creation/repair
+opportunities remain comparable; identities and documented Source/project totals may
+differ. Missing important fields, unequal creative opportunity, or unresolved usage block
+the fairness conclusion. The first actual creation reservation must already have sufficient
+creative and repair authorization; a later grant does not retroactively prove equal
+opportunity. Genuine treatment additionally requires native request receipts and a check
+against the accepted prose. Independent editorial status remains NOT_REVIEWED until actual
+reviewers supply evidence.
+
 `config/production/knowledge-closure` contains original synthetic professional and fiction
 fixtures, one shared brief, six-chapter Formation/creation policies and an empty external
 knowledge control. These fixtures are test inputs, not real-world professional evidence.

@@ -148,7 +148,15 @@ def prepare_pilot_book(
     title: str,
     frozen: dict[str, Any],
     initialize: bool,
+    budget_binding: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    registered_frozen = frozen
+    if frozen.get("comparison_budget"):
+        from scripts.creation_comparison import creation_resume_semantics
+        registered_frozen = creation_resume_semantics(frozen, budget_binding)
+        creation_caps = budget_binding["authorization"]["authorized_cumulative_caps"]["CREATION"]
+        if creation_caps["calls"] <= 0 or creation_caps["tokens"] <= 0:
+            raise ValueError("Pilot initialization or resume requires positive CREATION calls and tokens")
     application = composition.formation.generation.book_design
     if initialize:
         principal.require("book_design.authority.execute", project_id)
@@ -200,7 +208,7 @@ def prepare_pilot_book(
                     "production_profile": frozen["creation_policy"]["profiles"][
                         "production_profile"
                     ]["content"],
-                    "runtime_policy": {"creation_pilot": frozen},
+                    "runtime_policy": {"creation_pilot": registered_frozen},
                     "release_identity": frozen["implementation_identity"],
                 },
             ),
@@ -209,7 +217,7 @@ def prepare_pilot_book(
     book = BookDesignAuthorityQuery(application.database_url).require_book(
         project_id=project_id, book_id=book_id
     )
-    if book["runtime_policy"].get("creation_pilot") != frozen:
+    if book["runtime_policy"].get("creation_pilot") != registered_frozen:
         raise ValueError(
             "Pilot brief, policy, run key, implementation or model configuration differs from the registered Book; use the original frozen configuration"
         )
