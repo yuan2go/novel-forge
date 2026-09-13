@@ -43,6 +43,18 @@ def codex_local_binding_hash(*, codex_home: str, executable: str, entitlement: M
     }, sort_keys=True).encode()).hexdigest()
 
 
+def codex_account_binding_evidence(backend: object) -> dict:
+    from .backends import CodexCliExecutionBackend
+
+    if not isinstance(backend, CodexCliExecutionBackend) or backend.account_entitlement is None:
+        raise ValueError("existing native Codex account-entitlement backend required")
+    return {
+        "codex_home": backend.codex_home,
+        "executable": backend.codex_executable,
+        "entitlement": backend.account_entitlement.to_dict(),
+    }
+
+
 def codex_output_schema(schema: dict) -> dict:
     result = {k: v for k, v in schema.items() if k != "uniqueItems"}
     choices = [result["const"]] if "const" in result else result.get("enum", [])
