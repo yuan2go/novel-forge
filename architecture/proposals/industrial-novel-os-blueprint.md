@@ -8,18 +8,18 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `b10a4a8c5cf6410ba1557ad850a90d12a632d9fe`
-Baseline implementation identity: `sha256:1d63300e01b7cde55e26f1944ea36a607b39fcc5b7ec890f70fea287569a90d9`
+Current-reality baseline: `4c636037a6ed529af2ce6ba7d45e719638734ff5`
+Baseline implementation identity: `sha256:edf2ecfb5058dfa3c5f67672f4d773b3b06a17ca1378294d047f0328e3f2c978`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-13",
+  "reviewed_on": "2026-09-14",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "b10a4a8c5cf6410ba1557ad850a90d12a632d9fe",
-    "implementation_tree_sha": "sha256:1d63300e01b7cde55e26f1944ea36a607b39fcc5b7ec890f70fea287569a90d9"
+    "sha": "4c636037a6ed529af2ce6ba7d45e719638734ff5",
+    "implementation_tree_sha": "sha256:edf2ecfb5058dfa3c5f67672f4d773b3b06a17ca1378294d047f0328e3f2c978"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -199,7 +199,7 @@ Baseline implementation identity: `sha256:1d63300e01b7cde55e26f1944ea36a607b39fc
 }
 -->
 
-Implementation delta review at `b10a4a8c5cf6410ba1557ad850a90d12a632d9fe` (2026-09-13; code-agent review, not human qualification): Author document spans enter the existing Content and Story Design/Planning chain as versioned intent. Role projections preserve selected text and keep private intent outside viewpoint and Canon inputs. Located adoption decisions and official-driver reading checkpoints do not establish human quorum, reader policy or retrospective correction of accepted history. All seven remaining decisions are unchanged; no new Authority or trajectory store was added. Native Content registration and scripted PostgreSQL tests establish bounded wiring only; real prose and independent editorial evidence remain absent.
+Implementation delta review at `4c636037a6ed529af2ce6ba7d45e719638734ff5` (2026-09-14; code-agent lifecycle review): The changed World Foundation scope now checks external field types before enum and semantic validation, with one frozen compilation scope and field-level diagnostics. The storage change adds bounded pre-candidate repair lineage to existing Planning generation records, retaining failed terminal history and the frozen Book/task identity. Neither change adds narrative ownership, activates a candidate as Canon, or resolves optional Volume, segment, trajectory, reader-policy or accepted-history decisions. All seven remaining decisions are unchanged. This scoped code review adds no independent editorial or production qualification.
 
 Prior lifecycle baseline retained for provenance: `abe2e0df7c817ed5faf1fd07839f19d796304371`, `sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03`. The earlier review below is preserved.
 

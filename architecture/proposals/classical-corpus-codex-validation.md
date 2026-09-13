@@ -9,20 +9,20 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `b10a4a8c5cf6410ba1557ad850a90d12a632d9fe`
+Reality baseline: `4c636037a6ed529af2ce6ba7d45e719638734ff5`
 Baseline implementation identity:
-`sha256:1d63300e01b7cde55e26f1944ea36a607b39fcc5b7ec890f70fea287569a90d9`
+`sha256:edf2ecfb5058dfa3c5f67672f4d773b3b06a17ca1378294d047f0328e3f2c978`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-13",
+  "reviewed_on": "2026-09-14",
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "5421ae7476d37adda6cee53044312137496deed9",
-    "implementation_tree_sha": "sha256:4bdfb1ef8925e00d91014f4cf311e487b56957c642668840b418b9c3685c218a"
+    "sha": "4c636037a6ed529af2ce6ba7d45e719638734ff5",
+    "implementation_tree_sha": "sha256:edf2ecfb5058dfa3c5f67672f4d773b3b06a17ca1378294d047f0328e3f2c978"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -110,7 +110,7 @@ Baseline implementation identity:
 }
 -->
 
-Implementation delta review at `5421ae7476d37adda6cee53044312137496deed9` (2026-09-13; code-agent review, not human qualification): Knowledge runtime usage resolves project, Book, capability and exact Card selection before expanding Provider inputs and receipts. Exact version/hash checks, historical withdrawn-Card usage, result filtering and final ordering remain intact; this changes bounded trace-query execution, not knowledge admission or creative evidence. G3 and G4 remain outstanding, including real twenty-work consumption and the independent comparison arms.
+Implementation delta review at `4c636037a6ed529af2ce6ba7d45e719638734ff5` (2026-09-14; code-agent lifecycle review): Planning validates decoded world results against a single-scope typed contract before candidate materialization. Failed result evidence can support a bounded, causally linked repair Operation while preserving the original terminal Operation and frozen task; the new migration enforces that lineage. Production budget reallocation requires an exact predecessor policy and retains cumulative usage and reservations. The changed Capability Pack version requires its own approval. These changes add no Source processing, twenty-work consumption, comparison-arm execution or real receipt-interruption evidence for this proposal. G3 and G4 remain outstanding; this review does not promote Provider, human editorial or production evidence.
 
 Prior implementation delta review at `b10a4a8c5cf6410ba1557ad850a90d12a632d9fe` (2026-09-13; code-agent review, not human qualification): The single-Book policy uses the same cumulative ledger for separate Source, design, early/late chapter and repair scopes. Author-guided Context compilation now keeps scoped fragment semantics and frozen provenance; it does not consume classical-source knowledge or establish any of the proposed four-arm outcomes. G3 and G4 remain outstanding. The relevant checks are native author Formation wiring and single-Book budget isolation; these are scripted engineering evidence, not real Provider or independent editorial evidence.
 
