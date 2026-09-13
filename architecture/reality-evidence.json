@@ -4754,6 +4754,10 @@
         {
           "path": "src/novel_forge/modules/provider_qualification/source_binding.py",
           "symbol": "source_runtime_identity"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/creative_budget_scope.py",
+          "symbol": "require_business_scope"
         }
       ],
       "commands_operations": [
@@ -4851,6 +4855,10 @@
         {
           "path": "tests/integration/test_creative_experiment_budget_postgres.py",
           "symbol": "test_source_only_grant_and_unused_source_cannot_fund_creation_or_repair"
+        },
+        {
+          "path": "tests/integration/test_single_book_budget_postgres.py",
+          "symbol": "test_native_single_book_scope_blocks_every_creative_path_before_reservation"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -5526,6 +5534,14 @@
         {
           "path": "src/novel_forge/modules/worldbuilding/foundation.py",
           "symbol": "WorldFoundation"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/author_input.py",
+          "symbol": "validate_author_design"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/author_input.py",
+          "symbol": "compile_planning_author_projection"
         }
       ],
       "commands_operations": [
@@ -5594,6 +5610,14 @@
         {
           "path": "tests/unit/test_narrative_reality_causality.py",
           "symbol": "test_intent_compiler_preserves_source_and_routes_only_declared_constraints"
+        },
+        {
+          "path": "tests/unit/test_author_design_adoption.py",
+          "symbol": "test_private_adoption_cannot_populate_a_public_parent_field"
+        },
+        {
+          "path": "tests/integration/test_synthesis_formation_postgres.py",
+          "symbol": "test_native_formation_generates_foundation_from_author_brief"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7829,7 +7853,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03"
+    "implementation_tree_sha": "sha256:4bdfb1ef8925e00d91014f4cf311e487b56957c642668840b418b9c3685c218a"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

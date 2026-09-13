@@ -52,6 +52,30 @@ def test_formal_acceptance_resolves_retained_original_despite_historical_quality
     assert len(workspace["artifacts"]["history"]) == 8
 
 
+def test_partial_export_exposes_failure_stage_when_temporary_files_are_removed(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from scripts.run_world_production_smoke import export
+    from novel_forge.modules.chapter_authority import queries
+    from novel_forge.modules.mkaos_authority import query
+
+    book = {"project_id": "p", "book_id": "b", "book_run_id": "run",
+            "accepted_through_chapter": 0, "target_chapter_count": 180, "state": "PAUSED"}
+    monkeypatch.setattr(queries, "ChapterAuthorityQuery", lambda _url: SimpleNamespace(list_runs=lambda **_values: []))
+    monkeypatch.setattr(query, "MkaosAuthorityQuery", lambda _url: SimpleNamespace(list_runtime_usage=lambda **_values: []))
+    composition = SimpleNamespace(
+        authority=SimpleNamespace(require=lambda _run: book, database_url="unused-unit-fixture"),
+        query=SimpleNamespace(chapter_group_execution_lineage=lambda **_values: {"has_more": False}),
+    )
+    with pytest.raises(RuntimeError, match="Partial workspace export") as failure:
+        export(composition=composition, book_run_id="run", destination=tmp_path, include_artifacts=False)
+    status = json.loads((tmp_path / "workspace-export-status.json").read_text())
+    assert status["status"] == "PARTIAL"
+    assert status["errors"] == [{"stage": "accepted_reading", "error": "Reading requires complete current native ChapterGroup lineage"}]
+    assert json.dumps(status["errors"], ensure_ascii=False) in str(failure.value)
+    assert (tmp_path / "book.json").is_file()
+    assert not (tmp_path / "accepted-manuscript.md").exists()
+
+
 def test_knowledge_trace_keeps_selection_and_actual_accepted_prose_check_separate():
     from novel_forge.modules.mkaos_authority.trace import workspace_knowledge_trace
     workspace = accepted_workspace()
@@ -75,7 +99,7 @@ def test_knowledge_trace_keeps_selection_and_actual_accepted_prose_check_separat
         workspace_knowledge_trace(workspace)
 
 
-def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=True):
+def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=True, chapter_count=6):
     from novel_forge.modules.mkaos_authority.domain import resolve_book_knowledge_access_policy
     from tests.unit.test_creation_comparison import comparison_identities
     comparison = comparison_identities(tmp_path, book_names=("treatment", "control"), target_chapters=6)
@@ -90,7 +114,7 @@ def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=T
         folder = tmp_path / arm
         folder.mkdir()
         rows = []
-        for chapter in range(1, 7):
+        for chapter in range(1, chapter_count + 1):
             original = accepted_workspace()
             identities = {item["asset_version_id"] for item in original["artifacts"]["history"]} | {"outcome", "plan", "original"}
             def rewrite(value):
@@ -141,7 +165,7 @@ def _comparison_exports(tmp_path, *, group_ranges=((1, 3), (4, 6)), shared_arc=T
             })
         (folder / "chapter-groups.json").write_text(json.dumps({
             "contract_version": "book-chapter-group-lineage.v1", "project_id": project_id, "book_id": arm,
-            "book_run_id": f"{arm}:book-run", "accepted_through_chapter": 6,
+            "book_run_id": f"{arm}:book-run", "accepted_through_chapter": chapter_count,
             "groups": groups, "offset": 0, "limit": 500, "has_more": False,
         }))
         for name in ("asset-export-status.json", "workspace-export-status.json"):

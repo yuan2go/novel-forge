@@ -1026,6 +1026,8 @@ class ProductionPreparationService:
         forbidden_types: tuple[str, ...],
     ) -> str:
         content = asset.content
+        if asset_type == "operator_checklist" and content.get("contract_version") == "author-reading-review.v1":
+            return "OPERATOR_CHECKLIST_PURPOSE_MISMATCH"
         if asset_type in forbidden_types or content.get("quarantined") is True:
             return "STAGE_ASSET_FORBIDDEN"
         if (

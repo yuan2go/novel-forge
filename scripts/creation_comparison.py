@@ -132,14 +132,19 @@ def _budget_binding(value: Any, arm: dict[str, Any], contract: dict[str, Any], *
     _hash(binding["contract_hash"], "budget binding contract_hash")
     if binding["contract_hash"] != comparison_contract_hash(contract):
         raise ValueError("Comparison native budget binding differs from the frozen contract")
+    single_book = contract.get("contract_version") == "creative-single-book-budget.v2"
     authorization = _object(binding["authorization"], "native budget authorization", fields={
         "authorization_ref", "evidence_hash", "project_id", "book_id", "authorized_cumulative_caps",
-    })
+    } | ({"business_scope"} if single_book else set()))
     _text(authorization["authorization_ref"], "native authorization reference")
     _hash(authorization["evidence_hash"], "native authorization evidence")
     if any(authorization[key] != arm[key] for key in ("project_id", "book_id")):
         raise ValueError("Comparison authorization belongs to another arm")
-    _authorized_caps(authorization["authorized_cumulative_caps"], arm, require_creation=require_creation)
+    if single_book:
+        from novel_forge.modules.command_kernel.creative_budget_contract import validate_policy
+        validate_policy({"policy_version": binding["policy_version"], "comparison_budget": contract, "authorization": authorization})
+    else:
+        _authorized_caps(authorization["authorized_cumulative_caps"], arm, require_creation=require_creation)
     if binding["policy_hash"] != policy_hash({
         "policy_version": binding["policy_version"], "comparison_budget": contract,
         "authorization": authorization,

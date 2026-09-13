@@ -67,6 +67,12 @@ _SELECTION = """
       AND context_version.content #>> '{context_manifest,contract_version}' IN (
           'narrative-context-manifest-v1', 'narrative-context-manifest-v2',
           'narrative-context-manifest-v3', 'narrative-context-manifest-v4')
+      AND context_asset.project_id=%(project_id)s
+      AND (%(book_id)s='' OR COALESCE(context_version.content->>'book_id', '')=%(book_id)s)
+      AND (%(target_capability_id)s='' OR
+           context_version.content #>> '{context_manifest,task,target_capability_id}'=%(target_capability_id)s)
+      AND (%(knowledge_card_asset_version_id)s='' OR
+           card.knowledge_card_asset_version_id=%(knowledge_card_asset_version_id)s)
 """
 
 
@@ -115,7 +121,10 @@ def list_runtime_usage(
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             f"""
-            WITH selection AS ({_SELECTION})
+            -- WHY: Resolve scoped knowledge selection before expanding provider
+            -- inputs. Inlining lets the planner multiply context and receipt
+            -- work even for books that selected no external knowledge.
+            WITH selection AS MATERIALIZED ({_SELECTION})
             SELECT selection.project_id, selection.book_id,
                    selection.context_bundle_asset_version_id,
                    selection.context_bundle_content_hash, selection.context_content,
@@ -208,17 +217,16 @@ def list_runtime_usage(
                     AND actual.value->>'asset_version_id'=selection.context_bundle_asset_version_id
                     AND actual.value->>'content_hash'=selection.context_bundle_content_hash
                     AND actual.value->'content'=selection.context_content)
-              AND selection.project_id=%s AND (%s='' OR selection.book_id=%s)
-              AND (%s='' OR selection.target_capability_id=%s)
-              AND (%s='' OR result.asset_version_id=%s)
-              AND (%s='' OR selection.knowledge_card_asset_version_id=%s)
+              AND (%(result_asset_version_id)s='' OR result.asset_version_id=%(result_asset_version_id)s)
             ORDER BY consumed_at DESC, context_bundle_asset_version_id,
                      knowledge_pack_id, knowledge_card_asset_version_id, effect.external_effect_id
-            LIMIT %s
+            LIMIT %(limit)s
             """,
-            [project_id, book_id, book_id, target_capability_id, target_capability_id,
-             result_asset_version_id, result_asset_version_id, knowledge_card_asset_version_id,
-             knowledge_card_asset_version_id, limit],
+            {"project_id": project_id, "book_id": book_id,
+             "target_capability_id": target_capability_id,
+             "result_asset_version_id": result_asset_version_id,
+             "knowledge_card_asset_version_id": knowledge_card_asset_version_id,
+             "limit": limit},
         )
         return _rows(uow.cursor)
 
@@ -231,12 +239,11 @@ def list_runtime_selections(
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             f"""WITH selection AS ({_SELECTION}) SELECT * FROM selection
-            WHERE project_id=%s AND (%s='' OR book_id=%s)
-              AND (%s='' OR target_capability_id=%s)
-              AND (%s='' OR knowledge_card_asset_version_id=%s)
             ORDER BY selected_at DESC, context_bundle_asset_version_id,
-                     knowledge_pack_id, knowledge_card_asset_version_id LIMIT %s""",
-            [project_id, book_id, book_id, target_capability_id, target_capability_id,
-             knowledge_card_asset_version_id, knowledge_card_asset_version_id, limit],
+                     knowledge_pack_id, knowledge_card_asset_version_id LIMIT %(limit)s""",
+            {"project_id": project_id, "book_id": book_id,
+             "target_capability_id": target_capability_id,
+             "knowledge_card_asset_version_id": knowledge_card_asset_version_id,
+             "limit": limit},
         )
         return _rows(uow.cursor)

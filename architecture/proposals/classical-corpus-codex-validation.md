@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `abe2e0df7c817ed5faf1fd07839f19d796304371`
+Reality baseline: `b10a4a8c5cf6410ba1557ad850a90d12a632d9fe`
 Baseline implementation identity:
-`sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03`
+`sha256:1d63300e01b7cde55e26f1944ea36a607b39fcc5b7ec890f70fea287569a90d9`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "abe2e0df7c817ed5faf1fd07839f19d796304371",
-    "implementation_tree_sha": "sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03"
+    "sha": "5421ae7476d37adda6cee53044312137496deed9",
+    "implementation_tree_sha": "sha256:4bdfb1ef8925e00d91014f4cf311e487b56957c642668840b418b9c3685c218a"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -58,6 +58,14 @@ Baseline implementation identity:
     {
       "path": "src/novel_forge/modules/source_import/corpus_ingestion/narrative_execution.py",
       "symbol": "execute_reading"
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/creative_budget_scope.py",
+      "symbol": "require_business_scope"
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+      "symbol": "PostgresPlanningExecutionPreparer"
     }
   ],
   "superseding_refs": [],
@@ -101,6 +109,13 @@ Baseline implementation identity:
   ]
 }
 -->
+
+Implementation delta review at `5421ae7476d37adda6cee53044312137496deed9` (2026-09-13; code-agent review, not human qualification): Knowledge runtime usage resolves project, Book, capability and exact Card selection before expanding Provider inputs and receipts. Exact version/hash checks, historical withdrawn-Card usage, result filtering and final ordering remain intact; this changes bounded trace-query execution, not knowledge admission or creative evidence. G3 and G4 remain outstanding, including real twenty-work consumption and the independent comparison arms.
+
+Prior implementation delta review at `b10a4a8c5cf6410ba1557ad850a90d12a632d9fe` (2026-09-13; code-agent review, not human qualification): The single-Book policy uses the same cumulative ledger for separate Source, design, early/late chapter and repair scopes. Author-guided Context compilation now keeps scoped fragment semantics and frozen provenance; it does not consume classical-source knowledge or establish any of the proposed four-arm outcomes. G3 and G4 remain outstanding. The relevant checks are native author Formation wiring and single-Book budget isolation; these are scripted engineering evidence, not real Provider or independent editorial evidence.
+
+Prior lifecycle baseline retained for provenance: `abe2e0df7c817ed5faf1fd07839f19d796304371`, `sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03`. The earlier review below is preserved.
+
 
 Current implementation review (2026-09-13): The changed Source and Provider budget seams now bind fixed experiment allocations, cumulative phase grants, curated target-Book use and retry receipts. This does not run or qualify the proposed four-arm classical-corpus experiment; G3/G4 remain outstanding. The Rain pilot authorization is separate from this proposal. No real Provider or independent editorial evidence is added by this review.
 

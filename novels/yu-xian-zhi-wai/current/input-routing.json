@@ -1,0 +1,122 @@
+{
+  "contract_version": "author-input-routing-record.v1",
+  "task": "WP-AUTHOR-GUIDED-TWELVE-CHAPTER-PRODUCTION-01",
+  "author_input": "../../../config/production/author-guided-twelve/brief.json",
+  "design_version": "yu-xian-zhi-wai-author-v2-input-v5",
+  "status": "AUTHOR_INPUT_NOT_NATIVE_GENERATION_OR_APPROVAL",
+  "source_documents": [
+    {
+      "path": "novels/yu-xian-zhi-wai/current/group-a/01-premise-and-world.md",
+      "content_hash": "sha256:1274915a04e4bb803f14713bafdaef1d5f7e58ee7b95c00a53cc8ed95284d10f"
+    },
+    {
+      "path": "novels/yu-xian-zhi-wai/current/group-a/02-characters.md",
+      "content_hash": "sha256:4493bcc2218ab8848a84b639471e9c4e1db57214fab03f89c07956264e69d5ff"
+    },
+    {
+      "path": "novels/yu-xian-zhi-wai/current/group-a/03-three-volume-direction.md",
+      "content_hash": "sha256:bc37ae8c02ff023b1fcc3e5bbe85fefd2a236acfadb20076a489a52ae8f99052"
+    },
+    {
+      "path": "novels/yu-xian-zhi-wai/current/group-a/04-first-arc-author-only.md",
+      "content_hash": "sha256:aab40592bcababbb35389c7b67dd12cf3bc38a67ce5d660e8b13617ecc453d70"
+    },
+    {
+      "path": "novels/yu-xian-zhi-wai/current/group-a/06-voice-and-original-samples.md",
+      "content_hash": "sha256:975981ffdada94036fc353bae239d9a161785d6099c8a8246ab31bf60aff3cd7"
+    },
+    {
+      "path": "novels/yu-xian-zhi-wai/current/group-a/07-twelve-chapter-scenes.md",
+      "content_hash": "sha256:f19d65a6e3d135e4cdd2c852c84ef1514c192b9e94aa300bda064ecc546322d1"
+    }
+  ],
+  "selected_fragment_count": 33,
+  "excluded_scene_explanations": [
+    {
+      "chapter": 1,
+      "start": 923,
+      "end": 951,
+      "reason": "FUTURE_OR_AUTHOR_ONLY_EXPLANATION",
+      "content_hash": "sha256:5d2b49144b10220329c30f53eec1d130144da82704bb3cd52f38081438959cfb"
+    },
+    {
+      "chapter": 1,
+      "start": 1000,
+      "end": 1025,
+      "reason": "FUTURE_OR_AUTHOR_ONLY_EXPLANATION",
+      "content_hash": "sha256:05d29542df254e531303b381493790f9a9fdb9d106aeda467cf5ed71ef7482f0"
+    },
+    {
+      "chapter": 2,
+      "start": 1366,
+      "end": 1389,
+      "reason": "FUTURE_OR_AUTHOR_ONLY_EXPLANATION",
+      "content_hash": "sha256:f4a934013ca581f9eb90016a1a8941affb9ac57149ed512d372c30156ca6ae4e"
+    },
+    {
+      "chapter": 2,
+      "start": 1670,
+      "end": 1704,
+      "reason": "FUTURE_OR_AUTHOR_ONLY_EXPLANATION",
+      "content_hash": "sha256:ca5fda9edcdd1f40259ce5c736059e92e91faee155087d5e8c83388072fab78f"
+    },
+    {
+      "chapter": 2,
+      "start": 1704,
+      "end": 1730,
+      "reason": "FUTURE_OR_AUTHOR_ONLY_EXPLANATION",
+      "content_hash": "sha256:8cd7e9c7de226dd8dbc2993e91224a98bc6e1052b0cd3ab4d2cab74e0a79ac63"
+    },
+    {
+      "chapter": 3,
+      "start": 2286,
+      "end": 2323,
+      "reason": "FUTURE_OR_AUTHOR_ONLY_EXPLANATION",
+      "content_hash": "sha256:ee09f587d54ae5831b7f237cb4301ee7b8b20af107aadd4839d45902ec04320b"
+    },
+    {
+      "chapter": 4,
+      "start": 2972,
+      "end": 2984,
+      "reason": "FUTURE_OR_AUTHOR_ONLY_EXPLANATION",
+      "content_hash": "sha256:39e88644c4afda767c17aae13362a29c1f6d4ef1e95f6bbb08cbd414a5f27491"
+    },
+    {
+      "chapter": 5,
+      "start": 3544,
+      "end": 3573,
+      "reason": "FUTURE_OR_AUTHOR_ONLY_EXPLANATION",
+      "content_hash": "sha256:d87809d78b2ed6b645cfc28712c06bb9841d6996944f1706e45103f0f100df65"
+    },
+    {
+      "chapter": 5,
+      "start": 3573,
+      "end": 3614,
+      "reason": "FUTURE_OR_AUTHOR_ONLY_EXPLANATION",
+      "content_hash": "sha256:4c1f6b629abac4f33100f431591787d144176d501ebab21ca4c29b2fcbe84b5d"
+    },
+    {
+      "chapter": 9,
+      "start": 6026,
+      "end": 6063,
+      "reason": "FUTURE_OR_AUTHOR_ONLY_EXPLANATION",
+      "content_hash": "sha256:2bfe4a68c65ccd15f5959550976e8a620c24c38cf69ab4b6be21b3cf108e4b96"
+    },
+    {
+      "chapter": 10,
+      "start": 6618,
+      "end": 6661,
+      "reason": "FUTURE_OR_AUTHOR_ONLY_EXPLANATION",
+      "content_hash": "sha256:1d2044381b9d294f88fc6244439aaac33873bbea709b4a62da7a4fa0f07f6919"
+    }
+  ],
+  "private_routing": "AUTHOR_ONLY retained by scoped BOOK/VOLUME/ARC planning; not Canon or POV information",
+  "source_knowledge_policy": "EXPLICIT_DENY_ALL_FOR_NEW_AUTHOR_GUIDED_BOOK_NOT_AN_AB_RESET",
+  "routing_revision_reasons": [
+    "Exclude named future chapter actions from general voice generation",
+    "First-arc private cause limited to chapters 1–24",
+    "Book retains complete long direction; Volume/Arc see matching volume sections",
+    "Input v4 binds three-volume v2.1: Volume 2 ends with an unfavorable compensation exchange actually fulfilled, preserving distinct capabilities and consequences across volumes. Chapter fragments are unchanged.",
+    "Input v5 uses the author revision source file as runtime provenance. The package identifier stays in archival rationale, outside active runtime configuration; all 33 selected spans are unchanged. Prior input v4 and its native registration remain historical inputs, with no Book, Provider call or budget reservation created."
+  ]
+}

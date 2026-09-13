@@ -142,7 +142,8 @@
     {
       "id": "native-creation-scripted-wiring",
       "patterns": [
-        "tests/integration/test_synthesis_formation_postgres.py"
+        "tests/integration/test_synthesis_formation_postgres.py",
+        "tests/integration/test_author_reading_checkpoints_postgres.py"
       ],
       "classification": "FIXTURE_PROTOCOL",
       "owner": "book-design-authority",

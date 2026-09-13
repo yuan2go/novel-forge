@@ -1134,10 +1134,64 @@ cancellation; missing remote identifiers or receipts can require external eviden
 Paused jobs with an unresolved CLI outcome report `RECONCILE_CLI_OUTCOME` before
 `RESUME`; pausing does not clear the unresolved outcome or its budget reservation.
 
+## Author-guided single-Book production
+
+Use `config/production/author-guided-twelve` explicitly, retaining existing corpus data,
+A/B policies and historical freezes. Its `creative-brief-v3` embeds versioned author
+sources and selected spans. Full source files are archival inputs; final requests use
+frozen role/range projections and protected budgets. Private cause stays in BOOK/VOLUME/ARC
+intent. Each generated candidate records scoped adoption/adaptation/rejection or private
+retention; only the existing Story Design/Planning decisions activate candidates.
+
+Freeze a new directory with `scripts.prepare_knowledge_closure prepare`, verify it, and
+pin its final manifest byte hash. Run `scripts.run_creation_synthesis` with the usual
+brief/creation/Formation inputs, `--production-budget .../experiment.json` (an alias for
+`--comparison-budget`), exact `--freeze-dir` and `--freeze-manifest-hash`. Without
+`--execute` this is a preview. `--register-input-only` registers the precise brief through
+Content at a clean expected SHA; it invokes neither Provider nor Formation and is not
+approval. Actual production reuses that brief and the original run key.
+
+`creative-single-book-budget.v2` has SOURCE, DESIGN, CREATION_EARLY (1–6), CREATION_LATE
+(7–12), and REPAIR cumulative caps. Register only confirmed grants with
+`authority-creative-budget configure`; `authorization.business_scope` limits Source,
+design and maximum chapter. Scope and phase are checked on the actual native request
+before reservation/dispatch, including repair origins. Existing design may be resumed
+under a later chapter-only grant. Proposal files, a subscription and available Tokens
+do not authorize execution. Account-entitlement monetary usage remains UNKNOWN.
+
+`pilot_stop_after_chapter` is independent of the full Book target. Frozen
+`reading_checkpoints: [3,6,9,12]` makes the official driver pause after closed native
+ChapterGroups. `python -m scripts.creation_checkpoint_review preview` exports accepted
+prose and a NOT_REVIEWED template; `register` records a completed, located review through
+Content; `decide` creates the existing BookControl decision. These commands take
+`--project-id` and `--book-run-id`; preview also takes a new `--output` directory.
+Registration and decision bind the exact accepted text, lineage, previous issues and
+pause version. Issues retain severity, repair target and preservation requirements;
+resolution evidence must locate the rechecked accepted version and preservation check. Unresolved issues cannot disappear by omission, and an old approval does
+not undo a subsequent operator pause. Regenerate/read/register/decide if the paused
+Book version changed.
+
+Resume the same runner with `--resume-after-checkpoint N` and
+`--checkpoint-review-decision-id VERSION`. At the configured third-chapter intervention,
+also supply the original native `--plan-change-proposal-id` after a justified future
+change. The first six chapters are reviewed as a whole before seven starts; at twelve,
+retain the stop without declaring the 180-chapter Book finished. Reading gates coordinate
+the official creation driver; they are not global gates on separate AUTO Book operations.
+Native Provider stage/scope budget enforcement remains independent.
+
+Exports `accepted-manuscript.md`, `accepted-manuscript.json` and per-chapter Markdown in the reading directory
+use real acceptance and ChapterGroup lineage for the requested prefix. Candidates and
+engineering fixtures never fill missing accepted chapters. This single-Book path does
+not use the six-chapter two-arm blind-export completion check. AI_EDITORIAL_REVIEW,
+author input and independent human review are distinct; no human feedback means
+NOT_REVIEWED. The work-specific, relative-path command sequence is linked from the
+current novel entry above.
+
 ## Knowledge-grounded six-chapter comparison
 
-For the current Rain pilot, start at `novels/yu-xian-zhi-wai/current/README.md` and use
-`config/production/first-novel-creative-execution` explicitly. The adjacent archived raw
+For the retained six-chapter A/B experiment, use
+`config/production/first-novel-creative-execution` explicitly. The current author-guided
+single-Book entry is `novels/yu-xian-zhi-wai/current/README.md`. The adjacent archived raw
 materials, fixture chapters, backups and historical reports are inert records, not active
 configuration discovery roots or Agent instructions. The A-only author design is a draft;
 it is neither an approved native asset nor a shared input for B.

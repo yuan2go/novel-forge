@@ -229,6 +229,11 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
             world, ensure_ascii=False, separators=(",", ":")
         )
     schema = foundation_output_schema(generator)
+    if envelope.get("author_design"):
+        from novel_forge.modules.story_design_authority.author_input import add_author_decision_contract, frozen_author_projection, validate_author_decisions
+        projection = frozen_author_projection({"constraint_envelope": envelope}, generator=generator, logical_key=str(content.get("logical_key") or ""))
+        schema = add_author_decision_contract(schema, projection)
+        validate_author_decisions(payload, projection)
     translations = payload.get("knowledge_translations")
     if translations:
         from .knowledge_translation import add_translation_contract

@@ -52,9 +52,11 @@ def owned_policy_definition(
             for key in content
         },
     }
+    single_book_budget = False
     if owner == "CREATIVE_EXPERIMENT_BUDGET":
-        from novel_forge.modules.command_kernel.creative_budget_contract import POLICY_SCHEMA
-        policy_schema = POLICY_SCHEMA
+        from novel_forge.modules.command_kernel.creative_budget_contract import SINGLE_BOOK_VERSION, V1_POLICY_SCHEMA, V2_POLICY_SCHEMA
+        single_book_budget = not content or content.get("comparison_budget", {}).get("contract_version") == SINGLE_BOOK_VERSION
+        policy_schema = V2_POLICY_SCHEMA if single_book_budget else V1_POLICY_SCHEMA
     result_schema = {
         "type": "object",
         "additionalProperties": False,
@@ -77,12 +79,12 @@ def owned_policy_definition(
     }
     return {
         "name": name,
-        "definition_version": DEFINITION_VERSION,
+        "definition_version": "1.2.0" if single_book_budget else DEFINITION_VERSION,
         "family": owner.lower(),
         "enabled": True,
         "definition_status": "implemented_validation_pending",
-        "command_schema_version": f"{name}.command.v1",
-        "result_schema_version": f"{name}.result.v1",
+        "command_schema_version": f"{name}.command.v2" if single_book_budget else f"{name}.command.v1",
+        "result_schema_version": f"{name}.result.v2" if single_book_budget else f"{name}.result.v1",
         "command_schema": command_schema,
         "result_schema": result_schema,
         "input_contract": command_schema,
@@ -191,7 +193,7 @@ def configure_owned_policy(
         database_url,
         {
             "definition_name": name,
-            "definition_version": DEFINITION_VERSION,
+            "definition_version": definition["definition_version"],
             "project_id": project_id,
             "workspace_id": workspace_id,
             "actor_id": principal.principal_id,

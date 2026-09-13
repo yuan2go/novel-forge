@@ -3609,6 +3609,10 @@ class PostgresPlanningExecutionPreparer:
             output_schema = add_translation_contract(
                 output_schema, context_document.content.get("narrative_intelligence") or {}
             )
+            from novel_forge.modules.story_design_authority.author_input import add_author_decision_contract
+            output_schema = add_author_decision_contract(output_schema, context_document.content.get("author_design_projection") or {})
+            if (context_document.content.get("author_design_projection") or {}).get("fragments"):
+                output_schema_ref += ":author-input-v1"
         context_selection = [
             {
                 "artifact_ref": f"asset-version:{context_document.asset_version_id}",
@@ -4710,6 +4714,12 @@ class PostgresPlanningExecutionPreparer:
                 else {}
             ),
         }
+        from novel_forge.modules.story_design_authority.author_input import author_binding_from_inputs, compile_planning_author_projection
+        author_design = author_binding_from_inputs(selected, project_id=command.project_id, book_id=command.book_id)
+        if author_design:
+            content["author_design_projection"] = compile_planning_author_projection(
+                author_design, command=command, selected_inputs=selected,
+            )
         content["context_manifest"] = self._planning_context_manifest(
             command=command,
             selected_inputs=selected,
@@ -4956,7 +4966,7 @@ class PostgresPlanningExecutionPreparer:
             section="PLANNING_CONTRACT",
             bucket="planning_context_envelope",
         )
-        for key in ("realization_reference_contract", "repair_context"):
+        for key in ("realization_reference_contract", "repair_context", "author_design_projection"):
             if key not in provider_view:
                 continue
             value = provider_view[key]
@@ -4993,6 +5003,11 @@ class PostgresPlanningExecutionPreparer:
                     "authority": "StoryPlanningRuntime",
                     "projection_contract": "provider-context-view-v2",
                     "frozen_component_hash": digest,
+                    **(
+                        {"author_projection_source_receipt": dict(value["source_receipt"])}
+                        if key == "author_design_projection" and isinstance(value, Mapping) and isinstance(value.get("source_receipt"), Mapping)
+                        else {}
+                    ),
                     **(
                         {"authority_asset_version_id": repair_version_id}
                         if repair_version_id

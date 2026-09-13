@@ -222,7 +222,8 @@ def normalize_authoritative_chapter_plan(
 
 
 def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
-    return {
+    from novel_forge.modules.story_design_authority.author_input import project_author_design, without_author_private
+    result = {
         "contract_version": "draft-plan-view-v1",
         **{key: plan.get(key) for key in (
             "chapter", "title", "premise", "chapter_function", "chapter_objective",
@@ -251,6 +252,11 @@ def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
         "source_chapter_plan_content_hash": plan["source_chapter_plan_content_hash"],
         **{key: plan[key] for key in KNOWLEDGE_PLAN_FIELDS if key in plan},
     }
+    result = without_author_private(result)
+    binding = (plan.get("constraint_envelope") or {}).get("author_design")
+    if binding:
+        result["author_design_guidance"] = project_author_design(binding, target="CHAPTER", chapter=int(plan["chapter"]))
+    return result
 
 
 def build_draft_context_view(context_bundle: dict[str, Any]) -> dict[str, Any]:

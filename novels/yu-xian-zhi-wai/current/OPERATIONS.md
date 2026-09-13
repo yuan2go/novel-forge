@@ -1,98 +1,92 @@
-# 当前操作与恢复
+# 作者指导型单书操作与恢复
 
-从仓库根目录执行；私有连接与账户配置放在仓库外。将 `NF_ROOT`、`RUN_ROOT`、`EVIDENCE_ROOT` 和 `NF` 配成实际位置，`NF` 可指向加载私有环境后执行原生 CLI 的本机包装器。不要使用素材业务库运行 pytest，也不要覆盖历史冻结、备份或旧配置。
+从已验证的干净提交运行。私有连接、账户和授权证据放在仓库外；保留已有素材业务库和对象，名称含`test`也不能交给清库型pytest。以下路径可配置，不覆盖历史冻结和配置。
 
 ```bash
 NF_ROOT="${NF_ROOT:-$PWD}"
 export PYTHONPATH="$NF_ROOT/src:$NF_ROOT"
-NF="${NF:-$NF_ROOT/.venv/bin/novel-forge}"
 PYTHON="$NF_ROOT/.venv/bin/python"
-INPUTS="$NF_ROOT/config/production/first-novel-creative-execution"
+INPUTS="$NF_ROOT/config/production/author-guided-twelve"
 ```
 
-当前配置是新的共同中性输入；历史 `first-novel-pilot` 和归档冻结不变。`experiment.json` 的 480 次 / 1200 万 Token 是机会分配建议，**不是授权**。金额和不可观测开销未知，不能据此预测费用。各阶段分别确认；没有授权时只执行查询、输入冻结和预览。
+`NF`指向本交付仓库外`runtime/nf`包装器（路径由操作者配置）；它加载私有环境后执行原生CLI，并支持`--module`运行同环境下的原生脚本。包装器不会把连接变量导出到父shell，因此需要数据库的脚本也通过它运行。另设置`RUN_ROOT`、`EVIDENCE_ROOT`、`FROZEN`和实际验证过的`VERIFIED_SHA`，不将凭据写进文件。
 
-新 Formation 使用原生 `REVIEW_PLAN`，在候选审批处等待实际决定；不复用历史 `AUTO` 配置作为本轮自动批准授权。恢复使用原 `--resume-formation-run-id`，保留候选与审批记录。
-
-## 查询已有素材
+## 查询、冻结、登记作者输入
 
 ```bash
 "$NF" corpus jobs --project-id first-novel-pilot-20260912 --limit 10
-"$NF" corpus inspect --project-id first-novel-pilot-20260912 \
-  --processing-id corpus-processing:c4991a1a3a6e8f8259f9b585a5e745605ad13980bc34f689b2ea00d38b90d512
 "$NF" authority-creative-budget query --project-id first-novel-pilot-20260912
+"$PYTHON" -m scripts.prepare_knowledge_closure prepare \
+  --input-dir "$INPUTS" --target-book-id first-novel-pilot-a --output "$FROZEN"
+"$PYTHON" -m scripts.prepare_knowledge_closure verify "$FROZEN"
 ```
 
-最后一个查询在尚未登记阶段授权时返回 `CREATIVE_BUDGET_AUTHORIZATION_REQUIRED`，不返回虚假的零余额。既有素材目录、失败和精选版本见[历史目录](../corpus/index.html)。无需重新获取或重新入库。
+`FROZEN`必须尚不存在。保存最终`freeze.json`字节SHA-256为外部`FREEZE_HASH`；变化产生新版本，不改旧freeze。当前明确使用`deny-all.json`，不以空白名单冒充知识处理。
 
-## 第一阶段：Source 小样
+```bash
+"$NF" --module scripts.run_creation_synthesis \
+  --brief "$FROZEN/brief.json" --policy "$FROZEN/creation.json" \
+  --formation-policy "$FROZEN/formation.json" --knowledge-policy "$FROZEN/deny-all.json" \
+  --production-budget "$FROZEN/experiment.json" --freeze-dir "$FROZEN" \
+  --freeze-manifest-hash "$FREEZE_HASH" --project-id first-novel-pilot-20260912 \
+  --book-id first-novel-pilot-a --workspace-id first-novel-pilot-workspace \
+  --root "$RUN_ROOT" --run-key yu-xian-zhi-wai-author-twelve-v2 \
+  --expected-sha "$VERIFIED_SHA" --evidence-dir "$EVIDENCE_ROOT/preview-v1"
+```
 
-待明确确认：Codex CLI / gpt-6-astra / xhigh、实际账户引用、本项目与 `hydraulics-12` 范围、`ACCOUNT_ENTITLEMENT`、总计最多 10 次 / 250000 可观测 Token（含审阅、有限修复、D0与恢复）、并发 1；金额及不可观测 CLI 开销未知，不改用付费 API。该范围不包含知识正式批准、设计、正文或 B 组。
+上面仅预览。加入`--register-input-only`并使用新evidence目录，通过已有Content Command登记精确作者输入，无Provider、原生设计生成或审批。后续沿用同一run key复用brief。当前输入v5使用v2运行键；v1运行键仅登记过旧v4输入，没有创建Book或消费模型额度。旧输入保留，项目、Book和预算合同身份不变，这次输入版本衔接不重置累计额度。完整源文用于追溯，Provider只获得角色和范围允许的片段；04不能送给正文。
 
-确认后，在同一真实账户配置下由具有权限的操作者登记阶段策略，`policy.authorization` 绑定实际授权引用、证据字节哈希、项目和 Book。Source 授权累计上限为已确认小样额度，CREATION/REPAIR 均为零。授权文件由实际确认产生，此目录不附伪造授权。
+## 授权与Source小样
+
+`experiment.json`只是待确认分配：Source20次/50万可观测Token，设计60/150万，1—6章150/375万，7—12章150/375万，共享修复恢复100/250万，总计最多480/1200万。不是授权、账户权益证明或费用预测；可只确认首个有限阶段。金额及不可观测开销保留`UNKNOWN`，不能切换付费API。
+
+确认实际项目、账户、模型、用途和额度后，由有权限操作者登记授权。`authorization.business_scope`分别限制`source_allowed`、`design_allowed`、`max_chapter_number`；五阶段`authorized_cumulative_caps`只填累计已获准额度，未获准阶段不能填建议额度。查询旧策略，不能改名清账；未知请求保留预留。
 
 ```bash
 "$NF" authority-creative-budget configure --project-id first-novel-pilot-20260912 \
   --workspace-id first-novel-pilot-workspace --policy-file "$CONFIRMED_POLICY_FILE" \
   --authorization-evidence-file "$CONFIRMED_EVIDENCE_FILE" --idempotency-key "$GRANT_KEY"
-"$NF" corpus analyze --project-id first-novel-pilot-20260912 \
+"$NF" corpus reading-preview --project-id first-novel-pilot-20260912 \
   --revision-id corpus-curated-revision:d7202836d9753903ba45e9f8ef3d4282696cdde7580f45c7c6cd92deee12bb10 \
   --reading-scopes "$NF_ROOT/novels/yu-xian-zhi-wai/corpus/canary-reading-scopes.json" \
   --intended-use ABSTRACT_GENERATION --target-book-id first-novel-pilot-a \
-  --run-key first-novel-source-canary-v1 --limit 1 --max-calls 10 --max-tokens 250000 \
-  --authorization-ref "$CONFIRMED_REF"
+  --max-calls 20 --max-tokens 500000
 ```
 
-先用原 `reading-preview` 核对实际读取，再沿 `corpus run --max-stages 1`、`corpus status/results` 分阶段执行，D0 复用原 Source extraction Operation。详细参数以原生 `corpus --help` 和[运行手册](../../../docs/runtime-operations.md)为准。未知结果核对原 Effect/receipt；恢复保留原 job、project、Book 和 run key。暂停、恢复不释放未知预留；新 evidence-dir 不重置账本。
+Source授权生效后，才以同参数执行`corpus analyze --run-key first-novel-source-canary-v1 --limit 1 --authorization-ref "$CONFIRMED_REF"`，沿`corpus run --max-stages 1`、status/results逐步推进，复用原job、Effect、receipt及D0 extraction Operation。液压小样只能解释核实过的具体设备，不是排涝、调度或仓储普遍依据。本轮情节不依赖技术，无发现或待审时，原创依明确`DENY_ALL`策略继续，知识链保持未证明。
 
-Candidate 逐项导出原文定位、结论、条件、例外与拟用位置，由有权限审核者决定确切版本。已有 MKAOS 批准 API 的 202 只是受理，须待原 worker 完成并查询正式 Card。模型建议不是独立人工批准。
+Candidate逐项提供源定位、机制、条件、例外、失效和拟用位置，正式批准绑定有权限审核者及确切版本。要消费获批Card，另走现有书级政策和合法未来规划变更，不能改已运行的freeze。模型建议不等于独立人工批准。
 
-## 冻结、原生设计和首章
+## 原生设计、正文和读稿检查点
 
-获得确切批准版本后才创建 A 的白名单。使用新的、尚不存在的目录；不要把旧 freeze 目录当新的 input-dir。
+相应授权生效后，上述runner加`--initialize --execute --authorization-ref "$CONFIRMED_REF"`并使用新evidence目录。路由保持已确认账户、模型与计量方式。`REVIEW_PLAN`在Formation候选审批处等待实际决定；查询原生候选后按允许的审批策略处理，不能伪称独立人工批准。恢复保留run key，传`--resume-formation-run-id "$FORMATION_RUN_ID"`。
+
+官方驱动在真实三章组结束后暂停于3、6、9、12。先读精确接纳稿和关联前文，填写正文位置、严重程度、修复目标与保留要求，再登记及决定：
 
 ```bash
-"$PYTHON" -m scripts.prepare_knowledge_closure prepare --input-dir "$INPUTS" \
-  --approved-card-versions "$APPROVED_VERSIONS_FILE" --target-book-id first-novel-pilot-a \
-  --output "$FROZEN_A"
-"$PYTHON" -m scripts.prepare_knowledge_closure verify "$FROZEN_A"
+"$NF" --module scripts.creation_checkpoint_review preview \
+  --project-id first-novel-pilot-20260912 --book-run-id "$BOOK_RUN_ID" --output "$READING_DIR"
+"$NF" --module scripts.creation_checkpoint_review register \
+  --project-id first-novel-pilot-20260912 --book-run-id "$BOOK_RUN_ID" \
+  --review-file "$COMPLETED_REVIEW_FILE" --idempotency-key "$REVIEW_KEY"
+"$NF" --module scripts.creation_checkpoint_review decide \
+  --project-id first-novel-pilot-20260912 --book-run-id "$BOOK_RUN_ID" \
+  --review-asset-version-id "$REVIEW_VERSION" --decision APPROVE \
+  --reason "$REVIEW_REASON" --idempotency-key "$DECISION_KEY"
 ```
 
-保存最终 `freeze.json` 字节 SHA256 为外部校验值 `FREEZE_MANIFEST_HASH_A`。`verify` 不改文件；输入变化必须新版本目录。恢复沿用同一冻结目录和外部校验值。
+问题项使用`issue_id`、`chapter_number`、`status`、`severity`（如`major`）、`diagnosis`、`repair_target`、精确`location`、`preservation_requirements`和`acceptance_criteria`。标记`RESOLVED`还需`resolution_evidence`列表：每项绑定复核段落的`chapter_number`、`candidate_asset_version_id`、`text_hash`、`location`、`reason`与`preservation_check`。不能只填“已解决”。
 
-```bash
-"$PYTHON" -m scripts.run_creation_synthesis \
-  --brief "$FROZEN_A/brief.json" --policy "$FROZEN_A/creation.json" \
-  --formation-policy "$FROZEN_A/formation.json" --knowledge-policy "$FROZEN_A/allow-only.json" \
-  --comparison-budget "$FROZEN_A/experiment.json" --freeze-dir "$FROZEN_A" \
-  --freeze-manifest-hash "$FREEZE_MANIFEST_HASH_A" \
-  --project-id first-novel-pilot-20260912 --book-id first-novel-pilot-a \
-  --workspace-id first-novel-pilot-workspace --root "$RUN_ROOT/a" --run-key first-novel-a-v1 \
-  --expected-sha "$VERIFIED_SHA" --evidence-dir "$EVIDENCE_ROOT/a-preview-v1"
-```
+未读模板不能批准。模型读稿标`AI_EDITORIAL_REVIEW`，人工独立评价另留证据。未解决问题继续携带；新稿针对具体问题复核，不能漏报关闭。拒绝用`REJECT`，已接纳正文问题走合法更正/未来重规划，不编辑导出稿冒充数据库同步。
 
-上面仅预览。原生 Formation/Opening/正文阶段须另获额度后添加 `--initialize --execute --authorization-ref "$CONFIRMED_REF"`，并使用新的 evidence-dir。先完成一条知识进入规划、最终请求与接纳正文的追溯再扩大调用。若只批准分阶段的 A 首章机会，允许本组工作，但 A/B 比较保持未成立；不能事后追加额度就追认先前机会公平。
+第三章后，根据实际证据和已激活未来计划，经原生PlanChange提出、审阅、激活合法变化；无触发则说明并暂停。继续runner同时传`--plan-change-proposal-id "$PLAN_CHANGE_ID"`、`--resume-after-checkpoint 3`和`--checkpoint-review-decision-id "$DECISION_VERSION"`。第六、九章重复读稿并使用对应游标/新决定；六章不合格不能扩七章。不能用旧决定覆盖后来的人工暂停。
 
-B 独立冻结同一中性 brief 与比较计划，使用 `deny-all.json`，独立 project/Book/workspace/run-key/runtime-root；不得复制 A 的设计和缓存。Source 剩余额度不能转为任一组正文或修复额度。授权升级沿原生策略追加版本和累计上限，历史 Effect 仍保留原授权，账本不清零。
+读稿检查点由官方creation driver执行，不是所有独立AUTO Book操作的全局审批门；操作沿此入口。阶段预算和章节权限在原生Provider准入强制。十二章结束后只登记终段读稿并保持停止，不放行十三章；180章Book未完成。
 
-登记 B 的预算前，若该项目尚不存在，先通过已有 `POST /product/projects` 创建空的 B 项目与工作区，不能克隆 A。该步骤不调用模型：
+## 阅读版、追溯与恢复
 
-```bash
-curl --fail-with-body -H 'Content-Type: application/json' \
-  --data '{"project_id":"first-novel-control-20260912","workspace_id":"first-novel-control-workspace","title":"雨线之外 B","idempotency_key":"first-novel-control-project-v1"}' \
-  "$API_ROOT/product/projects"
-```
+runner导出`accepted-manuscript.md`、`accepted-manuscript.json`与`reading/chapter-NNN.md`，按真实游标、章组、`COMMITTED`血缘计汉字。候选、诊断、修订、择优、Canon/StoryState、请求与未完成问题留在原工作空间导出，不混入阅读版。`creation_checkpoint_review preview`也可无Provider导出已接纳范围。
 
-仅获准设计或首章时，以既有 Supervisor 的单步推进和暂停操作守住已授权范围，达到边界立即暂停；不要直接启动六章连续驱动。部分创作额度允许启动，实际预留仍受阶段上限限制；这不构成完整 A/B 机会公平证明。
+失败先查`creation-run.json`、events与原operation/effect/receipt。未知Provider结果不得盲重发；新run key/evidence-dir不重置账本。修复后按影响维护合法代码/输入版本关系，保留原Formation/Book/Effect。改旧freeze、重建项目都不是恢复。
 
-第三章后先检查本组实际接纳证据，再通过既有 PlanChange 的提出、审批和激活入口修改第四至六章。无证据触发时保持暂停，不伪造旧计划或事件。恢复传入原生 `--plan-change-proposal-id`；第六章完成真实章组后暂停，目标 180 章的 Book 不结束。
-
-## 导出与评审
-
-runner 保存原稿、审稿、修订、选择、接纳、状态、实际请求和预算用量。任一卡使用 `authority-knowledge-trace` 反查。两组都接纳六章且完整导出后，才执行：
-
-```bash
-"$PYTHON" -m scripts.prepare_knowledge_closure blind "$A_EXPORT" "$B_EXPORT" --output "$BLIND_OUTPUT"
-```
-
-预算比较输出显式分类差异与实际累计用量；未知重要差异或未测使用阻止公平结论。盲评由独立评审填写七维表，当前为 `NOT_REVIEWED`；没有真实正文时不评价文学质量。
+本包不使用两组六章`blind`接口判断完成。真实十二章可另交独立评审，覆盖知识准确性（未采用时不适用）、自然融入、因果、人物、节奏、声音、追读意愿；收到反馈前`NOT_REVIEWED`。作者指导、知识使用和模型审阅分别留痕，不推断知识因果收益。

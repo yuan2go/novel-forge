@@ -32,6 +32,7 @@ from novel_forge.modules.provider_control.registry import ProviderAdapterRegistr
 from novel_forge.modules.story_planning_runtime import (
     story_planning_generation_definition,
 )
+from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.workers.book_authority import execute_story_formation_claim
 from tests.integration.authority_postgres_support import DATABASE_URL
@@ -43,8 +44,9 @@ from tests.integration.synthesis_production_support import SynthesisTransport
 from tests.integration.test_core_functional_loops_postgres import _principal
 
 
-def test_native_formation_generates_foundation_from_author_brief(tmp_path):
-    harness = CapabilityPackPostgresHarness("synthesis-formation")
+@pytest.mark.parametrize("author_guided", [False, True])
+def test_native_formation_generates_foundation_from_author_brief(tmp_path, author_guided):
+    harness = CapabilityPackPostgresHarness("synthesis-formation-author" if author_guided else "synthesis-formation")
     from copy import copy
 
     chapter_pack = copy(harness)
@@ -117,6 +119,8 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
         integration_proven=CONTENT_CODECS,
         trusted_only=True,
     )
+    from tests.integration.synthesis_author_input_support import author_fixture, AuthorSynthesisTransport
+    author = author_fixture(harness.project_id, harness.book_ids[0]) if author_guided else None
     brief = content.execute(
         ContentOperationRequest(
             definition_name="creative.brief.create",
@@ -125,10 +129,11 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
             actor_id=principal.principal_id,
             trace_id="trace:synthesis-brief",
             correlation_id=harness.project_id,
-            idempotency_key="synthesis:brief",
+            idempotency_key=f"{harness.project_id}:synthesis:brief",
             payload={
                 "brief": {
-                    "creative_brief_contract_version": "creative-brief-v2",
+                    "creative_brief_contract_version": "creative-brief-v3" if author_guided else "creative-brief-v2",
+                    **({"author_design": author} if author_guided else {}),
                     "idea": "一名制图学徒发现街区正在被公共档案抹去，她必须决定是否公开会牵连证人的不完整证据。",
                     "genre": "speculative mystery",
                     "audience": "adult mystery readers",
@@ -161,7 +166,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
         database_url=DATABASE_URL,
     )
     registry = ProviderAdapterRegistry()
-    transport = SynthesisTransport()
+    transport = AuthorSynthesisTransport(author, brief) if author_guided else SynthesisTransport()
     registry.register(transport)
     execution = build_production_execution_composition(
         settings,
@@ -187,7 +192,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
             environment="test",
             configured_project_scope=frozenset({harness.project_id}),
         ).resolve_book_formation_worker_principal("synthesis-worker")
-        formation_key = "synthesis:formation"
+        formation_key = f"{harness.project_id}:synthesis:formation"
         formation_run_id = deterministic_story_formation_run_id(
             project_id=harness.project_id,
             book_id=harness.book_ids[0],
@@ -374,7 +379,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
                 role: versions[role] for role in _OPENING_INPUT_ROLES
             },
             arc_logical_keys=("arc:central", "arc:relationship"),
-            idempotency_key="synthesis:opening",
+            idempotency_key=f"{harness.project_id}:synthesis:opening",
             trace_id="trace:synthesis:opening",
             correlation_id=harness.project_id,
             initial_story_state_version=versions["story_state"],
@@ -404,7 +409,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
             start_command(
                 snapshot,
                 actor=principal.principal_id,
-                run_key="synthesis:production",
+                run_key=f"{harness.project_id}:synthesis:production",
                 chapters=3,
             ),
             principal=principal,
@@ -453,6 +458,35 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
                 == "scene-realization-composition.v2"
             )
             assert best["realization_contract"]["craft_tasks"]["tasks"]
+        if author_guided:
+            from novel_forge.modules.chapter_outcome.acceptance_contract import resolve_accepted_manuscript
+            from novel_forge.modules.story_design_authority.author_input import text_hash
+            for workspace in workspaces["workspaces"]:
+                manuscript = resolve_accepted_manuscript(workspace)
+                candidate = manuscript["candidate"]["content"]
+                guidance = candidate["author_design_guidance"]
+                assert guidance["brief_asset_version_id"] == brief.asset_version_id
+                assert guidance["brief_content_hash"] == brief.content_hash
+                assert all(item["visibility"] == "SCENE_INTENT" for item in guidance["fragments"])
+                assert "PRIVATE_AUTHOR_CAUSE_NOT_FOR_WRITER" not in json.dumps(guidance)
+                assert all(text_hash(item["text"]) == item["content_hash"] for item in guidance["fragments"])
+            contexts = AuthorityAssetQuery(DATABASE_URL).list_versions(project_id=harness.project_id, asset_type="context_bundle", limit=500)
+            bound_contexts = [item for item in contexts if item.content.get("author_design_projection")]
+            assert bound_contexts
+            from novel_forge.modules.story_design_authority.author_input import compile_provider_author_projection
+            for item in bound_contexts:
+                manifest = item.content["context_manifest"]
+                original = item.content["author_design_projection"]
+                delivered = manifest["provider_context_view"]["compiled_view"]["author_design_projection"]
+                assert delivered == compile_provider_author_projection(original)
+                semantic_fields = {"text", "fragment_id", "content_hash", "visibility", "strength", "chapter_range"}
+                assert delivered["fragments"] == [
+                    {key: value for key, value in fragment.items() if key in semantic_fields}
+                    for fragment in original["fragments"]
+                ]
+                assert delivered["source_receipt"]["json_pointer"] == "/author_design_projection"
+                assert delivered["source_receipt"]["content_hash"] == canonical_hash(original)
+                assert any(selected["logical_context_kind"] == "planning_author_design_projection" for selected in manifest["selected_inputs"])
         artifact = {
             "prepared": prepared,
             "opening": opened,
@@ -485,15 +519,15 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path):
         from scripts.creation_pilot import prepare_pilot_book
         assert set(chapters(tmp_path)) == {1, 2, 3}
         assert len(list(tmp_path.glob("accepted-chapter-*.txt"))) == 3
-        assert formation.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key="synthesis:formation")["formation_run_id"] == admitted.formation_run_id
+        assert formation.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key=formation_key)["formation_run_id"] == admitted.formation_run_id
         assert formation.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key="different-key") is None
-        assert composition.opening.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key="synthesis:opening")["opening_run_id"] == opening.opening_run_id
+        assert composition.opening.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key=f"{harness.project_id}:synthesis:opening")["opening_run_id"] == opening.opening_run_id
         pilot_project = harness.project_id + "-pilot"
         pilot_principal = replace(principal, project_scope=frozenset({pilot_project}), permissions=principal.permissions | {"project.authority.execute"})
         frozen_pilot = {"creation_policy": policy, "implementation_identity": RELEASE_SHA}
         arguments = dict(composition=composition, principal=pilot_principal, project_id=pilot_project,
                          workspace_id=pilot_project + "-workspace", book_id=pilot_project + "-book",
-                         run_key="pilot-prepare", title="隔离试运行", frozen=frozen_pilot)
+                         run_key=f"{harness.project_id}:pilot-prepare", title="隔离试运行", frozen=frozen_pilot)
         first_book = prepare_pilot_book(**arguments, initialize=True)
         assert prepare_pilot_book(**arguments, initialize=True) == first_book
         assert prepare_pilot_book(**arguments, initialize=False) == first_book

@@ -1380,6 +1380,24 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         self.assertEqual(MkaosAuthorityQuery(DATABASE_URL).list_runtime_usage(
             project_id=project_id, book_id="another-book", limit=1,
         ), [])
+        query = MkaosAuthorityQuery(DATABASE_URL)
+        first = usage[0]
+        self.assertEqual(query.list_runtime_usage(
+            project_id=project_id,
+            knowledge_card_asset_version_id=first["knowledge_card_asset_version_id"],
+            target_capability_id=first["target_capability_id"],
+            result_asset_version_id=first["result_asset_version_id"],
+            limit=1,
+        ), [first])
+        self.assertEqual(query.list_runtime_usage(
+            project_id=project_id, target_capability_id="unrelated-capability",
+        ), [])
+        self.assertEqual(query.list_runtime_selections(
+            project_id=project_id,
+            knowledge_card_asset_version_id=first["knowledge_card_asset_version_id"],
+            target_capability_id=first["target_capability_id"],
+            limit=1,
+        ), selections)
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """SELECT a.asset_type, v.content #>> '{knowledge_checks,0,usage_role}',

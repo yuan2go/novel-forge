@@ -1,0 +1,105 @@
+{
+  "status": "READY_FOR_AUTHORIZATION",
+  "not_an_authorization": true,
+  "task": "WP-AUTHOR-GUIDED-TWELVE-CHAPTER-PRODUCTION-01",
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "first-novel-pilot-a",
+  "suggested_route": {
+    "provider": "CODEX_CLI",
+    "cli_version_observed": "0.154.0",
+    "model": "gpt-6-astra",
+    "reasoning_effort": "xhigh",
+    "account_reference": "/Users/yuan/.codex-claude",
+    "metering_mode": "ACCOUNT_ENTITLEMENT",
+    "concurrency": 1,
+    "executable_path": "/Users/yuan/.local/share/fnm/node-versions/v22.22.2/installation/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+    "executable_sha256": "sha256:4f85982624b3898c8991cb80c0981b2aa71070e3537046c9a95950318a95afcc",
+    "route_verification": "LOCAL_BINARY_AND_VERSION_ONLY; NO_REMOTE_PROVIDER_QUALIFICATION"
+  },
+  "proposed_shared_total": {
+    "calls": 480,
+    "observable_tokens": 12000000,
+    "monetary_cost": "UNKNOWN",
+    "unobservable_overhead": "UNKNOWN"
+  },
+  "proposed_stage_caps": {
+    "SOURCE": {
+      "calls": 20,
+      "tokens": 500000
+    },
+    "DESIGN": {
+      "calls": 60,
+      "tokens": 1500000
+    },
+    "CREATION_EARLY": {
+      "calls": 150,
+      "tokens": 3750000,
+      "chapters": [
+        1,
+        6
+      ]
+    },
+    "CREATION_LATE": {
+      "calls": 150,
+      "tokens": 3750000,
+      "chapters": [
+        7,
+        12
+      ]
+    },
+    "REPAIR": {
+      "calls": 100,
+      "tokens": 2500000
+    }
+  },
+  "confirmation_required": [
+    "actual Provider/model/account/metering route",
+    "this project and book scope",
+    "approved stages, cumulative calls and observable token caps",
+    "repair/resume sub-budget within shared total",
+    "business_scope source_allowed/design_allowed/max_chapter_number",
+    "verifiable authorizing user statement/evidence and native version"
+  ],
+  "smallest_suggested_start": {
+    "phase": "SOURCE",
+    "calls": 20,
+    "observable_tokens": 500000,
+    "scope": "one existing curated Source canary, bounded review/repair and qualification; no design/prose"
+  },
+  "constraints": [
+    "No paid API switch",
+    "No reuse of unrelated Wukong RESEARCH grant",
+    "Unknown results retain reservations; do not resend blindly",
+    "The proposal is a maximum, not a forecast or a spending target",
+    "First six chapter reading review is required before chapter seven",
+    "Each stage needs matching authorization; successful prior stage is not a grant"
+  ],
+  "current_task_remote_calls": 0,
+  "current_task_observable_tokens": 0,
+  "independent_human_review": "NOT_REVIEWED",
+  "native_runtime_binding_after_confirmation": {
+    "NOVEL_FORGE_CODEX_EXECUTABLE": "/Users/yuan/.local/share/fnm/node-versions/v22.22.2/installation/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+    "NOVEL_FORGE_CODEX_EXECUTABLE_SHA256": "sha256:4f85982624b3898c8991cb80c0981b2aa71070e3537046c9a95950318a95afcc",
+    "NOVEL_FORGE_CODEX_HOME": "/Users/yuan/.codex-claude",
+    "NOVEL_FORGE_CODEX_CLI_VERSION": "0.154.0",
+    "NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT",
+    "authorization_account_and_configuration_refs": "MUST_BIND_ACTUAL_CONFIRMED_EVIDENCE; NOT_SET",
+    "isolated_workspace_and_persistent_execution_root": "REQUIRED_BY_EXISTING_RUNTIME; DO_NOT_POINT_AT_REFERENCE_CORPUS_OR_SOURCE_REPOSITORY",
+    "activation_status": "NOT_CONFIGURED_NOT_AUTHORIZED"
+  },
+  "budget_basis": {
+    "evidence_class": "PROPOSED_OPERATING_ENVELOPE_NOT_COST_PREDICTION",
+    "source": "One existing bounded canary only;20calls includes its observation/review/limited repair/extraction path, then stop to inspect actual output and usage. No claim all20will be needed or sufficient.",
+    "design": "60call ceiling for independent native design candidates and their required evaluation/plan generation; candidate count2. Stop at unresolved review or exhausted scope.",
+    "chapters": "Each six-chapter stage150calls is a ceiling of25calls per chapter on average for chapter work and required planning/world/review work, not25extra calls guaranteed to every chapter. Actual admission debits the native stage classification.",
+    "repair": "100calls is one shared, explicit repair/recovery ceiling; it cannot authorize Source/design/later chapters outside business_scope and is not duplicated by retries or evidence directories.",
+    "observable_token_envelope": "Stage ceilings use25000observable tokens per proposed call ceiling:480*25000=12000000. This arithmetic defines a conservative requested limit only; it is not measured model usage, a context size, expected spend or guaranteed completion. Native actual reservations and receipts remain authoritative.",
+    "not_observed": [
+      "No real Provider pilot executed",
+      "No verified account remaining quota",
+      "No money conversion for ACCOUNT_ENTITLEMENT",
+      "CLI/session overhead may be unobservable"
+    ],
+    "checkpoints": "Authorize only a named stage if preferred; inspect Source outcome, native design/first chapter, chapter3/6/9/12 accepted text and actual ledger before expanding within explicitly confirmed scope."
+  }
+}
