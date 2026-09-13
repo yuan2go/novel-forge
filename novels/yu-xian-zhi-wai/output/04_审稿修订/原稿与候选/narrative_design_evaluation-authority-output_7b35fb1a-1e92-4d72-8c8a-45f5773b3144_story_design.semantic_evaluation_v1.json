@@ -1,0 +1,200 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "logical_ref": "asset-version:authority-output:7b35fb1a-1e92-4d72-8c8a-45f5773b3144:story_design.semantic_evaluation:v1",
+  "category": "narrative_design_evaluation",
+  "asset_id": "authority-output:7b35fb1a-1e92-4d72-8c8a-45f5773b3144:story_design.semantic_evaluation",
+  "asset_type": "narrative_design_evaluation",
+  "asset_version_id": "authority-output:7b35fb1a-1e92-4d72-8c8a-45f5773b3144:story_design.semantic_evaluation:v1",
+  "version_number": 1,
+  "lifecycle": "ACTIVE",
+  "eligibility": "ELIGIBLE",
+  "governance": "CLEAR",
+  "content_hash": "sha256:b5c32289ef756f937b81f30f80d4fc805bc683266b650f06bbeda146d3e33d95",
+  "content": {
+    "evaluation": {
+      "evaluations": [
+        {
+          "layer": "STORY_INTENT",
+          "criteria": [
+            {
+              "verdict": "PASS",
+              "criterion": "ENDING_DIRECTION_CLARITY",
+              "rationale": "终局明确指向实际交付完成、责任重新确认及履约动作收束，并分别规定核心疑点、旧签名、关系变化和未尽义务的闭合条件。具体物件与地点留待接纳事实确定，符合结尾意图阶段，不影响方向清晰度。",
+              "evidence_refs": [
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/ending_direction",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "PROTAGONIST_COST",
+              "rationale": "代价落实为保留可被追责的记录、接受拒绝并放弃快捷方案，以及实际补救占用休息或其他机会。行动、更改安排或责任边界、履行后的损失形成可验证链条，同时明确赞誉和道歉不能抹去成本。当前阶段已规定正文实现要求，无须提前提供章节证据。",
+              "evidence_refs": [
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/protagonist_cost",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions/3",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/8"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "TRANSFORMATION_REACHABILITY",
+              "rationale": "转变具有可执行的行为路径：从自行判定安排完成，到让受影响者核对、接受异议、更正错误并履行明确责任。规则和合作边界须在此前冲突中影响行动，且成长不依赖无条件原谅或包揽责任，具备渐进达成的条件。",
+              "evidence_refs": [
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/protagonist_cost",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions/3",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/9"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "THEME_CLOSURE_ALIGNMENT",
+              "rationale": "有限资源中的帮助、证据边界与具体担当，通过真正可用的交付、可追问的责任和保留分歧的合作实现闭合。结尾动作回应等待者，同时保留已经发生的损失，与目标一致；禁止主题演说、表彰或万能赎罪替代兑现。",
+              "evidence_refs": [
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/objective",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/ending_direction",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions/7",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/unacceptable_shortcuts"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "LONGFORM_REACHABILITY",
+              "rationale": "明确区分六章兑现、十二章责任交接、首弧及三卷全书尺度；后续推进来自已兑现救助产生的空间、运输、轮班和照料负担，而非拖延旧谜底。终局允许按接纳后果调整未执行内容，并要求主线承诺完成后收束，具备结尾意图阶段所需的长篇延展与抵达机制。",
+              "evidence_refs": [
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/3",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/4",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/13",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions/4",
+                "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions/6"
+              ],
+              "repair_directive": ""
+            }
+          ],
+          "skill_ref": "long-outline",
+          "profile_id": "ending-intent-semantic-v1",
+          "profile_hash": "sha256:81fd97abad073d425b0654085061e88dfce846ba17838de317bfbce5941192db",
+          "capability_id": "ending.intent.generate",
+          "profile_version": "1.0.0"
+        }
+      ],
+      "schema_version": "progressive-narrative-qualification.v1"
+    },
+    "project_id": "first-novel-pilot-20260912",
+    "qualification": {
+      "status": "PASS",
+      "receipts": [
+        {
+          "layer": "STORY_INTENT",
+          "status": "PASS",
+          "evidence": {
+            "layer": "STORY_INTENT",
+            "criteria": [
+              {
+                "verdict": "PASS",
+                "criterion": "ENDING_DIRECTION_CLARITY",
+                "rationale": "终局明确指向实际交付完成、责任重新确认及履约动作收束，并分别规定核心疑点、旧签名、关系变化和未尽义务的闭合条件。具体物件与地点留待接纳事实确定，符合结尾意图阶段，不影响方向清晰度。",
+                "evidence_refs": [
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/ending_direction",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "PROTAGONIST_COST",
+                "rationale": "代价落实为保留可被追责的记录、接受拒绝并放弃快捷方案，以及实际补救占用休息或其他机会。行动、更改安排或责任边界、履行后的损失形成可验证链条，同时明确赞誉和道歉不能抹去成本。当前阶段已规定正文实现要求，无须提前提供章节证据。",
+                "evidence_refs": [
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/protagonist_cost",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions/3",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/8"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "TRANSFORMATION_REACHABILITY",
+                "rationale": "转变具有可执行的行为路径：从自行判定安排完成，到让受影响者核对、接受异议、更正错误并履行明确责任。规则和合作边界须在此前冲突中影响行动，且成长不依赖无条件原谅或包揽责任，具备渐进达成的条件。",
+                "evidence_refs": [
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/protagonist_cost",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions/3",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/9"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "THEME_CLOSURE_ALIGNMENT",
+                "rationale": "有限资源中的帮助、证据边界与具体担当，通过真正可用的交付、可追问的责任和保留分歧的合作实现闭合。结尾动作回应等待者，同时保留已经发生的损失，与目标一致；禁止主题演说、表彰或万能赎罪替代兑现。",
+                "evidence_refs": [
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/objective",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/ending_direction",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions/7",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/unacceptable_shortcuts"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "LONGFORM_REACHABILITY",
+                "rationale": "明确区分六章兑现、十二章责任交接、首弧及三卷全书尺度；后续推进来自已兑现救助产生的空间、运输、轮班和照料负担，而非拖延旧谜底。终局允许按接纳后果调整未执行内容，并要求主线承诺完成后收束，具备结尾意图阶段所需的长篇延展与抵达机制。",
+                "evidence_refs": [
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/3",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/4",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/13",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions/4",
+                  "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1#/selected_inputs/0/candidate/closure_conditions/6"
+                ],
+                "repair_directive": ""
+              }
+            ],
+            "skill_ref": "long-outline",
+            "profile_id": "ending-intent-semantic-v1",
+            "profile_hash": "sha256:81fd97abad073d425b0654085061e88dfce846ba17838de317bfbce5941192db",
+            "capability_id": "ending.intent.generate",
+            "profile_version": "1.0.0"
+          },
+          "skill_ref": "long-outline",
+          "profile_id": "ending-intent-semantic-v1",
+          "profile_hash": "sha256:81fd97abad073d425b0654085061e88dfce846ba17838de317bfbce5941192db",
+          "capability_id": "ending.intent.generate",
+          "criterion_count": 5,
+          "evaluation_hash": "sha256:be2bac18306d258d5a024a1444d7a90dd619503203075f158bd70c5b5454b3fc",
+          "profile_version": "1.0.0"
+        }
+      ],
+      "schema_version": "progressive-narrative-qualification.v1",
+      "qualification_hash": "sha256:d1889eb63c6df65954cf657eb52b61f659fd458f98d9f9d3d342585413afda4a"
+    },
+    "schema_version": "narrative-design-evaluation.v1",
+    "provider_evidence": [
+      {
+        "content_hash": "sha256:780e7f1619e9d512de788ae1421f3065b77d9a187345ea8dc728a3693b62dc63",
+        "asset_version_id": "7bad9b34-c1af-4a8f-ac13-089ea005d585"
+      }
+    ],
+    "provider_execution": {
+      "model_id": "gpt-6-astra",
+      "provider_id": "codex-cli",
+      "skill_version": "quality-review-narrative-evaluator-v1",
+      "prompt_version": "prompt-system:narrative-semantic-evaluation-pack@v3",
+      "route_snapshot_id": "production_execution/routes/e2363fc15e134c77d06b",
+      "provider_result_hash": "sha256:d6bfdf729b79a3dc15310c2666a570f14b74dca02bb2a2712c102d76b55e1d5e",
+      "provider_evidence_hash": "sha256:2fc4bebba2cb9be59446094a4f3c524530e9f282c7d2208a09f9ffe03ef5088f"
+    },
+    "evaluation_attempt_id": "7d7b3578-3440-4a81-80ab-2901ffba0855",
+    "candidate_content_hash": "sha256:4e5131ec911cddbed49e82a9fa0c1a4a993c55fe7bcf21378cd189cc52c7b485",
+    "evaluation_operation_id": "7b35fb1a-1e92-4d72-8c8a-45f5773b3144",
+    "generation_operation_id": "0353ce66-51d7-4f6a-9792-9a38c886eb45",
+    "evaluation_evidence_hash": "sha256:2c05aba4df4ed93bd8956556a2d754be0b20323570500efd3f1be1c183d86819",
+    "evaluator_execution_class": "MODEL_PROVIDER",
+    "candidate_asset_version_id": "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1",
+    "provider_evidence_asset_version_ids": [
+      "7bad9b34-c1af-4a8f-ac13-089ea005d585"
+    ]
+  },
+  "updated_at": "2026-09-13 05:48:52.967501+00:00"
+}

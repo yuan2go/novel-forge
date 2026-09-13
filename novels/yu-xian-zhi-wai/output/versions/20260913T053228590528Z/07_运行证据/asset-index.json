@@ -1,0 +1,106 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "first-novel-pilot-a",
+  "source_sha": "49941cd2bb410ba53a59ae52eb2670b6bf96d82d",
+  "assets": [
+    {
+      "asset_type": "planning_generation_candidate",
+      "asset_version_id": "authority-output:6caa82a5-d1ea-4a02-9876-cfb019a7b712:story_planning.candidate:v1",
+      "version_number": 1,
+      "content_hash": "sha256:421534ed85cd5c17c6807b6a39005f334e592962bb0fe418f9ec18b89c979e82",
+      "lifecycle": "CANDIDATE",
+      "eligibility": "INELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "0d33e3f8-3efc-4bf5-9411-87e26d5614ad",
+      "version_number": 1,
+      "content_hash": "sha256:31e2b4d5ab2caac692294868e70c7082d9db7f8b1dd0e45bd3962ac5d94eb478",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "bd1886ed-2244-4235-bc74-c23bf34d719a",
+      "version_number": 1,
+      "content_hash": "sha256:8054d93f09307221d7e0bf94e441bf3b35fb63c8bbc7ecb3f7e17716bebd1971",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "f98ac56a-064d-4157-bb8e-42a5950954f6",
+      "version_number": 1,
+      "content_hash": "sha256:ad1579d5cfed0da779c3c22115cdb20c7d121d1a6a4e7f7353d950509c1db34d",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "cf5e45df-7e6a-48c6-904e-5800b5ec6a13",
+      "version_number": 1,
+      "content_hash": "sha256:bc46c40938c74aebc62759fc0b071e15467ca4684a64ceb9f598c387ca3657fb",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "e0f994de-3f6a-4282-abf4-7c6c22f0d4b7",
+      "version_number": 1,
+      "content_hash": "sha256:7376f9f3506ca917c6be94994f977d9fb9e7b02731d45c8c830467752747d96d",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "cost_ledger",
+      "asset_version_id": "41a3c611-f95d-4b83-b475-03231966adc2",
+      "version_number": 1,
+      "content_hash": "sha256:9e497b6281d1136ff81a5c5eb7502978d3f8687fc02c2f1134af8b0a6f69cad2",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "8ead05cb-80ef-47d0-bb89-f9e6ecaa8f05",
+      "version_number": 1,
+      "content_hash": "sha256:cb7f24f2929eaaa1ce5d89ba79d16b7da8f9d5e4b94d00b1e0019b2ae2d4e743",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "6ce4d7e3-5391-43e6-8e11-05bcf7038969",
+      "version_number": 3,
+      "content_hash": "sha256:34e45e56840cb45eae439fb08a8e020f6090782842806a8618fc88c34eb9aef4",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "16940cc1-165d-43f4-aa5c-0d1c9cb5d765",
+      "version_number": 2,
+      "content_hash": "sha256:567bf97ffd456cb4e3448e211ec16bfd41b7f9216847df82595eb5f940588ade",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "b3a77693-17fd-4982-bb5b-5bedad173270",
+      "version_number": 1,
+      "content_hash": "sha256:635768c23130aad6f3d227963a0722492ef25e4d00aed05d00aab5d06f0a2b64",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    }
+  ]
+}
