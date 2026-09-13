@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `4c636037a6ed529af2ce6ba7d45e719638734ff5`
+Reality baseline: `1511047d71888e62961b8a75f276bdd1ae166ef8`
 Baseline implementation identity:
-`sha256:edf2ecfb5058dfa3c5f67672f4d773b3b06a17ca1378294d047f0328e3f2c978`
+`sha256:dbb78e906f77d12da5a0f6b2c60659b1a2ad83dd5df92668db8e194c7dc33f93`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "4c636037a6ed529af2ce6ba7d45e719638734ff5",
-    "implementation_tree_sha": "sha256:edf2ecfb5058dfa3c5f67672f4d773b3b06a17ca1378294d047f0328e3f2c978"
+    "sha": "1511047d71888e62961b8a75f276bdd1ae166ef8",
+    "implementation_tree_sha": "sha256:dbb78e906f77d12da5a0f6b2c60659b1a2ad83dd5df92668db8e194c7dc33f93"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -110,7 +110,7 @@ Baseline implementation identity:
 }
 -->
 
-Implementation delta review at `4c636037a6ed529af2ce6ba7d45e719638734ff5` (2026-09-14; code-agent lifecycle review): Planning validates decoded world results against a single-scope typed contract before candidate materialization. Failed result evidence can support a bounded, causally linked repair Operation while preserving the original terminal Operation and frozen task; the new migration enforces that lineage. Production budget reallocation requires an exact predecessor policy and retains cumulative usage and reservations. The changed Capability Pack version requires its own approval. These changes add no Source processing, twenty-work consumption, comparison-arm execution or real receipt-interruption evidence for this proposal. G3 and G4 remain outstanding; this review does not promote Provider, human editorial or production evidence.
+Implementation delta review at `1511047d71888e62961b8a75f276bdd1ae166ef8` (2026-09-14; code-agent lifecycle review): The v3 production initializer now calls the existing Project Authority to create an independent secondary Workspace with Project CAS. It preserves the primary Workspace and its Book while retaining the shared lifetime budget. This adds no Source processing, twenty-work consumption, comparison-arm execution or receipt-interruption evidence for this proposal. G3 and G4 remain outstanding; this review adds no independent editorial or production qualification.
 
 Prior implementation delta review at `b10a4a8c5cf6410ba1557ad850a90d12a632d9fe` (2026-09-13; code-agent review, not human qualification): The single-Book policy uses the same cumulative ledger for separate Source, design, early/late chapter and repair scopes. Author-guided Context compilation now keeps scoped fragment semantics and frozen provenance; it does not consume classical-source knowledge or establish any of the proposed four-arm outcomes. G3 and G4 remain outstanding. The relevant checks are native author Formation wiring and single-Book budget isolation; these are scripted engineering evidence, not real Provider or independent editorial evidence.
 
