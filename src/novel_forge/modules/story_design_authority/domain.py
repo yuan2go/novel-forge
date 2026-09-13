@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from collections.abc import Mapping
 
 
 class DesignLifecycle(StrEnum):
@@ -254,6 +255,26 @@ GENERATOR_DESIGN_SCOPE = {
     "chapter_group_plan.generate": DesignScope.CHAPTER_GROUP_PLAN,
     "chapter_plan.generate": DesignScope.CHAPTER_PLAN,
 }
+
+
+def matches_generated_foundation_source(
+    content: Mapping[str, object], *, role: str, project_id: object, book_id: object
+) -> bool:
+    generator = content.get("generator_operation_name")
+    scope = GENERATOR_DESIGN_SCOPE.get(generator) if isinstance(generator, str) else None
+    return (
+        scope is not None
+        and scope.value == role
+        and isinstance(project_id, str) and bool(project_id)
+        and isinstance(book_id, str) and bool(book_id)
+        and content.get("project_id") == project_id
+        and content.get("book_id") == book_id
+        and content.get("type") == "PlanningGenerationCandidate"
+        and content.get("schema_version") == "story_design.authority.v1"
+        and content.get("planning_scope") == "NOT_APPLICABLE"
+        and isinstance(content.get("candidate_payload"), Mapping)
+        and bool(content.get("candidate_payload"))
+    )
 
 
 __all__ = [

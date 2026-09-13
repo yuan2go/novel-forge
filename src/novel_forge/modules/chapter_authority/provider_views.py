@@ -17,6 +17,7 @@ from novel_forge.modules.narrative_state import (
 _MAX_SEGMENTS = 24
 _MAX_FACTS_PER_SEGMENT = 32
 _MAX_PROVIDER_CONTEXT_CHARACTERS = 65_536
+_MAX_FOUNDATION_EVALUATION_CONTEXT_CHARACTERS = 131_072
 _MAX_PROVIDER_KNOWLEDGE_CHARACTERS = 65_536
 _STATE_ASSET_TYPES = {"story_state_snapshot", "canon_snapshot"}
 
@@ -1240,8 +1241,17 @@ def _build_narrative_evaluation_context_view(
                     if isinstance(source_content, Mapping)
                     else None
                 )
+                from novel_forge.modules.story_design_authority.domain import matches_generated_foundation_source
+
+                source_kind_matches = item.get("asset_type") == expected_asset_type
+                if item.get("asset_type") == "planning_generation_candidate":
+                    source_kind_matches = isinstance(source_content, Mapping) and matches_generated_foundation_source(
+                        source_content, role=role,
+                        project_id=context_bundle.get("project_id"),
+                        book_id=context_bundle.get("book_id"),
+                    )
                 valid = valid and (
-                    item.get("asset_type") == expected_asset_type
+                    source_kind_matches
                     and isinstance(source_content, Mapping)
                     and source_content.get("schema_version")
                     == "story_design.authority.v1"
@@ -1302,7 +1312,12 @@ def _build_narrative_evaluation_context_view(
             "omitted_count": 0,
         },
     }
-    if _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
+    maximum_characters = (
+        _MAX_FOUNDATION_EVALUATION_CONTEXT_CHARACTERS
+        if isolation == "EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES"
+        else _MAX_PROVIDER_CONTEXT_CHARACTERS
+    )
+    if _serialized_character_count(view) > maximum_characters:
         raise KernelError(
             "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
             "Semantic Evaluation context exceeds the bounded Provider projection",

@@ -450,6 +450,14 @@ must include the six Foundation generation capabilities and their qualification 
 the Chapter pack must include Memo, Review/Revision and Canon support. It does not seed
 qualified story assets or call a Provider SDK directly.
 
+BookDesign v5 semantic evaluation resolves the exact six active Foundation bindings,
+including native `planning_generation_candidate` assets. Both dependency resolution and
+Provider projection check their generator role, project, Book and candidate contract;
+qualification verdicts remain provenance rather than evaluator input. The aggregate
+projection has a `CONFIGURABLE_POLICY` limit of 131,072 serialized characters. Other
+evaluation projections retain 65,536 characters. These bounds do not grant tokens or
+calls: frozen route capacity and native budget admission still apply before dispatch.
+
 The `short-arc-*` files remain the small English engineering smoke. The separate
 `chinese-pilot-*` files freeze an original three-chapter Chinese Arc, limited third-person
 POV, character voice constraints, information asymmetry, a costly choice and setup/payoff.

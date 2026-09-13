@@ -199,6 +199,14 @@ def test_book_design_v5_evaluation_resolves_exact_foundation_without_prior_verdi
         for item in content["selected_inputs"]
     )
     assert len(writer.command.reference_asset_ids) == 13
+    if generated:
+        from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+
+        view = build_provider_context_view(
+            "narrative_semantic_evaluation", writer.command.content, {}
+        )
+        assert len(view["selected_inputs"]) == 7
+        assert all("semantic_payload" in item for item in view["selected_inputs"][1:])
 
 
 @pytest.mark.parametrize("change", [
@@ -242,3 +250,39 @@ def test_book_design_v5_evaluation_fails_closed_on_dependency_hash_drift() -> No
                 "generator_operation_name": "book_design.propose",
             },
         )
+
+
+@pytest.mark.parametrize("characters, accepted", [(70_000, True), (140_000, False)])
+def test_generated_foundation_provider_capacity_is_bounded(characters, accepted):
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+
+    binder, candidate, writer, documents = _binder_fixture(generated=True)
+    source = documents["foundation:1"]
+    documents[source.asset_version_id] = replace(source, content={
+        **source.content, "candidate_payload": {"semantic_evidence": "文" * characters}
+    })
+    binder._evaluation_context_bundle(
+        operation_id="operation:evaluate", attempt_id="attempt:evaluate",
+        project_id="project:test", trace_id="trace:test", correlation_id="correlation:test",
+        pointer={"asset_version_id": candidate.asset_version_id, "artifact_type": candidate.asset_type, "content_hash": candidate.content_hash},
+        metadata={"book_id": "book:test", "generator_operation_name": "book_design.propose"},
+    )
+    if accepted:
+        view = build_provider_context_view("narrative_semantic_evaluation", writer.command.content, {})
+        assert view["selected_inputs"][1]["semantic_payload"]["semantic_evidence"] == "文" * characters
+    else:
+        with pytest.raises(KernelError, match="NARRATIVE_EVALUATION_PROVIDER_CONTEXT_BUDGET_EXCEEDED"):
+            build_provider_context_view("narrative_semantic_evaluation", writer.command.content, {})
+
+
+def test_candidate_only_evaluation_retains_its_smaller_capacity():
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+
+    with pytest.raises(KernelError, match="NARRATIVE_EVALUATION_PROVIDER_CONTEXT_BUDGET_EXCEEDED"):
+        build_provider_context_view("narrative_semantic_evaluation", {
+            "source_isolation": "EXACT_CANDIDATE_ONLY",
+            "selected_inputs": [{
+                "asset_version_id": "candidate:test", "content_hash": "sha256:" + "a" * 64,
+                "asset_type": "planning_generation_candidate", "candidate": {"semantic_evidence": "文" * 70_000}
+            }],
+        }, {})

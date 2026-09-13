@@ -350,6 +350,7 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         content = {
             "schema_version": "novelos.narrative_evaluation_context_bundle.v1",
             "project_id": project_id,
+            "book_id": metadata.get("book_id"),
             "operation_id": operation_id,
             "attempt_id": attempt_id,
             "source_isolation": (
@@ -477,7 +478,7 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
             )
 
         resolved: list[tuple[str, Any, Any]] = []
-        from .domain import GENERATOR_DESIGN_SCOPE
+        from .domain import matches_generated_foundation_source
 
         for role, expected_asset_type in _FOUNDATION_DEPENDENCY_ASSET_TYPES.items():
             binding = by_role[role]
@@ -498,22 +499,8 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
             qualification_content = qualification.content
             source_kind_matches = source.asset_type == expected_asset_type
             if source.asset_type == "planning_generation_candidate":
-                generator = source.content.get("generator_operation_name")
-                scope = (
-                    GENERATOR_DESIGN_SCOPE.get(generator)
-                    if isinstance(generator, str)
-                    else None
-                )
-                source_kind_matches = (
-                    scope is not None
-                    and scope.value == role
-                    and bool(book_id)
-                    and source.content.get("book_id") == book_id
-                    and source.content.get("project_id") == document.project_id
-                    and source.content.get("type") == "PlanningGenerationCandidate"
-                    and source.content.get("schema_version") == "story_design.authority.v1"
-                    and source.content.get("planning_scope") == "NOT_APPLICABLE"
-                    and isinstance(source.content.get("candidate_payload"), Mapping)
+                source_kind_matches = matches_generated_foundation_source(
+                    source.content, role=role, project_id=document.project_id, book_id=book_id
                 )
             valid = (
                 source_kind_matches
