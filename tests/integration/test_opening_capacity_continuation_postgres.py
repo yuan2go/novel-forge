@@ -8,7 +8,10 @@ import pytest
 from novel_forge.modules.book_authority.opening import PostgresBookOpeningApplication
 from novel_forge.modules.command_kernel.creative_budget_runtime import configure_creative_budget, get_creative_budget
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, plan_external_effect
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectCommandContext, accept_external_effect_receipt, mark_external_effect_unknown,
+    plan_external_effect, prepare_effect_dispatch,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier
 from tests.integration.book_opening_workflow_postgres_support import build_workflow_fixture
@@ -139,3 +142,49 @@ def test_capacity_continuation_cannot_resend_after_provider_intent(monkeypatch):
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT count(*) FROM authority_book_opening_capacity_continuation WHERE source_opening_run_id=%s", [original.opening_run_id])
         assert uow.cursor.fetchone()[0] == 0
+
+
+@pytest.mark.parametrize("outcome", ["intent", "unknown", "retryable_failure", "success"])
+def test_recovery_sees_planning_effect_before_any_candidate(monkeypatch, outcome):
+    fixture, original, _ = _capacity_fixture()
+    captured = {}
+    def fail_after_effect(**kwargs):
+        context = EffectCommandContext(operation_id=kwargs["operation_id"], project_id=fixture.project_id,
+            actor_id=fixture.principal.principal_id, trace_id=identifier("trace"), correlation_id=identifier("correlation"))
+        effect = plan_external_effect(DATABASE_URL, context, effect_type="model.invoke",
+            provider="fake_deterministic_provider", capability="model.fixture",
+            stable_idempotency_key=identifier("pre-candidate-effect"), request_payload={"fixture": True},
+            max_attempts=2, reversible=False)
+        captured.update(operation_id=kwargs["operation_id"], effect_id=effect["external_effect_id"])
+        if outcome != "intent":
+            dispatch = prepare_effect_dispatch(DATABASE_URL, context, effect_id=effect["external_effect_id"])
+            if outcome == "unknown":
+                mark_external_effect_unknown(DATABASE_URL, context, dispatch_id=dispatch["dispatch_id"], evidence={"fixture": "lost-response"})
+            else:
+                accept_external_effect_receipt(DATABASE_URL, context, dispatch_id=dispatch["dispatch_id"],
+                    provider="fake_deterministic_provider", receipt_id=identifier("receipt"),
+                    message_id=identifier("message"), payload_hash="sha256:"+"e"*64,
+                    provider_correlation_id=identifier("provider-correlation"), generation=dispatch["generation"],
+                    outcome=outcome, evidence={"fixture": True})
+        raise KernelError("MODEL_EFFECT_RETRYABLE_PLANNING", "no Candidate persisted")
+    monkeypatch.setattr(fixture.binder, "execute", fail_after_effect)
+    claim = fixture.claim(fixture.principal.principal_id)
+    with pytest.raises(KernelError, match="MODEL_EFFECT_RETRYABLE_PLANNING"):
+        fixture.execute(claim)
+    before = fixture.opening.require(original.opening_run_id)
+    budget = get_creative_budget(DATABASE_URL, fixture.project_id)
+    assessment = fixture.opening.recovery.assess_recovery(original.opening_run_id,
+        idempotency_key="pre-candidate-assessment", principal=fixture.principal)
+    assert assessment.disposition == ("PROVEN_SUCCESS" if outcome == "success" else "UNKNOWN_AMBIGUOUS")
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT snapshot FROM authority_book_opening_recovery_assessment WHERE recovery_assessment_id=%s", [assessment.recovery_assessment_id])
+        snapshot = uow.cursor.fetchone()[0]
+    assert snapshot["planning_generation"]["operation_id"] == captured["operation_id"]
+    assert snapshot["planning_generation"]["candidate_asset_version_id"] == ""
+    assert {item["effect_id"] for item in snapshot["external_effect"]["evidence"]} == {captured["effect_id"]}
+    if outcome != "success":
+        with pytest.raises(KernelError, match="EXTERNAL_EFFECT_RECONCILIATION_REQUIRED"):
+            fixture.opening.recovery.recover(assessment.recovery_assessment_id, idempotency_key="no-blind-resend",
+                reason="must reconcile the original Provider request", principal=fixture.principal)
+        assert fixture.opening.require(original.opening_run_id)["current_execution_generation"] == before["current_execution_generation"]
+    assert get_creative_budget(DATABASE_URL, fixture.project_id) == budget

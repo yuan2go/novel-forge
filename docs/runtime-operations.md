@@ -638,6 +638,12 @@ For Book Opening, use its progress query and recovery application. A process exi
 expired lease, or a completed inner semantic operation alone is insufficient to decide
 whether Provider work may be sent again.
 
+The recovery snapshot also resolves the current Narrative Search branch's latest
+Planning generation when no semantic Evaluation exists yet. Its durable Effect,
+Dispatch and Receipt evidence is required even before a Candidate is saved. A local
+timeout without a proven Provider outcome remains `UNKNOWN_AMBIGUOUS`; missing
+Candidate or checkpoint rows are not evidence that no request was sent.
+
 When an Opening node returns its committed result and a late heartbeat observes the
 released lease, the worker verifies the exact node receipt before preserving that
 result. A lost completion response still resolves from the receipt as a replay.
