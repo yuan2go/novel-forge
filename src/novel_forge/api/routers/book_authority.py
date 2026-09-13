@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, replace
-from typing import Any
+from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
+from pydantic import Field
 
 from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
 from novel_forge.api.routers.context import ProductRouterContext
@@ -50,6 +51,15 @@ class PlanChangeDecisionRequest:
 class PlanChangeControlRequest:
     project_id: str
     actor_id: str
+
+
+@dataclass
+class PlanningRuntimeContinuationRequest:
+    project_id: str
+    expected_source_version: Annotated[int, Field(strict=True, ge=1)]
+    decision_evidence: dict[str, Any]
+    trace_id: str
+    correlation_id: str
 
 
 def _planning_scope(record: dict[str, Any], *, project_id: str, book_id: str) -> None:
@@ -177,6 +187,24 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             result = _composition(ctx).planning.require_generation(operation_id)
             _planning_scope(result, project_id=project_id, book_id=book_id)
             return {**result, "frozen_command": _composition(ctx).planning.frozen_generation_command(operation_id)}
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/planning-generations/{operation_id}/runtime-continuation")
+    def continue_planning_runtime(book_id: str, operation_id: str, request: PlanningRuntimeContinuationRequest) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("story_planning.authority.execute", request.project_id)
+            planning = _composition(ctx).planning
+            _planning_scope(planning.require_generation(operation_id), project_id=request.project_id, book_id=book_id)
+            return planning.register_runtime_continuation(
+                operation_id, project_id=request.project_id, principal=principal,
+                expected_source_version=request.expected_source_version,
+                decision_evidence=request.decision_evidence,
+                trace_id=request.trace_id, correlation_id=request.correlation_id,
+            )
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:

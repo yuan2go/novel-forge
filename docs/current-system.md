@@ -570,6 +570,12 @@ are alternatives, not an output array. JSON-string transport is decoded and inte
 validated before Candidate materialization. Invalid Provider output remains evidence.
 Planning result recovery links a new bounded Operation to the failed Operation and
 retained result, preserving the old terminal state and fully revalidating the repair.
+Model profile identities retain exact legacy contracts and distinguish different frozen
+output schemas by contract hash. A separate operator registration can continue an
+execution-contract conflict across releases only after native cancellation proves that
+all retained Effects were never dispatched and every reservation was released. The
+new Operation preserves the source task, cites its predecessor and freezes the newly
+approved runtime; it does not reopen the old Operation or alter its execution snapshot.
 
 Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
 Description, Transition and Integration slots as needed. Dialogue and Interior slots

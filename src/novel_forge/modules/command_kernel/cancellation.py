@@ -311,6 +311,7 @@ def resolve_cancellation(
 ) -> dict[str, Any]:
     target = {
         "no_external_effect": "CANCELLED",
+        "never_dispatched_effects": "CANCELLED",
         "external_state_unknown": "RECONCILIATION_REQUIRED",
         "compensation_required": "COMPENSATION_REQUIRED",
     }.get(resolution)
@@ -352,6 +353,36 @@ def resolve_cancellation(
                     "CANCELLATION_NO_EFFECT_EVIDENCE_CONFLICT",
                     "no_external_effect resolution requires zero durable ExternalEffects",
                 )
+        if resolution == "never_dispatched_effects":
+            uow.cursor.execute(
+                "SELECT external_effect_id, status FROM authority_external_effect WHERE operation_id=%s AND project_id=%s ORDER BY external_effect_id FOR UPDATE",
+                [operation_id, project_id],
+            )
+            effects = uow.cursor.fetchall()
+            uow.cursor.execute(
+                "SELECT count(*) FROM authority_external_effect_dispatch dispatch JOIN authority_external_effect effect USING(external_effect_id) WHERE effect.operation_id=%s AND effect.project_id=%s",
+                [operation_id, project_id],
+            )
+            dispatch_count = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                "SELECT status FROM authority_budget_reservation WHERE operation_id=%s AND project_id=%s FOR UPDATE",
+                [operation_id, project_id],
+            )
+            reservations = uow.cursor.fetchall()
+            if not effects or any(row[1] not in {"READY", "CANCELLED"} for row in effects) or dispatch_count or not reservations or any(row[0] != "RELEASED" for row in reservations):
+                raise KernelError("CANCELLATION_NOT_DISPATCHED_PROOF_REQUIRED", "every retained Effect must have zero dispatches and only released budget reservations")
+            from .external_effect_runtime import EffectCommandContext, _record
+            context = EffectCommandContext(operation_id, project_id, actor_id, trace_id, correlation_id)
+            if operation[0] == "CANCELLED":
+                if any(status != "CANCELLED" for _, status in effects):
+                    raise KernelError("CANCELLATION_TERMINAL_EFFECT_CONFLICT", "a cancelled Operation cannot retain an uncancelled Effect")
+                return {"operation_id": operation_id, "status": "CANCELLED", "version": int(operation[1]), "replayed": True}
+            for effect_id, status in effects:
+                if status == "CANCELLED":
+                    continue
+                effect = uow.repositories.external_effects.get_for_update(str(effect_id))
+                target = uow.repositories.external_effects.cancel(effect)
+                _record(uow.repositories.external_effects, context, str(effect_id), "external_effect.cancelled", {"status": target, "provider_cancel_outcome": "not_dispatched", "dispatch_count": 0, "budget_disposition": "RELEASED"})
         result = _cas_operation(
             uow,
             operation_id=operation_id,

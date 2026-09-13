@@ -17,7 +17,7 @@ from novel_forge.modules.narrative_state.measurements import project_narrative_l
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.15.0"
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.16.0"
 STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.12.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
@@ -264,6 +264,7 @@ class StoryPlanningGenerationCommand:
     governance_action_version_ids: tuple[str, ...] = ()
     repair_of_candidate_id: str = ""
     repair_of_operation_id: str = ""
+    runtime_continuation_id: str = ""
     repair_result_asset_version_id: str = ""
     repair_result_diagnostic: Mapping[str, Any] | None = None
     repair_reason: str = ""
@@ -282,17 +283,17 @@ class StoryPlanningGenerationCommand:
     narrative_realization: Mapping[str, Any] | None = None
     opening_execution_binding: Mapping[str, Any] | None = None
     world_preparation_request: Mapping[str, Any] | None = None
-    execution_contract_version: str = "1.15.0"
+    execution_contract_version: str = "1.16.0"
 
     def __post_init__(self) -> None:
-        if self.execution_contract_version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0"} or (
+        if self.execution_contract_version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0"} or (
             self.execution_contract_version == "1.11.0"
             and self.world_preparation_request
         ):
             raise ValueError(
                 "historical Planning commands cannot acquire new world stages"
             )
-        if self.generator_operation_name in FOUNDATION_GENERATORS and self.execution_contract_version not in {"1.14.0", "1.15.0"}:
+        if self.generator_operation_name in FOUNDATION_GENERATORS and self.execution_contract_version not in {"1.14.0", "1.15.0", "1.16.0"}:
             raise ValueError("Foundation generation requires its current frozen execution contract")
         if self.world_preparation_request:
             from novel_forge.modules.worldbuilding.dynamics import (
@@ -429,10 +430,12 @@ class StoryPlanningGenerationCommand:
                 "Planning Generation inputs must match the Authority role set; "
                 f"missing={missing}, extra={extra}"
             )
+        if self.runtime_continuation_id and self.execution_contract_version != "1.16.0":
+            raise ValueError("runtime continuation requires its current registered contract")
         result_repair = bool(self.repair_of_operation_id)
         if result_repair != bool(self.repair_result_asset_version_id) or result_repair != bool(self.repair_result_diagnostic):
             raise ValueError("Planning result repair requires its failed Operation, raw result and diagnosis")
-        if result_repair and (self.repair_of_candidate_id or self.execution_contract_version != "1.15.0"):
+        if result_repair and (self.repair_of_candidate_id or self.execution_contract_version not in {"1.15.0", "1.16.0"}):
             raise ValueError("Planning result repair is a new bounded command without a source Candidate")
         if self.repair_result_diagnostic:
             object.__setattr__(self, "repair_result_diagnostic", _json_object_snapshot(self.repair_result_diagnostic, "repair_result_diagnostic"))

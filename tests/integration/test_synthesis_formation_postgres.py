@@ -44,8 +44,8 @@ from tests.integration.synthesis_production_support import SynthesisTransport
 from tests.integration.test_core_functional_loops_postgres import _principal
 
 
-@pytest.mark.parametrize("author_guided,result_repair", [(False, False), (True, False), (False, True)])
-def test_native_formation_generates_foundation_from_author_brief(tmp_path, author_guided, result_repair):
+@pytest.mark.parametrize("author_guided,result_repair,runtime_recovery", [(False, False, False), (True, False, False), (False, True, False), (False, False, True)])
+def test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery):
     harness = CapabilityPackPostgresHarness("synthesis-formation-author" if author_guided else "synthesis-formation")
     from copy import copy
 
@@ -69,8 +69,18 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, autho
     )
 
     PostgreSQLOnlyChapterSliceTests.release_evidence(harness.project_id)
+    historical = pytest.MonkeyPatch() if runtime_recovery else None
+    if historical:
+        import novel_forge.modules.capability_packs.longform_profiles as profiles
+        import novel_forge.modules.story_planning_runtime.application as planning_module
+        import novel_forge.modules.book_design_authority.formation_generation as formation_generation
+        original_command = formation_generation.StoryPlanningGenerationCommand
+        historical.setattr(profiles, "STORY_PLANNING_OPERATION_DEFINITION_REF", "story_planning.generate@1.15.0")
+        historical.setattr(planning_module, "STORY_PLANNING_GENERATION_VERSION", "1.15.0")
+        historical.setattr(formation_generation, "StoryPlanningGenerationCommand", lambda **values: replace(original_command(**values), execution_contract_version="1.15.0"))
     definition = story_planning_generation_definition(
-        application_build_id="synthesis-formation", commit_sha=RELEASE_SHA
+        application_build_id="synthesis-formation", commit_sha=RELEASE_SHA,
+        definition_version="1.15.0" if runtime_recovery else "1.16.0",
     )
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.repositories.definitions.register(definition)
@@ -154,6 +164,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, autho
         "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
         "NOVEL_FORGE_PLANNING_PROVIDER": "scripted_provider_v2",
         "NOVEL_FORGE_PLANNING_MODEL": "synthesis-scripted",
+        "NOVEL_FORGE_PLANNING_REASONING_EFFORT": "high",
         "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(tmp_path),
         "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": chapter_pack.pack_id,
@@ -263,7 +274,14 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, autho
                     raise RuntimeError("simulated activation projection crash")
 
         formation.generation.book_design.fault_injector = fail_activation
-        for _ in range(11):
+        runtime_recovered = False
+        if runtime_recovery:
+            preparer = formation.generation.planning.execution_binder.resolver.execution_preparer
+            def profile_collision(**_):
+                from novel_forge.modules.command_kernel.errors import KernelError
+                raise KernelError("EXECUTION_CONTRACT_FROZEN_CONFLICT", "retained legacy schema conflicts before dispatch")
+            preparer._execution_binding = profile_collision
+        for _ in range(12):
             formation.schedule_candidates(
                 limit=1,
                 project_id=harness.project_id,
@@ -286,7 +304,20 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, autho
                     claim,
                     lease_seconds=60,
                 )
-            except RuntimeError as exc:
+            except Exception as exc:
+                from novel_forge.modules.command_kernel.errors import KernelError
+                if isinstance(exc, KernelError) and exc.code == "EXECUTION_CONTRACT_FROZEN_CONFLICT" and runtime_recovery and not runtime_recovered:
+                    historical.undo()
+                    historical = None
+                    execution.close()
+                    formation, execution = _recover_runtime_profile_formation(
+                        harness=harness, chapter_pack=chapter_pack, formation=formation,
+                        principal=principal, settings=settings, env=env, registry=registry,
+                        transport=transport, admitted=admitted,
+                    )
+                    formation.generation.book_design.fault_injector = fail_activation
+                    runtime_recovered = True
+                    continue
                 assert (
                     str(exc) == "simulated activation projection crash"
                     and not recovered_activation
@@ -336,6 +367,9 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, autho
                 break
         result = formation.require(admitted.formation_run_id)
         assert result["lifecycle"] == "READY", result
+        assert runtime_recovered is runtime_recovery
+        if runtime_recovery:
+            _assert_runtime_continuation_once(formation, harness, transport, principal)
         creative_candidates = [
             item
             for item in AuthorityAssetQuery(DATABASE_URL).list_versions(
@@ -594,6 +628,8 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, autho
         with pytest.raises(ValueError, match="differs"):
             prepare_pilot_book(**{**arguments, "frozen": {**frozen_pilot, "run_key": "changed"}}, initialize=False)
     finally:
+        if historical:
+            historical.undo()
         (tmp_path / "provider-transcript.json").write_text(
             json.dumps(
                 {
@@ -607,3 +643,127 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, autho
             )
         )
         execution.close()
+
+
+def _recover_runtime_profile_formation(*, harness, chapter_pack, formation, principal, settings, env, registry, transport, admitted):
+    from concurrent.futures import ThreadPoolExecutor
+    from novel_forge.modules.command_kernel.budget_runtime import resolve_provider_budget_failure
+    from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation, resolve_cancellation
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+    from novel_forge.modules.story_planning_runtime.runtime_continuation import require_binding
+
+    assert not transport.calls
+    failed = formation.require(admitted.formation_run_id)
+    assert failed["lifecycle"] == "FAILED"
+    assert failed["current_stage"] == "CREATIVE_SEARCH"
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT op.operation_id,op.version,op.status,op.command_payload->'payload',effect.external_effect_id,reservation.reservation_id,snapshot.snapshot_payload FROM authority_operation op JOIN authority_story_planning_generation generation USING(operation_id) JOIN authority_external_effect effect USING(operation_id) JOIN authority_budget_reservation reservation USING(operation_id) JOIN authority_attempt_capability_pack_snapshot snapshot USING(operation_id) WHERE op.project_id=%s", [harness.project_id])
+        source_id, source_version, source_status, source_payload, effect_id, reservation_id, source_snapshot = uow.cursor.fetchone()
+        assert source_status == "FAILED_RETRYABLE"
+        assert source_payload["execution_contract_version"] == "1.15.0"
+        uow.cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s", [effect_id])
+        assert uow.cursor.fetchone()[0] == 0
+    requested = request_cancellation(DATABASE_URL, CancelCommand(operation_id=source_id,project_id=harness.project_id,actor_id=principal.principal_id,expected_version=source_version,reason="fixture verified no dispatch before runtime repair",idempotency_key=f"{source_id}:cancel",trace_id="trace:runtime-continuation",correlation_id=harness.project_id))
+    del requested
+    def cancel():
+        return resolve_cancellation(DATABASE_URL,operation_id=source_id,project_id=harness.project_id,expected_version=source_version+1,resolution="never_dispatched_effects",actor_id=principal.principal_id,reason="all reservations released and no dispatch",trace_id="trace:runtime-continuation",correlation_id=harness.project_id)
+    with pytest.raises(KernelError, match="CANCELLATION_NOT_DISPATCHED_PROOF_REQUIRED"):
+        cancel()
+    assert resolve_provider_budget_failure(DATABASE_URL,reservation_id=reservation_id,project_id=harness.project_id)["status"] == "RELEASED"
+    cancelled = cancel()
+    assert cancel()["replayed"] is True
+    new_sha = "f" * 40
+    definition = story_planning_generation_definition(application_build_id="synthesis-formation", commit_sha=new_sha)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        registered = uow.repositories.definitions.register(definition)
+        uow.cursor.execute("SELECT definition_hash FROM authority_operation_definition WHERE name=%s AND definition_version=%s",[definition["name"],definition["definition_version"]])
+        digest=uow.cursor.fetchone()[0]
+        uow.commit()
+    del registered
+    profile = build_story_planning_pack_profile(Path(__file__).resolve().parents[2], operation_definition_hash=digest,pack_id=harness.pack_id)
+    harness._base_manifest,harness._base_catalog=profile.manifest,profile.artifact_catalog
+    scope=harness.approval_scope(environments=("test",),runtime_profiles=("test",))
+    scope["allowed_workflow_definition_refs"]=[profile.workflow_ref]
+    from novel_forge.modules.capability_pack_authority.application import CapabilityPackAuthorityApplication
+    harness.release_sha=new_sha
+    harness.application=CapabilityPackAuthorityApplication(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=new_sha)
+    approved=harness.register_compile_approve("1.2.0",generation=2,approval_scope=scope,target_runtime_profile="test",proof_skill_ref=profile.agent_skill_ref,release_sha=new_sha)
+    deployment=harness.deploy(approved,environment="test",runtime_profile="test")
+    harness.activate(deployment,expected_activation_version=1,environment="test")
+    from novel_forge.modules.chapter_authority.definitions import chapter_operation_definitions
+    from novel_forge.modules.agent_runtime.definitions import agent_runtime_operation_definitions
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        for item in (*chapter_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha,model_effects_required=True),*agent_runtime_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha)):
+            uow.repositories.definitions.register(item)
+        uow.commit()
+    chapter_pack.release_sha=new_sha
+    chapter_pack.application=CapabilityPackAuthorityApplication(DATABASE_URL,application_build_id=chapter_pack.application_build_id,commit_sha=new_sha)
+    approved_chapter=chapter_pack.register_compile_approve("1.1.0",generation=2,approval_scope=chapter_pack.approval_scope(environments=("test",),runtime_profiles=("test",)),target_runtime_profile="test",release_sha=new_sha)
+    chapter_deployment=chapter_pack.deploy(approved_chapter,environment="test",runtime_profile="test")
+    chapter_pack.activate(chapter_deployment,expected_activation_version=1,environment="test")
+    env["NOVEL_FORGE_COMMIT_SHA"]=new_sha
+    execution=build_production_execution_composition(settings,env=env,provider_registry=registry,planning_fixture_factory=transport.planning,chapter_fixture_factory=transport.chapter)
+    chapter=build_chapter_authority_application(settings,execution=execution,env=env)
+    composition=build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter,env=env)
+    formation=composition.formation
+    planning=formation.generation.planning
+    def register():
+        return planning.register_runtime_continuation(source_id,project_id=harness.project_id,principal=principal,expected_source_version=cancelled["version"],decision_evidence={"authorization_ref":"test:trusted-runtime-continuation", "authorized_reasoning_effort":"high", "reason":"exact immutable profile identity repair"},trace_id="trace:runtime-continuation",correlation_id=harness.project_id)
+    worker = replace(principal, principal_type=__import__('novel_forge.modules.authority_security',fromlist=['PrincipalType']).PrincipalType.SERVICE)
+    with pytest.raises(PermissionError):
+        planning.register_runtime_continuation(source_id,project_id=harness.project_id,principal=worker,expected_source_version=cancelled["version"],decision_evidence={"authorization_ref":"test:trusted-runtime-continuation","reason":"not operator"},trace_id="trace:runtime-continuation",correlation_id=harness.project_id)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        registrations=list(pool.map(lambda _:register(),range(2)))
+    assert {item["operation_id"] for item in registrations}.__len__()==1
+    continuation_id=f"planning-runtime-continuation:{source_id}"
+    binding=require_binding(DATABASE_URL,continuation_id)
+    assert binding["source_command"]==source_payload
+    assert binding["target_release_sha"]==new_sha
+    assert binding["successor_command"]["execution_contract_version"]=="1.16.0"
+    assert binding["successor_operation_id"] is None
+    successor=_command_from_payload(binding["successor_command"])
+    with pytest.raises(KernelError,match="PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT"):
+        planning.generate(replace(successor,book_id="different-book"),principal=replace(principal,principal_id=successor.actor_id))
+    actual_sha=planning.commit_sha
+    planning.commit_sha=RELEASE_SHA
+    try:
+        with pytest.raises(KernelError,match="PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT"):
+            planning.generate(successor,principal=replace(principal,principal_id=successor.actor_id))
+    finally:
+        planning.commit_sha=actual_sha
+    formation.resume(admitted.formation_run_id,expected_version=failed["version"],principal=principal)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT status,command_payload->'payload' FROM authority_operation WHERE operation_id=%s",[source_id])
+        assert uow.cursor.fetchone()==("CANCELLED",source_payload)
+        uow.cursor.execute("SELECT snapshot_payload FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s",[source_id])
+        assert uow.cursor.fetchone()[0]==source_snapshot
+        uow.cursor.execute("SELECT status FROM authority_external_effect WHERE external_effect_id=%s",[effect_id])
+        assert uow.cursor.fetchone()[0]=="CANCELLED"
+    return formation,execution
+
+
+def _assert_runtime_continuation_once(formation, harness, transport, principal):
+    from concurrent.futures import ThreadPoolExecutor
+    from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT source_operation_id,successor_operation_id,source_command,target_release_sha,source_evidence_asset_version_id FROM authority_story_planning_runtime_continuation WHERE project_id=%s",[harness.project_id])
+        rows=uow.cursor.fetchall()
+        assert len(rows)==1
+        source_id,successor_id,payload,target_sha,control_asset=rows[0]
+        assert successor_id and source_id!=successor_id
+        uow.cursor.execute("SELECT op.status,op.causation_operation_id,snapshot.release_sha,g.candidate_asset_version_id,g.input_snapshot_hash FROM authority_operation op JOIN authority_story_planning_generation g USING(operation_id) JOIN authority_attempt_capability_pack_snapshot snapshot USING(operation_id) WHERE op.operation_id=ANY(%s) ORDER BY op.status",[[source_id,successor_id]])
+        source,successor=uow.cursor.fetchall()
+        assert source[0]=="CANCELLED" and source[3] is None
+        assert successor[0]=="SUCCEEDED" and successor[1]==source_id and successor[2]==target_sha
+        assert source[2]!=target_sha and source[4]==successor[4]
+        uow.cursor.execute("SELECT input_asset_snapshot FROM authority_operation WHERE operation_id=%s",[successor_id])
+        assert all(item["asset_version_id"] != control_asset for item in uow.cursor.fetchone()[0])
+    command=_command_from_payload(payload)
+    worker=replace(principal,principal_id=command.actor_id)
+    before=len(transport.calls)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes=list(pool.map(lambda version:formation.generation.planning.generate(replace(command,execution_contract_version=version),principal=worker),["1.15.0","1.16.0"]))
+    assert len({item.candidate_asset_version_id for item in outcomes})==1
+    assert all(item.generation_operation_id==successor_id for item in outcomes)
+    assert len(transport.calls)==before

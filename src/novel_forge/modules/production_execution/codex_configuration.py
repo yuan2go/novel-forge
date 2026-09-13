@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 from pathlib import Path
 from typing import Mapping
@@ -30,6 +31,16 @@ CODEX_INPUT_ONLY_OVERRIDES = (
 
 
 CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v2"
+
+
+def codex_local_binding_hash(*, codex_home: str, executable: str, entitlement: Mapping[str, str] | None) -> str:
+    return hashlib.sha256(json.dumps({
+        "codex_home": codex_home,
+        "executable": executable,
+        "entitlement": dict(entitlement) if entitlement is not None else None,
+        "input_only_overrides": CODEX_INPUT_ONLY_OVERRIDES,
+        "schema_projection": CODEX_SCHEMA_PROJECTION_VERSION,
+    }, sort_keys=True).encode()).hexdigest()
 
 
 def codex_output_schema(schema: dict) -> dict:

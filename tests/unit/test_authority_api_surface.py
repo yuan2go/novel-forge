@@ -78,6 +78,7 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                 "/product/mkaos/runtime-usage",
                 "/product/mkaos/runtime-selections",
                 "/product/production/book-authority/runs/{book_run_id}/corrective-actions",
+                "/product/production/book-authority/books/{book_id}/planning-generations/{operation_id}/runtime-continuation",
                 "/product/temporal-query",
                 "/product/content-intelligence/pacing",
                 "/product/content-intelligence/hooks",

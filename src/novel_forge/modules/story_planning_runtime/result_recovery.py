@@ -155,6 +155,7 @@ def require_result_repair_source(
 
         permitted_linkage_fields = {
             "execution_contract_version",
+            "runtime_continuation_id",
             "idempotency_key",
             "repair_of_candidate_id",
             "repair_of_operation_id",

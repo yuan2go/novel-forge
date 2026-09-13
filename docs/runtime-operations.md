@@ -512,6 +512,25 @@ existing resume/approval commands before the driver continues; a live lease is n
 stolen. Confirmed generation/evaluation receipts are reused, including evaluation whose
 candidate has subsequently been approved. New generation under a changed source uses a
 new run; old terminal tasks and accepted history are not reopened.
+For `EXECUTION_CONTRACT_FROZEN_CONFLICT` before the first Provider dispatch, inspect the
+retained Effect and release its reservation only after the native ledger proves the
+result is known not to have been dispatched. Request native cancellation and resolve it
+with `never_dispatched_effects`; the Kernel requires every Effect to have zero dispatch
+records and every reservation to be `RELEASED`. Install the repaired release and approve
+its exact Capability Pack compilation with duties separation preserved. The existing
+trusted local operator then registers a successor at
+`POST /product/production/book-authority/books/{book_id}/planning-generations/{operation_id}/runtime-continuation`,
+passing `project_id`, the cancelled source's `expected_source_version`,
+`decision_evidence` with the actual `authorization_ref`, `reason` and
+`authorized_reasoning_effort`, and `trace_id`/`correlation_id`. Reasoning is explicitly
+authorized by the current decision; missing fields in the old pre-dispatch request
+are not treated as historical proof. The original Book runtime policy binds the
+account, backend and CLI configuration. Registration binds the unchanged story task to the exact
+new runtime and permits at most two causal successors. Resume the same Formation with
+its observed CAS version; its original node follows the registered successor. Ordinary
+retries still enforce the old frozen runtime, and dispatched or unknown outcomes do not
+qualify for this path. A budget reallocation remains a separate native policy append;
+preserve the prior frozen driver configuration and continue through native step commands.
 
 Exports include Foundation candidates/diagnoses, model/usage/cost records, request
 admission and recovery artifacts even if Formation fails before Book production.

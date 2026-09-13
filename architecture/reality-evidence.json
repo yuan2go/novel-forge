@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260913_0131_planning_result_recovery",
+  "migration_head": "20260914_0132_planning_runtime_continuation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -5526,6 +5526,10 @@
         {
           "path": "architecture/manifests/production-entry-manifest.yaml",
           "locator": "\"name\": \"planning.binding.activate\""
+        },
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/books/{book_id}/planning-generations/{operation_id}/runtime-continuation\")"
         }
       ],
       "application": [
@@ -5572,6 +5576,10 @@
         {
           "path": "src/novel_forge/modules/story_planning_runtime/application.py",
           "symbol": "StoryPlanningGenerationApplication._repair_unmaterialized_result"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "symbol": "StoryPlanningGenerationApplication.register_runtime_continuation"
         }
       ],
       "state_ownership": {
@@ -5611,6 +5619,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260913_0131_planning_result_recovery.py",
           "locator": "MIGRATION_ID = \"20260913_0131_planning_result_recovery\"",
           "id": "20260913_0131_planning_result_recovery"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260914_0132_planning_runtime_continuation.py",
+          "locator": "MIGRATION_ID = \"20260914_0132_planning_runtime_continuation\"",
+          "id": "20260914_0132_planning_runtime_continuation"
         }
       ],
       "external_effects": {
@@ -5647,6 +5660,10 @@
         {
           "path": "tests/integration/test_synthesis_formation_postgres.py",
           "symbol": "test_native_formation_generates_foundation_from_author_brief"
+        },
+        {
+          "path": "tests/unit/test_planning_runtime_continuation_api.py",
+          "symbol": "test_runtime_continuation_route_binds_trusted_principal_and_exact_source"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7882,7 +7899,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:dbb78e906f77d12da5a0f6b2c60659b1a2ad83dd5df92668db8e194c7dc33f93"
+    "implementation_tree_sha": "sha256:f108173d537b98bc9ac3c42b631ffdcbe8df5a93815b004dd23da6c18d61967f"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

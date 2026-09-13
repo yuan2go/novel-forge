@@ -2112,7 +2112,7 @@ def test_world_runtime_contract_preserves_historical_frozen_commands():
 
     command = _command("chapter_plan.generate")
     current = _command_payload(command)
-    assert current["execution_contract_version"] == "1.15.0"
+    assert current["execution_contract_version"] == STORY_PLANNING_GENERATION_VERSION
     previous = {**current, "execution_contract_version": "1.13.0"}
     assert _command_payload(_command_from_payload(previous)) == previous
     published = {**current, "execution_contract_version": "1.12.0"}
@@ -2721,7 +2721,7 @@ def test_result_repair_command_keeps_historical_identity_and_bounded_new_causati
     assert recovered.repair_of_operation_id == "failed:operation"
     assert recovered.repair_of_candidate_id == ""
     assert recovered.repair_number == 1
-    assert recovered.execution_contract_version == "1.15.0"
+    assert recovered.execution_contract_version == STORY_PLANNING_GENERATION_VERSION
     assert _command_payload(original) == historical
     assert _command_from_payload(_command_payload(recovered)) == recovered
     with pytest.raises(KernelError, match="PLANNING_RESULT_REPAIR_BOUND_EXCEEDED"):
@@ -2732,3 +2732,84 @@ def test_result_repair_command_keeps_historical_identity_and_bounded_new_causati
 def test_result_repair_cannot_mix_candidate_and_raw_result_causation():
     with pytest.raises(ValueError, match="without a source Candidate"):
         replace(_command("world.design.generate"), repair_of_operation_id="failed:operation", repair_of_candidate_id="candidate:other", repair_result_asset_version_id="result:failed", repair_result_diagnostic={"error_code": "bad"}, repair_reason="bad:hash", repair_number=1)
+
+
+def _planning_profile_binding(preparer, *, schema_ref, generator="creative.candidates.generate", project_id="project-1", book_id="book-1", operation_id="profile-operation", attempt_id="profile-attempt", release_sha="a" * 40):
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass, FallbackPolicy, default_capability_registry
+    from novel_forge.modules.story_planning_runtime.execution import PlanningExecutionRoute
+    from tests.unit.test_production_execution_gateway import contracts
+
+    _, profile, policy, _, _, _ = contracts(backend_id="codex-profile-test", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+    route = PlanningExecutionRoute(model_profile=profile, route_policy=policy, fallback_policy=FallbackPolicy.fail_closed(policy.fallback_policy_ref, 1), backend_version="1", runtime_host_id="host:test", auth_profile_ref="auth:test", release_sha=release_sha)
+    command = replace(_command(generator), project_id=project_id, book_id=book_id)
+    definition = GENERATOR_CATALOG[generator]
+    return preparer._execution_binding(
+        operation_id=operation_id, attempt_id=attempt_id, fencing_token=1,
+        command=command, definition=definition,
+        capability=default_capability_registry().resolve(definition.capability),
+        planning_route=route,
+        context_document=SimpleNamespace(asset_version_id="context:test", content_hash=HASH),
+        input_documents=(), effect_id="effect:test", stable_key="effect-key:test", reservation_id="reservation:test",
+        output_schema_ref=schema_ref, frozen=SimpleNamespace(prompt_bundle_ref="prompt:test", skill_bundle_ref="skill:test"),
+        stage_name=generator, stage_identity="planning",
+    )
+
+
+@pytest.mark.parametrize("generator", ["creative.candidates.generate", "world.design.generate", "character.cast.generate", "book_plan.generate"])
+def test_planning_model_profile_distinguishes_contracts_and_reuses_exact_legacy(generator):
+    from novel_forge.modules.production_execution import ModelProfile, RoutePolicy
+    preparer = object.__new__(PostgresPlanningExecutionPreparer)
+    documents = {}
+    preparer._operation_graph = lambda operation_id, project_id: {"root_operation_id": operation_id, "saga_id": "saga:test", "definition_name": "story_planning.generate"}
+    def require(**arguments):
+        key = (arguments["project_id"], arguments["logical_ref"])
+        if key not in documents:
+            raise KernelError("AUTHORITY_ASSET_NOT_FOUND", "missing")
+        return documents[key]
+    def ensure(**arguments):
+        key = (arguments["project_id"], arguments["logical_ref"])
+        contract = arguments["contract"]
+        if key in documents:
+            assert documents[key].content["contract"] == contract
+        else:
+            documents[key] = SimpleNamespace(asset_type=arguments["asset_type"], content={"contract": deepcopy(contract)}, content_hash=canonical_hash(contract))
+        return documents[key]
+    preparer.query = SimpleNamespace(require=require)
+    preparer._ensure_contract = ensure
+    first, _ = _planning_profile_binding(preparer, schema_ref="schema:author-guided:v1", generator=generator)
+    original = deepcopy({key: value.content for key, value in documents.items()})
+    second, _ = _planning_profile_binding(preparer, schema_ref="schema:plain:v1", generator=generator, book_id="book-2", operation_id="profile-operation-2", attempt_id="attempt-2")
+    assert ".sha256." in first.route_snapshot.model_profile_id
+    assert ".sha256." in second.route_snapshot.model_profile_id
+    assert first.route_snapshot.model_profile_id != second.route_snapshot.model_profile_id
+    assert first.route_snapshot.policy_id != second.route_snapshot.policy_id
+    assert first.route_snapshot.fallback_policy_ref != second.route_snapshot.fallback_policy_ref
+    for key, content in original.items():
+        assert documents[key].content == content
+    for binding in (first, second):
+        route = binding.route_snapshot
+        profile = documents[("project-1", f"production_execution/model_profiles/{route.model_profile_id}/v1")].content["contract"]
+        policy = documents[("project-1", f"production_execution/route_policies/{route.policy_id}/v1")].content["contract"]
+        assert route.model_profile_hash == ModelProfile.from_dict(profile).contract_hash
+        assert route.route_policy_hash == RoutePolicy.from_dict(policy).contract_hash
+        assert profile["output_policy_ref"] == route.output_schema_ref
+        assert policy["allowed_model_profile_ids"] == [route.model_profile_id]
+        assert policy["fallback_policy_ref"] == route.fallback_policy_ref
+    replay, _ = _planning_profile_binding(preparer, schema_ref="schema:plain:v1", generator=generator, book_id="book-2", operation_id="profile-operation-2", attempt_id="attempt-2")
+    assert replay == second
+    reused, _ = _planning_profile_binding(preparer, schema_ref="schema:author-guided:v1", generator=generator, operation_id="profile-operation-3", attempt_id="attempt-3")
+    assert reused.route_snapshot.model_profile_id == first.route_snapshot.model_profile_id
+
+
+@pytest.mark.parametrize("invalid", [[], None, 42, {"profile_id": "wrong"}])
+def test_model_profile_does_not_coerce_or_rewrite_invalid_retained_contract(invalid):
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+    from tests.unit.test_production_execution_gateway import contracts
+    _, profile, _, _, _, _ = contracts(backend_id="codex-profile-test", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+    preparer = object.__new__(PostgresPlanningExecutionPreparer)
+    document = SimpleNamespace(asset_type="model_profile", content={"contract": invalid})
+    preparer.query = SimpleNamespace(require=lambda **kwargs: document)
+    before = deepcopy(document.content)
+    with pytest.raises(KernelError, match="EXECUTION_CONTRACT_FROZEN_CONFLICT"):
+        preparer._select_model_profile("project-1", profile)
+    assert document.content == before

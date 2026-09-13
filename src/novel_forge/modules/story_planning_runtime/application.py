@@ -357,6 +357,7 @@ class StoryPlanningGenerationHandlerRegistry:
             "1.12.0",
             "1.13.0",
             "1.14.0",
+            "1.15.0",
         }:
             raise KeyError((definition_name, definition_version))
         return replace(item, definition_version=definition_version)
@@ -385,6 +386,7 @@ class StoryPlanningGenerationApplication:
                 "Planning Generation requires PostgreSQL and build identity"
             )
         self.database_url = database_url
+        self.execution_binder = execution_binder
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.worker_id = worker_id
@@ -411,6 +413,10 @@ class StoryPlanningGenerationApplication:
             commit_sha=commit_sha,
         )
 
+    def register_runtime_continuation(self, source_operation_id: str, *, project_id: str, principal: Principal, expected_source_version: int, decision_evidence: Mapping[str, Any], trace_id: str, correlation_id: str) -> dict[str, Any]:
+        from .runtime_continuation import register
+        return register(self, source_operation_id, project_id=project_id, principal=principal, expected_source_version=expected_source_version, decision_evidence=decision_evidence, trace_id=trace_id, correlation_id=correlation_id)
+
     def generate(
         self,
         command: StoryPlanningGenerationCommand,
@@ -424,6 +430,10 @@ class StoryPlanningGenerationApplication:
                 "Planning Generation actor must be the trusted Principal"
             )
         self._probe(execution_probe)
+        continuation = None
+        if command.runtime_continuation_id:
+            from .runtime_continuation import require_successor
+            continuation = require_successor(self, command)
         replay = self._terminal_generation_replay(command, principal=principal)
         if replay is not None:
             return replay
@@ -520,7 +530,7 @@ class StoryPlanningGenerationApplication:
                     or command.repair_of_candidate_id
                 ),
                 "causation_operation_id": (
-                    command.repair_of_operation_id or command.parent_agent_session_operation_id or None
+                    (continuation["source_operation_id"] if continuation else "") or command.repair_of_operation_id or command.parent_agent_session_operation_id or None
                 ),
                 "input": {
                     "project_id": command.project_id,
@@ -1407,11 +1417,22 @@ class StoryPlanningGenerationApplication:
                     "historical Planning definitions may only resume their already admitted commands",
                 )
             return None
-        if dict(row[1]) != _command_payload(command):
+        frozen_payload = dict(row[1])
+        if row[2] == "CANCELLED" and not row[4]:
+            from .runtime_continuation import follow
+            current_payload = _command_payload(command)
+            if {key: value for key, value in frozen_payload.items() if key != "execution_contract_version"} == {key: value for key, value in current_payload.items() if key != "execution_contract_version"}:
+                resumed = follow(self, str(row[0]), _command_from_payload(frozen_payload), principal=principal)
+                if resumed is not None:
+                    return resumed
+        if frozen_payload != _command_payload(command):
             raise KernelError(
                 "PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT",
                 "replay must use the exact immutable admitted Planning command",
             )
+        if row[2] == "CANCELLED" and not row[4]:
+            from .runtime_continuation import follow
+            return follow(self, str(row[0]), command, principal=principal)
         if row[2] == "FAILED_FINAL" and not row[4]:
             return self._repair_unmaterialized_result(command, operation_id=str(row[0]), principal=principal)
         if row[2] != "SUCCEEDED" or not row[4]:
@@ -1427,7 +1448,7 @@ class StoryPlanningGenerationApplication:
                 )
                 failed = uow.cursor.fetchone()
             if failed:
-                if command.execution_contract_version in {"1.12.0", "1.13.0", "1.14.0", "1.15.0"}:
+                if command.execution_contract_version in {"1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0"}:
                     definition = GENERATOR_CATALOG[command.generator_operation_name]
                     maximum = (
                         definition.maximum_semantic_repairs
@@ -1441,6 +1462,7 @@ class StoryPlanningGenerationApplication:
                         )
                     repaired = replace(
                         command,
+                        runtime_continuation_id="",
                         repair_of_candidate_id=str(row[4]),
                         repair_of_operation_id="",
                         repair_result_asset_version_id="",
@@ -1486,6 +1508,7 @@ class StoryPlanningGenerationApplication:
         repaired = replace(
             command,
             execution_contract_version=STORY_PLANNING_GENERATION_VERSION,
+            runtime_continuation_id="",
             repair_of_candidate_id="",
             repair_of_operation_id=operation_id,
             repair_result_asset_version_id=source["asset_version_id"],
@@ -2150,6 +2173,7 @@ class StoryPlanningGenerationApplication:
         self._update_generation_status(operation_id, "REPAIR_REQUIRED")
         repaired = replace(
             command,
+            runtime_continuation_id="",
             repair_of_candidate_id=candidate_asset_version_id,
             repair_of_operation_id="",
             repair_result_asset_version_id="",
@@ -2535,6 +2559,9 @@ class StoryPlanningGenerationApplication:
                     command.repair_result_asset_version_id,
                 ],
             )
+            if command.runtime_continuation_id:
+                from .runtime_continuation import attach_successor
+                attach_successor(uow, command, operation_id)
             uow.commit()
 
     def _record_candidate(
@@ -3055,7 +3082,7 @@ def story_planning_generation_definition(
             "story_design_activation_separate": True,
             "semantic_evaluation_operation_separate": True,
             "repair_candidate_asset_input_allowed": True,
-            **({"repair_result_evidence_input_allowed": True} if definition_version == "1.15.0" else {}),
+            **({"repair_result_evidence_input_allowed": True} if definition_version in {"1.15.0", "1.16.0"} else {}),
             "capability_pack_attempt_snapshot_required": True,
             "typed_capability_binding_required": True,
             "agent_runtime_binding_required": False,
@@ -3123,6 +3150,7 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         "change_evidence_version_ids": list(command.change_evidence_version_ids),
         "governance_action_version_ids": list(command.governance_action_version_ids),
         "repair_of_candidate_id": command.repair_of_candidate_id,
+        **({"runtime_continuation_id": command.runtime_continuation_id} if command.runtime_continuation_id else {}),
         **({"repair_of_operation_id": command.repair_of_operation_id, "repair_result_asset_version_id": command.repair_result_asset_version_id, "repair_result_diagnostic": dict(command.repair_result_diagnostic or {})} if command.repair_of_operation_id else {}),
         "repair_reason": command.repair_reason,
         "repair_number": command.repair_number,
@@ -3188,6 +3216,7 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
             str(item) for item in payload.get("governance_action_version_ids") or ()
         ),
         repair_of_candidate_id=str(payload.get("repair_of_candidate_id") or ""),
+        runtime_continuation_id=str(payload.get("runtime_continuation_id") or ""),
         repair_of_operation_id=str(payload.get("repair_of_operation_id") or ""),
         repair_result_asset_version_id=str(payload.get("repair_result_asset_version_id") or ""),
         repair_result_diagnostic=dict(payload.get("repair_result_diagnostic") or {}) or None,

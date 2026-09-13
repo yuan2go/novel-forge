@@ -11,6 +11,15 @@
       "definition_factory": "novel_forge.modules.command_kernel.creative_budget_runtime:creative_budget_definitions"
     },
     {
+      "name": "story_planning.runtime_continuation.register",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/story_planning_runtime/runtime_continuation.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "planning.register_runtime_continuation",
+      "definition_factory": "novel_forge.modules.story_planning_runtime.runtime_continuation:runtime_continuation_definition"
+    },
+    {
       "name": "planning.causal.propose",
       "source": "src/novel_forge/api/routers/book_authority.py",
       "application_source": "src/novel_forge/modules/hierarchical_planning/causal_application.py",
