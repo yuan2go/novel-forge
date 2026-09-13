@@ -16,6 +16,7 @@ from novel_forge.modules.project_authority.definitions import (
     PROJECT_AUTHORITY_DEFINITION_VERSION,
     PROJECT_AUTHORITY_HANDLER_KEY,
     PROJECT_AUTHORITY_OPERATIONS,
+    PROJECT_WORKSPACE_DEFINITION_VERSION,
     project_authority_definitions,
 )
 from novel_forge.modules.project_authority.domain import (
@@ -131,7 +132,7 @@ class ProjectAuthorityApplication:
             self.database_url,
             {
                 "definition_name": command.definition_name,
-                "definition_version": PROJECT_AUTHORITY_DEFINITION_VERSION,
+                "definition_version": PROJECT_WORKSPACE_DEFINITION_VERSION if command.definition_name == "project_workspace.create" else PROJECT_AUTHORITY_DEFINITION_VERSION,
                 "project_id": command.project_id,
                 "workspace_id": command.workspace_id,
                 "actor_id": actor_id,
@@ -177,6 +178,8 @@ class ProjectAuthorityApplication:
             payload.get("expected_current_asset_version_id") or ""
         )
         repository = ProjectAuthorityRepository(uow.cursor)
+        if action == "project_workspace.create":
+            return self._create_workspace(uow, operation_id, operation, payload, repository, checkpoint)
         binding_document = None
         binding_type = ""
         binding_target_version_id = ""
@@ -436,6 +439,53 @@ class ProjectAuthorityApplication:
             "asset_version_id": project_document.asset_version_id,
             "content_hash": project_document.content_hash,
         }
+
+    def _create_workspace(
+        self, uow: AuthorityUnitOfWork, operation_id: str, operation: dict[str, Any],
+        payload: dict[str, Any], repository: ProjectAuthorityRepository,
+        checkpoint: TransactionCheckpoint,
+    ) -> dict[str, Any]:
+        project_id = str(payload["project_id"])
+        current = repository.lock_project(project_id)
+        if current["workspace_id"] != payload["workspace_id"]:
+            raise KernelError("WORKSPACE_SCOPE_CONFLICT", "workspace creation must use the owning project's primary workspace")
+        if (payload["expected_version"] != current["version"]
+            or payload.get("expected_current_asset_version_id") != current["asset_version_id"]):
+            raise KernelError("PROJECT_VERSION_CONFLICT", "workspace creation requires the current Project version and asset")
+        if current["content"]["status"] != "ACTIVE":
+            raise KernelError("PROJECT_LIFECYCLE_CONFLICT", "workspace creation requires an ACTIVE project")
+        requested = dict(payload["payload"])
+        workspace_id = requested["workspace_id"]
+        repository.require_new_workspace(workspace_id)
+        workspace = build_workspace_snapshot(project_id=project_id, workspace_id=workspace_id, payload=requested)
+        checkpoint("after_domain_validation")
+        document = uow.repositories.asset_documents.materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=operation_id, project_id=project_id, asset_id=f"workspace:{workspace_id}",
+                asset_type="workspace_record", schema_version="workspace-authority.v1",
+                logical_ref=f"workspaces/{workspace_id}", category="workspaces",
+                output_key="workspace.record", role="secondary_workspace", content=workspace,
+                qualification_policy="workspace-authority-v1", trace_id=str(operation["trace_id"]),
+                correlation_id=str(operation["correlation_id"]), causation_id=operation_id,
+            )
+        )
+        checkpoint("after_asset_version_insert")
+        repository.create_workspace(workspace=workspace, workspace_asset_version_id=document.asset_version_id,
+                                    operation_id=operation_id)
+        checkpoint("after_business_projection_update")
+        result = {"project_id": project_id, "workspace_id": workspace_id, "version": 1,
+                  "asset_version_id": document.asset_version_id, "content_hash": document.content_hash}
+        uow.repositories.operation_graph.record_event({
+            "event_id": str(uuid4()), "audit_id": str(uuid4()), "outbox_id": str(uuid4()),
+            "aggregate_type": "authority_workspace", "aggregate_id": workspace_id,
+            "operation_id": operation_id, "project_id": project_id,
+            "event_type": "authority.project_workspace.create.committed",
+            "correlation_id": str(operation["correlation_id"]), "causation_id": operation_id,
+            "payload": {**result, "operation_id": operation_id, "trace_id": str(operation["trace_id"]),
+                        "execution_classification": "transaction_command"},
+        })
+        checkpoint("after_outbox_insert")
+        return result
 
     @staticmethod
     def _project_for_operation(uow: AuthorityUnitOfWork, operation_id: str) -> str:

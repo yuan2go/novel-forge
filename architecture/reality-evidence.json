@@ -4450,6 +4450,10 @@
         {
           "path": "architecture/manifests/production-entry-manifest.yaml",
           "locator": "\"name\": \"project_lifecycle.create\""
+        },
+        {
+          "path": "src/novel_forge/api/routers/authority_projects.py",
+          "locator": "@router.post(\"/product/projects/{project_id}/workspaces\")"
         }
       ],
       "application": [
@@ -4468,6 +4472,10 @@
         {
           "path": "src/novel_forge/modules/project_authority/application.py",
           "symbol": "ProjectAuthorityCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/project_authority/definitions.py",
+          "locator": "PROJECT_WORKSPACE_DEFINITION_VERSION = \"1.0.0\""
         }
       ],
       "state_ownership": {
@@ -4520,6 +4528,14 @@
         {
           "path": "tests/integration/test_authority_project_workspace_postgres.py",
           "symbol": "ProjectWorkspaceAuthorityPostgresTests.test_create_update_replay_and_lifecycle_use_one_authority_chain"
+        },
+        {
+          "path": "tests/integration/test_secondary_workspace_postgres.py",
+          "symbol": "test_secondary_workspace_is_atomic_replayable_and_preserves_primary"
+        },
+        {
+          "path": "tests/integration/test_secondary_workspace_postgres.py",
+          "symbol": "test_v3_initialization_reaches_content_and_formation_in_independent_workspace"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7866,7 +7882,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:edf2ecfb5058dfa3c5f67672f4d773b3b06a17ca1378294d047f0328e3f2c978"
+    "implementation_tree_sha": "sha256:dbb78e906f77d12da5a0f6b2c60659b1a2ad83dd5df92668db8e194c7dc33f93"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

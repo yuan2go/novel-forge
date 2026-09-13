@@ -276,7 +276,30 @@ def prepare_pilot_book(
         if project["status"] != "ACTIVE":
             raise ValueError("Pilot initialization requires an ACTIVE project")
         if project["workspace_id"] != workspace_id:
-            raise ValueError("Pilot initialization requires the existing project's primary workspace")
+            from novel_forge.modules.command_kernel.creative_budget_contract import PRODUCTION_BOOK_VERSION
+            if frozen.get("comparison_budget", {}).get("contract_version") != PRODUCTION_BOOK_VERSION:
+                raise ValueError("Pilot initialization requires the existing project's primary workspace")
+            try:
+                workspace = query.require_workspace(project_id=project_id, workspace_id=workspace_id)
+            except KernelError as exc:
+                if exc.code != "WORKSPACE_NOT_FOUND":
+                    raise
+                project_application = ProjectAuthorityApplication(
+                    application.database_url, application_build_id=application.application_build_id,
+                    commit_sha=application.commit_sha,
+                )
+                project_application.execute(ProjectAuthorityCommand(
+                    definition_name="project_workspace.create", project_id=project_id,
+                    workspace_id=project["workspace_id"], actor_id=principal.principal_id,
+                    idempotency_key=f"{run_key}:workspace", trace_id=f"trace:{run_key}", correlation_id=run_key,
+                    expected_version=project["version"], expected_current_asset_version_id=project["asset_version_id"],
+                    payload={"workspace_id": workspace_id},
+                ), principal=principal)
+                workspace = query.require_workspace(project_id=project_id, workspace_id=workspace_id)
+            if workspace["status"] != "ACTIVE":
+                raise ValueError("Pilot initialization requires an ACTIVE workspace")
+            if workspace["book_id"] and workspace["book_id"] != book_id:
+                raise KernelError("BOOK_SCOPE_CONFLICT", "workspace is already bound to another book")
         application.execute(
             BookDesignAuthorityCommand(
                 definition_name="book.create",

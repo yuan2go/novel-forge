@@ -101,6 +101,15 @@
       "definition_factory": "novel_forge.modules.project_authority.definitions:project_authority_definitions"
     },
     {
+      "name": "project_workspace.create",
+      "source": "src/novel_forge/api/routers/authority_projects.py",
+      "application_source": "src/novel_forge/modules/project_authority/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_application(ctx).execute",
+      "definition_factory": "novel_forge.modules.project_authority.definitions:project_authority_definitions"
+    },
+    {
       "name": "project_lifecycle.transition",
       "source": "src/novel_forge/api/routers/authority_projects.py",
       "application_source": "src/novel_forge/modules/project_authority/application.py",

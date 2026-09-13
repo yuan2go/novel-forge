@@ -1170,6 +1170,16 @@ Estimate the actual wired Provider calls before production, including planning a
 quality nodes. A maximum chapter authorization does not prove that the budget can
 complete that many chapters.
 
+Each Workspace remains bound to one Book. Under a v3 production contract,
+`--initialize --workspace-id ...` can create an independent Workspace in the existing
+Project through `project_workspace.create`. Its API is
+`POST /product/projects/{project_id}/workspaces`; the command requires the current
+Project version and AssetVersion, the primary Workspace as its command scope, and
+an explicit new Workspace identity. Creation preserves the primary Workspace and its
+Book. Reuse requires an ACTIVE Workspace owned by the same Project and bound to no
+Book or the requested Book. Earlier production contracts retain their primary
+Workspace requirement.
+
 For Planning output rejected before a Candidate exists, retry the exact frozen
 generation command through `StoryPlanningGenerationApplication.generate`. The runtime
 requires retained raw result evidence, a verified successful Provider receipt and

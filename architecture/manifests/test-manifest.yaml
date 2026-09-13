@@ -8,6 +8,16 @@
   ],
   "classification_rules": [
     {
+      "id": "secondary-workspace-postgres",
+      "patterns": ["tests/integration/test_secondary_workspace_postgres.py"],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "project",
+      "capability": "secondary-workspace-postgres",
+      "production_target": "src/novel_forge/modules/project_authority/application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
       "id": "production-book-budget-postgres",
       "patterns": [
         "tests/integration/test_production_book_budget_postgres.py"
