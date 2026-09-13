@@ -1623,7 +1623,12 @@ def _build_planning_context_view(
                 "Planning realization reference contract must be an object",
             )
         view["realization_reference_contract"] = _compact(reference_contract)
-    if repair_context is not None:
+    if repair_context is not None and repair_context.get("contract_version") == "planning-result-repair-context.v1":
+        source = repair_context.get("source_result")
+        if not isinstance(source, Mapping) or "content" not in source or not source.get("operation_id"):
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_VIEW_INVALID", "result repair context requires its immutable raw result and failed Operation")
+        view["repair_context"] = dict(repair_context)
+    elif repair_context is not None:
         source = repair_context.get("source_candidate")
         if not isinstance(source, Mapping) or not isinstance(
             source.get("content"), Mapping

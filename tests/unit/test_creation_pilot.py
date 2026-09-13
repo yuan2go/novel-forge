@@ -118,12 +118,13 @@ def test_blind_export_does_not_turn_missing_prose_into_review_material(tmp_path)
 
 
 @pytest.mark.parametrize("long_goal", [False, True], ids=["bounded-target", "long-novel-pilot"])
-def test_creation_cursor_closes_accepted_group_without_dispatching_next_chapter(monkeypatch, long_goal):
+@pytest.mark.parametrize("boundary", [6, 30, 40, 50])
+def test_creation_cursor_closes_accepted_group_without_dispatching_next_chapter(monkeypatch, long_goal, boundary):
     from scripts import run_world_production_smoke as runner
     monkeypatch.setattr(runner, "RuntimeJobAuthority", lambda _database: None)
     book = {"project_id": "p", "book_id": "b", "book_run_id": "run", "state": "CANON_COMMITTED",
-            "target_chapter_count": 180 if long_goal else 6, "accepted_through_chapter": 6}
-    group = {"group_run_id": "second-group", "state": "CLOSURE_PENDING", "chapter_end": 6}
+            "target_chapter_count": 180 if long_goal else boundary, "accepted_through_chapter": boundary}
+    group = {"group_run_id": "second-group", "state": "CLOSURE_PENDING", "chapter_end": boundary}
     closed, paused, events = [], [], []
     def close(identity, **_kw):
         closed.append(identity)
@@ -139,15 +140,15 @@ def test_creation_cursor_closes_accepted_group_without_dispatching_next_chapter(
         chapter_groups=SimpleNamespace(require=lambda _id: dict(group), close=close),
     )
     chapter = Mock()
-    options = {"pilot_stop_after_chapter": 6} if long_goal else {}
+    options = {"pilot_stop_after_chapter": boundary} if long_goal else {}
     for _ in range(2):
         result = runner.drive(composition=composition, chapter=chapter, book_run_id="run", worker="worker",
                               events=events.append, maximum_ticks=2, deadline=0, **options)
         assert result == ("PILOT_ACCEPTED_CURSOR_REACHED" if long_goal else "ACCEPTED_TARGET_REACHED")
     assert closed == ["second-group"]
     assert paused == (["run"] if long_goal else [])
-    assert book["target_chapter_count"] == (180 if long_goal else 6)
-    assert book["accepted_through_chapter"] == 6
+    assert book["target_chapter_count"] == (180 if long_goal else boundary)
+    assert book["accepted_through_chapter"] == boundary
     chapter.scheduler.assert_not_called()
 
 

@@ -132,7 +132,8 @@ def _budget_binding(value: Any, arm: dict[str, Any], contract: dict[str, Any], *
     _hash(binding["contract_hash"], "budget binding contract_hash")
     if binding["contract_hash"] != comparison_contract_hash(contract):
         raise ValueError("Comparison native budget binding differs from the frozen contract")
-    single_book = contract.get("contract_version") == "creative-single-book-budget.v2"
+    from novel_forge.modules.command_kernel.creative_budget_contract import SINGLE_BOOK_VERSIONS
+    single_book = contract.get("contract_version") in SINGLE_BOOK_VERSIONS
     authorization = _object(binding["authorization"], "native budget authorization", fields={
         "authorization_ref", "evidence_hash", "project_id", "book_id", "authorized_cumulative_caps",
     } | ({"business_scope"} if single_book else set()))

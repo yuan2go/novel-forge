@@ -4,8 +4,14 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from .dynamics import CausalRequirement, require_contract_fields, require_text_fields
+from .dynamics import CausalRequirement
 from .mechanisms import WorldMechanism
+from .foundation_schema import (
+    WorldContractError,
+    validate_world_foundation_shape,
+    validate_world_rule_shape,
+    world_value_type,
+)
 
 
 CORE_WORLD_ONTOLOGY = frozenset(
@@ -38,54 +44,49 @@ class WorldRule:
 
     @classmethod
     def from_mapping(cls, raw: Mapping[str, Any]) -> WorldRule:
-        require_contract_fields(
-            raw,
-            required={
-                "rule_id",
-                "category",
-                "statement",
-                "enforcement",
-                "applicability",
-                "consequences",
-            },
-            optional={"predicate", "mechanism"},
-        )
-        require_text_fields(raw, ("rule_id", "category", "statement", "enforcement"))
-        if any(
-            not isinstance(raw[key], list)
-            or any(not isinstance(v, str) or not v for v in raw[key])
-            for key in ("applicability", "consequences")
-        ):
-            raise KernelError(
-                "WORLD_RULE_CONTRACT_INVALID",
-                "rule applicability and consequences must be string arrays",
-            )
+        validate_world_rule_shape(raw)
+        if raw["enforcement"] != "SOFT_CAUSAL" and raw.get("predicate") is None:
+            raise WorldContractError("WORLD_RULE_CONTRACT_INVALID", [{
+                "code": "WORLD_FIELD_REQUIRED", "field_path": "$.predicate",
+                "expected_type": "object", "actual_type": "null" if "predicate" in raw else "missing",
+                "constraint": "Deterministic rules require an executable predicate.",
+            }])
+        if (raw["enforcement"] == "MECHANISM") != (raw.get("mechanism") is not None):
+            raise WorldContractError("WORLD_RULE_CONTRACT_INVALID", [{
+                "code": "WORLD_FIELD_VALUE_INVALID", "field_path": "$.mechanism",
+                "expected_type": "object" if raw["enforcement"] == "MECHANISM" else "null",
+                "actual_type": "object" if raw.get("mechanism") is not None else "null",
+                "constraint": "Only MECHANISM enforcement supplies a typed mechanism.",
+            }])
+        predicate = None
+        if raw.get("predicate") is not None:
+            source = raw["predicate"]
+            if source["operator"] != "EXISTS" and "value" not in source:
+                raise WorldContractError("CAUSAL_REQUIREMENT_INVALID", [{
+                    "code": "WORLD_FIELD_REQUIRED", "field_path": "$.predicate.value",
+                    "expected_type": "string|number|boolean|null", "actual_type": "missing",
+                    "constraint": "Only EXISTS may omit a predicate value.",
+                }])
+            try:
+                predicate = CausalRequirement.from_mapping(source)
+            except (KernelError, OverflowError) as error:
+                code = error.code if isinstance(error, KernelError) else "CAUSAL_QUANTITY_INVALID"
+                constraint = error.message if isinstance(error, KernelError) else "Quantity exceeds the causal evaluator's finite numeric range."
+                raise WorldContractError(code, [{
+                    "code": "WORLD_FIELD_VALUE_INVALID", "field_path": "$.predicate.value",
+                    "expected_type": "number", "actual_type": world_value_type(source.get("value")),
+                    "constraint": constraint,
+                }]) from error
         rule = cls(
-            str(raw["rule_id"]),
-            str(raw["category"]),
-            str(raw["statement"]),
-            str(raw["enforcement"]),
+            raw["rule_id"],
+            raw["category"],
+            raw["statement"],
+            raw["enforcement"],
             tuple(raw["applicability"]),
             tuple(raw["consequences"]),
-            CausalRequirement.from_mapping(raw["predicate"])
-            if raw.get("predicate") is not None
-            else None,
+            predicate,
             WorldMechanism.from_mapping(raw["mechanism"]) if raw.get("mechanism") is not None else None,
         )
-        if (
-            not rule.rule_id
-            or not rule.statement
-            or rule.enforcement
-            not in {"HARD", "QUANTITATIVE", "TEMPORAL", "SOFT_CAUSAL", "MECHANISM"}
-            or not rule.applicability
-            or not rule.consequences
-            or (rule.enforcement != "SOFT_CAUSAL" and rule.predicate is None)
-            or (rule.enforcement == "MECHANISM") != (rule.mechanism is not None)
-        ):
-            raise KernelError(
-                "WORLD_RULE_CONTRACT_INVALID",
-                "deterministic world rules require an executable predicate; soft causal rules remain proposals",
-            )
         return rule
 
 
@@ -99,83 +100,63 @@ class WorldFoundation:
     entity_ids: tuple[str, ...]
 
     @classmethod
-    def from_mapping(cls, raw: Mapping[str, Any]) -> WorldFoundation:
-        require_contract_fields(
-            raw,
-            required={
-                "contract_version",
-                "genre_profile",
-                "compiled_scope",
-                "sections",
-                "rules",
-                "entities",
-            },
-        )
-        if raw.get("contract_version") != "world-foundation.v1":
-            raise KernelError(
-                "WORLD_FOUNDATION_VERSION_INVALID",
-                "World Foundation requires its typed contract",
-            )
+    def from_mapping(
+        cls, raw: Mapping[str, Any], *, expected_compiled_scope: str | None = None
+    ) -> WorldFoundation:
+        validate_world_foundation_shape(raw, expected_compiled_scope=expected_compiled_scope)
         sections = raw.get("sections")
         if not isinstance(sections, dict) or "core_laws" not in sections:
-            raise KernelError(
-                "WORLD_FOUNDATION_CORE_REQUIRED",
-                "progressive world compilation starts with core laws",
-            )
-        for key, value in sections.items():
+            raise WorldContractError("WORLD_FOUNDATION_CORE_REQUIRED", [{
+                "code": "WORLD_FIELD_REQUIRED", "field_path": "$.sections.core_laws",
+                "expected_type": "object", "actual_type": "missing",
+                "constraint": "Progressive world compilation starts with core laws.",
+            }])
+        for key in sections:
             if key not in CORE_WORLD_ONTOLOGY and not key.startswith(
                 ("genre:", "book:")
             ):
-                raise KernelError(
-                    "WORLD_FOUNDATION_EXTENSION_SCOPE_INVALID",
-                    "world extensions must declare genre or Book ownership",
-                )
-            if (
-                not isinstance(value, dict)
-                or value.get("depth") not in {"SEED", "WORKING", "DETAILED"}
-                or not str(value.get("content") or "").strip()
-            ):
-                raise KernelError(
-                    "WORLD_FOUNDATION_SECTION_INVALID",
-                    "compiled world sections require explicit depth and content",
-                )
-        if any(
-            not isinstance(raw.get(key), list)
-            or any(not isinstance(item, dict) for item in raw[key])
-            for key in ("rules", "entities")
-        ):
-            raise KernelError(
-                "WORLD_FOUNDATION_COLLECTION_INVALID",
-                "world rules and entities must be arrays of structured objects",
-            )
-        rules = tuple(WorldRule.from_mapping(r) for r in raw["rules"])
+                raise WorldContractError("WORLD_FOUNDATION_EXTENSION_SCOPE_INVALID", [{
+                    "code": "WORLD_FIELD_UNKNOWN", "field_path": f"$.sections.{key}",
+                    "expected_type": "object", "actual_type": "object",
+                    "constraint": "Section keys must be core ontology dimensions or genre:/book: extensions.",
+                }])
+        rules = []
+        for index, source in enumerate(raw["rules"]):
+            try:
+                rules.append(WorldRule.from_mapping(source))
+            except WorldContractError as error:
+                raise WorldContractError(error.code, [{
+                    **item, "field_path": f"$.rules[{index}]" + item["field_path"][1:]
+                } for item in error.diagnostics]) from error
+        rules = tuple(rules)
         entities = raw.get("entities", [])
-        ids = tuple(str(entity.get("entity_id") or "") for entity in entities)
-        if (
-            not rules
-            or len({r.rule_id for r in rules}) != len(rules)
-            or any(r.category not in sections for r in rules)
-            or not ids
-            or "" in ids
-            or len(set(ids)) != len(ids)
-        ):
-            raise KernelError(
-                "WORLD_FOUNDATION_IDENTITY_INVALID",
-                "world rules and entities need unique identities in compiled categories",
-            )
-        if not raw.get("genre_profile") or raw.get("compiled_scope") not in {
-            "BOOK",
-            "VOLUME",
-            "ARC",
-        }:
-            raise KernelError(
-                "WORLD_FOUNDATION_SCOPE_INVALID",
-                "progressive compilation requires genre and a bounded narrative scope",
-            )
+        ids = tuple(entity["entity_id"] for entity in entities)
+        diagnostics = []
+        seen_rules = set()
+        for index, rule in enumerate(rules):
+            if rule.rule_id in seen_rules or rule.category not in sections:
+                field = "rule_id" if rule.rule_id in seen_rules else "category"
+                diagnostics.append({
+                    "code": "WORLD_FIELD_IDENTITY_INVALID", "field_path": f"$.rules[{index}].{field}",
+                    "expected_type": "string", "actual_type": "string",
+                    "constraint": "Rule identities must be unique and categories must resolve to compiled sections.",
+                })
+            seen_rules.add(rule.rule_id)
+        seen_entities = set()
+        for index, entity_id in enumerate(ids):
+            if entity_id in seen_entities:
+                diagnostics.append({
+                    "code": "WORLD_FIELD_IDENTITY_INVALID", "field_path": f"$.entities[{index}].entity_id",
+                    "expected_type": "string", "actual_type": "string",
+                    "constraint": "World entity identities must be unique.",
+                })
+            seen_entities.add(entity_id)
+        if diagnostics:
+            raise WorldContractError("WORLD_FOUNDATION_IDENTITY_INVALID", diagnostics)
         return cls(
             "core-world-ontology.v1",
-            str(raw["genre_profile"]),
-            str(raw["compiled_scope"]),
+            raw["genre_profile"],
+            raw["compiled_scope"],
             tuple(sorted(sections)),
             rules,
             ids,

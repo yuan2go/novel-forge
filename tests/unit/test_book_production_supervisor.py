@@ -66,6 +66,17 @@ def test_supervisor_execution_cap_is_configurable_and_independent_of_recap() -> 
     ) == (29, 30)
 
 
+@pytest.mark.parametrize("target", [30, 40, 50])
+def test_volume_groups_cover_thirteen_and_short_final_group_without_next_volume(target):
+    groups = [_bounded_chapter_group_range(start_chapter=start, target_chapter_count=target,
+                                           preferred_size=3, maximum_chapters=3)
+              for start in range(1, target + 1, 3)]
+    assert (13, 15) in groups
+    assert [chapter for start, end in groups for chapter in range(start, end + 1)] == list(range(1, target + 1))
+    if target == 40:
+        assert groups[-2:] == [(37, 39), (40, 40)]
+
+
 @pytest.mark.parametrize(
     ("generated_contract", "expected_action"),
     (

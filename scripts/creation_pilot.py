@@ -224,7 +224,8 @@ def prepare_pilot_book(
     if frozen.get("comparison_budget"):
         from scripts.creation_comparison import creation_resume_semantics
         registered_frozen = creation_resume_semantics(frozen, budget_binding)
-        single_book = frozen["comparison_budget"].get("contract_version") == "creative-single-book-budget.v2"
+        from novel_forge.modules.command_kernel.creative_budget_contract import SINGLE_BOOK_VERSIONS
+        single_book = frozen["comparison_budget"].get("contract_version") in SINGLE_BOOK_VERSIONS
         authorization = budget_binding["authorization"]
         if not single_book:
             creation_caps = authorization["authorized_cumulative_caps"]["CREATION"]

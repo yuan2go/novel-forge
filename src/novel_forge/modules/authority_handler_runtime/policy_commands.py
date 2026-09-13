@@ -53,10 +53,12 @@ def owned_policy_definition(
         },
     }
     single_book_budget = False
+    production_book_budget = False
     if owner == "CREATIVE_EXPERIMENT_BUDGET":
-        from novel_forge.modules.command_kernel.creative_budget_contract import SINGLE_BOOK_VERSION, V1_POLICY_SCHEMA, V2_POLICY_SCHEMA
+        from novel_forge.modules.command_kernel.creative_budget_contract import PRODUCTION_BOOK_VERSION, SINGLE_BOOK_VERSION, V1_POLICY_SCHEMA, V2_POLICY_SCHEMA, V3_POLICY_SCHEMA
         single_book_budget = not content or content.get("comparison_budget", {}).get("contract_version") == SINGLE_BOOK_VERSION
-        policy_schema = V2_POLICY_SCHEMA if single_book_budget else V1_POLICY_SCHEMA
+        production_book_budget = content.get("comparison_budget", {}).get("contract_version") == PRODUCTION_BOOK_VERSION
+        policy_schema = V3_POLICY_SCHEMA if production_book_budget else V2_POLICY_SCHEMA if single_book_budget else V1_POLICY_SCHEMA
     result_schema = {
         "type": "object",
         "additionalProperties": False,
@@ -79,12 +81,12 @@ def owned_policy_definition(
     }
     return {
         "name": name,
-        "definition_version": "1.2.0" if single_book_budget else DEFINITION_VERSION,
+        "definition_version": "1.3.0" if production_book_budget else "1.2.0" if single_book_budget else DEFINITION_VERSION,
         "family": owner.lower(),
         "enabled": True,
         "definition_status": "implemented_validation_pending",
-        "command_schema_version": f"{name}.command.v2" if single_book_budget else f"{name}.command.v1",
-        "result_schema_version": f"{name}.result.v2" if single_book_budget else f"{name}.result.v1",
+        "command_schema_version": f"{name}.command.v3" if production_book_budget else f"{name}.command.v2" if single_book_budget else f"{name}.command.v1",
+        "result_schema_version": f"{name}.result.v3" if production_book_budget else f"{name}.result.v2" if single_book_budget else f"{name}.result.v1",
         "command_schema": command_schema,
         "result_schema": result_schema,
         "input_contract": command_schema,

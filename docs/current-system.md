@@ -557,6 +557,20 @@ including the original scope of repairs and semantic reviews. Old v1 A/B allocat
 and reservations remain valid and cannot be replaced to reset usage. Unknown effects
 retain their reservation. These grants govern permitted operations, not literary merit.
 
+`creative-book-production-budget.v3` appends an exact predecessor policy reference to
+reallocate unused, unreserved capacity to an independently authorized Book in the same
+project. It preserves the lifetime identity, total ceiling, historical phase charges
+and unknown reservations. Chapter phase ranges come from the frozen policy; the v2
+1–6 and 7–12 interpretation remains unchanged. Earlier Book dispatch is denied after
+selection moves to the new Book, while known earlier receipts can still settle.
+
+World generation uses one strict type contract for the nested world schema and prompt
+instructions. A Foundation task freezes one `BOOK` scope; `BOOK`, `VOLUME` and `ARC`
+are alternatives, not an output array. JSON-string transport is decoded and internally
+validated before Candidate materialization. Invalid Provider output remains evidence.
+Planning result recovery links a new bounded Operation to the failed Operation and
+retained result, preserving the old terminal state and fully revalidating the repair.
+
 Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
 Description, Transition and Integration slots as needed. Dialogue and Interior slots
 carry actor-local knowledge. The Draft and Revision contracts require complete slot

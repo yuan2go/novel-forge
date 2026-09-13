@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260912_0130_creative_experiment_budget",
+  "head": "20260913_0131_planning_result_recovery",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -133,6 +133,7 @@
     "20260909_0127_corpus_curation",
     "20260910_0128_corpus_operations",
     "20260912_0129_corpus_member_fk_indexes",
-    "20260912_0130_creative_experiment_budget"
+    "20260912_0130_creative_experiment_budget",
+    "20260913_0131_planning_result_recovery"
   ]
 }

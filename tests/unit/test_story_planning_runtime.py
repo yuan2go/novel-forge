@@ -2112,7 +2112,7 @@ def test_world_runtime_contract_preserves_historical_frozen_commands():
 
     command = _command("chapter_plan.generate")
     current = _command_payload(command)
-    assert current["execution_contract_version"] == "1.14.0"
+    assert current["execution_contract_version"] == "1.15.0"
     previous = {**current, "execution_contract_version": "1.13.0"}
     assert _command_payload(_command_from_payload(previous)) == previous
     published = {**current, "execution_contract_version": "1.12.0"}
@@ -2673,3 +2673,62 @@ def test_planning_takeover_preserves_snapshot_provenance_but_requires_current_bi
     else:
         with pytest.raises(KernelError, match='PLANNING_EXECUTION_ATTEMPT_DRIFT'):
             execute()
+
+
+def test_raw_result_contract_requires_all_repaired_fields_and_keeps_original():
+    import json
+    from tests.integration.synthesis_production_support import SynthesisTransport
+    from novel_forge.modules.story_planning_runtime.result_recovery import validate_raw_result
+
+    raw = SynthesisTransport().planning("world.design.generate", {})
+    world = json.loads(raw["world_foundation_json"])
+    world["compiled_scope"] = ["BOOK", "VOLUME", "ARC"]
+    world["genre_profile"] = {"label": "guofeng"}
+    raw["world_foundation_json"] = json.dumps(world)
+    original = deepcopy(raw)
+    with pytest.raises(KernelError) as failed:
+        validate_raw_result("world.design.generate", raw, compiled_scope="BOOK")
+    assert {item["field_path"] for item in failed.value.diagnostics} == {"$.compiled_scope", "$.genre_profile"}
+    world["compiled_scope"] = "BOOK"
+    incomplete = {**raw, "world_foundation_json": json.dumps(world)}
+    with pytest.raises(KernelError, match="genre_profile"):
+        validate_raw_result("world.design.generate", incomplete, compiled_scope="BOOK")
+    assert raw == original
+
+
+@pytest.mark.parametrize("raw", [None, [], 42, "invalid", {"objective": []}])
+def test_raw_result_boundary_rejects_types_without_coercion(raw):
+    from novel_forge.modules.story_planning_runtime.result_recovery import validate_raw_result
+    with pytest.raises(KernelError, match="expected"):
+        validate_raw_result("world.design.generate", raw, compiled_scope="BOOK")
+
+
+def test_result_repair_command_keeps_historical_identity_and_bounded_new_causation(monkeypatch):
+    from novel_forge.modules.story_planning_runtime import result_recovery
+    from novel_forge.modules.story_planning_runtime.application import _command_from_payload, _command_payload
+
+    original = replace(_command("world.design.generate"), execution_contract_version="1.14.0")
+    historical = _command_payload(original)
+    assert "repair_of_operation_id" not in historical
+    diagnostic = {"error_code": "WORLD_FOUNDATION_SCHEMA_INVALID", "fields": [{"field_path": "$.compiled_scope"}]}
+    source = {"asset_version_id": "result:failed", "diagnostic": diagnostic}
+    monkeypatch.setattr(result_recovery, "require_result_repair_source", lambda *args, **kwargs: source)
+    application = object.__new__(StoryPlanningGenerationApplication)
+    application.database_url = "isolated-test"
+    calls = []
+    application.generate = lambda command, **kwargs: calls.append(command) or command
+    recovered = application._repair_unmaterialized_result(original, operation_id="failed:operation", principal=object())
+    assert recovered.repair_of_operation_id == "failed:operation"
+    assert recovered.repair_of_candidate_id == ""
+    assert recovered.repair_number == 1
+    assert recovered.execution_contract_version == "1.15.0"
+    assert _command_payload(original) == historical
+    assert _command_from_payload(_command_payload(recovered)) == recovered
+    with pytest.raises(KernelError, match="PLANNING_RESULT_REPAIR_BOUND_EXCEEDED"):
+        application._repair_unmaterialized_result(recovered, operation_id="failed:again", principal=object())
+    assert len(calls) == 1
+
+
+def test_result_repair_cannot_mix_candidate_and_raw_result_causation():
+    with pytest.raises(ValueError, match="without a source Candidate"):
+        replace(_command("world.design.generate"), repair_of_operation_id="failed:operation", repair_of_candidate_id="candidate:other", repair_result_asset_version_id="result:failed", repair_result_diagnostic={"error_code": "bad"}, repair_reason="bad:hash", repair_number=1)

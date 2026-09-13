@@ -1496,3 +1496,22 @@ def test_structured_revision_projects_slot_prose_once_with_exact_contract():
     assert view["realization_contract"] == source["realization_contract"]
     assert json.dumps(view).count("One immutable prose fragment.") == 1
     assert source["text"] == "One immutable prose fragment."
+
+
+def test_planning_invalid_result_repair_view_preserves_raw_shape_without_candidate_claim():
+    raw = {"objective": "Build the world", "world_foundation_json": '{"compiled_scope":["BOOK","VOLUME","ARC"]}'}
+    repair = {
+        "contract_version": "planning-result-repair-context.v1",
+        "source_result": {"asset_version_id": "failure:v1", "content_hash": "sha256:" + "a" * 64, "content": raw, "operation_id": "failed:operation"},
+        "validation_failure": {"error_code": "WORLD_FOUNDATION_SCHEMA_INVALID", "fields": [{"field_path": "$.compiled_scope", "expected_type": "string", "actual_type": "array"}]},
+        "instruction": "Return the whole valid result against the frozen task.",
+    }
+    view = build_provider_context_view("book_plan.generate", {
+        "schema_version": "novelos.planning_context_bundle.v1", "book_id": "book-1", "logical_key": "book:main", "planning_scope": "BOOK",
+        "input_versions": [{"role": "book_design", "asset_version_id": "book:v1", "asset_type": "book_design", "content": {"premise": "An apprentice earns his first sword."}}],
+        "repair_context": repair,
+    }, {})
+    assert view["repair_context"] == repair
+    assert "source_candidate" not in view["repair_context"]
+    assert view["repair_context"]["source_result"]["content"] == raw
+    assert all(item["asset_version_id"] != "failure:v1" for item in view["segments"])

@@ -44,8 +44,8 @@ from tests.integration.synthesis_production_support import SynthesisTransport
 from tests.integration.test_core_functional_loops_postgres import _principal
 
 
-@pytest.mark.parametrize("author_guided", [False, True])
-def test_native_formation_generates_foundation_from_author_brief(tmp_path, author_guided):
+@pytest.mark.parametrize("author_guided,result_repair", [(False, False), (True, False), (False, True)])
+def test_native_formation_generates_foundation_from_author_brief(tmp_path, author_guided, result_repair):
     harness = CapabilityPackPostgresHarness("synthesis-formation-author" if author_guided else "synthesis-formation")
     from copy import copy
 
@@ -167,6 +167,21 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, autho
     )
     registry = ProviderAdapterRegistry()
     transport = AuthorSynthesisTransport(author, brief) if author_guided else SynthesisTransport()
+    if result_repair:
+        normal_planning = transport.planning
+        damaged_world = False
+
+        def malformed_once(stage, inputs):
+            nonlocal damaged_world
+            result = normal_planning(stage, inputs)
+            if stage == "world.design.generate" and not damaged_world:
+                damaged_world = True
+                world = json.loads(result["world_foundation_json"])
+                world["compiled_scope"] = ["BOOK", "VOLUME", "ARC"]
+                result["world_foundation_json"] = json.dumps(world)
+            return result
+
+        transport.planning = malformed_once
     registry.register(transport)
     execution = build_production_execution_composition(
         settings,
@@ -335,7 +350,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, autho
             "CANDIDATE",
         ]
         assert (
-            recovered_activation and len(transport.calls) == calls_before_recovery == 7
+            recovered_activation and len(transport.calls) == calls_before_recovery == (8 if result_repair else 7)
         )
         assert {call["stage"] for call in transport.calls} == {
             "creative.candidates.generate",
@@ -345,6 +360,51 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, autho
             "world.design.generate",
             "character.cast.generate",
         }
+        if result_repair:
+            from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+            from concurrent.futures import ThreadPoolExecutor
+
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT op.operation_id, op.status, op.command_payload->'payload', op.causation_operation_id, g.candidate_asset_version_id FROM authority_operation op JOIN authority_story_planning_generation g USING(operation_id) WHERE op.project_id=%s AND g.generator_operation_name='world.design.generate' ORDER BY op.created_at", [harness.project_id])
+                generations = uow.cursor.fetchall()
+            assert len(generations) == 2
+            failed, repaired = generations
+            assert failed[1] == "FAILED_FINAL" and not failed[4]
+            assert repaired[1] == "SUCCEEDED" and repaired[4]
+            assert str(repaired[3]) == str(failed[0])
+            failures = AuthorityAssetQuery(DATABASE_URL).list_versions(project_id=harness.project_id, asset_type="planning_generation_result_failure")
+            assert len(failures) == 1 and failures[0].eligibility == "INELIGIBLE"
+            assert failures[0].content["candidate_status"] == "NOT_MATERIALIZED"
+            assert failures[0].content["diagnostic"]["error_code"] == "WORLD_FOUNDATION_SCHEMA_INVALID"
+            from novel_forge.modules.command_kernel.errors import KernelError
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                frozen_failure = [{"asset_version_id": failures[0].asset_version_id, "content_hash": failures[0].content_hash}]
+                with pytest.raises(KernelError, match="AUTHORITY_INPUT_NOT_ELIGIBLE"):
+                    uow.repositories.chapter_authority.frozen_inputs(harness.project_id, frozen_failure)
+                readable_failure = uow.repositories.chapter_authority.frozen_inputs(harness.project_id, frozen_failure, repair_result_asset_version_id=failures[0].asset_version_id)
+                assert readable_failure[0]["asset_type"] == "planning_generation_result_failure"
+            before = len(transport.calls)
+            planning = formation.generation.planning
+            original = _command_from_payload(dict(failed[2]))
+            from novel_forge.modules.story_planning_runtime.result_recovery import require_result_repair_source
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT output.asset_version_id FROM authority_operation_output_asset output JOIN authority_asset asset USING(asset_id) WHERE output.operation_id=%s AND asset.asset_type='model_call_log'", [failed[0]])
+                legacy_result_asset = str(uow.cursor.fetchone()[0])
+            retained = require_result_repair_source(DATABASE_URL, command=original, operation_id=str(failed[0]), source_asset_version_id=legacy_result_asset)
+            assert retained["diagnostic"] == failures[0].content["diagnostic"]
+            assert retained["raw_result"] == failures[0].content["raw_result"]
+            with pytest.raises(KernelError, match="PLANNING_RESULT_REPAIR_INPUT_DRIFT"):
+                require_result_repair_source(DATABASE_URL, command=replace(original, auto_approve_low_risk=True), operation_id=str(failed[0]))
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                replayed = list(pool.map(lambda _: planning.generate(original, principal=formation_worker), range(2)))
+            assert {item.candidate_asset_version_id for item in replayed} == {str(repaired[4])}
+            assert len(transport.calls) == before
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [failed[0]])
+                assert uow.cursor.fetchone()[0] == "FAILED_FINAL"
+                uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id IN (%s,%s)", [failed[0], repaired[0]])
+                assert uow.cursor.fetchone()[0] == 2
+            return
         from novel_forge.modules.book_authority.creation_inputs import (
             prepare_creation_inputs,
         )

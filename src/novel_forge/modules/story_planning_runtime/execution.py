@@ -3203,7 +3203,7 @@ class _PlanningPepPort:
             cost=normalized_cost,
             amount=amount,
             total_tokens=total_tokens,
-            accepted_candidate=True,
+            accepted_candidate=False,
             recovered_completion=recovered_completion,
         )
         execution_result = production.get("execution_result")
@@ -3273,6 +3273,7 @@ class _PlanningPepPort:
                 "provider_invoked_this_attempt": not recovered_completion,
                 "recovered_external_effect_success": recovered_completion,
                 "post_provider_failure": dict(failure or {}),
+                "candidate_validation_status": "FAILED" if failure else "PENDING_DOMAIN_VALIDATION",
             },
         )
         if recovered_completion:
@@ -4531,6 +4532,18 @@ class PostgresPlanningExecutionPreparer:
                 }
             )
         repair_context: dict[str, Any] | None = None
+        if command.repair_of_operation_id:
+            from .result_recovery import require_result_repair_source
+            source = require_result_repair_source(self.database_url, command=command, operation_id=command.repair_of_operation_id, source_asset_version_id=command.repair_result_asset_version_id)
+            if source["diagnostic"] != dict(command.repair_result_diagnostic or {}):
+                raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "result repair context must use its frozen failure diagnosis")
+            documents.append(self.query.require(project_id=command.project_id, asset_version_id=source["asset_version_id"]))
+            repair_context = {
+                "contract_version": "planning-result-repair-context.v1",
+                "source_result": {"asset_version_id": source["asset_version_id"], "content_hash": source["content_hash"], "content": source["raw_result"], "operation_id": command.repair_of_operation_id},
+                "validation_failure": source["diagnostic"],
+                "instruction": "Repair this invalid raw Provider result against the frozen task and complete current Schema. It was never a Candidate or Canon. Preserve correct content, return the entire valid result; do not invent scope or omit fields.",
+            }
         if command.repair_of_candidate_id:
             repair_document = self.query.require(
                 project_id=command.project_id,

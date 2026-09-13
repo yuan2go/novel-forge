@@ -311,6 +311,7 @@ def _load_request(
         evaluation_candidate_id = ""
         story_design_candidate_id = ""
         repair_candidate_id = ""
+        repair_result_id = ""
         plan_change_candidate_id = ""
         semantic_revalidation_target_id = ""
         policy = dict(snapshot.get("policy") or {})
@@ -323,6 +324,8 @@ def _load_request(
             story_design_candidate_id = str(payload.get("asset_version_id") or "")
         if policy.get("repair_candidate_asset_input_allowed") is True:
             repair_candidate_id = str(payload.get("repair_of_candidate_id") or "")
+        if operation["definition_name"] == "story_planning.generate" and policy.get("repair_result_evidence_input_allowed") is True:
+            repair_result_id = str(payload.get("repair_result_asset_version_id") or "")
         if policy.get("plan_change_candidate_asset_input_allowed") is True:
             plan_change_candidate_id = str(
                 payload.get("proposed_asset_version_id") or ""
@@ -341,6 +344,7 @@ def _load_request(
             evaluation_candidate_asset_version_id=evaluation_candidate_id,
             story_design_candidate_asset_version_id=story_design_candidate_id,
             repair_candidate_asset_version_id=repair_candidate_id,
+            repair_result_asset_version_id=repair_result_id,
             plan_change_candidate_asset_version_id=plan_change_candidate_id,
             semantic_revalidation_target_asset_version_id=(
                 semantic_revalidation_target_id

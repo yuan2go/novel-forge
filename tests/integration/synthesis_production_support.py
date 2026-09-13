@@ -90,7 +90,9 @@ class SynthesisTransport(ScriptedProviderAdapterV2):
                 compiled_world_fixture,
             )
 
-            result["world_foundation_json"] = json.dumps(compiled_world_fixture())
+            world = compiled_world_fixture()
+            world["compiled_scope"] = "BOOK"
+            result["world_foundation_json"] = json.dumps(world)
             result.update(
                 dimensions=[
                     {

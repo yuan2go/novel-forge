@@ -26,7 +26,8 @@ def _number(value: Any, *, minimum: int) -> int:
     return value
 
 
-def classify_business_scope(identity: dict[str, Any], *, dispatch_generation: int = 1) -> dict[str, Any]:
+def classify_business_scope(identity: dict[str, Any], *, dispatch_generation: int = 1,
+                            chapter_ranges: dict[str, list[int]] | None = None) -> dict[str, Any]:
     _number(dispatch_generation, minimum=0)
     request = identity["request_payload"]
     phase = classify_phase(identity["operation_name"], identity["capability"], request, identity["attempt_no"])
@@ -108,9 +109,11 @@ def classify_business_scope(identity: dict[str, Any], *, dispatch_generation: in
             if len(set(numbers)) != 1:
                 raise _unknown("frozen chapter identities disagree")
             chapter = numbers[0]
-            if chapter > 12:
-                raise _unknown("creative Effect is outside the frozen twelve-chapter scope")
-            origin_phase = "CREATION_EARLY" if chapter <= 6 else "CREATION_LATE"
+            ranges = chapter_ranges if chapter_ranges is not None else {"CREATION_EARLY": [1, 6], "CREATION_LATE": [7, 12]}
+            matches = [name for name, (first, last) in ranges.items() if first <= chapter <= last]
+            if len(matches) != 1:
+                raise _unknown("creative Effect is outside the frozen chapter phase ranges")
+            origin_phase = matches[0]
     return {
         "phase": "SOURCE" if origin_phase == "SOURCE" else "REPAIR" if repair else origin_phase,
         "origin_phase": origin_phase,

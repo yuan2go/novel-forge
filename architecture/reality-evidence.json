@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260912_0130_creative_experiment_budget",
+  "migration_head": "20260913_0131_planning_result_recovery",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -5542,12 +5542,20 @@
         {
           "path": "src/novel_forge/modules/story_design_authority/author_input.py",
           "symbol": "compile_planning_author_projection"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/result_recovery.py",
+          "symbol": "require_result_repair_source"
         }
       ],
       "commands_operations": [
         {
           "path": "src/novel_forge/modules/story_design_authority/application.py",
           "symbol": "StoryDesignTransitionCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "symbol": "StoryPlanningGenerationApplication._repair_unmaterialized_result"
         }
       ],
       "state_ownership": {
@@ -5582,6 +5590,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260730_0038_story_design_authority.py",
           "locator": "MIGRATION_ID = \"20260730_0038_story_design_authority\"",
           "id": "20260730_0038_story_design_authority"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260913_0131_planning_result_recovery.py",
+          "locator": "MIGRATION_ID = \"20260913_0131_planning_result_recovery\"",
+          "id": "20260913_0131_planning_result_recovery"
         }
       ],
       "external_effects": {
@@ -7853,7 +7866,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:4bdfb1ef8925e00d91014f4cf311e487b56957c642668840b418b9c3685c218a"
+    "implementation_tree_sha": "sha256:60b76948da1eaa0ad9ad5963934d8e6a6fe87eb64c4acd26959b508cf41b08fa"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

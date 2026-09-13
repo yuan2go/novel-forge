@@ -11,6 +11,8 @@ from .errors import KernelError
 
 PHASES = ("SOURCE", "CREATION", "REPAIR")
 SINGLE_BOOK_VERSION = "creative-single-book-budget.v2"
+PRODUCTION_BOOK_VERSION = "creative-book-production-budget.v3"
+SINGLE_BOOK_VERSIONS = {SINGLE_BOOK_VERSION, PRODUCTION_BOOK_VERSION}
 SINGLE_BOOK_PHASES = ("SOURCE", "DESIGN", "CREATION_EARLY", "CREATION_LATE", "REPAIR")
 _ALLOCATIONS = dict(zip(PHASES, ("source_allocation", "creation_allocation", "repair_allocation"), strict=True))
 _HASH = re.compile(r"sha256:[0-9a-f]{64}")
@@ -69,6 +71,22 @@ _V2_AUTH_SCHEMA["properties"]["business_scope"] = _object_schema({
     "max_chapter_number": {"type": "integer", "minimum": 0, "maximum": 12},
 })
 _V2_AUTH_SCHEMA["required"].append("business_scope")
+V3_POLICY_SCHEMA = deepcopy(V2_POLICY_SCHEMA)
+_V3_PLAN_SCHEMA = V3_POLICY_SCHEMA["properties"]["comparison_budget"]
+_V3_PLAN_SCHEMA["properties"]["contract_version"] = {"type": "string", "const": PRODUCTION_BOOK_VERSION}
+_V3_PLAN_SCHEMA["properties"]["previous_policy"] = _object_schema({
+    "policy_version": _TEXT_SCHEMA,
+    "policy_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "contract_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+})
+_V3_PLAN_SCHEMA["required"].append("previous_policy")
+_V3_ARM_SCHEMA = _V3_PLAN_SCHEMA["properties"]["arms"]["items"]
+_V3_ARM_SCHEMA["properties"]["chapter_ranges"] = _object_schema({
+    phase: {"type": "array", "minItems": 2, "maxItems": 2,
+            "items": {"type": "integer", "minimum": 1}}
+    for phase in ("CREATION_EARLY", "CREATION_LATE")
+})
+V3_POLICY_SCHEMA["properties"]["authorization"]["properties"]["business_scope"]["properties"]["max_chapter_number"].pop("maximum")
 POLICY_SCHEMA = V1_POLICY_SCHEMA
 
 
@@ -106,10 +124,14 @@ def _allocation(value: Any, label: str, *, positive: bool = False, paired: bool 
 
 
 def validate_comparison_budget(value: Any, *, require_both_arms: bool = False) -> dict[str, Any]:
+    production = isinstance(value, dict) and value.get("contract_version") == PRODUCTION_BOOK_VERSION
     contract = _object(value, "comparison_budget", {
         "contract_version", "experiment_id", "accounting_basis", "shared_total", "arms",
+        *({"previous_policy"} if production else set()),
     })
-    if contract["contract_version"] == SINGLE_BOOK_VERSION:
+    if not isinstance(contract["contract_version"], str):
+        raise _invalid("Comparison budget contract version must be a string")
+    if contract["contract_version"] in SINGLE_BOOK_VERSIONS:
         return _validate_single_book_budget(contract, require_both_arms=require_both_arms)
     if contract["contract_version"] != "creative-experiment-budget.v1":
         raise _invalid("Comparison budget contract version is unsupported")
@@ -154,7 +176,7 @@ def validate_comparison_budget(value: Any, *, require_both_arms: bool = False) -
 
 
 def budget_phases(plan: dict[str, Any]) -> tuple[str, ...]:
-    return SINGLE_BOOK_PHASES if plan["contract_version"] == SINGLE_BOOK_VERSION else PHASES
+    return SINGLE_BOOK_PHASES if plan["contract_version"] in SINGLE_BOOK_VERSIONS else PHASES
 
 
 def allocation_fields(plan: dict[str, Any]) -> dict[str, str]:
@@ -182,10 +204,21 @@ def _validate_single_book_budget(contract: dict[str, Any], *, require_both_arms:
     for key in ("project_total", *fields.values()):
         _allocation(arm[key], key)
     ranges = _object(arm["chapter_ranges"], "chapter_ranges", {"CREATION_EARLY", "CREATION_LATE"})
-    for phase, expected in (("CREATION_EARLY", [1, 6]), ("CREATION_LATE", [7, 12])):
-        value = ranges[phase]
-        if not isinstance(value, list) or any(type(number) is not int for number in value) or value != expected:
+    for value in ranges.values():
+        if (not isinstance(value, list) or len(value) != 2
+            or any(type(number) is not int or number < 1 for number in value) or value[0] > value[1]):
+            raise _invalid("Single-book chapter ranges require two ordered positive integer endpoints")
+    if contract["contract_version"] == SINGLE_BOOK_VERSION:
+        if ranges != {"CREATION_EARLY": [1, 6], "CREATION_LATE": [7, 12]}:
             raise _invalid("Single-book chapter ranges must remain exactly 1–6 and 7–12")
+    else:
+        if ranges["CREATION_EARLY"][0] != 1 or ranges["CREATION_LATE"][0] != ranges["CREATION_EARLY"][1] + 1:
+            raise _invalid("Production chapter phases must partition one contiguous frozen range starting at chapter 1")
+        previous = _object(contract["previous_policy"], "previous_policy", {"policy_version", "policy_hash", "contract_hash"})
+        _text(previous["policy_version"], "previous policy version")
+        if (not isinstance(previous["policy_hash"], str) or not re.fullmatch(r"[0-9a-f]{64}", previous["policy_hash"])
+            or not isinstance(previous["contract_hash"], str) or not _HASH.fullmatch(previous["contract_hash"])):
+            raise _invalid("Production reallocation requires exact native predecessor policy and contract hashes")
     for key in shared:
         if arm["project_total"][key] != sum(arm[field][key] for field in fields.values()):
             raise _invalid("Single-book project total must equal its frozen phase allocations")
@@ -216,7 +249,7 @@ def validate_policy(value: Any) -> dict[str, Any]:
         raise _invalid("Native stage budget requires ACCOUNT_ENTITLEMENT; PRICED needs an explicit monetary phase contract")
     authorization = _object(policy["authorization"], "authorization", {
         "authorization_ref", "evidence_hash", "project_id", "book_id", "authorized_cumulative_caps",
-        *({"business_scope"} if plan["contract_version"] == SINGLE_BOOK_VERSION else set()),
+        *({"business_scope"} if plan["contract_version"] in SINGLE_BOOK_VERSIONS else set()),
     })
     for key in ("authorization_ref", "project_id", "book_id"):
         _text(authorization[key], key)
@@ -232,12 +265,12 @@ def validate_policy(value: Any) -> dict[str, Any]:
         amounts = _allocation(cap, "authorized " + phase, paired=False)
         if any(amounts[key] > arm[fields[phase]][key] for key in amounts):
             raise _invalid("Comparison authorization exceeds the immutable phase opportunity")
-    if plan["contract_version"] == SINGLE_BOOK_VERSION:
+    if plan["contract_version"] in SINGLE_BOOK_VERSIONS:
         scope = _object(authorization["business_scope"], "business_scope", {"source_allowed", "design_allowed", "max_chapter_number"})
         if any(type(scope[key]) is not bool for key in ("source_allowed", "design_allowed")):
             raise _invalid("Single-book business permissions must be booleans")
-        if _integer(scope["max_chapter_number"], "max_chapter_number") > 12:
-            raise _invalid("Single-book business scope cannot exceed chapter 12")
+        if _integer(scope["max_chapter_number"], "max_chapter_number") > arm["chapter_ranges"]["CREATION_LATE"][1]:
+            raise _invalid("Single-book business scope cannot exceed its frozen chapter range")
     return deepcopy(policy)
 
 
@@ -326,4 +359,4 @@ def classify_phase(operation_name: str, capability: str, request_payload: dict[s
     raise failure
 
 
-__all__ = ["PHASES", "POLICY_SCHEMA", "SINGLE_BOOK_PHASES", "SINGLE_BOOK_VERSION", "V1_POLICY_SCHEMA", "V2_POLICY_SCHEMA", "allocation_fields", "arm_for_project", "budget_phases", "classify_phase", "contract_hash", "validate_comparison_budget", "validate_policy"]
+__all__ = ["PHASES", "POLICY_SCHEMA", "SINGLE_BOOK_PHASES", "SINGLE_BOOK_VERSION", "SINGLE_BOOK_VERSIONS", "PRODUCTION_BOOK_VERSION", "V1_POLICY_SCHEMA", "V2_POLICY_SCHEMA", "V3_POLICY_SCHEMA", "allocation_fields", "arm_for_project", "budget_phases", "classify_phase", "contract_hash", "validate_comparison_budget", "validate_policy"]

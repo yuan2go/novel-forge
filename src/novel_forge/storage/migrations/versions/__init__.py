@@ -132,6 +132,7 @@ from . import (
     v20260910_0128_corpus_operations,
     v20260912_0129_corpus_member_fk_indexes,
     v20260912_0130_creative_experiment_budget,
+    v20260913_0131_planning_result_recovery,
 )
 
 VERSION_MODULES = [
@@ -266,6 +267,7 @@ VERSION_MODULES = [
     v20260910_0128_corpus_operations,
     v20260912_0129_corpus_member_fk_indexes,
     v20260912_0130_creative_experiment_budget,
+    v20260913_0131_planning_result_recovery,
 ]
 
 __all__ = ["VERSION_MODULES"]
