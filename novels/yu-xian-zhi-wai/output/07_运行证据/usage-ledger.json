@@ -1,0 +1,161 @@
+{
+  "comparison_budget": {
+    "arms": [
+      {
+        "arm": "SINGLE",
+        "book_id": "first-novel-pilot-a",
+        "project_id": "first-novel-pilot-20260912",
+        "project_total": {
+          "calls": 460,
+          "tokens": 11500000
+        },
+        "chapter_ranges": {
+          "CREATION_LATE": [
+            7,
+            12
+          ],
+          "CREATION_EARLY": [
+            1,
+            6
+          ]
+        },
+        "design_allocation": {
+          "calls": 60,
+          "tokens": 1500000
+        },
+        "repair_allocation": {
+          "calls": 100,
+          "tokens": 2500000
+        },
+        "source_allocation": {
+          "calls": 0,
+          "tokens": 0
+        },
+        "creation_late_allocation": {
+          "calls": 150,
+          "tokens": 3750000
+        },
+        "creation_early_allocation": {
+          "calls": 150,
+          "tokens": 3750000
+        }
+      }
+    ],
+    "shared_total": {
+      "calls": 460,
+      "tokens": 11500000
+    },
+    "experiment_id": "yu-xian-zhi-wai-author-guided-twelve-v1",
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "contract_version": "creative-single-book-budget.v2"
+  },
+  "budget_binding": {
+    "owner": "CREATIVE_EXPERIMENT_BUDGET",
+    "policy_version": "codex-novel-production-export-01-20260913-v1",
+    "policy_hash": "99ca65fce0b1e188b39f03a2e8a8b3bb0ddcaa78cf1e1298396aa5bfb0906972",
+    "contract_hash": "sha256:95937b896a41feb3d9bdb54daeba4555900f330e39139ff8730940137f166426",
+    "subject_id": "project:first-novel-pilot-20260912",
+    "authorization": {
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "evidence_hash": "sha256:dfe5c91b4c1ec2a1c5f3ab2b6e18066dbb41abbf87bc73a687c3fcc408361d8e",
+      "business_scope": {
+        "design_allowed": true,
+        "source_allowed": false,
+        "max_chapter_number": 12
+      },
+      "authorization_ref": "user:WP-CODEX-NOVEL-PRODUCTION-AND-EXPORT-01:20260913",
+      "authorized_cumulative_caps": {
+        "DESIGN": {
+          "calls": 60,
+          "tokens": 1500000
+        },
+        "REPAIR": {
+          "calls": 100,
+          "tokens": 2500000
+        },
+        "SOURCE": {
+          "calls": 0,
+          "tokens": 0
+        },
+        "CREATION_LATE": {
+          "calls": 150,
+          "tokens": 3750000
+        },
+        "CREATION_EARLY": {
+          "calls": 150,
+          "tokens": 3750000
+        }
+      }
+    }
+  },
+  "budget_usage": {
+    "contract_hash": "sha256:95937b896a41feb3d9bdb54daeba4555900f330e39139ff8730940137f166426",
+    "project_id": "first-novel-pilot-20260912",
+    "book_id": "first-novel-pilot-a",
+    "phases": {
+      "SOURCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "DESIGN": {
+        "calls_used_or_reserved": 9,
+        "conservative_tokens": 233653,
+        "recorded_actual_tokens": 233653,
+        "unmeasured_reserved_tokens": 0
+      },
+      "CREATION_EARLY": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "CREATION_LATE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "REPAIR": {
+        "calls_used_or_reserved": 1,
+        "conservative_tokens": 26699,
+        "recorded_actual_tokens": 26699,
+        "unmeasured_reserved_tokens": 0
+      }
+    },
+    "project_total": {
+      "calls_used_or_reserved": 10,
+      "conservative_tokens": 260352,
+      "recorded_actual_tokens": 260352,
+      "unmeasured_reserved_tokens": 0
+    },
+    "shared_total": {
+      "calls_used_or_reserved": 10,
+      "conservative_tokens": 260352,
+      "recorded_actual_tokens": 260352,
+      "unmeasured_reserved_tokens": 0
+    },
+    "reservation_ids": [
+      "ef7cb1fa-35a3-4c53-8e28-908b7bdaadae",
+      "f2482034-f4e3-4997-9c4c-aa2947ba335b",
+      "9e1276e5-1ded-4001-ba32-5f3b9e8737c4",
+      "c4bdf5c7-8057-4975-aac8-48918d589b31",
+      "3f5a15d3-a340-4197-84b0-907c34cf791b",
+      "7af6a0fa-49fd-4d7e-8534-8b5527a28ca2",
+      "d00b168f-de6b-484a-b198-ae1ea6f20ba1",
+      "cb1febeb-89d2-4a82-95ef-caa26c42c412",
+      "4eae9351-8a12-4f77-b86a-36b3837e1d6f",
+      "3b24d961-5661-4a00-9d2d-6b2cee7c6e43"
+    ],
+    "evidence_class": "POSTGRESQL_BUDGET_LEDGER",
+    "creation_opportunity": null
+  },
+  "remaining": {
+    "calls": 450,
+    "tokens": 11239648
+  },
+  "monetary_cost": "UNKNOWN",
+  "unobservable_CLI_overhead": "UNKNOWN"
+}

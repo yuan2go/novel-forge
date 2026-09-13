@@ -1,0 +1,200 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "logical_ref": "asset-version:authority-output:91731023-7e05-4d6f-86a2-c664a76f6076:story_design.semantic_evaluation:v1",
+  "category": "narrative_design_evaluation",
+  "asset_id": "authority-output:91731023-7e05-4d6f-86a2-c664a76f6076:story_design.semantic_evaluation",
+  "asset_type": "narrative_design_evaluation",
+  "asset_version_id": "authority-output:91731023-7e05-4d6f-86a2-c664a76f6076:story_design.semantic_evaluation:v1",
+  "version_number": 1,
+  "lifecycle": "ACTIVE",
+  "eligibility": "ELIGIBLE",
+  "governance": "CLEAR",
+  "content_hash": "sha256:71bfeab2dd84c1ddde1223a6b36b8dadef1fdd999aae4bdfd2b20898ee358d37",
+  "content": {
+    "evaluation": {
+      "evaluations": [
+        {
+          "layer": "STORY_INTENT",
+          "criteria": [
+            {
+              "verdict": "PASS",
+              "criterion": "THEMATIC_QUESTION_CLARITY",
+              "rationale": "主题问题明确聚焦有限救助之后继续承担、交接与拒绝的成立条件，将未经同意的他人付出作为可检验的责任边界。四种回答各有正当理由和实际局限，形成开放的价值争议。",
+              "evidence_refs": [
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/thematic_question",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/opposing_answers"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "CONFLICT_PRESSURE",
+              "rationale": "封闭的床位总量使互斥用途必然留下等待或使用机会损失；运输和空间选择进一步引入费用、时段、营业与照料负担。选择测试明确要求记录受影响者及资源状态变化，具备将主题转成持续行动压力的能力；这些仍是设计条件，不是已发生后果。",
+              "evidence_refs": [
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/0",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/1",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/2",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/3"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "CHARACTER_CHOICE_RELEVANCE",
+              "rationale": "岑禾的旧签名使核实范围与继续追索直接牵涉自身责任；误读承诺后的更正又要求她承担实际协调成本。配角分别拥有时间、费用、空间、执行与交接诉求，能够限制或反驳主角，使主题依赖人物选择而非抽象辩论。",
+              "evidence_refs": [
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/0",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/4",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/10"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "ENDING_ALIGNMENT",
+              "rationale": "当前十二章阶段收束要求后续责任有明确接手对象和追问依据，同时保留具体未满足需求，与承担边界及实际同意的主题一致。交接测试防止以登记姓名替代接受责任，禁令防止撤销既有回报或消除全部需求；足以建立主题契约阶段的收束方向，无须提前提供全书终局。",
+              "evidence_refs": [
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/5",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/13",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/prohibited_outcomes/10"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "ANTI_PREACHING_CAPACITY",
+              "rationale": "候选让守责、扩责、救急和协商均保留代价，且允许主角判断错误、配角拒绝及合作后继续异议。通过物件、可见影响、具体更正和状态变化承载论题，并明确禁止主旨演说与全员认可，具备反说教能力；正文效果仍待后续实现验证。",
+              "evidence_refs": [
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/opposing_answers",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/prohibited_outcomes/0",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/prohibited_outcomes/2",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/4",
+                "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/8"
+              ],
+              "repair_directive": ""
+            }
+          ],
+          "skill_ref": "narrative-beat-design",
+          "profile_id": "theme-contract-semantic-v1",
+          "profile_hash": "sha256:74842f5eadbd6947c249bdb41ac3f275e78e66ba576fb1832aa5f7a8291dd453",
+          "capability_id": "theme.question.generate",
+          "profile_version": "1.0.0"
+        }
+      ],
+      "schema_version": "progressive-narrative-qualification.v1"
+    },
+    "project_id": "first-novel-pilot-20260912",
+    "qualification": {
+      "status": "PASS",
+      "receipts": [
+        {
+          "layer": "STORY_INTENT",
+          "status": "PASS",
+          "evidence": {
+            "layer": "STORY_INTENT",
+            "criteria": [
+              {
+                "verdict": "PASS",
+                "criterion": "THEMATIC_QUESTION_CLARITY",
+                "rationale": "主题问题明确聚焦有限救助之后继续承担、交接与拒绝的成立条件，将未经同意的他人付出作为可检验的责任边界。四种回答各有正当理由和实际局限，形成开放的价值争议。",
+                "evidence_refs": [
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/thematic_question",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/opposing_answers"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "CONFLICT_PRESSURE",
+                "rationale": "封闭的床位总量使互斥用途必然留下等待或使用机会损失；运输和空间选择进一步引入费用、时段、营业与照料负担。选择测试明确要求记录受影响者及资源状态变化，具备将主题转成持续行动压力的能力；这些仍是设计条件，不是已发生后果。",
+                "evidence_refs": [
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/0",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/1",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/2",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/3"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "CHARACTER_CHOICE_RELEVANCE",
+                "rationale": "岑禾的旧签名使核实范围与继续追索直接牵涉自身责任；误读承诺后的更正又要求她承担实际协调成本。配角分别拥有时间、费用、空间、执行与交接诉求，能够限制或反驳主角，使主题依赖人物选择而非抽象辩论。",
+                "evidence_refs": [
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/0",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/4",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/10"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "ENDING_ALIGNMENT",
+                "rationale": "当前十二章阶段收束要求后续责任有明确接手对象和追问依据，同时保留具体未满足需求，与承担边界及实际同意的主题一致。交接测试防止以登记姓名替代接受责任，禁令防止撤销既有回报或消除全部需求；足以建立主题契约阶段的收束方向，无须提前提供全书终局。",
+                "evidence_refs": [
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/5",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/13",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/prohibited_outcomes/10"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "ANTI_PREACHING_CAPACITY",
+                "rationale": "候选让守责、扩责、救急和协商均保留代价，且允许主角判断错误、配角拒绝及合作后继续异议。通过物件、可见影响、具体更正和状态变化承载论题，并明确禁止主旨演说与全员认可，具备反说教能力；正文效果仍待后续实现验证。",
+                "evidence_refs": [
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/opposing_answers",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/prohibited_outcomes/0",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/prohibited_outcomes/2",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/choice_tests/4",
+                  "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/8"
+                ],
+                "repair_directive": ""
+              }
+            ],
+            "skill_ref": "narrative-beat-design",
+            "profile_id": "theme-contract-semantic-v1",
+            "profile_hash": "sha256:74842f5eadbd6947c249bdb41ac3f275e78e66ba576fb1832aa5f7a8291dd453",
+            "capability_id": "theme.question.generate",
+            "profile_version": "1.0.0"
+          },
+          "skill_ref": "narrative-beat-design",
+          "profile_id": "theme-contract-semantic-v1",
+          "profile_hash": "sha256:74842f5eadbd6947c249bdb41ac3f275e78e66ba576fb1832aa5f7a8291dd453",
+          "capability_id": "theme.question.generate",
+          "criterion_count": 5,
+          "evaluation_hash": "sha256:c0ac6134c089cc34720f58916036a2691d9c4bac4ae69873acf803ddae4fe196",
+          "profile_version": "1.0.0"
+        }
+      ],
+      "schema_version": "progressive-narrative-qualification.v1",
+      "qualification_hash": "sha256:455a4b11fe62f94adc4d2f1501695af8eabf304f66d50ab1ed284f38c0eeee85"
+    },
+    "schema_version": "narrative-design-evaluation.v1",
+    "provider_evidence": [
+      {
+        "content_hash": "sha256:b088692a9babc2c7e9def10cb036e717cbd27c536691b61251ac05d4e2a91969",
+        "asset_version_id": "b78a3748-4e8a-4193-a159-035defe947a5"
+      }
+    ],
+    "provider_execution": {
+      "model_id": "gpt-6-astra",
+      "provider_id": "codex-cli",
+      "skill_version": "quality-review-narrative-evaluator-v1",
+      "prompt_version": "prompt-system:narrative-semantic-evaluation-pack@v3",
+      "route_snapshot_id": "production_execution/routes/9b059b1fea15be5f18a3",
+      "provider_result_hash": "sha256:7fa83d99f4a9372dfa918b7ecbf2a2ca0618c058bffe836142c577d8c592fb76",
+      "provider_evidence_hash": "sha256:0e6aa252570bf0cdb0db7e2c28db4dc7ff4a4a0727a2683b27067b01629ba1af"
+    },
+    "evaluation_attempt_id": "e67700e4-bddb-4252-8139-0dcac43db90f",
+    "candidate_content_hash": "sha256:1d7d637daae5f0687034387cd27e18b704384d236a8ecb8a6fa563a6007eda90",
+    "evaluation_operation_id": "91731023-7e05-4d6f-86a2-c664a76f6076",
+    "generation_operation_id": "0c39694b-6aa0-4f43-854d-17a8859d1621",
+    "evaluation_evidence_hash": "sha256:895711bcb4f05cbce59cf4853f4071459849badff17f33d9b1323f19ee12ac80",
+    "evaluator_execution_class": "MODEL_PROVIDER",
+    "candidate_asset_version_id": "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1",
+    "provider_evidence_asset_version_ids": [
+      "b78a3748-4e8a-4193-a159-035defe947a5"
+    ]
+  },
+  "updated_at": "2026-09-13 05:41:11.084282+00:00"
+}

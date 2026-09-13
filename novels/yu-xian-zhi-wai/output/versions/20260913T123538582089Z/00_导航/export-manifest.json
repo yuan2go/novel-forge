@@ -1,0 +1,315 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "first-novel-pilot-a",
+  "source_sha": "49941cd2bb410ba53a59ae52eb2670b6bf96d82d",
+  "accepted_cursor": 0,
+  "exporter_hash": "sha256:9a15147744191c220b7b66f6c0d36833b1c502621f9042f3feea0bd556236984",
+  "exported_at": "20260913T055047756561Z",
+  "files": [
+    {
+      "source": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/novels/yu-xian-zhi-wai/current/group-a/01-premise-and-world.md",
+      "file": "06_作者专用/作者草案与版本/01-premise-and-world.md",
+      "status": "AUTHOR_DRAFT",
+      "file_hash": "sha256:1274915a04e4bb803f14713bafdaef1d5f7e58ee7b95c00a53cc8ed95284d10f"
+    },
+    {
+      "source": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/novels/yu-xian-zhi-wai/current/group-a/02-characters.md",
+      "file": "06_作者专用/作者草案与版本/02-characters.md",
+      "status": "AUTHOR_DRAFT",
+      "file_hash": "sha256:4493bcc2218ab8848a84b639471e9c4e1db57214fab03f89c07956264e69d5ff"
+    },
+    {
+      "source": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/novels/yu-xian-zhi-wai/current/group-a/03-three-volume-direction.md",
+      "file": "06_作者专用/作者草案与版本/03-three-volume-direction.md",
+      "status": "AUTHOR_DRAFT",
+      "file_hash": "sha256:bc37ae8c02ff023b1fcc3e5bbe85fefd2a236acfadb20076a489a52ae8f99052"
+    },
+    {
+      "source": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/novels/yu-xian-zhi-wai/current/group-a/04-first-arc-author-only.md",
+      "file": "06_作者专用/作者草案与版本/04-first-arc-author-only.md",
+      "status": "AUTHOR_DRAFT",
+      "file_hash": "sha256:aab40592bcababbb35389c7b67dd12cf3bc38a67ce5d660e8b13617ecc453d70"
+    },
+    {
+      "source": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/novels/yu-xian-zhi-wai/current/group-a/06-voice-and-original-samples.md",
+      "file": "06_作者专用/作者草案与版本/06-voice-and-original-samples.md",
+      "status": "AUTHOR_DRAFT",
+      "file_hash": "sha256:975981ffdada94036fc353bae239d9a161785d6099c8a8246ab31bf60aff3cd7"
+    },
+    {
+      "source": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/novels/yu-xian-zhi-wai/current/group-a/07-twelve-chapter-scenes.md",
+      "file": "06_作者专用/作者草案与版本/07-twelve-chapter-scenes.md",
+      "status": "AUTHOR_DRAFT",
+      "file_hash": "sha256:f19d65a6e3d135e4cdd2c852c84ef1514c192b9e94aa300bda064ecc546322d1"
+    },
+    {
+      "source": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/novels/yu-xian-zhi-wai/current/group-a/revision-rationale.json",
+      "file": "06_作者专用/作者草案与版本/revision-rationale.json",
+      "status": "AUTHOR_DRAFT",
+      "file_hash": "sha256:58c7c8fad358a698d309dfd6bf17e53b75e15f7efec85018f82b6bdd99990d11"
+    },
+    {
+      "file": "07_运行证据/model-route.json",
+      "file_hash": "sha256:6c03703938a40595fd6584da857cfe733481eaf282fab56c4c4a746eb217fde4",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    {
+      "file": "07_运行证据/usage-ledger.json",
+      "file_hash": "sha256:6ec2124e45d194cc18c67e7544634b4c5b23bd3898c68bbf18825ac2a028137a",
+      "status": "POSTGRESQL_BUDGET_LEDGER"
+    },
+    {
+      "file": "07_运行证据/production-events.jsonl",
+      "file_hash": "sha256:02dd0aae02babacf1f3467b63f6411644e7ed506d6f3211e3204d6350c3f3dfd",
+      "status": "NATIVE_EVENTS"
+    },
+    {
+      "file": "07_运行证据/asset-index.json",
+      "file_hash": "sha256:725442316ff83347383b05bf3fca1e30d338d7a2f83e43cb3d705e3aed6ffcfa",
+      "status": "SNAPSHOT"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/planning_generation_candidate-authority-output_6caa82a5-d1ea-4a02-9876-cfb019a7b712_story_planning.candidate_v1.json",
+      "file_hash": "sha256:2535db432785bf9e95f555665b537782b0e31de289ad45dbbab1b885626bd2b1",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:6caa82a5-d1ea-4a02-9876-cfb019a7b712:story_planning.candidate:v1",
+      "content_hash": "sha256:421534ed85cd5c17c6807b6a39005f334e592962bb0fe418f9ec18b89c979e82"
+    },
+    {
+      "file": "01_创作设计/题材与读者承诺.json",
+      "file_hash": "sha256:3abdef197dde9209f40d1a084d2530e9b57cb22e0440d327039be52b3e3d8140",
+      "status": "NATIVE_ACTIVE",
+      "asset_bindings": [
+        {
+          "asset_version_id": "authority-output:6caa82a5-d1ea-4a02-9876-cfb019a7b712:story_planning.candidate:v1",
+          "content_hash": "sha256:421534ed85cd5c17c6807b6a39005f334e592962bb0fe418f9ec18b89c979e82"
+        }
+      ]
+    },
+    {
+      "file": "01_创作设计/题材与读者承诺.md",
+      "file_hash": "sha256:a3166482d0fefb52420d2c9f675b19a55d3fa9e0e57fa8072c6fa819cf60abca",
+      "status": "NATIVE_ACTIVE",
+      "asset_bindings": [
+        {
+          "asset_version_id": "authority-output:6caa82a5-d1ea-4a02-9876-cfb019a7b712:story_planning.candidate:v1",
+          "content_hash": "sha256:421534ed85cd5c17c6807b6a39005f334e592962bb0fe418f9ec18b89c979e82"
+        }
+      ]
+    },
+    {
+      "file": "01_创作设计/主题与风格.json",
+      "file_hash": "sha256:16894ed004aca31a59864550ec4241e7acbd4372571fbc4513b8543546eadbc7",
+      "status": "NATIVE_ACTIVE",
+      "asset_bindings": [
+        {
+          "asset_version_id": "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1",
+          "content_hash": "sha256:1d7d637daae5f0687034387cd27e18b704384d236a8ecb8a6fa563a6007eda90"
+        },
+        {
+          "asset_version_id": "authority-output:6caa82a5-d1ea-4a02-9876-cfb019a7b712:story_planning.candidate:v1",
+          "content_hash": "sha256:421534ed85cd5c17c6807b6a39005f334e592962bb0fe418f9ec18b89c979e82"
+        }
+      ]
+    },
+    {
+      "file": "01_创作设计/主题与风格.md",
+      "file_hash": "sha256:199259eb23bb275daba737cf535332d31c2ce01b16e588f09cc1f07211b36d82",
+      "status": "NATIVE_ACTIVE",
+      "asset_bindings": [
+        {
+          "asset_version_id": "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1",
+          "content_hash": "sha256:1d7d637daae5f0687034387cd27e18b704384d236a8ecb8a6fa563a6007eda90"
+        },
+        {
+          "asset_version_id": "authority-output:6caa82a5-d1ea-4a02-9876-cfb019a7b712:story_planning.candidate:v1",
+          "content_hash": "sha256:421534ed85cd5c17c6807b6a39005f334e592962bb0fe418f9ec18b89c979e82"
+        }
+      ]
+    },
+    {
+      "file": "01_创作设计/世界观.json",
+      "file_hash": "sha256:6d473e551f97ae63543a4d8e33ab4c428a90aacba9201bcb8a7eef7a446eecf8",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "01_创作设计/世界观.md",
+      "file_hash": "sha256:48f62250d0a9b7812e34d8d9808fbfacf1da271d532fe578d7d1c452d1dafd31",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "01_创作设计/地点与组织.json",
+      "file_hash": "sha256:6d473e551f97ae63543a4d8e33ab4c428a90aacba9201bcb8a7eef7a446eecf8",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "01_创作设计/地点与组织.md",
+      "file_hash": "sha256:a331df9f7321e7da15bd24a60104db2a7e9b18f20bbe883a2b75159a7856f252",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "01_创作设计/人物设定.json",
+      "file_hash": "sha256:6d473e551f97ae63543a4d8e33ab4c428a90aacba9201bcb8a7eef7a446eecf8",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "01_创作设计/人物设定.md",
+      "file_hash": "sha256:ea3cae9cae945aa3e71f3d85293601d09c5bd97e8dfa2ccd9b7dac1f9ac24575",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "01_创作设计/人物关系.json",
+      "file_hash": "sha256:6d473e551f97ae63543a4d8e33ab4c428a90aacba9201bcb8a7eef7a446eecf8",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "01_创作设计/人物关系.md",
+      "file_hash": "sha256:d6660673672faec0ac0f77e0c2c21abef7a6b3329da769ed51f72c2901b3c0dd",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "02_分层规划/全书大纲.json",
+      "file_hash": "sha256:6d473e551f97ae63543a4d8e33ab4c428a90aacba9201bcb8a7eef7a446eecf8",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "02_分层规划/全书大纲.md",
+      "file_hash": "sha256:2a851a28c6a6a79582e5eedb509cadecc4d5d6bf295359f79b1ae6538cf91fd0",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "04_审稿修订/六章整体审稿.md",
+      "file_hash": "sha256:ddee0445f97b99c5775b2b5c9121b8031a2d5d70bf3106be568db57e392bf470",
+      "status": "NOT_REVIEWED"
+    },
+    {
+      "file": "04_审稿修订/十二章整体审稿.md",
+      "file_hash": "sha256:b14894fbdb097420aabbf85921d28e4622e61ef21db82d29bedef5ddb47ae60e",
+      "status": "NOT_REVIEWED"
+    },
+    {
+      "file": "04_审稿修订/未解决问题.json",
+      "file_hash": "sha256:56f2e99c463cf64dac56c83858be87596769a01ae565a670486dc0c1a76161e0",
+      "status": "NOT_REVIEWED"
+    },
+    {
+      "file": "00_导航/README.md",
+      "file_hash": "sha256:f2d06c60ad3699f7a4055db729bd871ffa995bb0063576237e17f97655d9a95e",
+      "status": "READ_PROJECTION"
+    },
+    {
+      "file": "00_导航/progress.json",
+      "file_hash": "sha256:00a89ebc9d5e0859d2e3f99e15ef98689d36500742a1967300842607fe68d9e7",
+      "status": "READ_PROJECTION"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/planning_generation_candidate-authority-output_6caa82a5-d1ea-4a02-9876-cfb019a7b712_story_planning.candidate_v1.md",
+      "file_hash": "sha256:6597acade22187478a3153c37e010854b97a0dbab77a64a6917ec4c7cdb4950a",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:6caa82a5-d1ea-4a02-9876-cfb019a7b712:story_planning.candidate:v1",
+      "content_hash": "sha256:421534ed85cd5c17c6807b6a39005f334e592962bb0fe418f9ec18b89c979e82"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/narrative_design_evaluation-authority-output_d78eec9e-e9e1-4779-ba81-724dbeb36b6f_story_design.semantic_evaluation_v1.json",
+      "file_hash": "sha256:529b44fef544d926c0b33e438e5ad2d3bcb05c77ba8710d8eb9f442d514c4ef4",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:d78eec9e-e9e1-4779-ba81-724dbeb36b6f:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:b552fde5d51bccbd1d620960059da2dc7e7dd5752bb049ba32a466b23772836f"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/planning_generation_candidate-authority-output_93516014-93a9-45ed-8911-12a6410acf7f_story_planning.candidate_v1.json",
+      "file_hash": "sha256:cad055de0ac277c5ae5802eba7eb27075b4fea28267ea912e9877e64a307870d",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1",
+      "content_hash": "sha256:89925fd2a04a486fd3aa420109c37f858e800235b44d788d04e2aa51965e3e50"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/planning_generation_candidate-authority-output_93516014-93a9-45ed-8911-12a6410acf7f_story_planning.candidate_v1.md",
+      "file_hash": "sha256:b10a728ca494c8008623123b094b16970534b319c023457ac2dfcb644f6f7127",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1",
+      "content_hash": "sha256:89925fd2a04a486fd3aa420109c37f858e800235b44d788d04e2aa51965e3e50"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/narrative_design_evaluation-authority-output_66d0ce22-e8c0-426d-94ad-af7d0c39b51c_story_design.semantic_evaluation_v1.json",
+      "file_hash": "sha256:44b2e8903167ae4b2b81f823333f673e3cd19ea9b19694631783c1433f7f1ac7",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:66d0ce22-e8c0-426d-94ad-af7d0c39b51c:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:3d652bc7e66fd716a4d8f83a68c868f8bb303b8faf18dc09806676671479878c"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/planning_generation_candidate-authority-output_0c39694b-6aa0-4f43-854d-17a8859d1621_story_planning.candidate_v1.json",
+      "file_hash": "sha256:1dfff430afa6e355a2f39707960731e33a49bfc712db20cf7f8b5cbbabd5cc33",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1",
+      "content_hash": "sha256:1d7d637daae5f0687034387cd27e18b704384d236a8ecb8a6fa563a6007eda90"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/planning_generation_candidate-authority-output_0c39694b-6aa0-4f43-854d-17a8859d1621_story_planning.candidate_v1.md",
+      "file_hash": "sha256:4369635b777c541b54bc7b9465956a248516e0574de43c14ca162c35151143a7",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1",
+      "content_hash": "sha256:1d7d637daae5f0687034387cd27e18b704384d236a8ecb8a6fa563a6007eda90"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/narrative_design_evaluation-authority-output_91731023-7e05-4d6f-86a2-c664a76f6076_story_design.semantic_evaluation_v1.json",
+      "file_hash": "sha256:79ff4641372b78b152924dde85b8e7b3ffa48392f6003d8730f56ad75a099cd4",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:91731023-7e05-4d6f-86a2-c664a76f6076:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:71bfeab2dd84c1ddde1223a6b36b8dadef1fdd999aae4bdfd2b20898ee358d37"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/planning_generation_candidate-authority-output_0353ce66-51d7-4f6a-9792-9a38c886eb45_story_planning.candidate_v1.json",
+      "file_hash": "sha256:ee9d6646820fc875596d78ede8ffa76e592415dfe214d10c1686dd95256bc71d",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1",
+      "content_hash": "sha256:4e5131ec911cddbed49e82a9fa0c1a4a993c55fe7bcf21378cd189cc52c7b485"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/planning_generation_candidate-authority-output_0353ce66-51d7-4f6a-9792-9a38c886eb45_story_planning.candidate_v1.md",
+      "file_hash": "sha256:ab7a7e55f590767f81ba308756e20800308b4fc6a4a1a6aa974d5e6a286ca5c9",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1",
+      "content_hash": "sha256:4e5131ec911cddbed49e82a9fa0c1a4a993c55fe7bcf21378cd189cc52c7b485"
+    },
+    {
+      "file": "04_审稿修订/原稿与候选/narrative_design_evaluation-authority-output_7b35fb1a-1e92-4d72-8c8a-45f5773b3144_story_design.semantic_evaluation_v1.json",
+      "file_hash": "sha256:fbba8e8de9077a475bb6ba367d6bc8e6f4cc469a5dbe1c43e7ba826f47fd95e3",
+      "status": "NATIVE_CANDIDATE",
+      "asset_version_id": "authority-output:7b35fb1a-1e92-4d72-8c8a-45f5773b3144:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:b5c32289ef756f937b81f30f80d4fc805bc683266b650f06bbeda146d3e33d95"
+    },
+    {
+      "file": "06_作者专用/幕后因果与真相预案.md",
+      "file_hash": "sha256:5c37e2c2368e9919b0d0f0a47e8a9c2964cb265f9a26f543e313f9413ebc00ba",
+      "status": "AUTHOR_DRAFT",
+      "source_file": "06_作者专用/作者草案与版本/04-first-arc-author-only.md"
+    },
+    {
+      "file": "05_叙事状态/时间线.md",
+      "file_hash": "sha256:f92f6151be560eac49a8c25e2e5935d024af79901154b1d79f54d614eefd8c99",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "05_叙事状态/资源与关系状态.md",
+      "file_hash": "sha256:a2c9b57e86ecccb93390d48202d1b4b99b71a54df88b5cc213468c8070f496d8",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "05_叙事状态/伏笔与承诺.md",
+      "file_hash": "sha256:c7f4dd35a8c2cc480c287fb8b48d52b54f524c7db182310d863d7d299f607d03",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "05_叙事状态/Canon快照.json",
+      "file_hash": "sha256:e3ca7057439d7cbb949ebca37204b0f2227e32448dfdc779c8dc1bcfc5f44aeb",
+      "status": "NOT_GENERATED"
+    },
+    {
+      "file": "05_叙事状态/后章承接索引.json",
+      "file_hash": "sha256:e3ca7057439d7cbb949ebca37204b0f2227e32448dfdc779c8dc1bcfc5f44aeb",
+      "status": "NOT_GENERATED"
+    }
+  ],
+  "conflicts": []
+}

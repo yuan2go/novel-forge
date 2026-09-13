@@ -1,0 +1,154 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "first-novel-pilot-a",
+  "source_sha": "49941cd2bb410ba53a59ae52eb2670b6bf96d82d",
+  "exported_at": "20260913T054857727457Z",
+  "first_unfinished_business_node": "FORMATION:ENDING_INTENT",
+  "real_generated_chapters": 0,
+  "committed_chapters": 0,
+  "exported_chapters": 0,
+  "han_characters": 0,
+  "accepted_cursor": 0,
+  "book_run_id": null,
+  "book_state": "NOT_ADMITTED",
+  "chapters": [],
+  "native_candidate_assets": 4,
+  "active_native_designs": [
+    "creative.candidates.generate",
+    "theme.candidates.generate"
+  ],
+  "formation": [
+    {
+      "formation_run_id": "story-formation:501ed16810da40fc068a3b11e40622cf83a906d93ae325d3a2580a8a5c20264c",
+      "lifecycle": "WAITING_APPROVAL",
+      "current_stage": "ENDING_INTENT",
+      "version": 10,
+      "failure": {},
+      "recovery_instruction": {
+        "stage": "ENDING_INTENT",
+        "action": "APPROVE_EXACT_CANDIDATE_AND_RESUME",
+        "authority": "STORY_PLANNING_AUTHORITY",
+        "formation_run_id": "story-formation:501ed16810da40fc068a3b11e40622cf83a906d93ae325d3a2580a8a5c20264c",
+        "wait_operation_id": "ef738271-0433-418a-8190-7c7902ab6b03",
+        "runtime_attempt_id": "runtime-attempt:ff8dd3e0-8ff0-4ebf-b84d-f40797f89a0d",
+        "candidate_content_hash": "sha256:4e5131ec911cddbed49e82a9fa0c1a4a993c55fe7bcf21378cd189cc52c7b485",
+        "candidate_asset_version_id": "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1",
+        "candidate_asset_version_ids": [
+          "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1"
+        ]
+      }
+    }
+  ],
+  "provider_effects": [
+    {
+      "external_effect_id": "ed93c442-382f-49b7-b923-55b2756d0a81",
+      "operation_id": "6caa82a5-d1ea-4a02-9876-cfb019a7b712",
+      "status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "capability": "creative.proposal.generate",
+      "model_id": "gpt-6-astra",
+      "request_hash": "sha256:eafc00ca02f2ea3b6c7c27e47859293106e36dba8592ccda819bee8cf33c6e18",
+      "last_error": {},
+      "reconciliation": {},
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "85e459cc-27e0-4f1b-addd-8b3d71bd38ec",
+      "operation_id": "d78eec9e-e9e1-4779-ba81-724dbeb36b6f",
+      "status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "capability": "model.narrative_semantic_evaluation",
+      "model_id": "gpt-6-astra",
+      "request_hash": "sha256:9862c7e3011361be6b59a34c9b73f652ab2e2a766064a3bf133155b3b9b293ef",
+      "last_error": {},
+      "reconciliation": {},
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "fd4ab03e-e3d6-4216-936c-b2f643272013",
+      "operation_id": "93516014-93a9-45ed-8911-12a6410acf7f",
+      "status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "capability": "creative.proposal.generate",
+      "model_id": "gpt-6-astra",
+      "request_hash": "sha256:267ba632e5debae6858923b8927303c908dd0346f7999f2d347201372a0b68ae",
+      "last_error": {},
+      "reconciliation": {},
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "6e2aea63-e62e-4cc7-abd4-202500afd264",
+      "operation_id": "66d0ce22-e8c0-426d-94ad-af7d0c39b51c",
+      "status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "capability": "model.narrative_semantic_evaluation",
+      "model_id": "gpt-6-astra",
+      "request_hash": "sha256:a24c7ef0d05f3f006788bfa7ffc81df22dd58327abfcdd8959f67d2727ecc4e3",
+      "last_error": {},
+      "reconciliation": {},
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "c4a82256-08a0-4952-8bc3-b5e54def2e06",
+      "operation_id": "0c39694b-6aa0-4f43-854d-17a8859d1621",
+      "status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "capability": "theme.question.generate",
+      "model_id": "gpt-6-astra",
+      "request_hash": "sha256:63b16507f7d53548078e4df7be830ac5ddf560844d95ec41e14a2b0fd83a0575",
+      "last_error": {},
+      "reconciliation": {},
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "af74acf8-d335-42d1-9eeb-8ba43a0c20fc",
+      "operation_id": "91731023-7e05-4d6f-86a2-c664a76f6076",
+      "status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "capability": "model.narrative_semantic_evaluation",
+      "model_id": "gpt-6-astra",
+      "request_hash": "sha256:584129cab24009c131a72db5f730ab8443c53f3309541b2f17f77174f1d8eb07",
+      "last_error": {},
+      "reconciliation": {},
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "df66d7a1-185d-4eda-be80-86eeb28095b7",
+      "operation_id": "0353ce66-51d7-4f6a-9792-9a38c886eb45",
+      "status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "capability": "ending.intent.generate",
+      "model_id": "gpt-6-astra",
+      "request_hash": "sha256:f76e2bc650fe48ba6bd10afe0baec541f646a1de28b14392872eaf3c9efad0b9",
+      "last_error": {},
+      "reconciliation": {},
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "71d7c81d-1961-453d-bec1-e39c57702c43",
+      "operation_id": "7b35fb1a-1e92-4d72-8c8a-45f5773b3144",
+      "status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "capability": "model.narrative_semantic_evaluation",
+      "model_id": "gpt-6-astra",
+      "request_hash": "sha256:2d6cfc38388f2a5148a4bfff46b32253e74a1e0b04837f7f09c833f92633758a",
+      "last_error": {},
+      "reconciliation": {},
+      "manual_resolution_required": false
+    }
+  ],
+  "budget_usage": {
+    "calls_used_or_reserved": 8,
+    "conservative_tokens": 205903,
+    "recorded_actual_tokens": 205903,
+    "unmeasured_reserved_tokens": 0
+  },
+  "budget_remaining": {
+    "calls": 452,
+    "tokens": 11294097
+  },
+  "monetary_cost": "UNKNOWN",
+  "unobservable_CLI_overhead": "UNKNOWN",
+  "independent_human_review": "NOT_REVIEWED",
+  "conflicts": []
+}

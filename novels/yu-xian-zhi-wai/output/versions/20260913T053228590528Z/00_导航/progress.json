@@ -1,0 +1,18 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "first-novel-pilot-a",
+  "source_sha": "49941cd2bb410ba53a59ae52eb2670b6bf96d82d",
+  "stage": "NATIVE_DESIGN_STARTUP",
+  "real_generated_chapters": 0,
+  "committed_chapters": 0,
+  "exported_chapters": 0,
+  "han_characters": 0,
+  "native_design": "NOT_GENERATED",
+  "independent_human_review": "NOT_REVIEWED",
+  "budget_remaining": {
+    "calls": 460,
+    "tokens": 11500000
+  },
+  "monetary_cost": "UNKNOWN",
+  "unobservable_CLI_overhead": "UNKNOWN"
+}

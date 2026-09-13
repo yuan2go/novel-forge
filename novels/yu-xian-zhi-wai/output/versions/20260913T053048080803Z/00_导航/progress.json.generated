@@ -1,0 +1,62 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "first-novel-pilot-a",
+  "source_sha": "49941cd2bb410ba53a59ae52eb2670b6bf96d82d",
+  "exported_at": "20260913T053048080803Z",
+  "first_unfinished_business_node": "CREATIVE_FOUNDATION_GENERATION",
+  "real_generated_chapters": 0,
+  "committed_chapters": 0,
+  "exported_chapters": 0,
+  "han_characters": 0,
+  "native_candidate_assets": 1,
+  "formation": [
+    {
+      "formation_run_id": "story-formation:501ed16810da40fc068a3b11e40622cf83a906d93ae325d3a2580a8a5c20264c",
+      "lifecycle": "RUNNING",
+      "current_stage": "CREATIVE_SEARCH",
+      "version": 2,
+      "failure": {},
+      "recovery_instruction": {}
+    }
+  ],
+  "provider_effects": [
+    {
+      "external_effect_id": "ed93c442-382f-49b7-b923-55b2756d0a81",
+      "operation_id": "6caa82a5-d1ea-4a02-9876-cfb019a7b712",
+      "status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "capability": "creative.proposal.generate",
+      "model_id": "gpt-6-astra",
+      "request_hash": "sha256:eafc00ca02f2ea3b6c7c27e47859293106e36dba8592ccda819bee8cf33c6e18",
+      "last_error": {},
+      "reconciliation": {},
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "85e459cc-27e0-4f1b-addd-8b3d71bd38ec",
+      "operation_id": "d78eec9e-e9e1-4779-ba81-724dbeb36b6f",
+      "status": "DISPATCHING",
+      "provider": "production_execution_gateway",
+      "capability": "model.narrative_semantic_evaluation",
+      "model_id": "gpt-6-astra",
+      "request_hash": "sha256:9862c7e3011361be6b59a34c9b73f652ab2e2a766064a3bf133155b3b9b293ef",
+      "last_error": {},
+      "reconciliation": {},
+      "manual_resolution_required": false
+    }
+  ],
+  "budget_usage": {
+    "calls_used_or_reserved": 2,
+    "conservative_tokens": 79015,
+    "recorded_actual_tokens": 26699,
+    "unmeasured_reserved_tokens": 52316
+  },
+  "budget_remaining": {
+    "calls": 458,
+    "tokens": 11420985
+  },
+  "monetary_cost": "UNKNOWN",
+  "unobservable_CLI_overhead": "UNKNOWN",
+  "independent_human_review": "NOT_REVIEWED",
+  "conflicts": []
+}

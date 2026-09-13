@@ -1,0 +1,727 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "first-novel-pilot-a",
+  "source_sha": "49941cd2bb410ba53a59ae52eb2670b6bf96d82d",
+  "assets": [
+    {
+      "asset_type": "planning_generation_candidate",
+      "asset_version_id": "authority-output:4c25311f-c3c2-4379-8caf-251d26b5d5c2:story_planning.candidate:v1",
+      "version_number": 1,
+      "content_hash": "sha256:adff41a0526cc1e692ba236b9e17b1ac2af881b8a1004ad812a4f4c613745bf8",
+      "lifecycle": "CANDIDATE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "planning_generation_candidate",
+      "asset_version_id": "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1",
+      "version_number": 1,
+      "content_hash": "sha256:4e5131ec911cddbed49e82a9fa0c1a4a993c55fe7bcf21378cd189cc52c7b485",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "planning_generation_candidate",
+      "asset_version_id": "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1",
+      "version_number": 1,
+      "content_hash": "sha256:1d7d637daae5f0687034387cd27e18b704384d236a8ecb8a6fa563a6007eda90",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "planning_generation_candidate",
+      "asset_version_id": "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1",
+      "version_number": 1,
+      "content_hash": "sha256:89925fd2a04a486fd3aa420109c37f858e800235b44d788d04e2aa51965e3e50",
+      "lifecycle": "CANDIDATE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "planning_generation_candidate",
+      "asset_version_id": "authority-output:6caa82a5-d1ea-4a02-9876-cfb019a7b712:story_planning.candidate:v1",
+      "version_number": 1,
+      "content_hash": "sha256:421534ed85cd5c17c6807b6a39005f334e592962bb0fe418f9ec18b89c979e82",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "narrative_design_evaluation",
+      "asset_version_id": "authority-output:e354b9a9-4fe4-4a60-96e8-afe90de0f6ef:story_design.semantic_evaluation:v1",
+      "version_number": 1,
+      "content_hash": "sha256:4a438106fe4113649fcf1ab3c04af49726c0e9f4c2e418eadcdf62e712c9cb47",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "narrative_design_evaluation",
+      "asset_version_id": "authority-output:7b35fb1a-1e92-4d72-8c8a-45f5773b3144:story_design.semantic_evaluation:v1",
+      "version_number": 1,
+      "content_hash": "sha256:b5c32289ef756f937b81f30f80d4fc805bc683266b650f06bbeda146d3e33d95",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "narrative_design_evaluation",
+      "asset_version_id": "authority-output:91731023-7e05-4d6f-86a2-c664a76f6076:story_design.semantic_evaluation:v1",
+      "version_number": 1,
+      "content_hash": "sha256:71bfeab2dd84c1ddde1223a6b36b8dadef1fdd999aae4bdfd2b20898ee358d37",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "narrative_design_evaluation",
+      "asset_version_id": "authority-output:66d0ce22-e8c0-426d-94ad-af7d0c39b51c:story_design.semantic_evaluation:v1",
+      "version_number": 1,
+      "content_hash": "sha256:3d652bc7e66fd716a4d8f83a68c868f8bb303b8faf18dc09806676671479878c",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "narrative_design_evaluation",
+      "asset_version_id": "authority-output:d78eec9e-e9e1-4779-ba81-724dbeb36b6f:story_design.semantic_evaluation:v1",
+      "version_number": 1,
+      "content_hash": "sha256:b552fde5d51bccbd1d620960059da2dc7e7dd5752bb049ba32a466b23772836f",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "8a99df8f-6638-44bd-8a30-171074efc8c0",
+      "version_number": 1,
+      "content_hash": "sha256:884d5ade31b91eb0e99479d9f2a3caa52c9d1d045342e62b7cec785298d93345",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "58ba1e10-96a5-487f-9b1b-e1f4b14a2282",
+      "version_number": 1,
+      "content_hash": "sha256:3748fa469fa1862a4c3325c9cf61eca595e278f15589f5eb36e6261f58b04c87",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "2492a5e9-c9dc-4c63-9fa3-ff628477ab0c",
+      "version_number": 1,
+      "content_hash": "sha256:9603214da08b5b38a1fb0d0f106080af6a6f1d26550ca7775c2a6593c5abb292",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "eae96230-6f1c-4c0e-9813-e75b1958efc7",
+      "version_number": 1,
+      "content_hash": "sha256:8aa3ab9dd7f6d29772b004d52e3bfcf170a375728e62d6c5f02275c97568d931",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "af819463-f6aa-4055-a7de-dcc9f0810b3e",
+      "version_number": 1,
+      "content_hash": "sha256:d947aae3ecaba68d6c0b893d283f7eb4b925f095ea31d058a9b6bfce962c6c30",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "0234ddef-d38e-40e6-8c5d-c77b76ec02cd",
+      "version_number": 1,
+      "content_hash": "sha256:31f6a33a5b8d22f974bee788e62f55edf789f0e7d50aabc6b49d74b1cea05c35",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "b73e5f62-284b-49c3-8fdc-a84c97b8a443",
+      "version_number": 1,
+      "content_hash": "sha256:3d1f419b8348958b454302ee353e66be5e4a8cfc7d53f95d5c0df73cb2150cd0",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "a9d3964e-df18-4e83-8101-b97aa1a41ab9",
+      "version_number": 1,
+      "content_hash": "sha256:f9e349ee792c4de5714978dd0aa5fbdc7ee1b20a9ee911d49773edb8cf1bd53e",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "0d33e3f8-3efc-4bf5-9411-87e26d5614ad",
+      "version_number": 1,
+      "content_hash": "sha256:31e2b4d5ab2caac692294868e70c7082d9db7f8b1dd0e45bd3962ac5d94eb478",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "bd1886ed-2244-4235-bc74-c23bf34d719a",
+      "version_number": 1,
+      "content_hash": "sha256:8054d93f09307221d7e0bf94e441bf3b35fb63c8bbc7ecb3f7e17716bebd1971",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "ad4a0e15-783d-4e6c-84d7-c5e056e1b626",
+      "version_number": 1,
+      "content_hash": "sha256:bf1d932e48daf72ab439ff154892a96ebcefddf35e3a5a56f9d06381b9321136",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "9089c869-047b-475e-9efe-728588f1f39f",
+      "version_number": 1,
+      "content_hash": "sha256:ef4a7fc396dde4c30d748aab8ef75b12b19c237cd87101fcd1affce781fa371e",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "5bcef5f8-57d0-4fb7-894c-75ff750f2b3e",
+      "version_number": 1,
+      "content_hash": "sha256:a5e30ec36cafd81193344364fb6c9399d14f3e7a3504991c61526b109fe4e992",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "998b0029-2c3e-4fae-b128-010e973d5587",
+      "version_number": 1,
+      "content_hash": "sha256:c7be2407f6736f8b442cc1052720f998baff626bc125a91a35de0ac56664e7c6",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "dbd48340-8153-4265-9c4e-673c11735fd7",
+      "version_number": 1,
+      "content_hash": "sha256:13eded9f2520780a5288c339a21318a42cae90553404cbc901585d4b6bcd6a2a",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "c5ceaf86-7ef1-492e-a006-3fd2ca57ddff",
+      "version_number": 1,
+      "content_hash": "sha256:08c58ea1d347d64e883803d197dd828c8350a65712ab9d164090c0b1335ab200",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "f8958393-3df3-4d43-b040-98aaa2161eda",
+      "version_number": 1,
+      "content_hash": "sha256:11c598264bbce57f80cced9ffaccb4cc781e807f7382aef3a289cb1b9ae796b7",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "2aae9312-e290-40a6-b157-e3740259be8d",
+      "version_number": 1,
+      "content_hash": "sha256:eb9a047c502dd797cee326b98f4dcb87627d3f1b5a7501efc1e905a482413fe8",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "f98ac56a-064d-4157-bb8e-42a5950954f6",
+      "version_number": 1,
+      "content_hash": "sha256:ad1579d5cfed0da779c3c22115cdb20c7d121d1a6a4e7f7353d950509c1db34d",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "cf5e45df-7e6a-48c6-904e-5800b5ec6a13",
+      "version_number": 1,
+      "content_hash": "sha256:bc46c40938c74aebc62759fc0b071e15467ca4684a64ceb9f598c387ca3657fb",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "fc01233a-b6a2-47c3-9861-c1c5f0fe0837",
+      "version_number": 1,
+      "content_hash": "sha256:05475515ae10f63a1c3a6465b7d06e3d5a6bc9b4261241bbdf16f04865d5d8b9",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "6aa157b5-5b64-48f5-b726-2f7d99046adc",
+      "version_number": 1,
+      "content_hash": "sha256:2b6eb7f82f1c45476edf8a11d057455c7d4cba1146a62ca3d7d1d6fa67bb2b81",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "7bad9b34-c1af-4a8f-ac13-089ea005d585",
+      "version_number": 1,
+      "content_hash": "sha256:780e7f1619e9d512de788ae1421f3065b77d9a187345ea8dc728a3693b62dc63",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "7a610b1e-d9e1-445a-9d8d-33f4988967f4",
+      "version_number": 1,
+      "content_hash": "sha256:192cb9b58150156014c8066e4dbb45be1275de57359ad846059ffc97723d9463",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "b78a3748-4e8a-4193-a159-035defe947a5",
+      "version_number": 1,
+      "content_hash": "sha256:b088692a9babc2c7e9def10cb036e717cbd27c536691b61251ac05d4e2a91969",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "3b09d594-49d5-4aba-a594-e77a988b4258",
+      "version_number": 1,
+      "content_hash": "sha256:9982f286530749185773bf0dd592ddfeb3f77cb89071b142f56f952a85592241",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "26935ea9-eabb-4c46-9e8f-80127737bd22",
+      "version_number": 1,
+      "content_hash": "sha256:8fc2439b021d841366a69020f02e296728d9c1156ed6210494fc4b011b3995d3",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "66713340-f4ad-4a71-b824-f2720ec09fe2",
+      "version_number": 1,
+      "content_hash": "sha256:cb757e88b9247e7f7287dbb9ba1fb42c6da3f0f4a77c63ef7387d5e8714c09d6",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "70a30d4a-3a22-4c6b-8337-da16260c8070",
+      "version_number": 1,
+      "content_hash": "sha256:a08ec9df5e1a38b5385010ee4b3dbdfec71ee625f4405c44c8375f56b155b71f",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "e0f994de-3f6a-4282-abf4-7c6c22f0d4b7",
+      "version_number": 1,
+      "content_hash": "sha256:7376f9f3506ca917c6be94994f977d9fb9e7b02731d45c8c830467752747d96d",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "cost_ledger",
+      "asset_version_id": "fe838694-4599-4960-b9b8-6adf91cdefab",
+      "version_number": 1,
+      "content_hash": "sha256:7b7e810781bd070b2a03f1e85ff85b51a297f6a2e62811fdfd2d3d8ec44d3b85",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "cost_ledger",
+      "asset_version_id": "86548d39-497d-466f-adbe-7f9d4351d560",
+      "version_number": 1,
+      "content_hash": "sha256:4bda492257ac712f93968fc9c2de333a3c145ac1b3db4b11d480a8d919824433",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "cost_ledger",
+      "asset_version_id": "56cb2500-45cd-477b-bb8d-1b4d10cafc07",
+      "version_number": 1,
+      "content_hash": "sha256:f0d872e78291c658e41850a6dad86c7d84eb41c3f5818c87dbc388d6545c0b9a",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "cost_ledger",
+      "asset_version_id": "77fccc12-fc6a-4c92-9856-2fb53a711f9f",
+      "version_number": 1,
+      "content_hash": "sha256:e05bcf659d65742fdffd37c0efcd6fbd399f92d499fbc2f7541f524f16149507",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "cost_ledger",
+      "asset_version_id": "bdafd90e-77e3-44f4-b824-d3b741f08d43",
+      "version_number": 1,
+      "content_hash": "sha256:6f0dd7e367017314021abb84e5db3541974749dcbca7397c1e37bbc3a95e4db1",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "cost_ledger",
+      "asset_version_id": "e3fd79b4-b3d0-4433-9bca-62b5a0effa7f",
+      "version_number": 1,
+      "content_hash": "sha256:bf397482e8705df8f26678b4d0544af109f6657091b567052a811f0b8936704b",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "cost_ledger",
+      "asset_version_id": "c3f3b264-a479-4d81-839c-054ca262a1b4",
+      "version_number": 1,
+      "content_hash": "sha256:b5245aa8b50f0ef54a09a70ff9f7c0949a5b5503c581049ff7faa49f41b796d2",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "cost_ledger",
+      "asset_version_id": "4fb5cd1e-1439-4e65-bd28-be502bd70946",
+      "version_number": 1,
+      "content_hash": "sha256:9593f97538e1ff57691b096af16a979220c5a90b3888a6a88ba48ece51f7d5c6",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "cost_ledger",
+      "asset_version_id": "910eb821-b142-45cc-8c98-0f2271fd0902",
+      "version_number": 1,
+      "content_hash": "sha256:3eb23870199e73bfcace1c61dc63e9ecb24aa139acb46e5a841a41416c5412cc",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "cost_ledger",
+      "asset_version_id": "41a3c611-f95d-4b83-b475-03231966adc2",
+      "version_number": 1,
+      "content_hash": "sha256:9e497b6281d1136ff81a5c5eb7502978d3f8687fc02c2f1134af8b0a6f69cad2",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "f91b6e0a-7ec3-41cf-88a9-95569becf845",
+      "version_number": 3,
+      "content_hash": "sha256:246de7d892dec7a61b5ef94497f73ecbd68e1d84884e0f0db9890040532a9004",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "2c31c5e0-b971-4c99-bdeb-9a0b6ecdf2c0",
+      "version_number": 2,
+      "content_hash": "sha256:619ec363177dc655e10b9e19cb1d447fdeda97d068edc2aab46a981f0cfd9a85",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "ac294ead-a4f1-4945-9226-165e4a213ed2",
+      "version_number": 1,
+      "content_hash": "sha256:8a3b86b84a7169f770298b5c85d9e84b1fa433e62393ad7ca57e99f69fadd6da",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "1cfcf324-16a6-4301-85d6-b77ea71a5617",
+      "version_number": 3,
+      "content_hash": "sha256:7b56285b035b4a6f50d00c9b980c1357d66cef9a74d8675e7037a09d5e8617d8",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "7dcafea9-7617-4369-bdd7-7bc999e914bf",
+      "version_number": 2,
+      "content_hash": "sha256:39cdb2c769d42d9d544f9377c2f7bb61d188fccfd026e976d4d92e7cbc3373a5",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "2ecd9dda-7598-4d75-9be8-019186a8c219",
+      "version_number": 1,
+      "content_hash": "sha256:17a72a650911ea07bbedf4354e90ceed2dde4a1e4b296a8ae4ddaecec03c8f5a",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "c16f8762-d04b-4432-aa9c-32dca770a1c9",
+      "version_number": 3,
+      "content_hash": "sha256:d3f1b4b712760a137324ea9c3a2a9548fb10bab2f3b6859318f9bdf5d7a13996",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "59de723e-309b-439a-af2f-12d77447d565",
+      "version_number": 2,
+      "content_hash": "sha256:ef684aa2a3f752b3728f51090096fc8d1d119ddc6cc8884b039cae3c05305511",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "6f9cdd90-a1ba-4737-a82b-230659cefbc7",
+      "version_number": 1,
+      "content_hash": "sha256:b7223ae241c73bd78eef5f7772e27e4316e8b99335f23b6e3ee7b773943231b2",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "050f7a33-eab1-4ebe-8126-5b84efcc6619",
+      "version_number": 3,
+      "content_hash": "sha256:53ea12c6a4d361341a24b9659a907eadd928d744b157d0c8b30d7916aec74d7c",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "c72e50db-3fbb-46b6-be7b-ef94c4743972",
+      "version_number": 2,
+      "content_hash": "sha256:7b37230c73d962e1b2675fd198215d3aeaff58971f0bc545b8a13f3b3a28a363",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "8f5a5d64-5a47-41fa-aa14-d7d2e977984a",
+      "version_number": 1,
+      "content_hash": "sha256:53db985ec04fe6d32c4d01d722c7595de36765081c13d1a84868abc2d610cdb6",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "042d3868-5180-4bb1-a6c8-10461d65184c",
+      "version_number": 3,
+      "content_hash": "sha256:db6a8657fdbae092013cc3d6408ce0413b2501fbd203a88e21fccde8c7e43c10",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "d6165287-f2f9-485c-9db2-9a88f2e3ec08",
+      "version_number": 2,
+      "content_hash": "sha256:5cbdf36a52eb0dfd46b67c8bce0acff9feca7f51151f3daa3d4323f07a563c6c",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "38d87a0a-e603-4f3d-88b5-ce80691dfad6",
+      "version_number": 1,
+      "content_hash": "sha256:d3759b3cfc01626866016772b6d48f062c2498d8ed5f769fc68ecab69fc52394",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "089e877f-259b-4860-962e-db4dfe0ba01f",
+      "version_number": 3,
+      "content_hash": "sha256:71255d39f6c4fa42c760bb207b6291b9ee36b6f3915d5c79fb0060de5f41d591",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "7f4a4785-9753-4e21-8991-08b79ee979ba",
+      "version_number": 2,
+      "content_hash": "sha256:8e369f731ce07ba1d673fbcabf957e1dedc1c5b856300680984e3a412c628765",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "14374511-6172-4dc0-a011-095c55294986",
+      "version_number": 1,
+      "content_hash": "sha256:ae619ba581b2dd58816f3f473485e7fe326af972a161de8f24d5c6529a42eaab",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "a7aeff67-99ac-4a78-b0d3-dbd5ad71ff75",
+      "version_number": 3,
+      "content_hash": "sha256:2e32218791b03f7d4808e7469792b19aaf384991d2e5182606f7d473cecac9d9",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "347d3159-8dae-40b9-88a7-1684753ff451",
+      "version_number": 2,
+      "content_hash": "sha256:1213faadeef08742dfb0c12c880f4fcb352474fc37f41ed451fb24e9f9a96e49",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "035c7c09-7583-48d4-8b9c-5e54cb494829",
+      "version_number": 1,
+      "content_hash": "sha256:3fc68d9ec971f60b2c45f697e62c4ee0f8d6fa0ce373c6bdf843209c92d2e322",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "8a53c1eb-8a67-4fa3-9058-8dcd91018149",
+      "version_number": 3,
+      "content_hash": "sha256:6db6ab3d2922b12ab600c5aaf050b00febf60f2e03e2f827333326716011313c",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "e3cef88d-61cb-4d1c-b6ae-e9177341035c",
+      "version_number": 2,
+      "content_hash": "sha256:cd22b8ade406cf7a00d88d07838b85319662144471cda4297e7d1391075d12da",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "e5b7feaf-bb88-4a8d-8f36-cf9c58631851",
+      "version_number": 1,
+      "content_hash": "sha256:5e4830e6f45524fc6457bc894bf3e7d6887e8ce12a9819442b33dc36d02e5092",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "5c11262a-f062-47de-a1e9-3db5befe1063",
+      "version_number": 3,
+      "content_hash": "sha256:cb8282c7f1b8756b4e50822900bfd9e56eefeea95af65a040ba67f0a9f86c0c8",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "07a02aa5-ba76-4df0-95e2-42d486fc5486",
+      "version_number": 2,
+      "content_hash": "sha256:ac8eb6518565abc7c1deed0217fdcec09c5488cb46896ffa415c665f30a93107",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "8ead05cb-80ef-47d0-bb89-f9e6ecaa8f05",
+      "version_number": 1,
+      "content_hash": "sha256:cb7f24f2929eaaa1ce5d89ba79d16b7da8f9d5e4b94d00b1e0019b2ae2d4e743",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "6ce4d7e3-5391-43e6-8e11-05bcf7038969",
+      "version_number": 3,
+      "content_hash": "sha256:34e45e56840cb45eae439fb08a8e020f6090782842806a8618fc88c34eb9aef4",
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "16940cc1-165d-43f4-aa5c-0d1c9cb5d765",
+      "version_number": 2,
+      "content_hash": "sha256:567bf97ffd456cb4e3448e211ec16bfd41b7f9216847df82595eb5f940588ade",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "asset_version_id": "b3a77693-17fd-4982-bb5b-5bedad173270",
+      "version_number": 1,
+      "content_hash": "sha256:635768c23130aad6f3d227963a0722492ef25e4d00aed05d00aab5d06f0a2b64",
+      "lifecycle": "SUPERSEDED",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR"
+    }
+  ]
+}

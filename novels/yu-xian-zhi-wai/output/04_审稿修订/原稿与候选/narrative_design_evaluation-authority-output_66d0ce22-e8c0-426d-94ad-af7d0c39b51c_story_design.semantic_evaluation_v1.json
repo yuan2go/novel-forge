@@ -1,0 +1,196 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "logical_ref": "asset-version:authority-output:66d0ce22-e8c0-426d-94ad-af7d0c39b51c:story_design.semantic_evaluation:v1",
+  "category": "narrative_design_evaluation",
+  "asset_id": "authority-output:66d0ce22-e8c0-426d-94ad-af7d0c39b51c:story_design.semantic_evaluation",
+  "asset_type": "narrative_design_evaluation",
+  "asset_version_id": "authority-output:66d0ce22-e8c0-426d-94ad-af7d0c39b51c:story_design.semantic_evaluation:v1",
+  "version_number": 1,
+  "lifecycle": "ACTIVE",
+  "eligibility": "ELIGIBLE",
+  "governance": "CLEAR",
+  "content_hash": "sha256:3d652bc7e66fd716a4d8f83a68c868f8bb303b8faf18dc09806676671479878c",
+  "content": {
+    "evaluation": {
+      "evaluations": [
+        {
+          "layer": "STORY_INTENT",
+          "criteria": [
+            {
+              "verdict": "PASS",
+              "criterion": "CORE_CONFLICT_CLARITY",
+              "rationale": "二十八张实物与三十六张记录的矛盾、连续缺号及岑禾旧签名共同构成明确的调查对象和个人牵连。及时救助与核实责任同时施压；有限资源、权限和失去信任的恐惧使冲突能够落实为有成本的选择，且未将开局线索越界认定为罪责确证。",
+              "evidence_refs": [
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/core_conflict",
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/core_fear"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "READER_FIT",
+              "rationale": "目标读者偏好具体劳动、人物争执、有代价选择和阶段解谜，候选以可见物件建立疑问，以限知追查和生活后果维持阅读兴趣。前三章的递进吸引点、前六章的交付兑现及后续影响与该读者定位相符，创意阶段的阅读承诺明确。",
+              "evidence_refs": [
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/target_reader",
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/narrative_engine",
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/style_profile/genre_conventions"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "DIFFERENTIATION",
+              "rationale": "首十二章封闭的三十六张编号床、调查者本人需要更正的签名，以及到达、使用、接收之间的证据边界形成了相互作用的叙事机制。解谜结果继续触发分配和责任冲突，差异化体现在行动结构与主角成长中；本判断不构成对外部作品的原创性比对认证。",
+              "evidence_refs": [
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/differentiation",
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/0",
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/core_desire"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "SERIALIZATION_CAPACITY",
+              "rationale": "候选建立了差异或需求、人物交涉、行动成本、局部答案、后果引出新要求的持续因果循环，并明确四个三章组的功能及第十二章可经实际交接检验的阶段变化。三卷主题由完成交付递进至承担转移成本和多人回应责任，具备创意基础阶段的长篇生成潜力；180章容量仍属待后续实践验证的方向。章内行动、后果与状态变化已纳入约束，无需此阶段提供尚未生成的正文或下游计划。",
+              "evidence_refs": [
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/serialization_potential",
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/narrative_engine",
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/8",
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/10"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "EMOTIONAL_CONTRACT",
+              "rationale": "情感承诺包含救助落实、错误追责撤回和需求得到答复等具体回报，同时允许受助者保留异议、主角承认漏问及承担更正成本。表达示范以等待、撤回越界要求和生活空间受占呈现这些张力，支持克制而有温度的阅读体验；示范仅作为设计证据，不视为已发生的章节事实。",
+              "evidence_refs": [
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/emotional_contract",
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/core_desire",
+                "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/style_profile/original_examples"
+              ],
+              "repair_directive": ""
+            }
+          ],
+          "skill_ref": "topic-development",
+          "profile_id": "creative-foundation-semantic-v1",
+          "profile_hash": "sha256:09026791663b29a79239d4d9e9260a36817f5790f24adae8a3b285ef45723149",
+          "capability_id": "creative.proposal.generate",
+          "profile_version": "1.0.0"
+        }
+      ],
+      "schema_version": "progressive-narrative-qualification.v1"
+    },
+    "project_id": "first-novel-pilot-20260912",
+    "qualification": {
+      "status": "PASS",
+      "receipts": [
+        {
+          "layer": "STORY_INTENT",
+          "status": "PASS",
+          "evidence": {
+            "layer": "STORY_INTENT",
+            "criteria": [
+              {
+                "verdict": "PASS",
+                "criterion": "CORE_CONFLICT_CLARITY",
+                "rationale": "二十八张实物与三十六张记录的矛盾、连续缺号及岑禾旧签名共同构成明确的调查对象和个人牵连。及时救助与核实责任同时施压；有限资源、权限和失去信任的恐惧使冲突能够落实为有成本的选择，且未将开局线索越界认定为罪责确证。",
+                "evidence_refs": [
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/core_conflict",
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/core_fear"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "READER_FIT",
+                "rationale": "目标读者偏好具体劳动、人物争执、有代价选择和阶段解谜，候选以可见物件建立疑问，以限知追查和生活后果维持阅读兴趣。前三章的递进吸引点、前六章的交付兑现及后续影响与该读者定位相符，创意阶段的阅读承诺明确。",
+                "evidence_refs": [
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/target_reader",
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/narrative_engine",
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/style_profile/genre_conventions"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "DIFFERENTIATION",
+                "rationale": "首十二章封闭的三十六张编号床、调查者本人需要更正的签名，以及到达、使用、接收之间的证据边界形成了相互作用的叙事机制。解谜结果继续触发分配和责任冲突，差异化体现在行动结构与主角成长中；本判断不构成对外部作品的原创性比对认证。",
+                "evidence_refs": [
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/differentiation",
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/0",
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/core_desire"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "SERIALIZATION_CAPACITY",
+                "rationale": "候选建立了差异或需求、人物交涉、行动成本、局部答案、后果引出新要求的持续因果循环，并明确四个三章组的功能及第十二章可经实际交接检验的阶段变化。三卷主题由完成交付递进至承担转移成本和多人回应责任，具备创意基础阶段的长篇生成潜力；180章容量仍属待后续实践验证的方向。章内行动、后果与状态变化已纳入约束，无需此阶段提供尚未生成的正文或下游计划。",
+                "evidence_refs": [
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/serialization_potential",
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/narrative_engine",
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/8",
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/constraints/10"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "EMOTIONAL_CONTRACT",
+                "rationale": "情感承诺包含救助落实、错误追责撤回和需求得到答复等具体回报，同时允许受助者保留异议、主角承认漏问及承担更正成本。表达示范以等待、撤回越界要求和生活空间受占呈现这些张力，支持克制而有温度的阅读体验；示范仅作为设计证据，不视为已发生的章节事实。",
+                "evidence_refs": [
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/emotional_contract",
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/core_desire",
+                  "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1#/selected_inputs/0/candidate/style_profile/original_examples"
+                ],
+                "repair_directive": ""
+              }
+            ],
+            "skill_ref": "topic-development",
+            "profile_id": "creative-foundation-semantic-v1",
+            "profile_hash": "sha256:09026791663b29a79239d4d9e9260a36817f5790f24adae8a3b285ef45723149",
+            "capability_id": "creative.proposal.generate",
+            "profile_version": "1.0.0"
+          },
+          "skill_ref": "topic-development",
+          "profile_id": "creative-foundation-semantic-v1",
+          "profile_hash": "sha256:09026791663b29a79239d4d9e9260a36817f5790f24adae8a3b285ef45723149",
+          "capability_id": "creative.proposal.generate",
+          "criterion_count": 5,
+          "evaluation_hash": "sha256:7dc043013f0479cb086ed590892eb6ca19e9ec717a54229c242188c0465882d7",
+          "profile_version": "1.0.0"
+        }
+      ],
+      "schema_version": "progressive-narrative-qualification.v1",
+      "qualification_hash": "sha256:e5008b7971129e3ba24453d96857283527155bbf333c95bb27223d0ab5289552"
+    },
+    "schema_version": "narrative-design-evaluation.v1",
+    "provider_evidence": [
+      {
+        "content_hash": "sha256:8fc2439b021d841366a69020f02e296728d9c1156ed6210494fc4b011b3995d3",
+        "asset_version_id": "26935ea9-eabb-4c46-9e8f-80127737bd22"
+      }
+    ],
+    "provider_execution": {
+      "model_id": "gpt-6-astra",
+      "provider_id": "codex-cli",
+      "skill_version": "quality-review-narrative-evaluator-v1",
+      "prompt_version": "prompt-system:narrative-semantic-evaluation-pack@v3",
+      "route_snapshot_id": "production_execution/routes/038b15e53c9b2b4779b3",
+      "provider_result_hash": "sha256:42272e3d074d0013404d0ca3bfe555854e1caefc4e3a48a9a269f8f2cf94888b",
+      "provider_evidence_hash": "sha256:7a2ab74229762140be1e0daf0f50789ece1784addaaa0b62b429c49504ae606d"
+    },
+    "evaluation_attempt_id": "b187034d-fd1d-4863-8c4a-71f438182333",
+    "candidate_content_hash": "sha256:89925fd2a04a486fd3aa420109c37f858e800235b44d788d04e2aa51965e3e50",
+    "evaluation_operation_id": "66d0ce22-e8c0-426d-94ad-af7d0c39b51c",
+    "generation_operation_id": "93516014-93a9-45ed-8911-12a6410acf7f",
+    "evaluation_evidence_hash": "sha256:494cb51f37998d0ae938ca28e4b9da65e6137f21446ee53f532e4af53cb2cbb2",
+    "evaluator_execution_class": "MODEL_PROVIDER",
+    "candidate_asset_version_id": "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1",
+    "provider_evidence_asset_version_ids": [
+      "26935ea9-eabb-4c46-9e8f-80127737bd22"
+    ]
+  },
+  "updated_at": "2026-09-13 05:36:17.693714+00:00"
+}
