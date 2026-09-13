@@ -576,6 +576,13 @@ execution-contract conflict across releases only after native cancellation prove
 all retained Effects were never dispatched and every reservation was released. The
 new Operation preserves the source task, cites its predecessor and freezes the newly
 approved runtime; it does not reopen the old Operation or alter its execution snapshot.
+Ordinary Planning admission retains the pre-workflow schema surface used by migration
+replay; pre-Candidate repair fields are written only for a repair, after its migrated
+source contract has been verified. Provider receipts remain pending domain validation;
+the later Candidate and validation reports establish successful materialization.
+Opening recovery passes no monetary claim for a replay assessment and obtains any next
+Provider allowance from the frozen budget policy. Account entitlement therefore retains
+its token and call limits without inventing a zero-dollar measurement.
 
 Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
 Description, Transition and Integration slots as needed. Dialogue and Interior slots

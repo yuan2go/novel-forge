@@ -160,6 +160,28 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
             fixture,
             request=BudgetScopeRequest(**request_values),
         )
+        from novel_forge.modules.book_authority.recovery import (
+            PostgresBookOpeningRecoveryApplication,
+        )
+
+        recovery = object.__new__(PostgresBookOpeningRecoveryApplication)
+        run = {
+            "project_id": fixture["project_id"],
+            "budget_scope_id": scope["budget_scope_id"],
+            "budget_scope_revision": scope["revision"],
+            "budget_contract_state": "BOUND",
+        }
+        for provider_required in (False, True):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                recovery_budget = recovery._budget_authority_snapshot(
+                    uow, run, provider_call_required=provider_required
+                )
+            self.assertEqual(
+                recovery_budget["outcome"],
+                BudgetAssessmentOutcome.ELIGIBLE if provider_required
+                else BudgetAssessmentOutcome.NOT_REQUIRED,
+            )
+            self.assertEqual(recovery_budget["scope"]["revision"], scope["revision"])
         context = EffectCommandContext(
             operation_id=fixture["operation_id"],
             project_id=fixture["project_id"],

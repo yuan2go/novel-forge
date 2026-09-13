@@ -85,6 +85,7 @@ from novel_forge.modules.story_planning_runtime import (
 from novel_forge.modules.story_planning_runtime.execution import (
     planning_fixture_response,
 )
+from novel_forge.modules.production_execution import ModelProfile
 from novel_forge.modules.story_design_authority import (
     GENERATOR_CATALOG,
     NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
@@ -2362,19 +2363,25 @@ def test_production_composition_executes_upstream_planning_via_pep() -> None:
         assert uow.cursor.fetchone() == (4, 4)
         uow.cursor.execute(
             """
-            SELECT DISTINCT version.content->'contract'->>'model_id',
-                            version.content->'contract'->>'reasoning_effort'
+            SELECT DISTINCT version.content->'contract'
             FROM authority_asset AS asset
             JOIN authority_asset_version AS version
               ON version.asset_id=asset.asset_id
             WHERE asset.project_id=%s
               AND asset.asset_type='model_profile'
               AND version.content->'contract'->>'profile_id'
-                    LIKE 'planning.%%.default'
+                    LIKE 'planning.%%.default.sha256.%%'
             """,
             [harness.project_id],
         )
-        assert uow.cursor.fetchall() == [("scripted-planning-fixture", "xhigh")]
+        profiles = [ModelProfile.from_dict(row[0]) for row in uow.cursor.fetchall()]
+        assert len(profiles) == 4
+        assert {(item.model_id, item.reasoning_effort) for item in profiles} == {
+            ("scripted-planning-fixture", "xhigh")
+        }
+        for item in profiles:
+            base_id, digest = item.profile_id.split(".sha256.")
+            assert digest == replace(item, profile_id=base_id).contract_hash
 
 
 def test_real_provider_planning_candidate_is_independently_evaluated_and_activated() -> (
@@ -2719,6 +2726,15 @@ def test_planning_retry_reuses_frozen_pack_after_provider_result(
             [result.generation_operation_id],
         )
         reservation_proof = uow.cursor.fetchone()
+        uow.cursor.execute(
+            """
+            SELECT validation.status, validation.candidate_asset_version_id
+            FROM authority_story_planning_validation_report AS validation
+            WHERE validation.generation_operation_id=%s
+            """,
+            [result.generation_operation_id],
+        )
+        validation_rows = uow.cursor.fetchall()
     assert [(row[0], row[1]) for row in attempts] == [
         (1, "FAILED_RETRYABLE"),
         # The worker Attempt is terminal after its immutable Candidate is
@@ -2736,15 +2752,18 @@ def test_planning_retry_reuses_frozen_pack_after_provider_result(
         assert evidence == [
             ("cost_ledger", "false", "true", "false"),
             ("model_call_log", "false", "true", "false"),
-            ("model_call_log", "true", "false", "true"),
+            ("model_call_log", "false", "false", "true"),
         ]
     else:
         assert evidence == [
-            ("model_call_log", "true", "false", "true"),
+            ("model_call_log", "false", "false", "true"),
         ]
     assert (effect_count, dispatch_count, dispatch_generations) == (1, 1, [1])
     assert reservation_proof == ("SETTLED", 0, "true")
     assert candidate_count == 1
+    assert validation_rows
+    assert {row[0] for row in validation_rows} == {"PASS"}
+    assert {row[1] for row in validation_rows} == {result.candidate_asset_version_id}
     assert planning_context_identity == (1, 1, 1)
 
 

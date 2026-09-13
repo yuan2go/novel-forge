@@ -2323,7 +2323,7 @@ class PostgresBookOpeningRecoveryApplication:
             uow,
             budget_scope_id=budget_scope_id,
             project_id=str(run["project_id"]),
-            requested_amount="0",
+            requested_amount=None,
             requested_tokens=0,
             requested_calls=0,
             execution_mode=(

@@ -8,6 +8,7 @@ import re
 from typing import Any
 from uuid import uuid4
 
+from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.authority_handler_runtime import (
@@ -1534,9 +1535,9 @@ class StoryPlanningGenerationApplication:
                        repair_of_candidate_id, repair_number, version,
                        COALESCE(narrative_search_id, ''),
                        COALESCE(narrative_search_branch_key, ''),
-                       COALESCE(repair_of_operation_id, ''),
-                       COALESCE(repair_result_asset_version_id, '')
-                FROM authority_story_planning_generation
+                       COALESCE(to_jsonb(generation)->>'repair_of_operation_id', ''),
+                       COALESCE(to_jsonb(generation)->>'repair_result_asset_version_id', '')
+                FROM authority_story_planning_generation AS generation
                 WHERE operation_id=%s
                 """,
                 [operation_id],
@@ -2520,24 +2521,33 @@ class StoryPlanningGenerationApplication:
     ) -> None:
         snapshot = [asdict(item) for item in inputs]
         snapshot_hash = canonical_hash(snapshot)
+        repair_fields = (
+            ("repair_of_operation_id", "repair_result_asset_version_id")
+            if command.repair_of_operation_id else ()
+        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
-                """
+                sql.SQL("""
                 INSERT INTO authority_story_planning_generation(
                     generation_id, operation_id, project_id, workspace_id,
                     book_id, generator_operation_name, planning_scope,
                     logical_key, parent_version_id, input_snapshot,
                     input_snapshot_hash, status, repair_of_candidate_id,
                     repair_reason, repair_number, narrative_search_id,
-                    narrative_search_branch_key, repair_of_operation_id,
-                    repair_result_asset_version_id
+                    narrative_search_branch_key{repair_columns}
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
                     %s, %s, 'ADMITTED', NULLIF(%s, ''), NULLIF(%s, ''), %s,
-                    NULLIF(%s, ''), NULLIF(%s, ''), NULLIF(%s, ''), NULLIF(%s, '')
+                    NULLIF(%s, ''), NULLIF(%s, ''){repair_values}
                 )
                 ON CONFLICT (operation_id) DO NOTHING
-                """,
+                """).format(
+                    repair_columns=sql.SQL("").join(
+                        sql.SQL(", {} ").format(sql.Identifier(field))
+                        for field in repair_fields
+                    ),
+                    repair_values=sql.SQL(", NULLIF(%s, '')" * len(repair_fields)),
+                ),
                 [
                     f"planning-generation:{operation_id}",
                     operation_id,
@@ -2555,9 +2565,7 @@ class StoryPlanningGenerationApplication:
                     command.repair_number,
                     command.narrative_search_id,
                     command.narrative_search_branch_key,
-                    command.repair_of_operation_id,
-                    command.repair_result_asset_version_id,
-                ],
+                ] + [getattr(command, field) for field in repair_fields],
             )
             if command.runtime_continuation_id:
                 from .runtime_continuation import attach_successor
