@@ -594,6 +594,7 @@ class PostgresBookOpeningRecoveryApplication:
             )
             if existing is not None:
                 return self._assessment_result(existing, replayed=True)
+            self._require_not_capacity_predecessor(uow, opening_run_id)
             if str(run["lifecycle"]) != "FAILED":
                 raise KernelError(
                     "BOOK_OPENING_RECOVERY_STATE_INVALID",
@@ -672,6 +673,7 @@ class PostgresBookOpeningRecoveryApplication:
                     principal_id=principal.principal_id,
                 )
                 return self._receipt_result(replay, replayed=True)
+            self._require_not_capacity_predecessor(uow, opening_run_id)
             execution = self._current_execution(uow, run, lock=True)
             snapshot = self._authoritative_snapshot(uow, run, execution)
             if (
@@ -2717,6 +2719,16 @@ class PostgresBookOpeningRecoveryApplication:
             "evidence": evidence,
             "digest": _canonical_hash(evidence),
         }
+
+    @staticmethod
+    def _require_not_capacity_predecessor(uow: AuthorityUnitOfWork, opening_run_id: str) -> None:
+        uow.cursor.execute("SELECT to_regclass('authority_book_opening_capacity_continuation')")
+        if uow.cursor.fetchone()[0] is None:
+            return
+        uow.cursor.execute("SELECT successor_opening_run_id FROM authority_book_opening_capacity_continuation WHERE source_opening_run_id=%s", [opening_run_id])
+        row = uow.cursor.fetchone()
+        if row is not None:
+            raise KernelError("BOOK_OPENING_CAPACITY_PREDECESSOR_FENCED", "Resume the registered capacity successor: " + str(row[0]))
 
     @staticmethod
     def _lock_opening(uow: AuthorityUnitOfWork, opening_run_id: str) -> None:

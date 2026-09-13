@@ -62,6 +62,13 @@ class PlanningRuntimeContinuationRequest:
     correlation_id: str
 
 
+@dataclass
+class BookOpeningCapacityContinuationRequest:
+    actor_id: str
+    expected_version: Annotated[int, Field(strict=True, ge=0)]
+    reason: str
+
+
 def _planning_scope(record: dict[str, Any], *, project_id: str, book_id: str) -> None:
     if record.get("project_id") != project_id or record.get("book_id") != book_id:
         raise KernelError("BOOK_PLANNING_SCOPE_MISMATCH", "Planning request belongs to another Book")
@@ -623,6 +630,24 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     "loss assessment belongs to another Book Opening",
                 )
             return asdict(receipt)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/opening-runs/{opening_run_id}/continue-unstarted-capacity", status_code=202)
+    def continue_unstarted_book_opening(
+        opening_run_id: str, request: BookOpeningCapacityContinuationRequest,
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.opening is None:
+                raise KernelError("BOOK_OPENING_RUNTIME_NOT_CONFIGURED", "Book opening is unavailable")
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            return asdict(composition.opening.continue_unstarted_with_budget(
+                opening_run_id, expected_version=request.expected_version,
+                reason=request.reason, principal=principal,
+            ))
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:

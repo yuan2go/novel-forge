@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260914_0133_formation_evaluation_recovery",
+  "migration_head": "20260914_0134_opening_capacity_continuation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -6076,6 +6076,10 @@
         {
           "path": "architecture/manifests/worker-manifest.yaml",
           "locator": "\"name\": \"book-authority\""
+        },
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/opening-runs/{opening_run_id}/continue-unstarted-capacity\""
         }
       ],
       "application": [
@@ -6094,6 +6098,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/opening.py",
           "symbol": "OpenBookProductionRequest"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/opening.py",
+          "symbol": "PostgresBookOpeningApplication.continue_unstarted_with_budget"
         }
       ],
       "state_ownership": {
@@ -6139,6 +6147,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260902_0106_quality_qualification_scope_generalization.py",
           "locator": "MIGRATION_ID = \"20260902_0106_quality_qualification_scope_generalization\"",
           "id": "20260902_0106_quality_qualification_scope_generalization"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260914_0134_opening_capacity_continuation.py",
+          "locator": "MIGRATION_ID = \"20260914_0134_opening_capacity_continuation\"",
+          "id": "20260914_0134_opening_capacity_continuation"
         }
       ],
       "external_effects": {
@@ -6176,6 +6189,10 @@
         {
           "path": "tests/integration/test_book_opening_workflow_nodes_postgres.py",
           "symbol": "test_committed_node_response_survives_a_terminal_heartbeat_race"
+        },
+        {
+          "path": "tests/integration/test_opening_capacity_continuation_postgres.py",
+          "symbol": "test_capacity_continuation_is_causal_idempotent_and_fences_failed_source"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7904,7 +7921,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:992a16e55ca9cceb0e01d238bf0f324c2518fa080fa698a3f25d46d0dc1f53ed"
+    "implementation_tree_sha": "sha256:b92ba496f4220ad81d87abe98c98c3fe12d77f40d7632488ddc25527015ac8e0"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

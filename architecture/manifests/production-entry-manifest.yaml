@@ -2,6 +2,15 @@
   "schema_version": "architecture-manifest.v1",
   "entries": [
     {
+      "name": "book.opening.continue_unstarted",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/book_authority/opening.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "composition.opening.continue_unstarted_with_budget",
+      "definition_factory": "novel_forge.modules.book_authority.opening:book_opening_capacity_continuation_definition"
+    },
+    {
       "name": "creative.experiment_budget.configure",
       "source": "src/novel_forge/api/routers/book_authority.py",
       "application_source": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",

@@ -583,6 +583,15 @@ the later Candidate and validation reports establish successful materialization.
 Opening recovery passes no monetary claim for a replay assessment and obtains any next
 Provider allowance from the frozen budget policy. Account entitlement therefore retains
 its token and call limits without inventing a zero-dollar measurement.
+An exact unstarted Opening blocked by capacity can append one native
+`book.opening.continue_unstarted` successor. It retains the Book, Formation and frozen
+story inputs, proves absence of Effects, reservations, outputs and node receipts, and
+binds a new account-entitlement capacity policy within current cumulative headroom.
+The original failed run, policy and Operations remain immutable; a guarded successor
+pointer fences its old execution and preserves one active Opening per Book.
+Qualified Foundation planning projections retain mandatory constraints once with
+auditable exact references, defer prose examples to prose stages, and replace an
+integrity-checked DENY_ALL empty retrieval query with its frozen need receipt.
 
 Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
 Description, Transition and Integration slots as needed. Dialogue and Interior slots

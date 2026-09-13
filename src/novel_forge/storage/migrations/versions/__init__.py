@@ -135,6 +135,7 @@ from . import (
     v20260913_0131_planning_result_recovery,
     v20260914_0132_planning_runtime_continuation,
     v20260914_0133_formation_evaluation_recovery,
+    v20260914_0134_opening_capacity_continuation,
 )
 
 VERSION_MODULES = [
@@ -272,6 +273,7 @@ VERSION_MODULES = [
     v20260913_0131_planning_result_recovery,
     v20260914_0132_planning_runtime_continuation,
     v20260914_0133_formation_evaluation_recovery,
+    v20260914_0134_opening_capacity_continuation,
 ]
 
 __all__ = ["VERSION_MODULES"]

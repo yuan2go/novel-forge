@@ -235,6 +235,34 @@ def _project_empty_world_selection(selection: Any) -> Any:
     return result if _serialized_character_count(result) < _serialized_character_count(selection) else deepcopy(selection)
 
 
+def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[str, Any]:
+    from novel_forge.modules.mkaos_authority.domain import validate_book_knowledge_access_policy
+
+    policy = selection.get("knowledge_access_policy")
+    need = selection.get("need")
+    if not isinstance(policy, Mapping) or policy.get("mode") != "DENY_ALL":
+        return selection
+    validate_book_knowledge_access_policy(policy, project_id=str(selection.get("project_id") or ""), book_id=str(policy.get("book_id") or ""))
+    if (
+        selection.get("selected") != []
+        or selection.get("selection_status") != "NO_ELIGIBLE_MATCH"
+        or not isinstance(need, Mapping)
+        or need.get("required_card_asset_version_ids") != []
+        or need.get("need_digest") != _projection_hash({key: value for key, value in need.items() if key != "need_digest"})
+        or selection.get("selection_digest") != _projection_hash({key: value for key, value in selection.items() if key != "selection_digest"})
+    ):
+        raise KernelError("PLANNING_EMPTY_SELECTION_DRIFT", "DENY_ALL selection does not bind its exact empty search result")
+    return {
+        **{key: value for key, value in selection.items() if key != "need"},
+        "need_receipt": {
+            "need_digest": need["need_digest"],
+            "selection_digest": selection["selection_digest"],
+            "frozen_context_pointer": "/narrative_intelligence/need",
+            "reason": "DENY_ALL_EMPTY_RETRIEVAL_QUERY_IS_NOT_STORY_INPUT",
+        },
+    }
+
+
 def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
 
     if stage == "retrieval_query_expansion":
@@ -390,7 +418,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             frozen_inputs=_compact(frozen_inputs),
             authoritative_narrative_load=_compact(authoritative_load),
             arc_working_set=_compact(arc_working_set),
-            narrative_intelligence=_compact(narrative_intelligence),
+            narrative_intelligence=_compact(_project_denied_planning_selection(narrative_intelligence)),
         )
     if stage == "narrative_semantic_evaluation":
         profiles = inputs.get("qualification_profiles")
@@ -1682,6 +1710,7 @@ def _build_planning_context_view(
     if token_budget is not None and (not isinstance(token_budget, int) or isinstance(token_budget, bool) or token_budget <= 0):
         raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_INVALID", "Planning token budget must be a positive integer")
     character_budget = min(_MAX_PROVIDER_CONTEXT_CHARACTERS, token_budget * 4) if token_budget is not None else _MAX_PROVIDER_CONTEXT_CHARACTERS
+    _compact_qualified_foundation_planning(view, sources=raw_inputs, stage=stage, project_id=str(context_bundle.get("project_id") or ""))
     _compact_planning_loss_sources(view)
     source_hash = planning_context_source_hash(context_bundle) if projection_audit is not None else ""
     _prune_optional_planning_context(view, sources=raw_inputs, character_budget=character_budget, audit_source_hash=source_hash)
@@ -1695,6 +1724,109 @@ def _build_planning_context_view(
             + json.dumps({"total": _serialized_character_count(view), "segments": [{"role": item["role"], "characters": _serialized_character_count(item)} for item in projected], "repair": _serialized_character_count(view.get("repair_context", {})), "references": _serialized_character_count(view.get("realization_reference_contract", {}))}, sort_keys=True),
         )
     return view
+
+
+def _compact_qualified_foundation_planning(
+    view: dict[str, Any], *, sources: list[Mapping[str, Any]], stage: str, project_id: str,
+) -> None:
+    from novel_forge.modules.book_design_authority.foundation import QualifiedFoundationSet
+    from novel_forge.modules.story_design_authority.domain import matches_generated_foundation_source
+
+    if stage not in {"book_plan.generate", "volume_plan.generate", "arc_plan.generate"}:
+        return
+    source_by_role = {item["role"]: item for item in sources}
+    design_source = source_by_role.get("book_design", {})
+    design = design_source.get("content", {})
+    if design.get("schema_version") != "book-design.v5":
+        return
+    foundation = QualifiedFoundationSet.from_mapping(design["foundation_set"])
+    segments = {item["role"]: item for item in view["segments"]}
+    selected = {}
+    for binding in foundation.bindings:
+        role = _NARRATIVE_FOUNDATION_DEPENDENCY_TYPES[binding.role.value]
+        source = source_by_role.get(role)
+        if source is None:
+            continue
+        if (
+            source["asset_version_id"] != binding.asset_version_id
+            or source["content_hash"] != binding.content_hash
+            or source["content"].get("project_id", project_id) != project_id
+            or source["content"].get("book_id", view["narrative_position"]["book_id"]) != view["narrative_position"]["book_id"]
+            or not (source.get("asset_type") == role or matches_generated_foundation_source(
+                source["content"], role=binding.role.value,
+                project_id=project_id,
+                book_id=str(view["narrative_position"]["book_id"]),
+            ))
+        ):
+            raise KernelError("PLANNING_FOUNDATION_PROJECTION_DRIFT", "Planning Foundation differs from its exact Book Design binding")
+        selected[role] = segments[role]
+    if not selected:
+        return
+    explanation = view["selection_explanation"]
+
+    def remove(parent: dict[str, Any], key: str, source: Mapping[str, Any], path: str, reason: str) -> None:
+        value = parent.pop(key)
+        explanation["loss_records"].append(_loss_record(source, path=path, value=value, reason=reason))
+        explanation["omitted_item_count"] += len(value) if isinstance(value, list) else 1
+
+    constraints = {
+        text for segment in selected.values()
+        for text in segment["content"].get("constraints", [])
+        if isinstance(text, str)
+    }
+    design_view = segments["book_design"]["content"]
+    inherited = [text for text in design_view.get("book_invariants", []) if isinstance(text, str) and text in constraints]
+    if inherited:
+        explanation["loss_records"].append(_loss_record(design_source, path="/book_invariants", value=inherited, reason="EXACT_DUPLICATE_OF_SELECTED_FOUNDATION_CONSTRAINTS"))
+        design_view["book_invariants"] = [text for text in design_view["book_invariants"] if not isinstance(text, str) or text not in constraints]
+        explanation["inherited_invariants"] = "Selected Foundation constraints remain mandatory Book invariants; exact duplicate strings are represented once."
+        explanation["omitted_item_count"] += len(inherited)
+    remove(design_view, "foundation_set", design_source, "/foundation_set", "QUALIFICATION_DIRECTORY_RETAINED_IN_FROZEN_INPUT")
+    for role, segment in selected.items():
+        content = segment["content"]
+        source = source_by_role[role]
+        for field in ("type", "book_id", "project_id", "logical_key", "planning_scope", "schema_version", "generator_operation_name", "foundation_parent_bindings", "knowledge_translation_policy_version"):
+            if field in content:
+                remove(content, field, source, "/" + field, "CONTROL_METADATA_RETAINED_IN_FROZEN_INPUT")
+        if role == "creative_foundation":
+            style = content.get("style_profile", {})
+            if "original_examples" in style:
+                remove(style, "original_examples", source, "/style_profile/original_examples", "PROSE_EXAMPLE_OUTSIDE_LONG_HORIZON_PLANNING")
+        if role == "theme_contract" and stage == "book_plan.generate" and "choice_tests" in content:
+            remove(content, "choice_tests", source, "/choice_tests", "ILLUSTRATIVE_CHOICE_SCENARIOS_DEFERRED_TO_VOLUME_PLANNING")
+        if role == "character_cast":
+            for index, character in enumerate(content.get("characters", [])):
+                if "voice_anchors" in character:
+                    remove(character, "voice_anchors", source, f"/characters/{index}/voice_anchors", "PROSE_EXAMPLE_OUTSIDE_LONG_HORIZON_PLANNING")
+    literals: dict[str, dict[str, str]] = {}
+
+    def collect(value: Any, role: str, path: str) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                collect(child, role, path + "/" + key.replace("~", "~0").replace("/", "~1"))
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                collect(child, role, path + "/" + str(index))
+        elif isinstance(value, str) and len(value) > 100:
+            literals.setdefault(value, {"literal_source_role": role, "json_pointer": path})
+
+    for role, segment in selected.items():
+        collect(segment["content"], role, "")
+
+    def replace_literal(value: Any, path: str) -> Any:
+        if isinstance(value, dict):
+            return {key: replace_literal(child, path + "/" + key) for key, child in value.items()}
+        if isinstance(value, list):
+            return [replace_literal(child, path + "/" + str(index)) for index, child in enumerate(value)]
+        if isinstance(value, str) and value in literals and _serialized_character_count(literals[value]) < len(value):
+            explanation["loss_records"].append({**_loss_record(design_source, path=path, value=value, reason="EXACT_LITERAL_RETAINED_IN_SELECTED_FOUNDATION"), **literals[value]})
+            return dict(literals[value])
+        return value
+
+    for field in ("narrative_dna", "cross_layer_synthesis"):
+        if field in design_view:
+            design_view[field] = replace_literal(design_view[field], "/" + field)
+    explanation["literal_references"] = "A literal_source_role/json_pointer object means the exact full string at that selected segment content path. It inherits the original Book Design requirement."
 
 
 def _projection_hash(value: Any) -> str:
