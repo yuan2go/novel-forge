@@ -268,27 +268,21 @@ def resolve_target(
     model = resolver.execution_preparer.planning_route.model_profile
     account = {}
     if model.model_provider == "codex-cli":
-        from novel_forge.modules.production_execution.backends import (
-            CodexCliExecutionBackend,
+        from novel_forge.modules.production_execution.codex_configuration import (
+            codex_account_binding_evidence,
         )
 
         session = resolver.execution_preparer.execution_transport.session_for_project(
             command.project_id
         )
         backend = session.gateway.backends.resolve(model.backend_id)
-        if (
-            not isinstance(backend, CodexCliExecutionBackend)
-            or backend.account_entitlement is None
-        ):
+        try:
+            account = codex_account_binding_evidence(backend)
+        except ValueError as error:
             raise KernelError(
                 "PLANNING_RUNTIME_CONTINUATION_ACCOUNT_REQUIRED",
                 "Codex continuation requires the existing native account-entitlement backend",
-            )
-        account = {
-            "codex_home": backend.codex_home,
-            "executable": backend.codex_executable,
-            "entitlement": backend.account_entitlement.to_dict(),
-        }
+            ) from error
     return {
         "pack_snapshot": snapshot.to_dict(),
         "model_provider": model.model_provider,
