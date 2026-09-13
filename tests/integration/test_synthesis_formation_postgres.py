@@ -44,8 +44,8 @@ from tests.integration.synthesis_production_support import SynthesisTransport
 from tests.integration.test_core_functional_loops_postgres import _principal
 
 
-@pytest.mark.parametrize("author_guided,result_repair,runtime_recovery", [(False, False, False), (True, False, False), (False, True, False), (False, False, True)])
-def test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery):
+@pytest.mark.parametrize("author_guided,result_repair,runtime_recovery,evaluation_recovery", [(False, False, False, False), (True, False, False, False), (False, True, False, False), (False, False, True, False), (False, False, False, True)])
+def test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery, evaluation_recovery):
     harness = CapabilityPackPostgresHarness("synthesis-formation-author" if author_guided else "synthesis-formation")
     from copy import copy
 
@@ -274,6 +274,32 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
                     raise RuntimeError("simulated activation projection crash")
 
         formation.generation.book_design.fault_injector = fail_activation
+        evaluation_failed = False
+        concurrent_recovery_heads = []
+        if evaluation_recovery:
+            from novel_forge.modules.story_design_authority.evaluation_runtime import NarrativeSemanticEvaluationHandler, NarrativeSemanticEvaluationApplication
+            original_evaluation = NarrativeSemanticEvaluationHandler.execute
+            original_admission = NarrativeSemanticEvaluationApplication._admit_candidate_once
+
+            def fail_evaluation_preflight_once(handler, request):
+                nonlocal evaluation_failed
+                if request.command["payload"]["generator_operation_name"] == "book_design.propose" and not evaluation_failed:
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    evaluation_failed = True
+                    raise KernelError("NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID", "retained preflight failure before any Effect")
+                return original_evaluation(handler, request)
+
+            monkeypatch.setattr(NarrativeSemanticEvaluationHandler, "execute", fail_evaluation_preflight_once)
+
+            def admit_concurrently_once(application, command, admission_command):
+                if evaluation_failed and not concurrent_recovery_heads and command.generator_operation_name == "book_design.propose":
+                    from concurrent.futures import ThreadPoolExecutor
+                    with ThreadPoolExecutor(max_workers=2) as pool:
+                        concurrent_recovery_heads.extend(pool.map(lambda _: original_admission(application, command, admission_command), range(2)))
+                    return concurrent_recovery_heads[0]
+                return original_admission(application, command, admission_command)
+
+            monkeypatch.setattr(NarrativeSemanticEvaluationApplication, "_admit_candidate_once", admit_concurrently_once)
         runtime_recovered = False
         if runtime_recovery:
             preparer = formation.generation.planning.execution_binder.resolver.execution_preparer
@@ -306,6 +332,11 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
                 )
             except Exception as exc:
                 from novel_forge.modules.command_kernel.errors import KernelError
+                if evaluation_recovery and isinstance(exc, KernelError) and exc.code == "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID":
+                    failed = formation.require(admitted.formation_run_id)
+                    assert failed["lifecycle"] == "FAILED"
+                    formation.resume(admitted.formation_run_id, expected_version=failed["version"], principal=principal)
+                    continue
                 if isinstance(exc, KernelError) and exc.code == "EXECUTION_CONTRACT_FROZEN_CONFLICT" and runtime_recovery and not runtime_recovered:
                     historical.undo()
                     historical = None
@@ -367,6 +398,34 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
                 break
         result = formation.require(admitted.formation_run_id)
         assert result["lifecycle"] == "READY", result
+        if evaluation_recovery:
+            assert evaluation_failed
+            assert len(concurrent_recovery_heads) == 2
+            assert len({head["operation_id"] for head in concurrent_recovery_heads}) == 1
+            assert {head["generation"] for head in concurrent_recovery_heads} == {2}
+            with AuthorityUnitOfWork(DATABASE_URL) as recovery_uow:
+                recovery_uow.cursor.execute("""
+                    SELECT source.status,successor.status,source.command_payload=successor.command_payload,
+                           successor.causation_operation_id=source.operation_id,recovery.candidate_asset_version_id,
+                           source_execution.candidate_asset_version_id,successor_execution.candidate_asset_version_id,
+                           source_execution.lifecycle,successor_execution.lifecycle,
+                           (SELECT count(*) FROM authority_external_effect WHERE operation_id=source.operation_id)
+                    FROM authority_narrative_formation_recovery recovery
+                    JOIN authority_operation source ON source.operation_id=recovery.source_operation_id
+                    JOIN authority_operation successor ON successor.operation_id=recovery.successor_operation_id
+                    JOIN authority_narrative_evaluation_execution source_execution ON source_execution.operation_id=source.operation_id
+                    JOIN authority_narrative_evaluation_execution successor_execution ON successor_execution.operation_id=successor.operation_id
+                    WHERE recovery.project_id=%s
+                """, [harness.project_id])
+                continuations = recovery_uow.cursor.fetchall()
+            assert len(continuations) == 1
+            recovery = continuations[0]
+            assert recovery[:4] == ("FAILED_FINAL", "SUCCEEDED", True, True)
+            assert recovery[4] == recovery[5] == recovery[6]
+            assert recovery[7:] == ("FAILED", "SUCCEEDED", 0)
+            with AuthorityUnitOfWork(DATABASE_URL) as recovery_uow:
+                recovery_uow.cursor.execute("SELECT authority_narrative_formation_gate_is_open(successor_operation_id,project_id,recovery_id) FROM authority_narrative_formation_recovery WHERE project_id=%s", [harness.project_id])
+                assert recovery_uow.cursor.fetchone()[0] is False
         assert runtime_recovered is runtime_recovery
         if runtime_recovery:
             _assert_runtime_continuation_once(formation, harness, transport, principal)

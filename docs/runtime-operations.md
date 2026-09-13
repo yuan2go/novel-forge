@@ -458,6 +458,16 @@ projection has a `CONFIGURABLE_POLICY` limit of 131,072 serialized characters. O
 evaluation projections retain 65,536 characters. These bounds do not grant tokens or
 calls: frozen route capacity and native budget admission still apply before dispatch.
 
+Migration `0133` adds bounded semantic evaluation continuation for Formation's
+`BOOK_DESIGN` stage. After an explicit native Formation resume, the same stage may
+append at most two evaluation successors for the three named dependency/context
+preflight failures, provided the failed Operation has no ExternalEffect. The same
+candidate, frozen inputs and independent evaluator are retained. A current Formation
+worker lease gates Operation, Attempt, Effect and dispatch transitions; the failed
+Operation and prior evaluation generation remain terminal. Opening-bound recovery uses
+its existing RecoveryIntent path. Other failures and unknown Provider outcomes do not
+acquire this continuation policy.
+
 The `short-arc-*` files remain the small English engineering smoke. The separate
 `chinese-pilot-*` files freeze an original three-chapter Chinese Arc, limited third-person
 POV, character voice constraints, information asymmetry, a costly choice and setup/payoff.

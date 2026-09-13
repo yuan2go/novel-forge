@@ -1180,6 +1180,15 @@ class NarrativeSemanticEvaluationApplication:
                         "NARRATIVE_EVALUATION_CLAIM_CONFLICT",
                         "candidate Evaluation head is bound to different immutable inputs",
                     )
+                from .formation_evaluation_recovery import try_admit_formation_continuation
+
+                continuation = try_admit_formation_continuation(
+                    self, claim_uow, command=command,
+                    admission_command=admission_command, current=current,
+                )
+                if continuation is not None:
+                    claim_uow.commit()
+                    return continuation
                 claim_uow.commit()
                 return {
                     "operation_id": str(current["operation_id"]),

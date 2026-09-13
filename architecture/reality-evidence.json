@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260914_0132_planning_runtime_continuation",
+  "migration_head": "20260914_0133_formation_evaluation_recovery",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -5624,6 +5624,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260914_0132_planning_runtime_continuation.py",
           "locator": "MIGRATION_ID = \"20260914_0132_planning_runtime_continuation\"",
           "id": "20260914_0132_planning_runtime_continuation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260914_0133_formation_evaluation_recovery.py",
+          "locator": "MIGRATION_ID = \"20260914_0133_formation_evaluation_recovery\"",
+          "id": "20260914_0133_formation_evaluation_recovery"
         }
       ],
       "external_effects": {
@@ -7899,7 +7904,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:bad209178e96bb86e25d2d39167d1b9ab7023341d17268bfcd6dd07670afb7a3"
+    "implementation_tree_sha": "sha256:290fef186b249722f9ab881ec90d61c017e70760c646f9899bcdbfb4fad67fc3"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
