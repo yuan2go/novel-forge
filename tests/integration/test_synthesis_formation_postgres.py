@@ -383,6 +383,28 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
             "ACTIVE",
             "CANDIDATE",
         ]
+        from novel_forge.modules.story_design_authority.evaluation_execution import (
+            PostgresNarrativeEvaluationExecutionContractBinder,
+        )
+
+        asset_query = AuthorityAssetQuery(DATABASE_URL)
+        book_design = next(
+            item for item in asset_query.list_versions(
+                project_id=harness.project_id, asset_type="book_design"
+            ) if item.lifecycle == "ACTIVE"
+        )
+        binder = object.__new__(PostgresNarrativeEvaluationExecutionContractBinder)
+        binder.evaluation_query = asset_query
+        dependencies = binder._canonical_dependencies(
+            book_design, book_id=harness.book_ids[0]
+        )
+        assert len(dependencies) == 6
+        assert all(
+            source.asset_type == "planning_generation_candidate"
+            and source.content["book_id"] == harness.book_ids[0]
+            and qualification.content["candidate_content_hash"] == source.content_hash
+            for _, source, qualification in dependencies
+        )
         assert (
             recovered_activation and len(transport.calls) == calls_before_recovery == (8 if result_repair else 7)
         )

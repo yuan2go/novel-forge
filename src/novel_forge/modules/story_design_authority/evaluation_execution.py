@@ -322,7 +322,9 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
                 "NARRATIVE_EVALUATION_TARGET_DRIFT",
                 "Narrative evaluation candidate differs from its Authority version",
             )
-        dependencies = self._canonical_dependencies(document)
+        dependencies = self._canonical_dependencies(
+            document, book_id=str(metadata.get("book_id") or "")
+        )
         logical_ref = (
             f"narrative_evaluation/context_bundles/{operation_id}-{attempt_id}.json"
         )
@@ -421,7 +423,7 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         )
 
     def _canonical_dependencies(
-        self, document: Any
+        self, document: Any, *, book_id: str = ""
     ) -> tuple[tuple[str, Any, Any], ...]:
         """SECURITY: Resolve only immutable dependencies named by a BookDesign v5 candidate.
 
@@ -475,6 +477,8 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
             )
 
         resolved: list[tuple[str, Any, Any]] = []
+        from .domain import GENERATOR_DESIGN_SCOPE
+
         for role, expected_asset_type in _FOUNDATION_DEPENDENCY_ASSET_TYPES.items():
             binding = by_role[role]
             asset_version_id = str(binding.get("asset_version_id") or "")
@@ -492,8 +496,27 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
                 asset_version_id=qualification_id,
             )
             qualification_content = qualification.content
+            source_kind_matches = source.asset_type == expected_asset_type
+            if source.asset_type == "planning_generation_candidate":
+                generator = source.content.get("generator_operation_name")
+                scope = (
+                    GENERATOR_DESIGN_SCOPE.get(generator)
+                    if isinstance(generator, str)
+                    else None
+                )
+                source_kind_matches = (
+                    scope is not None
+                    and scope.value == role
+                    and bool(book_id)
+                    and source.content.get("book_id") == book_id
+                    and source.content.get("project_id") == document.project_id
+                    and source.content.get("type") == "PlanningGenerationCandidate"
+                    and source.content.get("schema_version") == "story_design.authority.v1"
+                    and source.content.get("planning_scope") == "NOT_APPLICABLE"
+                    and isinstance(source.content.get("candidate_payload"), Mapping)
+                )
             valid = (
-                source.asset_type == expected_asset_type
+                source_kind_matches
                 and source.content_hash == content_hash
                 and source.lifecycle == "ACTIVE"
                 and source.eligibility == "ELIGIBLE"

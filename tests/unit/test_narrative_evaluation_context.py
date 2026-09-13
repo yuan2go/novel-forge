@@ -75,7 +75,7 @@ class _Writer:
         return command
 
 
-def _binder_fixture() -> tuple[
+def _binder_fixture(*, generated: bool = False) -> tuple[
     PostgresNarrativeEvaluationExecutionContractBinder,
     AuthorityAssetDocument,
     _Writer,
@@ -83,6 +83,11 @@ def _binder_fixture() -> tuple[
 ]:
     bindings: list[dict[str, str]] = []
     documents: dict[str, AuthorityAssetDocument] = {}
+    generators = dict(zip(FOUNDATION_TYPES, (
+        "creative.candidates.generate", "theme.candidates.generate",
+        "ending.intent.generate", "reader.promise.generate",
+        "world.design.generate", "character.cast.generate",
+    ), strict=True))
     for index, (role, asset_type) in enumerate(FOUNDATION_TYPES.items(), start=1):
         source_id = f"foundation:{index}"
         source_hash = "sha256:" + str(index) * 64
@@ -96,6 +101,16 @@ def _binder_fixture() -> tuple[
                 "candidate_payload": {"role": role, "evidence": f"evidence-{index}"}
             },
         )
+        if generated:
+            source = replace(source, asset_type="planning_generation_candidate", content={
+                **source.content,
+                "type": "PlanningGenerationCandidate",
+                "schema_version": "story_design.authority.v1",
+                "project_id": "project:test",
+                "book_id": "book:test",
+                "planning_scope": "NOT_APPLICABLE",
+                "generator_operation_name": generators[role],
+            })
         qualification = _document(
             asset_version_id=qualification_id,
             asset_type="narrative_design_evaluation",
@@ -144,10 +159,11 @@ def _binder_fixture() -> tuple[
     return binder, candidate, writer, documents
 
 
-def test_book_design_v5_evaluation_resolves_exact_foundation_without_prior_verdicts() -> (
+@pytest.mark.parametrize("generated", [False, True])
+def test_book_design_v5_evaluation_resolves_exact_foundation_without_prior_verdicts(generated) -> (
     None
 ):
-    binder, candidate, writer, _ = _binder_fixture()
+    binder, candidate, writer, _ = _binder_fixture(generated=generated)
 
     binder._evaluation_context_bundle(
         operation_id="operation:evaluate",
@@ -161,6 +177,7 @@ def test_book_design_v5_evaluation_resolves_exact_foundation_without_prior_verdi
             "content_hash": candidate.content_hash,
         },
         metadata={
+            "book_id": "book:test",
             "generation_operation_id": "operation:generate",
             "generator_operation_name": "book_design.propose",
         },
@@ -182,6 +199,23 @@ def test_book_design_v5_evaluation_resolves_exact_foundation_without_prior_verdi
         for item in content["selected_inputs"]
     )
     assert len(writer.command.reference_asset_ids) == 13
+
+
+@pytest.mark.parametrize("change", [
+    {"generator_operation_name": "world.design.generate"},
+    {"generator_operation_name": ["creative.candidates.generate"]},
+    {"book_id": "book:foreign"},
+    {"project_id": "project:foreign"},
+    {"planning_scope": "BOOK"},
+    {"type": "UnapprovedDraft"},
+    {"schema_version": "unknown"},
+])
+def test_generated_foundation_dependency_rejects_role_scope_and_contract_drift(change):
+    binder, candidate, _, documents = _binder_fixture(generated=True)
+    source = documents["foundation:1"]
+    documents[source.asset_version_id] = replace(source, content={**source.content, **change})
+    with pytest.raises(KernelError, match="NARRATIVE_EVALUATION_DEPENDENCY_DRIFT"):
+        binder._canonical_dependencies(candidate, book_id="book:test")
 
 
 def test_book_design_v5_evaluation_fails_closed_on_dependency_hash_drift() -> None:
