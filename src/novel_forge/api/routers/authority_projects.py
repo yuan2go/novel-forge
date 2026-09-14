@@ -23,6 +23,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     models = ctx.models
     globals().update(models)
     ProjectCreateRequest = models["ProjectCreateRequest"]
+    ProjectWorkspaceCreateRequest = models["ProjectWorkspaceCreateRequest"]
     ProjectConfigRequest = models["ProjectConfigRequest"]
     ProjectDuplicateRequest = models["ProjectDuplicateRequest"]
     ProjectBindingAssignRequest = models["ProjectBindingAssignRequest"]
@@ -114,6 +115,19 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             expected_version=0,
             expected_asset_version_id="",
             idempotency_key=idempotency_key,
+        )
+
+    @router.post("/product/projects/{project_id}/workspaces")
+    def create_workspace(project_id: str, request: ProjectWorkspaceCreateRequest) -> dict[str, Any]:
+        _authorize_project(project_id, "project.authority.execute")
+        current = _query(ctx).require_project(project_id)
+        return _execute(
+            ctx, definition_name="project_workspace.create", project_id=project_id,
+            workspace_id=current["workspace_id"],
+            payload={"workspace_id": request.workspace_id, "workspace_config": request.workspace_config},
+            expected_version=request.expected_project_version,
+            expected_asset_version_id=request.expected_project_asset_version_id,
+            idempotency_key=request.idempotency_key,
         )
 
     @router.patch("/product/projects/{project_id}/config")
@@ -385,7 +399,7 @@ def _execute(
             ),
             principal=principal,
         )
-        return {**result, **_query(ctx).require_project(project_id)}
+        return result if definition_name == "project_workspace.create" else {**result, **_query(ctx).require_project(project_id)}
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except KernelError as exc:

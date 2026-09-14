@@ -41,6 +41,7 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                 "/product/projects",
                 "/product/projects/operating-dashboard",
                 "/product/projects/{project_id}/bindings",
+                "/product/projects/{project_id}/workspaces",
                 "/product/projects/{project_id}/bindings/{binding_type}",
                 "/product/projects/{project_id}/bindings/{binding_type}/remove",
                 "/product/tasks",
@@ -77,6 +78,7 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                 "/product/mkaos/runtime-usage",
                 "/product/mkaos/runtime-selections",
                 "/product/production/book-authority/runs/{book_run_id}/corrective-actions",
+                "/product/production/book-authority/books/{book_id}/planning-generations/{operation_id}/runtime-continuation",
                 "/product/temporal-query",
                 "/product/content-intelligence/pacing",
                 "/product/content-intelligence/hooks",
@@ -121,6 +123,10 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                     ),
                     client.get("/product/projects/project-denied"),
                     client.get("/product/projects/project-denied/bindings"),
+                    client.post("/product/projects/project-denied/workspaces", json={
+                        "workspace_id": "denied-workspace", "expected_project_version": 1,
+                        "expected_project_asset_version_id": "denied-asset", "idempotency_key": "denied-create",
+                    }),
                     client.post(
                         "/product/tasks/cancel",
                         json={
@@ -212,7 +218,7 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                     ),
                 )
 
-        self.assertEqual([response.status_code for response in responses], [403] * 11)
+        self.assertEqual([response.status_code for response in responses], [403] * 12)
 
 
 if __name__ == "__main__":

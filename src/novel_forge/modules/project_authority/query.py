@@ -38,6 +38,21 @@ class ProjectAuthorityQuery:
             raise KernelError("PROJECT_NOT_FOUND", "project does not exist")
         return _project_row(row)
 
+    def require_workspace(self, *, project_id: str, workspace_id: str) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT workspace.project_id,workspace.workspace_id,workspace.book_id,
+                workspace.status,workspace.version,workspace.current_asset_version_id,version.content_hash
+                FROM authority_workspace workspace JOIN authority_asset_version version
+                ON version.asset_version_id=workspace.current_asset_version_id
+                WHERE workspace.workspace_id=%s""", [workspace_id])
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError("WORKSPACE_NOT_FOUND", "workspace does not exist")
+        if row[0] != project_id:
+            raise KernelError("WORKSPACE_SCOPE_CONFLICT", "workspace belongs to another project")
+        return dict(zip(("project_id", "workspace_id", "book_id", "status", "version",
+                         "asset_version_id", "content_hash"), row, strict=True))
+
     def list_assets(
         self,
         *,

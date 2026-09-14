@@ -1,0 +1,582 @@
+[
+  {
+    "asset_type": "execution_commit_policy",
+    "asset_version_id": "fa4dcdd3-1862-4d7d-b5ff-e88f880c5869",
+    "content_hash": "sha256:c6c5a8953be74860874697edbf84f2605cbd16aa8181966998893b91e7e84b77",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "prompt_bundle",
+    "asset_version_id": "8f3eeb0b-1fb6-4710-8add-5b518e575c1e",
+    "content_hash": "sha256:92c5b3939b2685dbd8a4d97cfcbd13cbae1c6ed1603c70c6e3154f38f8f42c95",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "provider_request_admission_manifest",
+    "asset_version_id": "c6c30b0a-5af5-487a-a52f-8f6b6ef3c57e",
+    "content_hash": "sha256:bf7c709b7589c3ab6c39d7f72b846b0da059396ca7d80f328d1f7ca8023f3e5f",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "tool_permission_snapshot",
+    "asset_version_id": "ae73a16b-6c8a-4438-ab7e-e023f59dac6a",
+    "content_hash": "sha256:486258d965d0884433907f29921b8342697dad4975b54769538c21ad85b8eab2",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "skill_bundle",
+    "asset_version_id": "a621ad07-579a-415f-aebb-3c772ebc49bf",
+    "content_hash": "sha256:e5c1cfc9c7ae7afddbcaf349d04e7932a4227c926c82f96bc5fde0b1b8c1b977",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_recovery_session",
+    "asset_version_id": "96f01ca2-ca2d-46aa-8cfb-197f9fdfcc15",
+    "content_hash": "sha256:194e79f72fb8e6f3748ff5c52c671c6d69cc517ea9d5f0cf080ca97c8e8de91a",
+    "version_number": 1,
+    "lifecycle": "SUPERSEDED",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_recovery_session",
+    "asset_version_id": "404f9159-3399-45cd-a170-b6663e398732",
+    "content_hash": "sha256:95b2cdd74289b0cfabaf5abe344860c8d63b755903ed13c78324e31fdb9ab303",
+    "version_number": 3,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_recovery_session",
+    "asset_version_id": "8a326fd7-82cb-4c1f-888e-cdc552b56d39",
+    "content_hash": "sha256:e63eb6fe7f15140066b6e69eb254054a3cc6d69052611c49d6fc8d2977fd3bc0",
+    "version_number": 3,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "input_manifest",
+    "asset_version_id": "7875fa84-8801-4dac-92e0-dd7f20266da9",
+    "content_hash": "sha256:399ee57bf6e30c4352a897e125fdcf74cbc2ab8ec4c5df6f904659a140dc303b",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "cost_ledger",
+    "asset_version_id": "e8db0423-4ca7-40a8-a45e-552b5a94dce9",
+    "content_hash": "sha256:13481d4df5c2270abeac38148f1fbd3d4dd7b4ec6a38aef3ec67e6a52286d6c3",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "5b6bbd71-afd3-4959-9a99-e6c0e113b0e6",
+    "content_hash": "sha256:4d87fe44a298fc0af7df1dab7d9717bcfdc1e7800e8beb978630941a79527e81",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "a20afc0c-4d9e-4784-b5bf-43fdeb7b75ab",
+    "content_hash": "sha256:3b1ce5ec90b302f19b0af0ac121e3c1903ec91ae7344e7976fa70c6d7e18678f",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "b21d89df-611d-4eba-a2bc-124a2ab01bfc",
+    "content_hash": "sha256:9b95c3edb26aab3eeb22aa3de40c0fcc4dfdea7c6a1a102dc62ba041f03f2220",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "8c8815c9-c350-4aec-be93-fa7e8fe54a5c",
+    "content_hash": "sha256:7b50d2a4031ddbdfbf65119cc9551d54f1de5c7e5caf1ea62b73260bd2141a1c",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "book_record",
+    "asset_version_id": "54502d19-320d-4f7c-b7ec-96c9ac4c24a0",
+    "content_hash": "sha256:348099fe4af38db65d45d3da75e17c57cbcfa2c983c6c0af26cc549513049f2d",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "0a9a07f8-342f-483d-9132-43484f8d8fb1",
+    "content_hash": "sha256:2ba5e6344ca6d058f8b1049ee1c0932ec49b93d227a8c760246b7a6a18eb07c2",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "09100221-1d54-46d1-94de-83867148f950",
+    "content_hash": "sha256:b8a064170649669f990a4701c252ea6e68937fb618fa116fac5915ab58495b5b",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "capability_materialization_manifest",
+    "asset_version_id": "f8eaaa85-3f20-45c3-b146-17eaa704ccfc",
+    "content_hash": "sha256:005c307b88e44e14b6e85bf9be0aad78ac7ac22fe1f6fe4c4522dcc48998e234",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "78343d4e-c0bf-4865-83d6-ec02b7e28c10",
+    "content_hash": "sha256:24f2d399e7a316556368c8d17dd58ff9c5f6900265cad999217147a8bdb58fd1",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "context_bundle",
+    "asset_version_id": "75e13038-c789-4e1f-a80d-f00a796245b4",
+    "content_hash": "sha256:202f2787e409e2b738a781785074b59a9ee225a5dd4de1bc3c38529e9c045bbb",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "model_profile",
+    "asset_version_id": "d78a84ae-d05d-4804-9375-eaf42981a8e9",
+    "content_hash": "sha256:f3b1eddc1a053b7767447910dc1f59e374dd2147e1f4e72396d5ecd126939d3a",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "context_bundle",
+    "asset_version_id": "3250c4eb-82eb-4308-b014-1b2f5fe90b46",
+    "content_hash": "sha256:d6d86d98bfaf45a75572a428723f8602e36620991052d878b477060d2e0db444",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "workspace_record",
+    "asset_version_id": "1d99b536-437c-43a2-9dc9-c5a51d53a0f0",
+    "content_hash": "sha256:812e42a66ab8ac0e61c9026bde59c0ac793d193e15834c50b801053d5e774ad9",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "input_manifest",
+    "asset_version_id": "38172880-8e60-43ea-9944-399b5c42cb8f",
+    "content_hash": "sha256:0e1b61dce8150c1adfa7f26b796ac83ba70127b0230d1a27618d0591347e2790",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "route_snapshot",
+    "asset_version_id": "a699a835-0bde-4764-8eb4-479e32ef6ac1",
+    "content_hash": "sha256:4c8b4a080d35e460fd5a5b44d805a5446ca9cf6552032361103bbc3803255336",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "model_call_log",
+    "asset_version_id": "bfeddd9c-d100-47ca-a870-e4881d10ae6c",
+    "content_hash": "sha256:d2af653ae7275e2acb435fec0e69e984dca6030eedc0b9e607adec2f30bc60aa",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_recovery_session",
+    "asset_version_id": "65e5203a-f455-4650-b0bd-f9e7025c717f",
+    "content_hash": "sha256:ae06e85d769d7a7ba54d7e5d601a492d5ed7429b6527827c320ae0b4f04c1036",
+    "version_number": 2,
+    "lifecycle": "SUPERSEDED",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "planning_runtime_continuation",
+    "asset_version_id": "01380dea-cfc4-4115-89a7-9aa72c922300",
+    "content_hash": "sha256:267f608281f5ae3b8c900d0e8ecd64b01bedd68df0049ec544198ec6653259d8",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "2e4b424d-1670-41ad-a307-dc49dabb71d8",
+    "content_hash": "sha256:09329f550f0ae6623d138a3f905cdcee98cd3da1bb2ed7e22ce52cfba3c36bba",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "route_snapshot",
+    "asset_version_id": "9853cf72-3e3f-4259-8f74-e45b3ceb001a",
+    "content_hash": "sha256:d5846284f862dc679b9776c1a7da3890e2023fe89ce6b968357f35492df857ed",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "route_snapshot",
+    "asset_version_id": "56a458b6-2a31-4acc-88a8-8298540a14f0",
+    "content_hash": "sha256:8a5e802a313d8e11d287ab090ea3b3992ea5b6bc70f8bdcd16c28741b1270f76",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "cost_ledger",
+    "asset_version_id": "5480672d-45f4-4ae8-8461-6b7b070efdb0",
+    "content_hash": "sha256:6172e1428dec459cc0d51e0e9292c0574acfefbeaada615dd614adbf7b38145b",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "input_manifest",
+    "asset_version_id": "5e0fcc89-11a1-4c76-aff4-b5ffdc784583",
+    "content_hash": "sha256:0f90c69c01f57294bef1569288b067f1d72294c31e6a2f578a082c5d0c32542c",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "f3d6a64b-65cf-4457-a989-dc50944fc55e",
+    "content_hash": "sha256:a517e95e34c3b2450e86a5516bf4ab1e4587123309580d25957c7b0447a5a2db",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "route_policy",
+    "asset_version_id": "fc35db48-a8e7-4234-84cc-4fdc13ef89e3",
+    "content_hash": "sha256:24f20ff041d1b40d9ad119d90dc66cc10e507a38f7b6ed91accc5b32361a9f94",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "narrative_design_evaluation",
+    "asset_version_id": "authority-output:757fcb14-3ab8-4bd7-b56d-28196e8802f9:story_design.semantic_evaluation:v1",
+    "content_hash": "sha256:18a661a52e271ec9d4a4977e8add2d1283639135261b8d48eafd60b0107155a3",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "provider_request_admission_manifest",
+    "asset_version_id": "676f92b1-8fe3-4b03-808c-15aaddec65a8",
+    "content_hash": "sha256:419277f444e39f769dc34284b51e65c3e3cff0339c1b4d84b7492e13a3fa666b",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "capability_materialization_manifest",
+    "asset_version_id": "dc3ae731-b356-455b-b3db-ce7469bd3273",
+    "content_hash": "sha256:f3de87f960b36adcfa8c7445c7082a380e19e550cd93ffd6bc0d3d5366a64117",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "fallback_policy",
+    "asset_version_id": "b07ccc82-26d8-47b0-b049-e675878911fb",
+    "content_hash": "sha256:16a824fcc771949ea59d9c97c0b08bfef918d3e9a33f840b8ebd657680262605",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_validation_policy",
+    "asset_version_id": "9ad00ffe-ce6d-4137-a997-886981a77603",
+    "content_hash": "sha256:f2b74e812755299056363296888ec8796984eae3df80c7cfe826dfaa294b391a",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "provider_request_admission_manifest",
+    "asset_version_id": "c7c8e17e-f878-4301-9e7c-93f588c122f3",
+    "content_hash": "sha256:8696b5db2e93d25782ba8f666f1ed341065e7828539e4020d2a5f2ec5c2acc33",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_recovery_session",
+    "asset_version_id": "600c14bd-5d93-4b13-afee-f4f4c050d2bd",
+    "content_hash": "sha256:ad4475e4362013c94d0a9929d99a6de26339a4750ca9093951bdf616a32cbffa",
+    "version_number": 1,
+    "lifecycle": "SUPERSEDED",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "capability_materialization_manifest",
+    "asset_version_id": "14252f89-d408-4864-ac3d-3f31fb5c2e44",
+    "content_hash": "sha256:2490a4a7dafa685edaf8ce9ffc2e3e5407b22d1942fe5293b29bdddf0be222f3",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "context_bundle",
+    "asset_version_id": "edd590ff-fa1e-4b68-9977-c23a356c4c56",
+    "content_hash": "sha256:cf010f0fda1a0c2034c7fdc614b9a91494cd0eaa1e073d05d362980accf3ec6f",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_recovery_session",
+    "asset_version_id": "009b126f-4cbc-4551-82e8-57aab55fb2ce",
+    "content_hash": "sha256:752834f584e86cff3e1e34df85b44cae855aeacdd112a410d140dacdfd368a49",
+    "version_number": 2,
+    "lifecycle": "SUPERSEDED",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "planning_generation_candidate",
+    "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1",
+    "content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6",
+    "version_number": 1,
+    "lifecycle": "CANDIDATE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "MATERIALIZED"
+  },
+  {
+    "asset_type": "model_call_log",
+    "asset_version_id": "d46ac3c5-4a77-45d9-84f2-6b744cbdd33a",
+    "content_hash": "sha256:267a3925440e95a273d77cd1cf74ef368583e52bac5c68e831081518a60227c8",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "1cb70715-0b34-4371-b87d-d7e8f6218c04",
+    "content_hash": "sha256:91d27d986157b0d32e85f03781fba23f4b11c520194c840b81020bc12911dcd5",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "6dca6092-2fdc-49f2-9a1b-92bd1ce41ded",
+    "content_hash": "sha256:0e54751d9a9bfd17e84c5cbacc7b0557d748de9e5b0867da33f07e4ab6fc7847",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_context_policy",
+    "asset_version_id": "a83ae467-b0c2-4ef9-80fe-f667b90eabea",
+    "content_hash": "sha256:7a118bd5aa5703c9b37fa3af5967f2cddb93e07ac4c10a1249abcf9c6d1f8721",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "226cf56e-8616-4ce1-ae23-f733d4c18cd6",
+    "content_hash": "sha256:4f1e1cff4766f61619c1e35fe321fecfcac5cdfc7e17888a015617735d647bc8",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "creative_brief",
+    "asset_version_id": "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1",
+    "content_hash": "sha256:73245902d79e29929ba55f40a18663be298a419db12bfa05ee0ea6af70b3427f",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "41463f23-5e05-49e0-b55d-992734799551",
+    "content_hash": "sha256:ba8fe5f8247b6e22800fd42a7907bd9cf3884e6b6498e12ad11e8cc92b7e3518",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "context_bundle",
+    "asset_version_id": "1e85910e-acd0-43bc-8892-8d5820f61198",
+    "content_hash": "sha256:cf010f0fda1a0c2034c7fdc614b9a91494cd0eaa1e073d05d362980accf3ec6f",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_evidence",
+    "asset_version_id": "b04b95b2-6dad-4d7c-b864-ea78fb9fe600",
+    "content_hash": "sha256:b6b81dbd49091e8e1e7671ac8e9ac7d37db67abd25aa860201ff817f4b56da75",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "capability_materialization_manifest",
+    "asset_version_id": "e00d58c8-bcc6-44e2-afa0-31001444fb20",
+    "content_hash": "sha256:8356e4d54614f2a9e096cfc4b16023ae7b02360e4cd4087b85a56992f2b7d9b4",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "execution_recovery_session",
+    "asset_version_id": "bfdd6316-c9bf-4d62-81f0-e69edec27b2a",
+    "content_hash": "sha256:7589f62cec321058814d17fa50a35e2e39c57ec2fe0db155f175f0dedb41da30",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "provider_request_admission_manifest",
+    "asset_version_id": "40e85fad-1c5f-47fd-bb92-999274d8926f",
+    "content_hash": "sha256:172f0b0ad5d0c4f1fd4a58ec5be471f90f5bff8106c4bc04ca126aee4c4da9be",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  }
+]

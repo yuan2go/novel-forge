@@ -1,0 +1,13 @@
+{
+  "source_sha": "d5c3dd3c7a5e2233d36cecd5aac9142fa626dc40",
+  "runtime_checkout": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-d5c3dd3c",
+  "worktree": "/Users/yuan/projects/novel-forge-guofeng-volume-one",
+  "status": "QUALIFICATION_RUNNING",
+  "baseline_sha": "5cddba5be0b436ced7bd2c6496ac9cdb16bf96eb",
+  "pack_version": "2.3.2",
+  "planning_execution_contract": "1.15.0",
+  "qualification_report": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/evidence/qualification-d5c3dd3c/p0-backend-qualification-d5c3dd3c7a5e2233d36cecd5aac9142fa626dc40.json",
+  "implementation_tree_sha": "sha256:dbb78e906f77d12da5a0f6b2c60659b1a2ad83dd5df92668db8e194c7dc33f93",
+  "focused_workspace_entry": "EXECUTABLE: isolated Book + Content + Formation and replay; original workspace preserved",
+  "registered_at": "2026-09-13T16:43:02.044438+00:00"
+}

@@ -1,0 +1,63 @@
+{
+  "source": "CURRENT_USER_PROMPT",
+  "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913",
+  "registration_executor": "AI_CODE_AGENT",
+  "compiled_by": "ai:codex:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01",
+  "registered_by": "first-novel-pilot-operator",
+  "enforce_duties_separation": true,
+  "release_sha": "d5c3dd3c7a5e2233d36cecd5aac9142fa626dc40",
+  "project_id": "first-novel-pilot-20260912",
+  "workspace_id": "guofeng-xuanhuan-01-workspace",
+  "book_id": "guofeng-xuanhuan-01",
+  "packs": [
+    {
+      "pack_id": "story_planning_pack",
+      "pack_version": "2.3.2",
+      "compilation_id": "compilation:guofeng-xuanhuan-01:story_planning_pack:production-01",
+      "compilation_hash": "sha256:33594974b3932036a6ad3e13892390de57dc62400af9e214505ebc98e3ce920f",
+      "deployment_id": "deployment:guofeng-xuanhuan-01:story_planning_pack:production-01",
+      "approval": {
+        "operation_id": "dad241ea-6ed8-427c-b388-e0833ba2791e",
+        "status": "SUCCEEDED",
+        "approval_id": "016ecc30-3d08-4953-8f21-d3fb5fcb36ba",
+        "compilation_id": "compilation:guofeng-xuanhuan-01:story_planning_pack:production-01",
+        "compilation_hash": "sha256:33594974b3932036a6ad3e13892390de57dc62400af9e214505ebc98e3ce920f",
+        "decision": "APPROVED",
+        "replayed": false
+      }
+    },
+    {
+      "pack_id": "narrative_semantic_evaluation_pack",
+      "pack_version": "2.3.2",
+      "compilation_id": "compilation:guofeng-xuanhuan-01:narrative_semantic_evaluation_pack:production-01",
+      "compilation_hash": "sha256:e1cdfaac58a4bd527cfa606069211358c506e64bdc9ea075931ae34442686194",
+      "deployment_id": "deployment:guofeng-xuanhuan-01:narrative_semantic_evaluation_pack:production-01",
+      "approval": {
+        "operation_id": "e78f3354-dd13-4d36-ae56-8fbb14f1cd4c",
+        "status": "SUCCEEDED",
+        "approval_id": "47d43181-6062-4a13-af69-6196d296eb0c",
+        "compilation_id": "compilation:guofeng-xuanhuan-01:narrative_semantic_evaluation_pack:production-01",
+        "compilation_hash": "sha256:e1cdfaac58a4bd527cfa606069211358c506e64bdc9ea075931ae34442686194",
+        "decision": "APPROVED",
+        "replayed": false
+      }
+    },
+    {
+      "pack_id": "chapter_generation_pack",
+      "pack_version": "2.3.2",
+      "compilation_id": "compilation:guofeng-xuanhuan-01:chapter_generation_pack:production-01",
+      "compilation_hash": "sha256:f2b10eaa369f1ef6140415920650affec33e310c417ba1e40de2e962b2a0d97e",
+      "deployment_id": "deployment:guofeng-xuanhuan-01:chapter_generation_pack:production-01",
+      "approval": {
+        "operation_id": "74caef4b-ee09-4554-a6ba-6eac4bdf8f2e",
+        "status": "SUCCEEDED",
+        "approval_id": "a86a6be4-bb39-4a84-9800-dc92b9ebdcfa",
+        "compilation_id": "compilation:guofeng-xuanhuan-01:chapter_generation_pack:production-01",
+        "compilation_hash": "sha256:f2b10eaa369f1ef6140415920650affec33e310c417ba1e40de2e962b2a0d97e",
+        "decision": "APPROVED",
+        "replayed": false
+      }
+    }
+  ],
+  "independent_human_review": "NOT_REVIEWED"
+}

@@ -1,0 +1,174 @@
+{
+  "comparison_budget": {
+    "arms": [
+      {
+        "arm": "SINGLE",
+        "book_id": "guofeng-xuanhuan-01",
+        "project_id": "first-novel-pilot-20260912",
+        "project_total": {
+          "calls": 460,
+          "tokens": 11500000
+        },
+        "chapter_ranges": {
+          "CREATION_LATE": [
+            4,
+            40
+          ],
+          "CREATION_EARLY": [
+            1,
+            3
+          ]
+        },
+        "design_allocation": {
+          "calls": 100,
+          "tokens": 3500000
+        },
+        "repair_allocation": {
+          "calls": 60,
+          "tokens": 1500000
+        },
+        "source_allocation": {
+          "calls": 0,
+          "tokens": 0
+        },
+        "creation_late_allocation": {
+          "calls": 210,
+          "tokens": 4250000
+        },
+        "creation_early_allocation": {
+          "calls": 90,
+          "tokens": 2250000
+        }
+      }
+    ],
+    "shared_total": {
+      "calls": 460,
+      "tokens": 11500000
+    },
+    "experiment_id": "yu-xian-zhi-wai-author-guided-twelve-v1",
+    "previous_policy": {
+      "policy_hash": "42e8a2723526f78182ba9e93adfe2b963c8fd1fb0e6817a43e17803e80fbcc4b",
+      "contract_hash": "sha256:c118dbacc5be0e1b2406acab6f0eebdd029d6b8ce78a934a35f7291680b4a1d7",
+      "policy_version": "guofeng-volume-one-production-01-20260913-v1"
+    },
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "contract_version": "creative-book-production-budget.v3"
+  },
+  "budget_binding": {
+    "owner": "CREATIVE_EXPERIMENT_BUDGET",
+    "policy_version": "guofeng-volume-one-production-01-20260914-v2",
+    "policy_hash": "46d91f1bdb7c487ae402d29026efdb6011f9761d234588f867b7f4548009f391",
+    "contract_hash": "sha256:91fd257f4348941abeaf0b657c25f84bf043e9850af7435395cf442f770c0fd6",
+    "subject_id": "project:first-novel-pilot-20260912",
+    "authorization": {
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "evidence_hash": "sha256:a1a1aaeb140d01c5b6887b04945f81c409f1aa7ec00e9c9a39492074df3344b6",
+      "business_scope": {
+        "design_allowed": true,
+        "source_allowed": false,
+        "max_chapter_number": 40
+      },
+      "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913:unused-balance-reallocation-v2",
+      "authorized_cumulative_caps": {
+        "DESIGN": {
+          "calls": 100,
+          "tokens": 3500000
+        },
+        "REPAIR": {
+          "calls": 60,
+          "tokens": 1500000
+        },
+        "SOURCE": {
+          "calls": 0,
+          "tokens": 0
+        },
+        "CREATION_LATE": {
+          "calls": 210,
+          "tokens": 4250000
+        },
+        "CREATION_EARLY": {
+          "calls": 90,
+          "tokens": 2250000
+        }
+      }
+    }
+  },
+  "budget_usage": {
+    "contract_hash": "sha256:91fd257f4348941abeaf0b657c25f84bf043e9850af7435395cf442f770c0fd6",
+    "project_id": "first-novel-pilot-20260912",
+    "book_id": "guofeng-xuanhuan-01",
+    "phases": {
+      "SOURCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "DESIGN": {
+        "calls_used_or_reserved": 22,
+        "conservative_tokens": 719342,
+        "recorded_actual_tokens": 719342,
+        "unmeasured_reserved_tokens": 0
+      },
+      "CREATION_EARLY": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "CREATION_LATE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "REPAIR": {
+        "calls_used_or_reserved": 2,
+        "conservative_tokens": 87811,
+        "recorded_actual_tokens": 87811,
+        "unmeasured_reserved_tokens": 0
+      }
+    },
+    "project_total": {
+      "calls_used_or_reserved": 24,
+      "conservative_tokens": 807153,
+      "recorded_actual_tokens": 807153,
+      "unmeasured_reserved_tokens": 0
+    },
+    "shared_total": {
+      "calls_used_or_reserved": 24,
+      "conservative_tokens": 807153,
+      "recorded_actual_tokens": 807153,
+      "unmeasured_reserved_tokens": 0
+    },
+    "reservation_ids": [
+      "ef7cb1fa-35a3-4c53-8e28-908b7bdaadae",
+      "f2482034-f4e3-4997-9c4c-aa2947ba335b",
+      "9e1276e5-1ded-4001-ba32-5f3b9e8737c4",
+      "c4bdf5c7-8057-4975-aac8-48918d589b31",
+      "3f5a15d3-a340-4197-84b0-907c34cf791b",
+      "7af6a0fa-49fd-4d7e-8534-8b5527a28ca2",
+      "d00b168f-de6b-484a-b198-ae1ea6f20ba1",
+      "cb1febeb-89d2-4a82-95ef-caa26c42c412",
+      "4eae9351-8a12-4f77-b86a-36b3837e1d6f",
+      "3b24d961-5661-4a00-9d2d-6b2cee7c6e43",
+      "56be04e7-e58f-43e8-af0f-f4073a85f8dd",
+      "abd0bce5-e546-41ce-ac4d-69117df8bfe8",
+      "9b4be09d-60bf-42da-8770-5a452fef22b9",
+      "34d0ebc8-e2c8-4a57-8fed-48be8c5d3a2a",
+      "83b493bb-e456-4019-a119-3b0a8fff2e0a",
+      "a333b99a-4265-461d-b024-90ccec5ef343",
+      "504a7288-9c48-455f-b4b3-b1a064b82dc5",
+      "996cc769-1920-4ab9-b656-726728eeeced",
+      "e73881ea-1f9e-485e-9d05-cc1c9a392359",
+      "0e61c5e4-3d3c-4de9-8bde-a366384266b0",
+      "a64e64d5-4e69-4aaa-a199-550bdb4270ee",
+      "5e93867c-3cc2-4944-a40f-0c6bcffb082b",
+      "9c823aa2-5834-4538-a9ce-3513b843cd81",
+      "b0533cbf-654d-4322-8fb3-e77c1f8a48b2"
+    ],
+    "evidence_class": "POSTGRESQL_BUDGET_LEDGER",
+    "creation_opportunity": null
+  }
+}

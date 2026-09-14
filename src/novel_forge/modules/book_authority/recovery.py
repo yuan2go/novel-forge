@@ -37,7 +37,7 @@ BOOK_OPENING_EXECUTION_CONTRACT_VERSION = "book-opening-execution-v2"
 BOOK_OPENING_WORKFLOW_EXECUTION_CONTRACT_VERSION = "book-opening-execution-v3"
 BOOK_OPENING_LEGACY_WORKFLOW_CONTRACT_VERSION = "legacy-monolithic-v2"
 BOOK_OPENING_EXECUTION_POLICY_VERSION = "book-opening-execution-policy-v1"
-BOOK_OPENING_RECOVERY_POLICY_VERSION = "book-opening-recovery-v1"
+BOOK_OPENING_RECOVERY_POLICY_VERSION = "book-opening-recovery-v2"
 BOOK_OPENING_AUTHORITY_VERSION = "book-opening-authority-v2"
 BOOK_OPENING_MAX_SEMANTIC_EVALUATION_GENERATIONS = 3
 
@@ -594,6 +594,7 @@ class PostgresBookOpeningRecoveryApplication:
             )
             if existing is not None:
                 return self._assessment_result(existing, replayed=True)
+            self._require_not_capacity_predecessor(uow, opening_run_id)
             if str(run["lifecycle"]) != "FAILED":
                 raise KernelError(
                     "BOOK_OPENING_RECOVERY_STATE_INVALID",
@@ -672,6 +673,7 @@ class PostgresBookOpeningRecoveryApplication:
                     principal_id=principal.principal_id,
                 )
                 return self._receipt_result(replay, replayed=True)
+            self._require_not_capacity_predecessor(uow, opening_run_id)
             execution = self._current_execution(uow, run, lock=True)
             snapshot = self._authoritative_snapshot(uow, run, execution)
             if (
@@ -2224,8 +2226,12 @@ class PostgresBookOpeningRecoveryApplication:
             uow, run, provider_call_required=False
         )
         evaluation = self._semantic_evaluation(uow, run, checkpoint=checkpoint)
+        generation = (
+            {} if evaluation.get("operation_id")
+            else self._pending_planning_generation(uow, run, checkpoint=checkpoint)
+        )
         external = self._external_effect_evidence(
-            uow, str(evaluation.get("operation_id") or "")
+            uow, str(evaluation.get("operation_id") or generation.get("operation_id") or "")
         )
         budget = (
             replay_budget
@@ -2277,6 +2283,7 @@ class PostgresBookOpeningRecoveryApplication:
             "runtime": runtime,
             "checkpoint": checkpoint,
             "semantic_evaluation": evaluation,
+            "planning_generation": generation,
             "external_effect": external,
             "budget": budget,
             "policy_config_digest": self._policy_digest(),
@@ -2323,7 +2330,7 @@ class PostgresBookOpeningRecoveryApplication:
             uow,
             budget_scope_id=budget_scope_id,
             project_id=str(run["project_id"]),
-            requested_amount="0",
+            requested_amount=None,
             requested_tokens=0,
             requested_calls=0,
             execution_mode=(
@@ -2434,13 +2441,13 @@ class PostgresBookOpeningRecoveryApplication:
             "lease_expired": bool(row[13]),
         }
 
-    def _semantic_evaluation(
+    def _current_search_branch(
         self,
         uow: AuthorityUnitOfWork,
         run: dict[str, Any],
         *,
         checkpoint: dict[str, Any],
-    ) -> dict[str, Any]:
+    ) -> tuple[str, str] | None:
         completed_search_work = {
             str(item["semantic_work_key"])
             for item in checkpoint.get("entries") or []
@@ -2459,7 +2466,7 @@ class PostgresBookOpeningRecoveryApplication:
             None,
         )
         if target is None:
-            return self._empty_semantic_evaluation()
+            return None
         semantic_work_key, target_search_id = target
         generator, logical_key = semantic_work_key.split(":", 1)
         stable_search_key = (
@@ -2487,12 +2494,12 @@ class PostgresBookOpeningRecoveryApplication:
         )
         search_row = uow.cursor.fetchone()
         if search_row is None:
-            return self._empty_semantic_evaluation()
+            return None
         if str(search_row[0]) in {"SELECTED", "ACTIVATED"}:
             # INVARIANT: Planning already owns a complete durable result.  The missing
             # outer cursor is replayed/reconciled from that Authority; creating
             # a semantic replacement here would orphan executable READY work.
-            return self._empty_semantic_evaluation()
+            return None
         directives = list(search_row[1] or [])
         candidate_target = int(search_row[2])
         expected_branches = [
@@ -2521,7 +2528,55 @@ class PostgresBookOpeningRecoveryApplication:
             # INVARIANT: Every branch has durable Planning membership.  Search selection
             # itself is the next idempotent step; no semantic generation is
             # authorized here.
+            return None
+        return target_search_id, current_branch
+
+    def _pending_planning_generation(
+        self, uow: AuthorityUnitOfWork, run: dict[str, Any], *, checkpoint: dict[str, Any]
+    ) -> dict[str, Any]:
+        branch = self._current_search_branch(uow, run, checkpoint=checkpoint)
+        if branch is None:
+            return {}
+        uow.cursor.execute(
+            """
+            SELECT generation.operation_id,generation.repair_number,
+                   generation.status,generation.candidate_asset_version_id,
+                   operation.status
+            FROM authority_story_planning_generation AS generation
+            JOIN authority_operation AS operation
+              ON operation.operation_id=generation.operation_id
+             AND operation.project_id=generation.project_id
+            WHERE generation.project_id=%s AND generation.workspace_id=%s
+              AND generation.book_id=%s AND generation.narrative_search_id=%s
+              AND generation.narrative_search_branch_key=%s
+            ORDER BY generation.repair_number DESC,generation.created_at DESC,
+                     generation.operation_id DESC
+            LIMIT 2
+            FOR UPDATE OF generation,operation
+            """,
+            [run["project_id"], run["workspace_id"], run["book_id"], *branch],
+        )
+        rows = uow.cursor.fetchall()
+        if not rows:
+            return {}
+        if len(rows) > 1 and int(rows[0][1]) == int(rows[1][1]):
+            self._stale("Narrative Search has multiple current Planning generations")
+        row = rows[0]
+        return {
+            "operation_id": str(row[0]), "repair_number": int(row[1]),
+            "generation_status": str(row[2]),
+            "candidate_asset_version_id": str(row[3] or ""),
+            "operation_status": str(row[4]),
+            "narrative_search_id": branch[0], "narrative_search_branch_key": branch[1],
+        }
+
+    def _semantic_evaluation(
+        self, uow: AuthorityUnitOfWork, run: dict[str, Any], *, checkpoint: dict[str, Any]
+    ) -> dict[str, Any]:
+        branch = self._current_search_branch(uow, run, checkpoint=checkpoint)
+        if branch is None:
             return self._empty_semantic_evaluation()
+        target_search_id, current_branch = branch
         # WHY: Select the exact Planning-owned search lineage first, then take the same
         # candidate advisory lock used by normal semantic admission before any
         # Evaluation/head row lock.  This preserves the canonical
@@ -2717,6 +2772,16 @@ class PostgresBookOpeningRecoveryApplication:
             "evidence": evidence,
             "digest": _canonical_hash(evidence),
         }
+
+    @staticmethod
+    def _require_not_capacity_predecessor(uow: AuthorityUnitOfWork, opening_run_id: str) -> None:
+        uow.cursor.execute("SELECT to_regclass('authority_book_opening_capacity_continuation')")
+        if uow.cursor.fetchone()[0] is None:
+            return
+        uow.cursor.execute("SELECT successor_opening_run_id FROM authority_book_opening_capacity_continuation WHERE source_opening_run_id=%s", [opening_run_id])
+        row = uow.cursor.fetchone()
+        if row is not None:
+            raise KernelError("BOOK_OPENING_CAPACITY_PREDECESSOR_FENCED", "Resume the registered capacity successor: " + str(row[0]))
 
     @staticmethod
     def _lock_opening(uow: AuthorityUnitOfWork, opening_run_id: str) -> None:

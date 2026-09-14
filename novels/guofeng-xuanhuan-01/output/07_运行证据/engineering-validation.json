@@ -1,0 +1,20 @@
+{
+  "source_sha": "b2541ecdc314de38aeee34d606047e1e04ed0b15",
+  "focused": [
+    {
+      "report": "opening-recovery-b2541ecd-focused.xml",
+      "tests": 49,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "source_revision": "b2541ecdc314de38aeee34d606047e1e04ed0b15",
+      "evidence_class": "ISOLATED_TEST",
+      "provider_invoked": false
+    }
+  ],
+  "complete_qualification_status": "FAIL",
+  "complete_qualification_report": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/evidence/qualification-b2541ecd/p0-backend-qualification-b2541ecdc314de38aeee34d606047e1e04ed0b15.json",
+  "older_reports_retained": true,
+  "source_baseline_sha": "5cddba5be0b436ced7bd2c6496ac9cdb16bf96eb",
+  "production_claim": "NO_PROSE_PRODUCTION_EVIDENCE"
+}

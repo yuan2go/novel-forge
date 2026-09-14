@@ -1,0 +1,7 @@
+{
+  "status": "INTERRUPTION_REQUESTED",
+  "at": "2026-09-13T17:01:12.581409+00:00",
+  "source_sha": "d5c3dd3c7a5e2233d36cecd5aac9142fa626dc40",
+  "pid": 21447,
+  "reason": "Actual validation run exposed cross-schema model-profile identity collision and zero-dispatch recovery gap; final qualification will run on the repaired implementation. No qualification pass claimed. Runner retains partial results and owns isolated resource cleanup."
+}

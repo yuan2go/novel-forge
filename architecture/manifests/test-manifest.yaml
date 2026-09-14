@@ -8,6 +8,90 @@
   ],
   "classification_rules": [
     {
+      "id": "planning-runtime-continuation-api",
+      "patterns": [
+        "tests/unit/test_planning_runtime_continuation_api.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "story-planning-runtime",
+      "capability": "planning-runtime-continuation-api",
+      "production_target": "src/novel_forge/api/routers/book_authority.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "planning-runtime-continuation-contract",
+      "patterns": [
+        "tests/unit/test_planning_runtime_continuation.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "story-planning-runtime",
+      "capability": "planning-runtime-continuation-contract",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/runtime_continuation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "secondary-workspace-postgres",
+      "patterns": [
+        "tests/integration/test_secondary_workspace_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "project",
+      "capability": "secondary-workspace-postgres",
+      "production_target": "src/novel_forge/modules/project_authority/application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "production-book-budget-postgres",
+      "patterns": [
+        "tests/integration/test_production_book_budget_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "command-kernel",
+      "capability": "production-book-budget-postgres",
+      "production_target": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "production-book-budget-contract",
+      "patterns": [
+        "tests/unit/test_production_book_budget_contract.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "command-kernel",
+      "capability": "production-book-budget-contract",
+      "production_target": "src/novel_forge/modules/command_kernel/creative_budget_contract.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "volume-reading-checkpoints",
+      "patterns": [
+        "tests/unit/test_volume_reading_checkpoints.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-authority",
+      "capability": "volume-reading-checkpoints",
+      "production_target": "scripts/creation_checkpoints.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "world-foundation-generation-contract",
+      "patterns": [
+        "tests/unit/test_world_foundation_contract.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "worldbuilding",
+      "capability": "world-foundation-generation-contract",
+      "production_target": "src/novel_forge/modules/worldbuilding/foundation_schema.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
       "id": "creation-comparison-contract",
       "patterns": [
         "tests/unit/test_creation_comparison.py"

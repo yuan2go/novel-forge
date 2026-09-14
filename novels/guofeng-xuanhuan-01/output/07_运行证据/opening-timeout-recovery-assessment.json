@@ -1,0 +1,218 @@
+{
+  "observed_at": "2026-09-13T20:42:08.439099+00:00",
+  "run": {
+    "opening_run_id": "book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df",
+    "project_id": "first-novel-pilot-20260912",
+    "workspace_id": "guofeng-xuanhuan-01-workspace",
+    "book_id": "guofeng-xuanhuan-01",
+    "root_operation_id": "25c0c9d5-1dfa-4dcf-97d8-f9a9a07cb5a7",
+    "lifecycle": "FAILED",
+    "frozen_request_digest": "sha256:9e7513549d4ab3a72b23151c291845313ba711e673f75180a4c1fcea258c3ce5",
+    "version": 1,
+    "result": {},
+    "failure": {
+      "code": "MODEL_EFFECT_RETRYABLE_PLANNING",
+      "message": "MODEL_EFFECT_RETRYABLE_PLANNING: Planning provider outcome was retryable_failure",
+      "opening_run_id": "book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df"
+    },
+    "recovery_instruction": {
+      "action": "ASSESS_BOOK_OPENING_RECOVERY",
+      "opening_run_id": "book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df"
+    },
+    "execution_contract_version": "book-opening-execution-v3",
+    "current_execution_id": "book-opening-execution:b850a05a8f1b42261b200861cf6b11ac938a619f73826ff3bbe3c0b5b81abcef",
+    "current_execution_generation": 1,
+    "current_checkpoint_id": null,
+    "current_checkpoint_sequence": 0,
+    "current_checkpoint_hash": "",
+    "recovery_state": "RECOVERY_REQUIRED",
+    "budget_scope_id": "budget-scope:8b247175810b0ce483e697100caf4964d78def77a97929701de3868255212a10",
+    "budget_scope_revision": 1,
+    "budget_contract_state": "BOUND",
+    "workflow_contract_version": "book-opening-workflow-v1",
+    "current_workflow_node_id": "book-opening-node:c6b33941905c8795f7c03ce381b99170be1983c4c06cd06b898d51a98a723f33",
+    "workflow_graph_revision": 1,
+    "workflow_graph_hash": "sha256:084b6bfa4272a4f1cdbbb5be39889fd6bb0c49f72fd84eb25728807f7b26f93d"
+  },
+  "assessment": {
+    "recovery_assessment_id": "book-opening-recovery-assessment:0fd9250ceb9e2dc2040679748cf1d8682d91add510694c5dbb760015a3d0aeed",
+    "assessment_kind": "RECOVERY",
+    "opening_run_id": "book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df",
+    "disposition": "PROVEN_NO_EFFECT",
+    "snapshot_hash": "sha256:047d41c2f0245f3da6900d561be50b2ecc839d31eb4de9a3069d8922d4b023a2",
+    "snapshot": {
+      "budget": {
+        "scope": {
+          "currency": "UNKNOWN",
+          "owner_id": "book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df",
+          "revision": 1,
+          "owner_kind": "BOOK_OPENING",
+          "project_id": "first-novel-pilot-20260912",
+          "started_at": "2026-09-13T20:29:16.310543+00:00",
+          "deadline_at": "2026-09-14T08:29:16.310543+00:00",
+          "policy_hash": "sha256:2db9fc28bd5c28af83340335591b8a7bd1a36dee781e43944924578794e80f8d",
+          "budget_scope_id": "budget-scope:8b247175810b0ce483e697100caf4964d78def77a97929701de3868255212a10",
+          "budget_timezone": "UTC",
+          "policy_snapshot": {
+            "token_limit": 10464000,
+            "execution_mode": "PROVIDER_ALLOWED",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913:unused-balance-reallocation-v2",
+            "cost_observability": "UNKNOWN",
+            "provider_call_limit": 60,
+            "per_call_token_limit": 218000
+          },
+          "stable_idempotency_key": "book-opening-budget:book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df",
+          "created_by_operation_id": "25c0c9d5-1dfa-4dcf-97d8-f9a9a07cb5a7",
+          "policy_contract_version": "book-opening-provider-budget.v2"
+        },
+        "usage": {
+          "cost_status": "UNKNOWN",
+          "status_counts": {
+            "SETTLED": 1
+          },
+          "committed_amount": null,
+          "committed_tokens": 190456,
+          "provider_call_count": 1
+        },
+        "outcome": "ELIGIBLE",
+        "reasons": [],
+        "request": {
+          "cost_status": "UNKNOWN",
+          "execution_mode": "PROVIDER_ALLOWED",
+          "requested_calls": 1,
+          "accounting_basis": "ACCOUNT_ENTITLEMENT",
+          "requested_amount": null,
+          "requested_tokens": 218000
+        },
+        "headroom": {
+          "tokens": 10273544,
+          "cost_amount": null,
+          "provider_calls": 59
+        },
+        "reservations": [
+          {
+            "status": "SETTLED",
+            "chapter": null,
+            "version": 1,
+            "currency": "UNKNOWN",
+            "provider": "production_execution_gateway",
+            "operation_id": "040f61c9-777d-4b2e-a008-50f62742baf5",
+            "actual_tokens": 190456,
+            "budget_breach": false,
+            "reservation_id": "3665355c-991a-48e4-b6ad-da65ac62f84f",
+            "settled_amount": null,
+            "reserved_amount": null,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "authority_source": "DIRECT_SCOPE",
+            "estimated_amount": null,
+            "estimated_tokens": 190456,
+            "external_effect_id": "ff4d2c74-67d4-4627-8a05-9e47052fb3f8",
+            "settled_cost_status": "UNKNOWN",
+            "budget_scope_revision": 1,
+            "estimated_cost_status": "UNKNOWN"
+          }
+        ],
+        "window_state": "ACTIVE",
+        "snapshot_hash": "sha256:71ce7b89c7766113db5e98b2ce2d410187aef7fad56ad5c1505449bc7508907a",
+        "evidence_links": [
+          {
+            "evidence_id": "budget-cost:3665355c-991a-48e4-b6ad-da65ac62f84f",
+            "evidence_hash": "sha256:10e8fc1c7b7ec7daa56602827f3dd2980e2629f66707639c43f76ffadf12fdac",
+            "evidence_kind": "OPERATION_COST",
+            "reservation_id": "3665355c-991a-48e4-b6ad-da65ac62f84f",
+            "budget_scope_id": "budget-scope:8b247175810b0ce483e697100caf4964d78def77a97929701de3868255212a10",
+            "evidence_version": 0,
+            "budget_scope_revision": 1,
+            "stable_idempotency_key": "operation-cost:3665355c-991a-48e4-b6ad-da65ac62f84f",
+            "budget_evidence_link_id": "budget-evidence-link:0cf1b0be88a105af4465fcd7e5ed8a7eba02fccd38ceb21863eed014571b7a3b"
+          }
+        ],
+        "budget_scope_id": "budget-scope:8b247175810b0ce483e697100caf4964d78def77a97929701de3868255212a10",
+        "contract_version": "provider-budget-authority-snapshot.v2",
+        "budget_policy_hash": "sha256:2db9fc28bd5c28af83340335591b8a7bd1a36dee781e43944924578794e80f8d",
+        "legacy_attributions": [],
+        "budget_scope_revision": 1,
+        "budget_snapshot_digest": "sha256:71ce7b89c7766113db5e98b2ce2d410187aef7fad56ad5c1505449bc7508907a"
+      },
+      "opening": {
+        "version": 1,
+        "lifecycle": "FAILED",
+        "opening_run_id": "book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df",
+        "budget_scope_id": "budget-scope:8b247175810b0ce483e697100caf4964d78def77a97929701de3868255212a10",
+        "workflow_graph_hash": "sha256:084b6bfa4272a4f1cdbbb5be39889fd6bb0c49f72fd84eb25728807f7b26f93d",
+        "current_execution_id": "book-opening-execution:b850a05a8f1b42261b200861cf6b11ac938a619f73826ff3bbe3c0b5b81abcef",
+        "budget_contract_state": "BOUND",
+        "budget_scope_revision": 1,
+        "frozen_request_digest": "sha256:9e7513549d4ab3a72b23151c291845313ba711e673f75180a4c1fcea258c3ce5",
+        "workflow_graph_revision": 1,
+        "current_workflow_node_id": "book-opening-node:c6b33941905c8795f7c03ce381b99170be1983c4c06cd06b898d51a98a723f33",
+        "workflow_contract_version": "book-opening-workflow-v1",
+        "execution_contract_version": "book-opening-execution-v3",
+        "current_execution_generation": 1
+      },
+      "runtime": {
+        "lease_id": "runtime-lease:346505be-73b8-4d45-916f-f97f4753cb87",
+        "worker_id": "first-novel-pilot-operator",
+        "attempt_id": "runtime-attempt:d9634d79-8b3d-44bb-87e3-081200695900",
+        "input_hash": "sha256:4fd658e87de8dead4acebfde0183000f3a42646720e3800277c5db5185eed5c1",
+        "lease_status": "RELEASED",
+        "fencing_token": 1,
+        "lease_expired": true,
+        "attempt_status": "FAILED",
+        "runtime_job_id": "runtime-job:1cb95dba0995ca3d56c4d263e448dc0ec8fa3d1d605016124a523c844af4c33c",
+        "lease_expires_at": "2026-09-13 20:40:16.151195+00:00",
+        "lease_loss_policy": "AUTHORITY_CONVERGENCE_REQUIRED",
+        "runtime_job_status": "FAILED"
+      },
+      "execution": {
+        "version": 3,
+        "lifecycle": "FAILED",
+        "generation": 1,
+        "workflow_node_id": "book-opening-node:c6b33941905c8795f7c03ce381b99170be1983c4c06cd06b898d51a98a723f33",
+        "opening_execution_id": "book-opening-execution:b850a05a8f1b42261b200861cf6b11ac938a619f73826ff3bbe3c0b5b81abcef",
+        "policy_snapshot_hash": "sha256:2ffe0352ace6b114962d2007c043316b14252e1ee6b4a9c3b23e237a89e043b0",
+        "source_checkpoint_id": "",
+        "source_checkpoint_hash": "",
+        "authority_contract_hash": "sha256:4329b16d14f5c2995195b13de299c6e32d458bc8090f1764e371b887ff673264",
+        "workflow_transition_kind": "ADMISSION",
+        "source_checkpoint_sequence": 0
+      },
+      "checkpoint": {
+        "entries": [],
+        "sequence": 0,
+        "checkpoint_id": "",
+        "checkpoint_hash": ""
+      },
+      "external_effect": {
+        "digest": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "evidence": [],
+        "classification": "PROVEN_NO_EFFECT"
+      },
+      "semantic_evaluation": {
+        "lifecycle": "",
+        "generation": 0,
+        "head_version": 0,
+        "operation_id": "",
+        "operation_status": "",
+        "execution_version": 0,
+        "evaluator_actor_id": "",
+        "candidate_content_hash": "",
+        "evaluation_execution_id": "",
+        "candidate_asset_version_id": ""
+      },
+      "policy_config_digest": "sha256:1e7e430b5b331a5ba2db847bba52381e19d1d223ad8c02ed10f483014ddc5495",
+      "authority_version_digest": "sha256:9a41b06586bb80cc96ac7632767bb56df2ec119ead5f9d7cc4f6369fe63ee06e"
+    },
+    "replayed": false
+  },
+  "decision_source": "CURRENT_USER_PROMPT:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01",
+  "registration_executor": "AI_CODE_AGENT",
+  "operator": "first-novel-pilot-operator",
+  "process_timeout_seconds": 570,
+  "result_integrity": "MISSING",
+  "upstream_cancellation": "NOT_PROVEN",
+  "unknown_usage_conservative_charge": 190456,
+  "prior_charge_retained": true,
+  "independent_human_review": "NOT_REVIEWED"
+}

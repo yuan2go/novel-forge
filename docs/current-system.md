@@ -557,6 +557,42 @@ including the original scope of repairs and semantic reviews. Old v1 A/B allocat
 and reservations remain valid and cannot be replaced to reset usage. Unknown effects
 retain their reservation. These grants govern permitted operations, not literary merit.
 
+`creative-book-production-budget.v3` appends an exact predecessor policy reference to
+reallocate unused, unreserved capacity to an independently authorized Book in the same
+project. It preserves the lifetime identity, total ceiling, historical phase charges
+and unknown reservations. Chapter phase ranges come from the frozen policy; the v2
+1–6 and 7–12 interpretation remains unchanged. Earlier Book dispatch is denied after
+selection moves to the new Book, while known earlier receipts can still settle.
+
+World generation uses one strict type contract for the nested world schema and prompt
+instructions. A Foundation task freezes one `BOOK` scope; `BOOK`, `VOLUME` and `ARC`
+are alternatives, not an output array. JSON-string transport is decoded and internally
+validated before Candidate materialization. Invalid Provider output remains evidence.
+Planning result recovery links a new bounded Operation to the failed Operation and
+retained result, preserving the old terminal state and fully revalidating the repair.
+Model profile identities retain exact legacy contracts and distinguish different frozen
+output schemas by contract hash. A separate operator registration can continue an
+execution-contract conflict across releases only after native cancellation proves that
+all retained Effects were never dispatched and every reservation was released. The
+new Operation preserves the source task, cites its predecessor and freezes the newly
+approved runtime; it does not reopen the old Operation or alter its execution snapshot.
+Ordinary Planning admission retains the pre-workflow schema surface used by migration
+replay; pre-Candidate repair fields are written only for a repair, after its migrated
+source contract has been verified. Provider receipts remain pending domain validation;
+the later Candidate and validation reports establish successful materialization.
+Opening recovery passes no monetary claim for a replay assessment and obtains any next
+Provider allowance from the frozen budget policy. Account entitlement therefore retains
+its token and call limits without inventing a zero-dollar measurement.
+An exact unstarted Opening blocked by capacity can append one native
+`book.opening.continue_unstarted` successor. It retains the Book, Formation and frozen
+story inputs, proves absence of Effects, reservations, outputs and node receipts, and
+binds a new account-entitlement capacity policy within current cumulative headroom.
+The original failed run, policy and Operations remain immutable; a guarded successor
+pointer fences its old execution and preserves one active Opening per Book.
+Qualified Foundation planning projections retain mandatory constraints once with
+auditable exact references, defer prose examples to prose stages, and replace an
+integrity-checked DENY_ALL empty retrieval query with its frozen need receipt.
+
 Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
 Description, Transition and Integration slots as needed. Dialogue and Interior slots
 carry actor-local knowledge. The Draft and Revision contracts require complete slot

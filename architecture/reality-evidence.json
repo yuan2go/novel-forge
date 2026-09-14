@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260912_0130_creative_experiment_budget",
+  "migration_head": "20260914_0134_opening_capacity_continuation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4450,6 +4450,10 @@
         {
           "path": "architecture/manifests/production-entry-manifest.yaml",
           "locator": "\"name\": \"project_lifecycle.create\""
+        },
+        {
+          "path": "src/novel_forge/api/routers/authority_projects.py",
+          "locator": "@router.post(\"/product/projects/{project_id}/workspaces\")"
         }
       ],
       "application": [
@@ -4468,6 +4472,10 @@
         {
           "path": "src/novel_forge/modules/project_authority/application.py",
           "symbol": "ProjectAuthorityCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/project_authority/definitions.py",
+          "locator": "PROJECT_WORKSPACE_DEFINITION_VERSION = \"1.0.0\""
         }
       ],
       "state_ownership": {
@@ -4520,6 +4528,14 @@
         {
           "path": "tests/integration/test_authority_project_workspace_postgres.py",
           "symbol": "ProjectWorkspaceAuthorityPostgresTests.test_create_update_replay_and_lifecycle_use_one_authority_chain"
+        },
+        {
+          "path": "tests/integration/test_secondary_workspace_postgres.py",
+          "symbol": "test_secondary_workspace_is_atomic_replayable_and_preserves_primary"
+        },
+        {
+          "path": "tests/integration/test_secondary_workspace_postgres.py",
+          "symbol": "test_v3_initialization_reaches_content_and_formation_in_independent_workspace"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -5510,6 +5526,10 @@
         {
           "path": "architecture/manifests/production-entry-manifest.yaml",
           "locator": "\"name\": \"planning.binding.activate\""
+        },
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/books/{book_id}/planning-generations/{operation_id}/runtime-continuation\")"
         }
       ],
       "application": [
@@ -5542,12 +5562,24 @@
         {
           "path": "src/novel_forge/modules/story_design_authority/author_input.py",
           "symbol": "compile_planning_author_projection"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/result_recovery.py",
+          "symbol": "require_result_repair_source"
         }
       ],
       "commands_operations": [
         {
           "path": "src/novel_forge/modules/story_design_authority/application.py",
           "symbol": "StoryDesignTransitionCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "symbol": "StoryPlanningGenerationApplication._repair_unmaterialized_result"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "symbol": "StoryPlanningGenerationApplication.register_runtime_continuation"
         }
       ],
       "state_ownership": {
@@ -5582,6 +5614,21 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260730_0038_story_design_authority.py",
           "locator": "MIGRATION_ID = \"20260730_0038_story_design_authority\"",
           "id": "20260730_0038_story_design_authority"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260913_0131_planning_result_recovery.py",
+          "locator": "MIGRATION_ID = \"20260913_0131_planning_result_recovery\"",
+          "id": "20260913_0131_planning_result_recovery"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260914_0132_planning_runtime_continuation.py",
+          "locator": "MIGRATION_ID = \"20260914_0132_planning_runtime_continuation\"",
+          "id": "20260914_0132_planning_runtime_continuation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260914_0133_formation_evaluation_recovery.py",
+          "locator": "MIGRATION_ID = \"20260914_0133_formation_evaluation_recovery\"",
+          "id": "20260914_0133_formation_evaluation_recovery"
         }
       ],
       "external_effects": {
@@ -5618,6 +5665,10 @@
         {
           "path": "tests/integration/test_synthesis_formation_postgres.py",
           "symbol": "test_native_formation_generates_foundation_from_author_brief"
+        },
+        {
+          "path": "tests/unit/test_planning_runtime_continuation_api.py",
+          "symbol": "test_runtime_continuation_route_binds_trusted_principal_and_exact_source"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -6025,6 +6076,10 @@
         {
           "path": "architecture/manifests/worker-manifest.yaml",
           "locator": "\"name\": \"book-authority\""
+        },
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "locator": "@router.post(\"/opening-runs/{opening_run_id}/continue-unstarted-capacity\""
         }
       ],
       "application": [
@@ -6043,6 +6098,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/opening.py",
           "symbol": "OpenBookProductionRequest"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/opening.py",
+          "symbol": "PostgresBookOpeningApplication.continue_unstarted_with_budget"
         }
       ],
       "state_ownership": {
@@ -6088,6 +6147,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260902_0106_quality_qualification_scope_generalization.py",
           "locator": "MIGRATION_ID = \"20260902_0106_quality_qualification_scope_generalization\"",
           "id": "20260902_0106_quality_qualification_scope_generalization"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260914_0134_opening_capacity_continuation.py",
+          "locator": "MIGRATION_ID = \"20260914_0134_opening_capacity_continuation\"",
+          "id": "20260914_0134_opening_capacity_continuation"
         }
       ],
       "external_effects": {
@@ -6125,6 +6189,10 @@
         {
           "path": "tests/integration/test_book_opening_workflow_nodes_postgres.py",
           "symbol": "test_committed_node_response_survives_a_terminal_heartbeat_race"
+        },
+        {
+          "path": "tests/integration/test_opening_capacity_continuation_postgres.py",
+          "symbol": "test_capacity_continuation_is_causal_idempotent_and_fences_failed_source"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7853,7 +7921,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:4bdfb1ef8925e00d91014f4cf311e487b56957c642668840b418b9c3685c218a"
+    "implementation_tree_sha": "sha256:f2ff37fa36ec31862595c9a9a9383baabff13ec0b0956446bf443bd0b7adc713"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

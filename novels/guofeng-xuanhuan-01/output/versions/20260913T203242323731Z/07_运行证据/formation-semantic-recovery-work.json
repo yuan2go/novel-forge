@@ -1,0 +1,18 @@
+{
+  "status": "IMPLEMENTING",
+  "current_release": "9a7d022248a14b004a6fe8a7388cf7bfc84ac951",
+  "formation_run_id": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+  "formation_version": 16,
+  "candidate_asset_version_id": "bcb25950-6822-4552-a043-1251694c78c1",
+  "failed_evaluation_operation_id": "4b3f029c-cbb8-4c7a-a6b4-5a3dd46ad0ac",
+  "source_status": "FAILED_FINAL",
+  "external_effects": [],
+  "chosen_recovery": "Add bounded Formation-specific semantic execution successor, preserving candidate and original terminal Operation. Reuse current evaluation generation head/CAS; distinct native Formation resume lineage, no fabricated Opening RecoveryIntent. Only known preflight errors, zero Effects, same frozen candidate/scope/evaluator, maximum two successors. Require live original Formation worker lease before dispatch. Existing Opening recovery remains unchanged.",
+  "rejected_approaches": [
+    "reset terminal status or retry count",
+    "fake Opening recovery intent",
+    "clone BookDesign or recreate Formation to escape failed head",
+    "global INVALID retryability change"
+  ],
+  "source_reuse": "All six ACTIVE Foundation designs and original BookDesign candidate retained; no new creative Foundation calls."
+}

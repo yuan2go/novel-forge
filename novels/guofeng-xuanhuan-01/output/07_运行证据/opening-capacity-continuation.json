@@ -1,0 +1,81 @@
+{
+  "registered_at": "2026-09-13T20:29:16.291326+00:00",
+  "source_sha": "fa190e4490dfc0d9d219b30bb7cf9f536ed00e25",
+  "decision_source": "CURRENT_USER_PROMPT:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01",
+  "registration_executor": "AI_CODE_AGENT",
+  "native_principal": "first-novel-pilot-operator",
+  "independent_human_review": "NOT_REVIEWED",
+  "source_opening": {
+    "opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8",
+    "project_id": "first-novel-pilot-20260912",
+    "workspace_id": "guofeng-xuanhuan-01-workspace",
+    "book_id": "guofeng-xuanhuan-01",
+    "root_operation_id": "2fdc046a-d912-4377-ad00-bd95f3b79a7b",
+    "lifecycle": "FAILED",
+    "frozen_request_digest": "sha256:4abdeb5e70ab45ab5eb0a076b45cc1e39558f21c6b0f491f8ef455c30631d846",
+    "version": 3,
+    "result": {},
+    "failure": {
+      "code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+      "message": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED: required Planning Provider Context exceeds its budget boundary; narrow the governed scope before sending: {\"references\": 3159, \"repair\": 2, \"segments\": [{\"characters\": 17142, \"role\": \"book_design\"}, {\"characters\": 14403, \"role\": \"world_bible\"}, {\"characters\": 5072, \"role\": \"ending_intent\"}, {\"characters\": 19473, \"role\": \"character_cast\"}, {\"characters\": 6663, \"role\": \"reader_promise\"}, {\"characters\": 6112, \"role\": \"theme_contract\"}, {\"characters\": 2228, \"role\": \"platform_profile\"}, {\"characters\": 1050, \"role\": \"production_profile\"}, {\"characters\": 7454, \"role\": \"creative_foundation\"}, {\"characters\": 1045, \"role\": \"narrative_search_parent_state\"}], \"total\": 85541}",
+      "opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8"
+    },
+    "recovery_instruction": {
+      "action": "ASSESS_BOOK_OPENING_RECOVERY",
+      "opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8"
+    },
+    "execution_contract_version": "book-opening-execution-v3",
+    "current_execution_id": "book-opening-execution:dd17a9def195af21070d9f3f91fa7f84a5f6795bfd84ebbe5b0660da805b865a",
+    "current_execution_generation": 2,
+    "current_checkpoint_id": null,
+    "current_checkpoint_sequence": 0,
+    "current_checkpoint_hash": "",
+    "recovery_state": "RECOVERY_REQUIRED",
+    "budget_scope_id": "budget-scope:4461cc6e9bc9234d811c15c9d0b45c6542f5e7e0bb582d3ef6bf9dd25e27fb0b",
+    "budget_scope_revision": 1,
+    "budget_contract_state": "BOUND",
+    "workflow_contract_version": "book-opening-workflow-v1",
+    "current_workflow_node_id": "book-opening-node:3cb535a5d2ca5b9e017aaad7366a3860ffe042ca4ed03a0202317d07eabb0aca",
+    "workflow_graph_revision": 1,
+    "workflow_graph_hash": "sha256:d14964d613d7796ae2b33431c4e8bafe18f961f8dce6eeb6474ad4460c2b0f02"
+  },
+  "reason": "Register the current user decision WP-GUOFENG-VOLUME-ONE-PRODUCTION-01: preserve this exact Book, READY Formation, frozen creative inputs and failed Opening; the fully rendered request needs 190456 conservatively accounted tokens, so append an unstarted native capacity successor at 218000 per call and 10464000 scope ceiling within the existing cumulative authorization. AI execution agent registers this decision through the existing operator; no human editorial review is claimed.",
+  "provider_called": false,
+  "admission": {
+    "opening_run_id": "book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df",
+    "root_operation_id": "25c0c9d5-1dfa-4dcf-97d8-f9a9a07cb5a7",
+    "runtime_job_id": "runtime-job:1cb95dba0995ca3d56c4d263e448dc0ec8fa3d1d605016124a523c844af4c33c",
+    "lifecycle": "ADMITTED",
+    "replayed": false
+  },
+  "native_evidence": {
+    "request": {
+      "reason": "Register the current user decision WP-GUOFENG-VOLUME-ONE-PRODUCTION-01: preserve this exact Book, READY Formation, frozen creative inputs and failed Opening; the fully rendered request needs 190456 conservatively accounted tokens, so append an unstarted native capacity successor at 218000 per call and 10464000 scope ceiling within the existing cumulative authorization. AI execution agent registers this decision through the existing operator; no human editorial review is claimed.",
+      "expected_version": 3,
+      "source_opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8",
+      "source_root_operation_id": "2fdc046a-d912-4377-ad00-bd95f3b79a7b"
+    },
+    "source_failure": {
+      "code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+      "message": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED: required Planning Provider Context exceeds its budget boundary; narrow the governed scope before sending: {\"references\": 3159, \"repair\": 2, \"segments\": [{\"characters\": 17142, \"role\": \"book_design\"}, {\"characters\": 14403, \"role\": \"world_bible\"}, {\"characters\": 5072, \"role\": \"ending_intent\"}, {\"characters\": 19473, \"role\": \"character_cast\"}, {\"characters\": 6663, \"role\": \"reader_promise\"}, {\"characters\": 6112, \"role\": \"theme_contract\"}, {\"characters\": 2228, \"role\": \"platform_profile\"}, {\"characters\": 1050, \"role\": \"production_profile\"}, {\"characters\": 7454, \"role\": \"creative_foundation\"}, {\"characters\": 1045, \"role\": \"narrative_search_parent_state\"}], \"total\": 85541}",
+      "opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8"
+    },
+    "contract_version": "book-opening-capacity-continuation.v1",
+    "source_policy_hash": "sha256:870b8c64e5e9aac9f2155ec0c56a60b1be7d7be407e6ece00bbd635317ff625f",
+    "zero_work_evidence": {
+      "effects": 0,
+      "outputs": 0,
+      "live_leases": 0,
+      "reservations": 0,
+      "node_receipts": 0
+    },
+    "creative_policy_hash": "46d91f1bdb7c487ae402d29026efdb6011f9761d234588f867b7f4548009f391",
+    "successor_policy_hash": "sha256:2db9fc28bd5c28af83340335591b8a7bd1a36dee781e43944924578794e80f8d",
+    "unused_cumulative_headroom": {
+      "calls": 433,
+      "tokens": 10516429
+    },
+    "source_frozen_request_digest": "sha256:4abdeb5e70ab45ab5eb0a076b45cc1e39558f21c6b0f491f8ef455c30631d846"
+  },
+  "native_evidence_hash": "sha256:ba6a2a46ddc7cac4705238ef33189f8404cd509d8c671951569fbe3e796454fd"
+}

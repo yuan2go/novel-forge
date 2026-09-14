@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timedelta
 import hashlib
 import json
@@ -101,6 +101,7 @@ BOOK_OPENING_HANDLER = "novel_forge.book_authority.opening"
 BOOK_OPENING_OPERATIONS = frozenset(
     {
         "book.opening.admit",
+        "book.opening.continue_unstarted",
         "book.opening.complete",
         "book.opening.complete_node",
         "book.opening.reconcile_legacy_budget_scope",
@@ -534,6 +535,31 @@ class PostgresBookOpeningApplication:
     def admit(
         self, request: OpenBookProductionRequest, *, principal: Principal
     ) -> BookOpeningAdmission:
+        return self._admit(request, principal=principal)
+
+    def continue_unstarted_with_budget(
+        self, opening_run_id: str, *, expected_version: int,
+        reason: str, principal: Principal,
+    ) -> BookOpeningAdmission:
+        if not isinstance(expected_version, int) or isinstance(expected_version, bool) or expected_version < 0:
+            raise KernelError("BOOK_OPENING_CONTINUATION_INVALID", "expected_version must be a non-negative integer")
+        if not isinstance(reason, str) or not reason.strip():
+            raise ValueError("Opening capacity continuation requires a reason")
+        source = self.require(opening_run_id)
+        principal.require("book.authority.execute", str(source["project_id"]))
+        request = self._frozen_request(opening_run_id)
+        key = _stable_id("opening-capacity-continuation", opening_run_id, self.provider_budget_policy_hash, expected_version, reason)
+        return self._admit(
+            replace(request, idempotency_key=key), principal=principal,
+            continuation={"source_opening_run_id": opening_run_id,
+                          "source_root_operation_id": source["root_operation_id"],
+                          "expected_version": expected_version, "reason": reason},
+        )
+
+    def _admit(
+        self, request: OpenBookProductionRequest, *, principal: Principal,
+        continuation: Mapping[str, Any] | None = None,
+    ) -> BookOpeningAdmission:
 
         principal.require("book.authority.execute", request.project_id)
         principal.require("story_planning.authority.execute", request.project_id)
@@ -575,6 +601,12 @@ class PostgresBookOpeningApplication:
                     "BOOK_OPENING_IDEMPOTENCY_CONFLICT",
                     "Book Opening idempotency identity belongs to another frozen request",
                 )
+            if continuation is not None:
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute("SELECT evidence->'request' FROM authority_book_opening_capacity_continuation WHERE successor_opening_run_id=%s", [opening_run_id])
+                    recorded = uow.cursor.fetchone()
+                if recorded is None or recorded[0] != dict(continuation):
+                    raise KernelError("BOOK_OPENING_CONTINUATION_CONFLICT", "Opening continuation replay differs from its immutable decision")
             run = self.require(opening_run_id)
             job = self._admission_job(opening_run_id)
             return BookOpeningAdmission(
@@ -585,11 +617,12 @@ class PostgresBookOpeningApplication:
                 replayed=True,
             )
         topology_budget = self._topology_budget_for_request(request)
+        definition_name = "book.opening.continue_unstarted" if continuation else "book.opening.admit"
         executed = execute_transaction_command(
             self.database_url,
             {
-                "definition_name": "book.opening.admit",
-                "definition_version": _opening_definition_version("book.opening.admit"),
+                "definition_name": definition_name,
+                "definition_version": _opening_definition_version(definition_name),
                 "project_id": request.project_id,
                 "workspace_id": request.workspace_id,
                 "book_id": request.book_id,
@@ -599,13 +632,15 @@ class PostgresBookOpeningApplication:
                 "trace_id": request.trace_id,
                 "span_id": str(uuid4()),
                 "correlation_id": request.correlation_id,
-                "causation_id": "",
+                "causation_id": str((continuation or {}).get("source_root_operation_id") or ""),
+                **({"causation_operation_id": continuation["source_root_operation_id"]} if continuation else {}),
                 "input": {
                     "project_id": request.project_id,
                     "book_id": request.book_id,
                     "opening_run_id": opening_run_id,
                     "frozen_request": frozen_request,
                     "frozen_request_digest": frozen_request_digest,
+                    **({"capacity_continuation": dict(continuation)} if continuation else {}),
                     "provider_budget_contract": {
                         "policy_contract_version": (BOOK_OPENING_BUDGET_POLICY_VERSION),
                         "policy_snapshot": dict(self.provider_budget_policy),
@@ -2247,6 +2282,90 @@ class PostgresBookOpeningApplication:
             fault_injector=checkpoint,
         )
 
+    def _validate_capacity_continuation_in_uow(
+        self, uow: AuthorityUnitOfWork, *, payload: Mapping[str, Any],
+        request: OpenBookProductionRequest, actor_id: str,
+    ) -> dict[str, Any]:
+        from novel_forge.modules.command_kernel.creative_budget_runtime import (
+            _lock, _policy_for, _usage,
+        )
+
+        decision = payload.get("capacity_continuation")
+        if not isinstance(decision, Mapping) or set(decision) != {
+            "source_opening_run_id", "source_root_operation_id", "expected_version", "reason",
+        } or not isinstance(decision.get("reason"), str) or not decision["reason"].strip():
+            raise KernelError("BOOK_OPENING_CONTINUATION_INVALID", "Opening continuation requires exact source, version and reason")
+        source_id = decision["source_opening_run_id"]
+        self.recovery._lock_opening(uow, source_id)
+        source = self.recovery._opening(uow, source_id, lock=True)
+        uow.cursor.execute("SELECT failure FROM authority_book_opening_run WHERE opening_run_id=%s", [source_id])
+        source["failure"] = uow.cursor.fetchone()[0]
+        previous = dict(source["frozen_request"])
+        current = request.to_dict()
+        previous.pop("idempotency_key")
+        current.pop("idempotency_key")
+        if (source["lifecycle"] != "FAILED" or source["version"] != decision["expected_version"]
+            or source["root_operation_id"] != decision["source_root_operation_id"]
+            or previous != current or actor_id != request.actor_id
+            or source["frozen_request_digest"] != _canonical_hash(source["frozen_request"])
+            or (source.get("failure") or {}).get("code") not in {
+                "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_REQUEST_BUDGET_EXCEEDED",
+            }):
+            raise KernelError("BOOK_OPENING_CONTINUATION_SOURCE_INVALID", "Only the exact unstarted failed capacity request can continue")
+        uow.cursor.execute("SELECT 1 FROM authority_book_opening_capacity_continuation WHERE source_opening_run_id=%s OR successor_opening_run_id=%s", [source_id, source_id])
+        if uow.cursor.fetchone() is not None:
+            raise KernelError("BOOK_OPENING_CONTINUATION_LIMIT", "One capacity continuation per Opening lineage is allowed")
+        uow.cursor.execute(
+            """WITH RECURSIVE owned(operation_id) AS (
+                SELECT operation_id FROM authority_operation WHERE operation_id=%s OR (
+                    project_id=%s AND COALESCE(command_payload #>> '{payload,opening_execution_binding,opening_run_id}',
+                                              command_payload #>> '{opening_execution_binding,opening_run_id}')=%s)
+                UNION SELECT child.operation_id FROM authority_operation child JOIN owned parent ON child.causation_operation_id=parent.operation_id
+            ), all_operations AS (
+                SELECT operation_id FROM owned UNION SELECT operation_id FROM authority_book_opening_budget_operation_binding WHERE opening_run_id=%s
+            ) SELECT
+                (SELECT count(*) FROM authority_external_effect WHERE operation_id IN (SELECT operation_id FROM all_operations)),
+                (SELECT count(*) FROM authority_budget_reservation WHERE budget_scope_id=%s),
+                (SELECT count(*) FROM authority_book_opening_node_receipt WHERE opening_run_id=%s),
+                (SELECT count(*) FROM authority_operation_output_asset WHERE operation_id IN (SELECT operation_id FROM all_operations)),
+                (SELECT count(*) FROM authority_runtime_job_lease lease JOIN authority_runtime_job job USING(runtime_job_id)
+                 WHERE job.subject_kind='BOOK_OPENING_RUN' AND job.subject_id=%s AND lease.status='HELD' AND lease.lease_expires_at>clock_timestamp())
+            """, [source["root_operation_id"], request.project_id, source_id, source_id, source["budget_scope_id"], source_id, source_id],
+        )
+        counts = uow.cursor.fetchone()
+        if any(int(value) for value in counts):
+            raise KernelError("BOOK_OPENING_CONTINUATION_WORK_EXISTS", "Provider, reservation, output, node or live lease evidence requires ordinary reconciliation")
+        uow.cursor.execute("SELECT policy_snapshot,policy_hash FROM authority_provider_budget_scope WHERE budget_scope_id=%s AND revision=%s FOR SHARE", [source["budget_scope_id"], source["budget_scope_revision"]])
+        old_policy, old_hash = uow.cursor.fetchone()
+        budget = dict(payload["provider_budget_contract"])
+        policy = canonical_budget_policy(budget["policy_snapshot"])
+        updated = policy["policy_snapshot"]
+        allowed = {"token_limit", "per_call_token_limit"}
+        if ({key: value for key, value in old_policy.items() if key not in allowed}
+            != {key: value for key, value in updated.items() if key not in allowed}
+            or updated.get("accounting_basis") != "ACCOUNT_ENTITLEMENT"
+            or updated["per_call_token_limit"] <= old_policy["per_call_token_limit"]
+            or updated["token_limit"] < old_policy["token_limit"]):
+            raise KernelError("BOOK_OPENING_CONTINUATION_POLICY_INVALID", "Capacity continuation preserves account authorization, mode and call ceiling")
+        selected = _policy_for(uow.cursor, request.project_id, required=True)
+        _lock(uow.cursor, selected["policy"]["comparison_budget"]["experiment_id"])
+        selected = _policy_for(uow.cursor, request.project_id, required=True)
+        creative = selected["policy"]
+        usage = _usage(uow.cursor, creative["comparison_budget"], request.project_id)
+        arm = next(item for item in creative["comparison_budget"]["arms"] if item["project_id"] == request.project_id)
+        remaining = {key: min(creative["comparison_budget"]["shared_total"][key] - usage["shared_total"][used], arm["project_total"][key] - usage["project_total"][used])
+                     for key, used in (("calls", "calls_used_or_reserved"), ("tokens", "conservative_tokens"))}
+        if (creative["authorization"]["book_id"] != request.book_id
+            or updated["provider_call_limit"] > remaining["calls"]
+            or updated["token_limit"] > remaining["tokens"]):
+            raise KernelError("BOOK_OPENING_CONTINUATION_BUDGET_EXHAUSTED", "Continuation capacity exceeds the current Book's unused cumulative authorization")
+        return {"contract_version": "book-opening-capacity-continuation.v1", "request": dict(decision),
+                "source_frozen_request_digest": source["frozen_request_digest"],
+                "source_failure": source["failure"], "source_policy_hash": old_hash,
+                "successor_policy_hash": policy["policy_hash"], "creative_policy_hash": selected["policy_hash"],
+                "unused_cumulative_headroom": remaining,
+                "zero_work_evidence": dict(zip(("effects", "reservations", "node_receipts", "outputs", "live_leases"), counts, strict=True))}
+
     def _execute_transaction(
         self,
         uow: AuthorityUnitOfWork,
@@ -2282,7 +2401,7 @@ class PostgresBookOpeningApplication:
                 principal_id=str(operation[4]),
                 checkpoint=checkpoint,
             )
-        if definition_name == "book.opening.admit":
+        if definition_name in {"book.opening.admit", "book.opening.continue_unstarted"}:
             frozen_request = dict(payload["frozen_request"])
             digest = _canonical_hash(frozen_request)
             if digest != str(payload["frozen_request_digest"]):
@@ -2291,6 +2410,13 @@ class PostgresBookOpeningApplication:
                     "Book opening request differs from its digest",
                 )
             request = OpenBookProductionRequest.from_mapping(frozen_request)
+            predecessor = ""
+            continuation_evidence = None
+            if definition_name == "book.opening.continue_unstarted":
+                continuation_evidence = self._validate_capacity_continuation_in_uow(
+                    uow, payload=payload, request=request, actor_id=str(operation[4]),
+                )
+                predecessor = str(continuation_evidence["request"]["source_opening_run_id"])
             self._require_canonical_opening_inputs(request)
             design_version = self._require_qualified_foundation_in_uow(
                 uow.cursor, request
@@ -2306,16 +2432,21 @@ class PostgresBookOpeningApplication:
                 request=request,
                 input_asset_snapshot=operation[6],
             )
+            excluded_openings = [opening_run_id, predecessor]
+            uow.cursor.execute("SELECT to_regclass('authority_book_opening_capacity_continuation')")
+            if uow.cursor.fetchone()[0] is not None:
+                uow.cursor.execute("SELECT source_opening_run_id FROM authority_book_opening_capacity_continuation WHERE project_id=%s AND book_id=%s", [request.project_id, request.book_id])
+                excluded_openings.extend(str(row[0]) for row in uow.cursor.fetchall())
             uow.cursor.execute(
                 """
                 SELECT opening_run_id
                 FROM authority_book_opening_run
                 WHERE project_id=%s AND book_id=%s
                   AND lifecycle IN ('ADMITTED','RUNNING','FAILED')
-                  AND opening_run_id<>%s
+                  AND opening_run_id<>ALL(%s)
                 FOR UPDATE
                 """,
-                [request.project_id, request.book_id, opening_run_id],
+                [request.project_id, request.book_id, excluded_openings],
             )
             if uow.cursor.fetchone() is not None:
                 raise KernelError(
@@ -2381,6 +2512,10 @@ class PostgresBookOpeningApplication:
                 topology_budget=topology_budget,
             )
             first_node = workflow.node(BookOpeningWorkflowNodeKind.BOOK_PLAN)
+            if continuation_evidence is not None:
+                uow.cursor.execute("UPDATE authority_book_opening_run SET capacity_successor_opening_run_id=%s WHERE opening_run_id=%s AND capacity_successor_opening_run_id IS NULL", [opening_run_id, predecessor])
+                if uow.cursor.rowcount != 1:
+                    raise KernelError("BOOK_OPENING_CONTINUATION_CONFLICT", "Opening already has a capacity successor")
             uow.cursor.execute(
                 """
                 INSERT INTO authority_book_opening_run(
@@ -2565,6 +2700,17 @@ class PostgresBookOpeningApplication:
                     "Book Opening is already bound to another Budget Authority",
                 )
             checkpoint("after_budget_scope_binding")
+            if continuation_evidence is not None:
+                uow.cursor.execute(
+                    """INSERT INTO authority_book_opening_capacity_continuation(
+                        source_opening_run_id,successor_opening_run_id,operation_id,
+                        project_id,workspace_id,book_id,evidence,evidence_hash
+                    ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    [predecessor, opening_run_id, operation_id, request.project_id,
+                     request.workspace_id, request.book_id, Jsonb(continuation_evidence),
+                     _canonical_hash(continuation_evidence)],
+                )
+                checkpoint("after_capacity_continuation")
         elif definition_name == "book.opening.complete_node":
             return self._complete_workflow_node_in_uow(
                 uow,
@@ -5953,6 +6099,10 @@ class PostgresBookOpeningApplication:
                 "BOOK_OPENING_ACCEPTED_BOUNDARY_DRIFT",
                 "Book Opening requires one canonical accepted Story State and Canon boundary",
             )
+
+
+def book_opening_capacity_continuation_definition(*, application_build_id: str, commit_sha: str) -> dict[str, Any]:
+    return _opening_definition("book.opening.continue_unstarted", application_build_id=application_build_id, commit_sha=commit_sha)
 
 
 def _opening_definition(

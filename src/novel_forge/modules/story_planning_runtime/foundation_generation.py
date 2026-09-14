@@ -113,7 +113,7 @@ def foundation_output_schema(generator: str) -> dict[str, Any]:
                     "type": "string",
                     "minLength": 2,
                     "maxLength": 24000,
-                    "description": "JSON encoded world-foundation.v1, following the frozen world_contract. The deterministic WorldFoundation parser validates it before activation.",
+                    "description": "JSON encoded world-foundation.v1 object conforming to foundation_task.world_contract.schema. compiled_scope is exactly the frozen single string, never an array of enum choices. Decoded inner fields are strictly validated before candidate persistence.",
                 },
                 "dimensions": _records(
                     "dimension scope current_need definition constraints extension_trigger",
@@ -204,6 +204,7 @@ def foundation_envelope(*, generator: str, inputs: tuple[Any, ...]) -> dict[str,
             "asset_version_id": by_role["creative_brief"].asset_version_id,
             "content_hash": by_role["creative_brief"].content_hash,
         },
+        **({"world_compilation": {"contract_version": "world-foundation.v1", "compiled_scope": "BOOK"}} if role is FoundationRole.WORLD_BIBLE else {}),
     }
 
 
@@ -224,7 +225,10 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
         from novel_forge.modules.worldbuilding.foundation import WorldFoundation
 
         world = payload.pop("world_foundation")
-        WorldFoundation.from_mapping(world)
+        WorldFoundation.from_mapping(
+            world,
+            expected_compiled_scope=(envelope.get("world_compilation") or {}).get("compiled_scope"),
+        )
         payload["world_foundation_json"] = json.dumps(
             world, ensure_ascii=False, separators=(",", ":")
         )
@@ -263,60 +267,29 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
             )
 
 
-def world_generation_contract() -> dict[str, Any]:
+def world_generation_contract(*, compiled_scope: str = "BOOK") -> dict[str, Any]:
     from novel_forge.modules.worldbuilding.foundation import CORE_WORLD_ONTOLOGY
-    from novel_forge.modules.worldbuilding.dynamics import RequirementOperator
-    from novel_forge.modules.narrative_state.contracts import NarrativeStateKind
+    from novel_forge.modules.worldbuilding.foundation_schema import (
+        world_foundation_example,
+        world_foundation_schema,
+    )
 
     return {
         "contract_version": "world-foundation.v1",
-        "required_fields": [
-            "contract_version",
-            "genre_profile",
-            "compiled_scope",
-            "sections",
-            "rules",
-            "entities",
-        ],
-        "compiled_scope": ["BOOK", "VOLUME", "ARC"],
+        "compiled_scope": compiled_scope,
+        "schema": world_foundation_schema(compiled_scope=compiled_scope),
+        "example": world_foundation_example(compiled_scope=compiled_scope),
+        "enum_contract": "Every enum is one scalar string. Schema enum arrays list choices; they are never the field's returned value. compiled_scope is fixed by this task.",
         "sections": {
             "key_rule": "core_laws is required; include only needed ontology dimensions or genre:/book: extensions",
             "ontology": sorted(CORE_WORLD_ONTOLOGY),
-            "value_fields": {
-                "depth": ["SEED", "WORKING", "DETAILED"],
-                "content": "concrete approved initial conditions, rules and limits",
-            },
+            "content": "concrete approved initial conditions, rules and limits",
         },
         "rules": {
-            "required_fields": [
-                "rule_id",
-                "category",
-                "statement",
-                "enforcement",
-                "applicability",
-                "consequences",
-            ],
             "category": "one compiled section key",
-            "enforcement": [
-                "HARD",
-                "QUANTITATIVE",
-                "TEMPORAL",
-                "SOFT_CAUSAL",
-                "MECHANISM",
-            ],
             "applicability_and_consequences": "nonempty string arrays",
             "predicate": {
                 "required_for": "every enforcement except SOFT_CAUSAL",
-                "fields": [
-                    "requirement_id",
-                    "state_kind",
-                    "entity_key",
-                    "field",
-                    "operator",
-                    "value",
-                ],
-                "state_kind": [item.value for item in NarrativeStateKind],
-                "operator": [item.value for item in RequirementOperator],
                 "value": "typed scalar; only EXISTS may omit value",
             },
             "mechanism": "Use MECHANISM only when the existing typed WorldMechanism contract can express the rule; otherwise request explicit design clarification. Do not replace a hard rule with soft reasoning.",
@@ -326,23 +299,34 @@ def world_generation_contract() -> dict[str, Any]:
 
 
 def normalize_foundation_payload(
-    generator: str, raw: Mapping[str, Any]
+    generator: str, raw: Mapping[str, Any], *, expected_compiled_scope: str | None = None
 ) -> dict[str, Any]:
+    if not isinstance(raw, Mapping):
+        raise KernelError(
+            "FOUNDATION_PAYLOAD_TYPE_INVALID",
+            f"$: expected object; actual type {type(raw).__name__}",
+        )
     payload = dict(raw)
     if generator == "world.design.generate":
         from novel_forge.modules.worldbuilding.foundation import WorldFoundation
+        from novel_forge.modules.worldbuilding.foundation_schema import WorldContractError, world_value_type
 
+        encoded = payload.pop("world_foundation_json", None)
+        if not isinstance(encoded, str):
+            raise WorldContractError("FOUNDATION_WORLD_PARSE_FAILED", [{
+                "code": "WORLD_FIELD_TYPE_INVALID" if "world_foundation_json" in raw else "WORLD_FIELD_REQUIRED",
+                "field_path": "$.world_foundation_json", "expected_type": "string",
+                "actual_type": world_value_type(encoded) if "world_foundation_json" in raw else "missing",
+                "constraint": "World compilation must be a JSON encoded object conforming to the frozen schema.",
+            }])
         try:
-            value = json.loads(payload.pop("world_foundation_json"))
-        except (KeyError, TypeError, ValueError) as error:
-            raise KernelError(
-                "FOUNDATION_WORLD_PARSE_FAILED",
-                "World generation must return its complete typed compilation; an empty world is not a fallback",
-            ) from error
-        if not isinstance(value, dict):
-            raise KernelError(
-                "FOUNDATION_WORLD_PARSE_FAILED", "World compilation must be an object"
-            )
-        WorldFoundation.from_mapping(value)
+            value = json.loads(encoded)
+        except json.JSONDecodeError as error:
+            raise WorldContractError("FOUNDATION_WORLD_PARSE_FAILED", [{
+                "code": "WORLD_FIELD_JSON_INVALID", "field_path": "$.world_foundation_json",
+                "expected_type": "string", "actual_type": "string",
+                "constraint": f"Invalid inner JSON at line {error.lineno}, column {error.colno}: {error.msg}",
+            }]) from error
+        WorldFoundation.from_mapping(value, expected_compiled_scope=expected_compiled_scope)
         payload["world_foundation"] = value
     return payload

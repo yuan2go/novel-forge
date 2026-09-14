@@ -55,7 +55,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
         self.assertTrue(report.ok, report.errors)
         self.assertEqual(report.pack_id, "chapter_generation_pack")
-        self.assertEqual(report.version, "2.3.1")
+        self.assertEqual(report.version, "2.3.3")
         node_ids = {node.node_id for node in manifest.workflow_template.nodes}
         self.assertEqual(len(node_ids), 22)
         self.assertTrue(

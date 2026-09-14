@@ -180,6 +180,21 @@ def test_real_codex_backend_accepts_one_account_entitlement_without_pricing() ->
     assert backend.capability_profile.supports_usage_receipt is True
     assert backend.capability_profile.supports_cost_receipt is True
 
+    from novel_forge.modules.production_execution.codex_configuration import (
+        codex_account_binding_evidence,
+    )
+
+    assert codex_account_binding_evidence(backend) == {
+        "codex_home": str(Path(tmp).resolve()),
+        "executable": sys.executable,
+        "entitlement": _entitlement().to_dict(),
+    }
+    with pytest.raises(ValueError, match="account-entitlement"):
+        codex_account_binding_evidence(object())
+    backend.account_entitlement = None
+    with pytest.raises(ValueError, match="account-entitlement"):
+        codex_account_binding_evidence(backend)
+
 
 def test_codex_jsonl_records_and_denies_observed_cli_tools() -> None:
     evidence = parse_codex_jsonl_evidence(

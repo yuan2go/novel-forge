@@ -1,0 +1,289 @@
+{
+  "configured_route": {
+    "NOVEL_FORGE_ENVIRONMENT": "validation",
+    "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql",
+    "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_REASONING_EFFORT": "high",
+    "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "ai:codex:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01",
+    "NOVEL_FORGE_CODEX_EXECUTABLE": "/Users/yuan/.local/share/fnm/node-versions/v22.22.2/installation/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+    "NOVEL_FORGE_CODEX_EXECUTABLE_SHA256": "sha256:4f85982624b3898c8991cb80c0981b2aa71070e3537046c9a95950318a95afcc",
+    "NOVEL_FORGE_CODEX_HOME": "/Users/yuan/.codex-claude",
+    "NOVEL_FORGE_CODEX_WORKSPACE": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-workspace",
+    "NOVEL_FORGE_CODEX_EXECUTION_ROOT": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions",
+    "NOVEL_FORGE_CODEX_CLI_VERSION": "codex-cli 0.154.0",
+    "NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT",
+    "NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913:unused-balance-reallocation-v2",
+    "NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF": "local-account-directory:/Users/yuan/.codex-claude:chatgpt-login",
+    "NOVEL_FORGE_CODEX_CONFIGURATION_REF": "route:guofeng-xuanhuan-01:codex-production-01-v1",
+    "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "account-entitlement:guofeng-xuanhuan-01:codex-production-01-v1",
+    "NOVEL_FORGE_RUNTIME_HOST_ID": "local:yuan:novel-production",
+    "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "200000",
+    "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+    "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF": "local-cli-model-cache:20260913:272000:application-byte-upper-bound",
+    "NOVEL_FORGE_PROVIDER_TOKEN_SAFETY_MARGIN": "8192",
+    "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT": "460",
+    "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT": "11500000",
+    "NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET": "48000",
+    "NOVEL_FORGE_BOOK_QUALITY_CONTEXT_TOKEN_BUDGET": "80000",
+    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_CALL_LIMIT": "60",
+    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_TOKEN_LIMIT": "7680000",
+    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT": "160000",
+    "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_PLANNING_MODEL": "gpt-6-astra",
+    "NOVEL_FORGE_PLANNING_REASONING_EFFORT": "high",
+    "NOVEL_FORGE_MEMO_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_MEMO_MODEL": "gpt-6-astra",
+    "NOVEL_FORGE_MEMO_REASONING_EFFORT": "high",
+    "NOVEL_FORGE_CANON_SUPPORT_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_CANON_SUPPORT_MODEL": "gpt-6-astra",
+    "NOVEL_FORGE_CANON_SUPPORT_REASONING_EFFORT": "high",
+    "NOVEL_FORGE_DRAFT_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_DRAFT_MODEL": "gpt-6-astra",
+    "NOVEL_FORGE_DRAFT_REASONING_EFFORT": "medium",
+    "NOVEL_FORGE_REVIEW_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_REVIEW_MODEL": "gpt-6-astra",
+    "NOVEL_FORGE_REVIEW_REASONING_EFFORT": "high",
+    "NOVEL_FORGE_REVISION_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_REVISION_MODEL": "gpt-6-astra",
+    "NOVEL_FORGE_REVISION_REASONING_EFFORT": "medium",
+    "NOVEL_FORGE_REREVIEW_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_REREVIEW_MODEL": "gpt-6-astra",
+    "NOVEL_FORGE_REREVIEW_REASONING_EFFORT": "high",
+    "NOVEL_FORGE_CANON_EXTRACTION_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_CANON_EXTRACTION_MODEL": "gpt-6-astra",
+    "NOVEL_FORGE_CANON_EXTRACTION_REASONING_EFFORT": "high",
+    "NOVEL_FORGE_QUALITY_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_QUALITY_MODEL": "gpt-6-astra",
+    "NOVEL_FORGE_QUALITY_REASONING_EFFORT": "high",
+    "NOVEL_FORGE_READER_OUTCOME_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_READER_OUTCOME_MODEL": "gpt-6-astra",
+    "NOVEL_FORGE_READER_OUTCOME_REASONING_EFFORT": "high",
+    "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
+    "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "gpt-6-astra",
+    "NOVEL_FORGE_NARRATIVE_EVALUATOR_REASONING_EFFORT": "high",
+    "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": "high",
+    "NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID": "ai:codex:narrative-evaluator:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01",
+    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_WINDOW_SECONDS": "43200",
+    "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_MODEL_CONTEXT_LIMIT": "272000",
+    "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_TOKEN_ACCOUNTING_EVIDENCE_REF": "local-cli-model-cache:sha256:65cfe690b234a97fa7c1ef8b8a5ed948f501c5a0118a5890594df2e1dd9e3a9d:gpt-6-astra:272000:application-byte-upper-bound"
+  },
+  "native_calls": [
+    {
+      "asset_version_id": "50a6eed0-536f-4213-b72e-1ec192772c09",
+      "content_hash": "sha256:b7b2670d07e19953bde10229ce873fb2f78a83dad0875a626978f16c18ebe591",
+      "configuration_and_usage": {
+        "stage": "world.design.generate",
+        "model_id": "gpt-6-astra",
+        "usage": {
+          "model": "gpt-6-astra",
+          "measurement": "MEASURED",
+          "availability": "AVAILABLE",
+          "input_tokens": 44500,
+          "total_tokens": 61112,
+          "output_tokens": 16612,
+          "cached_input_tokens": 0,
+          "uncached_input_tokens": 44500,
+          "reasoning_output_tokens": 1326
+        },
+        "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de"
+      }
+    },
+    {
+      "asset_version_id": "3952942e-d408-412d-a106-ab6b6719e1b2",
+      "content_hash": "sha256:66545a21de49411631e118633c69174e6e5c0e2607c18fdbc76dc910bacf1c9c",
+      "configuration_and_usage": {
+        "stage": "world.design.generate",
+        "model_id": "gpt-6-astra",
+        "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de"
+      }
+    },
+    {
+      "asset_version_id": "28041093-39a4-4753-a314-6dfb25f04551",
+      "content_hash": "sha256:209fb548029c19c8391603d8fb2eb80367e3bf4bfb6bba3b653b6abcbe0edf4c",
+      "configuration_and_usage": {
+        "stage": "character.cast.generate",
+        "model_id": "gpt-6-astra",
+        "usage": {
+          "model": "gpt-6-astra",
+          "measurement": "MEASURED",
+          "availability": "AVAILABLE",
+          "input_tokens": 60165,
+          "total_tokens": 73121,
+          "output_tokens": 12956,
+          "cached_input_tokens": 0,
+          "uncached_input_tokens": 60165,
+          "reasoning_output_tokens": 468
+        },
+        "operation_id": "8dac1874-4710-4a5f-acdc-6fbe142713fb"
+      }
+    },
+    {
+      "asset_version_id": "1e7d5aec-36cd-4f5c-95e9-4ec0e26d44a4",
+      "content_hash": "sha256:5250b6f194398de899c8b141874e5628cb00cef332c70c6dab6d1dad5e7684c4",
+      "configuration_and_usage": {
+        "stage": "creative.candidates.generate",
+        "model_id": "gpt-6-astra",
+        "usage": {
+          "model": "gpt-6-astra",
+          "measurement": "MEASURED",
+          "availability": "AVAILABLE",
+          "input_tokens": 19726,
+          "total_tokens": 25633,
+          "output_tokens": 5907,
+          "cached_input_tokens": 0,
+          "uncached_input_tokens": 19726,
+          "reasoning_output_tokens": 516
+        },
+        "operation_id": "d6f70986-b171-47f8-9f04-3134aa74a740"
+      }
+    },
+    {
+      "asset_version_id": "d46ac3c5-4a77-45d9-84f2-6b744cbdd33a",
+      "content_hash": "sha256:267a3925440e95a273d77cd1cf74ef368583e52bac5c68e831081518a60227c8",
+      "configuration_and_usage": {
+        "stage": "narrative_semantic_evaluation",
+        "trace_id": "trace:story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+        "operation_id": "757fcb14-3ab8-4bd7-b56d-28196e8802f9"
+      }
+    },
+    {
+      "asset_version_id": "ae6ee416-2872-4403-b50c-7fa9b2b84e69",
+      "content_hash": "sha256:32a1d23370935655c79e682b1108f46e2115a51ea378acf6ac451006438aa005",
+      "configuration_and_usage": {
+        "stage": "narrative_semantic_evaluation",
+        "trace_id": "trace:story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+        "operation_id": "fc429018-c9c2-4c03-9dde-0232c1bec6e8"
+      }
+    },
+    {
+      "asset_version_id": "45831adb-abc8-4735-84e7-91de9d80ab31",
+      "content_hash": "sha256:9f0cb4310bfe450793abaecb422959cbf754c5db68e24269036f99eb4cf20ca2",
+      "configuration_and_usage": {
+        "stage": "narrative_semantic_evaluation",
+        "trace_id": "trace:story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+        "operation_id": "45036a6d-b538-44e9-aab2-344f6d708beb"
+      }
+    },
+    {
+      "asset_version_id": "0e321eab-a2f1-437d-92cd-ccee8f15e189",
+      "content_hash": "sha256:f1bca9bd3d7b4164cff910e44b94baada70201da308c5fa833cbc2c296c9425e",
+      "configuration_and_usage": {
+        "stage": "narrative_semantic_evaluation",
+        "trace_id": "trace:story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+        "operation_id": "32e206a6-02d6-4fe9-a82d-cd69becf4319"
+      }
+    },
+    {
+      "asset_version_id": "542e16b8-f4cc-4e73-abd5-2bf8c31e2737",
+      "content_hash": "sha256:b0f2528089713e3289b68badf1560ca566ae5548ded60409ce28a579b6e22996",
+      "configuration_and_usage": {
+        "stage": "ending.intent.generate",
+        "model_id": "gpt-6-astra",
+        "usage": {
+          "model": "gpt-6-astra",
+          "measurement": "MEASURED",
+          "availability": "AVAILABLE",
+          "input_tokens": 26943,
+          "total_tokens": 30212,
+          "output_tokens": 3269,
+          "cached_input_tokens": 0,
+          "uncached_input_tokens": 26943,
+          "reasoning_output_tokens": 219
+        },
+        "operation_id": "e7226485-ce85-44af-acfb-32b5902c8715"
+      }
+    },
+    {
+      "asset_version_id": "bfeddd9c-d100-47ca-a870-e4881d10ae6c",
+      "content_hash": "sha256:d2af653ae7275e2acb435fec0e69e984dca6030eedc0b9e607adec2f30bc60aa",
+      "configuration_and_usage": {
+        "stage": "creative.candidates.generate",
+        "model_id": "gpt-6-astra",
+        "usage": {
+          "model": "gpt-6-astra",
+          "measurement": "MEASURED",
+          "availability": "AVAILABLE",
+          "input_tokens": 19730,
+          "total_tokens": 25184,
+          "output_tokens": 5454,
+          "cached_input_tokens": 0,
+          "uncached_input_tokens": 19730,
+          "reasoning_output_tokens": 343
+        },
+        "operation_id": "58320be8-f7a1-4508-bca0-06383f8f4c37"
+      }
+    },
+    {
+      "asset_version_id": "8bec4e99-57e4-42b7-9f9a-e2f8285242c7",
+      "content_hash": "sha256:2b6ad5ab3136b2fa392fa5d0e4fdce4be2f11fc79ce3e14a51be390101da04f3",
+      "configuration_and_usage": {
+        "stage": "narrative_semantic_evaluation",
+        "trace_id": "trace:story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+        "operation_id": "87fc4229-d596-4db3-bb61-161866403c95"
+      }
+    },
+    {
+      "asset_version_id": "a765c6bd-95db-4f88-a093-4b46b82e314d",
+      "content_hash": "sha256:773510d44c22eae1d41daa57ac85645e344305fb31c6787a8fac4030d72ad84b",
+      "configuration_and_usage": {
+        "stage": "reader.promise.generate",
+        "model_id": "gpt-6-astra",
+        "usage": {
+          "model": "gpt-6-astra",
+          "measurement": "MEASURED",
+          "availability": "AVAILABLE",
+          "input_tokens": 26544,
+          "total_tokens": 30895,
+          "output_tokens": 4351,
+          "cached_input_tokens": 0,
+          "uncached_input_tokens": 26544,
+          "reasoning_output_tokens": 143
+        },
+        "operation_id": "bdb13fe9-9444-4be0-9bee-9f1733216c42"
+      }
+    },
+    {
+      "asset_version_id": "7b3484f0-a4f0-4ef8-a265-9d12736ea767",
+      "content_hash": "sha256:e068286e7d29de3031303978d7cfb8cf3f826e273c71e1f4bd4e718253cb24e7",
+      "configuration_and_usage": {
+        "stage": "narrative_semantic_evaluation",
+        "trace_id": "trace:story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+        "operation_id": "1a02299b-bcea-4bb6-bf34-5bd8825780da"
+      }
+    },
+    {
+      "asset_version_id": "694dc1fa-a1ad-47c1-a4b9-0a9f5e1af20b",
+      "content_hash": "sha256:f7c5365b8219fbb74f433033bf97e6d0e533f9d0501da9bcb7f5ff4857ccbe84",
+      "configuration_and_usage": {
+        "stage": "theme.candidates.generate",
+        "model_id": "gpt-6-astra",
+        "usage": {
+          "model": "gpt-6-astra",
+          "measurement": "MEASURED",
+          "availability": "AVAILABLE",
+          "input_tokens": 27106,
+          "total_tokens": 30952,
+          "output_tokens": 3846,
+          "cached_input_tokens": 0,
+          "uncached_input_tokens": 27106,
+          "reasoning_output_tokens": 334
+        },
+        "operation_id": "f7fdb3b8-2d72-451c-a06d-20f8e399e05d"
+      }
+    },
+    {
+      "asset_version_id": "d57cf6cf-bb48-4d6e-bff2-4bb17c6aa7a2",
+      "content_hash": "sha256:6e2a191a6d3997ad5808e5f909c476bb1b67cb797b5dab39ca1cac2c95ebdf37",
+      "configuration_and_usage": {
+        "stage": "narrative_semantic_evaluation",
+        "trace_id": "trace:story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+        "operation_id": "6b4f306a-9364-4f02-9a96-b66a542b7e8e"
+      }
+    }
+  ],
+  "export_code_sha": "6bc55ffe18c61b0755eb780e43a8cb03eb25503c",
+  "concurrency": 1,
+  "accounting_basis": "ACCOUNT_ENTITLEMENT",
+  "provider_observed_model": "SEE_NATIVE_CALL_EVIDENCE_OR_NOT_REPORTED",
+  "independent_human_review": "NOT_REVIEWED"
+}

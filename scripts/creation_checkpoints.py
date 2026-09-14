@@ -13,13 +13,18 @@ from scripts.creation_reading import load_accepted_reading
 
 
 REVIEW_CONTRACT = "author-reading-review.v1"
+VOLUME_REVIEW_CONTRACT = "author-reading-review.v2"
+REVIEW_CONTRACTS = {REVIEW_CONTRACT, VOLUME_REVIEW_CONTRACT}
 
 
-def reading_review_template(manifest: dict) -> dict:
+def reading_review_template(manifest: dict, *, reading_start_chapter: int | None = None) -> dict:
     boundary = manifest["accepted_through_chapter"]
-    start = 1 if boundary <= 6 else boundary - 2
+    if reading_start_chapter is not None and (type(reading_start_chapter) is not int or not 1 <= reading_start_chapter <= boundary):
+        raise ValueError("Volume review start must be an accepted chapter in this exact prefix")
+    start = reading_start_chapter if reading_start_chapter is not None else 1 if boundary <= 6 else boundary - 2
     return {
-        "contract_version": REVIEW_CONTRACT,
+        "contract_version": VOLUME_REVIEW_CONTRACT if reading_start_chapter is not None else REVIEW_CONTRACT,
+        **({"reading_start_chapter": start} if reading_start_chapter is not None else {}),
         **{key: manifest[key] for key in ("project_id", "book_id", "book_run_id", "accepted_through_chapter")},
         "reading_manifest_hash": manifest["manifest_hash"], "status": "NOT_REVIEWED",
         "paused_book_version": manifest.get("book_version"),
@@ -52,7 +57,7 @@ def _documents(composition: Any, book: dict, *, kind: str) -> list:
 
 def validate_reading_review(review: dict, manifest: dict, *, previous_reviews: list[dict] = (), require_clear: bool = True) -> None:
     scope = {key: manifest[key] for key in ("project_id", "book_id", "book_run_id", "accepted_through_chapter")}
-    if (review.get("contract_version") != REVIEW_CONTRACT
+    if (review.get("contract_version") not in REVIEW_CONTRACTS
         or review.get("status") != "REVIEWED"
         or any(review.get(key) != value for key, value in scope.items())
         or review.get("reading_manifest_hash") != manifest["manifest_hash"]
@@ -65,10 +70,41 @@ def validate_reading_review(review: dict, manifest: dict, *, previous_reviews: l
         raise ValueError("Checkpoint review must bind exact accepted text and explicit non-independent editorial evidence")
     chapters = {row["chapter_number"]: row for row in manifest["chapters"]}
     boundary = manifest["accepted_through_chapter"]
-    start = 1 if boundary <= 6 else boundary - 2
+    volume_review = review["contract_version"] == VOLUME_REVIEW_CONTRACT
+    start = review.get("reading_start_chapter") if volume_review else 1 if boundary <= 6 else boundary - 2
+    if type(start) is not int or not 1 <= start <= boundary:
+        raise ValueError("Volume review requires an explicit accepted reading start")
+    if volume_review:
+        covered = set()
+        for previous in previous_reviews:
+            if (previous.get("status") != "REVIEWED" or previous.get("contract_version") not in REVIEW_CONTRACTS
+                or any(previous.get(key) != manifest[key] for key in ("project_id", "book_id", "book_run_id"))
+                or type(previous.get("accepted_through_chapter")) is not int or previous["accepted_through_chapter"] >= start):
+                continue
+            for assessment in previous.get("chapter_assessments", []):
+                number = assessment.get("chapter_number")
+                target = chapters.get(number)
+                locations = assessment.get("locations")
+                located = isinstance(locations, list) and bool(locations) and target is not None
+                for location in locations if isinstance(locations, list) else ():
+                    if not isinstance(location, dict):
+                        located = False
+                        break
+                    left, right = location.get("start"), location.get("end")
+                    if (target is None or type(left) is not int or type(right) is not int
+                        or not 0 <= left < right <= len(target["text"]) or target["text"][left:right] != location.get("text")):
+                        located = False
+                        break
+                if (target is not None and number <= previous["accepted_through_chapter"]
+                    and assessment.get("candidate_asset_version_id") == target["candidate_asset_version_id"]
+                    and assessment.get("text_hash") == target["text_hash"] and assessment.get("assessment")
+                    and located):
+                    covered.add(number)
+        if not set(range(1, start)).issubset(covered):
+            raise ValueError("Volume checkpoint leaves earlier accepted chapters without exact native reading evidence")
     assessments = review.get("chapter_assessments")
     if not isinstance(assessments, list) or [item.get("chapter_number") for item in assessments] != list(range(start, boundary + 1)):
-        raise ValueError("Checkpoint review omits a required accepted chapter; chapter six requires the entire first six")
+        raise ValueError("Checkpoint review omits a required accepted chapter in its reading range")
     for assessment in assessments:
         target = chapters[assessment["chapter_number"]]
         if (assessment.get("candidate_asset_version_id") != target["candidate_asset_version_id"]
@@ -114,7 +150,12 @@ def validate_reading_review(review: dict, manifest: dict, *, previous_reviews: l
                     or type(left) is not int or type(right) is not int or not 0 <= left < right <= len(target["text"])
                     or target["text"][left:right] != location.get("text")):
                     raise ValueError("Checkpoint resolution must recheck exact accepted text and preservation")
-        if require_clear and issue["status"] != "RESOLVED":
+        if volume_review and type(issue.get("blocking")) is not bool:
+            raise ValueError("Volume checkpoint issue requires an explicit blocking classification")
+        hard = issue["severity"].lower() in {"critical", "blocker", "blocking", "high", "major"}
+        if volume_review and hard and not issue["blocking"]:
+            raise ValueError("A hard checkpoint issue cannot be classified as nonblocking")
+        if require_clear and issue["status"] != "RESOLVED" and (not volume_review or issue["blocking"]):
             raise ValueError("Unresolved checkpoint issues block continuation")
         current[issue["issue_id"]] = issue
     for previous in previous_reviews:
@@ -125,6 +166,8 @@ def validate_reading_review(review: dict, manifest: dict, *, previous_reviews: l
                 "chapter_number", "severity", "diagnosis", "repair_target", "location", "preservation_requirements", "acceptance_criteria",
             )):
                 raise ValueError("A checkpoint issue cannot change its original repair or preservation contract")
+            if "blocking" in old and current[old["issue_id"]].get("blocking") != old["blocking"]:
+                raise ValueError("A checkpoint issue cannot silently change its blocking classification")
 
 
 def register_reading_review(*, composition: Any, content_application: Any, book_run_id: str,
@@ -135,8 +178,11 @@ def register_reading_review(*, composition: Any, content_application: Any, book_
         raise ValueError("Register checkpoint reading against the exact native paused cursor")
     manifest = load_accepted_reading(composition=composition, book_run_id=book_run_id, require_closed_groups=True)
     previous = [item.content for item in _documents(composition, book, kind="operator_checklist")
-                if item.content.get("contract_version") == REVIEW_CONTRACT
-                and item.content.get("accepted_through_chapter") == book["accepted_through_chapter"]]
+                if item.content.get("contract_version") in REVIEW_CONTRACTS
+                and type(item.content.get("accepted_through_chapter")) is int
+                and (0 < item.content["accepted_through_chapter"] <= book["accepted_through_chapter"]
+                     if review.get("contract_version") == VOLUME_REVIEW_CONTRACT
+                     else item.content["accepted_through_chapter"] == book["accepted_through_chapter"])]
     validate_reading_review(review, manifest, previous_reviews=previous, require_clear=False)
     result = content_application.execute(ContentOperationRequest(
         definition_name="chapter.operator_checklist.author", project_id=book["project_id"],
@@ -170,8 +216,11 @@ def _review(composition: Any, book: dict, identity: str, *, require_clear: bool 
     manifest = load_accepted_reading(composition=composition, book_run_id=book["book_run_id"],
                                      through_chapter=boundary, require_closed_groups=True)
     previous = [item.content for item in _documents(composition, book, kind="operator_checklist")
-                if item.content.get("contract_version") == REVIEW_CONTRACT
-                and item.content.get("accepted_through_chapter") == boundary]
+                if item.content.get("contract_version") in REVIEW_CONTRACTS
+                and type(item.content.get("accepted_through_chapter")) is int
+                and (0 < item.content["accepted_through_chapter"] <= boundary
+                     if document.content.get("contract_version") == VOLUME_REVIEW_CONTRACT
+                     else item.content["accepted_through_chapter"] == boundary)]
     validate_reading_review(document.content, manifest, previous_reviews=previous, require_clear=require_clear)
     return document
 

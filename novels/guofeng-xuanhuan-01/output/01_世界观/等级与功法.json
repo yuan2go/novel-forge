@@ -1,0 +1,180 @@
+{
+  "source": {
+    "status": "ACTIVE",
+    "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+    "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+  },
+  "content": {
+    "sections": {
+      "core_laws": {
+        "depth": "WORKING",
+        "content": "候选世界第一规则：可用本领必须有承载，承诺必须有承担者。身体承载真气，材料与维护承载兵刃，人、船、补给与报酬承载护运。声望、比试与善意不能代替这些条件。死亡不可逆；无复活、时间回退、失忆免债或系统赐予。所有硬限制同时约束陆照、伙伴与对手。决定性行动须显露具体后果或不可逆代价，并可定位状态变化；胜利允许保持有效。"
+      },
+      "technology_power": {
+        "depth": "WORKING",
+        "content": "当前编译微息、行气、贯劲三层能力，不宣称这是全世界修行上限。微息可短暂沿所持兵券运气，连发容易断续；行气可在迈步、接触、收招之间保持运气，稳定衔接攻守；贯劲可在受冲击后重组劲力，具备更高续力与容错。高层仍受视线、落脚、疲劳与武器承载限制，但低层不能正面击败完整状态高层。越级局部成果依赖先建立的任务、地形、协作或伤疲条件，并留下代价。微息进入行气至少十二个有效训练日，末段连续三日通过步法、握持与呼吸配合的稳定测试；最低时间不保证突破，境界也不赠送剑法。既有训练只有合法起点依据才计入。听隙必须由自身真气沿手中兵刃运行，以磨刀经验解释触觉反馈；只辨当前应力偏移与导气断续，不读取寿命答案、招式、过往、记忆或人心。陌生材质、包覆和震动使判断失准；碰撞不等于检查对方整柄兵器。持续运用会指端麻木，强用可伤掌或毁刃。磨刀可以修整毛刺和浅缺口，不能补回刃材、逆转结构疲劳；重铸需要新料与炉工。"
+      }
+    },
+    "rules": [
+      {
+        "rule_id": "rule:tingxi_contact",
+        "category": "technology_power",
+        "predicate": {
+          "field": "required_channel",
+          "value": "OWN_QI_THROUGH_HELD_BLADE_TOUCH",
+          "operator": "EQUALS",
+          "entity_key": "power:tingxi",
+          "state_kind": "power_state",
+          "requirement_id": "requirement:tingxi_contact"
+        },
+        "statement": "听隙必须经自身真气沿手中兵刃形成接触反馈；无隔空使用例外。持续运用消耗体力与注意，过载可伤掌或毁刃。",
+        "enforcement": "HARD",
+        "consequences": [
+          "必须实际持用并检查兵刃，接触机会影响行动选择。",
+          "出现麻木后继续强用须承担精细操作受损或更重伤害。"
+        ],
+        "applicability": [
+          "power_state",
+          "character_state"
+        ]
+      },
+      {
+        "rule_id": "rule:tingxi_information",
+        "category": "technology_power",
+        "predicate": {
+          "field": "information_domain",
+          "value": "CURRENT_HELD_BLADE_STRESS_AND_QI_DISCONTINUITY",
+          "operator": "EQUALS",
+          "entity_key": "power:tingxi",
+          "state_kind": "power_state",
+          "requirement_id": "requirement:tingxi_information"
+        },
+        "statement": "听隙信息限定于当前所持兵刃的应力偏移和导气断续，不读心、不读史、不复制招式，也不输出准确剩余寿命。陌生材质、包覆和震动可使判断失准。",
+        "enforcement": "HARD",
+        "consequences": [
+          "反馈必须经手艺经验解释，推断保留误差。",
+          "检查耗时，赶期限时只能缩小保证范围或承担误判风险。"
+        ],
+        "applicability": [
+          "power_state",
+          "character_knowledge",
+          "character_belief"
+        ]
+      },
+      {
+        "rule_id": "rule:blade_wear",
+        "category": "technology_power",
+        "predicate": {
+          "field": "structural_fatigue_reversible_by_sharpening",
+          "value": false,
+          "operator": "EQUALS",
+          "entity_key": "system:blade_maintenance",
+          "state_kind": "world_rule",
+          "requirement_id": "requirement:blade_wear"
+        },
+        "statement": "磨刀与听隙不能逆转结构疲劳或补回刃材；浅缺口可整修，重铸须另付新料、工时与等待。",
+        "enforcement": "HARD",
+        "consequences": [
+          "一次成功试手不能证明旧刃可无限重复承载。",
+          "整修与报废影响成本、供给和后续可接任务。"
+        ],
+        "applicability": [
+          "resource_state",
+          "power_state"
+        ]
+      },
+      {
+        "rule_id": "rule:power_gap",
+        "category": "technology_power",
+        "predicate": {
+          "field": "lower_tier_frontal_victory_over_intact_higher_tier_allowed",
+          "value": false,
+          "operator": "EQUALS",
+          "entity_key": "system:cultivation",
+          "state_kind": "world_rule",
+          "requirement_id": "requirement:power_gap"
+        },
+        "statement": "低能力层次不能正面击败完整状态的高层对手。先建立的伤疲、地形、协作与任务限制可以支持局部脱险，不构成抹平境界的例外。",
+        "enforcement": "HARD",
+        "consequences": [
+          "关键战斗须区分击败对手与完成保护、阻滞、撤退目标。",
+          "借地形协作要承担装备、时间、同伴职责或放弃追击的成本。"
+        ],
+        "applicability": [
+          "power_state",
+          "conflict_state"
+        ]
+      },
+      {
+        "rule_id": "rule:training_time",
+        "category": "technology_power",
+        "predicate": {
+          "field": "weixi_to_xingqi_min_effective_training_days",
+          "value": 12,
+          "operator": "AT_LEAST",
+          "entity_key": "system:cultivation",
+          "state_kind": "world_rule",
+          "requirement_id": "requirement:training_time"
+        },
+        "statement": "微息至行气的最低有效训练日为十二，末段连续三日须通过稳定测试；资源与最低时间均不保证突破。无用药或顿悟跳过下限的例外。",
+        "enforcement": "TEMPORAL",
+        "consequences": [
+          "训练占用挣钱和准备时间，食宿、药膏与兵器维护须有来源。",
+          "运气紊乱至少停练两日，恢复经检查后才继续计有效日。"
+        ],
+        "applicability": [
+          "power_state",
+          "character_state",
+          "timeline_event",
+          "resource_state"
+        ]
+      },
+      {
+        "rule_id": "rule:irreversibility",
+        "category": "core_laws",
+        "predicate": {
+          "field": "consequence_reversal_available",
+          "value": false,
+          "operator": "EQUALS",
+          "entity_key": "system:existence",
+          "state_kind": "world_rule",
+          "requirement_id": "requirement:irreversibility"
+        },
+        "statement": "死亡、已经消耗的钱物与过去时间不能以复活、时间回退或失忆免债恢复。正常休息和治疗是连续恢复，不是逆转后果。",
+        "enforcement": "HARD",
+        "consequences": [
+          "治疗、误工和照护须实际支付。",
+          "恢复战斗能力不自动恢复信任、积蓄和错过的机会。"
+        ],
+        "applicability": [
+          "world_state",
+          "character_state",
+          "consequence_state"
+        ]
+      },
+      {
+        "rule_id": "rule:causal_cost",
+        "category": "core_laws",
+        "predicate": {
+          "field": "decisive_action_consequence_trace_required",
+          "value": true,
+          "operator": "EQUALS",
+          "entity_key": "system:causal_cost",
+          "state_kind": "world_rule",
+          "requirement_id": "requirement:causal_cost"
+        },
+        "statement": "依据knowledge:chapter-causal-cost:v1，决定性章节行动须在正文显露具体后果或不可逆代价，并建立可定位的状态变化。后果可以有利，不要求每次胜利受伤。",
+        "enforcement": "HARD",
+        "consequences": [
+          "审查应能定位行动、后果与新状态。",
+          "既有资源消耗和损失不得被胜利遮蔽，已经挣得的成长与收入也不得被任意撤销。"
+        ],
+        "applicability": [
+          "consequence_state",
+          "reward_event",
+          "payoff_event"
+        ]
+      }
+    ]
+  }
+}

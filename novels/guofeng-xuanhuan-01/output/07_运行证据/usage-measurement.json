@@ -1,0 +1,23 @@
+{
+  "native_conservative_tokens": 1174027,
+  "reported_usage_excluding_unknown_ceilings": 841708,
+  "unknown_usage_charged_at_ceiling": 332319,
+  "in_flight_or_held_reservations": 0,
+  "unknown_calls": [
+    {
+      "reservation_id": "5e93867c-3cc2-4944-a40f-0c6bcffb082b",
+      "status": "SETTLED",
+      "conservative_charge": 141863,
+      "usage_settlement_basis": "RESERVATION_CEILING",
+      "observable_usage": "NOT_REPORTED"
+    },
+    {
+      "reservation_id": "3665355c-991a-48e4-b6ad-da65ac62f84f",
+      "status": "SETTLED",
+      "conservative_charge": 190456,
+      "usage_settlement_basis": "RESERVATION_CEILING",
+      "observable_usage": "NOT_REPORTED"
+    }
+  ],
+  "authority": "NATIVE_LEDGER_AND_USAGE_SETTLEMENT_EVIDENCE"
+}

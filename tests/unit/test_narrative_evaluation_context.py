@@ -75,7 +75,7 @@ class _Writer:
         return command
 
 
-def _binder_fixture() -> tuple[
+def _binder_fixture(*, generated: bool = False) -> tuple[
     PostgresNarrativeEvaluationExecutionContractBinder,
     AuthorityAssetDocument,
     _Writer,
@@ -83,6 +83,11 @@ def _binder_fixture() -> tuple[
 ]:
     bindings: list[dict[str, str]] = []
     documents: dict[str, AuthorityAssetDocument] = {}
+    generators = dict(zip(FOUNDATION_TYPES, (
+        "creative.candidates.generate", "theme.candidates.generate",
+        "ending.intent.generate", "reader.promise.generate",
+        "world.design.generate", "character.cast.generate",
+    ), strict=True))
     for index, (role, asset_type) in enumerate(FOUNDATION_TYPES.items(), start=1):
         source_id = f"foundation:{index}"
         source_hash = "sha256:" + str(index) * 64
@@ -96,6 +101,16 @@ def _binder_fixture() -> tuple[
                 "candidate_payload": {"role": role, "evidence": f"evidence-{index}"}
             },
         )
+        if generated:
+            source = replace(source, asset_type="planning_generation_candidate", content={
+                **source.content,
+                "type": "PlanningGenerationCandidate",
+                "schema_version": "story_design.authority.v1",
+                "project_id": "project:test",
+                "book_id": "book:test",
+                "planning_scope": "NOT_APPLICABLE",
+                "generator_operation_name": generators[role],
+            })
         qualification = _document(
             asset_version_id=qualification_id,
             asset_type="narrative_design_evaluation",
@@ -144,10 +159,11 @@ def _binder_fixture() -> tuple[
     return binder, candidate, writer, documents
 
 
-def test_book_design_v5_evaluation_resolves_exact_foundation_without_prior_verdicts() -> (
+@pytest.mark.parametrize("generated", [False, True])
+def test_book_design_v5_evaluation_resolves_exact_foundation_without_prior_verdicts(generated) -> (
     None
 ):
-    binder, candidate, writer, _ = _binder_fixture()
+    binder, candidate, writer, _ = _binder_fixture(generated=generated)
 
     binder._evaluation_context_bundle(
         operation_id="operation:evaluate",
@@ -161,6 +177,7 @@ def test_book_design_v5_evaluation_resolves_exact_foundation_without_prior_verdi
             "content_hash": candidate.content_hash,
         },
         metadata={
+            "book_id": "book:test",
             "generation_operation_id": "operation:generate",
             "generator_operation_name": "book_design.propose",
         },
@@ -182,6 +199,31 @@ def test_book_design_v5_evaluation_resolves_exact_foundation_without_prior_verdi
         for item in content["selected_inputs"]
     )
     assert len(writer.command.reference_asset_ids) == 13
+    if generated:
+        from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+
+        view = build_provider_context_view(
+            "narrative_semantic_evaluation", writer.command.content, {}
+        )
+        assert len(view["selected_inputs"]) == 7
+        assert all("semantic_payload" in item for item in view["selected_inputs"][1:])
+
+
+@pytest.mark.parametrize("change", [
+    {"generator_operation_name": "world.design.generate"},
+    {"generator_operation_name": ["creative.candidates.generate"]},
+    {"book_id": "book:foreign"},
+    {"project_id": "project:foreign"},
+    {"planning_scope": "BOOK"},
+    {"type": "UnapprovedDraft"},
+    {"schema_version": "unknown"},
+])
+def test_generated_foundation_dependency_rejects_role_scope_and_contract_drift(change):
+    binder, candidate, _, documents = _binder_fixture(generated=True)
+    source = documents["foundation:1"]
+    documents[source.asset_version_id] = replace(source, content={**source.content, **change})
+    with pytest.raises(KernelError, match="NARRATIVE_EVALUATION_DEPENDENCY_DRIFT"):
+        binder._canonical_dependencies(candidate, book_id="book:test")
 
 
 def test_book_design_v5_evaluation_fails_closed_on_dependency_hash_drift() -> None:
@@ -208,3 +250,39 @@ def test_book_design_v5_evaluation_fails_closed_on_dependency_hash_drift() -> No
                 "generator_operation_name": "book_design.propose",
             },
         )
+
+
+@pytest.mark.parametrize("characters, accepted", [(70_000, True), (140_000, False)])
+def test_generated_foundation_provider_capacity_is_bounded(characters, accepted):
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+
+    binder, candidate, writer, documents = _binder_fixture(generated=True)
+    source = documents["foundation:1"]
+    documents[source.asset_version_id] = replace(source, content={
+        **source.content, "candidate_payload": {"semantic_evidence": "文" * characters}
+    })
+    binder._evaluation_context_bundle(
+        operation_id="operation:evaluate", attempt_id="attempt:evaluate",
+        project_id="project:test", trace_id="trace:test", correlation_id="correlation:test",
+        pointer={"asset_version_id": candidate.asset_version_id, "artifact_type": candidate.asset_type, "content_hash": candidate.content_hash},
+        metadata={"book_id": "book:test", "generator_operation_name": "book_design.propose"},
+    )
+    if accepted:
+        view = build_provider_context_view("narrative_semantic_evaluation", writer.command.content, {})
+        assert view["selected_inputs"][1]["semantic_payload"]["semantic_evidence"] == "文" * characters
+    else:
+        with pytest.raises(KernelError, match="NARRATIVE_EVALUATION_PROVIDER_CONTEXT_BUDGET_EXCEEDED"):
+            build_provider_context_view("narrative_semantic_evaluation", writer.command.content, {})
+
+
+def test_candidate_only_evaluation_retains_its_smaller_capacity():
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+
+    with pytest.raises(KernelError, match="NARRATIVE_EVALUATION_PROVIDER_CONTEXT_BUDGET_EXCEEDED"):
+        build_provider_context_view("narrative_semantic_evaluation", {
+            "source_isolation": "EXACT_CANDIDATE_ONLY",
+            "selected_inputs": [{
+                "asset_version_id": "candidate:test", "content_hash": "sha256:" + "a" * 64,
+                "asset_type": "planning_generation_candidate", "candidate": {"semantic_evidence": "文" * 70_000}
+            }],
+        }, {})

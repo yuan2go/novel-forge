@@ -1,0 +1,22 @@
+{
+  "before_head": "20260914_0132_planning_runtime_continuation",
+  "after_head": "20260914_0133_formation_evaluation_recovery",
+  "status": "APPLIED",
+  "source_sha": "6bc55ffe18c61b0755eb780e43a8cb03eb25503c",
+  "retained_business_facts": {
+    "source_operation": [
+      "FAILED_FINAL",
+      6
+    ],
+    "candidate": [
+      "sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83",
+      "CANDIDATE"
+    ],
+    "budget_reservations": [
+      27,
+      "1954784",
+      "910472"
+    ]
+  },
+  "no_business_rows_rewritten": true
+}

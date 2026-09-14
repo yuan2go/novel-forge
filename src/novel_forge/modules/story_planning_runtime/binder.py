@@ -238,6 +238,9 @@ class PostgresPlanningExecutionBundleResolver:
             worker_id=worker_id,
         )
         frozen = attempt_snapshot.execution_snapshot
+        if command.runtime_continuation_id:
+            from .runtime_continuation import require_snapshot
+            require_snapshot(self.database_url, command, attempt_snapshot)
         if (
             frozen.execution_capability_id != definition.capability
             or frozen.commit_authority
@@ -428,6 +431,16 @@ class CapabilityPackBackedPlanningExecutionBinder:
             )
         )
         evidence = execution.evidence
+        from .result_recovery import PlanningResultValidationError, validate_raw_result
+
+        try:
+            validate_raw_result(
+                command.generator_operation_name,
+                execution.raw_output,
+                compiled_scope="BOOK" if command.generator_operation_name == "world.design.generate" and command.execution_contract_version in {"1.15.0", "1.16.0"} else None,
+            )
+        except KernelError as error:
+            raise PlanningResultValidationError(error, raw_result=execution.raw_output, execution_evidence=evidence.to_dict()) from error
         return PlanningGenerationCandidate(
             generator_operation_name=command.generator_operation_name,
             planning_scope=command.planning_scope,

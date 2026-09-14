@@ -1,0 +1,91 @@
+{
+  "source": "POSTGRESQL_BOOK_RUNTIME_POLICY",
+  "book_version": 1,
+  "frozen_configuration_hash": "sha256:2733f44b3d0bd55b78a7aa8dcc793f0624914aaee3b3cdd011ae6831f393ba18",
+  "runtime_settings": {
+    "NOVEL_FORGE_CODEX_CLI_VERSION": "codex-cli 0.154.0",
+    "NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT",
+    "NOVEL_FORGE_CODEX_CONFIGURATION_REF": "route:guofeng-xuanhuan-01:codex-production-01-v1",
+    "NOVEL_FORGE_CODEX_EXECUTABLE_SHA256": "sha256:4f85982624b3898c8991cb80c0981b2aa71070e3537046c9a95950318a95afcc",
+    "NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET": "48000",
+    "NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF": "local-account-directory:/Users/yuan/.codex-claude:chatgpt-login",
+    "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT": "460",
+    "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT": "11500000",
+    "NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF": {
+      "native_budget_contract_hash": "sha256:c118dbacc5be0e1b2406acab6f0eebdd029d6b8ce78a934a35f7291680b4a1d7"
+    },
+    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_CALL_LIMIT": "60",
+    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_TOKEN_LIMIT": "7680000",
+    "NOVEL_FORGE_BOOK_QUALITY_CONTEXT_TOKEN_BUDGET": "80000",
+    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_WINDOW_SECONDS": "43200",
+    "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT": "160000"
+  },
+  "cost_accounting": {
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "authorization_ref": {
+      "native_budget_contract_hash": "sha256:c118dbacc5be0e1b2406acab6f0eebdd029d6b8ce78a934a35f7291680b4a1d7"
+    },
+    "authorized_total_usd": null,
+    "monetary_cost_status": "UNKNOWN"
+  },
+  "native_narrative_semantic_evaluation_route": {
+    "route_policy": {
+      "status": "ACTIVE",
+      "policy_id": "story-design.narrative-semantic-evaluator.route",
+      "rule_set_ref": "route-rules:story-design:narrative-semantic-evaluator:v1",
+      "policy_version": 1,
+      "fallback_policy": "FAIL_CLOSED",
+      "fallback_policy_ref": "story-design.narrative-semantic-evaluator.fail-closed",
+      "fallback_policy_version": 1,
+      "default_model_profile_id": "story-design.narrative-semantic-evaluator.default",
+      "allowed_model_profile_ids": [
+        "story-design.narrative-semantic-evaluator.default"
+      ],
+      "reasoning_downgrade_policy": "PROHIBITED"
+    },
+    "model_profile": {
+      "status": "ACTIVE",
+      "model_id": "gpt-6-astra",
+      "backend_id": "codex-cli",
+      "profile_id": "story-design.narrative-semantic-evaluator.default",
+      "runtime_class": "LOCAL_CLI_REMOTE_INFERENCE",
+      "model_provider": "codex-cli",
+      "fallback_policy": "FAIL_CLOSED",
+      "profile_version": 1,
+      "reasoning_effort": "high",
+      "output_policy_ref": "output:chapter:narrative_semantic_evaluation:json:v1",
+      "timeout_policy_ref": "timeout:quality-intrinsic-judge:v1",
+      "capability_probe_ref": "capability-probe:codex-cli:real-runtime-v1",
+      "workspace_policy_ref": "workspace:chapter-authority:v1"
+    },
+    "skill_version": "quality-review@quality-review-v1",
+    "template_hash": "sha256:5a8ccec99d1c1bf0a28870f1cb608169974f78529b0552119dbfbe5c790b22c0",
+    "prompt_version": "prompt-system:chapter-generation-pack@v1",
+    "backend_version": "1.0.0",
+    "fallback_policy": {
+      "mode": "FAIL_CLOSED",
+      "status": "ACTIVE",
+      "triggers": [],
+      "policy_id": "story-design.narrative-semantic-evaluator.fail-closed",
+      "policy_version": 1,
+      "allowed_route_ids": [],
+      "approval_required": true,
+      "maximum_route_changes": 0,
+      "quality_revalidation_required": true
+    },
+    "auth_profile_ref": "account-entitlement:guofeng-xuanhuan-01:codex-production-01-v1:codex:30f6625f362428c69c3f8bcc47195d282329f27f48fc130e0abbf8ceea3021fb",
+    "output_schema_ref": "schema:execution-output:quality-intrinsic-judge:v1",
+    "skill_content_hash": "sha256:27d5dbd40de81ddcefc90d20a2ead047903e7ca29eebef6a9ab3f28dfd156e23",
+    "model_context_limit": 200000,
+    "token_safety_margin": 8192,
+    "token_framing_overhead": 16,
+    "prompt_compiler_version": "chapter-prompt-compiler:v2",
+    "system_instruction_hash": "sha256:56ca60948dbfee8de94e233307604f3a178e0b61c3f3082803a38cce0830ba20",
+    "token_accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+    "token_accounting_evidence_ref": "local-cli-model-cache:20260913:272000:application-byte-upper-bound"
+  },
+  "auth_profile_refs": [
+    "account-entitlement:guofeng-xuanhuan-01:codex-production-01-v1:codex:30f6625f362428c69c3f8bcc47195d282329f27f48fc130e0abbf8ceea3021fb"
+  ],
+  "source_export_route_models_verified_equal_to_database": true
+}

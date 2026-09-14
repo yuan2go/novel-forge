@@ -1,0 +1,99 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "guofeng-xuanhuan-01",
+  "title": "借锋",
+  "target_volume_chapters": 40,
+  "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+  "formation": [
+    {
+      "formation_run_id": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+      "lifecycle": "RUNNING",
+      "current_stage": "ENDING_INTENT",
+      "version": 5,
+      "failure": {},
+      "recovery_instruction": {}
+    }
+  ],
+  "real_generated_chapters": 0,
+  "committed_chapters": 0,
+  "exported_chapters": 0,
+  "han_characters": 0,
+  "accepted_cursor": 0,
+  "book_run_id": null,
+  "book_state": "NOT_ADMITTED",
+  "chapters": [],
+  "independent_human_review": "NOT_REVIEWED",
+  "budget": {
+    "contract_hash": "sha256:91fd257f4348941abeaf0b657c25f84bf043e9850af7435395cf442f770c0fd6",
+    "project_id": "first-novel-pilot-20260912",
+    "book_id": "guofeng-xuanhuan-01",
+    "phases": {
+      "SOURCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "DESIGN": {
+        "calls_used_or_reserved": 17,
+        "conservative_tokens": 519247,
+        "recorded_actual_tokens": 441208,
+        "unmeasured_reserved_tokens": 78039
+      },
+      "CREATION_EARLY": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "CREATION_LATE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "REPAIR": {
+        "calls_used_or_reserved": 1,
+        "conservative_tokens": 26699,
+        "recorded_actual_tokens": 26699,
+        "unmeasured_reserved_tokens": 0
+      }
+    },
+    "project_total": {
+      "calls_used_or_reserved": 18,
+      "conservative_tokens": 545946,
+      "recorded_actual_tokens": 467907,
+      "unmeasured_reserved_tokens": 78039
+    },
+    "shared_total": {
+      "calls_used_or_reserved": 18,
+      "conservative_tokens": 545946,
+      "recorded_actual_tokens": 467907,
+      "unmeasured_reserved_tokens": 78039
+    },
+    "reservation_ids": [
+      "ef7cb1fa-35a3-4c53-8e28-908b7bdaadae",
+      "f2482034-f4e3-4997-9c4c-aa2947ba335b",
+      "9e1276e5-1ded-4001-ba32-5f3b9e8737c4",
+      "c4bdf5c7-8057-4975-aac8-48918d589b31",
+      "3f5a15d3-a340-4197-84b0-907c34cf791b",
+      "7af6a0fa-49fd-4d7e-8534-8b5527a28ca2",
+      "d00b168f-de6b-484a-b198-ae1ea6f20ba1",
+      "cb1febeb-89d2-4a82-95ef-caa26c42c412",
+      "4eae9351-8a12-4f77-b86a-36b3837e1d6f",
+      "3b24d961-5661-4a00-9d2d-6b2cee7c6e43",
+      "56be04e7-e58f-43e8-af0f-f4073a85f8dd",
+      "abd0bce5-e546-41ce-ac4d-69117df8bfe8",
+      "9b4be09d-60bf-42da-8770-5a452fef22b9",
+      "34d0ebc8-e2c8-4a57-8fed-48be8c5d3a2a",
+      "83b493bb-e456-4019-a119-3b0a8fff2e0a",
+      "a333b99a-4265-461d-b024-90ccec5ef343",
+      "504a7288-9c48-455f-b4b3-b1a064b82dc5",
+      "996cc769-1920-4ab9-b656-726728eeeced"
+    ],
+    "evidence_class": "POSTGRESQL_BUDGET_LEDGER",
+    "creation_opportunity": null
+  },
+  "export_conflicts": [],
+  "exported_at": "20260913T175630960542Z"
+}

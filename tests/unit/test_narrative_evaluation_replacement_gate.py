@@ -38,6 +38,7 @@ def _lineage_row(
     recovery_intent_id: str = "",
     head_current: bool = True,
     opening_binding: dict[str, Any] | None = None,
+    formation_recovery_ref: str | None = None,
 ) -> tuple[Any, ...]:
     return (
         generation,
@@ -56,6 +57,7 @@ def _lineage_row(
         True,
         True,
         True,
+        formation_recovery_ref,
     )
 
 
@@ -235,6 +237,39 @@ def test_missing_semantic_execution_lineage_fails_closed() -> None:
         )
 
     assert rejected.value.code == "NARRATIVE_EVALUATION_EXECUTION_NOT_FOUND"
+
+
+@pytest.mark.parametrize("live", [False, True])
+def test_formation_continuation_requires_current_worker_fence(live):
+    cursor = _Cursor([_lineage_row(2, formation_recovery_ref="formation-recovery:test"),
+                      (live,)])
+    uow = SimpleNamespace(cursor=cursor)
+    if live:
+        result = assert_narrative_replacement_execution_gate_in_uow(uow, operation_id="operation:generation-2", project_id="project:test")
+        assert result["replacement"] and result["gate_open"]
+        assert result["formation_recovery_ref"] == "formation-recovery:test"
+    else:
+        with pytest.raises(KernelError, match="NARRATIVE_EVALUATION_FORMATION_GATE_CLOSED"):
+            assert_narrative_replacement_execution_gate_in_uow(uow, operation_id="operation:generation-2", project_id="project:test")
+
+
+@pytest.mark.parametrize("error_code,effect_exists,expected_error", [
+    ("PROGRAMMING_BUG", False, None),
+    ("NARRATIVE_EVALUATION_INPUT_INVALID", False, None),
+    ("NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID", True, "NARRATIVE_EVALUATION_EXTERNAL_EFFECT_RECONCILIATION_REQUIRED"),
+])
+def test_formation_continuation_does_not_generalize_preflight_retries(error_code, effect_exists, expected_error):
+    from novel_forge.modules.story_design_authority.formation_evaluation_recovery import try_admit_formation_continuation
+
+    cursor = _Cursor([("attempt:test", error_code, "a" * 40, "2026-09-14"), (effect_exists,)])
+    command = SimpleNamespace(generator_operation_name="book_design.propose", actor_id="evaluator:test")
+    current = {"operation_status": "FAILED_FINAL", "command_payload": {"payload": {}},
+               "recovery_intent_id": None, "operation_actor_id": command.actor_id, "operation_id": "operation:failed"}
+    if expected_error:
+        with pytest.raises(KernelError, match=expected_error):
+            try_admit_formation_continuation(None, SimpleNamespace(cursor=cursor), command=command, admission_command={}, current=current)
+    else:
+        assert try_admit_formation_continuation(None, SimpleNamespace(cursor=cursor), command=command, admission_command={}, current=current) is None
 
 
 def test_non_current_semantic_execution_lineage_fails_closed() -> None:

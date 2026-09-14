@@ -1,0 +1,670 @@
+{
+  "current": "20260913_0131_planning_result_recovery",
+  "applied": [
+    {
+      "migration_id": "20260625_0001_initial_industrial_schema",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260628_0002_query_and_release_indexes",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260702_0003_mkaos_p0",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260703_0004_review_issue",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260712_0005_core_os_runtime",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260712_0006_core_os_outbox_delivery",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260712_0007_postgres_command_kernel_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260713_0008_authority_schema_recovery",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260713_0009_attempt_lease_invariants",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260713_0010_asset_blob_invariants",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260713_0011_effect_inbox_invariants",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260713_0012_admission_contract",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260713_0013_attempt_runtime",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260713_0014_cancellation_compensation",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260713_0015_stale_command_evidence",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260713_0016_asset_blob_protocol",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260713_0017_external_effect_runtime",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260713_0018_operation_graph_completion",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260716_0019_external_effect_protocol",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260716_0020_operation_output_evidence",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260716_0021_saga_coordination",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260716_0022_authority_asset_locator",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260718_0023_provider_budget_lifecycle",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260718_0024_pre_provider_runtime_hardening",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260718_0025_canon_approval_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260718_0026_canon_saga_gate",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260718_0027_canon_approval_operation",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260718_0028_provider_adapter_v2",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260718_0029_canon_reextraction_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260718_0030_provider_callback_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260718_0031_canon_reextraction_governance",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260718_0032_provider_callback_dispatch_index",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260728_0033_agent_collaboration_v1",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260729_0034_unified_business_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260730_0035_book_child_delegation",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260730_0036_book_canon_checkpoint",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260730_0037_story_state_reducer_registry",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260730_0038_story_design_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260730_0039_hierarchical_planning",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260730_0040_chapter_group_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260730_0041_plan_change_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260730_0042_reader_calibration",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260801_0043_project_workspace_and_legacy_migration_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260801_0044_project_binding_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260801_0045_task_recovery_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260801_0046_source_document_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260801_0047_candidate_asset_lifecycle",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260801_0048_source_transform_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260801_0049_source_transform_fk_indexes",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260801_0050_mkaos_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260803_0051_book_design_authority_slice",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0052_asset_schema_and_scope_integrity",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0053_d0_provider_qualification_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0054_scope_foreign_key_indexes",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0055_legacy_native_conversion",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0056_database_runtime_governance",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0057_hot_query_governance",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0058_authority_cutover_release_qualification",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0059_migration_validation_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0060_migration_completion_semantics",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0061_structured_migration_references",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0062_runtime_job_execution_plane",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0063_worker_fleet_operational_governance",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0064_runtime_job_integrity_hardening",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0065_runtime_job_lease_identity",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0066_runtime_job_attempt_lease_existence",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260804_0067_activated_migration_archival_binding",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260805_0068_unified_agent_runtime",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260805_0069_agent_runtime_domain_commit_closure",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260805_0070_agent_runtime_recovery_protocol",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260805_0071_capability_pack_authority",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260806_0072_capability_pack_integrity_hardening",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260806_0073_core_functional_loops",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260811_0074_longform_native_intelligence",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260811_0075_source_deconstruction_intelligence",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260811_0076_source_import_runtime",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260811_0077_source_reprocessing_execution",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260811_0078_reprocessing_action_expansion",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260811_0079_source_import_scope_closure",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260811_0080_source_snapshot_governance_identity",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260811_0081_source_intelligence_router",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260812_0082_narrative_state_contract_v2",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260812_0083_narrative_runtime_convergence",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260812_0084_development_gap_final_convergence",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260812_0085_corrective_action_terminal_lineage",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260812_0086_corrective_generation_terminal_lineage",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260813_0087_book_initial_narrative_state_binding",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260814_0088_canonical_narrative_architecture",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260814_0089_progressive_narrative_design",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260814_0090_progressive_replan_scopes",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260814_0091_canonical_longform_runtime_completion",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260814_0092_longform_correctness_closure",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260820_0093_book_liveness_critical_path_closure",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260820_0094_industrial_autonomous_novel_os",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260821_0095_post_merge_correctness_repair",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260821_0096_runtime_hardening",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260824_0097_narrative_evaluator_codex_lineage",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260825_0098_narrative_evolution_engine",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260825_0099_creative_engineering_convergence",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260825_0100_hierarchy_closure",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260826_0101_quality_qualification",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260828_0102_book_opening_recovery_closure",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260829_0103_book_opening_semantic_runtime_hardening",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260829_0104_book_opening_workflow_nodes",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260830_0105_p0_backend_qualification_repairs",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260902_0106_quality_qualification_scope_generalization",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260903_0107_retrieval_campaign_runtime",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260903_0108_context_governance_projection",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260905_0109_industrial_execution_policies",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260905_0110_chapter_mission_scene_contract",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260905_0111_whole_book_completion",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260905_0112_realization_execution_policy",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260905_0113_policy_completion_fk_indexes",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260906_0114_narrative_reality",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260906_0115_reality_event_index",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260906_0116_book_control_policy",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260906_0117_world_causal_event_locators",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260907_0118_preparation_event_lineage",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260907_0119_grounded_chapter_acceptance",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260907_0120_foundation_generation",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260908_0121_account_entitlement_budget",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260908_0121_corpus_foundation",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260908_0122_source_work_manifest",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260908_0123_source_analysis_dimensions",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260909_0124_corpus_fk_indexes",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260909_0125_corpus_ingestion_bridge",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260909_0126_corpus_processing",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260909_0127_corpus_curation",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260910_0128_corpus_operations",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260912_0129_corpus_member_fk_indexes",
+      "applied_at": "2026-09-12 10:06:08.675151+00:00"
+    },
+    {
+      "migration_id": "20260912_0130_creative_experiment_budget",
+      "applied_at": "2026-09-12 18:04:54.914739+00:00"
+    },
+    {
+      "migration_id": "20260913_0131_planning_result_recovery",
+      "applied_at": "2026-09-13 16:24:33.182471+00:00"
+    }
+  ],
+  "available": [
+    "20260625_0001_initial_industrial_schema",
+    "20260628_0002_query_and_release_indexes",
+    "20260702_0003_mkaos_p0",
+    "20260703_0004_review_issue",
+    "20260712_0005_core_os_runtime",
+    "20260712_0006_core_os_outbox_delivery",
+    "20260712_0007_postgres_command_kernel_authority",
+    "20260713_0008_authority_schema_recovery",
+    "20260713_0009_attempt_lease_invariants",
+    "20260713_0010_asset_blob_invariants",
+    "20260713_0011_effect_inbox_invariants",
+    "20260713_0012_admission_contract",
+    "20260713_0013_attempt_runtime",
+    "20260713_0014_cancellation_compensation",
+    "20260713_0015_stale_command_evidence",
+    "20260713_0016_asset_blob_protocol",
+    "20260713_0017_external_effect_runtime",
+    "20260713_0018_operation_graph_completion",
+    "20260716_0019_external_effect_protocol",
+    "20260716_0020_operation_output_evidence",
+    "20260716_0021_saga_coordination",
+    "20260716_0022_authority_asset_locator",
+    "20260718_0023_provider_budget_lifecycle",
+    "20260718_0024_pre_provider_runtime_hardening",
+    "20260718_0025_canon_approval_authority",
+    "20260718_0026_canon_saga_gate",
+    "20260718_0027_canon_approval_operation",
+    "20260718_0028_provider_adapter_v2",
+    "20260718_0029_canon_reextraction_authority",
+    "20260718_0030_provider_callback_authority",
+    "20260718_0031_canon_reextraction_governance",
+    "20260718_0032_provider_callback_dispatch_index",
+    "20260728_0033_agent_collaboration_v1",
+    "20260729_0034_unified_business_authority",
+    "20260730_0035_book_child_delegation",
+    "20260730_0036_book_canon_checkpoint",
+    "20260730_0037_story_state_reducer_registry",
+    "20260730_0038_story_design_authority",
+    "20260730_0039_hierarchical_planning",
+    "20260730_0040_chapter_group_authority",
+    "20260730_0041_plan_change_authority",
+    "20260730_0042_reader_calibration",
+    "20260801_0043_project_workspace_and_legacy_migration_authority",
+    "20260801_0044_project_binding_authority",
+    "20260801_0045_task_recovery_authority",
+    "20260801_0046_source_document_authority",
+    "20260801_0047_candidate_asset_lifecycle",
+    "20260801_0048_source_transform_authority",
+    "20260801_0049_source_transform_fk_indexes",
+    "20260801_0050_mkaos_authority",
+    "20260803_0051_book_design_authority_slice",
+    "20260804_0052_asset_schema_and_scope_integrity",
+    "20260804_0053_d0_provider_qualification_authority",
+    "20260804_0054_scope_foreign_key_indexes",
+    "20260804_0055_legacy_native_conversion",
+    "20260804_0056_database_runtime_governance",
+    "20260804_0057_hot_query_governance",
+    "20260804_0058_authority_cutover_release_qualification",
+    "20260804_0059_migration_validation_authority",
+    "20260804_0060_migration_completion_semantics",
+    "20260804_0061_structured_migration_references",
+    "20260804_0062_runtime_job_execution_plane",
+    "20260804_0063_worker_fleet_operational_governance",
+    "20260804_0064_runtime_job_integrity_hardening",
+    "20260804_0065_runtime_job_lease_identity",
+    "20260804_0066_runtime_job_attempt_lease_existence",
+    "20260804_0067_activated_migration_archival_binding",
+    "20260805_0068_unified_agent_runtime",
+    "20260805_0069_agent_runtime_domain_commit_closure",
+    "20260805_0070_agent_runtime_recovery_protocol",
+    "20260805_0071_capability_pack_authority",
+    "20260806_0072_capability_pack_integrity_hardening",
+    "20260806_0073_core_functional_loops",
+    "20260811_0074_longform_native_intelligence",
+    "20260811_0075_source_deconstruction_intelligence",
+    "20260811_0076_source_import_runtime",
+    "20260811_0077_source_reprocessing_execution",
+    "20260811_0078_reprocessing_action_expansion",
+    "20260811_0079_source_import_scope_closure",
+    "20260811_0080_source_snapshot_governance_identity",
+    "20260811_0081_source_intelligence_router",
+    "20260812_0082_narrative_state_contract_v2",
+    "20260812_0083_narrative_runtime_convergence",
+    "20260812_0084_development_gap_final_convergence",
+    "20260812_0085_corrective_action_terminal_lineage",
+    "20260812_0086_corrective_generation_terminal_lineage",
+    "20260813_0087_book_initial_narrative_state_binding",
+    "20260814_0088_canonical_narrative_architecture",
+    "20260814_0089_progressive_narrative_design",
+    "20260814_0090_progressive_replan_scopes",
+    "20260814_0091_canonical_longform_runtime_completion",
+    "20260814_0092_longform_correctness_closure",
+    "20260820_0093_book_liveness_critical_path_closure",
+    "20260820_0094_industrial_autonomous_novel_os",
+    "20260821_0095_post_merge_correctness_repair",
+    "20260821_0096_runtime_hardening",
+    "20260824_0097_narrative_evaluator_codex_lineage",
+    "20260825_0098_narrative_evolution_engine",
+    "20260825_0099_creative_engineering_convergence",
+    "20260825_0100_hierarchy_closure",
+    "20260826_0101_quality_qualification",
+    "20260828_0102_book_opening_recovery_closure",
+    "20260829_0103_book_opening_semantic_runtime_hardening",
+    "20260829_0104_book_opening_workflow_nodes",
+    "20260830_0105_p0_backend_qualification_repairs",
+    "20260902_0106_quality_qualification_scope_generalization",
+    "20260903_0107_retrieval_campaign_runtime",
+    "20260903_0108_context_governance_projection",
+    "20260905_0109_industrial_execution_policies",
+    "20260905_0110_chapter_mission_scene_contract",
+    "20260905_0111_whole_book_completion",
+    "20260905_0112_realization_execution_policy",
+    "20260905_0113_policy_completion_fk_indexes",
+    "20260906_0114_narrative_reality",
+    "20260906_0115_reality_event_index",
+    "20260906_0116_book_control_policy",
+    "20260906_0117_world_causal_event_locators",
+    "20260907_0118_preparation_event_lineage",
+    "20260907_0119_grounded_chapter_acceptance",
+    "20260907_0120_foundation_generation",
+    "20260908_0121_account_entitlement_budget",
+    "20260908_0121_corpus_foundation",
+    "20260908_0122_source_work_manifest",
+    "20260908_0123_source_analysis_dimensions",
+    "20260909_0124_corpus_fk_indexes",
+    "20260909_0125_corpus_ingestion_bridge",
+    "20260909_0126_corpus_processing",
+    "20260909_0127_corpus_curation",
+    "20260910_0128_corpus_operations",
+    "20260912_0129_corpus_member_fk_indexes",
+    "20260912_0130_creative_experiment_budget",
+    "20260913_0131_planning_result_recovery"
+  ],
+  "missing": [],
+  "extra": [],
+  "ok": true
+}

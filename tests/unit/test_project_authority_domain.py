@@ -85,6 +85,19 @@ class ProjectAuthorityDomainTests(unittest.TestCase):
                     definition["completion_contract"]["required_outbox_events"]
                 )
 
+    def test_secondary_workspace_contract_preserves_existing_operation_versions(self) -> None:
+        from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
+        definitions = project_authority_definitions(application_build_id="build-1", commit_sha="a" * 40)
+        secondary = next(item for item in definitions if item["name"] == "project_workspace.create")
+        self.assertEqual(secondary["definition_version"], "1.0.0")
+        self.assertTrue(all(item["definition_version"] == "1.0.2" for item in definitions if item is not secondary))
+        command = {"project_id": "project", "workspace_id": "primary", "expected_version": 1,
+                   "expected_current_asset_version_id": "project-version", "payload": {"workspace_id": "secondary"}}
+        _validate(secondary["command_schema"], command, path="$")
+        command["payload"]["book_id"] = "unilaterally-bound-book"
+        with self.assertRaises(ValueError):
+            _validate(secondary["command_schema"], command, path="$")
+
 
 if __name__ == "__main__":
     unittest.main()

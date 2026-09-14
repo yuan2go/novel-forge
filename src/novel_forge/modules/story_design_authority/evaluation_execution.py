@@ -322,7 +322,9 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
                 "NARRATIVE_EVALUATION_TARGET_DRIFT",
                 "Narrative evaluation candidate differs from its Authority version",
             )
-        dependencies = self._canonical_dependencies(document)
+        dependencies = self._canonical_dependencies(
+            document, book_id=str(metadata.get("book_id") or "")
+        )
         logical_ref = (
             f"narrative_evaluation/context_bundles/{operation_id}-{attempt_id}.json"
         )
@@ -348,6 +350,7 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         content = {
             "schema_version": "novelos.narrative_evaluation_context_bundle.v1",
             "project_id": project_id,
+            "book_id": metadata.get("book_id"),
             "operation_id": operation_id,
             "attempt_id": attempt_id,
             "source_isolation": (
@@ -421,7 +424,7 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         )
 
     def _canonical_dependencies(
-        self, document: Any
+        self, document: Any, *, book_id: str = ""
     ) -> tuple[tuple[str, Any, Any], ...]:
         """SECURITY: Resolve only immutable dependencies named by a BookDesign v5 candidate.
 
@@ -475,6 +478,8 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
             )
 
         resolved: list[tuple[str, Any, Any]] = []
+        from .domain import matches_generated_foundation_source
+
         for role, expected_asset_type in _FOUNDATION_DEPENDENCY_ASSET_TYPES.items():
             binding = by_role[role]
             asset_version_id = str(binding.get("asset_version_id") or "")
@@ -492,8 +497,13 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
                 asset_version_id=qualification_id,
             )
             qualification_content = qualification.content
+            source_kind_matches = source.asset_type == expected_asset_type
+            if source.asset_type == "planning_generation_candidate":
+                source_kind_matches = matches_generated_foundation_source(
+                    source.content, role=role, project_id=document.project_id, book_id=book_id
+                )
             valid = (
-                source.asset_type == expected_asset_type
+                source_kind_matches
                 and source.content_hash == content_hash
                 and source.lifecycle == "ACTIVE"
                 and source.eligibility == "ELIGIBLE"

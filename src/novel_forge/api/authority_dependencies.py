@@ -869,8 +869,7 @@ def build_production_execution_composition(
     codex_model = next(iter(codex_models), "")
     if codex_models:
         from novel_forge.modules.production_execution.codex_configuration import (
-            CODEX_INPUT_ONLY_OVERRIDES,
-            CODEX_SCHEMA_PROJECTION_VERSION,
+            codex_local_binding_hash,
             require_codex_home,
         )
 
@@ -962,20 +961,10 @@ def build_production_execution_composition(
                     "controlled Codex CLI version differs from its frozen identity"
                 )
             codex_entitlement = CodexAccountEntitlementSnapshot(**entitlement_values)
-        local_binding = hashlib.sha256(
-            json.dumps(
-                {
-                    "codex_home": codex_home,
-                    "executable": codex_executable,
-                    "entitlement": codex_entitlement.to_dict()
-                    if codex_entitlement
-                    else None,
-                    "input_only_overrides": CODEX_INPUT_ONLY_OVERRIDES,
-                    "schema_projection": CODEX_SCHEMA_PROJECTION_VERSION,
-                },
-                sort_keys=True,
-            ).encode()
-        ).hexdigest()
+        local_binding = codex_local_binding_hash(
+            codex_home=codex_home, executable=codex_executable,
+            entitlement=codex_entitlement.to_dict() if codex_entitlement else None,
+        )
         routes = {
             stage: replace(
                 route,

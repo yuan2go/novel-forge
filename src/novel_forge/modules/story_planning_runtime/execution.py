@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
@@ -3203,7 +3203,7 @@ class _PlanningPepPort:
             cost=normalized_cost,
             amount=amount,
             total_tokens=total_tokens,
-            accepted_candidate=True,
+            accepted_candidate=False,
             recovered_completion=recovered_completion,
         )
         execution_result = production.get("execution_result")
@@ -3273,6 +3273,7 @@ class _PlanningPepPort:
                 "provider_invoked_this_attempt": not recovered_completion,
                 "recovered_external_effect_success": recovered_completion,
                 "post_provider_failure": dict(failure or {}),
+                "candidate_validation_status": "FAILED" if failure else "PENDING_DOMAIN_VALIDATION",
             },
         )
         if recovered_completion:
@@ -4278,14 +4279,17 @@ class PostgresPlanningExecutionPreparer:
             status=planning_route.model_profile.status,
             capability_probe_ref=planning_route.model_profile.capability_probe_ref,
         )
+        profile = self._select_model_profile(command.project_id, profile)
+        identity_suffix = profile.profile_id.removeprefix(profile_id)
+        profile_id = profile.profile_id
         policy = RoutePolicy(
-            policy_id=f"planning.{suffix}.route",
+            policy_id=f"planning.{suffix}.route{identity_suffix}",
             policy_version=1,
             default_model_profile_id=profile_id,
             allowed_model_profile_ids=(profile_id,),
             rule_set_ref=f"route-rules:planning:{suffix}:v1",
             fallback_policy="FAIL_CLOSED",
-            fallback_policy_ref=f"planning.{suffix}.fail-closed",
+            fallback_policy_ref=f"planning.{suffix}.fail-closed{identity_suffix}",
             fallback_policy_version=1,
             reasoning_downgrade_policy="PROHIBITED",
             status="ACTIVE",
@@ -4531,6 +4535,18 @@ class PostgresPlanningExecutionPreparer:
                 }
             )
         repair_context: dict[str, Any] | None = None
+        if command.repair_of_operation_id:
+            from .result_recovery import require_result_repair_source
+            source = require_result_repair_source(self.database_url, command=command, operation_id=command.repair_of_operation_id, source_asset_version_id=command.repair_result_asset_version_id)
+            if source["diagnostic"] != dict(command.repair_result_diagnostic or {}):
+                raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "result repair context must use its frozen failure diagnosis")
+            documents.append(self.query.require(project_id=command.project_id, asset_version_id=source["asset_version_id"]))
+            repair_context = {
+                "contract_version": "planning-result-repair-context.v1",
+                "source_result": {"asset_version_id": source["asset_version_id"], "content_hash": source["content_hash"], "content": source["raw_result"], "operation_id": command.repair_of_operation_id},
+                "validation_failure": source["diagnostic"],
+                "instruction": "Repair this invalid raw Provider result against the frozen task and complete current Schema. It was never a Candidate or Canon. Preserve correct content, return the entire valid result; do not invent scope or omit fields.",
+            }
         if command.repair_of_candidate_id:
             repair_document = self.query.require(
                 project_id=command.project_id,
@@ -5414,6 +5430,35 @@ class PostgresPlanningExecutionPreparer:
             "saga_id": str(row[2]),
         }
 
+    def _select_model_profile(self, project_id: str, profile: ModelProfile) -> ModelProfile:
+        logical_ref = f"production_execution/model_profiles/{profile.profile_id}/v{profile.profile_version}"
+        try:
+            existing = self.query.require(project_id=project_id, logical_ref=logical_ref)
+        except KernelError as error:
+            if error.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
+            return replace(profile, profile_id=f"{profile.profile_id}.sha256.{profile.contract_hash}")
+        contract = existing.content.get("contract", existing.content)
+        expected = profile.to_dict()
+        if (
+            existing.asset_type != "model_profile"
+            or not isinstance(contract, Mapping)
+            or set(contract) != set(expected)
+            or any(type(contract[key]) is not type(value) for key, value in expected.items())
+            or contract.get("profile_id") != profile.profile_id
+            or contract.get("profile_version") != profile.profile_version
+        ):
+            raise KernelError("EXECUTION_CONTRACT_FROZEN_CONFLICT", "the retained model profile identity is not a valid typed contract")
+        try:
+            retained = ModelProfile.from_dict(contract)
+        except ValueError as error:
+            raise KernelError("EXECUTION_CONTRACT_FROZEN_CONFLICT", "the retained model profile contract is invalid") from error
+        if retained.to_dict() != contract:
+            raise KernelError("EXECUTION_CONTRACT_FROZEN_CONFLICT", "the retained model profile contract is not canonical")
+        if contract == expected:
+            return profile
+        return replace(profile, profile_id=f"{profile.profile_id}.sha256.{profile.contract_hash}")
+
     def _ensure_contract(
         self,
         *,
@@ -5444,23 +5489,31 @@ class PostgresPlanningExecutionPreparer:
                 )
             return existing
         token = _token(f"{project_id}:{logical_ref}")
-        return self.writer.materialize_output(
-            AuthorityAssetWriteCommand(
-                operation_id=operation_id,
-                project_id=project_id,
-                asset_id=f"production-execution-contract:{token}",
-                asset_type=asset_type,
-                schema_version="production-execution-contract.v1",
-                logical_ref=logical_ref,
-                category="production_execution_contracts",
-                output_key=f"production_execution.contract.{asset_type}.{token}",
-                role="execution_contract",
-                content={"contract": contract},
-                qualification_policy="production-execution-contract-v1",
-                trace_id=trace_id,
-                correlation_id=correlation_id,
+        try:
+            return self.writer.materialize_output(
+                AuthorityAssetWriteCommand(
+                    operation_id=operation_id,
+                    project_id=project_id,
+                    asset_id=f"production-execution-contract:{token}",
+                    asset_type=asset_type,
+                    schema_version="production-execution-contract.v1",
+                    logical_ref=logical_ref,
+                    category="production_execution_contracts",
+                    output_key=f"production_execution.contract.{asset_type}.{token}",
+                    role="execution_contract",
+                    content={"contract": contract},
+                    qualification_policy="production-execution-contract-v1",
+                    trace_id=trace_id,
+                    correlation_id=correlation_id,
+                )
             )
-        )
+        except KernelError as error:
+            if error.code != "AUTHORITY_ASSET_VERSION_CONFLICT":
+                raise
+            concurrent = self.query.require(project_id=project_id, logical_ref=logical_ref)
+            if concurrent.asset_type != asset_type or concurrent.content.get("contract", concurrent.content) != contract:
+                raise KernelError("EXECUTION_CONTRACT_FROZEN_CONFLICT", "concurrent Planning execution contract differs from its immutable identity") from error
+            return concurrent
 
 
 __all__ = [

@@ -1,0 +1,329 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "logical_ref": "asset-version:authority-output:13a5df41-9a27-4704-9a7b-2cf0b555e4ba:story_design.semantic_evaluation:v1",
+  "category": "narrative_design_evaluation",
+  "asset_id": "authority-output:13a5df41-9a27-4704-9a7b-2cf0b555e4ba:story_design.semantic_evaluation",
+  "asset_type": "narrative_design_evaluation",
+  "asset_version_id": "authority-output:13a5df41-9a27-4704-9a7b-2cf0b555e4ba:story_design.semantic_evaluation:v1",
+  "version_number": 1,
+  "lifecycle": "ACTIVE",
+  "eligibility": "ELIGIBLE",
+  "governance": "CLEAR",
+  "content_hash": "sha256:6363d17428edddec20cce4e5653b822c024d1d5b7f4dfbfd0280181392c145ba",
+  "content": {
+    "evaluation": {
+      "evaluations": [
+        {
+          "layer": "STORY_INTENT",
+          "criteria": [
+            {
+              "verdict": "PASS",
+              "criterion": "PREMISE_COHERENCE",
+              "rationale": "磨刀少年争取试工的欲望，经旧刃试手成功引出独立承保责任，再由误判、赔偿与调整合作推动真实护运，因果链完整。有限听隙支撑起点优势，也容许寿命判断失败；试手收益与经营资格明确分离，前提没有自相矛盾。",
+              "evidence_refs": [
+                "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna",
+                "asset_version_id=authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1; content_hash=sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6; path=/selected_inputs/1/semantic_payload/narrative_engine"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "THEME_CONFLICT_ALIGNMENT",
+              "rationale": "自主选择与保障之间的主题落实为入门授权、承保范围、赔偿和伙伴拒绝等具体冲突。接受保障、坚持独立、共同决策均有实际收益与损失；失败迫使陆照改变定价和权限，主题由行动后果检验，未预设所有人接受同一答案。",
+              "evidence_refs": [
+                "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/cross_layer_synthesis/0",
+                "asset_version_id=authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1; content_hash=sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2; path=/selected_inputs/2/semantic_payload/choice_tests"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "GENRE_READER_PROMISE_ALIGNMENT",
+              "rationale": "真气、兵刃、门派与护运冒险共同承载国风玄幻和江湖成长承诺。前三章小胜利及实得奖金、前十章打法与关系变化、首卷真实履约形成分层回报；生活趣味和可保留奖励避免责任成本吞没阅读满足。此处证明设计承载力，不宣称正文已兑现。",
+              "evidence_refs": [
+                "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna/emotional_contract",
+                "asset_version_id=authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1; content_hash=sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787; path=/selected_inputs/4/semantic_payload/setup_progress_payoff"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "ENDING_INTENT_REACHABILITY",
+              "rationale": "结局从取得独立工作空间，递进到师承授权及多队机会分配，最终检验陆照是否允许别人自主选择。闭合条件要求真实任务、既有能力、验收结算与实际让权，并保留已付金钱和时间损失；终局无需无敌或临时规则，具备本阶段可支持的抵达路径。",
+              "evidence_refs": [
+                "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/cross_layer_synthesis/1",
+                "asset_version_id=authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1; content_hash=sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57; path=/selected_inputs/3/semantic_payload/closure_conditions"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "CORE_CONFLICT_CLARITY",
+              "rationale": "争夺对象是年度养刃与护运业务中的独立接约空间，双方分别依赖持续保障收入和自主谋生渠道。陶靖的待遇与授权条件明确；签约截止、真实履约和有限责任提供压力及胜负尺度，武力胜负不能自动决定经营权。",
+              "evidence_refs": [
+                "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna/recurring_choice",
+                "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/world_foundation/sections/politics_factions",
+                "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/world_foundation/sections/space_time_geography"
+              ],
+              "repair_directive": ""
+            }
+          ],
+          "skill_ref": "topic-development",
+          "profile_id": "story-intent-semantic-v1",
+          "profile_hash": "sha256:40a6e55caf9292b3b796bee31384387906e0f76c5a4b932d33be88ca64384d7d",
+          "capability_id": "creative.proposal.generate",
+          "profile_version": "1.0.0"
+        },
+        {
+          "layer": "STORY_FOUNDATION",
+          "criteria": [
+            {
+              "verdict": "PASS",
+              "criterion": "WORLD_RULE_COHERENCE",
+              "rationale": "冻结世界语义明确听隙接触与信息域、不可逆刃损、境界差距、至少十二个有效训练日及恢复限制，彼此相容。资源批次、价格、路线时长、年度期限和消息延迟支持同一运行尺度；履约与责任规则也支撑候选的赔偿和合作因果。",
+              "evidence_refs": [
+                "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna/distinctive_mechanism",
+                "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/world_foundation/rules",
+                "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/world_foundation/sections"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "CHARACTER_CONFLICT_FIT",
+              "rationale": "陆照对署名的渴望与过度承诺直接制造失误；叶满汀的船工生计、杜衡的照护与俸钱、岑素的署名和返工利益分别限制航行、护卫和生产。人物具备独立欲望、缺点、拒绝权及知情边界，关系变化能够实际改变资源和任务。",
+              "evidence_refs": [
+                "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/cross_layer_synthesis/0/narrative_function",
+                "asset_version_id=authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1; content_hash=sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e; path=/selected_inputs/6/semantic_payload/characters",
+                "asset_version_id=authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1; content_hash=sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e; path=/selected_inputs/6/semantic_payload/relationships"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "OPPOSITION_CAPACITY",
+              "rationale": "陶靖拥有成本核算、调度、条款和真实待遇等持续施压手段；回澜门具有武者、工坊、采购与抚恤优势，同时受收入、库存、授权和内部异议限制。商号选择及散户分歧进一步制造阻力，对抗不依赖对手失智、无限资源或全知。",
+              "evidence_refs": [
+                "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna/recurring_choice",
+                "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/factions",
+                "asset_version_id=authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1; content_hash=sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e; path=/selected_inputs/6/semantic_payload/characters/3"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "NARRATIVE_DNA_DISTINCTNESS",
+              "rationale": "养刃触觉、有限真气、材料疲劳与承保责任形成相互制约的机制：同一旧刃优势既产生试手收益，也可能诱发长期可靠性误判和赔偿。手艺归属继续连接师承与机会分配，形成超出名称替换的叙事辨识度；此判断仅限冻结设计，不作外部作品查重结论。",
+              "evidence_refs": [
+                "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna",
+                "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/rules/2"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "LONGFORM_FOUNDATION_CAPACITY",
+              "rationale": "首卷具有立足、试行、失败换法和履约兑现的完整推进；后两卷分别增加师承授权及多队分配压力，改变能力职责和关系规模。世界扩展有触发条件，人物合作存在持续摩擦，足以支持暂定120章的基础容量；本阶段无需以尚未生成的BookPlan、ArcPlan或ChapterPlan证明执行完成。",
+              "evidence_refs": [
+                "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/cross_layer_synthesis",
+                "asset_version_id=authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1; content_hash=sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6; path=/selected_inputs/1/semantic_payload/serialization_potential",
+                "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/deferred_dimensions",
+                "asset_version_id=authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1; content_hash=sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e; path=/selected_inputs/6/semantic_payload/relationships"
+              ],
+              "repair_directive": ""
+            }
+          ],
+          "skill_ref": "worldbuilding",
+          "profile_id": "story-foundation-semantic-v1",
+          "profile_hash": "sha256:a23c83d15f1717c069c1975cae3121a6127029b09e1aa740264cfa721be3571b",
+          "capability_id": "world.design.generate",
+          "profile_version": "1.0.0"
+        }
+      ],
+      "schema_version": "progressive-narrative-qualification.v1"
+    },
+    "project_id": "first-novel-pilot-20260912",
+    "qualification": {
+      "status": "PASS",
+      "receipts": [
+        {
+          "layer": "STORY_INTENT",
+          "status": "PASS",
+          "evidence": {
+            "layer": "STORY_INTENT",
+            "criteria": [
+              {
+                "verdict": "PASS",
+                "criterion": "PREMISE_COHERENCE",
+                "rationale": "磨刀少年争取试工的欲望，经旧刃试手成功引出独立承保责任，再由误判、赔偿与调整合作推动真实护运，因果链完整。有限听隙支撑起点优势，也容许寿命判断失败；试手收益与经营资格明确分离，前提没有自相矛盾。",
+                "evidence_refs": [
+                  "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna",
+                  "asset_version_id=authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1; content_hash=sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6; path=/selected_inputs/1/semantic_payload/narrative_engine"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "THEME_CONFLICT_ALIGNMENT",
+                "rationale": "自主选择与保障之间的主题落实为入门授权、承保范围、赔偿和伙伴拒绝等具体冲突。接受保障、坚持独立、共同决策均有实际收益与损失；失败迫使陆照改变定价和权限，主题由行动后果检验，未预设所有人接受同一答案。",
+                "evidence_refs": [
+                  "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/cross_layer_synthesis/0",
+                  "asset_version_id=authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1; content_hash=sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2; path=/selected_inputs/2/semantic_payload/choice_tests"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "GENRE_READER_PROMISE_ALIGNMENT",
+                "rationale": "真气、兵刃、门派与护运冒险共同承载国风玄幻和江湖成长承诺。前三章小胜利及实得奖金、前十章打法与关系变化、首卷真实履约形成分层回报；生活趣味和可保留奖励避免责任成本吞没阅读满足。此处证明设计承载力，不宣称正文已兑现。",
+                "evidence_refs": [
+                  "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna/emotional_contract",
+                  "asset_version_id=authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1; content_hash=sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787; path=/selected_inputs/4/semantic_payload/setup_progress_payoff"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "ENDING_INTENT_REACHABILITY",
+                "rationale": "结局从取得独立工作空间，递进到师承授权及多队机会分配，最终检验陆照是否允许别人自主选择。闭合条件要求真实任务、既有能力、验收结算与实际让权，并保留已付金钱和时间损失；终局无需无敌或临时规则，具备本阶段可支持的抵达路径。",
+                "evidence_refs": [
+                  "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/cross_layer_synthesis/1",
+                  "asset_version_id=authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1; content_hash=sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57; path=/selected_inputs/3/semantic_payload/closure_conditions"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "CORE_CONFLICT_CLARITY",
+                "rationale": "争夺对象是年度养刃与护运业务中的独立接约空间，双方分别依赖持续保障收入和自主谋生渠道。陶靖的待遇与授权条件明确；签约截止、真实履约和有限责任提供压力及胜负尺度，武力胜负不能自动决定经营权。",
+                "evidence_refs": [
+                  "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna/recurring_choice",
+                  "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/world_foundation/sections/politics_factions",
+                  "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/world_foundation/sections/space_time_geography"
+                ],
+                "repair_directive": ""
+              }
+            ],
+            "skill_ref": "topic-development",
+            "profile_id": "story-intent-semantic-v1",
+            "profile_hash": "sha256:40a6e55caf9292b3b796bee31384387906e0f76c5a4b932d33be88ca64384d7d",
+            "capability_id": "creative.proposal.generate",
+            "profile_version": "1.0.0"
+          },
+          "skill_ref": "topic-development",
+          "profile_id": "story-intent-semantic-v1",
+          "profile_hash": "sha256:40a6e55caf9292b3b796bee31384387906e0f76c5a4b932d33be88ca64384d7d",
+          "capability_id": "creative.proposal.generate",
+          "criterion_count": 5,
+          "evaluation_hash": "sha256:f29f204d39d48ee1dcbbdd89328ada4311c7dbd06e40073c42ae1a2aaee3b829",
+          "profile_version": "1.0.0"
+        },
+        {
+          "layer": "STORY_FOUNDATION",
+          "status": "PASS",
+          "evidence": {
+            "layer": "STORY_FOUNDATION",
+            "criteria": [
+              {
+                "verdict": "PASS",
+                "criterion": "WORLD_RULE_COHERENCE",
+                "rationale": "冻结世界语义明确听隙接触与信息域、不可逆刃损、境界差距、至少十二个有效训练日及恢复限制，彼此相容。资源批次、价格、路线时长、年度期限和消息延迟支持同一运行尺度；履约与责任规则也支撑候选的赔偿和合作因果。",
+                "evidence_refs": [
+                  "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna/distinctive_mechanism",
+                  "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/world_foundation/rules",
+                  "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/world_foundation/sections"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "CHARACTER_CONFLICT_FIT",
+                "rationale": "陆照对署名的渴望与过度承诺直接制造失误；叶满汀的船工生计、杜衡的照护与俸钱、岑素的署名和返工利益分别限制航行、护卫和生产。人物具备独立欲望、缺点、拒绝权及知情边界，关系变化能够实际改变资源和任务。",
+                "evidence_refs": [
+                  "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/cross_layer_synthesis/0/narrative_function",
+                  "asset_version_id=authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1; content_hash=sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e; path=/selected_inputs/6/semantic_payload/characters",
+                  "asset_version_id=authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1; content_hash=sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e; path=/selected_inputs/6/semantic_payload/relationships"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "OPPOSITION_CAPACITY",
+                "rationale": "陶靖拥有成本核算、调度、条款和真实待遇等持续施压手段；回澜门具有武者、工坊、采购与抚恤优势，同时受收入、库存、授权和内部异议限制。商号选择及散户分歧进一步制造阻力，对抗不依赖对手失智、无限资源或全知。",
+                "evidence_refs": [
+                  "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna/recurring_choice",
+                  "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/factions",
+                  "asset_version_id=authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1; content_hash=sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e; path=/selected_inputs/6/semantic_payload/characters/3"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "NARRATIVE_DNA_DISTINCTNESS",
+                "rationale": "养刃触觉、有限真气、材料疲劳与承保责任形成相互制约的机制：同一旧刃优势既产生试手收益，也可能诱发长期可靠性误判和赔偿。手艺归属继续连接师承与机会分配，形成超出名称替换的叙事辨识度；此判断仅限冻结设计，不作外部作品查重结论。",
+                "evidence_refs": [
+                  "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/narrative_dna",
+                  "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/rules/2"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "LONGFORM_FOUNDATION_CAPACITY",
+                "rationale": "首卷具有立足、试行、失败换法和履约兑现的完整推进；后两卷分别增加师承授权及多队分配压力，改变能力职责和关系规模。世界扩展有触发条件，人物合作存在持续摩擦，足以支持暂定120章的基础容量；本阶段无需以尚未生成的BookPlan、ArcPlan或ChapterPlan证明执行完成。",
+                "evidence_refs": [
+                  "asset_version_id=bcb25950-6822-4552-a043-1251694c78c1; content_hash=sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83; path=/selected_inputs/0/candidate/cross_layer_synthesis",
+                  "asset_version_id=authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1; content_hash=sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6; path=/selected_inputs/1/semantic_payload/serialization_potential",
+                  "asset_version_id=authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1; content_hash=sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96; path=/selected_inputs/5/semantic_payload/deferred_dimensions",
+                  "asset_version_id=authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1; content_hash=sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e; path=/selected_inputs/6/semantic_payload/relationships"
+                ],
+                "repair_directive": ""
+              }
+            ],
+            "skill_ref": "worldbuilding",
+            "profile_id": "story-foundation-semantic-v1",
+            "profile_hash": "sha256:a23c83d15f1717c069c1975cae3121a6127029b09e1aa740264cfa721be3571b",
+            "capability_id": "world.design.generate",
+            "profile_version": "1.0.0"
+          },
+          "skill_ref": "worldbuilding",
+          "profile_id": "story-foundation-semantic-v1",
+          "profile_hash": "sha256:a23c83d15f1717c069c1975cae3121a6127029b09e1aa740264cfa721be3571b",
+          "capability_id": "world.design.generate",
+          "criterion_count": 5,
+          "evaluation_hash": "sha256:c7f04d003aebb9b00edb501b6c19edcd007699352e5c030fb6cbb201f96ca0b3",
+          "profile_version": "1.0.0"
+        }
+      ],
+      "schema_version": "progressive-narrative-qualification.v1",
+      "qualification_hash": "sha256:7153e2ad5790683a79ee7f4379bc5a0a3e25cbcd4948f672aae19e4ac9b4eb46"
+    },
+    "schema_version": "narrative-design-evaluation.v1",
+    "provider_evidence": [
+      {
+        "content_hash": "sha256:7c63336b962c39a09cfad6533ffb3a39405da6880b5a16fc539357c09481f9e5",
+        "asset_version_id": "a2fc1fdc-157f-4c93-acce-9737a384fa45"
+      }
+    ],
+    "provider_execution": {
+      "model_id": "gpt-6-astra",
+      "provider_id": "codex-cli",
+      "skill_version": "quality-review-narrative-evaluator-v1",
+      "prompt_version": "prompt-system:narrative-semantic-evaluation-pack@v3",
+      "route_snapshot_id": "production_execution/routes/d365070e2d374c243695",
+      "provider_result_hash": "sha256:1c8c6fb02e531450b28c7122f579b6cfed7e00b027262f2e58ea396fb7148748",
+      "provider_evidence_hash": "sha256:bcf46d3fce589bbd5c61947cc15c8f656c59c86a469452bd2a38cf658c6cc639"
+    },
+    "evaluation_attempt_id": "30cc072a-3f9e-40da-85c9-380a7950d0b1",
+    "candidate_content_hash": "sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83",
+    "evaluation_operation_id": "13a5df41-9a27-4704-9a7b-2cf0b555e4ba",
+    "generation_operation_id": "73eb9a88-9a60-43f7-b0ad-ac7a40356175",
+    "evaluation_evidence_hash": "sha256:af93c270dff97e3268cd1f523910f0c7466a83fa5228276df575ec5ce4adcf72",
+    "evaluator_execution_class": "MODEL_PROVIDER",
+    "candidate_asset_version_id": "bcb25950-6822-4552-a043-1251694c78c1",
+    "provider_evidence_asset_version_ids": [
+      "a2fc1fdc-157f-4c93-acce-9737a384fa45"
+    ]
+  },
+  "updated_at": "2026-09-13 19:36:09.127381+00:00"
+}

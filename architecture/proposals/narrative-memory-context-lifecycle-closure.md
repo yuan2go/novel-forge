@@ -9,19 +9,19 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `abe2e0df7c817ed5faf1fd07839f19d796304371`
+Reality baseline: `4ca65752e7684e85776f882604f66dd66bc4a0ac`
 Baseline implementation identity:
-`sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03`
+`sha256:f2ff37fa36ec31862595c9a9a9383baabff13ec0b0956446bf443bd0b7adc713`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-13",
+  "reviewed_on": "2026-09-14",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "abe2e0df7c817ed5faf1fd07839f19d796304371",
-    "implementation_tree_sha": "sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03"
+    "sha": "4ca65752e7684e85776f882604f66dd66bc4a0ac",
+    "implementation_tree_sha": "sha256:f2ff37fa36ec31862595c9a9a9383baabff13ec0b0956446bf443bd0b7adc713"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -138,7 +138,7 @@ Baseline implementation identity:
 }
 -->
 
-Current implementation review (2026-09-13): The changed storage scope appends only the experiment-budget policy owner and immutable reservation-proof trigger. Frozen runner input bytes are validated before parsing, without changing accepted memory, Context ownership, Digest, retention, GC or cutover semantics. The remaining decisions and PR-B through PR-E work remain outstanding. No real Provider or independent editorial evidence is added by this review.
+Current implementation review at `4c636037a6ed529af2ce6ba7d45e719638734ff5` (2026-09-14; code-agent lifecycle review): The scoped implementation delta consists of the Planning result-recovery migration and its registry entry. It adds immutable links from a bounded repair generation to the failed Operation and retained result, plus a unique successor constraint. It does not change Context compilation, accepted memory, structured Digest, diagnostic retention, retrieval representations or cutover/GC behavior. All three remaining decisions and Gates B–E remain outstanding. This review adds no real Provider, independent editorial or production qualification.
 
 
 Gate A is implemented by the effective policy compiler, v8 Context manifest and frozen

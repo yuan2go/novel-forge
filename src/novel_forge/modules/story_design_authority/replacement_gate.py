@@ -595,7 +595,8 @@ def assert_narrative_replacement_execution_gate_in_uow(
                            AND evaluation_operation.causation_operation_id=
                                evaluation.predecessor_operation_id
                        )
-                   )
+                   ),
+               evaluation.formation_recovery_ref
         FROM authority_narrative_evaluation_execution AS evaluation
         JOIN authority_operation AS evaluation_operation
           ON evaluation_operation.operation_id=evaluation.operation_id
@@ -647,6 +648,7 @@ def assert_narrative_replacement_execution_gate_in_uow(
     predecessor_execution_id = str(row[10] or "")
     predecessor_generation = int(row[11] or 0)
     predecessor_operation_id = str(row[12] or "")
+    formation_recovery_ref = str(row[16] or "")
     if raw_opening_binding is None:
         opening_binding: dict[str, Any] = {}
     elif isinstance(raw_opening_binding, dict):
@@ -668,11 +670,13 @@ def assert_narrative_replacement_execution_gate_in_uow(
         or not bool(row[13])
         or not bool(row[14])
         or not bool(row[15])
-        or (generation > 1 and not recovery_intent_id)
+        or (generation > 1 and not (recovery_intent_id or formation_recovery_ref))
+        or bool(recovery_intent_id and formation_recovery_ref)
         or (
             generation == 1
             and (
                 recovery_intent_id
+                or formation_recovery_ref
                 or predecessor_execution_id
                 or predecessor_generation
                 or predecessor_operation_id
@@ -756,6 +760,18 @@ def assert_narrative_replacement_execution_gate_in_uow(
             "replacement": False,
             "gate_open": True,
         }
+    if formation_recovery_ref:
+        from .formation_evaluation_recovery import assert_formation_continuation_gate
+
+        if opening_binding:
+            raise KernelError("NARRATIVE_EVALUATION_FORMATION_GATE_CLOSED", "Formation continuation cannot replace an Opening-bound evaluation")
+        assert_formation_continuation_gate(
+            uow, operation_id=operation_id, project_id=project_id,
+            recovery_id=formation_recovery_ref,
+        )
+        return {"operation_id": operation_id, "project_id": project_id,
+                "generation": generation, "replacement": True, "gate_open": True,
+                "formation_recovery_ref": formation_recovery_ref}
     _assert_live_replacement_opening(
         uow,
         operation_id=operation_id,

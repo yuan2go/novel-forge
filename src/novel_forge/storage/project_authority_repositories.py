@@ -51,6 +51,16 @@ class ProjectAuthorityRepository:
                 project_asset_version_id, operation_id, operation_id,
             ],
         )
+        self.create_workspace(workspace=workspace, workspace_asset_version_id=workspace_asset_version_id,
+                              operation_id=operation_id)
+
+    def require_new_workspace(self, workspace_id: str) -> None:
+        self.cursor.execute("SELECT project_id FROM authority_workspace WHERE workspace_id=%s", [workspace_id])
+        if self.cursor.fetchone() is not None:
+            raise KernelError("WORKSPACE_SCOPE_CONFLICT", "workspace identity already exists and cannot be reassigned")
+
+    def create_workspace(self, *, workspace: dict[str, Any], workspace_asset_version_id: str, operation_id: str) -> None:
+        self._require_asset_scope(workspace["project_id"], workspace_asset_version_id, "workspace_record")
         self.cursor.execute(
             """
             INSERT INTO authority_workspace (
@@ -58,6 +68,8 @@ class ProjectAuthorityRepository:
                 current_asset_version_id, created_by_operation_id,
                 last_operation_id
             ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT(workspace_id) DO NOTHING
+            RETURNING workspace_id
             """,
             [
                 workspace["workspace_id"], workspace["project_id"],
@@ -65,6 +77,8 @@ class ProjectAuthorityRepository:
                 workspace_asset_version_id, operation_id, operation_id,
             ],
         )
+        if self.cursor.fetchone() is None:
+            raise KernelError("WORKSPACE_SCOPE_CONFLICT", "workspace identity was created concurrently")
 
     def update(
         self,

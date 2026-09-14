@@ -1,0 +1,23 @@
+{
+  "contract_version": "formation-generation.v2",
+  "approval_mode": "AUTO",
+  "creative_candidates": 2,
+  "target_chapters": 120,
+  "title": "借锋",
+  "auto_authorization": {
+    "contract_version": "formation-auto-authorization.v1",
+    "policy_version": "formation-auto-policy.v1",
+    "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913",
+    "authorized_by_principal_id": "first-novel-pilot-operator",
+    "project_id": "first-novel-pilot-20260912",
+    "workspace_id": "guofeng-xuanhuan-01-workspace",
+    "book_id": "guofeng-xuanhuan-01",
+    "formation_run_id": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+    "allowed_actions": [
+      "book_design.candidate.activate",
+      "book_design.candidate.decide",
+      "story_planning.candidate.activate",
+      "story_planning.candidate.approve"
+    ]
+  }
+}

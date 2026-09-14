@@ -1,0 +1,121 @@
+{
+  "observed_at": "2026-09-13T22:45:22.322865+00:00",
+  "source_sha": "b2541ecdc314de38aeee34d606047e1e04ed0b15",
+  "book_id": "guofeng-xuanhuan-01",
+  "title": "借锋",
+  "target_volume_chapters": 40,
+  "generated_chapters": 0,
+  "accepted_chapters": 0,
+  "exported_chapters": 0,
+  "han_characters": 0,
+  "overall_result": "INCOMPLETE_HARD_BLOCKED",
+  "user_facing_blocker": "全书大纲调用在570秒后超时，未返回最终结果或usage。原生恢复评估现为UNKNOWN_AMBIGUOUS；未知结果未核清，不能重发。正文尚未生成。",
+  "native_assessment_id": "book-opening-recovery-assessment:735079353ade1ca8d5ff87ac39f3990674a5d9cc90168f9959281dcf62bf7319",
+  "opening": {
+    "lifecycle": "FAILED",
+    "version": 1,
+    "current_execution_generation": 1
+  },
+  "provider_submit_after_timeout": false,
+  "missing_evidence": [
+    "Original Provider final result and usage, or verifiable conclusive termination outcome"
+  ],
+  "ordinary_reapproval_cannot_resolve": true,
+  "model_route_unchanged": true,
+  "old_book_active_creation_stopped": true,
+  "current_task_calls": 17,
+  "cumulative_calls": 28,
+  "current_task_observable_tokens": 521673,
+  "cumulative_observable_tokens": 841708,
+  "unknown_charged_tokens": 332319,
+  "cumulative_conservative_tokens": 1174027,
+  "remaining_phase_caps": {
+    "DESIGN": {
+      "calls": 75,
+      "conservative_tokens": 2486883
+    },
+    "CREATION_EARLY": {
+      "calls": 90,
+      "conservative_tokens": 2250000
+    },
+    "CREATION_LATE": {
+      "calls": 210,
+      "conservative_tokens": 4250000
+    },
+    "REPAIR": {
+      "calls": 57,
+      "conservative_tokens": 1339090
+    }
+  },
+  "remaining_shared_calls": 432,
+  "remaining_shared_conservative_tokens": 10325973,
+  "minimum_additional_calls_assumption": {
+    "opening": 42,
+    "fourteen_chapter_groups": 84,
+    "forty_chapters": 640
+  },
+  "minimum_forecast_cumulative_calls": 794,
+  "forecast_excludes": [
+    "additional repair",
+    "checkpoint review",
+    "volume end review",
+    "replanning"
+  ],
+  "third_chapter_recalibration": "NOT_REACHED",
+  "acceptance_states": {
+    "GENERATION_CONTRACT_RECOVERY": {
+      "evidence": "EXECUTABLE",
+      "state": "CONTRACT_AND_CANDIDATE_RECOVERY_IMPLEMENTED; UNKNOWN_PROVIDER_RESULT_BLOCKED"
+    },
+    "NEW_BOOK_ISOLATION": {
+      "evidence": "EXECUTABLE",
+      "state": "NATIVE_INDEPENDENT_BOOK_AND_FORMATION"
+    },
+    "WORLD_AND_CHARACTER_DESIGN": {
+      "evidence": "EXECUTABLE",
+      "state": "ACTIVE_NATIVE_ASSETS"
+    },
+    "BOOK_OUTLINE": {
+      "state": "NOT_GENERATED; PROVIDER_UNKNOWN"
+    },
+    "VOLUME_ONE_ARCS_AND_CHAPTER_PLANS": {
+      "state": "NOT_GENERATED"
+    },
+    "REAL_PROSE_GENERATION": {
+      "state": "NOT_GENERATED"
+    },
+    "ACCEPTED_VOLUME_ONE": {
+      "state": "NOT_GENERATED"
+    },
+    "CROSS_CHAPTER_CONTINUITY": {
+      "state": "NOT_EVALUATED"
+    },
+    "AI_EDITORIAL_REVIEW": {
+      "state": "FOUNDATION_SEMANTIC_REVIEW_COMPLETED; PROSE_NOT_REVIEWED"
+    },
+    "INDEPENDENT_HUMAN_REVIEW": {
+      "state": "NOT_REVIEWED"
+    }
+  },
+  "second_volume_ready": false,
+  "engineering": {
+    "source_sha": "b2541ecdc314de38aeee34d606047e1e04ed0b15",
+    "focused": [
+      {
+        "report": "opening-recovery-b2541ecd-focused.xml",
+        "tests": 49,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "source_revision": "b2541ecdc314de38aeee34d606047e1e04ed0b15",
+        "evidence_class": "ISOLATED_TEST",
+        "provider_invoked": false
+      }
+    ],
+    "complete_qualification_status": "FAIL",
+    "complete_qualification_report": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/evidence/qualification-b2541ecd/p0-backend-qualification-b2541ecdc314de38aeee34d606047e1e04ed0b15.json",
+    "older_reports_retained": true,
+    "source_baseline_sha": "5cddba5be0b436ced7bd2c6496ac9cdb16bf96eb",
+    "production_claim": "NO_PROSE_PRODUCTION_EVIDENCE"
+  }
+}

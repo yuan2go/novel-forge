@@ -1,0 +1,20 @@
+{
+  "observed_at": "2026-09-13T18:15:52.460132+00:00",
+  "source": "CURRENT_USER_PROMPT_AUTHORIZED_NATIVE_RECOVERY",
+  "registration_executor": "AI_CODE_AGENT",
+  "operator": "first-novel-pilot-operator",
+  "source_operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+  "source_external_effect_id": "47ddae96-5824-4f78-bc2a-afc4cd855767",
+  "process_receipt_status": "TIMED_OUT",
+  "result_integrity": "MISSING",
+  "local_termination_only": true,
+  "upstream_cancellation_not_claimed": true,
+  "native_effect_status": "FAILED_RETRYABLE",
+  "native_recovery_instruction": "RESUME_WITH_SAME_FROZEN_INPUTS",
+  "candidate_exists": false,
+  "observed_usage_available": false,
+  "unknown_usage_conservative_charge": 141863,
+  "reservation_id": "5e93867c-3cc2-4944-a40f-0c6bcffb082b",
+  "prior_charge_retained": true,
+  "planned_action": "One native CAS resume and one bounded next Attempt of the same frozen WORLD_BIBLE node; native gates decide dispatch. No runtime/prompt/task edits and no completed upstream regeneration."
+}

@@ -54,6 +54,7 @@ class AuthorityHandlerRepository:
         evaluation_candidate_asset_version_id: str = "",
         story_design_candidate_asset_version_id: str = "",
         repair_candidate_asset_version_id: str = "",
+        repair_result_asset_version_id: str = "",
         plan_change_candidate_asset_version_id: str = "",
         semantic_revalidation_target_asset_version_id: str = "",
     ) -> list[dict[str, Any]]:
@@ -139,6 +140,13 @@ class AuthorityHandlerRepository:
                 and row[5] == "INELIGIBLE"
                 and row[6] == "CLEAR"
             )
+            repair_result = (
+                asset_version_id == repair_result_asset_version_id
+                and row[1] == "planning_generation_result_failure"
+                and row[4] == "ACTIVE"
+                and row[5] == "INELIGIBLE"
+                and row[6] == "CLEAR"
+            )
             plan_change_candidate = (
                 asset_version_id == plan_change_candidate_asset_version_id
                 and row[1] == "planning_generation_candidate"
@@ -152,6 +160,7 @@ class AuthorityHandlerRepository:
                 and not evaluation_candidate
                 and not story_design_candidate
                 and not repair_candidate
+                and not repair_result
                 and not plan_change_candidate
             ):
                 raise KernelError(
@@ -166,6 +175,7 @@ class AuthorityHandlerRepository:
                     evaluation_candidate
                     or story_design_candidate
                     or repair_candidate
+                    or repair_result
                     or plan_change_candidate
                 )
                 else {None, "ELIGIBLE"}

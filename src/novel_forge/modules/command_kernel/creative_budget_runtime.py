@@ -58,6 +58,42 @@ def _arm(plan: dict[str, Any], project_id: str) -> dict[str, Any]:
     return next(a for a in plan["arms"] if a["project_id"] == project_id)
 
 
+def _validate_reallocation(plan: dict[str, Any], previous: dict[str, Any], *, project_id: str) -> None:
+    prior = previous["comparison_budget"]
+    reference = plan.get("previous_policy") or {}
+    if (plan["contract_version"] != _contract().PRODUCTION_BOOK_VERSION
+        or prior["contract_version"] not in _contract().SINGLE_BOOK_VERSIONS
+        or reference != {"policy_version": previous["policy_version"], "policy_hash": policy_hash(previous),
+                         "contract_hash": _contract().contract_hash(prior)}):
+        raise KernelError("CREATIVE_BUDGET_PREDECESSOR_MISMATCH", "reallocation must append to the exact current native single-book policy")
+    if (plan["experiment_id"] != prior["experiment_id"] or plan["accounting_basis"] != prior["accounting_basis"]
+        or plan["shared_total"] != prior["shared_total"]
+        or {a["project_id"] for a in plan["arms"]} != {project_id}
+        or {a["project_id"] for a in prior["arms"]} != {project_id}):
+        raise KernelError("CREATIVE_BUDGET_REALLOCATION_SCOPE_MISMATCH", "reallocation must retain the project, lifetime identity and exact cumulative ceiling")
+
+
+def _lineage_plans(cursor: Any, plan: dict[str, Any], project_id: str) -> dict[str, dict[str, Any]]:
+    result = {}
+    current = plan
+    while True:
+        digest = _contract().contract_hash(current)
+        if digest in result:
+            raise KernelError("CREATIVE_BUDGET_PREDECESSOR_MISMATCH", "budget predecessor lineage contains a cycle")
+        result[digest] = current
+        if current["contract_version"] != _contract().PRODUCTION_BOOK_VERSION:
+            return result
+        reference = current["previous_policy"]
+        cursor.execute("""SELECT content,content_hash FROM authority_runtime_policy_version
+            WHERE owner=%s AND project_id=%s AND policy_version=%s""", [OWNER, project_id, reference["policy_version"]])
+        row = cursor.fetchone()
+        if row is None or row[1] != reference["policy_hash"] or policy_hash(row[0]) != row[1]:
+            raise KernelError("CREATIVE_BUDGET_PREDECESSOR_MISMATCH", "budget predecessor native policy is missing or altered")
+        _contract().validate_policy(row[0])
+        _validate_reallocation(current, row[0], project_id=project_id)
+        current = row[0]["comparison_budget"]
+
+
 def validate_selection_in_uow(uow: AuthorityUnitOfWork, *, project_id: str, content: dict[str, Any]) -> None:
     _contract().validate_policy(content)
     if content["authorization"]["project_id"] != project_id:
@@ -66,11 +102,20 @@ def validate_selection_in_uow(uow: AuthorityUnitOfWork, *, project_id: str, cont
     _lock(uow.cursor, "configuration")
     _lock(uow.cursor, plan["experiment_id"])
     projects = {a["project_id"] for a in plan["arms"]}
-    for selected in _selected(uow.cursor):
+    selections = _selected(uow.cursor)
+    own = next((row for row in selections if row["project_id"] == project_id), None)
+    if plan["contract_version"] == _contract().PRODUCTION_BOOK_VERSION and (own is None or own["policy"]["comparison_budget"] != plan):
+        if own is None:
+            raise KernelError("CREATIVE_BUDGET_PREDECESSOR_MISMATCH", "production reallocation requires an existing selected native policy")
+        _validate_reallocation(plan, own["policy"], project_id=project_id)
+        if content["authorization"]["authorization_ref"] == own["policy"]["authorization"]["authorization_ref"]:
+            raise KernelError("CREATIVE_BUDGET_AUTHORIZATION_MISMATCH", "reallocation requires a new explicit authorization reference")
+    for selected in selections:
         prior = selected["policy"]["comparison_budget"]
         overlap = projects & {a["project_id"] for a in prior["arms"]}
         if (overlap or prior["experiment_id"] == plan["experiment_id"]) and prior != plan:
-            raise KernelError("CREATIVE_BUDGET_PLAN_IMMUTABLE", "participants and allocations cannot be reassigned by a new grant")
+            if selected is not own or plan["contract_version"] != _contract().PRODUCTION_BOOK_VERSION:
+                raise KernelError("CREATIVE_BUDGET_PLAN_IMMUTABLE", "participants and allocations require an exact native reallocation predecessor")
     usage = _usage(uow.cursor, plan, project_id)
     _check_limits(content, usage, phase=None, tokens=0, calls=0)
 
@@ -91,7 +136,8 @@ def _effect_identity(cursor: Any, effect_id: str, project_id: str) -> dict[str, 
     return dict(zip(("operation_name", "capability", "request_payload", "command_payload", "attempt_no", "request_hash"), row, strict=True))
 
 
-def _business_scope(cursor: Any, identity: dict[str, Any], *, project_id: str, generation: int = 1) -> dict[str, Any]:
+def _business_scope(cursor: Any, identity: dict[str, Any], *, project_id: str, generation: int = 1,
+                    plan: dict[str, Any] | None = None) -> dict[str, Any]:
     from novel_forge.modules.command_kernel.creative_budget_scope import classify_business_scope
     if identity["operation_name"] == "story_design.semantic_evaluate":
         request = identity["request_payload"]
@@ -127,7 +173,8 @@ def _business_scope(cursor: Any, identity: dict[str, Any], *, project_id: str, g
             "definition_name": rows[0][0], "command_payload": original,
             "source_ref": identities,
         }}
-    return classify_business_scope(identity, dispatch_generation=generation)
+    return classify_business_scope(identity, dispatch_generation=generation,
+                                   chapter_ranges=_arm(plan, project_id)["chapter_ranges"] if plan is not None else None)
 
 
 def _phase(identity: dict[str, Any]) -> str:
@@ -144,6 +191,7 @@ def _empty_usage() -> dict[str, int]:
 def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reservation: str = "") -> dict[str, Any]:
     from novel_forge.modules.command_kernel.budget_runtime import provider_usage_accounted_sql
     projects = [a["project_id"] for a in plan["arms"]]
+    lineage = _lineage_plans(cursor, plan, project_id)
     cursor.execute(f"""SELECT reservation_id,external_effect_id,project_id,status,
         estimated_tokens,actual_tokens,evidence,created_at FROM authority_budget_reservation
         WHERE project_id=ANY(%s) AND reservation_id<>%s AND {provider_usage_accounted_sql()}
@@ -161,16 +209,19 @@ def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reserv
             raise KernelError("CREATIVE_BUDGET_LEDGER_AMBIGUOUS", "multiple accounted reservations bind one Provider dispatch")
         seen.add(dispatch_subject)
         if proof:
-            if proof["contract_hash"] != usage["contract_hash"]:
+            if proof["contract_hash"] not in lineage:
                 raise KernelError("CREATIVE_BUDGET_PLAN_IMMUTABLE", "historical ledger uses another allocation plan")
             phase = proof["phase"]
-            if plan["contract_version"] == _contract().SINGLE_BOOK_VERSION:
+            if plan["contract_version"] in _contract().SINGLE_BOOK_VERSIONS:
                 scope = proof.get("business_scope")
                 if not isinstance(scope, dict) or scope.get("phase") != phase:
                     raise KernelError("CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN", "historical reservation lost its frozen business classification")
         else:
             identity = _effect_identity(cursor, effect_id, owner_project)
-            phase = _business_scope(cursor, identity, project_id=owner_project)["phase"] if plan["contract_version"] == _contract().SINGLE_BOOK_VERSION else _phase(identity)
+            legacy_plan = next(reversed(lineage.values()))
+            phase = _business_scope(cursor, identity, project_id=owner_project, plan=legacy_plan)["phase"] if plan["contract_version"] in _contract().SINGLE_BOOK_VERSIONS else _phase(identity)
+        if phase not in usage["phases"]:
+            raise KernelError("CREATIVE_BUDGET_PHASE_UNKNOWN", "historical reservation has an unsupported frozen phase")
         actual = max(int(actual or 0), int(dict(evidence or {}).get("actual_tokens") or 0))
         counted = actual if status == "SETTLED" else max(actual, int(estimate))
         amounts = {"calls_used_or_reserved": 1, "conservative_tokens": counted,
@@ -235,6 +286,10 @@ def reserve_creative_budget_in_uow(uow: AuthorityUnitOfWork, request: Any) -> di
     snapshot = VersionedPolicyRepository(uow.cursor, owner=OWNER, project_id=request.project_id).freeze(
         subject_id=subject_id, default=policy, actor_id="command-kernel-budget")
     policy = snapshot["policy"]
+    current_policy = selected["policy"]
+    if (current_policy["comparison_budget"]["contract_version"] == _contract().PRODUCTION_BOOK_VERSION
+        and current_policy["comparison_budget"] != policy["comparison_budget"]):
+        raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "an earlier frozen budget cannot dispatch after its Book allocation was superseded")
     if request.accounting_basis != policy["comparison_budget"]["accounting_basis"] or request.cost_authorization_ref != policy["authorization"]["authorization_ref"]:
         raise KernelError("CREATIVE_BUDGET_AUTHORIZATION_MISMATCH", "Provider route must use this effect's frozen authorization and accounting basis")
     if request.estimated_tokens <= 0:
@@ -244,10 +299,11 @@ def reserve_creative_budget_in_uow(uow: AuthorityUnitOfWork, request: Any) -> di
     if generation > 1 and phase != "SOURCE":
         phase = "REPAIR"
     business_scope = None
-    if policy["comparison_budget"]["contract_version"] == _contract().SINGLE_BOOK_VERSION:
+    if policy["comparison_budget"]["contract_version"] in _contract().SINGLE_BOOK_VERSIONS:
         from novel_forge.modules.command_kernel.creative_budget_scope import require_business_scope
-        business_scope = _business_scope(uow.cursor, identity, project_id=request.project_id, generation=max(1, generation))
+        business_scope = _business_scope(uow.cursor, identity, project_id=request.project_id, generation=max(1, generation), plan=policy["comparison_budget"])
         require_business_scope(policy, business_scope)
+        require_business_scope(current_policy, business_scope)
         if request.chapter is not None and business_scope["chapter_number"] != request.chapter:
             raise KernelError("CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN", "budget request chapter differs from frozen Provider and Operation scope")
         phase = business_scope["phase"]
@@ -264,7 +320,7 @@ def reserve_creative_budget_in_uow(uow: AuthorityUnitOfWork, request: Any) -> di
     elif book_id != policy["authorization"]["book_id"]:
         raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "creative Effect must belong to the exact authorized Book")
     usage = _usage(uow.cursor, policy["comparison_budget"], request.project_id)
-    _check_limits(policy, usage, phase=phase, tokens=request.estimated_tokens, calls=1)
+    _check_limits(current_policy, usage, phase=phase, tokens=request.estimated_tokens, calls=1)
     return {"owner": OWNER, "policy_version": policy["policy_version"], "policy_hash": snapshot["policy_hash"],
         "contract_hash": _contract().contract_hash(policy["comparison_budget"]), "subject_id": snapshot["subject_id"],
         "authorization": policy["authorization"], "phase": phase,
@@ -284,9 +340,10 @@ def check_creative_settlement_in_uow(uow: AuthorityUnitOfWork, row: dict[str, An
     _lock(uow.cursor, policy["comparison_budget"]["experiment_id"])
     selected = _policy_for(uow.cursor, row["project_id"], required=True)
     current = selected["policy"]
-    if current["comparison_budget"] != policy["comparison_budget"]:
+    lineage = _lineage_plans(uow.cursor, current["comparison_budget"], row["project_id"])
+    if _contract().contract_hash(policy["comparison_budget"]) not in lineage:
         raise KernelError("CREATIVE_BUDGET_PLAN_IMMUTABLE", "settlement cannot change the frozen allocation plan")
-    usage = _usage(uow.cursor, policy["comparison_budget"], row["project_id"], exclude_reservation=row["reservation_id"])
+    usage = _usage(uow.cursor, current["comparison_budget"], row["project_id"], exclude_reservation=row["reservation_id"])
     _check_limits(current, usage, phase=proof["phase"], tokens=actual_tokens, calls=1)
 
 

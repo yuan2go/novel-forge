@@ -1,0 +1,973 @@
+{
+  "effect": {
+    "external_effect_id": "47ddae96-5824-4f78-bc2a-afc4cd855767",
+    "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+    "status": "FAILED_RETRYABLE",
+    "provider": "production_execution_gateway",
+    "model_id": "gpt-6-astra"
+  },
+  "operation": {
+    "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+    "status": "FAILED_RETRYABLE",
+    "version": 3
+  },
+  "reservations": [
+    {
+      "reservation_id": "5e93867c-3cc2-4944-a40f-0c6bcffb082b",
+      "status": "SETTLED",
+      "estimated_tokens": 141863,
+      "actual_tokens": 141863,
+      "evidence": {
+        "phase": "pre_dispatch",
+        "fixture": false,
+        "model_id": "gpt-6-astra",
+        "call_caps": {
+          "project_total": 460
+        },
+        "token_caps": {
+          "project_total": 11500000
+        },
+        "cost_status": "UNKNOWN",
+        "provider_id": "codex-cli",
+        "reservation_id": "5e93867c-3cc2-4944-a40f-0c6bcffb082b",
+        "budget_scope_id": "",
+        "real_model_call": true,
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "submission_state": "SENT",
+        "execution_outcome": "RETRYABLE_FAILURE",
+        "accepted_candidate": false,
+        "creative_experiment": {
+          "owner": "CREATIVE_EXPERIMENT_BUDGET",
+          "phase": "DESIGN",
+          "subject_id": "effect:47ddae96-5824-4f78-bc2a-afc4cd855767",
+          "policy_hash": "46d91f1bdb7c487ae402d29026efdb6011f9761d234588f867b7f4548009f391",
+          "authorization": {
+            "book_id": "guofeng-xuanhuan-01",
+            "project_id": "first-novel-pilot-20260912",
+            "evidence_hash": "sha256:a1a1aaeb140d01c5b6887b04945f81c409f1aa7ec00e9c9a39492074df3344b6",
+            "business_scope": {
+              "design_allowed": true,
+              "source_allowed": false,
+              "max_chapter_number": 40
+            },
+            "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913:unused-balance-reallocation-v2",
+            "authorized_cumulative_caps": {
+              "DESIGN": {
+                "calls": 100,
+                "tokens": 3500000
+              },
+              "REPAIR": {
+                "calls": 60,
+                "tokens": 1500000
+              },
+              "SOURCE": {
+                "calls": 0,
+                "tokens": 0
+              },
+              "CREATION_LATE": {
+                "calls": 210,
+                "tokens": 4250000
+              },
+              "CREATION_EARLY": {
+                "calls": 90,
+                "tokens": 2250000
+              }
+            }
+          },
+          "contract_hash": "sha256:91fd257f4348941abeaf0b657c25f84bf043e9850af7435395cf442f770c0fd6",
+          "business_scope": {
+            "phase": "DESIGN",
+            "stage": "world.design.generate",
+            "capability": "world.design.generate",
+            "origin_phase": "DESIGN",
+            "scope_sources": [
+              {
+                "path": "operation.repair_number",
+                "value": 0
+              }
+            ],
+            "chapter_number": 0,
+            "operation_name": "story_planning.generate",
+            "dispatch_generation": 1,
+            "provider_request_hash": "sha256:47ba03d447af655a55f2ad1f3698abf5c98adeae2ce58c10846a58b79c700f72",
+            "generator_operation_name": "world.design.generate"
+          },
+          "policy_version": "guofeng-volume-one-production-01-20260914-v2"
+        },
+        "budget_scope_revision": null,
+        "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+        "estimated_cost_status": "UNKNOWN",
+        "measurement_available": false,
+        "cost_authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913:unused-balance-reallocation-v2",
+        "usage_settlement_basis": "RESERVATION_CEILING",
+        "entitlement_usage_reconciled": false
+      }
+    }
+  ],
+  "artifact_types": [
+    "cost_ledger",
+    "model_call_log",
+    "context_bundle",
+    "capability_materialization_manifest",
+    "fallback_policy",
+    "input_manifest",
+    "model_profile",
+    "provider_request_admission_manifest",
+    "route_policy",
+    "route_snapshot",
+    "execution_evidence",
+    "execution_recovery_session",
+    "execution_recovery_session",
+    "execution_recovery_session"
+  ],
+  "model_calls": [
+    {
+      "asset_version_id": "3952942e-d408-412d-a106-ab6b6719e1b2",
+      "asset_type": "model_call_log",
+      "content_hash": "sha256:66545a21de49411631e118633c69174e6e5c0e2607c18fdbc76dc910bacf1c9c",
+      "content": {
+        "type": "model_call_log",
+        "stage": "world.design.generate",
+        "model_id": "gpt-6-astra",
+        "project_id": "first-novel-pilot-20260912",
+        "provider_id": "codex-cli",
+        "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+        "skill_version": "worldbuilding@worldbuilding-qualification-v1",
+        "prompt_version": "prompt-system:story-planning-pack@v7",
+        "real_model_call": true,
+        "candidate_accepted": false,
+        "capability_runtime": {
+          "skill": {
+            "ref": "worldbuilding",
+            "version": "worldbuilding-qualification-v1",
+            "content_hash": "sha256:c2f95594a756f9bb0df507c96b4d3f265217e65928dfcfaecdc0e8bf881e5e82"
+          },
+          "allowed_tools": [
+            "model.provider.invoke"
+          ],
+          "provider_view": {
+            "component_hashes": {
+              "tool_policy": "sha256:058abd5cdd33e9f20fec97de618920cae3f9b93617df642ebcd1dfc737d1e547",
+              "output_schema": "sha256:b9bceae78b827685928d53eb1ae3831834b8e353c0a57d924f174db8ec2deda8",
+              "governed_skill": "sha256:8c987220d8aaa4cd5fb8fbe92780d5559c527e35cd17913e6e1a5c6595274cbe",
+              "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+              "provider_task_view": "sha256:660eba80aaa14e0fc8bb20b62efb33acdf2482ad747888db5c3a32f930cb8903",
+              "system_instruction": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+              "fully_rendered_prompt": "sha256:7742449e44828034b919d0c543cdc3f31b156576f3d17205112e1c011e896939",
+              "provider_context_view": "sha256:29d13491d457669bb48508e0b1c7f74668a68db2ff06c0b823abffaa85e94614",
+              "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+            },
+            "component_characters": {
+              "tool_policy": 258,
+              "output_schema": 2466,
+              "governed_skill": 1742,
+              "provider_knowledge": 437,
+              "provider_task_view": 23166,
+              "system_instruction": 5867,
+              "fully_rendered_prompt": 61625,
+              "provider_context_view": 26762,
+              "stage_semantic_contract": 65
+            },
+            "representation_policy": "authority-projection-task-provider-v1",
+            "selection_explanation": {
+              "policy": "minimum-sufficient-planning-context-v2",
+              "loss_receipt": {
+                "audit_hash": "sha256:1b419e072ec8ddc80f76874146a517d31d75bc285e4bd510e8e2d1668fa1f709",
+                "json_pointer": "/context_manifest/projection_audit",
+                "loss_record_count": 0,
+                "source_input_hash": "sha256:d84925de06007c5a1056309dde5bd699665487e7bfad449a0a7b52c84a9a757c"
+              },
+              "field_classes": {
+                "invariants": "HARD_CONSTRAINT",
+                "constraints": "HARD_CONSTRAINT",
+                "inspiration": "OPTIONAL_GUIDANCE",
+                "required_facts": "REQUIRED_FACT",
+                "due_obligations": "DUE_OBLIGATION",
+                "forbidden_events": "PROHIBITION",
+                "hard_constraints": "HARD_CONSTRAINT",
+                "required_payoffs": "DUE_OBLIGATION",
+                "soft_suggestions": "OPTIONAL_GUIDANCE",
+                "forbidden_payoffs": "PROHIBITION",
+                "optional_guidance": "OPTIONAL_GUIDANCE",
+                "required_fact_ids": "REQUIRED_FACT",
+                "story_constraints": "HARD_CONSTRAINT",
+                "style_suggestions": "OPTIONAL_GUIDANCE",
+                "prohibited_outcomes": "PROHIBITION",
+                "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+                "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+                "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+                "required_obligation_ids": "DUE_OBLIGATION",
+                "unresolved_obligation_ids": "DUE_OBLIGATION"
+              },
+              "compiler_version": "scope-preserving-planning-context-v1",
+              "maximum_segments": 24,
+              "omitted_fact_count": 0,
+              "omitted_item_count": 0,
+              "included_fact_count": 0,
+              "omitted_segment_count": 0,
+              "included_segment_count": 5,
+              "maximum_facts_per_segment": 32,
+              "truncated_character_count": 0,
+              "maximum_serialized_characters": 65536
+            },
+            "task_contract_version": "provider-task-view-v1",
+            "context_contract_version": "provider-context-view-v2",
+            "context_projection_ratio": 1.000149,
+            "component_estimated_tokens": {
+              "tool_policy": 64,
+              "output_schema": 616,
+              "governed_skill": 435,
+              "provider_knowledge": 109,
+              "provider_task_view": 5791,
+              "system_instruction": 1466,
+              "fully_rendered_prompt": 15406,
+              "provider_context_view": 6690,
+              "stage_semantic_contract": 16
+            },
+            "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+            "component_utf8_byte_upper_bounds": {
+              "tool_policy": 258,
+              "output_schema": 2466,
+              "governed_skill": 3180,
+              "provider_knowledge": 437,
+              "provider_task_view": 40292,
+              "system_instruction": 5867,
+              "fully_rendered_prompt": 117655,
+              "provider_context_view": 64228,
+              "stage_semantic_contract": 65
+            },
+            "provider_context_estimated_tokens": 6690,
+            "authority_context_estimated_tokens": 6689,
+            "rendered_prompt_to_semantic_input_ratio": 1.22367,
+            "provider_admission_uses_component_estimates": false
+          },
+          "prompt_template": {
+            "ref": "prompt-template:story-planning-pack",
+            "version": "v1",
+            "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+          },
+          "output_schema_ref": "schema:foundation-provider-output:world_bible:v1",
+          "output_schema_hash": "sha256:b9bceae78b827685928d53eb1ae3831834b8e353c0a57d924f174db8ec2deda8",
+          "provider_admission": {
+            "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+            "status": "ADMITTED",
+            "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+            "envelope_hash": "sha256:d1aa8d30946ef95bee2f2ecc50e2122fc27342e66e7dd1f7aa56c289c425587a",
+            "total_reserved": 141863,
+            "component_usage": {
+              "safety_margin": 8192,
+              "output_reserve": 16000,
+              "provider_input": 117655,
+              "request_framing": 16
+            },
+            "applicable_limit": 200000,
+            "contract_version": "provider-token-admission-v1",
+            "accounting_contract": {
+              "model": "gpt-6-astra",
+              "provider": "codex-cli",
+              "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+              "evidence_ref": "local-cli-model-cache:20260913:272000:application-byte-upper-bound",
+              "meter_version": "v1",
+              "safety_margin": 8192,
+              "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+              "output_reserve": 16000,
+              "route_identity": "world.design.generate:codex-cli:gpt-6-astra:90543b35173b84af91d9933086b749df2df65cab:sha256:8a12b40a189d39a1c085ad014a45adad3b34410e1bcb0dabed8f99e10ba0755e",
+              "contract_version": "provider-token-accounting-v2",
+              "framing_overhead": 16,
+              "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+              "model_context_limit": 200000,
+              "execution_token_limit": 200000,
+              "serialization_contract": "codex-cli-application-stdin-v1"
+            },
+            "context_bundle_status": "VALID",
+            "context_bundle_tokens": 6689,
+            "input_component_hashes": {
+              "tool_policy": "sha256:058abd5cdd33e9f20fec97de618920cae3f9b93617df642ebcd1dfc737d1e547",
+              "output_schema": "sha256:b9bceae78b827685928d53eb1ae3831834b8e353c0a57d924f174db8ec2deda8",
+              "governed_skill": "sha256:8c987220d8aaa4cd5fb8fbe92780d5559c527e35cd17913e6e1a5c6595274cbe",
+              "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+              "provider_task_view": "sha256:660eba80aaa14e0fc8bb20b62efb33acdf2482ad747888db5c3a32f930cb8903",
+              "system_instruction": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+              "fully_rendered_prompt": "sha256:7742449e44828034b919d0c543cdc3f31b156576f3d17205112e1c011e896939",
+              "provider_context_view": "sha256:29d13491d457669bb48508e0b1c7f74668a68db2ff06c0b823abffaa85e94614",
+              "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+            },
+            "complete_request_coverage": [
+              "system_runtime_instructions",
+              "prompt_template",
+              "skill_instructions",
+              "tool_policy_and_schemas",
+              "structured_output_schema",
+              "context_bundle",
+              "knowledge_inputs",
+              "request_envelope_and_framing",
+              "output_reserve",
+              "safety_margin"
+            ]
+          },
+          "system_instruction": {
+            "ref": "prompt-system:story-planning-pack",
+            "version": "v7",
+            "content_hash": "sha256:f91f8afd14743544f35690e45f079accd7eecfd3516ac16107b8aaf357c8cd5a"
+          },
+          "materialization_hash": "sha256:f3249aa035f80a9487b73b3c3d536e9f7eb9397305bec09a26468b2ae5541b9f",
+          "rendered_prompt_bytes": 117655,
+          "knowledge_content_hashes": [
+            "sha256:e880fdc724a45fccecbff445974f362668511fe03238b812f2740160e20b6c49"
+          ],
+          "context_asset_version_ids": [
+            "31cfb50f-2c8f-44ac-885d-891e86d0be89"
+          ],
+          "embedding_output_contract": null,
+          "fully_rendered_prompt_hash": "sha256:7742449e44828034b919d0c543cdc3f31b156576f3d17205112e1c011e896939",
+          "provider_request_envelope_hash": "sha256:d1aa8d30946ef95bee2f2ecc50e2122fc27342e66e7dd1f7aa56c289c425587a",
+          "required_reader_facing_language": null,
+          "rendered_prompt_estimated_tokens": 39219,
+          "provider_prompt_projection_version": "authority-projection-task-provider-v1",
+          "provider_admission_asset_version_id": "03b0a6d5-8841-490d-8643-f754f9627468"
+        },
+        "production_verified": false,
+        "production_execution": {
+          "input_manifest": {
+            "book_id": "guofeng-xuanhuan-01",
+            "read_set": [
+              "asset-version:31cfb50f-2c8f-44ac-885d-891e86d0be89",
+              "asset-version:authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1",
+              "asset-version:authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1",
+              "asset-version:authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1",
+              "asset-version:authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1",
+              "asset-version:authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1"
+            ],
+            "attempt_id": "f2a22d65-6d38-42f9-badc-3af938e9e3f1",
+            "project_id": "first-novel-pilot-20260912",
+            "manifest_id": "production_execution/inputs/de8a6a560999f5f0a661",
+            "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+            "target_scope": {
+              "book_id": "guofeng-xuanhuan-01",
+              "scope_id": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34:WORLD_BIBLE:0",
+              "project_id": "first-novel-pilot-20260912",
+              "scope_kind": "not_applicable"
+            },
+            "fencing_token": 1,
+            "input_artifacts": [
+              {
+                "artifact_ref": "asset-version:31cfb50f-2c8f-44ac-885d-891e86d0be89",
+                "content_hash": "sha256:69d685eefb492dda7e6fa02aa491454b73372085eb43583874d3c2ea9d7a1835",
+                "artifact_type": "context_bundle",
+                "schema_version": "novelos.planning_context_bundle.v1",
+                "asset_version_id": "31cfb50f-2c8f-44ac-885d-891e86d0be89",
+                "source_eligibility": "PRODUCTION_ELIGIBLE"
+              },
+              {
+                "artifact_ref": "asset-version:authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1",
+                "content_hash": "sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57",
+                "artifact_type": "planning_generation_candidate",
+                "schema_version": "planning_generation_candidate.v1",
+                "asset_version_id": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1",
+                "source_eligibility": "PRODUCTION_ELIGIBLE"
+              },
+              {
+                "artifact_ref": "asset-version:authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1",
+                "content_hash": "sha256:73245902d79e29929ba55f40a18663be298a419db12bfa05ee0ea6af70b3427f",
+                "artifact_type": "creative_brief",
+                "schema_version": "creative_brief.v1",
+                "asset_version_id": "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1",
+                "source_eligibility": "PRODUCTION_ELIGIBLE"
+              },
+              {
+                "artifact_ref": "asset-version:authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1",
+                "content_hash": "sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787",
+                "artifact_type": "planning_generation_candidate",
+                "schema_version": "planning_generation_candidate.v1",
+                "asset_version_id": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1",
+                "source_eligibility": "PRODUCTION_ELIGIBLE"
+              },
+              {
+                "artifact_ref": "asset-version:authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1",
+                "content_hash": "sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2",
+                "artifact_type": "planning_generation_candidate",
+                "schema_version": "planning_generation_candidate.v1",
+                "asset_version_id": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1",
+                "source_eligibility": "PRODUCTION_ELIGIBLE"
+              },
+              {
+                "artifact_ref": "asset-version:authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1",
+                "content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6",
+                "artifact_type": "planning_generation_candidate",
+                "schema_version": "planning_generation_candidate.v1",
+                "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1",
+                "source_eligibility": "PRODUCTION_ELIGIBLE"
+              }
+            ],
+            "arc_version_refs": [],
+            "planning_version": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34:WORLD_BIBLE:0",
+            "skill_bundle_ref": "worldbuilding@worldbuilding-qualification-v1",
+            "prompt_bundle_ref": "prompt-system:story-planning-pack@v7",
+            "source_policy_ref": "source:world-design-generate:v1",
+            "canon_version_refs": [],
+            "context_bundle_ref": "asset-version:31cfb50f-2c8f-44ac-885d-891e86d0be89",
+            "source_eligibility": "PRODUCTION_ELIGIBLE",
+            "story_state_version": "none",
+            "skill_bundle_version": "worldbuilding@worldbuilding-qualification-v1",
+            "prompt_bundle_version": "prompt-system:story-planning-pack@v7",
+            "canon_snapshot_version": "none",
+            "context_bundle_version": "31cfb50f-2c8f-44ac-885d-891e86d0be89",
+            "quality_profile_version": "none"
+          },
+          "route_snapshot": {
+            "model_id": "gpt-6-astra",
+            "policy_id": "planning.world_bible.route.sha256.5871d6a64e10ecb473c4bdaacb6bbdaae6ed2426bfeb6b0ecdeae9979ed0e762",
+            "attempt_id": "f2a22d65-6d38-42f9-badc-3af938e9e3f1",
+            "backend_id": "codex-cli",
+            "release_sha": "90543b35173b84af91d9933086b749df2df65cab",
+            "approval_ref": "",
+            "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+            "model_provider": "codex-cli",
+            "policy_version": 1,
+            "backend_version": "1.0.0",
+            "runtime_host_id": "local:yuan:novel-production",
+            "auth_profile_ref": "account-entitlement:guofeng-xuanhuan-01:codex-production-01-v1:codex:6af8df14a4caeae6ceaeb7c88fac141b1df1b7343eee8dd8b7f2f0851f0def92",
+            "credential_scope": "",
+            "fallback_trigger": "",
+            "model_profile_id": "planning.world_bible.default.sha256.5871d6a64e10ecb473c4bdaacb6bbdaae6ed2426bfeb6b0ecdeae9979ed0e762",
+            "reasoning_effort": "high",
+            "route_generation": 1,
+            "skill_bundle_ref": "worldbuilding@worldbuilding-qualification-v1",
+            "output_schema_ref": "schema:foundation-provider-output:world_bible:v1",
+            "prompt_bundle_ref": "prompt-system:story-planning-pack@v7",
+            "route_decision_id": "route-decision:98d08f014ab23b7ef814",
+            "route_policy_hash": "a6fe523553b28cd73d22eeb8a9801de8f852dceffb99a8ae9945492196722397",
+            "route_snapshot_id": "production_execution/routes/de8a6a560999f5f0a661",
+            "context_bundle_ref": "asset-version:31cfb50f-2c8f-44ac-885d-891e86d0be89",
+            "model_profile_hash": "7e50609eac2ee867b484c93ed73112b757c463c2ac0958543404393cc50f1d06",
+            "route_change_index": 0,
+            "secret_version_ref": "",
+            "fallback_policy_ref": "planning.world_bible.fail-closed.sha256.5871d6a64e10ecb473c4bdaacb6bbdaae6ed2426bfeb6b0ecdeae9979ed0e762",
+            "model_profile_version": 1,
+            "fallback_policy_version": 1,
+            "parent_route_snapshot_id": "",
+            "quality_revalidation_ref": "",
+            "requested_reasoning_effort": "high"
+          },
+          "execution_handle": {
+            "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+            "attempt_id": "f2a22d65-6d38-42f9-badc-3af938e9e3f1",
+            "backend_id": "codex-cli",
+            "execution_id": "planning-execution:47ddae96-5824-4f78-bc2a-afc4cd855767:f2a22d65-6d38-42f9-badc-3af938e9e3f1",
+            "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+            "fencing_token": 1,
+            "completion_mode": "PROCESS_EXIT",
+            "local_process_id": 34516,
+            "query_capability": "SUPPORTED",
+            "cancel_capability": "SUPPORTED",
+            "callback_capability": "UNSUPPORTED",
+            "external_request_id": null,
+            "provider_request_id": null,
+            "backend_execution_id": "process-receipt:e154eb85f17906fc671d7dc2",
+            "local_process_group_id": 34516,
+            "local_process_start_time": "Mon Sep 14 02:02:17 2026",
+            "local_execution_receipt_id": "process-receipt:e154eb85f17906fc671d7dc2"
+          },
+          "execution_result": {
+            "outcome": "TIMED_OUT",
+            "attempt_id": "f2a22d65-6d38-42f9-badc-3af938e9e3f1",
+            "started_at": "2026-09-13T18:02:17.700452Z",
+            "completed_at": "2026-09-13T18:11:48.165376Z",
+            "execution_id": "planning-execution:47ddae96-5824-4f78-bc2a-afc4cd855767:f2a22d65-6d38-42f9-badc-3af938e9e3f1",
+            "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+            "fencing_token": 1,
+            "raw_output_ref": null,
+            "cost_receipt_ref": null,
+            "usage_receipt_ref": null,
+            "output_manifest_ref": null,
+            "process_receipt_ref": "authority-asset-version:2638412b-61ca-4d3d-8ada-77100b25594d",
+            "external_receipt_ref": null,
+            "provider_receipt_ref": null,
+            "normalized_output_ref": null,
+            "validation_report_ref": null
+          },
+          "process_evidence": {
+            "stage": "world.design.generate",
+            "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+            "denied_tools": [],
+            "failure_code": "PROCESS_TIMEOUT",
+            "allowed_tools": [
+              "model.provider.invoke"
+            ],
+            "output_schema": {
+              "type": "object",
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "required": [
+                "objective",
+                "constraints",
+                "prohibited_outcomes",
+                "rules",
+                "world_foundation_json",
+                "dimensions",
+                "factions",
+                "deferred_dimensions"
+              ],
+              "properties": {
+                "rules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "rule",
+                      "cost",
+                      "exception",
+                      "consequence",
+                      "narrative_function"
+                    ],
+                    "properties": {
+                      "cost": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "rule": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "exception": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "consequence": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "narrative_function": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16,
+                  "minItems": 1
+                },
+                "factions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "faction_id",
+                      "goal",
+                      "resources",
+                      "pressure",
+                      "information_access"
+                    ],
+                    "properties": {
+                      "goal": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "pressure": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "resources": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "faction_id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "information_access": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16,
+                  "minItems": 0
+                },
+                "objective": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "dimensions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "dimension",
+                      "scope",
+                      "current_need",
+                      "definition",
+                      "constraints",
+                      "extension_trigger"
+                    ],
+                    "properties": {
+                      "scope": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "dimension": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "definition": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "constraints": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "current_need": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "extension_trigger": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "maxItems": 20,
+                  "minItems": 1
+                },
+                "constraints": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 24
+                },
+                "deferred_dimensions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "dimension",
+                      "reason",
+                      "trigger"
+                    ],
+                    "properties": {
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "trigger": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "dimension": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "maxItems": 16,
+                  "minItems": 0
+                },
+                "prohibited_outcomes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 24
+                },
+                "world_foundation_json": {
+                  "type": "string",
+                  "maxLength": 24000,
+                  "minLength": 2,
+                  "description": "JSON encoded world-foundation.v1 object conforming to foundation_task.world_contract.schema. compiled_scope is exactly the frozen single string, never an array of enum choices. Decoded inner fields are strictly validated before candidate persistence."
+                }
+              },
+              "additionalProperties": false
+            },
+            "failure_message": "PROCESS_TIMEOUT",
+            "model_authority": {
+              "schema_version": "novelos.model_authority_evidence.v1",
+              "route_policy_id": "planning.world_bible.route.sha256.5871d6a64e10ecb473c4bdaacb6bbdaae6ed2426bfeb6b0ecdeae9979ed0e762",
+              "invocation_model": "gpt-6-astra",
+              "model_profile_id": "planning.world_bible.default.sha256.5871d6a64e10ecb473c4bdaacb6bbdaae6ed2426bfeb6b0ecdeae9979ed0e762",
+              "route_policy_hash": "a6fe523553b28cd73d22eeb8a9801de8f852dceffb99a8ae9945492196722397",
+              "route_snapshot_id": "production_execution/routes/de8a6a560999f5f0a661",
+              "frozen_route_model": "gpt-6-astra",
+              "model_profile_hash": "7e50609eac2ee867b484c93ed73112b757c463c2ac0958543404393cc50f1d06",
+              "route_snapshot_hash": "c6d8a1f6a02775a8dfe8731889ca94ff0d8a9a4a162a3b821f6764e17e2d6081",
+              "route_policy_version": 1,
+              "model_profile_version": 1,
+              "policy_requested_model": "gpt-6-astra",
+              "invocation_command_hash": "sha256:7e9104a175cf1adab3c451be801a678fab09b6c8fa796dc0d7d3131eace94c80",
+              "provider_observed_model": "unavailable",
+              "local_user_config_ignored": true,
+              "invocation_reasoning_effort": "high",
+              "frozen_route_reasoning_effort": "high",
+              "policy_requested_reasoning_effort": "high",
+              "provider_observed_reasoning_effort": "unavailable",
+              "local_user_config_is_model_authority": false
+            },
+            "submission_phase": "PROCESS_RESULT_RECORDED",
+            "capability_evidence": {
+              "skill": {
+                "ref": "worldbuilding",
+                "version": "worldbuilding-qualification-v1",
+                "content_hash": "sha256:c2f95594a756f9bb0df507c96b4d3f265217e65928dfcfaecdc0e8bf881e5e82"
+              },
+              "allowed_tools": [
+                "model.provider.invoke"
+              ],
+              "provider_view": {
+                "component_hashes": {
+                  "tool_policy": "sha256:058abd5cdd33e9f20fec97de618920cae3f9b93617df642ebcd1dfc737d1e547",
+                  "output_schema": "sha256:b9bceae78b827685928d53eb1ae3831834b8e353c0a57d924f174db8ec2deda8",
+                  "governed_skill": "sha256:8c987220d8aaa4cd5fb8fbe92780d5559c527e35cd17913e6e1a5c6595274cbe",
+                  "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+                  "provider_task_view": "sha256:660eba80aaa14e0fc8bb20b62efb33acdf2482ad747888db5c3a32f930cb8903",
+                  "system_instruction": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+                  "fully_rendered_prompt": "sha256:7742449e44828034b919d0c543cdc3f31b156576f3d17205112e1c011e896939",
+                  "provider_context_view": "sha256:29d13491d457669bb48508e0b1c7f74668a68db2ff06c0b823abffaa85e94614",
+                  "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+                },
+                "component_characters": {
+                  "tool_policy": 258,
+                  "output_schema": 2466,
+                  "governed_skill": 1742,
+                  "provider_knowledge": 437,
+                  "provider_task_view": 23166,
+                  "system_instruction": 5867,
+                  "fully_rendered_prompt": 61625,
+                  "provider_context_view": 26762,
+                  "stage_semantic_contract": 65
+                },
+                "representation_policy": "authority-projection-task-provider-v1",
+                "selection_explanation": {
+                  "policy": "minimum-sufficient-planning-context-v2",
+                  "loss_receipt": {
+                    "audit_hash": "sha256:1b419e072ec8ddc80f76874146a517d31d75bc285e4bd510e8e2d1668fa1f709",
+                    "json_pointer": "/context_manifest/projection_audit",
+                    "loss_record_count": 0,
+                    "source_input_hash": "sha256:d84925de06007c5a1056309dde5bd699665487e7bfad449a0a7b52c84a9a757c"
+                  },
+                  "field_classes": {
+                    "invariants": "HARD_CONSTRAINT",
+                    "constraints": "HARD_CONSTRAINT",
+                    "inspiration": "OPTIONAL_GUIDANCE",
+                    "required_facts": "REQUIRED_FACT",
+                    "due_obligations": "DUE_OBLIGATION",
+                    "forbidden_events": "PROHIBITION",
+                    "hard_constraints": "HARD_CONSTRAINT",
+                    "required_payoffs": "DUE_OBLIGATION",
+                    "soft_suggestions": "OPTIONAL_GUIDANCE",
+                    "forbidden_payoffs": "PROHIBITION",
+                    "optional_guidance": "OPTIONAL_GUIDANCE",
+                    "required_fact_ids": "REQUIRED_FACT",
+                    "story_constraints": "HARD_CONSTRAINT",
+                    "style_suggestions": "OPTIONAL_GUIDANCE",
+                    "prohibited_outcomes": "PROHIBITION",
+                    "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+                    "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+                    "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+                    "required_obligation_ids": "DUE_OBLIGATION",
+                    "unresolved_obligation_ids": "DUE_OBLIGATION"
+                  },
+                  "compiler_version": "scope-preserving-planning-context-v1",
+                  "maximum_segments": 24,
+                  "omitted_fact_count": 0,
+                  "omitted_item_count": 0,
+                  "included_fact_count": 0,
+                  "omitted_segment_count": 0,
+                  "included_segment_count": 5,
+                  "maximum_facts_per_segment": 32,
+                  "truncated_character_count": 0,
+                  "maximum_serialized_characters": 65536
+                },
+                "task_contract_version": "provider-task-view-v1",
+                "context_contract_version": "provider-context-view-v2",
+                "context_projection_ratio": 1.000149,
+                "component_estimated_tokens": {
+                  "tool_policy": 64,
+                  "output_schema": 616,
+                  "governed_skill": 435,
+                  "provider_knowledge": 109,
+                  "provider_task_view": 5791,
+                  "system_instruction": 1466,
+                  "fully_rendered_prompt": 15406,
+                  "provider_context_view": 6690,
+                  "stage_semantic_contract": 16
+                },
+                "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+                "component_utf8_byte_upper_bounds": {
+                  "tool_policy": 258,
+                  "output_schema": 2466,
+                  "governed_skill": 3180,
+                  "provider_knowledge": 437,
+                  "provider_task_view": 40292,
+                  "system_instruction": 5867,
+                  "fully_rendered_prompt": 117655,
+                  "provider_context_view": 64228,
+                  "stage_semantic_contract": 65
+                },
+                "provider_context_estimated_tokens": 6690,
+                "authority_context_estimated_tokens": 6689,
+                "rendered_prompt_to_semantic_input_ratio": 1.22367,
+                "provider_admission_uses_component_estimates": false
+              },
+              "prompt_template": {
+                "ref": "prompt-template:story-planning-pack",
+                "version": "v1",
+                "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+              },
+              "output_schema_ref": "schema:foundation-provider-output:world_bible:v1",
+              "output_schema_hash": "sha256:b9bceae78b827685928d53eb1ae3831834b8e353c0a57d924f174db8ec2deda8",
+              "provider_admission": {
+                "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+                "status": "ADMITTED",
+                "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                "envelope_hash": "sha256:d1aa8d30946ef95bee2f2ecc50e2122fc27342e66e7dd1f7aa56c289c425587a",
+                "total_reserved": 141863,
+                "component_usage": {
+                  "safety_margin": 8192,
+                  "output_reserve": 16000,
+                  "provider_input": 117655,
+                  "request_framing": 16
+                },
+                "applicable_limit": 200000,
+                "contract_version": "provider-token-admission-v1",
+                "accounting_contract": {
+                  "model": "gpt-6-astra",
+                  "provider": "codex-cli",
+                  "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                  "evidence_ref": "local-cli-model-cache:20260913:272000:application-byte-upper-bound",
+                  "meter_version": "v1",
+                  "safety_margin": 8192,
+                  "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+                  "output_reserve": 16000,
+                  "route_identity": "world.design.generate:codex-cli:gpt-6-astra:90543b35173b84af91d9933086b749df2df65cab:sha256:8a12b40a189d39a1c085ad014a45adad3b34410e1bcb0dabed8f99e10ba0755e",
+                  "contract_version": "provider-token-accounting-v2",
+                  "framing_overhead": 16,
+                  "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+                  "model_context_limit": 200000,
+                  "execution_token_limit": 200000,
+                  "serialization_contract": "codex-cli-application-stdin-v1"
+                },
+                "context_bundle_status": "VALID",
+                "context_bundle_tokens": 6689,
+                "input_component_hashes": {
+                  "tool_policy": "sha256:058abd5cdd33e9f20fec97de618920cae3f9b93617df642ebcd1dfc737d1e547",
+                  "output_schema": "sha256:b9bceae78b827685928d53eb1ae3831834b8e353c0a57d924f174db8ec2deda8",
+                  "governed_skill": "sha256:8c987220d8aaa4cd5fb8fbe92780d5559c527e35cd17913e6e1a5c6595274cbe",
+                  "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+                  "provider_task_view": "sha256:660eba80aaa14e0fc8bb20b62efb33acdf2482ad747888db5c3a32f930cb8903",
+                  "system_instruction": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+                  "fully_rendered_prompt": "sha256:7742449e44828034b919d0c543cdc3f31b156576f3d17205112e1c011e896939",
+                  "provider_context_view": "sha256:29d13491d457669bb48508e0b1c7f74668a68db2ff06c0b823abffaa85e94614",
+                  "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+                },
+                "complete_request_coverage": [
+                  "system_runtime_instructions",
+                  "prompt_template",
+                  "skill_instructions",
+                  "tool_policy_and_schemas",
+                  "structured_output_schema",
+                  "context_bundle",
+                  "knowledge_inputs",
+                  "request_envelope_and_framing",
+                  "output_reserve",
+                  "safety_margin"
+                ]
+              },
+              "system_instruction": {
+                "ref": "prompt-system:story-planning-pack",
+                "version": "v7",
+                "content_hash": "sha256:f91f8afd14743544f35690e45f079accd7eecfd3516ac16107b8aaf357c8cd5a"
+              },
+              "materialization_hash": "sha256:f3249aa035f80a9487b73b3c3d536e9f7eb9397305bec09a26468b2ae5541b9f",
+              "rendered_prompt_bytes": 117655,
+              "knowledge_content_hashes": [
+                "sha256:e880fdc724a45fccecbff445974f362668511fe03238b812f2740160e20b6c49"
+              ],
+              "context_asset_version_ids": [
+                "31cfb50f-2c8f-44ac-885d-891e86d0be89"
+              ],
+              "embedding_output_contract": null,
+              "fully_rendered_prompt_hash": "sha256:7742449e44828034b919d0c543cdc3f31b156576f3d17205112e1c011e896939",
+              "provider_request_envelope_hash": "sha256:d1aa8d30946ef95bee2f2ecc50e2122fc27342e66e7dd1f7aa56c289c425587a",
+              "required_reader_facing_language": null,
+              "rendered_prompt_estimated_tokens": 39219,
+              "provider_prompt_projection_version": "authority-projection-task-provider-v1",
+              "provider_admission_asset_version_id": "03b0a6d5-8841-490d-8643-f754f9627468"
+            },
+            "failure_disposition": "RETRYABLE",
+            "provider_request_id": null,
+            "output_schema_version": "schema:foundation-provider-output:world_bible:v1",
+            "provider_schema_contract": {
+              "version": "codex-structured-schema.v2",
+              "provider_hash": "sha256:b9bceae78b827685928d53eb1ae3831834b8e353c0a57d924f174db8ec2deda8",
+              "canonical_hash": "sha256:b9bceae78b827685928d53eb1ae3831834b8e353c0a57d924f174db8ec2deda8",
+              "local_constraints_retained": [
+                "uniqueItems"
+              ]
+            },
+            "local_execution_receipt_id": "process-receipt:e154eb85f17906fc671d7dc2"
+          },
+          "execution_request": {
+            "stage": "world.design.generate",
+            "domain": "world",
+            "book_id": "guofeng-xuanhuan-01",
+            "saga_id": "322ad652-4db4-4db5-ada7-d9b382b84639",
+            "trace_id": "trace:story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+            "task_kind": "story_planning.generate",
+            "attempt_id": "f2a22d65-6d38-42f9-badc-3af938e9e3f1",
+            "capability": "world.design.generate",
+            "project_id": "first-novel-pilot-20260912",
+            "risk_class": "high",
+            "execution_id": "planning-execution:47ddae96-5824-4f78-bc2a-afc4cd855767:f2a22d65-6d38-42f9-badc-3af938e9e3f1",
+            "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+            "origin_chain": [
+              "story_planning.generate",
+              "world.design.generate"
+            ],
+            "target_scope": {
+              "book_id": "guofeng-xuanhuan-01",
+              "scope_id": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34:WORLD_BIBLE:0",
+              "project_id": "first-novel-pilot-20260912",
+              "scope_kind": "not_applicable"
+            },
+            "workspace_id": "guofeng-xuanhuan-01-workspace",
+            "fencing_token": 1,
+            "correlation_id": "bf2aa6be-2ff1-47d8-946d-7b04e4b2d025",
+            "agent_hop_count": 0,
+            "resource_claims": [
+              "book:guofeng-xuanhuan-01",
+              "planning:story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34:WORLD_BIBLE:0"
+            ],
+            "importance_class": "HIGH",
+            "budget_policy_ref": "budget:world-design-generate:v1",
+            "commit_policy_ref": "commit:world-design-generate:v1",
+            "root_operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+            "route_snapshot_id": "production_execution/routes/de8a6a560999f5f0a661",
+            "external_effect_id": "47ddae96-5824-4f78-bc2a-afc4cd855767",
+            "input_manifest_ref": "production_execution/inputs/de8a6a560999f5f0a661",
+            "timeout_policy_ref": "timeout:world-design-generate:v3",
+            "budget_reservation_id": "5e93867c-3cc2-4944-a40f-0c6bcffb082b",
+            "permission_policy_ref": "permission:world-design-generate:v1",
+            "validation_policy_ref": "validation:world-design-generate:v1",
+            "stable_idempotency_key": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:world.design.generate:planning-pep-v2",
+            "workspace_snapshot_ref": "guofeng-xuanhuan-01-workspace"
+          }
+        },
+        "fixture_protocol_only": false,
+        "post_provider_failure": {
+          "code": "PLANNING_PROVIDER_NON_SUCCESS",
+          "outcome": "retryable_failure",
+          "submission_state": "SENT",
+          "budget_disposition": "SETTLED"
+        },
+        "candidate_validation_status": "FAILED",
+        "provider_invoked_this_attempt": true,
+        "recovered_external_effect_success": false
+      }
+    }
+  ]
+}

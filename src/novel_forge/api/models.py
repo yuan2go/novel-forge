@@ -31,6 +31,14 @@ class ProjectCreateRequest(BaseModel):
     continuity_bible_path: str | None = None
 
 
+class ProjectWorkspaceCreateRequest(BaseModel):
+    workspace_id: str = Field(min_length=1, pattern=r"\S")
+    expected_project_version: int = Field(ge=1)
+    expected_project_asset_version_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1)
+    workspace_config: dict[str, Any] = Field(default_factory=dict)
+
+
 class ProjectConfigRequest(BaseModel):
     genre: str | None = None
     target_platform: str | None = None
@@ -2389,6 +2397,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "PipelineRunRequest": PipelineRunRequest,
         "StepRunRequest": StepRunRequest,
         "ProjectCreateRequest": ProjectCreateRequest,
+        "ProjectWorkspaceCreateRequest": ProjectWorkspaceCreateRequest,
         "ProjectConfigRequest": ProjectConfigRequest,
         "ProjectDuplicateRequest": ProjectDuplicateRequest,
         "ProjectBindingAssignRequest": ProjectBindingAssignRequest,

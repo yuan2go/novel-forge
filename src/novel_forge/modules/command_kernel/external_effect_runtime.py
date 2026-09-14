@@ -115,83 +115,105 @@ def read_succeeded_external_effect(
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
         _require_context(repository, context)
-        effect = repository.get_for_update(effect_id)
-        _require_project(effect, context.project_id)
-        if effect["operation_id"] != context.operation_id:
-            raise KernelError(
-                "EFFECT_OPERATION_CONFLICT",
-                "ExternalEffect belongs to another Operation",
-            )
-        if effect["status"] != "SUCCEEDED":
-            return None
-        frozen_capability_profile = _validated_frozen_provider_capability_profile(
-            effect
-        )
+        return _read_verified_success(uow, repository, context, effect_id)
+
+
+def read_failed_operation_success(
+    database_url: str,
+    context: EffectCommandContext,
+    *,
+    effect_id: str,
+) -> dict[str, Any] | None:
+    _validate_effect_context(context)
+    with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
-            """
-            SELECT dispatch.generation, dispatch.evidence,
-                   receipt.payload_hash, receipt.payload, receipt.status
-            FROM authority_external_effect_dispatch AS dispatch
-            JOIN authority_external_receipt AS receipt
-              ON receipt.dispatch_id=dispatch.dispatch_id
-            WHERE dispatch.external_effect_id=%s
-              AND dispatch.status='SUCCEEDED'
-              AND receipt.status='VERIFIED'
-            ORDER BY dispatch.generation DESC
-            LIMIT 1
-            """,
-            [effect_id],
+            "SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s",
+            [context.operation_id, context.project_id],
         )
-        receipt = uow.cursor.fetchone()
-        if receipt is None:
-            raise KernelError(
-                "EFFECT_SUCCESS_RECEIPT_MISSING",
-                "succeeded ExternalEffect has no verified receipt",
-            )
-        generation, dispatch_evidence, payload_hash, payload, receipt_status = receipt
-        provider_evidence = (
-            payload.get("evidence") if isinstance(payload, dict) else None
+        row = uow.cursor.fetchone()
+        if row is None or row[0] != "FAILED_FINAL":
+            raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "retained result recovery requires a failed terminal owner")
+        return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
+
+
+def _read_verified_success(uow: Any, repository: Any, context: EffectCommandContext, effect_id: str) -> dict[str, Any] | None:
+    effect = repository.get_for_update(effect_id)
+    _require_project(effect, context.project_id)
+    if effect["operation_id"] != context.operation_id:
+        raise KernelError(
+            "EFFECT_OPERATION_CONFLICT",
+            "ExternalEffect belongs to another Operation",
         )
-        if (
-            receipt_status != "VERIFIED"
-            or not isinstance(provider_evidence, dict)
-            or not provider_evidence
-            or provider_evidence != dispatch_evidence
-            or _hash(provider_evidence) != payload_hash
-        ):
-            raise KernelError(
-                "EFFECT_SUCCESS_RECEIPT_INVALID",
-                "succeeded ExternalEffect receipt evidence failed integrity checks",
-            )
-        uow.cursor.execute(
-            """
-            SELECT reservation_id,status,reserved_amount,estimated_tokens,version
-            FROM authority_budget_reservation
-            WHERE external_effect_id=%s AND project_id=%s
-              AND status IN ('SETTLED','RESERVED','HELD_UNKNOWN')
-            ORDER BY created_at DESC, reservation_id DESC
-            LIMIT 1
-            """,
-            [effect_id, context.project_id],
+    if effect["status"] != "SUCCEEDED":
+        return None
+    frozen_capability_profile = _validated_frozen_provider_capability_profile(
+        effect
+    )
+    uow.cursor.execute(
+        """
+        SELECT dispatch.generation, dispatch.evidence,
+               receipt.payload_hash, receipt.payload, receipt.status
+        FROM authority_external_effect_dispatch AS dispatch
+        JOIN authority_external_receipt AS receipt
+          ON receipt.dispatch_id=dispatch.dispatch_id
+        WHERE dispatch.external_effect_id=%s
+          AND dispatch.status='SUCCEEDED'
+          AND receipt.status='VERIFIED'
+        ORDER BY dispatch.generation DESC
+        LIMIT 1
+        """,
+        [effect_id],
+    )
+    receipt = uow.cursor.fetchone()
+    if receipt is None:
+        raise KernelError(
+            "EFFECT_SUCCESS_RECEIPT_MISSING",
+            "succeeded ExternalEffect has no verified receipt",
         )
-        budget = uow.cursor.fetchone()
-        if budget is None:
-            raise KernelError(
-                "EFFECT_SUCCESS_BUDGET_MISSING",
-                "succeeded Provider Effect has no recoverable budget reservation",
-            )
-        return {
-            "external_effect_id": effect_id,
-            "generation": int(generation),
-            "provider_evidence": provider_evidence,
-            "provider_capability_profile": frozen_capability_profile,
-            "budget_reservation_id": str(budget[0]),
-            "budget_reservation_status": str(budget[1]),
-            "budget_reserved_amount": str(budget[2]),
-            "budget_estimated_tokens": int(budget[3]),
-            "budget_reservation_version": int(budget[4]),
-            "recovered": True,
-        }
+    generation, dispatch_evidence, payload_hash, payload, receipt_status = receipt
+    provider_evidence = (
+        payload.get("evidence") if isinstance(payload, dict) else None
+    )
+    if (
+        receipt_status != "VERIFIED"
+        or not isinstance(provider_evidence, dict)
+        or not provider_evidence
+        or provider_evidence != dispatch_evidence
+        or _hash(provider_evidence) != payload_hash
+    ):
+        raise KernelError(
+            "EFFECT_SUCCESS_RECEIPT_INVALID",
+            "succeeded ExternalEffect receipt evidence failed integrity checks",
+        )
+    uow.cursor.execute(
+        """
+        SELECT reservation_id,status,reserved_amount,estimated_tokens,version
+        FROM authority_budget_reservation
+        WHERE external_effect_id=%s AND project_id=%s
+          AND status IN ('SETTLED','RESERVED','HELD_UNKNOWN')
+        ORDER BY created_at DESC, reservation_id DESC
+        LIMIT 1
+        """,
+        [effect_id, context.project_id],
+    )
+    budget = uow.cursor.fetchone()
+    if budget is None:
+        raise KernelError(
+            "EFFECT_SUCCESS_BUDGET_MISSING",
+            "succeeded Provider Effect has no recoverable budget reservation",
+        )
+    return {
+        "external_effect_id": effect_id,
+        "generation": int(generation),
+        "provider_evidence": provider_evidence,
+        "provider_capability_profile": frozen_capability_profile,
+        "budget_reservation_id": str(budget[0]),
+        "budget_reservation_status": str(budget[1]),
+        "budget_reserved_amount": str(budget[2]),
+        "budget_estimated_tokens": int(budget[3]),
+        "budget_reservation_version": int(budget[4]),
+        "recovered": True,
+    }
 
 
 def read_external_effect_intent(

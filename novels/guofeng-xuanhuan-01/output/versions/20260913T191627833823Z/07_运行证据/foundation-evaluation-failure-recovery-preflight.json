@@ -1,0 +1,10 @@
+{
+  "operation": {
+    "operation_id": "4b3f029c-cbb8-4c7a-a6b4-5a3dd46ad0ac",
+    "status": "FAILED_RETRYABLE",
+    "version": 3,
+    "definition_name": "story_design.semantic_evaluate",
+    "definition_version": "1.0.0"
+  },
+  "effects": []
+}

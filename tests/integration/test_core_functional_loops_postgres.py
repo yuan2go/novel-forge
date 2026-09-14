@@ -85,6 +85,7 @@ from novel_forge.modules.story_planning_runtime import (
 from novel_forge.modules.story_planning_runtime.execution import (
     planning_fixture_response,
 )
+from novel_forge.modules.production_execution import ModelProfile
 from novel_forge.modules.story_design_authority import (
     GENERATOR_CATALOG,
     NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
@@ -2362,19 +2363,25 @@ def test_production_composition_executes_upstream_planning_via_pep() -> None:
         assert uow.cursor.fetchone() == (4, 4)
         uow.cursor.execute(
             """
-            SELECT DISTINCT version.content->'contract'->>'model_id',
-                            version.content->'contract'->>'reasoning_effort'
+            SELECT DISTINCT version.content->'contract'
             FROM authority_asset AS asset
             JOIN authority_asset_version AS version
               ON version.asset_id=asset.asset_id
             WHERE asset.project_id=%s
               AND asset.asset_type='model_profile'
               AND version.content->'contract'->>'profile_id'
-                    LIKE 'planning.%%.default'
+                    LIKE 'planning.%%.default.sha256.%%'
             """,
             [harness.project_id],
         )
-        assert uow.cursor.fetchall() == [("scripted-planning-fixture", "xhigh")]
+        profiles = [ModelProfile.from_dict(row[0]) for row in uow.cursor.fetchall()]
+        assert len(profiles) == 4
+        assert {(item.model_id, item.reasoning_effort) for item in profiles} == {
+            ("scripted-planning-fixture", "xhigh")
+        }
+        for item in profiles:
+            base_id, digest = item.profile_id.split(".sha256.")
+            assert digest == replace(item, profile_id=base_id).contract_hash
 
 
 def test_real_provider_planning_candidate_is_independently_evaluated_and_activated() -> (
@@ -2719,6 +2726,15 @@ def test_planning_retry_reuses_frozen_pack_after_provider_result(
             [result.generation_operation_id],
         )
         reservation_proof = uow.cursor.fetchone()
+        uow.cursor.execute(
+            """
+            SELECT validation.status, validation.candidate_asset_version_id
+            FROM authority_story_planning_validation_report AS validation
+            WHERE validation.generation_operation_id=%s
+            """,
+            [result.generation_operation_id],
+        )
+        validation_rows = uow.cursor.fetchall()
     assert [(row[0], row[1]) for row in attempts] == [
         (1, "FAILED_RETRYABLE"),
         # The worker Attempt is terminal after its immutable Candidate is
@@ -2736,15 +2752,18 @@ def test_planning_retry_reuses_frozen_pack_after_provider_result(
         assert evidence == [
             ("cost_ledger", "false", "true", "false"),
             ("model_call_log", "false", "true", "false"),
-            ("model_call_log", "true", "false", "true"),
+            ("model_call_log", "false", "false", "true"),
         ]
     else:
         assert evidence == [
-            ("model_call_log", "true", "false", "true"),
+            ("model_call_log", "false", "false", "true"),
         ]
     assert (effect_count, dispatch_count, dispatch_generations) == (1, 1, [1])
     assert reservation_proof == ("SETTLED", 0, "true")
     assert candidate_count == 1
+    assert validation_rows
+    assert {row[0] for row in validation_rows} == {"PASS"}
+    assert {row[1] for row in validation_rows} == {result.candidate_asset_version_id}
     assert planning_context_identity == (1, 1, 1)
 
 
@@ -4977,3 +4996,47 @@ def test_reader_judge_composite_scope_rejects_cross_project_sql_chain() -> None:
                     other_operation,
                 ],
             )
+
+
+def test_planning_profile_contracts_coexist_in_one_project_without_rewriting_legacy():
+    from novel_forge.modules.story_planning_runtime.execution import PostgresPlanningExecutionPreparer
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery, AuthorityAssetWriter
+    from tests.integration.authority_postgres_support import insert_definition, insert_operation
+    from tests.unit.test_story_planning_runtime import _planning_profile_binding
+
+    harness = CapabilityPackPostgresHarness("planning-profile-identity", book_count=2)
+    operation_ids = [str(uuid4()) for _ in range(3)]
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        name = f"profile-contract-fixture:{uuid4()}"
+        insert_definition(uow.cursor, name)
+        for operation_id in operation_ids:
+            insert_operation(uow.cursor, operation_id=operation_id, definition_name=name, project_id=harness.project_id, workspace_id=harness.workspace_id, status="EXECUTING")
+        uow.commit()
+    preparer = object.__new__(PostgresPlanningExecutionPreparer)
+    preparer.query = AuthorityAssetQuery(DATABASE_URL)
+    preparer.writer = AuthorityAssetWriter(DATABASE_URL)
+    preparer._operation_graph = lambda operation_id, project_id: {"root_operation_id": operation_id, "saga_id": "profile-contract-fixture", "definition_name": name}
+    select_profile = preparer._select_model_profile
+    preparer._select_model_profile = lambda project_id, profile: profile
+    first, _ = _planning_profile_binding(preparer, project_id=harness.project_id, book_id=harness.book_ids[0], operation_id=operation_ids[0], schema_ref="schema:foundation-provider-output:creative_foundation:v1:author-input-v1")
+    preparer._select_model_profile = select_profile
+    assert first.route_snapshot.model_profile_id.endswith(".default")
+    original_ref = f"production_execution/model_profiles/{first.route_snapshot.model_profile_id}/v1"
+    original = preparer.query.require(project_id=harness.project_id, logical_ref=original_ref)
+    second, _ = _planning_profile_binding(preparer, project_id=harness.project_id, book_id=harness.book_ids[1], operation_id=operation_ids[1], schema_ref="schema:foundation-provider-output:creative_foundation:v1")
+    retried, _ = _planning_profile_binding(preparer, project_id=harness.project_id, book_id=harness.book_ids[1], operation_id=operation_ids[1], attempt_id="retry-attempt", schema_ref="schema:foundation-provider-output:creative_foundation:v1")
+    legacy, _ = _planning_profile_binding(preparer, project_id=harness.project_id, book_id=harness.book_ids[0], operation_id=operation_ids[2], schema_ref="schema:foundation-provider-output:creative_foundation:v1:author-input-v1")
+    assert first.route_snapshot.model_profile_id == legacy.route_snapshot.model_profile_id
+    assert second.route_snapshot.model_profile_id == retried.route_snapshot.model_profile_id
+    assert second.route_snapshot.model_profile_id != first.route_snapshot.model_profile_id
+    assert second.route_snapshot.policy_id == retried.route_snapshot.policy_id
+    assert second.route_snapshot.fallback_policy_ref == retried.route_snapshot.fallback_policy_ref
+    assert second.request.book_id == harness.book_ids[1]
+    assert preparer.query.require(project_id=harness.project_id, logical_ref=original_ref) == original
+    for kind in ("model_profile", "route_policy", "fallback_policy"):
+        records = preparer.query.list_versions(project_id=harness.project_id, asset_type=kind)
+        assert len(records) == 2
+        assert all(record.version_number == 1 for record in records)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [harness.project_id])
+        assert uow.cursor.fetchone()[0] == 0

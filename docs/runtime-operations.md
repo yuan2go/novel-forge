@@ -450,6 +450,24 @@ must include the six Foundation generation capabilities and their qualification 
 the Chapter pack must include Memo, Review/Revision and Canon support. It does not seed
 qualified story assets or call a Provider SDK directly.
 
+BookDesign v5 semantic evaluation resolves the exact six active Foundation bindings,
+including native `planning_generation_candidate` assets. Both dependency resolution and
+Provider projection check their generator role, project, Book and candidate contract;
+qualification verdicts remain provenance rather than evaluator input. The aggregate
+projection has a `CONFIGURABLE_POLICY` limit of 131,072 serialized characters. Other
+evaluation projections retain 65,536 characters. These bounds do not grant tokens or
+calls: frozen route capacity and native budget admission still apply before dispatch.
+
+Migration `0133` adds bounded semantic evaluation continuation for Formation's
+`BOOK_DESIGN` stage. After an explicit native Formation resume, the same stage may
+append at most two evaluation successors for the three named dependency/context
+preflight failures, provided the failed Operation has no ExternalEffect. The same
+candidate, frozen inputs and independent evaluator are retained. A current Formation
+worker lease gates Operation, Attempt, Effect and dispatch transitions; the failed
+Operation and prior evaluation generation remain terminal. Opening-bound recovery uses
+its existing RecoveryIntent path. Other failures and unknown Provider outcomes do not
+acquire this continuation policy.
+
 The `short-arc-*` files remain the small English engineering smoke. The separate
 `chinese-pilot-*` files freeze an original three-chapter Chinese Arc, limited third-person
 POV, character voice constraints, information asymmetry, a costly choice and setup/payoff.
@@ -512,6 +530,25 @@ existing resume/approval commands before the driver continues; a live lease is n
 stolen. Confirmed generation/evaluation receipts are reused, including evaluation whose
 candidate has subsequently been approved. New generation under a changed source uses a
 new run; old terminal tasks and accepted history are not reopened.
+For `EXECUTION_CONTRACT_FROZEN_CONFLICT` before the first Provider dispatch, inspect the
+retained Effect and release its reservation only after the native ledger proves the
+result is known not to have been dispatched. Request native cancellation and resolve it
+with `never_dispatched_effects`; the Kernel requires every Effect to have zero dispatch
+records and every reservation to be `RELEASED`. Install the repaired release and approve
+its exact Capability Pack compilation with duties separation preserved. The existing
+trusted local operator then registers a successor at
+`POST /product/production/book-authority/books/{book_id}/planning-generations/{operation_id}/runtime-continuation`,
+passing `project_id`, the cancelled source's `expected_source_version`,
+`decision_evidence` with the actual `authorization_ref`, `reason` and
+`authorized_reasoning_effort`, and `trace_id`/`correlation_id`. Reasoning is explicitly
+authorized by the current decision; missing fields in the old pre-dispatch request
+are not treated as historical proof. The original Book runtime policy binds the
+account, backend and CLI configuration. Registration binds the unchanged story task to the exact
+new runtime and permits at most two causal successors. Resume the same Formation with
+its observed CAS version; its original node follows the registered successor. Ordinary
+retries still enforce the old frozen runtime, and dispatched or unknown outcomes do not
+qualify for this path. A budget reallocation remains a separate native policy append;
+preserve the prior frozen driver configuration and continue through native step commands.
 
 Exports include Foundation candidates/diagnoses, model/usage/cost records, request
 admission and recovery artifacts even if Formation fails before Book production.
@@ -600,6 +637,12 @@ under the same frozen operation.
 For Book Opening, use its progress query and recovery application. A process exit, an
 expired lease, or a completed inner semantic operation alone is insufficient to decide
 whether Provider work may be sent again.
+
+The recovery snapshot also resolves the current Narrative Search branch's latest
+Planning generation when no semantic Evaluation exists yet. Its durable Effect,
+Dispatch and Receipt evidence is required even before a Candidate is saved. A local
+timeout without a proven Provider outcome remains `UNKNOWN_AMBIGUOUS`; missing
+Candidate or checkpoint rows are not evidence that no request was sent.
 
 When an Opening node returns its committed result and a late heartbeat observes the
 released lease, the worker verifies the exact node receipt before preserving that
@@ -1159,6 +1202,37 @@ before reservation/dispatch, including repair origins. Existing design may be re
 under a later chapter-only grant. Proposal files, a subscription and available Tokens
 do not authorize execution. Account-entitlement monetary usage remains UNKNOWN.
 
+For a newly authorized production Book, `creative-book-production-budget.v3` uses the
+same configure command. Read the current `budget_binding` first and bind its exact
+`policy_version`, `policy_hash` and `contract_hash` in `previous_policy`. Preserve the
+experiment identity, project and cumulative total; supply the new Book, authorization
+reference, evidence hash, explicit phase allocations and contiguous chapter ranges.
+Every allocation must still cover its historical charges and outstanding reservations.
+Configuration appends a policy version; it does not copy a fresh initial allowance.
+Estimate the actual wired Provider calls before production, including planning and
+quality nodes. A maximum chapter authorization does not prove that the budget can
+complete that many chapters.
+
+Each Workspace remains bound to one Book. Under a v3 production contract,
+`--initialize --workspace-id ...` can create an independent Workspace in the existing
+Project through `project_workspace.create`. Its API is
+`POST /product/projects/{project_id}/workspaces`; the command requires the current
+Project version and AssetVersion, the primary Workspace as its command scope, and
+an explicit new Workspace identity. Creation preserves the primary Workspace and its
+Book. Reuse requires an ACTIVE Workspace owned by the same Project and bound to no
+Book or the requested Book. Earlier production contracts retain their primary
+Workspace requirement.
+
+For Planning output rejected before a Candidate exists, retry the exact frozen
+generation command through `StoryPlanningGenerationApplication.generate`. The runtime
+requires retained raw result evidence, a verified successful Provider receipt and
+settled original usage. Only an explicit result-contract failure can create a linked
+repair Operation, with at most two repairs and the complete original task retained.
+The failed Operation remains terminal. Missing or unknown receipts require
+reconciliation; valid raw output with a persistence failure is not regenerated by this
+contract-repair path. World diagnostics identify the field path, expected type and
+actual type, including fields inside `world_foundation_json`.
+
 `pilot_stop_after_chapter` is independent of the full Book target. Frozen
 `reading_checkpoints: [3,6,9,12]` makes the official driver pause after closed native
 ChapterGroups. `python -m scripts.creation_checkpoint_review preview` exports accepted
@@ -1170,6 +1244,14 @@ pause version. Issues retain severity, repair target and preservation requiremen
 resolution evidence must locate the rechecked accepted version and preservation check. Unresolved issues cannot disappear by omission, and an old approval does
 not undo a subsequent operator pause. Regenerate/read/register/decide if the paused
 Book version changed.
+
+For longer volumes, `reading_review_template(..., reading_start_chapter=N)` creates a
+v2 review covering every chapter from N through the current checkpoint. Earlier
+chapters require exact prior reading evidence; this avoids gaps between distant
+checkpoints. Explicit nonblocking minor opinions may remain OPEN, while hard issues
+still block continuation. The original v1 review contract retains its historical
+coverage rules. Checkpoints and the final stop must coincide with actual ChapterGroup
+boundaries; the existing supervisor permits a shorter final group at the Volume end.
 
 Resume the same runner with `--resume-after-checkpoint N` and
 `--checkpoint-review-decision-id VERSION`. At the configured third-chapter intervention,

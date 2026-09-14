@@ -4,12 +4,14 @@ from typing import Any
 
 
 PROJECT_AUTHORITY_DEFINITION_VERSION = "1.0.2"
+PROJECT_WORKSPACE_DEFINITION_VERSION = "1.0.0"
 PROJECT_AUTHORITY_OPERATIONS = (
     "project_lifecycle.create",
     "project_lifecycle.update",
     "project_lifecycle.transition",
     "project_binding.assign",
     "project_binding.remove",
+    "project_workspace.create",
 )
 PROJECT_AUTHORITY_HANDLER_KEY = "novel_forge.project_authority.lifecycle"
 
@@ -36,7 +38,8 @@ def project_authority_definitions(
     }
     definitions: list[dict[str, Any]] = []
     for name in PROJECT_AUTHORITY_OPERATIONS:
-        create = name.endswith(".create")
+        create = name == "project_lifecycle.create"
+        secondary = name == "project_workspace.create"
         selectors = [
             {
                 "selector": "project_record",
@@ -69,14 +72,38 @@ def project_authority_definitions(
                     "governance": "CLEAR",
                 }
             )
+        if secondary:
+            selectors = [{
+                "selector": "workspace_record", "output_key": "workspace.record",
+                "role": "secondary_workspace", "lifecycle": "ACTIVE",
+                "eligibility": "ELIGIBLE", "governance": "CLEAR",
+            }]
+        selected_command_schema = command_schema
+        if secondary:
+            selected_command_schema = {
+                **command_schema,
+                "required": [*command_schema["required"], "expected_current_asset_version_id"],
+                "properties": {
+                    **command_schema["properties"],
+                    "expected_version": {"type": "integer", "minimum": 1},
+                    "expected_current_asset_version_id": {"type": "string", "minLength": 1},
+                    "payload": {
+                        "type": "object", "required": ["workspace_id"], "additionalProperties": False,
+                        "properties": {
+                            "workspace_id": {"type": "string", "minLength": 1, "pattern": r"\S"},
+                            "workspace_config": {"type": "object"},
+                        },
+                    },
+                },
+            }
         event = f"authority.{name}.committed"
         definitions.append(
             {
                 "name": name,
-                "definition_version": PROJECT_AUTHORITY_DEFINITION_VERSION,
+                "definition_version": PROJECT_WORKSPACE_DEFINITION_VERSION if secondary else PROJECT_AUTHORITY_DEFINITION_VERSION,
                 "family": "project_lifecycle",
                 "enabled": True,
-                "command_schema": command_schema,
+                "command_schema": selected_command_schema,
                 "result_schema": {
                     "type": "object",
                     "required": ["project_id", "asset_version_id"],
@@ -127,6 +154,7 @@ def project_authority_definitions(
 
 __all__ = [
     "PROJECT_AUTHORITY_DEFINITION_VERSION",
+    "PROJECT_WORKSPACE_DEFINITION_VERSION",
     "PROJECT_AUTHORITY_HANDLER_KEY",
     "PROJECT_AUTHORITY_OPERATIONS",
     "project_authority_definitions",

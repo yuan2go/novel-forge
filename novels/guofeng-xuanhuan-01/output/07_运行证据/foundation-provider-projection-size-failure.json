@@ -1,0 +1,108 @@
+{
+  "error": "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_BUDGET_EXCEEDED: Semantic Evaluation context exceeds the bounded Provider projection",
+  "total_characters": 88669,
+  "items": [
+    {
+      "role": "BOOK_DESIGN",
+      "characters": 17123,
+      "fields": {
+        "title": 4,
+        "narrative_dna": 1388,
+        "foundation_set": 4176,
+        "schema_version": 16,
+        "book_invariants": 9487,
+        "target_chapters": 3,
+        "cross_layer_synthesis": 1735
+      }
+    },
+    {
+      "role": "CREATIVE_FOUNDATION",
+      "characters": 7034,
+      "fields": {
+        "genre": 6,
+        "subgenre": 34,
+        "core_fear": 142,
+        "objective": 190,
+        "constraints": 1618,
+        "core_desire": 116,
+        "core_conflict": 309,
+        "style_profile": 1746,
+        "target_reader": 77,
+        "differentiation": 314,
+        "narrative_engine": 444,
+        "why_worth_writing": 187,
+        "emotional_contract": 257,
+        "prohibited_outcomes": 710,
+        "serialization_potential": 293,
+        "foundation_parent_bindings": 2
+      }
+    },
+    {
+      "role": "THEME_CONTRACT",
+      "characters": 5700,
+      "fields": {
+        "objective": 144,
+        "constraints": 1321,
+        "choice_tests": 2489,
+        "opposing_answers": 295,
+        "thematic_question": 69,
+        "prohibited_outcomes": 733,
+        "foundation_parent_bindings": 217
+      }
+    },
+    {
+      "role": "ENDING_INTENT",
+      "characters": 4664,
+      "fields": {
+        "objective": 135,
+        "constraints": 1269,
+        "ending_direction": 366,
+        "protagonist_cost": 340,
+        "closure_conditions": 956,
+        "prohibited_outcomes": 450,
+        "unacceptable_shortcuts": 469,
+        "foundation_parent_bindings": 217
+      }
+    },
+    {
+      "role": "READER_PROMISE",
+      "characters": 6253,
+      "fields": {
+        "objective": 140,
+        "constraints": 1409,
+        "reader_promise": 209,
+        "prohibited_outcomes": 654,
+        "disappointment_risks": 751,
+        "setup_progress_payoff": 2431,
+        "foundation_parent_bindings": 217
+      }
+    },
+    {
+      "role": "WORLD_BIBLE",
+      "characters": 28455,
+      "fields": {
+        "rules": 3852,
+        "factions": 1548,
+        "objective": 143,
+        "dimensions": 4021,
+        "constraints": 1742,
+        "world_foundation": 14069,
+        "deferred_dimensions": 1028,
+        "prohibited_outcomes": 753,
+        "foundation_parent_bindings": 849
+      }
+    },
+    {
+      "role": "CHARACTER_CAST",
+      "characters": 19063,
+      "fields": {
+        "objective": 168,
+        "characters": 11849,
+        "constraints": 2133,
+        "relationships": 2511,
+        "prohibited_outcomes": 939,
+        "foundation_parent_bindings": 1057
+      }
+    }
+  ]
+}

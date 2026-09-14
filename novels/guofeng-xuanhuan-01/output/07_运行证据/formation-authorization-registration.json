@@ -1,0 +1,34 @@
+{
+  "registered_at": "2026-09-13T16:46:05.278736+00:00",
+  "source": "CURRENT_USER_PROMPT",
+  "registration_executor": "AI_CODE_AGENT",
+  "registered_by": "first-novel-pilot-operator",
+  "independent_human_review": "NOT_REVIEWED",
+  "source_policy_sha256": "b33ee6104e9e17af71d095a87e9343b5513f37b17b79645f5f54292952dfa92a",
+  "effective_policy_sha256": "46d934e3067d37810e108b127a3d59ba4aac89e62f3d649b48d7d0bdf84ea862",
+  "derivation": "Retain frozen source intent unchanged; bind its AUTO decision to exact existing operator/project/newWorkspace/newBook/deterministic Formation via native formation-generation.v2 scoped authorization. No story content, target, model route or budget changes.",
+  "initial_rejection": "AUTO Formation requires a frozen scoped authorization contract",
+  "effective_policy": {
+    "contract_version": "formation-generation.v2",
+    "approval_mode": "AUTO",
+    "creative_candidates": 2,
+    "target_chapters": 120,
+    "title": "借锋",
+    "auto_authorization": {
+      "contract_version": "formation-auto-authorization.v1",
+      "policy_version": "formation-auto-policy.v1",
+      "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913",
+      "authorized_by_principal_id": "first-novel-pilot-operator",
+      "project_id": "first-novel-pilot-20260912",
+      "workspace_id": "guofeng-xuanhuan-01-workspace",
+      "book_id": "guofeng-xuanhuan-01",
+      "formation_run_id": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+      "allowed_actions": [
+        "book_design.candidate.activate",
+        "book_design.candidate.decide",
+        "story_planning.candidate.activate",
+        "story_planning.candidate.approve"
+      ]
+    }
+  }
+}

@@ -8,6 +8,7 @@ import re
 from typing import Any
 from uuid import uuid4
 
+from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.authority_handler_runtime import (
@@ -136,6 +137,16 @@ class _PlanningGenerationHandler:
         self.database_url = database_url
 
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
+        from .result_recovery import PlanningResultValidationError, persist_result_failure
+
+        try:
+            return self._execute(request)
+        except PlanningResultValidationError as error:
+            if self.database_url:
+                persist_result_failure(self.database_url, request=request, command=_command_from_payload(dict(request.command["payload"])), error=error)
+            raise
+
+    def _execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         payload = request.command.get("payload")
         if not isinstance(payload, dict):
             raise KernelError(
@@ -346,6 +357,8 @@ class StoryPlanningGenerationHandlerRegistry:
             "1.11.0",
             "1.12.0",
             "1.13.0",
+            "1.14.0",
+            "1.15.0",
         }:
             raise KeyError((definition_name, definition_version))
         return replace(item, definition_version=definition_version)
@@ -374,6 +387,7 @@ class StoryPlanningGenerationApplication:
                 "Planning Generation requires PostgreSQL and build identity"
             )
         self.database_url = database_url
+        self.execution_binder = execution_binder
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.worker_id = worker_id
@@ -400,6 +414,10 @@ class StoryPlanningGenerationApplication:
             commit_sha=commit_sha,
         )
 
+    def register_runtime_continuation(self, source_operation_id: str, *, project_id: str, principal: Principal, expected_source_version: int, decision_evidence: Mapping[str, Any], trace_id: str, correlation_id: str) -> dict[str, Any]:
+        from .runtime_continuation import register
+        return register(self, source_operation_id, project_id=project_id, principal=principal, expected_source_version=expected_source_version, decision_evidence=decision_evidence, trace_id=trace_id, correlation_id=correlation_id)
+
     def generate(
         self,
         command: StoryPlanningGenerationCommand,
@@ -413,6 +431,10 @@ class StoryPlanningGenerationApplication:
                 "Planning Generation actor must be the trusted Principal"
             )
         self._probe(execution_probe)
+        continuation = None
+        if command.runtime_continuation_id:
+            from .runtime_continuation import require_successor
+            continuation = require_successor(self, command)
         replay = self._terminal_generation_replay(command, principal=principal)
         if replay is not None:
             return replay
@@ -465,6 +487,12 @@ class StoryPlanningGenerationApplication:
                     "content_hash": str(proof["content_hash"]),
                 }
             )
+        if command.repair_of_operation_id:
+            from .result_recovery import require_result_repair_source
+            repair_source = require_result_repair_source(self.database_url, command=command, operation_id=command.repair_of_operation_id, source_asset_version_id=command.repair_result_asset_version_id)
+            if repair_source["diagnostic"] != dict(command.repair_result_diagnostic or {}):
+                raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "the frozen result repair diagnosis changed")
+            input_assets.append({"asset_version_id": repair_source["asset_version_id"], "content_hash": repair_source["content_hash"]})
         if command.repair_of_candidate_id:
             repair_asset = self._require_asset(
                 project_id=command.project_id,
@@ -499,10 +527,11 @@ class StoryPlanningGenerationApplication:
                 "correlation_id": command.correlation_id,
                 "causation_id": (
                     command.parent_agent_session_operation_id
+                    or command.repair_of_operation_id
                     or command.repair_of_candidate_id
                 ),
                 "causation_operation_id": (
-                    command.parent_agent_session_operation_id or None
+                    (continuation["source_operation_id"] if continuation else "") or command.repair_of_operation_id or command.parent_agent_session_operation_id or None
                 ),
                 "input": {
                     "project_id": command.project_id,
@@ -580,11 +609,16 @@ class StoryPlanningGenerationApplication:
                 execution_probe=execution_probe,
             )
         self._probe(execution_probe)
-        scheduled = ContentAuthorityScheduler(
-            self.database_url,
-            registry=self.registry,
-            worker_id=self.worker_id,
-        ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+        try:
+            scheduled = ContentAuthorityScheduler(
+                self.database_url,
+                registry=self.registry,
+                worker_id=self.worker_id,
+            ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+        except KernelError as error:
+            if error.code != "PLANNING_GENERATION_RESULT_INVALID":
+                raise
+            return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
         self._probe(execution_probe)
         candidate_id = scheduled.output.asset_version_id
         self._record_candidate(
@@ -1384,11 +1418,24 @@ class StoryPlanningGenerationApplication:
                     "historical Planning definitions may only resume their already admitted commands",
                 )
             return None
-        if dict(row[1]) != _command_payload(command):
+        frozen_payload = dict(row[1])
+        if row[2] == "CANCELLED" and not row[4]:
+            from .runtime_continuation import follow
+            current_payload = _command_payload(command)
+            if {key: value for key, value in frozen_payload.items() if key != "execution_contract_version"} == {key: value for key, value in current_payload.items() if key != "execution_contract_version"}:
+                resumed = follow(self, str(row[0]), _command_from_payload(frozen_payload), principal=principal)
+                if resumed is not None:
+                    return resumed
+        if frozen_payload != _command_payload(command):
             raise KernelError(
                 "PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT",
                 "replay must use the exact immutable admitted Planning command",
             )
+        if row[2] == "CANCELLED" and not row[4]:
+            from .runtime_continuation import follow
+            return follow(self, str(row[0]), command, principal=principal)
+        if row[2] == "FAILED_FINAL" and not row[4]:
+            return self._repair_unmaterialized_result(command, operation_id=str(row[0]), principal=principal)
         if row[2] != "SUCCEEDED" or not row[4]:
             return None
         state = self.story_design.require(
@@ -1402,7 +1449,7 @@ class StoryPlanningGenerationApplication:
                 )
                 failed = uow.cursor.fetchone()
             if failed:
-                if command.execution_contract_version in {"1.12.0", "1.13.0", "1.14.0"}:
+                if command.execution_contract_version in {"1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0"}:
                     definition = GENERATOR_CATALOG[command.generator_operation_name]
                     maximum = (
                         definition.maximum_semantic_repairs
@@ -1416,7 +1463,11 @@ class StoryPlanningGenerationApplication:
                         )
                     repaired = replace(
                         command,
+                        runtime_continuation_id="",
                         repair_of_candidate_id=str(row[4]),
+                        repair_of_operation_id="",
+                        repair_result_asset_version_id="",
+                        repair_result_diagnostic=None,
                         repair_reason=f"{failed[0]['error_code']}:{failed[1]}",
                         repair_number=command.repair_number + 1,
                         idempotency_key=f"{command.idempotency_key}:repair:{command.repair_number + 1}",
@@ -1447,6 +1498,29 @@ class StoryPlanningGenerationApplication:
             True,
         )
 
+    def _repair_unmaterialized_result(self, command: StoryPlanningGenerationCommand, *, operation_id: str, principal: Principal, execution_probe: Callable[[], object] | None = None) -> PlanningGenerationResult:
+        from .result_recovery import MAXIMUM_RESULT_REPAIRS, require_result_repair_source
+
+        maximum = min(MAXIMUM_RESULT_REPAIRS, GENERATOR_CATALOG[command.generator_operation_name].maximum_structural_regenerations)
+        if command.repair_number >= maximum:
+            raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
+        source = require_result_repair_source(self.database_url, command=command, operation_id=operation_id)
+        diagnostic = source["diagnostic"]
+        repaired = replace(
+            command,
+            execution_contract_version=STORY_PLANNING_GENERATION_VERSION,
+            runtime_continuation_id="",
+            repair_of_candidate_id="",
+            repair_of_operation_id=operation_id,
+            repair_result_asset_version_id=source["asset_version_id"],
+            repair_result_diagnostic=diagnostic,
+            repair_reason=f"{diagnostic['error_code']}:{canonical_hash(diagnostic)}",
+            repair_number=command.repair_number + 1,
+            parent_agent_session_operation_id="",
+            idempotency_key=f"{command.idempotency_key}:result-repair:{command.repair_number + 1}",
+        )
+        return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+
     def frozen_generation_command(self, operation_id: str) -> dict[str, Any]:
         return _command_payload(self._generation_command(operation_id))
 
@@ -1460,8 +1534,10 @@ class StoryPlanningGenerationApplication:
                        status, candidate_asset_version_id,
                        repair_of_candidate_id, repair_number, version,
                        COALESCE(narrative_search_id, ''),
-                       COALESCE(narrative_search_branch_key, '')
-                FROM authority_story_planning_generation
+                       COALESCE(narrative_search_branch_key, ''),
+                       COALESCE(to_jsonb(generation)->>'repair_of_operation_id', ''),
+                       COALESCE(to_jsonb(generation)->>'repair_result_asset_version_id', '')
+                FROM authority_story_planning_generation AS generation
                 WHERE operation_id=%s
                 """,
                 [operation_id],
@@ -1489,6 +1565,8 @@ class StoryPlanningGenerationApplication:
             "version",
             "narrative_search_id",
             "narrative_search_branch_key",
+            "repair_of_operation_id",
+            "repair_result_asset_version_id",
         )
         return dict(zip(fields, row, strict=True))
 
@@ -2096,7 +2174,11 @@ class StoryPlanningGenerationApplication:
         self._update_generation_status(operation_id, "REPAIR_REQUIRED")
         repaired = replace(
             command,
+            runtime_continuation_id="",
             repair_of_candidate_id=candidate_asset_version_id,
+            repair_of_operation_id="",
+            repair_result_asset_version_id="",
+            repair_result_diagnostic=None,
             repair_reason=f"{error.code}:{report_hash}",
             repair_number=command.repair_number + 1,
             idempotency_key=f"{command.idempotency_key}:repair:{command.repair_number + 1}",
@@ -2439,23 +2521,33 @@ class StoryPlanningGenerationApplication:
     ) -> None:
         snapshot = [asdict(item) for item in inputs]
         snapshot_hash = canonical_hash(snapshot)
+        repair_fields = (
+            ("repair_of_operation_id", "repair_result_asset_version_id")
+            if command.repair_of_operation_id else ()
+        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
-                """
+                sql.SQL("""
                 INSERT INTO authority_story_planning_generation(
                     generation_id, operation_id, project_id, workspace_id,
                     book_id, generator_operation_name, planning_scope,
                     logical_key, parent_version_id, input_snapshot,
                     input_snapshot_hash, status, repair_of_candidate_id,
                     repair_reason, repair_number, narrative_search_id,
-                    narrative_search_branch_key
+                    narrative_search_branch_key{repair_columns}
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
                     %s, %s, 'ADMITTED', NULLIF(%s, ''), NULLIF(%s, ''), %s,
-                    NULLIF(%s, ''), NULLIF(%s, '')
+                    NULLIF(%s, ''), NULLIF(%s, ''){repair_values}
                 )
                 ON CONFLICT (operation_id) DO NOTHING
-                """,
+                """).format(
+                    repair_columns=sql.SQL("").join(
+                        sql.SQL(", {} ").format(sql.Identifier(field))
+                        for field in repair_fields
+                    ),
+                    repair_values=sql.SQL(", NULLIF(%s, '')" * len(repair_fields)),
+                ),
                 [
                     f"planning-generation:{operation_id}",
                     operation_id,
@@ -2473,8 +2565,11 @@ class StoryPlanningGenerationApplication:
                     command.repair_number,
                     command.narrative_search_id,
                     command.narrative_search_branch_key,
-                ],
+                ] + [getattr(command, field) for field in repair_fields],
             )
+            if command.runtime_continuation_id:
+                from .runtime_continuation import attach_successor
+                attach_successor(uow, command, operation_id)
             uow.commit()
 
     def _record_candidate(
@@ -2995,6 +3090,7 @@ def story_planning_generation_definition(
             "story_design_activation_separate": True,
             "semantic_evaluation_operation_separate": True,
             "repair_candidate_asset_input_allowed": True,
+            **({"repair_result_evidence_input_allowed": True} if definition_version in {"1.15.0", "1.16.0"} else {}),
             "capability_pack_attempt_snapshot_required": True,
             "typed_capability_binding_required": True,
             "agent_runtime_binding_required": False,
@@ -3062,6 +3158,8 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         "change_evidence_version_ids": list(command.change_evidence_version_ids),
         "governance_action_version_ids": list(command.governance_action_version_ids),
         "repair_of_candidate_id": command.repair_of_candidate_id,
+        **({"runtime_continuation_id": command.runtime_continuation_id} if command.runtime_continuation_id else {}),
+        **({"repair_of_operation_id": command.repair_of_operation_id, "repair_result_asset_version_id": command.repair_result_asset_version_id, "repair_result_diagnostic": dict(command.repair_result_diagnostic or {})} if command.repair_of_operation_id else {}),
         "repair_reason": command.repair_reason,
         "repair_number": command.repair_number,
         "auto_approve_low_risk": command.auto_approve_low_risk,
@@ -3126,6 +3224,10 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
             str(item) for item in payload.get("governance_action_version_ids") or ()
         ),
         repair_of_candidate_id=str(payload.get("repair_of_candidate_id") or ""),
+        runtime_continuation_id=str(payload.get("runtime_continuation_id") or ""),
+        repair_of_operation_id=str(payload.get("repair_of_operation_id") or ""),
+        repair_result_asset_version_id=str(payload.get("repair_result_asset_version_id") or ""),
+        repair_result_diagnostic=dict(payload.get("repair_result_diagnostic") or {}) or None,
         repair_reason=str(payload.get("repair_reason") or ""),
         repair_number=int(payload.get("repair_number") or 0),
         auto_approve_low_risk=bool(payload.get("auto_approve_low_risk", False)),
