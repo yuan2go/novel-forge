@@ -70,7 +70,7 @@ def build_provider_adapter_registry(
 
         deepseek_key = str(values.get("DEEPSEEK_API_KEY") or "").strip()
         if not deepseek_key:
-            raise RuntimeError("DeepSeek composition requires DEEPSEEK_API_KEY")
+            raise RuntimeError("DeepSeek credential is not configured: DEEPSEEK_API_KEY is required")
         factory.register("deepseek", lambda: DeepSeekProviderAdapter(
             deepseek_key, pricing={item.model: item.pricing for item in deepseek_candidates(available=True)},
         ))
