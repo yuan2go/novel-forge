@@ -1,0 +1,28 @@
+{
+  "recorded_at": "2026-09-13T16:28:46.455717+00:00",
+  "decision_source": "CURRENT_USER_PROMPT explicitly permits a new Workspace where necessary for independent Book",
+  "status": "PENDING_NATIVE_WORKSPACE_CREATION",
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "guofeng-xuanhuan-01",
+  "book_workspace_id": "guofeng-xuanhuan-01-workspace",
+  "budget_registration_workspace_id": "first-novel-pilot-workspace",
+  "budget_policy_unchanged": "guofeng-volume-one-production-01-20260913-v1",
+  "original_workspace_binding_preserved": true,
+  "script_changes": [
+    {
+      "path": "initialize_book.py",
+      "before_sha256": "26cb8685360facd0d2ce320a8ed8950e5ab074216484c06cb0254a65fde10360",
+      "after_sha256": "c1626c2dec3221e3e9fcd34368d2c25a5e8bfb76568747289c3cb13806d3027a"
+    },
+    {
+      "path": "launch.py",
+      "before_sha256": "6035883abd3ca54c128a237ba66b9fdab39c35ab4c793dbe51bfad2797a9b415",
+      "after_sha256": "9caa379eda7acef4ee41bd41b44695f3e871dbb53a062f9463943c2ddeaf5e56"
+    },
+    {
+      "path": "deploy_packs.py",
+      "before_sha256": "79093c40c11f28f82f55fdce2f3d8083318af43e216b162fcbc2c8b3759b9e62",
+      "after_sha256": "f6534638252ca2d8df289f0235489bf587bf90e121c19d4d1e66048e5d4ba565"
+    }
+  ]
+}

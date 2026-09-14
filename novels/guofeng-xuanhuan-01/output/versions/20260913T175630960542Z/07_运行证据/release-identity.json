@@ -1,0 +1,13 @@
+{
+  "source_sha": "13d1570284b87631a76d75b83f37a3b57563c7b4",
+  "runtime_checkout": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-13d15702",
+  "worktree": "/Users/yuan/projects/novel-forge-guofeng-volume-one",
+  "status": "VALIDATION_NATIVE_FORMATION_RESUMED; QUALIFICATION_RUNNING",
+  "baseline_sha": "5cddba5be0b436ced7bd2c6496ac9cdb16bf96eb",
+  "pack_version": "2.3.3",
+  "planning_execution_contract": "1.16.0",
+  "implementation_tree_sha": "sha256:f108173d537b98bc9ac3c42b631ffdcbe8df5a93815b004dd23da6c18d61967f",
+  "registered_at": "2026-09-13T17:37:04.944619+00:00",
+  "previous_release_preserved": "release-d5c3dd3c",
+  "qualification_report": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/evidence/qualification-13d15702/p0-backend-qualification-13d1570284b87631a76d75b83f37a3b57563c7b4.json"
+}

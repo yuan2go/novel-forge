@@ -1,0 +1,36 @@
+{
+  "identity_keys": [
+    "model",
+    "protocol",
+    "provider",
+    "input_text_hash",
+    "timeout_seconds",
+    "max_output_tokens",
+    "stable_idempotency_key"
+  ],
+  "metadata_keys": [
+    "capability_runtime"
+  ],
+  "request_keys": [
+    "input",
+    "stage",
+    "trace_id",
+    "operation_id",
+    "correlation_id",
+    "max_output_tokens",
+    "_production_execution",
+    "provider_token_contract"
+  ],
+  "safe_identity": {
+    "model": "gpt-6-astra",
+    "provider": "codex-cli",
+    "timeout_seconds": 570,
+    "max_output_tokens": 16000
+  },
+  "safe_metadata": {},
+  "safe_request": {
+    "stage": "creative.candidates.generate",
+    "max_output_tokens": 16000
+  },
+  "parameter_keys": []
+}

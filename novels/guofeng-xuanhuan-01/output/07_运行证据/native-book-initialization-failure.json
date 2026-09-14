@@ -1,0 +1,15 @@
+{
+  "observed_at": "2026-09-13T16:27:38.641341+00:00",
+  "attempt": "initialize_book.py",
+  "source_sha": "3345ffb5d214c4518a21aacf3e9c388fbecb1654",
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "guofeng-xuanhuan-01",
+  "requested_workspace_id": "first-novel-pilot-workspace",
+  "error_code": "BOOK_SCOPE_CONFLICT",
+  "message": "workspace is already bound to another book",
+  "native_boundary": "BookDesignAuthorityRepository.create_book",
+  "book_created": false,
+  "provider_calls": 0,
+  "preserved_native_budget_policy": "guofeng-volume-one-production-01-20260913-v1",
+  "recovery": "Append a legitimate independent Workspace under existing ProjectAuthority, then create Book using frozen new workspace scope; preserve existing workspace/book binding and budget spend."
+}

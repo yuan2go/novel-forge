@@ -1,0 +1,40 @@
+{
+  "source": {
+    "status": "ACTIVE",
+    "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+    "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+  },
+  "content": {
+    "sections": {
+      "space_time_geography": {
+        "depth": "WORKING",
+        "content": "首卷只定三点：白石渡、上游料埠、下游石汊泊。料埠至白石渡水程三十六里，白石渡至石汊泊二十四里；正常水情下常载货船顺流每小时六里、逆流每小时三里，因此前段顺流六小时、逆流十二小时，后段顺流四小时、逆流八小时。这些只算实际航行，装卸、候泊、夜间停船和停航另计。白石渡至石汊泊岸路三十里，普通步行每小时五里，需六小时；料埠至白石渡无连续可行的沿岸近路。具体阻截地形必须在局部规划中提前建立。当前处于水位渐落时节，现场水尺决定当日可航条件，不把常年枯水趋势当作确定灾情。选锋会日定义为T0，年度合同签订截止为T0后三十日黄昏，新年度服务自T0后三十六日起；这是候选初始日历，未排章节。旧合同在届满前继续收费运行；对手调度、采购和期限不因陆照离场停止。"
+      }
+    },
+    "rules": [
+      {
+        "rule_id": "rule:annual_deadline",
+        "category": "space_time_geography",
+        "predicate": {
+          "field": "annual_signature_due_days_after_selection",
+          "value": 30,
+          "operator": "EQUALS",
+          "entity_key": "calendar:baishidu",
+          "state_kind": "world_rule",
+          "requirement_id": "requirement:annual_deadline"
+        },
+        "statement": "以选锋会日T0为基准，年度签约在其后三十日黄昏截止，新年度服务自其后三十六日起；主角离场和水位变化不自动延长日期。",
+        "enforcement": "TEMPORAL",
+        "consequences": [
+          "采购、休养和试行挤占有限筹备时间。",
+          "旧合同届满前继续运行，对手按自身截止安排人手与收入。"
+        ],
+        "applicability": [
+          "timeline_event",
+          "faction_state",
+          "world_rule"
+        ]
+      }
+    ]
+  }
+}

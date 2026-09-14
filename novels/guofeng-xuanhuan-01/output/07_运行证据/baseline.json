@@ -1,0 +1,24 @@
+{
+  "baseline_sha": "5cddba5be0b436ced7bd2c6496ac9cdb16bf96eb",
+  "origin_main_sha": "5cddba5be0b436ced7bd2c6496ac9cdb16bf96eb",
+  "old_runtime_release_sha": "49941cd2bb410ba53a59ae52eb2670b6bf96d82d",
+  "worktree": "/Users/yuan/projects/novel-forge-guofeng-volume-one",
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "guofeng-xuanhuan-01",
+  "initial_observed_usage": {
+    "calls": 11,
+    "tokens": 320035,
+    "calls_remaining": 449,
+    "tokens_remaining": 11179965
+  },
+  "budget_estimate": {
+    "target_chapters": 40,
+    "minimum_native_calls_per_chapter": 12,
+    "minimum_chapter_calls": 480,
+    "planning_and_design_calls": "ADDITIONAL",
+    "status": "TARGET_EXCEEDS_AVAILABLE_CALLS"
+  },
+  "authorization_source": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913",
+  "independent_human_review": "NOT_REVIEWED",
+  "input_status": "AUTHOR_INTENT_NOT_ADOPTED_DESIGN"
+}

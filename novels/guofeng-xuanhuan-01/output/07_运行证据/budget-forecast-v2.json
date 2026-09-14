@@ -1,0 +1,31 @@
+{
+  "recorded_at": "2026-09-13T17:11:18.063279+00:00",
+  "target_volume_chapters": 40,
+  "fixed_calls_per_chapter": 16,
+  "mandatory_chapter_creation_calls": 14,
+  "mandatory_chapter_repair_calls": 2,
+  "foundation_calls": 14,
+  "opening_book_volume_arc_calls": 42,
+  "calls_per_native_chapter_group": 6,
+  "first_chapter_minimum_new_calls": 78,
+  "first_three_minimum_new_calls": 110,
+  "volume_minimum_new_calls": 780,
+  "current_historical_calls": 11,
+  "current_historical_tokens": 320035,
+  "unmeasured_reserved_tokens": 0,
+  "volume_forecast_status": "EXCEEDS_UNCHANGED_LIFETIME_CAP",
+  "excluded_additional_work": [
+    "extra repair/retry",
+    "retrieval and query expansion",
+    "checkpoint and volume-end review",
+    "replanning after actual deviations"
+  ],
+  "volume_future_chapter_design": "Frozen brief requests 40 single-chapter narrative_segments inside the native Volume plan. Counted in Opening only if actual returned plan fulfills this; these are future intents, not executable ChapterPlan or Canon.",
+  "token_estimate": {
+    "planning_actual_tokens_per_call_assumption": 40000,
+    "planning_additional_calls_through_three_chapters_and_two_extra_groups": 74,
+    "one_call_reservation_margin": 160000,
+    "estimated_design_total_with_history": 3413336
+  },
+  "policy": "Recalibrate with actual calls and observable tokens after three accepted chapters; retain target40 and all required gates. Current legal reallocation changes unused phase balance only, not the cumulative cap or story inputs."
+}

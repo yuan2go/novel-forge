@@ -1,0 +1,277 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "guofeng-xuanhuan-01",
+  "title": "借锋",
+  "target_volume_chapters": 40,
+  "source_sha": "b2541ecdc314de38aeee34d606047e1e04ed0b15",
+  "formation": [
+    {
+      "formation_run_id": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+      "lifecycle": "READY",
+      "current_stage": "COMPLETE",
+      "version": 20,
+      "failure": {},
+      "recovery_instruction": {}
+    }
+  ],
+  "openings": [
+    {
+      "opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8",
+      "lifecycle": "FAILED",
+      "version": 3,
+      "failure": {
+        "code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+        "message": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED: required Planning Provider Context exceeds its budget boundary; narrow the governed scope before sending: {\"references\": 3159, \"repair\": 2, \"segments\": [{\"characters\": 17142, \"role\": \"book_design\"}, {\"characters\": 14403, \"role\": \"world_bible\"}, {\"characters\": 5072, \"role\": \"ending_intent\"}, {\"characters\": 19473, \"role\": \"character_cast\"}, {\"characters\": 6663, \"role\": \"reader_promise\"}, {\"characters\": 6112, \"role\": \"theme_contract\"}, {\"characters\": 2228, \"role\": \"platform_profile\"}, {\"characters\": 1050, \"role\": \"production_profile\"}, {\"characters\": 7454, \"role\": \"creative_foundation\"}, {\"characters\": 1045, \"role\": \"narrative_search_parent_state\"}], \"total\": 85541}",
+        "opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8"
+      },
+      "capacity_successor_opening_run_id": "book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df"
+    },
+    {
+      "opening_run_id": "book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df",
+      "lifecycle": "FAILED",
+      "version": 1,
+      "failure": {
+        "code": "MODEL_EFFECT_RETRYABLE_PLANNING",
+        "message": "MODEL_EFFECT_RETRYABLE_PLANNING: Planning provider outcome was retryable_failure",
+        "opening_run_id": "book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df"
+      },
+      "capacity_successor_opening_run_id": null
+    }
+  ],
+  "real_generated_chapters": 0,
+  "committed_chapters": 0,
+  "exported_chapters": 0,
+  "han_characters": 0,
+  "accepted_cursor": 0,
+  "book_run_id": null,
+  "book_state": "NOT_ADMITTED",
+  "chapters": [],
+  "independent_human_review": "NOT_REVIEWED",
+  "budget": {
+    "contract_hash": "sha256:91fd257f4348941abeaf0b657c25f84bf043e9850af7435395cf442f770c0fd6",
+    "project_id": "first-novel-pilot-20260912",
+    "book_id": "guofeng-xuanhuan-01",
+    "phases": {
+      "SOURCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "DESIGN": {
+        "calls_used_or_reserved": 25,
+        "conservative_tokens": 1013117,
+        "recorded_actual_tokens": 1013117,
+        "unmeasured_reserved_tokens": 0
+      },
+      "CREATION_EARLY": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "CREATION_LATE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "REPAIR": {
+        "calls_used_or_reserved": 3,
+        "conservative_tokens": 160910,
+        "recorded_actual_tokens": 160910,
+        "unmeasured_reserved_tokens": 0
+      }
+    },
+    "project_total": {
+      "calls_used_or_reserved": 28,
+      "conservative_tokens": 1174027,
+      "recorded_actual_tokens": 1174027,
+      "unmeasured_reserved_tokens": 0
+    },
+    "shared_total": {
+      "calls_used_or_reserved": 28,
+      "conservative_tokens": 1174027,
+      "recorded_actual_tokens": 1174027,
+      "unmeasured_reserved_tokens": 0
+    },
+    "reservation_ids": [
+      "ef7cb1fa-35a3-4c53-8e28-908b7bdaadae",
+      "f2482034-f4e3-4997-9c4c-aa2947ba335b",
+      "9e1276e5-1ded-4001-ba32-5f3b9e8737c4",
+      "c4bdf5c7-8057-4975-aac8-48918d589b31",
+      "3f5a15d3-a340-4197-84b0-907c34cf791b",
+      "7af6a0fa-49fd-4d7e-8534-8b5527a28ca2",
+      "d00b168f-de6b-484a-b198-ae1ea6f20ba1",
+      "cb1febeb-89d2-4a82-95ef-caa26c42c412",
+      "4eae9351-8a12-4f77-b86a-36b3837e1d6f",
+      "3b24d961-5661-4a00-9d2d-6b2cee7c6e43",
+      "56be04e7-e58f-43e8-af0f-f4073a85f8dd",
+      "abd0bce5-e546-41ce-ac4d-69117df8bfe8",
+      "9b4be09d-60bf-42da-8770-5a452fef22b9",
+      "34d0ebc8-e2c8-4a57-8fed-48be8c5d3a2a",
+      "83b493bb-e456-4019-a119-3b0a8fff2e0a",
+      "a333b99a-4265-461d-b024-90ccec5ef343",
+      "504a7288-9c48-455f-b4b3-b1a064b82dc5",
+      "996cc769-1920-4ab9-b656-726728eeeced",
+      "e73881ea-1f9e-485e-9d05-cc1c9a392359",
+      "0e61c5e4-3d3c-4de9-8bde-a366384266b0",
+      "a64e64d5-4e69-4aaa-a199-550bdb4270ee",
+      "5e93867c-3cc2-4944-a40f-0c6bcffb082b",
+      "9c823aa2-5834-4538-a9ce-3513b843cd81",
+      "b0533cbf-654d-4322-8fb3-e77c1f8a48b2",
+      "b6455366-8a7b-4578-be7b-4119968b153d",
+      "6a179da1-6c7f-4f8e-b5d0-0761268a0aa3",
+      "0b3787b3-e176-49ca-9a60-99d2181af42d",
+      "3665355c-991a-48e4-b6ad-da65ac62f84f"
+    ],
+    "evidence_class": "POSTGRESQL_BUDGET_LEDGER",
+    "creation_opportunity": null
+  },
+  "usage_measurement": {
+    "native_conservative_tokens": 1174027,
+    "reported_usage_excluding_unknown_ceilings": 841708,
+    "unknown_usage_charged_at_ceiling": 332319,
+    "in_flight_or_held_reservations": 0,
+    "unknown_calls": [
+      {
+        "reservation_id": "5e93867c-3cc2-4944-a40f-0c6bcffb082b",
+        "status": "SETTLED",
+        "conservative_charge": 141863,
+        "usage_settlement_basis": "RESERVATION_CEILING",
+        "observable_usage": "NOT_REPORTED"
+      },
+      {
+        "reservation_id": "3665355c-991a-48e4-b6ad-da65ac62f84f",
+        "status": "SETTLED",
+        "conservative_charge": 190456,
+        "usage_settlement_basis": "RESERVATION_CEILING",
+        "observable_usage": "NOT_REPORTED"
+      }
+    ],
+    "authority": "NATIVE_LEDGER_AND_USAGE_SETTLEMENT_EVIDENCE"
+  },
+  "export_conflicts": [],
+  "exported_at": "20260913T224522865748Z",
+  "delivery_stop": {
+    "observed_at": "2026-09-13T22:45:22.322865+00:00",
+    "source_sha": "b2541ecdc314de38aeee34d606047e1e04ed0b15",
+    "book_id": "guofeng-xuanhuan-01",
+    "title": "借锋",
+    "target_volume_chapters": 40,
+    "generated_chapters": 0,
+    "accepted_chapters": 0,
+    "exported_chapters": 0,
+    "han_characters": 0,
+    "overall_result": "INCOMPLETE_HARD_BLOCKED",
+    "user_facing_blocker": "全书大纲调用在570秒后超时，未返回最终结果或usage。原生恢复评估现为UNKNOWN_AMBIGUOUS；未知结果未核清，不能重发。正文尚未生成。",
+    "native_assessment_id": "book-opening-recovery-assessment:735079353ade1ca8d5ff87ac39f3990674a5d9cc90168f9959281dcf62bf7319",
+    "opening": {
+      "lifecycle": "FAILED",
+      "version": 1,
+      "current_execution_generation": 1
+    },
+    "provider_submit_after_timeout": false,
+    "missing_evidence": [
+      "Original Provider final result and usage, or verifiable conclusive termination outcome"
+    ],
+    "ordinary_reapproval_cannot_resolve": true,
+    "model_route_unchanged": true,
+    "old_book_active_creation_stopped": true,
+    "current_task_calls": 17,
+    "cumulative_calls": 28,
+    "current_task_observable_tokens": 521673,
+    "cumulative_observable_tokens": 841708,
+    "unknown_charged_tokens": 332319,
+    "cumulative_conservative_tokens": 1174027,
+    "remaining_phase_caps": {
+      "DESIGN": {
+        "calls": 75,
+        "conservative_tokens": 2486883
+      },
+      "CREATION_EARLY": {
+        "calls": 90,
+        "conservative_tokens": 2250000
+      },
+      "CREATION_LATE": {
+        "calls": 210,
+        "conservative_tokens": 4250000
+      },
+      "REPAIR": {
+        "calls": 57,
+        "conservative_tokens": 1339090
+      }
+    },
+    "remaining_shared_calls": 432,
+    "remaining_shared_conservative_tokens": 10325973,
+    "minimum_additional_calls_assumption": {
+      "opening": 42,
+      "fourteen_chapter_groups": 84,
+      "forty_chapters": 640
+    },
+    "minimum_forecast_cumulative_calls": 794,
+    "forecast_excludes": [
+      "additional repair",
+      "checkpoint review",
+      "volume end review",
+      "replanning"
+    ],
+    "third_chapter_recalibration": "NOT_REACHED",
+    "acceptance_states": {
+      "GENERATION_CONTRACT_RECOVERY": {
+        "evidence": "EXECUTABLE",
+        "state": "CONTRACT_AND_CANDIDATE_RECOVERY_IMPLEMENTED; UNKNOWN_PROVIDER_RESULT_BLOCKED"
+      },
+      "NEW_BOOK_ISOLATION": {
+        "evidence": "EXECUTABLE",
+        "state": "NATIVE_INDEPENDENT_BOOK_AND_FORMATION"
+      },
+      "WORLD_AND_CHARACTER_DESIGN": {
+        "evidence": "EXECUTABLE",
+        "state": "ACTIVE_NATIVE_ASSETS"
+      },
+      "BOOK_OUTLINE": {
+        "state": "NOT_GENERATED; PROVIDER_UNKNOWN"
+      },
+      "VOLUME_ONE_ARCS_AND_CHAPTER_PLANS": {
+        "state": "NOT_GENERATED"
+      },
+      "REAL_PROSE_GENERATION": {
+        "state": "NOT_GENERATED"
+      },
+      "ACCEPTED_VOLUME_ONE": {
+        "state": "NOT_GENERATED"
+      },
+      "CROSS_CHAPTER_CONTINUITY": {
+        "state": "NOT_EVALUATED"
+      },
+      "AI_EDITORIAL_REVIEW": {
+        "state": "FOUNDATION_SEMANTIC_REVIEW_COMPLETED; PROSE_NOT_REVIEWED"
+      },
+      "INDEPENDENT_HUMAN_REVIEW": {
+        "state": "NOT_REVIEWED"
+      }
+    },
+    "second_volume_ready": false,
+    "engineering": {
+      "source_sha": "b2541ecdc314de38aeee34d606047e1e04ed0b15",
+      "focused": [
+        {
+          "report": "opening-recovery-b2541ecd-focused.xml",
+          "tests": 49,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0,
+          "source_revision": "b2541ecdc314de38aeee34d606047e1e04ed0b15",
+          "evidence_class": "ISOLATED_TEST",
+          "provider_invoked": false
+        }
+      ],
+      "complete_qualification_status": "FAIL",
+      "complete_qualification_report": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/evidence/qualification-b2541ecd/p0-backend-qualification-b2541ecdc314de38aeee34d606047e1e04ed0b15.json",
+      "older_reports_retained": true,
+      "source_baseline_sha": "5cddba5be0b436ced7bd2c6496ac9cdb16bf96eb",
+      "production_claim": "NO_PROSE_PRODUCTION_EVIDENCE"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "evidence": "READ_ONLY_ACTUAL_AUTHORITY_ASSETS_TO_PROVIDER_PROJECTION",
+  "candidate_asset_version_id": "bcb25950-6822-4552-a043-1251694c78c1",
+  "candidate_content_hash": "sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83",
+  "selected_count": 7,
+  "provider_view_utf8_bytes": 193290,
+  "projection_sha256": "f283763153ed9b986c7b236caec76e9bd8ba42e6c255b386c05704886152cc2c",
+  "provider_dispatched": false,
+  "business_mutations": false
+}

@@ -1,0 +1,22 @@
+{
+  "before_head": "20260914_0133_formation_evaluation_recovery",
+  "after_head": "20260914_0134_opening_capacity_continuation",
+  "status": "APPLIED",
+  "source_sha": "fa190e4490dfc0d9d219b30bb7cf9f536ed00e25",
+  "retained_business_facts": {
+    "source_operation": [
+      "FAILED_FINAL",
+      6
+    ],
+    "candidate": [
+      "sha256:01405b272aff488184a57c588c93870aeb4e262665df363c88cf7336db6c4c83",
+      "ACTIVE"
+    ],
+    "budget_reservations": [
+      28,
+      "2173368",
+      "983571"
+    ]
+  },
+  "no_business_rows_rewritten": true
+}

@@ -1,0 +1,113 @@
+{
+  "source_sha": "6bc55ffe18c61b0755eb780e43a8cb03eb25503c",
+  "materialization_asset_version_id": "61d6918c-dcb3-4456-a632-919f1d284c7e",
+  "materialization_hash": "sha256:cfc3d23de402b6b52317d2ba6673b2388c72558edeb2b0b09ad064fa861a893f",
+  "prompt_bytes": 202376,
+  "output_reserve": 8000,
+  "safety_margin": 8192,
+  "framing_overhead": 16,
+  "conservative_request_total": 218584,
+  "current_configured_limit": 200000,
+  "local_cli_model_capacity": {
+    "model": "gpt-6-astra",
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "cache_sha256": "65cfe690b234a97fa7c1ef8b8a5ed948f501c5a0118a5890594df2e1dd9e3a9d"
+  },
+  "prompt_evidence": {
+    "materialization_hash": "sha256:4bf3cfc3cfd0d33c3f6a8ecf2b2ac53d8465f79a0e01d96e14d8256c2e71b661",
+    "fully_rendered_prompt_hash": "sha256:4e31a91b6cb2cf0b6345e7f117541e648e8d5539bb1cda4b04d7b565cf7694fb",
+    "required_reader_facing_language": null,
+    "provider_prompt_projection_version": "authority-projection-task-provider-v1",
+    "rendered_prompt_bytes": 202376,
+    "rendered_prompt_estimated_tokens": 67459,
+    "system_instruction": {
+      "ref": "prompt-system:narrative-semantic-evaluation-pack",
+      "version": "v3",
+      "content_hash": "sha256:889b3035419c44316b502d0f45339b3b43acec5b12f0745bcf6c83839d9e1c8e"
+    },
+    "prompt_template": {
+      "ref": "prompt-template:narrative-semantic-evaluation-pack",
+      "version": "v1",
+      "content_hash": "sha256:92841e45a0b7b22b3b91d8003c016ae6fd82cf54631e4927d2829ed43892839d"
+    },
+    "skill": {
+      "ref": "quality-review",
+      "version": "quality-review-narrative-evaluator-v1",
+      "content_hash": "sha256:27d5dbd40de81ddcefc90d20a2ead047903e7ca29eebef6a9ab3f28dfd156e23"
+    },
+    "context_asset_version_ids": [
+      "303926ce-9003-4bf0-aeb7-bc6f5a7aa1b9"
+    ],
+    "knowledge_content_hashes": [
+      "sha256:e880fdc724a45fccecbff445974f362668511fe03238b812f2740160e20b6c49"
+    ],
+    "allowed_tools": [
+      "model.provider.invoke"
+    ],
+    "output_schema_ref": "schema:narrative-semantic-evaluation:book_design.propose:v1:e3f0562b50776486",
+    "output_schema_hash": "sha256:e3f0562b5077648650f99f654b12e98729d95a7b2757ba406a1c9f89781e9aa4",
+    "embedding_output_contract": null,
+    "provider_view": {
+      "task_contract_version": "provider-task-view-v1",
+      "context_contract_version": "provider-context-view-v2",
+      "selection_explanation": {
+        "policy": "exact-candidate-and-canonical-foundation-semantic-closure-v2",
+        "selected_count": 7,
+        "omitted_count": 0
+      },
+      "component_characters": {
+        "system_instruction": 1992,
+        "governed_skill": 2404,
+        "provider_knowledge": 437,
+        "provider_task_view": 1216,
+        "provider_context_view": 88669,
+        "tool_policy": 258,
+        "stage_semantic_contract": 1160,
+        "output_schema": 1542,
+        "fully_rendered_prompt": 98438
+      },
+      "component_estimated_tokens": {
+        "system_instruction": 498,
+        "governed_skill": 601,
+        "provider_knowledge": 109,
+        "provider_task_view": 304,
+        "provider_context_view": 22167,
+        "tool_policy": 64,
+        "stage_semantic_contract": 290,
+        "output_schema": 385,
+        "fully_rendered_prompt": 24609
+      },
+      "component_utf8_byte_upper_bounds": {
+        "system_instruction": 1992,
+        "governed_skill": 3964,
+        "provider_knowledge": 437,
+        "provider_task_view": 1216,
+        "provider_context_view": 191047,
+        "tool_policy": 258,
+        "stage_semantic_contract": 1160,
+        "output_schema": 1542,
+        "fully_rendered_prompt": 202376
+      },
+      "component_hashes": {
+        "system_instruction": "sha256:cf69cace3ae3dcf856c05b9fd413e954b0d5215240444624e4ca7dfec52ad7b2",
+        "governed_skill": "sha256:d8ada86b028cbc5e921d0aed88cd691884cc89fd0799b36d86e1c3b24d868496",
+        "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+        "provider_task_view": "sha256:429cf2b98de67845bed986c33303d9f1a78321868d9305459d6816ac1ad10686",
+        "provider_context_view": "sha256:e4df6a70c3218e3e9f13ab41eb4298997940cda6c58b2ebccd6159f67c855024",
+        "tool_policy": "sha256:1f8d7e69795efc8ce1b6d33729c765c002c35701b02097e607403e9f2213e0e4",
+        "stage_semantic_contract": "sha256:c35d00249b0e295657a2808d655113365dd6d5315a07dd1ad79aa653db83e679",
+        "output_schema": "sha256:e3f0562b5077648650f99f654b12e98729d95a7b2757ba406a1c9f89781e9aa4",
+        "fully_rendered_prompt": "sha256:4e31a91b6cb2cf0b6345e7f117541e648e8d5539bb1cda4b04d7b565cf7694fb"
+      },
+      "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+      "provider_admission_uses_component_estimates": false,
+      "authority_context_estimated_tokens": 0,
+      "provider_context_estimated_tokens": 22167,
+      "context_projection_ratio": 22167.0,
+      "rendered_prompt_to_semantic_input_ratio": 1.089858,
+      "representation_policy": "authority-projection-task-provider-v1"
+    }
+  },
+  "provider_called": false
+}

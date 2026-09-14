@@ -1,0 +1,100 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "guofeng-xuanhuan-01",
+  "title": "借锋",
+  "target_volume_chapters": 40,
+  "source_sha": "d5c3dd3c7a5e2233d36cecd5aac9142fa626dc40",
+  "formation": [
+    {
+      "formation_run_id": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+      "lifecycle": "FAILED",
+      "current_stage": "CREATIVE_SEARCH",
+      "version": 1,
+      "failure": {
+        "code": "EXECUTION_CONTRACT_FROZEN_CONFLICT",
+        "message": "EXECUTION_CONTRACT_FROZEN_CONFLICT: Planning execution contract changed inside one identity",
+        "formation_run_id": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34"
+      },
+      "recovery_instruction": {
+        "action": "RESUME_WITH_SAME_FROZEN_INPUTS",
+        "formation_run_id": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+        "failed_operation_id": "runtime-attempt:65a219d0-9cd9-475f-a369-f1e568f3cfc9"
+      }
+    }
+  ],
+  "real_generated_chapters": 0,
+  "committed_chapters": 0,
+  "exported_chapters": 0,
+  "han_characters": 0,
+  "accepted_cursor": 0,
+  "book_run_id": null,
+  "book_state": "NOT_ADMITTED",
+  "chapters": [],
+  "independent_human_review": "NOT_REVIEWED",
+  "budget": {
+    "contract_hash": "sha256:c118dbacc5be0e1b2406acab6f0eebdd029d6b8ce78a934a35f7291680b4a1d7",
+    "project_id": "first-novel-pilot-20260912",
+    "book_id": "guofeng-xuanhuan-01",
+    "phases": {
+      "SOURCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "DESIGN": {
+        "calls_used_or_reserved": 10,
+        "conservative_tokens": 293336,
+        "recorded_actual_tokens": 293336,
+        "unmeasured_reserved_tokens": 0
+      },
+      "CREATION_EARLY": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "CREATION_LATE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "REPAIR": {
+        "calls_used_or_reserved": 1,
+        "conservative_tokens": 26699,
+        "recorded_actual_tokens": 26699,
+        "unmeasured_reserved_tokens": 0
+      }
+    },
+    "project_total": {
+      "calls_used_or_reserved": 11,
+      "conservative_tokens": 320035,
+      "recorded_actual_tokens": 320035,
+      "unmeasured_reserved_tokens": 0
+    },
+    "shared_total": {
+      "calls_used_or_reserved": 11,
+      "conservative_tokens": 320035,
+      "recorded_actual_tokens": 320035,
+      "unmeasured_reserved_tokens": 0
+    },
+    "reservation_ids": [
+      "ef7cb1fa-35a3-4c53-8e28-908b7bdaadae",
+      "f2482034-f4e3-4997-9c4c-aa2947ba335b",
+      "9e1276e5-1ded-4001-ba32-5f3b9e8737c4",
+      "c4bdf5c7-8057-4975-aac8-48918d589b31",
+      "3f5a15d3-a340-4197-84b0-907c34cf791b",
+      "7af6a0fa-49fd-4d7e-8534-8b5527a28ca2",
+      "d00b168f-de6b-484a-b198-ae1ea6f20ba1",
+      "cb1febeb-89d2-4a82-95ef-caa26c42c412",
+      "4eae9351-8a12-4f77-b86a-36b3837e1d6f",
+      "3b24d961-5661-4a00-9d2d-6b2cee7c6e43",
+      "56be04e7-e58f-43e8-af0f-f4073a85f8dd"
+    ],
+    "evidence_class": "POSTGRESQL_BUDGET_LEDGER",
+    "creation_opportunity": null
+  },
+  "export_conflicts": [],
+  "exported_at": "20260913T170122041591Z"
+}

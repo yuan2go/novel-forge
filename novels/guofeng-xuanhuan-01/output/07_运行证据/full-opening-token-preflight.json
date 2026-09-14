@@ -1,0 +1,143 @@
+{
+  "status": "COMPLETE_NATIVE_PROMPT_RECONSTRUCTED_READ_ONLY",
+  "prompt_bytes": 166248,
+  "output_reserve": 16000,
+  "safety_margin": 8192,
+  "framing_overhead": 16,
+  "conservative_request_total": 190456,
+  "frozen_opening_per_call_limit": 160000,
+  "prompt_evidence": {
+    "materialization_hash": "",
+    "fully_rendered_prompt_hash": "sha256:936df3a2369b41da728d999b40d7d2b6f72c3c8e1f4b3076796a5e2547eda604",
+    "required_reader_facing_language": null,
+    "provider_prompt_projection_version": "authority-projection-task-provider-v1",
+    "rendered_prompt_bytes": 166248,
+    "rendered_prompt_estimated_tokens": 55416,
+    "system_instruction": {
+      "ref": "prompt-system:story-planning-pack",
+      "version": "v7",
+      "content_hash": "sha256:f91f8afd14743544f35690e45f079accd7eecfd3516ac16107b8aaf357c8cd5a"
+    },
+    "prompt_template": {
+      "ref": "prompt-template:story-planning-pack",
+      "version": "v1",
+      "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+    },
+    "skill": {
+      "ref": "chapter-outline",
+      "version": "chapter-outline-qualification-v1",
+      "content_hash": "sha256:6434e396a96a6d29f9a839bdbfade605a57bbc129bfbef350434a2f9911744ed"
+    },
+    "context_asset_version_ids": [
+      ""
+    ],
+    "knowledge_content_hashes": [
+      "sha256:e880fdc724a45fccecbff445974f362668511fe03238b812f2740160e20b6c49"
+    ],
+    "allowed_tools": [
+      "model.provider.invoke"
+    ],
+    "output_schema_ref": "schema:planning-provider-output:book:v1",
+    "output_schema_hash": "",
+    "embedding_output_contract": null,
+    "provider_view": {
+      "task_contract_version": "provider-task-view-v1",
+      "context_contract_version": "provider-context-view-v2",
+      "selection_explanation": {
+        "policy": "minimum-sufficient-planning-context-v2",
+        "included_segment_count": 10,
+        "included_fact_count": 0,
+        "omitted_segment_count": 0,
+        "omitted_fact_count": 0,
+        "omitted_item_count": 150,
+        "truncated_character_count": 0,
+        "compiler_version": "scope-preserving-planning-context-v1",
+        "field_classes": {
+          "hard_constraints": "HARD_CONSTRAINT",
+          "invariants": "HARD_CONSTRAINT",
+          "story_constraints": "HARD_CONSTRAINT",
+          "constraints": "HARD_CONSTRAINT",
+          "forbidden_events": "PROHIBITION",
+          "forbidden_payoffs": "PROHIBITION",
+          "prohibited_outcomes": "PROHIBITION",
+          "required_facts": "REQUIRED_FACT",
+          "required_fact_ids": "REQUIRED_FACT",
+          "required_payoffs": "DUE_OBLIGATION",
+          "due_obligations": "DUE_OBLIGATION",
+          "required_obligation_ids": "DUE_OBLIGATION",
+          "unresolved_obligation_ids": "DUE_OBLIGATION",
+          "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+          "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+          "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+          "inspiration": "OPTIONAL_GUIDANCE",
+          "optional_guidance": "OPTIONAL_GUIDANCE",
+          "soft_suggestions": "OPTIONAL_GUIDANCE",
+          "style_suggestions": "OPTIONAL_GUIDANCE"
+        },
+        "maximum_segments": 24,
+        "maximum_facts_per_segment": 32,
+        "maximum_serialized_characters": 65536,
+        "inherited_invariants": "Selected Foundation constraints remain mandatory Book invariants; exact duplicate strings are represented once.",
+        "literal_references": "A literal_source_role/json_pointer object means the exact full string at that selected segment content path. It inherits the original Book Design requirement.",
+        "loss_receipt": {
+          "source_input_hash": "sha256:4d8c936908afe5fae211de49b127183b1066198c69072a80912099f366443eae",
+          "json_pointer": "/context_manifest/projection_audit",
+          "audit_hash": "sha256:b4521e1b26e19c34786f45f598318188b725975eac6a32bf195923276df0b71f",
+          "loss_record_count": 60
+        }
+      },
+      "component_characters": {
+        "system_instruction": 5867,
+        "governed_skill": 2204,
+        "provider_knowledge": 437,
+        "provider_task_view": 8349,
+        "provider_context_view": 63107,
+        "tool_policy": 258,
+        "stage_semantic_contract": 842,
+        "output_schema": 15641,
+        "fully_rendered_prompt": 97460
+      },
+      "component_estimated_tokens": {
+        "system_instruction": 1466,
+        "governed_skill": 551,
+        "provider_knowledge": 109,
+        "provider_task_view": 2087,
+        "provider_context_view": 15776,
+        "tool_policy": 64,
+        "stage_semantic_contract": 210,
+        "output_schema": 3910,
+        "fully_rendered_prompt": 24365
+      },
+      "component_utf8_byte_upper_bounds": {
+        "system_instruction": 5867,
+        "governed_skill": 3864,
+        "provider_knowledge": 437,
+        "provider_task_view": 8349,
+        "provider_context_view": 130235,
+        "tool_policy": 258,
+        "stage_semantic_contract": 842,
+        "output_schema": 15641,
+        "fully_rendered_prompt": 166248
+      },
+      "component_hashes": {
+        "system_instruction": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+        "governed_skill": "sha256:fd8d3e02c7cc428eb96037d9d7d8036b59b26252f76388ba7f44e3338fe5bf76",
+        "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+        "provider_task_view": "sha256:c526d8ff117e6bee2fd06765def9149f3e91f88ba62941caf1393bee5dc8da59",
+        "provider_context_view": "sha256:bf1b7022084383fb3ab0b8cead2432062d607f45814006850b6096c7fd71d31f",
+        "tool_policy": "sha256:058abd5cdd33e9f20fec97de618920cae3f9b93617df642ebcd1dfc737d1e547",
+        "stage_semantic_contract": "sha256:0df08991bf4c54df1d2f0a067baddd8fcd67e2db59ee29c960fa86a9167f00af",
+        "output_schema": "sha256:773c6bd14a1f8324bed579db4603836761247f7ffc674bc2861f542279080ccf",
+        "fully_rendered_prompt": "sha256:936df3a2369b41da728d999b40d7d2b6f72c3c8e1f4b3076796a5e2547eda604"
+      },
+      "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+      "provider_admission_uses_component_estimates": false,
+      "authority_context_estimated_tokens": 15767,
+      "provider_context_estimated_tokens": 15776,
+      "context_projection_ratio": 1.000571,
+      "rendered_prompt_to_semantic_input_ratio": 1.35572,
+      "representation_policy": "authority-projection-task-provider-v1"
+    }
+  },
+  "provider_called": false
+}

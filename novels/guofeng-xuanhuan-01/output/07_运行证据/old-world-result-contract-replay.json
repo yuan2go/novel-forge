@@ -1,0 +1,25 @@
+{
+  "sample_sha256": "8e60370373ec1c7e153f590dd297f798a888c432d5e70c7d95af0cadecc23f33",
+  "sample_bytes": 49265,
+  "code": "WORLD_FOUNDATION_SCHEMA_INVALID",
+  "diagnostics": [
+    {
+      "code": "WORLD_FIELD_TYPE_INVALID",
+      "field_path": "$.genre_profile",
+      "expected_type": "string",
+      "actual_type": "object",
+      "constraint": "Input should be a valid string"
+    },
+    {
+      "code": "WORLD_FIELD_TYPE_INVALID",
+      "field_path": "$.compiled_scope",
+      "expected_type": "string",
+      "actual_type": "array",
+      "constraint": "Input should be 'BOOK', 'VOLUME' or 'ARC'"
+    }
+  ],
+  "old_sample_unchanged": true,
+  "candidate_created": false,
+  "model_calls": 0,
+  "proof": "LOCAL_REAL_FAILED_RESULT_REPLAY"
+}

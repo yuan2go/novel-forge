@@ -1,0 +1,32 @@
+{
+  "source_sha": "c667eb73b652af079c516d79c36c7543c15dc0f6",
+  "continuations": [
+    {
+      "recovery_id": "narrative-formation-recovery:cfc464f769f371823a2097e2b14319aeba9db6c1bf459704c84d6b6b0daa48f3",
+      "formation_run_id": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+      "candidate_asset_version_id": "bcb25950-6822-4552-a043-1251694c78c1",
+      "source_operation_id": "4b3f029c-cbb8-4c7a-a6b4-5a3dd46ad0ac",
+      "successor_operation_id": "13a5df41-9a27-4704-9a7b-2cf0b555e4ba",
+      "successor_generation": 2,
+      "resume_operation_id": "9ef6c26d-294e-4ffc-9e69-3daa08fb43c4",
+      "evidence": {
+        "error_code": "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID",
+        "source_status": "FAILED_FINAL",
+        "source_attempt_id": "3bc18a48-1428-43fb-99b3-71efd2a6c96b",
+        "source_release_sha": "90543b35173b84af91d9933086b749df2df65cab",
+        "target_release_sha": "6bc55ffe18c61b0755eb780e43a8cb03eb25503c",
+        "external_effect_disposition": "PROVEN_NO_EFFECT"
+      },
+      "source_status": "FAILED_FINAL",
+      "successor_status": "SUCCEEDED",
+      "effects": [
+        {
+          "external_effect_id": "a0c61619-2aa7-451e-b798-ec19fef726a3",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-astra"
+        }
+      ]
+    }
+  ]
+}

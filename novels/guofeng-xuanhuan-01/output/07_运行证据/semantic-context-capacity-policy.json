@@ -1,0 +1,23 @@
+{
+  "registered_at": "2026-09-13T19:33:35.428745+00:00",
+  "decision_source": "CURRENT_USER_PROMPT:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01",
+  "registration_executor": "AI_CODE_AGENT",
+  "classification": "CONFIGURABLE_POLICY",
+  "stage": "narrative_semantic_evaluation",
+  "source_sha": "6bc55ffe18c61b0755eb780e43a8cb03eb25503c",
+  "before_limit": 200000,
+  "after_limit": 272000,
+  "request_upper_bound": 218584,
+  "capacity_evidence": {
+    "model": "gpt-6-astra",
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "cache_sha256": "65cfe690b234a97fa7c1ef8b8a5ed948f501c5a0118a5890594df2e1dd9e3a9d"
+  },
+  "before_route_env_hash": "a4c46bf749a5e14196ee0bf42bd10875386b0ce43868b4a1914f932a2fd8bb01",
+  "after_route_env_hash": "1153114a6c7948162121f5d92f26185b986097f4b2d4d1573f197ad9496ca10c",
+  "archive": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/operator/config-versions/semantic-context-capacity-20260913T193335Z",
+  "model_account_budget_scope_unchanged": true,
+  "independent_human_review": "NOT_REVIEWED",
+  "native_admission_required": true
+}

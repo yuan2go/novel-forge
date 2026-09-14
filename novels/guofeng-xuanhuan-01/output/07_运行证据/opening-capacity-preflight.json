@@ -1,0 +1,9 @@
+{
+  "recorded_at": "2026-09-13T16:19:36.795078+00:00",
+  "status": "PRE_ADMISSION_CONFIGURATION",
+  "basis": "Opening topology requires 6 calls * (1 Book + 3 Volumes + 3 Arcs + 1 reserved search) = 48 calls; its conservative capacity divides the scope ceiling by the 160000 per-call ceiling. Set 48 * 160000 for this nested scope. Native creative DESIGN phase remains 70 calls / 2000000 tokens including history; project total remains 460 / 11500000. The nested scope is not an additional grant, and all tighter native limits remain enforced. A 12-hour opening window accommodates serial real-Provider execution.",
+  "prior_route_sha256": "8bd4ebcd8e614e8ddef75de6011a3556d26cb7f6a79ff2cd389dc6af07f9dba6",
+  "new_route_sha256": "14aa524a085252fc1859fd5ad4f19a6ba06758fc4217ca535bfe06a218d597a3",
+  "native_usage_change": 0,
+  "authorization_scope_change": false
+}

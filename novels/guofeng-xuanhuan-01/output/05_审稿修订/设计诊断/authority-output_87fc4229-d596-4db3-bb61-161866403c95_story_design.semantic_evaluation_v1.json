@@ -1,0 +1,196 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "logical_ref": "asset-version:authority-output:87fc4229-d596-4db3-bb61-161866403c95:story_design.semantic_evaluation:v1",
+  "category": "narrative_design_evaluation",
+  "asset_id": "authority-output:87fc4229-d596-4db3-bb61-161866403c95:story_design.semantic_evaluation",
+  "asset_type": "narrative_design_evaluation",
+  "asset_version_id": "authority-output:87fc4229-d596-4db3-bb61-161866403c95:story_design.semantic_evaluation:v1",
+  "version_number": 1,
+  "lifecycle": "ACTIVE",
+  "eligibility": "ELIGIBLE",
+  "governance": "CLEAR",
+  "content_hash": "sha256:d2e64c095103c9c6f35aac74822abff4607e56e1116ff4a5f8f99cdd78b54d8d",
+  "content": {
+    "evaluation": {
+      "evaluations": [
+        {
+          "layer": "STORY_FOUNDATION",
+          "criteria": [
+            {
+              "verdict": "PASS",
+              "criterion": "WORLD_RULE_COHERENCE",
+              "rationale": "听隙的接触渠道、信息范围与判断误差相互一致，辨弱不自动提供破防力量；境界优势、材料损耗与局部脱险条件不存在互相取消的例外。航程与速度计算一致，消息受实际路线和岗位权限约束，能够维持行动及限知叙述的连续性。",
+              "evidence_refs": [
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/technology_power",
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/space_time_geography",
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/information_communication"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "RULE_COST_AND_LIMIT",
+              "rationale": "能力运用、修炼、养刃和履约均有具体成本与失效边界：十二个有效训练日及末段测试、过载后的功能损失、不可逆刃材消耗、批次补给和有偿保障形成可执行约束。价格尺度支持收入与支出的比较，替代采购仍须支付时间和性能代价。候选已规定决定性行动的后果与状态变化须在正文显露；本阶段无需已有章节来证明执行。",
+              "evidence_refs": [
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/rules",
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/economy",
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/ecology_resources"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "CONFLICT_GENERATION_CAPACITY",
+              "rationale": "门派保障收入、散匠工法自主、渡户生计、商号交期与渡务秩序具有交叉且不一致的利益。签约期限、补给等待和真实护运要求能够持续产生筹资、议价、误判、协作与验收冲突；各势力拥有独立资源和压力，冲突无需依赖全员恶意或单一反派维持。",
+              "evidence_refs": [
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/factions",
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/politics_factions",
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/space_time_geography"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "CHARACTER_AGENCY_SUPPORT",
+              "rationale": "入门保障与独立经营各有真实收益和义务，陶靖的待遇及权利让渡条件保持为待选择事项。叶满汀、杜衡和其他合作者保有生计目标、拒绝权及信息边界。明确同意、有限责任、替代履约保障与退出安排允许人物通过议价、缩小业务或承担补救改变局面，同时保留选择的后果。",
+              "evidence_refs": [
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/society_class",
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/politics_factions",
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/rules/7"
+              ],
+              "repair_directive": ""
+            },
+            {
+              "verdict": "PASS",
+              "criterion": "LONGFORM_EVOLUTION_CAPACITY",
+              "rationale": "首卷的个人手艺与有限合约可自然扩展至师承授权、共同成果归属和多队分配，冲突规模增长具有制度与资源基础。远域路线、更高能力和跨地结算均设置了具体扩展触发条件，并禁止追溯改写旧约或能力；既有收入和关系回报可保留。已具备世界基础阶段所需的长篇演化容量，无需预先生成后续卷章计划。",
+              "evidence_refs": [
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/objective",
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/deferred_dimensions",
+                "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/society_class"
+              ],
+              "repair_directive": ""
+            }
+          ],
+          "skill_ref": "worldbuilding",
+          "profile_id": "world-foundation-semantic-v1",
+          "profile_hash": "sha256:d084e467982e67fa7cbae43b5be1d750dc6fc7a4e3179b6e6ce7ee985ac646d8",
+          "capability_id": "world.design.generate",
+          "profile_version": "1.0.0"
+        }
+      ],
+      "schema_version": "progressive-narrative-qualification.v1"
+    },
+    "project_id": "first-novel-pilot-20260912",
+    "qualification": {
+      "status": "PASS",
+      "receipts": [
+        {
+          "layer": "STORY_FOUNDATION",
+          "status": "PASS",
+          "evidence": {
+            "layer": "STORY_FOUNDATION",
+            "criteria": [
+              {
+                "verdict": "PASS",
+                "criterion": "WORLD_RULE_COHERENCE",
+                "rationale": "听隙的接触渠道、信息范围与判断误差相互一致，辨弱不自动提供破防力量；境界优势、材料损耗与局部脱险条件不存在互相取消的例外。航程与速度计算一致，消息受实际路线和岗位权限约束，能够维持行动及限知叙述的连续性。",
+                "evidence_refs": [
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/technology_power",
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/space_time_geography",
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/information_communication"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "RULE_COST_AND_LIMIT",
+                "rationale": "能力运用、修炼、养刃和履约均有具体成本与失效边界：十二个有效训练日及末段测试、过载后的功能损失、不可逆刃材消耗、批次补给和有偿保障形成可执行约束。价格尺度支持收入与支出的比较，替代采购仍须支付时间和性能代价。候选已规定决定性行动的后果与状态变化须在正文显露；本阶段无需已有章节来证明执行。",
+                "evidence_refs": [
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/rules",
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/economy",
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/ecology_resources"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "CONFLICT_GENERATION_CAPACITY",
+                "rationale": "门派保障收入、散匠工法自主、渡户生计、商号交期与渡务秩序具有交叉且不一致的利益。签约期限、补给等待和真实护运要求能够持续产生筹资、议价、误判、协作与验收冲突；各势力拥有独立资源和压力，冲突无需依赖全员恶意或单一反派维持。",
+                "evidence_refs": [
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/factions",
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/politics_factions",
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/space_time_geography"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "CHARACTER_AGENCY_SUPPORT",
+                "rationale": "入门保障与独立经营各有真实收益和义务，陶靖的待遇及权利让渡条件保持为待选择事项。叶满汀、杜衡和其他合作者保有生计目标、拒绝权及信息边界。明确同意、有限责任、替代履约保障与退出安排允许人物通过议价、缩小业务或承担补救改变局面，同时保留选择的后果。",
+                "evidence_refs": [
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/society_class",
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/politics_factions",
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/rules/7"
+                ],
+                "repair_directive": ""
+              },
+              {
+                "verdict": "PASS",
+                "criterion": "LONGFORM_EVOLUTION_CAPACITY",
+                "rationale": "首卷的个人手艺与有限合约可自然扩展至师承授权、共同成果归属和多队分配，冲突规模增长具有制度与资源基础。远域路线、更高能力和跨地结算均设置了具体扩展触发条件，并禁止追溯改写旧约或能力；既有收入和关系回报可保留。已具备世界基础阶段所需的长篇演化容量，无需预先生成后续卷章计划。",
+                "evidence_refs": [
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/objective",
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/deferred_dimensions",
+                  "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1@sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96#/selected_inputs/0/candidate/world_foundation/sections/society_class"
+                ],
+                "repair_directive": ""
+              }
+            ],
+            "skill_ref": "worldbuilding",
+            "profile_id": "world-foundation-semantic-v1",
+            "profile_hash": "sha256:d084e467982e67fa7cbae43b5be1d750dc6fc7a4e3179b6e6ce7ee985ac646d8",
+            "capability_id": "world.design.generate",
+            "profile_version": "1.0.0"
+          },
+          "skill_ref": "worldbuilding",
+          "profile_id": "world-foundation-semantic-v1",
+          "profile_hash": "sha256:d084e467982e67fa7cbae43b5be1d750dc6fc7a4e3179b6e6ce7ee985ac646d8",
+          "capability_id": "world.design.generate",
+          "criterion_count": 5,
+          "evaluation_hash": "sha256:f60659807425b6566826ee2ccc7b963276bcc43a572e8284f45f47965d8f4bdf",
+          "profile_version": "1.0.0"
+        }
+      ],
+      "schema_version": "progressive-narrative-qualification.v1",
+      "qualification_hash": "sha256:6419ed3e9641cac487c333752af90e4868d8ec48167d538b429e957ef2b4e64d"
+    },
+    "schema_version": "narrative-design-evaluation.v1",
+    "provider_evidence": [
+      {
+        "content_hash": "sha256:2b6ad5ab3136b2fa392fa5d0e4fdce4be2f11fc79ce3e14a51be390101da04f3",
+        "asset_version_id": "8bec4e99-57e4-42b7-9f9a-e2f8285242c7"
+      }
+    ],
+    "provider_execution": {
+      "model_id": "gpt-6-astra",
+      "provider_id": "codex-cli",
+      "skill_version": "quality-review-narrative-evaluator-v1",
+      "prompt_version": "prompt-system:narrative-semantic-evaluation-pack@v3",
+      "route_snapshot_id": "production_execution/routes/e0ab035a4017ebc4b572",
+      "provider_result_hash": "sha256:9191c1d910039a6c1a0ab26a845696e7685abe87c165a1c4acac4673601679d0",
+      "provider_evidence_hash": "sha256:cf802d4cc52fddd311a27740d5cc6f25692af1a93e1fb26d42f82f32188b4fc1"
+    },
+    "evaluation_attempt_id": "29a88933-2008-479a-ac3f-5b1d7b0a64fe",
+    "candidate_content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96",
+    "evaluation_operation_id": "87fc4229-d596-4db3-bb61-161866403c95",
+    "generation_operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+    "evaluation_evidence_hash": "sha256:789fbbb261c979f0836bb929de0c70cd567b2c245732e04347e92d02826c2a30",
+    "evaluator_execution_class": "MODEL_PROVIDER",
+    "candidate_asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+    "provider_evidence_asset_version_ids": [
+      "8bec4e99-57e4-42b7-9f9a-e2f8285242c7"
+    ]
+  },
+  "updated_at": "2026-09-13 18:26:21.134871+00:00"
+}

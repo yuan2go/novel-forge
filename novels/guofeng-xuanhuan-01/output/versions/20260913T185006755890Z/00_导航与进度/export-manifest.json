@@ -1,0 +1,2211 @@
+{
+  "files": {
+    "05_审稿修订/设计诊断/authority-output_87fc4229-d596-4db3-bb61-161866403c95_story_design.semantic_evaluation_v1.json": {
+      "expected_hash": "sha256:d19db2ae1b3338122029efb6cac7eaba136544da7486f03ee98adb45be251f7e",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d19db2ae1b3338122029efb6cac7eaba136544da7486f03ee98adb45be251f7e",
+          "owned_hash": "sha256:d19db2ae1b3338122029efb6cac7eaba136544da7486f03ee98adb45be251f7e"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d19db2ae1b3338122029efb6cac7eaba136544da7486f03ee98adb45be251f7e",
+          "owned_hash": "sha256:d19db2ae1b3338122029efb6cac7eaba136544da7486f03ee98adb45be251f7e"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:87fc4229-d596-4db3-bb61-161866403c95:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:d2e64c095103c9c6f35aac74822abff4607e56e1116ff4a5f8f99cdd78b54d8d",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "05_审稿修订/设计诊断/authority-output_87fc4229-d596-4db3-bb61-161866403c95_story_design.semantic_evaluation_v1.md": {
+      "expected_hash": "sha256:0e107f7784083880605d05cd488a9884a25c1801458ba9beb2e7c8ebef585b87",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:0e107f7784083880605d05cd488a9884a25c1801458ba9beb2e7c8ebef585b87",
+          "owned_hash": "sha256:0e107f7784083880605d05cd488a9884a25c1801458ba9beb2e7c8ebef585b87"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:0e107f7784083880605d05cd488a9884a25c1801458ba9beb2e7c8ebef585b87",
+          "owned_hash": "sha256:0e107f7784083880605d05cd488a9884a25c1801458ba9beb2e7c8ebef585b87"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:87fc4229-d596-4db3-bb61-161866403c95:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:d2e64c095103c9c6f35aac74822abff4607e56e1116ff4a5f8f99cdd78b54d8d",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "05_审稿修订/设计诊断/authority-output_32e206a6-02d6-4fe9-a82d-cd69becf4319_story_design.semantic_evaluation_v1.json": {
+      "expected_hash": "sha256:e8cc1c516e26b4863f948f5d4584002f208559918a4ffe66038f1321ce0eb074",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e8cc1c516e26b4863f948f5d4584002f208559918a4ffe66038f1321ce0eb074",
+          "owned_hash": "sha256:e8cc1c516e26b4863f948f5d4584002f208559918a4ffe66038f1321ce0eb074"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e8cc1c516e26b4863f948f5d4584002f208559918a4ffe66038f1321ce0eb074",
+          "owned_hash": "sha256:e8cc1c516e26b4863f948f5d4584002f208559918a4ffe66038f1321ce0eb074"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:32e206a6-02d6-4fe9-a82d-cd69becf4319:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:311c36dee25b7f7177e88e2a2171cf3151702d9ae1c2f4bc17314856fe9f6e42",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "05_审稿修订/设计诊断/authority-output_32e206a6-02d6-4fe9-a82d-cd69becf4319_story_design.semantic_evaluation_v1.md": {
+      "expected_hash": "sha256:6b05a94545bbbb055b587f7658f74b5fcc81ee75f973681d3ca29b5c01d6827b",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:6b05a94545bbbb055b587f7658f74b5fcc81ee75f973681d3ca29b5c01d6827b",
+          "owned_hash": "sha256:6b05a94545bbbb055b587f7658f74b5fcc81ee75f973681d3ca29b5c01d6827b"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:6b05a94545bbbb055b587f7658f74b5fcc81ee75f973681d3ca29b5c01d6827b",
+          "owned_hash": "sha256:6b05a94545bbbb055b587f7658f74b5fcc81ee75f973681d3ca29b5c01d6827b"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:32e206a6-02d6-4fe9-a82d-cd69becf4319:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:311c36dee25b7f7177e88e2a2171cf3151702d9ae1c2f4bc17314856fe9f6e42",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "05_审稿修订/设计诊断/authority-output_1a02299b-bcea-4bb6-bf34-5bd8825780da_story_design.semantic_evaluation_v1.json": {
+      "expected_hash": "sha256:21c7b5987716119cfb0782d9469667c32e555a40f51970deaa9694292b37b7e4",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:21c7b5987716119cfb0782d9469667c32e555a40f51970deaa9694292b37b7e4",
+          "owned_hash": "sha256:21c7b5987716119cfb0782d9469667c32e555a40f51970deaa9694292b37b7e4"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:21c7b5987716119cfb0782d9469667c32e555a40f51970deaa9694292b37b7e4",
+          "owned_hash": "sha256:21c7b5987716119cfb0782d9469667c32e555a40f51970deaa9694292b37b7e4"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:1a02299b-bcea-4bb6-bf34-5bd8825780da:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:5dc85baf24c2129bb15caccc55d809a6d8e056c7b8668dbc5e347fab47715f8a",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "05_审稿修订/设计诊断/authority-output_1a02299b-bcea-4bb6-bf34-5bd8825780da_story_design.semantic_evaluation_v1.md": {
+      "expected_hash": "sha256:b3622f1699fb3a2a916f30906fc7fea7ec0145714a50c13bca59749da9f2dd47",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:b3622f1699fb3a2a916f30906fc7fea7ec0145714a50c13bca59749da9f2dd47",
+          "owned_hash": "sha256:b3622f1699fb3a2a916f30906fc7fea7ec0145714a50c13bca59749da9f2dd47"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:b3622f1699fb3a2a916f30906fc7fea7ec0145714a50c13bca59749da9f2dd47",
+          "owned_hash": "sha256:b3622f1699fb3a2a916f30906fc7fea7ec0145714a50c13bca59749da9f2dd47"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:1a02299b-bcea-4bb6-bf34-5bd8825780da:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:5dc85baf24c2129bb15caccc55d809a6d8e056c7b8668dbc5e347fab47715f8a",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "03_分层规划/题材与读者承诺/主题/authority-output_f7fdb3b8-2d72-451c-a06d-20f8e399e05d_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:f2a194f123143dcc5ab79ded1186413eb52a0a90af3687cf30b91c5578ef23c0",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:f2a194f123143dcc5ab79ded1186413eb52a0a90af3687cf30b91c5578ef23c0",
+          "owned_hash": "sha256:f2a194f123143dcc5ab79ded1186413eb52a0a90af3687cf30b91c5578ef23c0"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:f2a194f123143dcc5ab79ded1186413eb52a0a90af3687cf30b91c5578ef23c0",
+          "owned_hash": "sha256:f2a194f123143dcc5ab79ded1186413eb52a0a90af3687cf30b91c5578ef23c0"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1",
+      "content_hash": "sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "03_分层规划/题材与读者承诺/主题/authority-output_f7fdb3b8-2d72-451c-a06d-20f8e399e05d_story_planning.candidate_v1.md": {
+      "expected_hash": "sha256:e0f6a4c747f9df8395df73969f50b761496e5346a65c403849d1afa1c8cc7f1f",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e0f6a4c747f9df8395df73969f50b761496e5346a65c403849d1afa1c8cc7f1f",
+          "owned_hash": "sha256:e0f6a4c747f9df8395df73969f50b761496e5346a65c403849d1afa1c8cc7f1f"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e0f6a4c747f9df8395df73969f50b761496e5346a65c403849d1afa1c8cc7f1f",
+          "owned_hash": "sha256:e0f6a4c747f9df8395df73969f50b761496e5346a65c403849d1afa1c8cc7f1f"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1",
+      "content_hash": "sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "05_审稿修订/设计候选/authority-output_f7fdb3b8-2d72-451c-a06d-20f8e399e05d_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:942a97db2e9c61889fc62d46d64c7b86e43a484c7c549d847083eb85d655f0f8",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:942a97db2e9c61889fc62d46d64c7b86e43a484c7c549d847083eb85d655f0f8",
+          "owned_hash": "sha256:942a97db2e9c61889fc62d46d64c7b86e43a484c7c549d847083eb85d655f0f8"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:942a97db2e9c61889fc62d46d64c7b86e43a484c7c549d847083eb85d655f0f8",
+          "owned_hash": "sha256:942a97db2e9c61889fc62d46d64c7b86e43a484c7c549d847083eb85d655f0f8"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1",
+      "content_hash": "sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "01_世界观/世界设计/authority-output_63f8d2dc-c959-4f3c-b4a8-70d08a51a5de_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:2fbae8385a2365f2d8470c630d0fe4cbc243ae061dd0b5accc8eb0758ee6fe57",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:2fbae8385a2365f2d8470c630d0fe4cbc243ae061dd0b5accc8eb0758ee6fe57",
+          "owned_hash": "sha256:2fbae8385a2365f2d8470c630d0fe4cbc243ae061dd0b5accc8eb0758ee6fe57"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:2fbae8385a2365f2d8470c630d0fe4cbc243ae061dd0b5accc8eb0758ee6fe57",
+          "owned_hash": "sha256:2fbae8385a2365f2d8470c630d0fe4cbc243ae061dd0b5accc8eb0758ee6fe57"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "01_世界观/世界设计/authority-output_63f8d2dc-c959-4f3c-b4a8-70d08a51a5de_story_planning.candidate_v1.md": {
+      "expected_hash": "sha256:89ce8615f07d2371f32c9d7eda68e6416af9f2f6923f8145ff5351fedda7d4d1",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:89ce8615f07d2371f32c9d7eda68e6416af9f2f6923f8145ff5351fedda7d4d1",
+          "owned_hash": "sha256:89ce8615f07d2371f32c9d7eda68e6416af9f2f6923f8145ff5351fedda7d4d1"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:89ce8615f07d2371f32c9d7eda68e6416af9f2f6923f8145ff5351fedda7d4d1",
+          "owned_hash": "sha256:89ce8615f07d2371f32c9d7eda68e6416af9f2f6923f8145ff5351fedda7d4d1"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "05_审稿修订/设计候选/authority-output_63f8d2dc-c959-4f3c-b4a8-70d08a51a5de_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:fd8fa4126d2ab894cc5aa94bd5c71ff9e4f5051d46408382cb5b9595c1e36366",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:fd8fa4126d2ab894cc5aa94bd5c71ff9e4f5051d46408382cb5b9595c1e36366",
+          "owned_hash": "sha256:fd8fa4126d2ab894cc5aa94bd5c71ff9e4f5051d46408382cb5b9595c1e36366"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:fd8fa4126d2ab894cc5aa94bd5c71ff9e4f5051d46408382cb5b9595c1e36366",
+          "owned_hash": "sha256:fd8fa4126d2ab894cc5aa94bd5c71ff9e4f5051d46408382cb5b9595c1e36366"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "06_作者专用与叙事状态/幕后与结局意图/authority-output_e7226485-ce85-44af-acfb-32b5902c8715_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:1a4710f3706be46010cec0f2327b75a8cc844cb2d7b27738f108ce4885c6b11e",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:1a4710f3706be46010cec0f2327b75a8cc844cb2d7b27738f108ce4885c6b11e",
+          "owned_hash": "sha256:1a4710f3706be46010cec0f2327b75a8cc844cb2d7b27738f108ce4885c6b11e"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:1a4710f3706be46010cec0f2327b75a8cc844cb2d7b27738f108ce4885c6b11e",
+          "owned_hash": "sha256:1a4710f3706be46010cec0f2327b75a8cc844cb2d7b27738f108ce4885c6b11e"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1",
+      "content_hash": "sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "06_作者专用与叙事状态/幕后与结局意图/authority-output_e7226485-ce85-44af-acfb-32b5902c8715_story_planning.candidate_v1.md": {
+      "expected_hash": "sha256:d68c54d349b75ff6b2d4512e113c513f34182e6dddbf184d2f9622ac43f3ad2b",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d68c54d349b75ff6b2d4512e113c513f34182e6dddbf184d2f9622ac43f3ad2b",
+          "owned_hash": "sha256:d68c54d349b75ff6b2d4512e113c513f34182e6dddbf184d2f9622ac43f3ad2b"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d68c54d349b75ff6b2d4512e113c513f34182e6dddbf184d2f9622ac43f3ad2b",
+          "owned_hash": "sha256:d68c54d349b75ff6b2d4512e113c513f34182e6dddbf184d2f9622ac43f3ad2b"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1",
+      "content_hash": "sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "05_审稿修订/设计候选/authority-output_e7226485-ce85-44af-acfb-32b5902c8715_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:d5a00dc9265875a05510a08718a0031456f1b7bc39e9957a505083e4fc376796",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d5a00dc9265875a05510a08718a0031456f1b7bc39e9957a505083e4fc376796",
+          "owned_hash": "sha256:d5a00dc9265875a05510a08718a0031456f1b7bc39e9957a505083e4fc376796"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d5a00dc9265875a05510a08718a0031456f1b7bc39e9957a505083e4fc376796",
+          "owned_hash": "sha256:d5a00dc9265875a05510a08718a0031456f1b7bc39e9957a505083e4fc376796"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1",
+      "content_hash": "sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "05_审稿修订/设计诊断/authority-output_fc429018-c9c2-4c03-9dde-0232c1bec6e8_story_design.semantic_evaluation_v1.json": {
+      "expected_hash": "sha256:8d05919cf19532d4a8509d4095c02de903c1e4d1e4ab1cdd482f1428d394ba33",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:8d05919cf19532d4a8509d4095c02de903c1e4d1e4ab1cdd482f1428d394ba33",
+          "owned_hash": "sha256:8d05919cf19532d4a8509d4095c02de903c1e4d1e4ab1cdd482f1428d394ba33"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:8d05919cf19532d4a8509d4095c02de903c1e4d1e4ab1cdd482f1428d394ba33",
+          "owned_hash": "sha256:8d05919cf19532d4a8509d4095c02de903c1e4d1e4ab1cdd482f1428d394ba33"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:fc429018-c9c2-4c03-9dde-0232c1bec6e8:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:4834ac8bfe8da2375d82998beaad7ca08c81a94013acd19fe83f0cb36ed9665d",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "05_审稿修订/设计诊断/authority-output_fc429018-c9c2-4c03-9dde-0232c1bec6e8_story_design.semantic_evaluation_v1.md": {
+      "expected_hash": "sha256:ee5965fdd35f4959dbb83cc7f32d07048c8094e5c4c49a9629ee1a00dec283c3",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:ee5965fdd35f4959dbb83cc7f32d07048c8094e5c4c49a9629ee1a00dec283c3",
+          "owned_hash": "sha256:ee5965fdd35f4959dbb83cc7f32d07048c8094e5c4c49a9629ee1a00dec283c3"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:ee5965fdd35f4959dbb83cc7f32d07048c8094e5c4c49a9629ee1a00dec283c3",
+          "owned_hash": "sha256:ee5965fdd35f4959dbb83cc7f32d07048c8094e5c4c49a9629ee1a00dec283c3"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:fc429018-c9c2-4c03-9dde-0232c1bec6e8:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:4834ac8bfe8da2375d82998beaad7ca08c81a94013acd19fe83f0cb36ed9665d",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "05_审稿修订/设计诊断/authority-output_6b4f306a-9364-4f02-9a96-b66a542b7e8e_story_design.semantic_evaluation_v1.json": {
+      "expected_hash": "sha256:5e45d6000459c0b3d03723bc3e66b9840ca42b44f61b10794ec06dcc3cd77537",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:5e45d6000459c0b3d03723bc3e66b9840ca42b44f61b10794ec06dcc3cd77537",
+          "owned_hash": "sha256:5e45d6000459c0b3d03723bc3e66b9840ca42b44f61b10794ec06dcc3cd77537"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:5e45d6000459c0b3d03723bc3e66b9840ca42b44f61b10794ec06dcc3cd77537",
+          "owned_hash": "sha256:5e45d6000459c0b3d03723bc3e66b9840ca42b44f61b10794ec06dcc3cd77537"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:6b4f306a-9364-4f02-9a96-b66a542b7e8e:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:4f4a40417023a3fd7f9711d3d88ea57d39f5863064526690000e4c0dd8a36ce0",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "05_审稿修订/设计诊断/authority-output_6b4f306a-9364-4f02-9a96-b66a542b7e8e_story_design.semantic_evaluation_v1.md": {
+      "expected_hash": "sha256:fa96668ea635b65e5e5973216df4bad429d31ca0ff5543abfc9be4edda645842",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:fa96668ea635b65e5e5973216df4bad429d31ca0ff5543abfc9be4edda645842",
+          "owned_hash": "sha256:fa96668ea635b65e5e5973216df4bad429d31ca0ff5543abfc9be4edda645842"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:fa96668ea635b65e5e5973216df4bad429d31ca0ff5543abfc9be4edda645842",
+          "owned_hash": "sha256:fa96668ea635b65e5e5973216df4bad429d31ca0ff5543abfc9be4edda645842"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:6b4f306a-9364-4f02-9a96-b66a542b7e8e:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:4f4a40417023a3fd7f9711d3d88ea57d39f5863064526690000e4c0dd8a36ce0",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "03_分层规划/题材与读者承诺/创作基础/authority-output_d6f70986-b171-47f8-9f04-3134aa74a740_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:8813dc22cb45bab20bf8caa5748718752dc54d8b6aa13d7a0a2a25bb7977e70d",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:8813dc22cb45bab20bf8caa5748718752dc54d8b6aa13d7a0a2a25bb7977e70d",
+          "owned_hash": "sha256:8813dc22cb45bab20bf8caa5748718752dc54d8b6aa13d7a0a2a25bb7977e70d"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:8813dc22cb45bab20bf8caa5748718752dc54d8b6aa13d7a0a2a25bb7977e70d",
+          "owned_hash": "sha256:8813dc22cb45bab20bf8caa5748718752dc54d8b6aa13d7a0a2a25bb7977e70d"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "CANDIDATE / WAITING_APPROVAL",
+      "asset_version_id": "authority-output:d6f70986-b171-47f8-9f04-3134aa74a740:story_planning.candidate:v1",
+      "content_hash": "sha256:57412de395dbf62ad92aa1a27f86fe5dc8ca1c8a113a90236b3ac81236fcf843",
+      "version_number": 1,
+      "lifecycle": "CANDIDATE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "MATERIALIZED"
+    },
+    "03_分层规划/题材与读者承诺/创作基础/authority-output_d6f70986-b171-47f8-9f04-3134aa74a740_story_planning.candidate_v1.md": {
+      "expected_hash": "sha256:a6dcbd757d4e6432ce87f228fd0606741fe816e3d4aa2f74196a5c175f7ad158",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a6dcbd757d4e6432ce87f228fd0606741fe816e3d4aa2f74196a5c175f7ad158",
+          "owned_hash": "sha256:a6dcbd757d4e6432ce87f228fd0606741fe816e3d4aa2f74196a5c175f7ad158"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a6dcbd757d4e6432ce87f228fd0606741fe816e3d4aa2f74196a5c175f7ad158",
+          "owned_hash": "sha256:a6dcbd757d4e6432ce87f228fd0606741fe816e3d4aa2f74196a5c175f7ad158"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "CANDIDATE / WAITING_APPROVAL",
+      "asset_version_id": "authority-output:d6f70986-b171-47f8-9f04-3134aa74a740:story_planning.candidate:v1",
+      "content_hash": "sha256:57412de395dbf62ad92aa1a27f86fe5dc8ca1c8a113a90236b3ac81236fcf843",
+      "version_number": 1,
+      "lifecycle": "CANDIDATE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "MATERIALIZED"
+    },
+    "05_审稿修订/设计候选/authority-output_d6f70986-b171-47f8-9f04-3134aa74a740_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:b9c8b6cf6197fc313f6b101036390150f5aff16283b8d53202039910464c2758",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:b9c8b6cf6197fc313f6b101036390150f5aff16283b8d53202039910464c2758",
+          "owned_hash": "sha256:b9c8b6cf6197fc313f6b101036390150f5aff16283b8d53202039910464c2758"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:b9c8b6cf6197fc313f6b101036390150f5aff16283b8d53202039910464c2758",
+          "owned_hash": "sha256:b9c8b6cf6197fc313f6b101036390150f5aff16283b8d53202039910464c2758"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "CANDIDATE / WAITING_APPROVAL",
+      "asset_version_id": "authority-output:d6f70986-b171-47f8-9f04-3134aa74a740:story_planning.candidate:v1",
+      "content_hash": "sha256:57412de395dbf62ad92aa1a27f86fe5dc8ca1c8a113a90236b3ac81236fcf843",
+      "version_number": 1,
+      "lifecycle": "CANDIDATE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "MATERIALIZED"
+    },
+    "03_分层规划/题材与读者承诺/读者承诺/authority-output_bdb13fe9-9444-4be0-9bee-9f1733216c42_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:acc780755795bb35216dab93cbcc6e1ec8055fbc3b5e873240ea72a4acd5c528",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:acc780755795bb35216dab93cbcc6e1ec8055fbc3b5e873240ea72a4acd5c528",
+          "owned_hash": "sha256:acc780755795bb35216dab93cbcc6e1ec8055fbc3b5e873240ea72a4acd5c528"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:acc780755795bb35216dab93cbcc6e1ec8055fbc3b5e873240ea72a4acd5c528",
+          "owned_hash": "sha256:acc780755795bb35216dab93cbcc6e1ec8055fbc3b5e873240ea72a4acd5c528"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1",
+      "content_hash": "sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "03_分层规划/题材与读者承诺/读者承诺/authority-output_bdb13fe9-9444-4be0-9bee-9f1733216c42_story_planning.candidate_v1.md": {
+      "expected_hash": "sha256:a0d4b66b8a235b084b4beac004b3dc2a29b0bb14139f029fa4da60675105fe83",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a0d4b66b8a235b084b4beac004b3dc2a29b0bb14139f029fa4da60675105fe83",
+          "owned_hash": "sha256:a0d4b66b8a235b084b4beac004b3dc2a29b0bb14139f029fa4da60675105fe83"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a0d4b66b8a235b084b4beac004b3dc2a29b0bb14139f029fa4da60675105fe83",
+          "owned_hash": "sha256:a0d4b66b8a235b084b4beac004b3dc2a29b0bb14139f029fa4da60675105fe83"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1",
+      "content_hash": "sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "05_审稿修订/设计候选/authority-output_bdb13fe9-9444-4be0-9bee-9f1733216c42_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:51ac26c34a5daadeabad74835dc299c022893815546ce36e30d112bbc768aacc",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:51ac26c34a5daadeabad74835dc299c022893815546ce36e30d112bbc768aacc",
+          "owned_hash": "sha256:51ac26c34a5daadeabad74835dc299c022893815546ce36e30d112bbc768aacc"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:51ac26c34a5daadeabad74835dc299c022893815546ce36e30d112bbc768aacc",
+          "owned_hash": "sha256:51ac26c34a5daadeabad74835dc299c022893815546ce36e30d112bbc768aacc"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1",
+      "content_hash": "sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "03_分层规划/题材与读者承诺/创作基础/authority-output_58320be8-f7a1-4508-bca0-06383f8f4c37_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:982f31f6b420404bff21ad01e99dd1c75a9d53f18f1d793c78e05fdf21a788b7",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:982f31f6b420404bff21ad01e99dd1c75a9d53f18f1d793c78e05fdf21a788b7",
+          "owned_hash": "sha256:982f31f6b420404bff21ad01e99dd1c75a9d53f18f1d793c78e05fdf21a788b7"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:982f31f6b420404bff21ad01e99dd1c75a9d53f18f1d793c78e05fdf21a788b7",
+          "owned_hash": "sha256:982f31f6b420404bff21ad01e99dd1c75a9d53f18f1d793c78e05fdf21a788b7"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1",
+      "content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "03_分层规划/题材与读者承诺/创作基础/authority-output_58320be8-f7a1-4508-bca0-06383f8f4c37_story_planning.candidate_v1.md": {
+      "expected_hash": "sha256:2a6a71178a9243e5df66e5545a9aabbcf4a730e2dad2c13a92513724f069e0a9",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:2a6a71178a9243e5df66e5545a9aabbcf4a730e2dad2c13a92513724f069e0a9",
+          "owned_hash": "sha256:2a6a71178a9243e5df66e5545a9aabbcf4a730e2dad2c13a92513724f069e0a9"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:2a6a71178a9243e5df66e5545a9aabbcf4a730e2dad2c13a92513724f069e0a9",
+          "owned_hash": "sha256:2a6a71178a9243e5df66e5545a9aabbcf4a730e2dad2c13a92513724f069e0a9"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1",
+      "content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "05_审稿修订/设计候选/authority-output_58320be8-f7a1-4508-bca0-06383f8f4c37_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:76497139736f5b242e17bcf981c44245b635b0198eee85ec0d5986f8f54195a5",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:76497139736f5b242e17bcf981c44245b635b0198eee85ec0d5986f8f54195a5",
+          "owned_hash": "sha256:76497139736f5b242e17bcf981c44245b635b0198eee85ec0d5986f8f54195a5"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:76497139736f5b242e17bcf981c44245b635b0198eee85ec0d5986f8f54195a5",
+          "owned_hash": "sha256:76497139736f5b242e17bcf981c44245b635b0198eee85ec0d5986f8f54195a5"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1",
+      "content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "02_人物与关系/人物与关系/authority-output_8dac1874-4710-4a5f-acdc-6fbe142713fb_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:c69ed8bb1956940d2ccaf8dbd7dc86367f7199491b12ddf4bde0404c2a961b9b",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:c69ed8bb1956940d2ccaf8dbd7dc86367f7199491b12ddf4bde0404c2a961b9b",
+          "owned_hash": "sha256:c69ed8bb1956940d2ccaf8dbd7dc86367f7199491b12ddf4bde0404c2a961b9b"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:c69ed8bb1956940d2ccaf8dbd7dc86367f7199491b12ddf4bde0404c2a961b9b",
+          "owned_hash": "sha256:c69ed8bb1956940d2ccaf8dbd7dc86367f7199491b12ddf4bde0404c2a961b9b"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1",
+      "content_hash": "sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "02_人物与关系/人物与关系/authority-output_8dac1874-4710-4a5f-acdc-6fbe142713fb_story_planning.candidate_v1.md": {
+      "expected_hash": "sha256:78b8fda2854ea2763867997b8eb53c8f2455005c857764e9788f9500eb6ad437",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:78b8fda2854ea2763867997b8eb53c8f2455005c857764e9788f9500eb6ad437",
+          "owned_hash": "sha256:78b8fda2854ea2763867997b8eb53c8f2455005c857764e9788f9500eb6ad437"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:78b8fda2854ea2763867997b8eb53c8f2455005c857764e9788f9500eb6ad437",
+          "owned_hash": "sha256:78b8fda2854ea2763867997b8eb53c8f2455005c857764e9788f9500eb6ad437"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1",
+      "content_hash": "sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "05_审稿修订/设计候选/authority-output_8dac1874-4710-4a5f-acdc-6fbe142713fb_story_planning.candidate_v1.json": {
+      "expected_hash": "sha256:a7d0258a32206f887602ea580c8d5b71333bd8f82574f5193d09a5486f494551",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a7d0258a32206f887602ea580c8d5b71333bd8f82574f5193d09a5486f494551",
+          "owned_hash": "sha256:a7d0258a32206f887602ea580c8d5b71333bd8f82574f5193d09a5486f494551"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a7d0258a32206f887602ea580c8d5b71333bd8f82574f5193d09a5486f494551",
+          "owned_hash": "sha256:a7d0258a32206f887602ea580c8d5b71333bd8f82574f5193d09a5486f494551"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1",
+      "content_hash": "sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "ACTIVE"
+    },
+    "05_审稿修订/设计诊断/authority-output_757fcb14-3ab8-4bd7-b56d-28196e8802f9_story_design.semantic_evaluation_v1.json": {
+      "expected_hash": "sha256:349ddc4a5b8dd2d7c08c8fa020495ea30855d3dd440f443245434296a1b83e9b",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:349ddc4a5b8dd2d7c08c8fa020495ea30855d3dd440f443245434296a1b83e9b",
+          "owned_hash": "sha256:349ddc4a5b8dd2d7c08c8fa020495ea30855d3dd440f443245434296a1b83e9b"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:349ddc4a5b8dd2d7c08c8fa020495ea30855d3dd440f443245434296a1b83e9b",
+          "owned_hash": "sha256:349ddc4a5b8dd2d7c08c8fa020495ea30855d3dd440f443245434296a1b83e9b"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:757fcb14-3ab8-4bd7-b56d-28196e8802f9:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:18a661a52e271ec9d4a4977e8add2d1283639135261b8d48eafd60b0107155a3",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "05_审稿修订/设计诊断/authority-output_757fcb14-3ab8-4bd7-b56d-28196e8802f9_story_design.semantic_evaluation_v1.md": {
+      "expected_hash": "sha256:7e9075d898d8a07437fc06eb17003e4b23637bc3c757ddaf696602f8f0521dd0",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:7e9075d898d8a07437fc06eb17003e4b23637bc3c757ddaf696602f8f0521dd0",
+          "owned_hash": "sha256:7e9075d898d8a07437fc06eb17003e4b23637bc3c757ddaf696602f8f0521dd0"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:7e9075d898d8a07437fc06eb17003e4b23637bc3c757ddaf696602f8f0521dd0",
+          "owned_hash": "sha256:7e9075d898d8a07437fc06eb17003e4b23637bc3c757ddaf696602f8f0521dd0"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:757fcb14-3ab8-4bd7-b56d-28196e8802f9:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:18a661a52e271ec9d4a4977e8add2d1283639135261b8d48eafd60b0107155a3",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "05_审稿修订/设计诊断/authority-output_45036a6d-b538-44e9-aab2-344f6d708beb_story_design.semantic_evaluation_v1.json": {
+      "expected_hash": "sha256:4eb65ac39e3bef3a4510923a3bcdfacb149eccd82f33a1ec7935e2d9f8f7f2f7",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:4eb65ac39e3bef3a4510923a3bcdfacb149eccd82f33a1ec7935e2d9f8f7f2f7",
+          "owned_hash": "sha256:4eb65ac39e3bef3a4510923a3bcdfacb149eccd82f33a1ec7935e2d9f8f7f2f7"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:4eb65ac39e3bef3a4510923a3bcdfacb149eccd82f33a1ec7935e2d9f8f7f2f7",
+          "owned_hash": "sha256:4eb65ac39e3bef3a4510923a3bcdfacb149eccd82f33a1ec7935e2d9f8f7f2f7"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:45036a6d-b538-44e9-aab2-344f6d708beb:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:0b369d9196c9df4c06c6975109a6994b5b536e86f3a706aa8dfb779616c62bfc",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "05_审稿修订/设计诊断/authority-output_45036a6d-b538-44e9-aab2-344f6d708beb_story_design.semantic_evaluation_v1.md": {
+      "expected_hash": "sha256:207f981b60ebde511963ed4b3cf164975bb30258a48631990194a1b6fa8083b9",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:207f981b60ebde511963ed4b3cf164975bb30258a48631990194a1b6fa8083b9",
+          "owned_hash": "sha256:207f981b60ebde511963ed4b3cf164975bb30258a48631990194a1b6fa8083b9"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:207f981b60ebde511963ed4b3cf164975bb30258a48631990194a1b6fa8083b9",
+          "owned_hash": "sha256:207f981b60ebde511963ed4b3cf164975bb30258a48631990194a1b6fa8083b9"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "asset_version_id": "authority-output:45036a6d-b538-44e9-aab2-344f6d708beb:story_design.semantic_evaluation:v1",
+      "content_hash": "sha256:0b369d9196c9df4c06c6975109a6994b5b536e86f3a706aa8dfb779616c62bfc",
+      "version_number": 1,
+      "lifecycle": "ACTIVE",
+      "eligibility": "ELIGIBLE",
+      "governance": "CLEAR",
+      "content_adoption": "NOT_APPLICABLE"
+    },
+    "03_分层规划/题材与读者承诺/创作基础/index.json": {
+      "expected_hash": "sha256:a674e614804f89f0a81965abe26ff180e7ab1c529a24a8e3ba695accdea7be29",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a674e614804f89f0a81965abe26ff180e7ab1c529a24a8e3ba695accdea7be29",
+          "owned_hash": "sha256:a674e614804f89f0a81965abe26ff180e7ab1c529a24a8e3ba695accdea7be29"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a674e614804f89f0a81965abe26ff180e7ab1c529a24a8e3ba695accdea7be29",
+          "owned_hash": "sha256:a674e614804f89f0a81965abe26ff180e7ab1c529a24a8e3ba695accdea7be29"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    },
+    "03_分层规划/题材与读者承诺/创作基础/当前设计.md": {
+      "expected_hash": "sha256:9dafe45d780ca4015d383ad5b5f93853aef97922926e53726ca8ec969eec1ed6",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:9dafe45d780ca4015d383ad5b5f93853aef97922926e53726ca8ec969eec1ed6",
+          "owned_hash": "sha256:9dafe45d780ca4015d383ad5b5f93853aef97922926e53726ca8ec969eec1ed6"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:9dafe45d780ca4015d383ad5b5f93853aef97922926e53726ca8ec969eec1ed6",
+          "owned_hash": "sha256:9dafe45d780ca4015d383ad5b5f93853aef97922926e53726ca8ec969eec1ed6"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_bindings": [
+        {
+          "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1",
+          "content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6"
+        }
+      ]
+    },
+    "03_分层规划/题材与读者承诺/创作基础/当前设计.json": {
+      "expected_hash": "sha256:55e1aea7a68719ba4f5da3205b41d365b3d26fdd9a6c4f56646b81015a1fa9f5",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:55e1aea7a68719ba4f5da3205b41d365b3d26fdd9a6c4f56646b81015a1fa9f5",
+          "owned_hash": "sha256:55e1aea7a68719ba4f5da3205b41d365b3d26fdd9a6c4f56646b81015a1fa9f5"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:55e1aea7a68719ba4f5da3205b41d365b3d26fdd9a6c4f56646b81015a1fa9f5",
+          "owned_hash": "sha256:55e1aea7a68719ba4f5da3205b41d365b3d26fdd9a6c4f56646b81015a1fa9f5"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE"
+    },
+    "03_分层规划/题材与读者承诺/主题/index.json": {
+      "expected_hash": "sha256:986a6b2c8cb15ec6a8e9f9434b6f640f5facaaacae703886dac526d674f89ebc",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:986a6b2c8cb15ec6a8e9f9434b6f640f5facaaacae703886dac526d674f89ebc",
+          "owned_hash": "sha256:986a6b2c8cb15ec6a8e9f9434b6f640f5facaaacae703886dac526d674f89ebc"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:986a6b2c8cb15ec6a8e9f9434b6f640f5facaaacae703886dac526d674f89ebc",
+          "owned_hash": "sha256:986a6b2c8cb15ec6a8e9f9434b6f640f5facaaacae703886dac526d674f89ebc"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    },
+    "03_分层规划/题材与读者承诺/主题/当前设计.md": {
+      "expected_hash": "sha256:405d665101730a3ded556f8e2264d3692aed34529b27da24cc5a67b1b85c95bf",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:405d665101730a3ded556f8e2264d3692aed34529b27da24cc5a67b1b85c95bf",
+          "owned_hash": "sha256:405d665101730a3ded556f8e2264d3692aed34529b27da24cc5a67b1b85c95bf"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:405d665101730a3ded556f8e2264d3692aed34529b27da24cc5a67b1b85c95bf",
+          "owned_hash": "sha256:405d665101730a3ded556f8e2264d3692aed34529b27da24cc5a67b1b85c95bf"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_bindings": [
+        {
+          "asset_version_id": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1",
+          "content_hash": "sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2"
+        }
+      ]
+    },
+    "03_分层规划/题材与读者承诺/主题/当前设计.json": {
+      "expected_hash": "sha256:a26ce56e676625a60498aaabd331151f465981069389a8a2f6552632b21729e1",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a26ce56e676625a60498aaabd331151f465981069389a8a2f6552632b21729e1",
+          "owned_hash": "sha256:a26ce56e676625a60498aaabd331151f465981069389a8a2f6552632b21729e1"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a26ce56e676625a60498aaabd331151f465981069389a8a2f6552632b21729e1",
+          "owned_hash": "sha256:a26ce56e676625a60498aaabd331151f465981069389a8a2f6552632b21729e1"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE"
+    },
+    "03_分层规划/题材与读者承诺/读者承诺/index.json": {
+      "expected_hash": "sha256:b085e093d64370d35919092995028783aa8de40c074db4c50b239e8f4cc25aaa",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:b085e093d64370d35919092995028783aa8de40c074db4c50b239e8f4cc25aaa",
+          "owned_hash": "sha256:b085e093d64370d35919092995028783aa8de40c074db4c50b239e8f4cc25aaa"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:b085e093d64370d35919092995028783aa8de40c074db4c50b239e8f4cc25aaa",
+          "owned_hash": "sha256:b085e093d64370d35919092995028783aa8de40c074db4c50b239e8f4cc25aaa"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    },
+    "03_分层规划/题材与读者承诺/读者承诺/当前设计.md": {
+      "expected_hash": "sha256:36b8e59a12ac35afffce5d98686c8c783b3f7b015cc58256967e5d359cab8b65",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:36b8e59a12ac35afffce5d98686c8c783b3f7b015cc58256967e5d359cab8b65",
+          "owned_hash": "sha256:36b8e59a12ac35afffce5d98686c8c783b3f7b015cc58256967e5d359cab8b65"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:36b8e59a12ac35afffce5d98686c8c783b3f7b015cc58256967e5d359cab8b65",
+          "owned_hash": "sha256:36b8e59a12ac35afffce5d98686c8c783b3f7b015cc58256967e5d359cab8b65"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_bindings": [
+        {
+          "asset_version_id": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1",
+          "content_hash": "sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787"
+        }
+      ]
+    },
+    "03_分层规划/题材与读者承诺/读者承诺/当前设计.json": {
+      "expected_hash": "sha256:441134a847b284eea1f795e87c5527bcd32b07cb1b3dc35362b55de8fca8c89c",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:441134a847b284eea1f795e87c5527bcd32b07cb1b3dc35362b55de8fca8c89c",
+          "owned_hash": "sha256:441134a847b284eea1f795e87c5527bcd32b07cb1b3dc35362b55de8fca8c89c"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:441134a847b284eea1f795e87c5527bcd32b07cb1b3dc35362b55de8fca8c89c",
+          "owned_hash": "sha256:441134a847b284eea1f795e87c5527bcd32b07cb1b3dc35362b55de8fca8c89c"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE"
+    },
+    "01_世界观/世界设计/index.json": {
+      "expected_hash": "sha256:c7fb36298199a75bec7cca0b5bcc6983c758f112e5fd7a1c4a8554267165b667",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:c7fb36298199a75bec7cca0b5bcc6983c758f112e5fd7a1c4a8554267165b667",
+          "owned_hash": "sha256:c7fb36298199a75bec7cca0b5bcc6983c758f112e5fd7a1c4a8554267165b667"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:c7fb36298199a75bec7cca0b5bcc6983c758f112e5fd7a1c4a8554267165b667",
+          "owned_hash": "sha256:c7fb36298199a75bec7cca0b5bcc6983c758f112e5fd7a1c4a8554267165b667"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    },
+    "01_世界观/世界设计/当前设计.md": {
+      "expected_hash": "sha256:c884c858164dbc11f5819fb364e6fece49309850244c80188ab703f150f44ca3",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:c884c858164dbc11f5819fb364e6fece49309850244c80188ab703f150f44ca3",
+          "owned_hash": "sha256:c884c858164dbc11f5819fb364e6fece49309850244c80188ab703f150f44ca3"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:c884c858164dbc11f5819fb364e6fece49309850244c80188ab703f150f44ca3",
+          "owned_hash": "sha256:c884c858164dbc11f5819fb364e6fece49309850244c80188ab703f150f44ca3"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_bindings": [
+        {
+          "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+          "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+        }
+      ]
+    },
+    "01_世界观/世界设计/当前设计.json": {
+      "expected_hash": "sha256:4b30acc8771f2d186f2e29fcbab7e6370d99d71da521d7ed3ce877971cc26f6d",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:4b30acc8771f2d186f2e29fcbab7e6370d99d71da521d7ed3ce877971cc26f6d",
+          "owned_hash": "sha256:4b30acc8771f2d186f2e29fcbab7e6370d99d71da521d7ed3ce877971cc26f6d"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:4b30acc8771f2d186f2e29fcbab7e6370d99d71da521d7ed3ce877971cc26f6d",
+          "owned_hash": "sha256:4b30acc8771f2d186f2e29fcbab7e6370d99d71da521d7ed3ce877971cc26f6d"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE"
+    },
+    "01_世界观/等级与功法.json": {
+      "expected_hash": "sha256:db7f2a97323f7e8feb6073878ed83be59ff7929290bb673064a495a7b0947934",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:db7f2a97323f7e8feb6073878ed83be59ff7929290bb673064a495a7b0947934",
+          "owned_hash": "sha256:db7f2a97323f7e8feb6073878ed83be59ff7929290bb673064a495a7b0947934"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:db7f2a97323f7e8feb6073878ed83be59ff7929290bb673064a495a7b0947934",
+          "owned_hash": "sha256:db7f2a97323f7e8feb6073878ed83be59ff7929290bb673064a495a7b0947934"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/等级与功法.md": {
+      "expected_hash": "sha256:3bff284757c84b1e7c902acc4d2719a7ba822d81f68819d54d75f190a7af1e55",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:3bff284757c84b1e7c902acc4d2719a7ba822d81f68819d54d75f190a7af1e55",
+          "owned_hash": "sha256:3bff284757c84b1e7c902acc4d2719a7ba822d81f68819d54d75f190a7af1e55"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:3bff284757c84b1e7c902acc4d2719a7ba822d81f68819d54d75f190a7af1e55",
+          "owned_hash": "sha256:3bff284757c84b1e7c902acc4d2719a7ba822d81f68819d54d75f190a7af1e55"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/资源与供给.json": {
+      "expected_hash": "sha256:14c7e3feb3d498933711a1dd239650b75ba8eb194459e22c1f4d99eb49d108c6",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:14c7e3feb3d498933711a1dd239650b75ba8eb194459e22c1f4d99eb49d108c6",
+          "owned_hash": "sha256:14c7e3feb3d498933711a1dd239650b75ba8eb194459e22c1f4d99eb49d108c6"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:14c7e3feb3d498933711a1dd239650b75ba8eb194459e22c1f4d99eb49d108c6",
+          "owned_hash": "sha256:14c7e3feb3d498933711a1dd239650b75ba8eb194459e22c1f4d99eb49d108c6"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/资源与供给.md": {
+      "expected_hash": "sha256:3aa07175a2e4cbd397f655cfcb4f591fb5ccc728107eb821295784e1b4e436b5",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:3aa07175a2e4cbd397f655cfcb4f591fb5ccc728107eb821295784e1b4e436b5",
+          "owned_hash": "sha256:3aa07175a2e4cbd397f655cfcb4f591fb5ccc728107eb821295784e1b4e436b5"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:3aa07175a2e4cbd397f655cfcb4f591fb5ccc728107eb821295784e1b4e436b5",
+          "owned_hash": "sha256:3aa07175a2e4cbd397f655cfcb4f591fb5ccc728107eb821295784e1b4e436b5"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/经济与利益.json": {
+      "expected_hash": "sha256:74d5727661b37c494a29869e727efd208d1daf6b52ee0b56db33d2884822bf70",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:74d5727661b37c494a29869e727efd208d1daf6b52ee0b56db33d2884822bf70",
+          "owned_hash": "sha256:74d5727661b37c494a29869e727efd208d1daf6b52ee0b56db33d2884822bf70"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:74d5727661b37c494a29869e727efd208d1daf6b52ee0b56db33d2884822bf70",
+          "owned_hash": "sha256:74d5727661b37c494a29869e727efd208d1daf6b52ee0b56db33d2884822bf70"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/经济与利益.md": {
+      "expected_hash": "sha256:8e1743157e7f9c74ef9703a4b55150d129d22b7a3eb30e7686da7d0e87bdb782",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:8e1743157e7f9c74ef9703a4b55150d129d22b7a3eb30e7686da7d0e87bdb782",
+          "owned_hash": "sha256:8e1743157e7f9c74ef9703a4b55150d129d22b7a3eb30e7686da7d0e87bdb782"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:8e1743157e7f9c74ef9703a4b55150d129d22b7a3eb30e7686da7d0e87bdb782",
+          "owned_hash": "sha256:8e1743157e7f9c74ef9703a4b55150d129d22b7a3eb30e7686da7d0e87bdb782"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/地理与行程.json": {
+      "expected_hash": "sha256:3510d19b86dfb5bd566085e1527ee845328c9e2dbb27760965117f1d0878526d",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:3510d19b86dfb5bd566085e1527ee845328c9e2dbb27760965117f1d0878526d",
+          "owned_hash": "sha256:3510d19b86dfb5bd566085e1527ee845328c9e2dbb27760965117f1d0878526d"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:3510d19b86dfb5bd566085e1527ee845328c9e2dbb27760965117f1d0878526d",
+          "owned_hash": "sha256:3510d19b86dfb5bd566085e1527ee845328c9e2dbb27760965117f1d0878526d"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/地理与行程.md": {
+      "expected_hash": "sha256:308174a47f6c65e10a16ad85c0aaeb0072e6f26f3f12b60ef44254ecbe72c70f",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:308174a47f6c65e10a16ad85c0aaeb0072e6f26f3f12b60ef44254ecbe72c70f",
+          "owned_hash": "sha256:308174a47f6c65e10a16ad85c0aaeb0072e6f26f3f12b60ef44254ecbe72c70f"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:308174a47f6c65e10a16ad85c0aaeb0072e6f26f3f12b60ef44254ecbe72c70f",
+          "owned_hash": "sha256:308174a47f6c65e10a16ad85c0aaeb0072e6f26f3f12b60ef44254ecbe72c70f"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/势力与组织.json": {
+      "expected_hash": "sha256:fdd73c39da706a9bedf2c361c67b37cdd735d75ac21b19ead9431c80af4cc6f2",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:fdd73c39da706a9bedf2c361c67b37cdd735d75ac21b19ead9431c80af4cc6f2",
+          "owned_hash": "sha256:fdd73c39da706a9bedf2c361c67b37cdd735d75ac21b19ead9431c80af4cc6f2"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:fdd73c39da706a9bedf2c361c67b37cdd735d75ac21b19ead9431c80af4cc6f2",
+          "owned_hash": "sha256:fdd73c39da706a9bedf2c361c67b37cdd735d75ac21b19ead9431c80af4cc6f2"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/势力与组织.md": {
+      "expected_hash": "sha256:562b034bb13957acbd46c04710cf18563919e6f3c739bb78172cfbbecf0fb9a6",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:562b034bb13957acbd46c04710cf18563919e6f3c739bb78172cfbbecf0fb9a6",
+          "owned_hash": "sha256:562b034bb13957acbd46c04710cf18563919e6f3c739bb78172cfbbecf0fb9a6"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:562b034bb13957acbd46c04710cf18563919e6f3c739bb78172cfbbecf0fb9a6",
+          "owned_hash": "sha256:562b034bb13957acbd46c04710cf18563919e6f3c739bb78172cfbbecf0fb9a6"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/文化与生活.json": {
+      "expected_hash": "sha256:452ccf198ccd0067cc8977957ec2e7c8cd4d7c9615fb7ed1f5d6da313a308df1",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:452ccf198ccd0067cc8977957ec2e7c8cd4d7c9615fb7ed1f5d6da313a308df1",
+          "owned_hash": "sha256:452ccf198ccd0067cc8977957ec2e7c8cd4d7c9615fb7ed1f5d6da313a308df1"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:452ccf198ccd0067cc8977957ec2e7c8cd4d7c9615fb7ed1f5d6da313a308df1",
+          "owned_hash": "sha256:452ccf198ccd0067cc8977957ec2e7c8cd4d7c9615fb7ed1f5d6da313a308df1"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/文化与生活.md": {
+      "expected_hash": "sha256:bbf1b37a8ee332cb8b4609a0cbd2b425a0d37eadcf8ac302ea51b7767ae0ec9d",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:bbf1b37a8ee332cb8b4609a0cbd2b425a0d37eadcf8ac302ea51b7767ae0ec9d",
+          "owned_hash": "sha256:bbf1b37a8ee332cb8b4609a0cbd2b425a0d37eadcf8ac302ea51b7767ae0ec9d"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:bbf1b37a8ee332cb8b4609a0cbd2b425a0d37eadcf8ac302ea51b7767ae0ec9d",
+          "owned_hash": "sha256:bbf1b37a8ee332cb8b4609a0cbd2b425a0d37eadcf8ac302ea51b7767ae0ec9d"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/发展与信息逻辑.json": {
+      "expected_hash": "sha256:770d5e8841530c7841ecf14bee4eb06339ff49d89ba8fbda45809346891883ba",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:770d5e8841530c7841ecf14bee4eb06339ff49d89ba8fbda45809346891883ba",
+          "owned_hash": "sha256:770d5e8841530c7841ecf14bee4eb06339ff49d89ba8fbda45809346891883ba"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:770d5e8841530c7841ecf14bee4eb06339ff49d89ba8fbda45809346891883ba",
+          "owned_hash": "sha256:770d5e8841530c7841ecf14bee4eb06339ff49d89ba8fbda45809346891883ba"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "01_世界观/发展与信息逻辑.md": {
+      "expected_hash": "sha256:42d3b84517ea4ddf0cd0e8ddfa1cc39a6fa39646235af12ca61e17e58c415238",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:42d3b84517ea4ddf0cd0e8ddfa1cc39a6fa39646235af12ca61e17e58c415238",
+          "owned_hash": "sha256:42d3b84517ea4ddf0cd0e8ddfa1cc39a6fa39646235af12ca61e17e58c415238"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:42d3b84517ea4ddf0cd0e8ddfa1cc39a6fa39646235af12ca61e17e58c415238",
+          "owned_hash": "sha256:42d3b84517ea4ddf0cd0e8ddfa1cc39a6fa39646235af12ca61e17e58c415238"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+      "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+    },
+    "02_人物与关系/人物与关系/index.json": {
+      "expected_hash": "sha256:b37099b078c1982c9791a364648c645925653dd6491dea3620ce75768035aa44",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:b37099b078c1982c9791a364648c645925653dd6491dea3620ce75768035aa44",
+          "owned_hash": "sha256:b37099b078c1982c9791a364648c645925653dd6491dea3620ce75768035aa44"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:b37099b078c1982c9791a364648c645925653dd6491dea3620ce75768035aa44",
+          "owned_hash": "sha256:b37099b078c1982c9791a364648c645925653dd6491dea3620ce75768035aa44"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    },
+    "02_人物与关系/人物与关系/当前设计.md": {
+      "expected_hash": "sha256:3b64ee03d1f8910266c2da2810c52150be89970757b6c6a0f15c41c743c834e3",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:3b64ee03d1f8910266c2da2810c52150be89970757b6c6a0f15c41c743c834e3",
+          "owned_hash": "sha256:3b64ee03d1f8910266c2da2810c52150be89970757b6c6a0f15c41c743c834e3"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:3b64ee03d1f8910266c2da2810c52150be89970757b6c6a0f15c41c743c834e3",
+          "owned_hash": "sha256:3b64ee03d1f8910266c2da2810c52150be89970757b6c6a0f15c41c743c834e3"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_bindings": [
+        {
+          "asset_version_id": "authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1",
+          "content_hash": "sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e"
+        }
+      ]
+    },
+    "02_人物与关系/人物与关系/当前设计.json": {
+      "expected_hash": "sha256:cc987bceb508871a5489dbede3ea18b2c3a4ae56145c1e551e0b25165ef6f02d",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:cc987bceb508871a5489dbede3ea18b2c3a4ae56145c1e551e0b25165ef6f02d",
+          "owned_hash": "sha256:cc987bceb508871a5489dbede3ea18b2c3a4ae56145c1e551e0b25165ef6f02d"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:cc987bceb508871a5489dbede3ea18b2c3a4ae56145c1e551e0b25165ef6f02d",
+          "owned_hash": "sha256:cc987bceb508871a5489dbede3ea18b2c3a4ae56145c1e551e0b25165ef6f02d"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE"
+    },
+    "06_作者专用与叙事状态/幕后与结局意图/index.json": {
+      "expected_hash": "sha256:ce725023857d8a1e8bef959f164d67afae6ba0c332b8afc53ace3d4f4509b110",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:ce725023857d8a1e8bef959f164d67afae6ba0c332b8afc53ace3d4f4509b110",
+          "owned_hash": "sha256:ce725023857d8a1e8bef959f164d67afae6ba0c332b8afc53ace3d4f4509b110"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:ce725023857d8a1e8bef959f164d67afae6ba0c332b8afc53ace3d4f4509b110",
+          "owned_hash": "sha256:ce725023857d8a1e8bef959f164d67afae6ba0c332b8afc53ace3d4f4509b110"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    },
+    "06_作者专用与叙事状态/幕后与结局意图/当前设计.md": {
+      "expected_hash": "sha256:04c52cf0a5c97e724c4c37fc04b9c20b7e62e48c5ec48294ec133fa58826e7fb",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:04c52cf0a5c97e724c4c37fc04b9c20b7e62e48c5ec48294ec133fa58826e7fb",
+          "owned_hash": "sha256:04c52cf0a5c97e724c4c37fc04b9c20b7e62e48c5ec48294ec133fa58826e7fb"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:04c52cf0a5c97e724c4c37fc04b9c20b7e62e48c5ec48294ec133fa58826e7fb",
+          "owned_hash": "sha256:04c52cf0a5c97e724c4c37fc04b9c20b7e62e48c5ec48294ec133fa58826e7fb"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE",
+      "asset_bindings": [
+        {
+          "asset_version_id": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1",
+          "content_hash": "sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57"
+        }
+      ]
+    },
+    "06_作者专用与叙事状态/幕后与结局意图/当前设计.json": {
+      "expected_hash": "sha256:cdb93794884737b68454dda7646324316ae314948d1064b9c7427e68a051719e",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:cdb93794884737b68454dda7646324316ae314948d1064b9c7427e68a051719e",
+          "owned_hash": "sha256:cdb93794884737b68454dda7646324316ae314948d1064b9c7427e68a051719e"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:cdb93794884737b68454dda7646324316ae314948d1064b9c7427e68a051719e",
+          "owned_hash": "sha256:cdb93794884737b68454dda7646324316ae314948d1064b9c7427e68a051719e"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "ACTIVE"
+    },
+    "03_分层规划/全书大纲/index.json": {
+      "expected_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+          "owned_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+          "owned_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    },
+    "03_分层规划/卷纲/index.json": {
+      "expected_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+          "owned_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+          "owned_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    },
+    "03_分层规划/Arc/index.json": {
+      "expected_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+          "owned_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+          "owned_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    },
+    "03_分层规划/章组计划/index.json": {
+      "expected_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+          "owned_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+          "owned_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    },
+    "03_分层规划/章节与场景/index.json": {
+      "expected_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+          "owned_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019",
+          "owned_hash": "sha256:667a0afd0ac6c8284e622da9de0d5fab7b46c3b8f8f68b9efc4b6416fe152019"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    },
+    "07_运行证据/usage-ledger.json": {
+      "expected_hash": "sha256:4873f0ac0587384b75f0bbf620795cc396e1964e5628fdf56eb1a8557c2219ea",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:4873f0ac0587384b75f0bbf620795cc396e1964e5628fdf56eb1a8557c2219ea",
+          "owned_hash": "sha256:4873f0ac0587384b75f0bbf620795cc396e1964e5628fdf56eb1a8557c2219ea"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:4873f0ac0587384b75f0bbf620795cc396e1964e5628fdf56eb1a8557c2219ea",
+          "owned_hash": "sha256:4873f0ac0587384b75f0bbf620795cc396e1964e5628fdf56eb1a8557c2219ea"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "NATIVE_LEDGER"
+    },
+    "07_运行证据/usage-measurement.json": {
+      "expected_hash": "sha256:5ae8214632ae8dd2967838fadec417e4765c89e1e53707fabe6eb4115a165618",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:5ae8214632ae8dd2967838fadec417e4765c89e1e53707fabe6eb4115a165618",
+          "owned_hash": "sha256:5ae8214632ae8dd2967838fadec417e4765c89e1e53707fabe6eb4115a165618"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:5ae8214632ae8dd2967838fadec417e4765c89e1e53707fabe6eb4115a165618",
+          "owned_hash": "sha256:5ae8214632ae8dd2967838fadec417e4765c89e1e53707fabe6eb4115a165618"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "MEASURED_AND_UNKNOWN_USAGE_SEPARATED"
+    },
+    "07_运行证据/模型请求配置.json": {
+      "expected_hash": "sha256:d284e971a540afa0f72dc13ea002e26ccc632c9d163f7f49351745b398d217d6",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d284e971a540afa0f72dc13ea002e26ccc632c9d163f7f49351745b398d217d6",
+          "owned_hash": "sha256:d284e971a540afa0f72dc13ea002e26ccc632c9d163f7f49351745b398d217d6"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d284e971a540afa0f72dc13ea002e26ccc632c9d163f7f49351745b398d217d6",
+          "owned_hash": "sha256:d284e971a540afa0f72dc13ea002e26ccc632c9d163f7f49351745b398d217d6"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "NATIVE_CALL_METADATA"
+    },
+    "07_运行证据/asset-index.json": {
+      "expected_hash": "sha256:7430b8671cf60d5aaf2eec34ab00ca39f78a4b79dbc9bb75adcb49c5165fc399",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:7430b8671cf60d5aaf2eec34ab00ca39f78a4b79dbc9bb75adcb49c5165fc399",
+          "owned_hash": "sha256:7430b8671cf60d5aaf2eec34ab00ca39f78a4b79dbc9bb75adcb49c5165fc399"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:7430b8671cf60d5aaf2eec34ab00ca39f78a4b79dbc9bb75adcb49c5165fc399",
+          "owned_hash": "sha256:7430b8671cf60d5aaf2eec34ab00ca39f78a4b79dbc9bb75adcb49c5165fc399"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "BOOK_SCOPED_NATIVE_ASSETS"
+    },
+    "07_运行证据/baseline.json": {
+      "expected_hash": "sha256:dedf223f5e62817b8b7687f4ad864c9cf7b96281b0e6ea6550d251e99aae9c33",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:dedf223f5e62817b8b7687f4ad864c9cf7b96281b0e6ea6550d251e99aae9c33",
+          "owned_hash": "sha256:dedf223f5e62817b8b7687f4ad864c9cf7b96281b0e6ea6550d251e99aae9c33"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:dedf223f5e62817b8b7687f4ad864c9cf7b96281b0e6ea6550d251e99aae9c33",
+          "owned_hash": "sha256:dedf223f5e62817b8b7687f4ad864c9cf7b96281b0e6ea6550d251e99aae9c33"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/runtime-pack-approval.json": {
+      "expected_hash": "sha256:5a4e402d829a7db277854deb2af8628a0d11d8055bfa61d6f0e4f141262682ce",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:5a4e402d829a7db277854deb2af8628a0d11d8055bfa61d6f0e4f141262682ce",
+          "owned_hash": "sha256:5a4e402d829a7db277854deb2af8628a0d11d8055bfa61d6f0e4f141262682ce"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:5a4e402d829a7db277854deb2af8628a0d11d8055bfa61d6f0e4f141262682ce",
+          "owned_hash": "sha256:5a4e402d829a7db277854deb2af8628a0d11d8055bfa61d6f0e4f141262682ce"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/budget-forecast.json": {
+      "expected_hash": "sha256:d9edba3a469defc8f419c83f501b5e3401a6f722ce57788a3fbab82ff6a9ca33",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d9edba3a469defc8f419c83f501b5e3401a6f722ce57788a3fbab82ff6a9ca33",
+          "owned_hash": "sha256:d9edba3a469defc8f419c83f501b5e3401a6f722ce57788a3fbab82ff6a9ca33"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d9edba3a469defc8f419c83f501b5e3401a6f722ce57788a3fbab82ff6a9ca33",
+          "owned_hash": "sha256:d9edba3a469defc8f419c83f501b5e3401a6f722ce57788a3fbab82ff6a9ca33"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/budget-registration.json": {
+      "expected_hash": "sha256:64de1488f555d3ac305beac30cdddea28463c9e2e1f3c10ce01753a3766a0efd",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:64de1488f555d3ac305beac30cdddea28463c9e2e1f3c10ce01753a3766a0efd",
+          "owned_hash": "sha256:64de1488f555d3ac305beac30cdddea28463c9e2e1f3c10ce01753a3766a0efd"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:64de1488f555d3ac305beac30cdddea28463c9e2e1f3c10ce01753a3766a0efd",
+          "owned_hash": "sha256:64de1488f555d3ac305beac30cdddea28463c9e2e1f3c10ce01753a3766a0efd"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/release-identity.json": {
+      "expected_hash": "sha256:b9656a339e4e3a803bb647fb675ed75517467c17f1bfe4e8daa734b593da3b1e",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:b9656a339e4e3a803bb647fb675ed75517467c17f1bfe4e8daa734b593da3b1e",
+          "owned_hash": "sha256:b9656a339e4e3a803bb647fb675ed75517467c17f1bfe4e8daa734b593da3b1e"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:b9656a339e4e3a803bb647fb675ed75517467c17f1bfe4e8daa734b593da3b1e",
+          "owned_hash": "sha256:b9656a339e4e3a803bb647fb675ed75517467c17f1bfe4e8daa734b593da3b1e"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/workspace-scope-decision.json": {
+      "expected_hash": "sha256:4b4f883120e14ef2a3468d594f430ff73ffe7cea75124e8c20b9f772db70933d",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:4b4f883120e14ef2a3468d594f430ff73ffe7cea75124e8c20b9f772db70933d",
+          "owned_hash": "sha256:4b4f883120e14ef2a3468d594f430ff73ffe7cea75124e8c20b9f772db70933d"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:4b4f883120e14ef2a3468d594f430ff73ffe7cea75124e8c20b9f772db70933d",
+          "owned_hash": "sha256:4b4f883120e14ef2a3468d594f430ff73ffe7cea75124e8c20b9f772db70933d"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/opening-capacity-preflight.json": {
+      "expected_hash": "sha256:5485c6b3ccf6f89305a89333d5efda9de87133ff6ab02bb23e3609edf4c24c7c",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:5485c6b3ccf6f89305a89333d5efda9de87133ff6ab02bb23e3609edf4c24c7c",
+          "owned_hash": "sha256:5485c6b3ccf6f89305a89333d5efda9de87133ff6ab02bb23e3609edf4c24c7c"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:5485c6b3ccf6f89305a89333d5efda9de87133ff6ab02bb23e3609edf4c24c7c",
+          "owned_hash": "sha256:5485c6b3ccf6f89305a89333d5efda9de87133ff6ab02bb23e3609edf4c24c7c"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/runtime-artifact-installation.json": {
+      "expected_hash": "sha256:94c35388f11fa0fc58fa1ce9ece5e8993245ead5bb56701acadf5138c93f785d",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:94c35388f11fa0fc58fa1ce9ece5e8993245ead5bb56701acadf5138c93f785d",
+          "owned_hash": "sha256:94c35388f11fa0fc58fa1ce9ece5e8993245ead5bb56701acadf5138c93f785d"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:94c35388f11fa0fc58fa1ce9ece5e8993245ead5bb56701acadf5138c93f785d",
+          "owned_hash": "sha256:94c35388f11fa0fc58fa1ce9ece5e8993245ead5bb56701acadf5138c93f785d"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/formation-authorization-registration.json": {
+      "expected_hash": "sha256:15be0995d10379c7ed5d87be4a10e05bcfee2d83f20c4903d98731783896505b",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:15be0995d10379c7ed5d87be4a10e05bcfee2d83f20c4903d98731783896505b",
+          "owned_hash": "sha256:15be0995d10379c7ed5d87be4a10e05bcfee2d83f20c4903d98731783896505b"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:15be0995d10379c7ed5d87be4a10e05bcfee2d83f20c4903d98731783896505b",
+          "owned_hash": "sha256:15be0995d10379c7ed5d87be4a10e05bcfee2d83f20c4903d98731783896505b"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/formation-generation-v2.json": {
+      "expected_hash": "sha256:46d934e3067d37810e108b127a3d59ba4aac89e62f3d649b48d7d0bdf84ea862",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:46d934e3067d37810e108b127a3d59ba4aac89e62f3d649b48d7d0bdf84ea862",
+          "owned_hash": "sha256:46d934e3067d37810e108b127a3d59ba4aac89e62f3d649b48d7d0bdf84ea862"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:46d934e3067d37810e108b127a3d59ba4aac89e62f3d649b48d7d0bdf84ea862",
+          "owned_hash": "sha256:46d934e3067d37810e108b127a3d59ba4aac89e62f3d649b48d7d0bdf84ea862"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/planning-pre-dispatch-budget-resolution.json": {
+      "expected_hash": "sha256:e40823a735cb06e16f437c15673a08622f63b66d58a7aedef8e625d504ab2916",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e40823a735cb06e16f437c15673a08622f63b66d58a7aedef8e625d504ab2916",
+          "owned_hash": "sha256:e40823a735cb06e16f437c15673a08622f63b66d58a7aedef8e625d504ab2916"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e40823a735cb06e16f437c15673a08622f63b66d58a7aedef8e625d504ab2916",
+          "owned_hash": "sha256:e40823a735cb06e16f437c15673a08622f63b66d58a7aedef8e625d504ab2916"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/budget-reallocation-v2.json": {
+      "expected_hash": "sha256:a1a1aaeb140d01c5b6887b04945f81c409f1aa7ec00e9c9a39492074df3344b6",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a1a1aaeb140d01c5b6887b04945f81c409f1aa7ec00e9c9a39492074df3344b6",
+          "owned_hash": "sha256:a1a1aaeb140d01c5b6887b04945f81c409f1aa7ec00e9c9a39492074df3344b6"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a1a1aaeb140d01c5b6887b04945f81c409f1aa7ec00e9c9a39492074df3344b6",
+          "owned_hash": "sha256:a1a1aaeb140d01c5b6887b04945f81c409f1aa7ec00e9c9a39492074df3344b6"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/budget-policy-v2.json": {
+      "expected_hash": "sha256:5c163b3854adb4b122a517842e5746ebf08313bc24141276423310754307bc64",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:5c163b3854adb4b122a517842e5746ebf08313bc24141276423310754307bc64",
+          "owned_hash": "sha256:5c163b3854adb4b122a517842e5746ebf08313bc24141276423310754307bc64"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:5c163b3854adb4b122a517842e5746ebf08313bc24141276423310754307bc64",
+          "owned_hash": "sha256:5c163b3854adb4b122a517842e5746ebf08313bc24141276423310754307bc64"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/budget-reallocation-v2-registration.json": {
+      "expected_hash": "sha256:96be83b58827e4664be75c9a043ac30560f37285403258dbf5541371a59f8d18",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:96be83b58827e4664be75c9a043ac30560f37285403258dbf5541371a59f8d18",
+          "owned_hash": "sha256:96be83b58827e4664be75c9a043ac30560f37285403258dbf5541371a59f8d18"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:96be83b58827e4664be75c9a043ac30560f37285403258dbf5541371a59f8d18",
+          "owned_hash": "sha256:96be83b58827e4664be75c9a043ac30560f37285403258dbf5541371a59f8d18"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/budget-forecast-v2.json": {
+      "expected_hash": "sha256:e36700b0036dc98cab59e0e1c13f56b4ae78e33cca3bba547075b8d6d6a6f12f",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e36700b0036dc98cab59e0e1c13f56b4ae78e33cca3bba547075b8d6d6a6f12f",
+          "owned_hash": "sha256:e36700b0036dc98cab59e0e1c13f56b4ae78e33cca3bba547075b8d6d6a6f12f"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e36700b0036dc98cab59e0e1c13f56b4ae78e33cca3bba547075b8d6d6a6f12f",
+          "owned_hash": "sha256:e36700b0036dc98cab59e0e1c13f56b4ae78e33cca3bba547075b8d6d6a6f12f"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/planning-runtime-continuation.json": {
+      "expected_hash": "sha256:0b3751f71e55790e8abe1931d1317f91970cddc12b20f13e9edfe4867f0679b2",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:0b3751f71e55790e8abe1931d1317f91970cddc12b20f13e9edfe4867f0679b2",
+          "owned_hash": "sha256:0b3751f71e55790e8abe1931d1317f91970cddc12b20f13e9edfe4867f0679b2"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:0b3751f71e55790e8abe1931d1317f91970cddc12b20f13e9edfe4867f0679b2",
+          "owned_hash": "sha256:0b3751f71e55790e8abe1931d1317f91970cddc12b20f13e9edfe4867f0679b2"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/world-timeout-recovery-decision.json": {
+      "expected_hash": "sha256:ed3b09a3a0ba48c0f985f8772cfa98613428694613e75060c1465f599167a437",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:ed3b09a3a0ba48c0f985f8772cfa98613428694613e75060c1465f599167a437",
+          "owned_hash": "sha256:ed3b09a3a0ba48c0f985f8772cfa98613428694613e75060c1465f599167a437"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:ed3b09a3a0ba48c0f985f8772cfa98613428694613e75060c1465f599167a437",
+          "owned_hash": "sha256:ed3b09a3a0ba48c0f985f8772cfa98613428694613e75060c1465f599167a437"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/native-book-initialization-failure.json": {
+      "expected_hash": "sha256:4645b33d3006f9c3aec539c34c8024992cb6b280d48b41abefa0b02b37c96fb2",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:4645b33d3006f9c3aec539c34c8024992cb6b280d48b41abefa0b02b37c96fb2",
+          "owned_hash": "sha256:4645b33d3006f9c3aec539c34c8024992cb6b280d48b41abefa0b02b37c96fb2"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:4645b33d3006f9c3aec539c34c8024992cb6b280d48b41abefa0b02b37c96fb2",
+          "owned_hash": "sha256:4645b33d3006f9c3aec539c34c8024992cb6b280d48b41abefa0b02b37c96fb2"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/old-world-result-contract-replay.json": {
+      "expected_hash": "sha256:64123b9bb0dc903f8ee214e214e222acf3ab2ff80935c40692efb86bd46afa1c",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:64123b9bb0dc903f8ee214e214e222acf3ab2ff80935c40692efb86bd46afa1c",
+          "owned_hash": "sha256:64123b9bb0dc903f8ee214e214e222acf3ab2ff80935c40692efb86bd46afa1c"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:64123b9bb0dc903f8ee214e214e222acf3ab2ff80935c40692efb86bd46afa1c",
+          "owned_hash": "sha256:64123b9bb0dc903f8ee214e214e222acf3ab2ff80935c40692efb86bd46afa1c"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/native-migration-0131.json": {
+      "expected_hash": "sha256:a83d4c2e3233c2b1424b3b7d5236c20841460cf234c4df4d7cd06b05fa6ba9fd",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a83d4c2e3233c2b1424b3b7d5236c20841460cf234c4df4d7cd06b05fa6ba9fd",
+          "owned_hash": "sha256:a83d4c2e3233c2b1424b3b7d5236c20841460cf234c4df4d7cd06b05fa6ba9fd"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:a83d4c2e3233c2b1424b3b7d5236c20841460cf234c4df4d7cd06b05fa6ba9fd",
+          "owned_hash": "sha256:a83d4c2e3233c2b1424b3b7d5236c20841460cf234c4df4d7cd06b05fa6ba9fd"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/planning-profile-conflict.jsonl": {
+      "expected_hash": "sha256:6d501304abd25a0e193346611253a2ccf9356e1d0d6572e9b0750774a0a05a72",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:6d501304abd25a0e193346611253a2ccf9356e1d0d6572e9b0750774a0a05a72",
+          "owned_hash": "sha256:6d501304abd25a0e193346611253a2ccf9356e1d0d6572e9b0750774a0a05a72"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:6d501304abd25a0e193346611253a2ccf9356e1d0d6572e9b0750774a0a05a72",
+          "owned_hash": "sha256:6d501304abd25a0e193346611253a2ccf9356e1d0d6572e9b0750774a0a05a72"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/qualification-d5c3dd3c-interruption.json": {
+      "expected_hash": "sha256:193433bda3d44ab80d61fd5ba22298e96e34379d64b40240652e7f3f487cccc4",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:193433bda3d44ab80d61fd5ba22298e96e34379d64b40240652e7f3f487cccc4",
+          "owned_hash": "sha256:193433bda3d44ab80d61fd5ba22298e96e34379d64b40240652e7f3f487cccc4"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:193433bda3d44ab80d61fd5ba22298e96e34379d64b40240652e7f3f487cccc4",
+          "owned_hash": "sha256:193433bda3d44ab80d61fd5ba22298e96e34379d64b40240652e7f3f487cccc4"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/source-runtime-identity.json": {
+      "expected_hash": "sha256:e414f22b842811cf5722b94c62593aea5f1239e3563d13e8531ed5df8830493a",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e414f22b842811cf5722b94c62593aea5f1239e3563d13e8531ed5df8830493a",
+          "owned_hash": "sha256:e414f22b842811cf5722b94c62593aea5f1239e3563d13e8531ed5df8830493a"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e414f22b842811cf5722b94c62593aea5f1239e3563d13e8531ed5df8830493a",
+          "owned_hash": "sha256:e414f22b842811cf5722b94c62593aea5f1239e3563d13e8531ed5df8830493a"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/source-book-route-policy.json": {
+      "expected_hash": "sha256:564c27160c519773daaae7117d0afd3d839777e3a90575aebc1c6f1db1e651bf",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:564c27160c519773daaae7117d0afd3d839777e3a90575aebc1c6f1db1e651bf",
+          "owned_hash": "sha256:564c27160c519773daaae7117d0afd3d839777e3a90575aebc1c6f1db1e651bf"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:564c27160c519773daaae7117d0afd3d839777e3a90575aebc1c6f1db1e651bf",
+          "owned_hash": "sha256:564c27160c519773daaae7117d0afd3d839777e3a90575aebc1c6f1db1e651bf"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/native-migration-0132.json": {
+      "expected_hash": "sha256:d8461f442c03184dc52cb6b595e42f0c831462b3ea8085221c96d1fea8c7eac1",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d8461f442c03184dc52cb6b595e42f0c831462b3ea8085221c96d1fea8c7eac1",
+          "owned_hash": "sha256:d8461f442c03184dc52cb6b595e42f0c831462b3ea8085221c96d1fea8c7eac1"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d8461f442c03184dc52cb6b595e42f0c831462b3ea8085221c96d1fea8c7eac1",
+          "owned_hash": "sha256:d8461f442c03184dc52cb6b595e42f0c831462b3ea8085221c96d1fea8c7eac1"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/current-world-provider-contract.json": {
+      "expected_hash": "sha256:e728c07cd4c77fcf75271e0e10b034cbb631903c99900152fa0a13ffc9ee1d50",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e728c07cd4c77fcf75271e0e10b034cbb631903c99900152fa0a13ffc9ee1d50",
+          "owned_hash": "sha256:e728c07cd4c77fcf75271e0e10b034cbb631903c99900152fa0a13ffc9ee1d50"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e728c07cd4c77fcf75271e0e10b034cbb631903c99900152fa0a13ffc9ee1d50",
+          "owned_hash": "sha256:e728c07cd4c77fcf75271e0e10b034cbb631903c99900152fa0a13ffc9ee1d50"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/world-timeout-diagnostic.json": {
+      "expected_hash": "sha256:0308c5540d6fb9661e07034d2a6c32d60f50821190c8014ed2ddef02f7c6043c",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:0308c5540d6fb9661e07034d2a6c32d60f50821190c8014ed2ddef02f7c6043c",
+          "owned_hash": "sha256:0308c5540d6fb9661e07034d2a6c32d60f50821190c8014ed2ddef02f7c6043c"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:0308c5540d6fb9661e07034d2a6c32d60f50821190c8014ed2ddef02f7c6043c",
+          "owned_hash": "sha256:0308c5540d6fb9661e07034d2a6c32d60f50821190c8014ed2ddef02f7c6043c"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "07_运行证据/world-native-recovery-outcome.json": {
+      "expected_hash": "sha256:91cd2d0d5a8dd8b205ca5a2605dece338ce6e3c911939dadcaf0531ddfbcfa9e",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:91cd2d0d5a8dd8b205ca5a2605dece338ce6e3c911939dadcaf0531ddfbcfa9e",
+          "owned_hash": "sha256:91cd2d0d5a8dd8b205ca5a2605dece338ce6e3c911939dadcaf0531ddfbcfa9e"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:91cd2d0d5a8dd8b205ca5a2605dece338ce6e3c911939dadcaf0531ddfbcfa9e",
+          "owned_hash": "sha256:91cd2d0d5a8dd8b205ca5a2605dece338ce6e3c911939dadcaf0531ddfbcfa9e"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "RUNTIME_EVIDENCE"
+    },
+    "06_作者专用与叙事状态/作者输入.json": {
+      "expected_hash": "sha256:e82734ecc8c891f3a344828d7e915def82f2a98f460e173c08ea61f2d3d17ed2",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e82734ecc8c891f3a344828d7e915def82f2a98f460e173c08ea61f2d3d17ed2",
+          "owned_hash": "sha256:e82734ecc8c891f3a344828d7e915def82f2a98f460e173c08ea61f2d3d17ed2"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e82734ecc8c891f3a344828d7e915def82f2a98f460e173c08ea61f2d3d17ed2",
+          "owned_hash": "sha256:e82734ecc8c891f3a344828d7e915def82f2a98f460e173c08ea61f2d3d17ed2"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "AUTHOR_INTENT"
+    },
+    "06_作者专用与叙事状态/作者输入.md": {
+      "expected_hash": "sha256:1a2ed53ee2c5b5d5d36ab132944a0c6f53b17febb2a11da1595d8fb3743b5a32",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:1a2ed53ee2c5b5d5d36ab132944a0c6f53b17febb2a11da1595d8fb3743b5a32",
+          "owned_hash": "sha256:1a2ed53ee2c5b5d5d36ab132944a0c6f53b17febb2a11da1595d8fb3743b5a32"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:1a2ed53ee2c5b5d5d36ab132944a0c6f53b17febb2a11da1595d8fb3743b5a32",
+          "owned_hash": "sha256:1a2ed53ee2c5b5d5d36ab132944a0c6f53b17febb2a11da1595d8fb3743b5a32"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "AUTHOR_INTENT"
+    },
+    "07_运行证据/工程资格/p0-backend-qualification-13d1570284b87631a76d75b83f37a3b57563c7b4.json": {
+      "expected_hash": "sha256:f35e8c266c2eabde8873f7b9bdee0f774acc824f026da525f0945990eb0b0f47",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:f35e8c266c2eabde8873f7b9bdee0f774acc824f026da525f0945990eb0b0f47",
+          "owned_hash": "sha256:f35e8c266c2eabde8873f7b9bdee0f774acc824f026da525f0945990eb0b0f47"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:f35e8c266c2eabde8873f7b9bdee0f774acc824f026da525f0945990eb0b0f47",
+          "owned_hash": "sha256:f35e8c266c2eabde8873f7b9bdee0f774acc824f026da525f0945990eb0b0f47"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "EXACT_SHA_ENGINEERING_EVIDENCE"
+    },
+    "07_运行证据/工程资格/p0-backend-qualification-4c636037a6ed529af2ce6ba7d45e719638734ff5.json": {
+      "expected_hash": "sha256:e72a1d694b65cd04395725925d5d49f5b03b1ecc8a0d424f2f4a9060e38c3f45",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e72a1d694b65cd04395725925d5d49f5b03b1ecc8a0d424f2f4a9060e38c3f45",
+          "owned_hash": "sha256:e72a1d694b65cd04395725925d5d49f5b03b1ecc8a0d424f2f4a9060e38c3f45"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:e72a1d694b65cd04395725925d5d49f5b03b1ecc8a0d424f2f4a9060e38c3f45",
+          "owned_hash": "sha256:e72a1d694b65cd04395725925d5d49f5b03b1ecc8a0d424f2f4a9060e38c3f45"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "EXACT_SHA_ENGINEERING_EVIDENCE"
+    },
+    "07_运行证据/工程资格/p0-backend-qualification-a64a126746f58f1b0c41914fcef916e77d8e6c2f.json": {
+      "expected_hash": "sha256:13f9e30741edf99058612a3794806a2066e6e4ee487d9878c64c1d90bb781904",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:13f9e30741edf99058612a3794806a2066e6e4ee487d9878c64c1d90bb781904",
+          "owned_hash": "sha256:13f9e30741edf99058612a3794806a2066e6e4ee487d9878c64c1d90bb781904"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:13f9e30741edf99058612a3794806a2066e6e4ee487d9878c64c1d90bb781904",
+          "owned_hash": "sha256:13f9e30741edf99058612a3794806a2066e6e4ee487d9878c64c1d90bb781904"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "EXACT_SHA_ENGINEERING_EVIDENCE"
+    },
+    "07_运行证据/工程资格/p0-backend-qualification-3345ffb5d214c4518a21aacf3e9c388fbecb1654.json": {
+      "expected_hash": "sha256:f8ea4b8f37e474450b9adda4c8d1eb68993dbd306a6b7c224aa1140cf8b9c5d7",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:f8ea4b8f37e474450b9adda4c8d1eb68993dbd306a6b7c224aa1140cf8b9c5d7",
+          "owned_hash": "sha256:f8ea4b8f37e474450b9adda4c8d1eb68993dbd306a6b7c224aa1140cf8b9c5d7"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:f8ea4b8f37e474450b9adda4c8d1eb68993dbd306a6b7c224aa1140cf8b9c5d7",
+          "owned_hash": "sha256:f8ea4b8f37e474450b9adda4c8d1eb68993dbd306a6b7c224aa1140cf8b9c5d7"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "EXACT_SHA_ENGINEERING_EVIDENCE"
+    },
+    "07_运行证据/工程资格/p0-backend-qualification-d5c3dd3c7a5e2233d36cecd5aac9142fa626dc40.json": {
+      "expected_hash": "sha256:d09062a816fa638de03058467e356859b30560e6beac502ba8e369abe2ca1915",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d09062a816fa638de03058467e356859b30560e6beac502ba8e369abe2ca1915",
+          "owned_hash": "sha256:d09062a816fa638de03058467e356859b30560e6beac502ba8e369abe2ca1915"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:d09062a816fa638de03058467e356859b30560e6beac502ba8e369abe2ca1915",
+          "owned_hash": "sha256:d09062a816fa638de03058467e356859b30560e6beac502ba8e369abe2ca1915"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "EXACT_SHA_ENGINEERING_EVIDENCE"
+    },
+    "00_导航与进度/progress.json": {
+      "expected_hash": "sha256:0ed3a42e42b1f64a5fd47bcc1c88a9fd8a3134b91d05c9007388fe19a5960c88",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:0ed3a42e42b1f64a5fd47bcc1c88a9fd8a3134b91d05c9007388fe19a5960c88",
+          "owned_hash": "sha256:0ed3a42e42b1f64a5fd47bcc1c88a9fd8a3134b91d05c9007388fe19a5960c88"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:0ed3a42e42b1f64a5fd47bcc1c88a9fd8a3134b91d05c9007388fe19a5960c88",
+          "owned_hash": "sha256:0ed3a42e42b1f64a5fd47bcc1c88a9fd8a3134b91d05c9007388fe19a5960c88"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "status": "READ_PROJECTION"
+    },
+    "00_导航与进度/README.md": {
+      "expected_hash": "sha256:ccb05e39787c37f28b9f30538fe1c1639a00aa74f6cba2954c956d062f4779fa",
+      "installations": {
+        "/Users/yuan/novel-output/guofeng-xuanhuan-01": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:ccb05e39787c37f28b9f30538fe1c1639a00aa74f6cba2954c956d062f4779fa",
+          "owned_hash": "sha256:ccb05e39787c37f28b9f30538fe1c1639a00aa74f6cba2954c956d062f4779fa"
+        },
+        "/Users/yuan/projects/novel-forge-guofeng-volume-one/novels/guofeng-xuanhuan-01/output": {
+          "status": "INSTALLED",
+          "file_hash": "sha256:ccb05e39787c37f28b9f30538fe1c1639a00aa74f6cba2954c956d062f4779fa",
+          "owned_hash": "sha256:ccb05e39787c37f28b9f30538fe1c1639a00aa74f6cba2954c956d062f4779fa"
+        }
+      },
+      "source_sha": "90543b35173b84af91d9933086b749df2df65cab"
+    }
+  },
+  "conflicts": [],
+  "source_sha": "90543b35173b84af91d9933086b749df2df65cab",
+  "exported_at": "20260913T183551003717Z"
+}

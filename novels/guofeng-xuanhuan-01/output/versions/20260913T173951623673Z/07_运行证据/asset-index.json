@@ -1,0 +1,62 @@
+[
+  {
+    "asset_type": "provider_request_admission_manifest",
+    "asset_version_id": "676f92b1-8fe3-4b03-808c-15aaddec65a8",
+    "content_hash": "sha256:419277f444e39f769dc34284b51e65c3e3cff0339c1b4d84b7492e13a3fa666b",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "context_bundle",
+    "asset_version_id": "edd590ff-fa1e-4b68-9977-c23a356c4c56",
+    "content_hash": "sha256:cf010f0fda1a0c2034c7fdc614b9a91494cd0eaa1e073d05d362980accf3ec6f",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "book_record",
+    "asset_version_id": "54502d19-320d-4f7c-b7ec-96c9ac4c24a0",
+    "content_hash": "sha256:348099fe4af38db65d45d3da75e17c57cbcfa2c983c6c0af26cc549513049f2d",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "creative_brief",
+    "asset_version_id": "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1",
+    "content_hash": "sha256:73245902d79e29929ba55f40a18663be298a419db12bfa05ee0ea6af70b3427f",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "workspace_record",
+    "asset_version_id": "1d99b536-437c-43a2-9dc9-c5a51d53a0f0",
+    "content_hash": "sha256:812e42a66ab8ac0e61c9026bde59c0ac793d193e15834c50b801053d5e774ad9",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  },
+  {
+    "asset_type": "capability_materialization_manifest",
+    "asset_version_id": "e00d58c8-bcc6-44e2-afa0-31001444fb20",
+    "content_hash": "sha256:8356e4d54614f2a9e096cfc4b16023ae7b02360e4cd4087b85a56992f2b7d9b4",
+    "version_number": 1,
+    "lifecycle": "ACTIVE",
+    "eligibility": "ELIGIBLE",
+    "governance": "CLEAR",
+    "content_adoption": "NOT_APPLICABLE"
+  }
+]

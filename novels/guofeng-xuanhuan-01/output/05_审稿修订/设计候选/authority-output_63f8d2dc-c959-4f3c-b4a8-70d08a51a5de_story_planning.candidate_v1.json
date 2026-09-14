@@ -1,0 +1,1771 @@
+{
+  "project_id": "first-novel-pilot-20260912",
+  "logical_ref": "asset-version:authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+  "category": "planning_generation_candidate",
+  "asset_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate",
+  "asset_type": "planning_generation_candidate",
+  "asset_version_id": "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+  "version_number": 1,
+  "lifecycle": "ACTIVE",
+  "eligibility": "ELIGIBLE",
+  "governance": "CLEAR",
+  "content_hash": "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96",
+  "content": {
+    "type": "PlanningGenerationCandidate",
+    "rules": [
+      {
+        "cost": "运气消耗体力与注意力，持续使用引起指端麻木，强行继续可能伤掌或毁刃。",
+        "rule": "rule:tingxi_contact：听隙必须由自身真气沿手中兵刃运行，以接触反馈进行辨别。",
+        "exception": "无接触路径例外。不同材质和包覆结构只会改变可辨程度，不会开放隔空判断。",
+        "consequence": "陆照必须先取得兵刃的实际使用与检查机会；更换陌生器物可能让熟悉打法暂时失效。",
+        "narrative_function": "使磨刀经验成为可准备、会受阻的优势，迫使主角争取接触与选择用力方式。"
+      },
+      {
+        "cost": "检查花费时间，反复试验消耗兵刃承载余量；赶船期时可能无法完成充分核验。",
+        "rule": "rule:tingxi_information：听隙只提供当前所持兵刃的应力偏移与导气断续反馈，不给出绝对寿命或必胜答案。",
+        "exception": "无读心、读招、读史或隔空鉴敌例外；触及对方兵刃的碰撞也不等于完整检查。",
+        "consequence": "一次判断只能为用法提供依据；陌生材质、包覆和震动仍需试验，误判会影响接下来的出手与担保。",
+        "narrative_function": "限制信息优势，给高估旧刃寿命的失误留下由人物判断造成的因果空间。"
+      },
+      {
+        "cost": "整修需要工时、磨具与刃材，重铸需新料、炉工和等待，并失去原兵刃的熟悉手感。",
+        "rule": "rule:blade_wear：养刃改善当前可用状态，不能把材料损耗归零。",
+        "exception": "局部毛刺与浅缺口可整修；结构疲劳与已损失材料不能靠听隙或磨刀恢复。重铸属于重新加工。",
+        "consequence": "廉价旧刃可以胜任明示的有限工况，却不能由一次试手表现推出多次护运都可靠；需要重估报废与换刃成本。",
+        "narrative_function": "把技艺、误判与赔偿连在一起，同时保留低价养护有真实用途的开局胜利。"
+      },
+      {
+        "cost": "利用狭路与协作往往牺牲追击、独占功劳或更快路线，并消耗同伴工时与装备。",
+        "rule": "rule:power_gap：较高能力层次拥有稳定的续力与容错优势，听隙不能抹平完整状态下的境界差距。",
+        "exception": "可在事先建立的伤疲、任务约束、地形或协作条件下取得局部成果；这些条件不构成正面压倒完整高层的许可。",
+        "consequence": "低层面对高层应争取护船、夺位、阻滞或撤退等有限结果；找到弱处仍须有力量、角度和时机利用。",
+        "narrative_function": "让强敌保持压迫感，让成长表现为更可靠的打法与职责，而非越级数字膨胀。"
+      },
+      {
+        "cost": "至少十二个有效训练日及正常食宿、兵器维护；练功膏可辅助恢复但须购买。运气紊乱至少停练两日，受伤则按病程处理。",
+        "rule": "rule:training_time：微息至行气至少需要十二个有效训练日，末段连续三个训练日通过稳定运气测试；满足最低日数不保证成功。",
+        "exception": "不用练功膏可以训练，但恢复可能更慢，不能缩短最低有效训练日；既有训练须有合法依据才可计入，临时顿悟不能补账。",
+        "consequence": "修炼占用可接活时间；突破只增加稳定运气能力，基础剑法仍须分别练熟并接受实战检验。",
+        "narrative_function": "支撑首卷一次有成本的进阶，制造赚钱、练剑与赶期限之间的可承受取舍。"
+      },
+      {
+        "cost": "照护、误工、换药与重新练习需要时间和收入；重伤者的长期支持须有持续来源。",
+        "rule": "rule:irreversibility：本书不提供复活、时间回退或借失忆注销责任的手段。",
+        "exception": "休息能恢复疲劳，药物能辅助愈合；这些是连续恢复，不是倒转死亡、损耗或已经发生的损失。",
+        "consequence": "当前能力恢复后，花掉的钱、错过的船期和受损信任仍在；人物须用新的行动处理余波。",
+        "narrative_function": "确保代价可信，同时容许正常休养与生活满足，不把连续重残当作成长门槛。"
+      },
+      {
+        "cost": "登记、见证、备货、押款或具名保障占用钱与时间；争议处理也会耽误接活。",
+        "rule": "rule:contract_separation：比试资格、实际履约、合同权利和争议证据是不同事项，不能相互自动兑换。",
+        "exception": "合同可允许预付款、分段验收或约定替代见证，但须事先写明并经相关方同意；不免除实际服务。",
+        "consequence": "试手胜利能得到奖金、席位与议价注意，却仍须通过准备、真实护运、验收及结算才能支持独立合同。",
+        "narrative_function": "保持开局爽快回报，并防止比试直接兑换渡口控制权。"
+      },
+      {
+        "cost": "需要预留准备金、支付承担份额、补救误工，或放弃超出能力的订单；共享决定权会减少单独调度的便利。",
+        "rule": "rule:consent_and_liability：联名责任、工法授权和新增风险须由具体当事人明确同意；退出只终止约定可退出的未来工作。",
+        "exception": "签约后可以共同修改未来安排，但不能单方追溯免除已造成的损失。故意隐瞒或擅自扩险不能援引原约逃避争议处理。",
+        "consequence": "陆照公开限制后仍须承受失单、议价和伙伴拒绝；赔付安排改变后续收入及自由支配时间。",
+        "narrative_function": "把自由与责任落实为可执行的边界，使合作有价值也有摩擦。"
+      },
+      {
+        "cost": "等待可能失去一轮采购或订单；提前签约则锁定部分钱、船和人手。",
+        "rule": "rule:annual_deadline：以选锋会日为T0，年度签订截止为其后三十日黄昏，新年度服务自其后三十六日起；旧合同按原期限继续运行。",
+        "exception": "枯水和事故可以改变实际可航条件，但不自行改写合同日期；变更日期需有合法新约，不能临场为主角延长。",
+        "consequence": "散户不能无限试验，回澜门也必须在截止前安排下一年度的人手与收入；未解决的争议不自动停掉旧服务。",
+        "narrative_function": "提供独立推进的期限压力，让筹备、休养与承保范围形成选择。"
+      },
+      {
+        "cost": "钢料与练功膏正常每六日补给一批；加急需付运输和排单差价，水运受潮、锈蚀与库存占款均由约定持有人承担。",
+        "rule": "rule:resource_supply：资源必须经生产、储运和付费分配进入使用者手中，供应中断须有原因和替代代价。",
+        "exception": "可向现有持货者购买、租借或使用已检验旧料，但必须交代库存、交易条件和性能下降；不能用加急跳过实际路程与加工。",
+        "consequence": "错过常班会让便宜方案变慢；回澜门的现货优势有成本依据，散户仍能通过共购、订货或缩小业务选择替代方案。",
+        "narrative_function": "给拒绝收编后的独立道路以真实难度，同时避免资源被唯一势力无条件垄断。"
+      },
+      {
+        "cost": "核验需要差旅、抄录、等待和公开接触，获取消息可能让竞争者知道己方关注点。",
+        "rule": "rule:information_delay：信息有产生者、载体、行程和证明范围，不随叙述需要自动共享。",
+        "exception": "近距离旗哨可快速传递事先约定的少量指令；没有跨地即时传讯例外，传闻只能保留为传闻。",
+        "consequence": "一份可靠证据可以证明某项违约或争取试行，却不能证明全部航路安全、保证未来履约或解释他人内心。",
+        "narrative_function": "维持限知、证人护送和信息差，使聪明对手按实际消息行动。"
+      },
+      {
+        "cost": "门派承担付俸、抚恤和库存成本，独立者承担空档和采购成本；各方拒绝不利安排可能损失机会。",
+        "rule": "rule:paid_cooperation：保障、劳动和组织权力均有维护成本；提供保障不天然取得他人的全部工法与去向。",
+        "exception": "可以有自愿援助和明确补贴，但必须有出资者、范围及期限；一次帮助不产生无限兜底或永久服从。",
+        "consequence": "回澜门失去部分养刃收入后须调整业务或议价；独立队扩大订单也须增加人手、照护与风险准备，不能只分享利润。",
+        "narrative_function": "保留各主题答案的真实收益与剩余分歧，为远期多队合作提供压力。"
+      },
+      {
+        "cost": "代价可以是材料、金钱、时间、承诺、机会或关系变化，不要求用身体伤残支付每一次胜利。",
+        "rule": "rule:causal_cost：依据knowledge:chapter-causal-cost:v1，每次决定性章节行动须显露具体后果或不可逆代价，并建立可定位的状态变化。",
+        "exception": "无决定性行动免后果的例外；后果可以主要是有利的状态变化，但已有资源消耗及不可逆损失不得被遮蔽。",
+        "consequence": "后续章节应让读者看见出手改变了什么，以及这一改变怎样影响下一次选择；验收与结算不能被战斗胜负省略。",
+        "narrative_function": "连接战斗、成长与履约兑现，保留可追踪的胜利和责任。"
+      }
+    ],
+    "book_id": "guofeng-xuanhuan-01",
+    "factions": [
+      {
+        "goal": "回澜门维持险水护航、门内就业与抚恤的持续支付，争取把武刃养护纳入年度合约以稳定收入。",
+        "pressure": "需要按时付俸、补充损耗和兑现抚恤；工坊收入减少会压缩调度余地。门内工匠与护航武者对收入分配可能不同意，公开承诺不能任意撤回。",
+        "resources": "受训武者、门内工坊、批量采购份额、常备药械和缴费形成的抚恤储备；资源靠护航费、养刃收益及门内约定缴纳维护，不能无限支取。",
+        "faction_id": "faction:huilan",
+        "information_access": "掌握门内排班、工坊养护记录、已签合同和自家巡航报告；陶靖可以汇总业务信息，杜衡按职责获知任务内容，不自动共享全部经营决策。散户库存与陆照判断须经合法渠道了解。"
+      },
+      {
+        "goal": "独立匠人保住按自身名字接活、收费和使用工法的渠道；只有在条件可承受时才参与联名。",
+        "pressure": "单件收入薄、缺少大批采购折扣，拿钱备货会挤占日常生计；担保份额、工法泄露和返工分配容易造成分歧。",
+        "resources": "手艺、熟客、磨具、小量材料和零散作业时间；未来独立队可以购买这些服务，但不能预设全体匠人已经出资或接受陆照领导。",
+        "faction_id": "faction:independent_artisans",
+        "information_access": "熟悉自己处理过的刃材、客户反馈和本摊成本；只能通过交换、共购账目或当面检查掌握同行情况，不因同业身份共享秘法。"
+      },
+      {
+        "goal": "渡户保住船、船工收入和可以选择订单的余地，避免单一渠道控制全部出船机会。",
+        "pressure": "停一趟船仍有养船和家用支出；不同船况、载重与家庭余钱使各户承险能力不同。叶满汀可以拒绝超出家船与船工承受力的方案。",
+        "resources": "船只、识水经验、泊位使用关系、船工和沿途熟人；船工须领工钱，借船须约定租用、损坏与误工，不能凭人情无限占用。",
+        "faction_id": "faction:ferry_households",
+        "information_access": "掌握自家船况、船工排班、实际水尺和亲历航段；关于上游封航、他船损失及商号计划须等报告或亲自核实。"
+      },
+      {
+        "goal": "白石渡商号按期收到货物，以可预测费用取得运输、护卫和损失处理；可能选择门派保障或限范围独立服务。",
+        "pressure": "压低运费可能增加延误与损失，全面绑定则削弱议价空间；大货主与小商户对保障覆盖、付款方式和价格的偏好不同。",
+        "resources": "货物、现金、预付款、订单和验收权；预付能解决部分周转，却占用商号资金并要求明确用途，不是无偿赠款。",
+        "faction_id": "faction:local_merchants",
+        "information_access": "掌握自身货值、交货期、订单及收到的履约记录；商号之间存在竞争，不自动共享底价，不能凭一份告状认定整条航路安全。"
+      },
+      {
+        "goal": "渡务署维持泊位与航道秩序、税费征收和合同登记的可信度，使年度服务不断档。",
+        "pressure": "人员与差旅有限，强行执行会占用人手；只顾快速结案会损伤登记信用，过度停航又损及税费和生计。",
+        "resources": "登记权、泊位管理、告示设施和有限差役；维持经费来自既定渡务收费，登记和裁决能约束行为，但不能代替武者护航、医疗或偿债资金。",
+        "faction_id": "faction:ferry_office",
+        "information_access": "掌握登记合同、报备船只、收到的事故报告和公开水尺；没有全知侦查能力，需听取双方、查验实物及召见证人。"
+      }
+    ],
+    "objective": "为《借锋》编译服务既定冲突的BOOK级世界基础：让陆照的磨刀手艺、有限修为与独立接活愿望，在可核查的兵刃损耗、修炼成本、渡口行程和有偿合作中产生行动选择。首卷以白石渡的最小运行范围支撑真实护运、有限赔偿与独立合约兑现；全书保留师承授权、共同成果和多队协作的延展接口，不预写未来事件。",
+    "dimensions": [
+      {
+        "scope": "BOOK",
+        "dimension": "core_laws",
+        "definition": "世界第一规则是：可用的本领必须有承载，承诺必须有承担者。真气由身体承载，刀剑由材料与维护承载，护运由有报酬的人、船和补给承载；名望只能改变别人愿不愿意谈条件，不能替代上述条件。",
+        "constraints": "修为、兵刃寿命、时间和他人同意分别构成限制；不相互代偿，不因主角需要而消失。",
+        "current_need": "让一次漂亮出手同时受手艺、力量和履约责任约束，支撑自由与保障的主题冲突。",
+        "extension_trigger": "出现新能力或合作规模时，先指出承载条件、失效边界和承担者，再允许成为关键解法。"
+      },
+      {
+        "scope": "BOOK",
+        "dimension": "technology_power",
+        "definition": "当前只编译微息、行气、贯劲三个能力层次。微息能短暂沿手中兵刃运气，连续发力容易断续；行气能在迈步、接触和收招间保持运气，允许稳定衔接攻守；贯劲能在承受冲击后重新组织劲力，对低层形成续力与容错优势。微息进入行气须补足步法、握持与呼吸配合，至少十二个有效训练日，末段连续三个训练日完成稳定运气测试；这是必要条件而非保证。更高层的具体晋升暂不编译。",
+        "constraints": "听隙不复制技艺、不读取敌人或过往；境界晋升不附赠剑法。低层不能正面击败完整状态的高层。",
+        "current_need": "明确陆照从微弱真气到稳定基础剑法的成长路径，并给越级护送与撤退保留合理空间。",
+        "extension_trigger": "后续规划需要实际突破或更高层交锋时，记录角色起点、有效训练日、测试、资源和失败恢复期。"
+      },
+      {
+        "scope": "BOOK",
+        "dimension": "ecology_resources",
+        "definition": "运行资源限于钢料与磨具、练功膏、常用伤药和食物。钢料从白石渡上游加工点运来，每六日一班；普通剑胚预订后另需三日加工。练功膏由本地药铺以季收干药配制，每六日一批，主要缓解训练酸胀，不制造真气。伤药每三日配制，洁净布与煮水每日消耗。门内有常备份额，散户可以零买、共购或预订，但承担单价、库存和等待成本。",
+        "constraints": "磨去裂口会损失刃材；药物不能跳过组织恢复；采购周期与运输损耗对各方同样生效。",
+        "current_need": "让压价、高估旧刃寿命和拒绝门内供应具有可计算的风险，同时保留付费替代渠道。",
+        "extension_trigger": "具体任务确定装备或疗伤需求时，补足批次、持有人、已用数量与下一次可到货时间。"
+      },
+      {
+        "scope": "BOOK",
+        "dimension": "economy",
+        "definition": "白石渡以文计小额，千文为一贯。成人一日基础食宿约二十五文，普通船工日工六十文，磨刀摊正常开工日净得五十至八十文，普通临时护运武者日酬约一百二十文且不含重大伤亡承保。普通养刃十至三十文，旧刃整修一百至三百文，普通新剑二至三贯。练功膏一日份三十五文，轻伤初次处理约一百二十文，后续换药另计。任务报价须另纳船、工、食、养护、停工、风险准备与利润，不能把门派综合保障价和散户单项工价直接比较。",
+        "constraints": "基础价是正常供应条件下的比较尺度，不是已成交记录；任何涨价须有原因，任何补贴须有出资者。",
+        "current_need": "使磨刀收入、练功支出、武者俸钱和护运报价处于可理解的价值关系中。",
+        "extension_trigger": "选锋会奖金、试工报酬或护运合同进入规划时，确定具体金额并检验扣除既定成本后仍有真实收益。"
+      },
+      {
+        "scope": "BOOK",
+        "dimension": "politics_factions",
+        "definition": "白石渡渡务署管理泊位、航道告示和合同副本；商号选择承运与护运者，验收人按事先条件确认交付。回澜门凭受训武者、工坊和抚恤组织维持竞争优势。独立接约需列明服务、航段、货值上限、价格、期限、验收、退出与有限责任安排；押款、具名担保或商号同意的分段付款可以作为履约保障，均须当事人同意。注册不等于已经履约，争议裁定也不自动变出赔款。",
+        "constraints": "官府负责登记与争议执行，不免费提供全部险水护卫；比试只产生明示奖金和试工机会。",
+        "current_need": "区分武力、经营资格、承保责任和工法归属，给双方可执行的议价空间。",
+        "extension_trigger": "首份试行约定或年度独立合约进入规划前，确定签署者、金额、风险范围、见证人和可执行的结算程序。"
+      },
+      {
+        "scope": "BOOK",
+        "dimension": "society_class",
+        "definition": "门内武者按职责领取俸钱并享有章程规定的抚恤，交换排班、训练与任务约束；独立匠人保有议价和择活空间，却自行负担空档、采购与失手成本。船户拥有船不等于拥有船工的无偿劳动。师承礼数可以要求尊称、守密与约定服务，但具体工法授权须单列：学习、独立使用、转授和共同改进是不同权利。现成的师承惯例不替代陶靖的具体条件，也不替陆照自动保留被要求让出的权利。",
+        "constraints": "门内身份与独立身份均有真实收益和缺点；援手、拜师和私人交情不默认转让工法或劳动。",
+        "current_need": "支持杜衡保留门内职责、叶满汀坚持船工生计，以及陆照对收编的敏感。",
+        "extension_trigger": "人物正式入门、换职或订立教学约定前，明确待遇、授权、义务期限与退出后仍存续的条款。"
+      },
+      {
+        "scope": "BOOK",
+        "dimension": "space_time_geography",
+        "definition": "首卷局部只定白石渡、上游料埠和下游石汊泊三点。料埠至白石渡水程三十六里，白石渡至石汊泊二十四里；正常水情、常载货船顺流每小时六里、逆流每小时三里，均为航行时间，装卸、候泊与停航另计。白石渡至石汊泊岸路三十里，普通步行每小时五里；料埠与白石渡间无连续可行的沿岸近路。选锋会日记为T0，年度合同签订截止为T0后三十日黄昏，新年度服务自T0后三十六日起；这是候选初始日历，不是章节排期。当前处于水位渐落时节，旧合同在届满前继续执行。",
+        "constraints": "新路线不得事后缩短既有距离；枯水趋势不能作为任意切换水位的按钮，行船仍以现场水尺和已传递告示为准。",
+        "current_need": "让护运、补给、追赶与消息到达有统一时空尺度，并维持年度合约期限压力。",
+        "extension_trigger": "具体护运或阻截场景编译前，增加该航段的浅滩、泊点、视线、退路、当日水尺与出发时刻；不得改变基础距离和合同截止条件。"
+      },
+      {
+        "scope": "BOOK",
+        "dimension": "information_communication",
+        "definition": "消息通过人、船、纸件和近距离旗哨传递。旗哨只能表达预先约定的少数指令，转弯、雨雾和噪声会阻断；书信最快也要走既定路程。渡务署保管合同副本，工坊掌握自身检修记录，药铺掌握自身批次，船户掌握实际航程与船况。跨账核验需持有人配合、付费抄录或正式争议程序，并留下时间与接触痕迹。",
+        "constraints": "账册记录有限范围，见证人只能证明亲见事项；信号无跨地即时传讯能力，知道某项技术也不等于知道他人意图。",
+        "current_need": "使供应、证人抵达和门派调度受到知识边界约束，避免一份证据包办全部争端。",
+        "extension_trigger": "某条消息、证据或秘密将改变人物选择时，建立产生者、载体、路线、时间戳、接收人和可信程度。"
+      },
+      {
+        "scope": "BOOK",
+        "dimension": "history_culture",
+        "definition": "候选背景仅保留制度形成的原因：险水需要熟练护航，伤残者需要持续照护，因此门派把长期收费与抚恤相连；散匠则靠熟客认手艺、按件计价维持独立。渡口见证习惯是先读明服务范围，再由具名双方及见证人各留一份；匠人交刃时当面指出已知缺陷。请饭可以表达感谢和再合作意愿，不能代替工钱。这些习惯允许人物遵守、误解或有成本地违背，不规定所有人的同一种口吻。",
+        "constraints": "不编造与首卷无关的朝代史、神秘祖师或幕后总敌；礼俗不能自动抹销债务和异议。",
+        "current_need": "让门派保障和渡口互助具有生活根基，并给人物的礼数、误解与拒绝提供场景材料。",
+        "extension_trigger": "特定旧约或礼俗成为实际争议依据时，才补足出处、适用人群、反例与证据保存方式。"
+      },
+      {
+        "scope": "BOOK",
+        "dimension": "life_death_disease",
+        "definition": "普通疲劳经饮食与睡眠恢复，连续过载会延长恢复期；听隙出现指端麻木后继续强用，会失去精细握持与磨刀能力，严重时伤掌。轻度运气紊乱至少停练两日，经检查恢复后才重新计有效训练日；真实创伤依伤势另定，药物只能辅助止血、清洁和恢复。休养期间可以改做不受伤处限制的工作，但不能把休养写成无代价的训练加速。",
+        "constraints": "死亡不可逆；疗伤不倒转消耗、误工与关系损失。长辈伤残不能被新药顺手治好以解除杜衡的生活压力。",
+        "current_need": "限定听隙过载和练功失败的后果，使照护与抚恤有实际费用，同时避免成长只能依赖重残。",
+        "extension_trigger": "具体伤势进入规划时，在发生当时确定功能损失、护理资源和复查条件，后续依同一病程推进。"
+      }
+    ],
+    "project_id": "first-novel-pilot-20260912",
+    "constraints": [
+      "本产物为WORLD_BIBLE候选；project_id：first-novel-pilot-20260912；book_id：guofeng-xuanhuan-01；generation_operation_id：63f8d2dc-c959-4f3c-b4a8-70d08a51a5de。仅供后续独立诊断，独立人工评审状态为NOT_REVIEWED。",
+      "作者意图来自creative_brief：authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1；继承creative_foundation：authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1。",
+      "其余冻结父输入为theme_contract：authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1；ending_intent：authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1；reader_promise：authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1。父关系由运行时绑定，本候选不增改父关系。",
+      "接纳边界为第0章。继承的人物、利益关系和目标属于初始设计条件；新增地理、价格、周期与制度属于候选世界条件，均不证明章节事件已经发生。",
+      "仅使用冻结输入、所附worldbuilding技能与knowledge:chapter-causal-cost:v1及本次原生设计；外部知识访问保持DENY_ALL，不引入旧Book、外部作品表达或未授权素材。",
+      "world_foundation_json的compiled_scope固定为单个字符串BOOK。首卷局部运行参数属于全书世界中的地域适用条件，不生成独立VOLUME或ARC资产，不伪造实现引用。",
+      "暂按120章三卷支持成长；首卷固定40章。本阶段不编制逐章排期、不生成第41章；后两卷仅保留师承归属与多队协作所需接口。",
+      "继承前三章奖金与随船试工席位的小胜利、前十章打法成长与关系变化窗口；世界成本必须容许奖励实际改善生活，不用新增事故立即收回。",
+      "听隙沿用接触兵刃、自身微弱真气和磨刀经验的条件；发现弱处不等于拥有击穿它的力量。",
+      "力量差距通过发力、续力、步法和容错表现。突破需要有效训练、资源及恢复时间，不能以技能命名或境界数字替代行动。",
+      "陶靖提出的优厚入门待遇、让出工法独立使用权及撤回联名承保条件同时保留；世界制度不预先替陆照接受或拒绝。",
+      "回澜门的险水护航、伤亡抚恤和供应贡献真实成立；独立方案必须安排这些业务的承担者与费用，不能靠击败个人自动恢复服务。",
+      "关键资源均须追踪来源、控制者、消耗、补给周期、运储和替代代价；任务价、货值、赔付额和具体库存由后续任务在出发前明确，不能临到结算补写。",
+      "新增路线基准、供应周期和年度截止条件一经后续合法采用即保持连续；停航、断供、涨价与绕行须有先行原因及可观察后果，不为主角暂停期限。",
+      "责任可由支付、补救劳动和双方认可的有限安排履行；合作退出不注销已承担义务，也不意味着终身依附。未经同意者不能被默认列为担保人。",
+      "遵守knowledge:chapter-causal-cost:v1：决定性行动须在正文中显露具体后果或不可逆代价，并可定位行动、后果和状态变化；不强制每次受伤。",
+      "保持第三人称限知。世界背景、势力目标和供给数据不自动成为陆照知识；正文仅通过合法接触、观察、询问和有来源的消息获得必要信息。",
+      "不批准、激活或修改Story Design、Planning Authority、Canon及知识状态，不以自报质量作为接纳证据。"
+    ],
+    "logical_key": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34:WORLD_BIBLE:0",
+    "frozen_inputs": [
+      {
+        "role": "ending_intent",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57",
+        "asset_version_id": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1"
+      },
+      {
+        "role": "creative_brief",
+        "asset_type": "creative_brief",
+        "content_hash": "sha256:73245902d79e29929ba55f40a18663be298a419db12bfa05ee0ea6af70b3427f",
+        "asset_version_id": "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1"
+      },
+      {
+        "role": "reader_promise",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787",
+        "asset_version_id": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1"
+      },
+      {
+        "role": "theme_contract",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2",
+        "asset_version_id": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1"
+      },
+      {
+        "role": "creative_foundation",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6",
+        "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1"
+      }
+    ],
+    "planning_scope": "NOT_APPLICABLE",
+    "schema_version": "story_design.authority.v1",
+    "world_foundation": {
+      "rules": [
+        {
+          "rule_id": "rule:tingxi_contact",
+          "category": "technology_power",
+          "predicate": {
+            "field": "required_channel",
+            "value": "OWN_QI_THROUGH_HELD_BLADE_TOUCH",
+            "operator": "EQUALS",
+            "entity_key": "power:tingxi",
+            "state_kind": "power_state",
+            "requirement_id": "requirement:tingxi_contact"
+          },
+          "statement": "听隙必须经自身真气沿手中兵刃形成接触反馈；无隔空使用例外。持续运用消耗体力与注意，过载可伤掌或毁刃。",
+          "enforcement": "HARD",
+          "consequences": [
+            "必须实际持用并检查兵刃，接触机会影响行动选择。",
+            "出现麻木后继续强用须承担精细操作受损或更重伤害。"
+          ],
+          "applicability": [
+            "power_state",
+            "character_state"
+          ]
+        },
+        {
+          "rule_id": "rule:tingxi_information",
+          "category": "technology_power",
+          "predicate": {
+            "field": "information_domain",
+            "value": "CURRENT_HELD_BLADE_STRESS_AND_QI_DISCONTINUITY",
+            "operator": "EQUALS",
+            "entity_key": "power:tingxi",
+            "state_kind": "power_state",
+            "requirement_id": "requirement:tingxi_information"
+          },
+          "statement": "听隙信息限定于当前所持兵刃的应力偏移和导气断续，不读心、不读史、不复制招式，也不输出准确剩余寿命。陌生材质、包覆和震动可使判断失准。",
+          "enforcement": "HARD",
+          "consequences": [
+            "反馈必须经手艺经验解释，推断保留误差。",
+            "检查耗时，赶期限时只能缩小保证范围或承担误判风险。"
+          ],
+          "applicability": [
+            "power_state",
+            "character_knowledge",
+            "character_belief"
+          ]
+        },
+        {
+          "rule_id": "rule:blade_wear",
+          "category": "technology_power",
+          "predicate": {
+            "field": "structural_fatigue_reversible_by_sharpening",
+            "value": false,
+            "operator": "EQUALS",
+            "entity_key": "system:blade_maintenance",
+            "state_kind": "world_rule",
+            "requirement_id": "requirement:blade_wear"
+          },
+          "statement": "磨刀与听隙不能逆转结构疲劳或补回刃材；浅缺口可整修，重铸须另付新料、工时与等待。",
+          "enforcement": "HARD",
+          "consequences": [
+            "一次成功试手不能证明旧刃可无限重复承载。",
+            "整修与报废影响成本、供给和后续可接任务。"
+          ],
+          "applicability": [
+            "resource_state",
+            "power_state"
+          ]
+        },
+        {
+          "rule_id": "rule:power_gap",
+          "category": "technology_power",
+          "predicate": {
+            "field": "lower_tier_frontal_victory_over_intact_higher_tier_allowed",
+            "value": false,
+            "operator": "EQUALS",
+            "entity_key": "system:cultivation",
+            "state_kind": "world_rule",
+            "requirement_id": "requirement:power_gap"
+          },
+          "statement": "低能力层次不能正面击败完整状态的高层对手。先建立的伤疲、地形、协作与任务限制可以支持局部脱险，不构成抹平境界的例外。",
+          "enforcement": "HARD",
+          "consequences": [
+            "关键战斗须区分击败对手与完成保护、阻滞、撤退目标。",
+            "借地形协作要承担装备、时间、同伴职责或放弃追击的成本。"
+          ],
+          "applicability": [
+            "power_state",
+            "conflict_state"
+          ]
+        },
+        {
+          "rule_id": "rule:training_time",
+          "category": "technology_power",
+          "predicate": {
+            "field": "weixi_to_xingqi_min_effective_training_days",
+            "value": 12,
+            "operator": "AT_LEAST",
+            "entity_key": "system:cultivation",
+            "state_kind": "world_rule",
+            "requirement_id": "requirement:training_time"
+          },
+          "statement": "微息至行气的最低有效训练日为十二，末段连续三日须通过稳定测试；资源与最低时间均不保证突破。无用药或顿悟跳过下限的例外。",
+          "enforcement": "TEMPORAL",
+          "consequences": [
+            "训练占用挣钱和准备时间，食宿、药膏与兵器维护须有来源。",
+            "运气紊乱至少停练两日，恢复经检查后才继续计有效日。"
+          ],
+          "applicability": [
+            "power_state",
+            "character_state",
+            "timeline_event",
+            "resource_state"
+          ]
+        },
+        {
+          "rule_id": "rule:irreversibility",
+          "category": "core_laws",
+          "predicate": {
+            "field": "consequence_reversal_available",
+            "value": false,
+            "operator": "EQUALS",
+            "entity_key": "system:existence",
+            "state_kind": "world_rule",
+            "requirement_id": "requirement:irreversibility"
+          },
+          "statement": "死亡、已经消耗的钱物与过去时间不能以复活、时间回退或失忆免债恢复。正常休息和治疗是连续恢复，不是逆转后果。",
+          "enforcement": "HARD",
+          "consequences": [
+            "治疗、误工和照护须实际支付。",
+            "恢复战斗能力不自动恢复信任、积蓄和错过的机会。"
+          ],
+          "applicability": [
+            "world_state",
+            "character_state",
+            "consequence_state"
+          ]
+        },
+        {
+          "rule_id": "rule:contract_separation",
+          "category": "politics_factions",
+          "predicate": {
+            "field": "contest_automatically_grants_operating_rights",
+            "value": false,
+            "operator": "EQUALS",
+            "entity_key": "system:contract",
+            "state_kind": "world_rule",
+            "requirement_id": "requirement:contract_separation"
+          },
+          "statement": "比试不自动授予经营权，证据不替代服务，战斗不替代验收与结算；预付款、替代见证和分段验收须事前约定。",
+          "enforcement": "HARD",
+          "consequences": [
+            "试手仍可完整兑现奖金和试工席位。",
+            "独立合约必须另有准备、真实履约、费用承担与验收。"
+          ],
+          "applicability": [
+            "world_rule",
+            "faction_state",
+            "conflict_state",
+            "payoff_event"
+          ]
+        },
+        {
+          "rule_id": "rule:consent_and_liability",
+          "category": "society_class",
+          "predicate": {
+            "field": "risk_and_rights_changes_require_explicit_consent",
+            "value": true,
+            "operator": "EQUALS",
+            "entity_key": "system:contract",
+            "state_kind": "world_rule",
+            "requirement_id": "requirement:consent_and_liability"
+          },
+          "statement": "联名责任、工法授权和新增风险必须由具体当事人明确同意；退出未来合作不注销已发生责任，不能单方追溯免除损失。",
+          "enforcement": "HARD",
+          "consequences": [
+            "伙伴能够拒绝、议价和要求缩小范围，主角不能免费调用劳动。",
+            "误判须以实际支付、补救劳动或双方认可的有限履责安排处理。"
+          ],
+          "applicability": [
+            "relationship_state",
+            "faction_state",
+            "world_rule",
+            "consequence_state"
+          ]
+        },
+        {
+          "rule_id": "rule:annual_deadline",
+          "category": "space_time_geography",
+          "predicate": {
+            "field": "annual_signature_due_days_after_selection",
+            "value": 30,
+            "operator": "EQUALS",
+            "entity_key": "calendar:baishidu",
+            "state_kind": "world_rule",
+            "requirement_id": "requirement:annual_deadline"
+          },
+          "statement": "以选锋会日T0为基准，年度签约在其后三十日黄昏截止，新年度服务自其后三十六日起；主角离场和水位变化不自动延长日期。",
+          "enforcement": "TEMPORAL",
+          "consequences": [
+            "采购、休养和试行挤占有限筹备时间。",
+            "旧合同届满前继续运行，对手按自身截止安排人手与收入。"
+          ],
+          "applicability": [
+            "timeline_event",
+            "faction_state",
+            "world_rule"
+          ]
+        },
+        {
+          "rule_id": "rule:resource_supply",
+          "category": "ecology_resources",
+          "predicate": {
+            "field": "normal_delivery_interval_days",
+            "value": 6,
+            "operator": "EQUALS",
+            "entity_key": "resource:steel_supply",
+            "state_kind": "resource_state",
+            "requirement_id": "requirement:resource_supply"
+          },
+          "statement": "钢料常班每六日到渡一次；练功膏也按六日批次配制。替代采购必须有真实持货者，运输加工与库存成本不得省略。",
+          "enforcement": "QUANTITATIVE",
+          "consequences": [
+            "错过班期会改变成本或等待时间，不能凭钱跳过实际路程。",
+            "共购、现货和租借可缓解缺口，但带来付款、返还或性能限制。"
+          ],
+          "applicability": [
+            "resource_state",
+            "timeline_event",
+            "faction_state"
+          ]
+        },
+        {
+          "rule_id": "rule:information_delay",
+          "category": "information_communication",
+          "predicate": {
+            "field": "instant_remote_communication_available",
+            "value": false,
+            "operator": "EQUALS",
+            "entity_key": "system:communication",
+            "state_kind": "world_rule",
+            "requirement_id": "requirement:information_delay"
+          },
+          "statement": "消息经人、船或纸件行走，旗哨仅用于近距离预定指令；无跨地即时通信。见证、记录与传闻均有证明范围。",
+          "enforcement": "HARD",
+          "consequences": [
+            "核验消耗时间与费用，证人和文书必须实际到达。",
+            "世界中的信息不能自动成为陆照或整支势力共享的知识。"
+          ],
+          "applicability": [
+            "character_knowledge",
+            "character_belief",
+            "disclosure_event",
+            "timeline_event"
+          ]
+        },
+        {
+          "rule_id": "rule:paid_cooperation",
+          "category": "politics_factions",
+          "statement": "保障与劳动需要持续收入。回澜门倾向维护护航和抚恤资金，散户倾向保住收入与选择；内部可有分歧，不保证必然合作或让步。援助须明确出资者、范围和期限。",
+          "enforcement": "SOFT_CAUSAL",
+          "consequences": [
+            "剥离养刃收入会引起调价、缩减或重新议价压力，而非服务自动照旧。",
+            "独立队扩大任务须同时扩大人手与承担能力，伙伴拒绝可以使方案延后或缩小。"
+          ],
+          "applicability": [
+            "faction_state",
+            "relationship_state",
+            "resource_state"
+          ]
+        },
+        {
+          "rule_id": "rule:causal_cost",
+          "category": "core_laws",
+          "predicate": {
+            "field": "decisive_action_consequence_trace_required",
+            "value": true,
+            "operator": "EQUALS",
+            "entity_key": "system:causal_cost",
+            "state_kind": "world_rule",
+            "requirement_id": "requirement:causal_cost"
+          },
+          "statement": "依据knowledge:chapter-causal-cost:v1，决定性章节行动须在正文显露具体后果或不可逆代价，并建立可定位的状态变化。后果可以有利，不要求每次胜利受伤。",
+          "enforcement": "HARD",
+          "consequences": [
+            "审查应能定位行动、后果与新状态。",
+            "既有资源消耗和损失不得被胜利遮蔽，已经挣得的成长与收入也不得被任意撤销。"
+          ],
+          "applicability": [
+            "consequence_state",
+            "reward_event",
+            "payoff_event"
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "kind": "POWER",
+          "entity_id": "power:tingxi",
+          "required_channel": "OWN_QI_THROUGH_HELD_BLADE_TOUCH",
+          "definition_status": "CANDIDATE_INITIAL_CONDITION",
+          "information_domain": "CURRENT_HELD_BLADE_STRESS_AND_QI_DISCONTINUITY"
+        },
+        {
+          "kind": "WORLD_SYSTEM",
+          "entity_id": "system:blade_maintenance",
+          "structural_fatigue_reversible_by_sharpening": false
+        },
+        {
+          "kind": "WORLD_SYSTEM",
+          "entity_id": "system:cultivation",
+          "final_consecutive_test_days": 3,
+          "weixi_to_xingqi_min_effective_training_days": 12,
+          "lower_tier_frontal_victory_over_intact_higher_tier_allowed": false
+        },
+        {
+          "kind": "WORLD_SYSTEM",
+          "entity_id": "system:existence",
+          "consequence_reversal_available": false
+        },
+        {
+          "kind": "WORLD_SYSTEM",
+          "entity_id": "system:contract",
+          "contest_automatically_grants_operating_rights": false,
+          "risk_and_rights_changes_require_explicit_consent": true
+        },
+        {
+          "kind": "WORLD_SYSTEM",
+          "entity_id": "system:communication",
+          "instant_remote_communication_available": false
+        },
+        {
+          "kind": "WORLD_SYSTEM",
+          "entity_id": "system:causal_cost",
+          "decisive_action_consequence_trace_required": true
+        },
+        {
+          "kind": "CALENDAR",
+          "entity_id": "calendar:baishidu",
+          "epoch_definition": "选锋会日T0；尚未编排章节事件",
+          "new_service_start_days_after_selection": 36,
+          "annual_signature_due_days_after_selection": 30
+        },
+        {
+          "kind": "RESOURCE",
+          "entity_id": "resource:steel_supply",
+          "source_location_id": "location:liaobu",
+          "destination_location_id": "location:baishidu",
+          "normal_delivery_interval_days": 6,
+          "ordinary_blade_processing_days": 3
+        },
+        {
+          "kind": "RESOURCE",
+          "entity_id": "resource:training_paste",
+          "controller": "本地药铺；门派可预付锁定部分份额",
+          "daily_portion_price_wen": 35,
+          "sealed_dry_storage_days": 60,
+          "normal_production_interval_days": 6
+        },
+        {
+          "kind": "RESOURCE",
+          "entity_id": "resource:wound_care",
+          "controller": "本地药铺与收费医者",
+          "sealed_storage_days": 10,
+          "normal_production_interval_days": 3
+        },
+        {
+          "kind": "RESOURCE",
+          "entity_id": "resource:food",
+          "controller": "周边农户、商号与渡口食铺",
+          "ordinary_sale_interval_days": 1
+        },
+        {
+          "kind": "FACTION",
+          "name": "回澜门",
+          "entity_id": "faction:huilan"
+        },
+        {
+          "kind": "FACTION",
+          "name": "独立匠人群体",
+          "entity_id": "faction:independent_artisans",
+          "organization_status": "分散经营；未来联名尚未发生"
+        },
+        {
+          "kind": "FACTION",
+          "name": "渡户群体",
+          "entity_id": "faction:ferry_households",
+          "organization_status": "各户独立承担船与船工生计"
+        },
+        {
+          "kind": "FACTION",
+          "name": "白石渡商号群体",
+          "entity_id": "faction:local_merchants",
+          "organization_status": "相互竞争的买方，非统一意志"
+        },
+        {
+          "kind": "FACTION",
+          "name": "白石渡渡务署",
+          "entity_id": "faction:ferry_office"
+        },
+        {
+          "kind": "LOCATION",
+          "name": "白石渡",
+          "entity_id": "location:baishidu"
+        },
+        {
+          "kind": "LOCATION",
+          "name": "上游料埠",
+          "entity_id": "location:liaobu"
+        },
+        {
+          "kind": "LOCATION",
+          "name": "下游石汊泊",
+          "entity_id": "location:shichabo"
+        },
+        {
+          "kind": "ROUTE",
+          "entity_id": "route:liaobu_baishidu",
+          "distance_li": 36,
+          "origin_location_id": "location:liaobu",
+          "normal_upstream_hours": 12,
+          "destination_location_id": "location:baishidu",
+          "normal_downstream_hours": 6
+        },
+        {
+          "kind": "ROUTE",
+          "entity_id": "route:baishidu_shichabo_water",
+          "distance_li": 24,
+          "origin_location_id": "location:baishidu",
+          "normal_upstream_hours": 8,
+          "destination_location_id": "location:shichabo",
+          "normal_downstream_hours": 4
+        },
+        {
+          "kind": "ROUTE",
+          "entity_id": "route:baishidu_shichabo_bank",
+          "distance_li": 30,
+          "origin_location_id": "location:baishidu",
+          "normal_walking_hours": 6,
+          "destination_location_id": "location:shichabo"
+        }
+      ],
+      "sections": {
+        "economy": {
+          "depth": "WORKING",
+          "content": "正常供应条件下，千文为一贯。成人基础食宿约二十五文每日，船工日工六十文，磨刀摊正常开工日净收入五十至八十文；普通临时武者护运日酬一百二十文，不含重大伤亡承保。普通养刃十至三十文，旧刃整修一百至三百文，普通新剑二至三贯。练功膏一日份三十五文，轻伤初次处理约一百二十文，复诊换药另计。以上为候选比较尺度，不是已经成交或持有的钱。护运报价须覆盖船租或折旧、船工、武者、食宿、养刃、停工、风险准备及利润；货物本金和综合承保不能偷藏在普通日酬中。门内武者的俸钱、训练与抚恤打包，不能直接与散户单项价比较。回澜门收入来自护航费、养刃利润与门内约定缴纳，抚恤储备和常备库存不能无限支取。具体奖金、押款、货值、赔付及门内待遇留给任务确定，须保留早期奖励改善生活与首卷远行收入的空间。"
+        },
+        "core_laws": {
+          "depth": "WORKING",
+          "content": "候选世界第一规则：可用本领必须有承载，承诺必须有承担者。身体承载真气，材料与维护承载兵刃，人、船、补给与报酬承载护运。声望、比试与善意不能代替这些条件。死亡不可逆；无复活、时间回退、失忆免债或系统赐予。所有硬限制同时约束陆照、伙伴与对手。决定性行动须显露具体后果或不可逆代价，并可定位状态变化；胜利允许保持有效。"
+        },
+        "society_class": {
+          "depth": "WORKING",
+          "content": "门内身份交换稳定俸钱、训练和章程内抚恤，也承担排班与任务约束；独立者保有择活和议价权，同时承担空档、采购与失手成本。船主不能把船工劳动当作自有免费资源。叶满汀关心家船与船工收入，杜衡关心俸钱、长辈照护及职责，这些继承动机不等于人物已作选择。工法的学习、独立使用、转授与共同改进属于不同授权事项；具体归属按事前约定确定，不能以授艺、付款、相救或师徒称谓自动推定全部转让。退出未来合作不注销既有责任，自愿帮助不产生终身依附。后续第二卷扩展师承权利，第三卷扩展共同成果和多队分配，不能追溯改写先前约定。"
+        },
+        "book:provenance": {
+          "depth": "SEED",
+          "book_id": "guofeng-xuanhuan-01",
+          "content": "本对象为世界基础候选；继承条件与新增局部参数均不证明已发生事件。接纳边界为第0章，不创建人物或世界实现引用，不批准、激活或变更任何Authority、Canon及知识状态。仅用冻结输入、所附worldbuilding技能和knowledge:chapter-causal-cost:v1；外部知识DENY_ALL。运行时绑定父关系，实体标识仅作本候选内的设计引用。",
+          "project_id": "first-novel-pilot-20260912",
+          "input_versions": {
+            "ending_intent": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1",
+            "creative_brief": "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1",
+            "reader_promise": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1",
+            "theme_contract": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1",
+            "creative_foundation": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1"
+          },
+          "quality_status": "CANDIDATE",
+          "human_review_status": "NOT_REVIEWED",
+          "generation_operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+          "accepted_through_chapter": 0
+        },
+        "history_culture": {
+          "depth": "SEED",
+          "content": "候选背景只保留当前制度所需成因：险水护航依赖熟练武者与长期照护费用，门派因此有把持续收费与抚恤相连的现实基础；散匠凭熟客认手艺、按件计价维持独立。渡口见证习惯是先读服务范围，再由双方及见证人各留副本；交刃时指出已知缺陷。请饭表达感谢或愿意再合作，不能替代工钱。礼数允许不同解释与违背，不能强制所有人物同声。上述为拟定初始背景，不是已经接纳的历史事件，也不设祖师阴谋或单一坏人来源。"
+        },
+        "technology_power": {
+          "depth": "WORKING",
+          "content": "当前编译微息、行气、贯劲三层能力，不宣称这是全世界修行上限。微息可短暂沿所持兵券运气，连发容易断续；行气可在迈步、接触、收招之间保持运气，稳定衔接攻守；贯劲可在受冲击后重组劲力，具备更高续力与容错。高层仍受视线、落脚、疲劳与武器承载限制，但低层不能正面击败完整状态高层。越级局部成果依赖先建立的任务、地形、协作或伤疲条件，并留下代价。微息进入行气至少十二个有效训练日，末段连续三日通过步法、握持与呼吸配合的稳定测试；最低时间不保证突破，境界也不赠送剑法。既有训练只有合法起点依据才计入。听隙必须由自身真气沿手中兵刃运行，以磨刀经验解释触觉反馈；只辨当前应力偏移与导气断续，不读取寿命答案、招式、过往、记忆或人心。陌生材质、包覆和震动使判断失准；碰撞不等于检查对方整柄兵器。持续运用会指端麻木，强用可伤掌或毁刃。磨刀可以修整毛刺和浅缺口，不能补回刃材、逆转结构疲劳；重铸需要新料与炉工。"
+        },
+        "ecology_resources": {
+          "depth": "WORKING",
+          "content": "只编译首卷必需资源。钢料来自上游料埠的加工与集货，常规到渡每六日一班，常备原料按月向更上游采购；矿区位置与储量暂不展开，也不参与当前解困。商号控制在途批次，门内工坊和独立铁匠按付款取得份额。普通剑胚到料后另需三日加工；锻制耗炭、工时和废料。钢料及磨具须防水防锈；旧料可替代但须检验，不能按新料寿命承保。练功膏由本地药铺用季收干药每六日配一批，密封干燥存放六十日，启封后一日份当日使用；药铺控制配制与零售，门派凭预付款锁定部分份额。每个使用日耗一份，只缓解训练酸胀；不用膏可训练，但恢复可能更慢。干药受潮或季收不足须通过可见减产与库存变化产生后果。常用伤药每三日配制，密封十日，洁净布和煮水每日消耗；药铺售药、医者收费处理，粗布与清水只能替代部分清洁需求，不能等效替代治疗。粮食由周边农户与商号供应，渡口日常售卖，船上按人日携带并防潮；省食会影响体力和恢复。加急、共购、租借与外购均要交代持货者、钱、加工和实际行程。"
+        },
+        "politics_factions": {
+          "depth": "WORKING",
+          "content": "回澜门维护险水护航、工坊就业及抚恤，要求把养刃并入年度合约以稳定收入；其贡献真实，争议在控制范围和分配。陶靖的优厚入门条件继续同时包括让出工法独立使用权和撤回联名承保，本候选不代陆照选择。独立匠人、渡户只是利益有交集的分散人群，未来联名须逐一得到同意；不存在已成立并已服从陆照的独立队。商号以交货和可预测费用为目标，自行选服务者。渡务署负责泊位、航道告示、合同副本与有限争议执行，经费来自渡务收费，无免费无限护航能力。比试只授明示奖金及试工机会。独立合同须提前写明签署者、服务航段、货值上限、期限、价格、验收人、退出及责任安排；押款、具名保障或商号同意的分段付款可供议价，并非强制唯一方式。有限约定不得单方转嫁损失，隐瞒缺陷或擅自扩险仍须处理由此产生的责任争议。登记不证明履约，裁决不制造钱。部分业务可以独立，门派保有实际服务及合理报酬，具体成交仍属未来事件。"
+        },
+        "life_death_disease": {
+          "depth": "WORKING",
+          "content": "疲劳通过饮食、睡眠和停用恢复，过载延长恢复；听隙麻木影响精细握持与磨刀，继续强用可伤掌。轻度运气紊乱至少停练两日，经检查恢复后才能重新计有效训练日；真实创伤按发生时建立的伤势与复查条件恢复，不能把两日下限当作所有伤势的上限。药物辅助止血、清洁和愈合，不跳过组织恢复、不解除已发生误工。休养可以安排不受伤处限制的劳动，仍须计入工时与恢复负担。死亡不可逆，长期伤残的照护须有收入来源；不得通过临时新药取消杜衡已建立的赡养压力。"
+        },
+        "space_time_geography": {
+          "depth": "WORKING",
+          "content": "首卷只定三点：白石渡、上游料埠、下游石汊泊。料埠至白石渡水程三十六里，白石渡至石汊泊二十四里；正常水情下常载货船顺流每小时六里、逆流每小时三里，因此前段顺流六小时、逆流十二小时，后段顺流四小时、逆流八小时。这些只算实际航行，装卸、候泊、夜间停船和停航另计。白石渡至石汊泊岸路三十里，普通步行每小时五里，需六小时；料埠至白石渡无连续可行的沿岸近路。具体阻截地形必须在局部规划中提前建立。当前处于水位渐落时节，现场水尺决定当日可航条件，不把常年枯水趋势当作确定灾情。选锋会日定义为T0，年度合同签订截止为T0后三十日黄昏，新年度服务自T0后三十六日起；这是候选初始日历，未排章节。旧合同在届满前继续收费运行；对手调度、采购和期限不因陆照离场停止。"
+        },
+        "information_communication": {
+          "depth": "WORKING",
+          "content": "消息依人、船、纸件与近距离旗哨传递，无跨地即时通信。旗哨只表达预先约定的少量指令，河弯、雨雾与噪声可阻断。书信使用既定路线和行程，最快到达仍需实际运送。渡务署知道已登记事项，工坊知道自己的检修，药铺知道自己的批次，船户知道亲历航程与自家船况；跨账核验需授权、费用或争议程序。回澜门内部按岗位分配信息，陶靖与杜衡不自动共享所有信息；散户和商号同样没有全体共享的账本。见证只能证明亲见事项，货物验收与证言真假须分别判断。信息在世界中存在不等于陆照已知；每条关键消息须在后续记录来源、载体、发出与到达时间、接收人及可信程度。"
+        }
+      },
+      "genre_profile": "jiefeng-guofeng-wuxia-growth.v1",
+      "compiled_scope": "BOOK",
+      "contract_version": "world-foundation.v1"
+    },
+    "candidate_payload": {
+      "rules": [
+        {
+          "cost": "运气消耗体力与注意力，持续使用引起指端麻木，强行继续可能伤掌或毁刃。",
+          "rule": "rule:tingxi_contact：听隙必须由自身真气沿手中兵刃运行，以接触反馈进行辨别。",
+          "exception": "无接触路径例外。不同材质和包覆结构只会改变可辨程度，不会开放隔空判断。",
+          "consequence": "陆照必须先取得兵刃的实际使用与检查机会；更换陌生器物可能让熟悉打法暂时失效。",
+          "narrative_function": "使磨刀经验成为可准备、会受阻的优势，迫使主角争取接触与选择用力方式。"
+        },
+        {
+          "cost": "检查花费时间，反复试验消耗兵刃承载余量；赶船期时可能无法完成充分核验。",
+          "rule": "rule:tingxi_information：听隙只提供当前所持兵刃的应力偏移与导气断续反馈，不给出绝对寿命或必胜答案。",
+          "exception": "无读心、读招、读史或隔空鉴敌例外；触及对方兵刃的碰撞也不等于完整检查。",
+          "consequence": "一次判断只能为用法提供依据；陌生材质、包覆和震动仍需试验，误判会影响接下来的出手与担保。",
+          "narrative_function": "限制信息优势，给高估旧刃寿命的失误留下由人物判断造成的因果空间。"
+        },
+        {
+          "cost": "整修需要工时、磨具与刃材，重铸需新料、炉工和等待，并失去原兵刃的熟悉手感。",
+          "rule": "rule:blade_wear：养刃改善当前可用状态，不能把材料损耗归零。",
+          "exception": "局部毛刺与浅缺口可整修；结构疲劳与已损失材料不能靠听隙或磨刀恢复。重铸属于重新加工。",
+          "consequence": "廉价旧刃可以胜任明示的有限工况，却不能由一次试手表现推出多次护运都可靠；需要重估报废与换刃成本。",
+          "narrative_function": "把技艺、误判与赔偿连在一起，同时保留低价养护有真实用途的开局胜利。"
+        },
+        {
+          "cost": "利用狭路与协作往往牺牲追击、独占功劳或更快路线，并消耗同伴工时与装备。",
+          "rule": "rule:power_gap：较高能力层次拥有稳定的续力与容错优势，听隙不能抹平完整状态下的境界差距。",
+          "exception": "可在事先建立的伤疲、任务约束、地形或协作条件下取得局部成果；这些条件不构成正面压倒完整高层的许可。",
+          "consequence": "低层面对高层应争取护船、夺位、阻滞或撤退等有限结果；找到弱处仍须有力量、角度和时机利用。",
+          "narrative_function": "让强敌保持压迫感，让成长表现为更可靠的打法与职责，而非越级数字膨胀。"
+        },
+        {
+          "cost": "至少十二个有效训练日及正常食宿、兵器维护；练功膏可辅助恢复但须购买。运气紊乱至少停练两日，受伤则按病程处理。",
+          "rule": "rule:training_time：微息至行气至少需要十二个有效训练日，末段连续三个训练日通过稳定运气测试；满足最低日数不保证成功。",
+          "exception": "不用练功膏可以训练，但恢复可能更慢，不能缩短最低有效训练日；既有训练须有合法依据才可计入，临时顿悟不能补账。",
+          "consequence": "修炼占用可接活时间；突破只增加稳定运气能力，基础剑法仍须分别练熟并接受实战检验。",
+          "narrative_function": "支撑首卷一次有成本的进阶，制造赚钱、练剑与赶期限之间的可承受取舍。"
+        },
+        {
+          "cost": "照护、误工、换药与重新练习需要时间和收入；重伤者的长期支持须有持续来源。",
+          "rule": "rule:irreversibility：本书不提供复活、时间回退或借失忆注销责任的手段。",
+          "exception": "休息能恢复疲劳，药物能辅助愈合；这些是连续恢复，不是倒转死亡、损耗或已经发生的损失。",
+          "consequence": "当前能力恢复后，花掉的钱、错过的船期和受损信任仍在；人物须用新的行动处理余波。",
+          "narrative_function": "确保代价可信，同时容许正常休养与生活满足，不把连续重残当作成长门槛。"
+        },
+        {
+          "cost": "登记、见证、备货、押款或具名保障占用钱与时间；争议处理也会耽误接活。",
+          "rule": "rule:contract_separation：比试资格、实际履约、合同权利和争议证据是不同事项，不能相互自动兑换。",
+          "exception": "合同可允许预付款、分段验收或约定替代见证，但须事先写明并经相关方同意；不免除实际服务。",
+          "consequence": "试手胜利能得到奖金、席位与议价注意，却仍须通过准备、真实护运、验收及结算才能支持独立合同。",
+          "narrative_function": "保持开局爽快回报，并防止比试直接兑换渡口控制权。"
+        },
+        {
+          "cost": "需要预留准备金、支付承担份额、补救误工，或放弃超出能力的订单；共享决定权会减少单独调度的便利。",
+          "rule": "rule:consent_and_liability：联名责任、工法授权和新增风险须由具体当事人明确同意；退出只终止约定可退出的未来工作。",
+          "exception": "签约后可以共同修改未来安排，但不能单方追溯免除已造成的损失。故意隐瞒或擅自扩险不能援引原约逃避争议处理。",
+          "consequence": "陆照公开限制后仍须承受失单、议价和伙伴拒绝；赔付安排改变后续收入及自由支配时间。",
+          "narrative_function": "把自由与责任落实为可执行的边界，使合作有价值也有摩擦。"
+        },
+        {
+          "cost": "等待可能失去一轮采购或订单；提前签约则锁定部分钱、船和人手。",
+          "rule": "rule:annual_deadline：以选锋会日为T0，年度签订截止为其后三十日黄昏，新年度服务自其后三十六日起；旧合同按原期限继续运行。",
+          "exception": "枯水和事故可以改变实际可航条件，但不自行改写合同日期；变更日期需有合法新约，不能临场为主角延长。",
+          "consequence": "散户不能无限试验，回澜门也必须在截止前安排下一年度的人手与收入；未解决的争议不自动停掉旧服务。",
+          "narrative_function": "提供独立推进的期限压力，让筹备、休养与承保范围形成选择。"
+        },
+        {
+          "cost": "钢料与练功膏正常每六日补给一批；加急需付运输和排单差价，水运受潮、锈蚀与库存占款均由约定持有人承担。",
+          "rule": "rule:resource_supply：资源必须经生产、储运和付费分配进入使用者手中，供应中断须有原因和替代代价。",
+          "exception": "可向现有持货者购买、租借或使用已检验旧料，但必须交代库存、交易条件和性能下降；不能用加急跳过实际路程与加工。",
+          "consequence": "错过常班会让便宜方案变慢；回澜门的现货优势有成本依据，散户仍能通过共购、订货或缩小业务选择替代方案。",
+          "narrative_function": "给拒绝收编后的独立道路以真实难度，同时避免资源被唯一势力无条件垄断。"
+        },
+        {
+          "cost": "核验需要差旅、抄录、等待和公开接触，获取消息可能让竞争者知道己方关注点。",
+          "rule": "rule:information_delay：信息有产生者、载体、行程和证明范围，不随叙述需要自动共享。",
+          "exception": "近距离旗哨可快速传递事先约定的少量指令；没有跨地即时传讯例外，传闻只能保留为传闻。",
+          "consequence": "一份可靠证据可以证明某项违约或争取试行，却不能证明全部航路安全、保证未来履约或解释他人内心。",
+          "narrative_function": "维持限知、证人护送和信息差，使聪明对手按实际消息行动。"
+        },
+        {
+          "cost": "门派承担付俸、抚恤和库存成本，独立者承担空档和采购成本；各方拒绝不利安排可能损失机会。",
+          "rule": "rule:paid_cooperation：保障、劳动和组织权力均有维护成本；提供保障不天然取得他人的全部工法与去向。",
+          "exception": "可以有自愿援助和明确补贴，但必须有出资者、范围及期限；一次帮助不产生无限兜底或永久服从。",
+          "consequence": "回澜门失去部分养刃收入后须调整业务或议价；独立队扩大订单也须增加人手、照护与风险准备，不能只分享利润。",
+          "narrative_function": "保留各主题答案的真实收益与剩余分歧，为远期多队合作提供压力。"
+        },
+        {
+          "cost": "代价可以是材料、金钱、时间、承诺、机会或关系变化，不要求用身体伤残支付每一次胜利。",
+          "rule": "rule:causal_cost：依据knowledge:chapter-causal-cost:v1，每次决定性章节行动须显露具体后果或不可逆代价，并建立可定位的状态变化。",
+          "exception": "无决定性行动免后果的例外；后果可以主要是有利的状态变化，但已有资源消耗及不可逆损失不得被遮蔽。",
+          "consequence": "后续章节应让读者看见出手改变了什么，以及这一改变怎样影响下一次选择；验收与结算不能被战斗胜负省略。",
+          "narrative_function": "连接战斗、成长与履约兑现，保留可追踪的胜利和责任。"
+        }
+      ],
+      "factions": [
+        {
+          "goal": "回澜门维持险水护航、门内就业与抚恤的持续支付，争取把武刃养护纳入年度合约以稳定收入。",
+          "pressure": "需要按时付俸、补充损耗和兑现抚恤；工坊收入减少会压缩调度余地。门内工匠与护航武者对收入分配可能不同意，公开承诺不能任意撤回。",
+          "resources": "受训武者、门内工坊、批量采购份额、常备药械和缴费形成的抚恤储备；资源靠护航费、养刃收益及门内约定缴纳维护，不能无限支取。",
+          "faction_id": "faction:huilan",
+          "information_access": "掌握门内排班、工坊养护记录、已签合同和自家巡航报告；陶靖可以汇总业务信息，杜衡按职责获知任务内容，不自动共享全部经营决策。散户库存与陆照判断须经合法渠道了解。"
+        },
+        {
+          "goal": "独立匠人保住按自身名字接活、收费和使用工法的渠道；只有在条件可承受时才参与联名。",
+          "pressure": "单件收入薄、缺少大批采购折扣，拿钱备货会挤占日常生计；担保份额、工法泄露和返工分配容易造成分歧。",
+          "resources": "手艺、熟客、磨具、小量材料和零散作业时间；未来独立队可以购买这些服务，但不能预设全体匠人已经出资或接受陆照领导。",
+          "faction_id": "faction:independent_artisans",
+          "information_access": "熟悉自己处理过的刃材、客户反馈和本摊成本；只能通过交换、共购账目或当面检查掌握同行情况，不因同业身份共享秘法。"
+        },
+        {
+          "goal": "渡户保住船、船工收入和可以选择订单的余地，避免单一渠道控制全部出船机会。",
+          "pressure": "停一趟船仍有养船和家用支出；不同船况、载重与家庭余钱使各户承险能力不同。叶满汀可以拒绝超出家船与船工承受力的方案。",
+          "resources": "船只、识水经验、泊位使用关系、船工和沿途熟人；船工须领工钱，借船须约定租用、损坏与误工，不能凭人情无限占用。",
+          "faction_id": "faction:ferry_households",
+          "information_access": "掌握自家船况、船工排班、实际水尺和亲历航段；关于上游封航、他船损失及商号计划须等报告或亲自核实。"
+        },
+        {
+          "goal": "白石渡商号按期收到货物，以可预测费用取得运输、护卫和损失处理；可能选择门派保障或限范围独立服务。",
+          "pressure": "压低运费可能增加延误与损失，全面绑定则削弱议价空间；大货主与小商户对保障覆盖、付款方式和价格的偏好不同。",
+          "resources": "货物、现金、预付款、订单和验收权；预付能解决部分周转，却占用商号资金并要求明确用途，不是无偿赠款。",
+          "faction_id": "faction:local_merchants",
+          "information_access": "掌握自身货值、交货期、订单及收到的履约记录；商号之间存在竞争，不自动共享底价，不能凭一份告状认定整条航路安全。"
+        },
+        {
+          "goal": "渡务署维持泊位与航道秩序、税费征收和合同登记的可信度，使年度服务不断档。",
+          "pressure": "人员与差旅有限，强行执行会占用人手；只顾快速结案会损伤登记信用，过度停航又损及税费和生计。",
+          "resources": "登记权、泊位管理、告示设施和有限差役；维持经费来自既定渡务收费，登记和裁决能约束行为，但不能代替武者护航、医疗或偿债资金。",
+          "faction_id": "faction:ferry_office",
+          "information_access": "掌握登记合同、报备船只、收到的事故报告和公开水尺；没有全知侦查能力，需听取双方、查验实物及召见证人。"
+        }
+      ],
+      "objective": "为《借锋》编译服务既定冲突的BOOK级世界基础：让陆照的磨刀手艺、有限修为与独立接活愿望，在可核查的兵刃损耗、修炼成本、渡口行程和有偿合作中产生行动选择。首卷以白石渡的最小运行范围支撑真实护运、有限赔偿与独立合约兑现；全书保留师承授权、共同成果和多队协作的延展接口，不预写未来事件。",
+      "dimensions": [
+        {
+          "scope": "BOOK",
+          "dimension": "core_laws",
+          "definition": "世界第一规则是：可用的本领必须有承载，承诺必须有承担者。真气由身体承载，刀剑由材料与维护承载，护运由有报酬的人、船和补给承载；名望只能改变别人愿不愿意谈条件，不能替代上述条件。",
+          "constraints": "修为、兵刃寿命、时间和他人同意分别构成限制；不相互代偿，不因主角需要而消失。",
+          "current_need": "让一次漂亮出手同时受手艺、力量和履约责任约束，支撑自由与保障的主题冲突。",
+          "extension_trigger": "出现新能力或合作规模时，先指出承载条件、失效边界和承担者，再允许成为关键解法。"
+        },
+        {
+          "scope": "BOOK",
+          "dimension": "technology_power",
+          "definition": "当前只编译微息、行气、贯劲三个能力层次。微息能短暂沿手中兵刃运气，连续发力容易断续；行气能在迈步、接触和收招间保持运气，允许稳定衔接攻守；贯劲能在承受冲击后重新组织劲力，对低层形成续力与容错优势。微息进入行气须补足步法、握持与呼吸配合，至少十二个有效训练日，末段连续三个训练日完成稳定运气测试；这是必要条件而非保证。更高层的具体晋升暂不编译。",
+          "constraints": "听隙不复制技艺、不读取敌人或过往；境界晋升不附赠剑法。低层不能正面击败完整状态的高层。",
+          "current_need": "明确陆照从微弱真气到稳定基础剑法的成长路径，并给越级护送与撤退保留合理空间。",
+          "extension_trigger": "后续规划需要实际突破或更高层交锋时，记录角色起点、有效训练日、测试、资源和失败恢复期。"
+        },
+        {
+          "scope": "BOOK",
+          "dimension": "ecology_resources",
+          "definition": "运行资源限于钢料与磨具、练功膏、常用伤药和食物。钢料从白石渡上游加工点运来，每六日一班；普通剑胚预订后另需三日加工。练功膏由本地药铺以季收干药配制，每六日一批，主要缓解训练酸胀，不制造真气。伤药每三日配制，洁净布与煮水每日消耗。门内有常备份额，散户可以零买、共购或预订，但承担单价、库存和等待成本。",
+          "constraints": "磨去裂口会损失刃材；药物不能跳过组织恢复；采购周期与运输损耗对各方同样生效。",
+          "current_need": "让压价、高估旧刃寿命和拒绝门内供应具有可计算的风险，同时保留付费替代渠道。",
+          "extension_trigger": "具体任务确定装备或疗伤需求时，补足批次、持有人、已用数量与下一次可到货时间。"
+        },
+        {
+          "scope": "BOOK",
+          "dimension": "economy",
+          "definition": "白石渡以文计小额，千文为一贯。成人一日基础食宿约二十五文，普通船工日工六十文，磨刀摊正常开工日净得五十至八十文，普通临时护运武者日酬约一百二十文且不含重大伤亡承保。普通养刃十至三十文，旧刃整修一百至三百文，普通新剑二至三贯。练功膏一日份三十五文，轻伤初次处理约一百二十文，后续换药另计。任务报价须另纳船、工、食、养护、停工、风险准备与利润，不能把门派综合保障价和散户单项工价直接比较。",
+          "constraints": "基础价是正常供应条件下的比较尺度，不是已成交记录；任何涨价须有原因，任何补贴须有出资者。",
+          "current_need": "使磨刀收入、练功支出、武者俸钱和护运报价处于可理解的价值关系中。",
+          "extension_trigger": "选锋会奖金、试工报酬或护运合同进入规划时，确定具体金额并检验扣除既定成本后仍有真实收益。"
+        },
+        {
+          "scope": "BOOK",
+          "dimension": "politics_factions",
+          "definition": "白石渡渡务署管理泊位、航道告示和合同副本；商号选择承运与护运者，验收人按事先条件确认交付。回澜门凭受训武者、工坊和抚恤组织维持竞争优势。独立接约需列明服务、航段、货值上限、价格、期限、验收、退出与有限责任安排；押款、具名担保或商号同意的分段付款可以作为履约保障，均须当事人同意。注册不等于已经履约，争议裁定也不自动变出赔款。",
+          "constraints": "官府负责登记与争议执行，不免费提供全部险水护卫；比试只产生明示奖金和试工机会。",
+          "current_need": "区分武力、经营资格、承保责任和工法归属，给双方可执行的议价空间。",
+          "extension_trigger": "首份试行约定或年度独立合约进入规划前，确定签署者、金额、风险范围、见证人和可执行的结算程序。"
+        },
+        {
+          "scope": "BOOK",
+          "dimension": "society_class",
+          "definition": "门内武者按职责领取俸钱并享有章程规定的抚恤，交换排班、训练与任务约束；独立匠人保有议价和择活空间，却自行负担空档、采购与失手成本。船户拥有船不等于拥有船工的无偿劳动。师承礼数可以要求尊称、守密与约定服务，但具体工法授权须单列：学习、独立使用、转授和共同改进是不同权利。现成的师承惯例不替代陶靖的具体条件，也不替陆照自动保留被要求让出的权利。",
+          "constraints": "门内身份与独立身份均有真实收益和缺点；援手、拜师和私人交情不默认转让工法或劳动。",
+          "current_need": "支持杜衡保留门内职责、叶满汀坚持船工生计，以及陆照对收编的敏感。",
+          "extension_trigger": "人物正式入门、换职或订立教学约定前，明确待遇、授权、义务期限与退出后仍存续的条款。"
+        },
+        {
+          "scope": "BOOK",
+          "dimension": "space_time_geography",
+          "definition": "首卷局部只定白石渡、上游料埠和下游石汊泊三点。料埠至白石渡水程三十六里，白石渡至石汊泊二十四里；正常水情、常载货船顺流每小时六里、逆流每小时三里，均为航行时间，装卸、候泊与停航另计。白石渡至石汊泊岸路三十里，普通步行每小时五里；料埠与白石渡间无连续可行的沿岸近路。选锋会日记为T0，年度合同签订截止为T0后三十日黄昏，新年度服务自T0后三十六日起；这是候选初始日历，不是章节排期。当前处于水位渐落时节，旧合同在届满前继续执行。",
+          "constraints": "新路线不得事后缩短既有距离；枯水趋势不能作为任意切换水位的按钮，行船仍以现场水尺和已传递告示为准。",
+          "current_need": "让护运、补给、追赶与消息到达有统一时空尺度，并维持年度合约期限压力。",
+          "extension_trigger": "具体护运或阻截场景编译前，增加该航段的浅滩、泊点、视线、退路、当日水尺与出发时刻；不得改变基础距离和合同截止条件。"
+        },
+        {
+          "scope": "BOOK",
+          "dimension": "information_communication",
+          "definition": "消息通过人、船、纸件和近距离旗哨传递。旗哨只能表达预先约定的少数指令，转弯、雨雾和噪声会阻断；书信最快也要走既定路程。渡务署保管合同副本，工坊掌握自身检修记录，药铺掌握自身批次，船户掌握实际航程与船况。跨账核验需持有人配合、付费抄录或正式争议程序，并留下时间与接触痕迹。",
+          "constraints": "账册记录有限范围，见证人只能证明亲见事项；信号无跨地即时传讯能力，知道某项技术也不等于知道他人意图。",
+          "current_need": "使供应、证人抵达和门派调度受到知识边界约束，避免一份证据包办全部争端。",
+          "extension_trigger": "某条消息、证据或秘密将改变人物选择时，建立产生者、载体、路线、时间戳、接收人和可信程度。"
+        },
+        {
+          "scope": "BOOK",
+          "dimension": "history_culture",
+          "definition": "候选背景仅保留制度形成的原因：险水需要熟练护航，伤残者需要持续照护，因此门派把长期收费与抚恤相连；散匠则靠熟客认手艺、按件计价维持独立。渡口见证习惯是先读明服务范围，再由具名双方及见证人各留一份；匠人交刃时当面指出已知缺陷。请饭可以表达感谢和再合作意愿，不能代替工钱。这些习惯允许人物遵守、误解或有成本地违背，不规定所有人的同一种口吻。",
+          "constraints": "不编造与首卷无关的朝代史、神秘祖师或幕后总敌；礼俗不能自动抹销债务和异议。",
+          "current_need": "让门派保障和渡口互助具有生活根基，并给人物的礼数、误解与拒绝提供场景材料。",
+          "extension_trigger": "特定旧约或礼俗成为实际争议依据时，才补足出处、适用人群、反例与证据保存方式。"
+        },
+        {
+          "scope": "BOOK",
+          "dimension": "life_death_disease",
+          "definition": "普通疲劳经饮食与睡眠恢复，连续过载会延长恢复期；听隙出现指端麻木后继续强用，会失去精细握持与磨刀能力，严重时伤掌。轻度运气紊乱至少停练两日，经检查恢复后才重新计有效训练日；真实创伤依伤势另定，药物只能辅助止血、清洁和恢复。休养期间可以改做不受伤处限制的工作，但不能把休养写成无代价的训练加速。",
+          "constraints": "死亡不可逆；疗伤不倒转消耗、误工与关系损失。长辈伤残不能被新药顺手治好以解除杜衡的生活压力。",
+          "current_need": "限定听隙过载和练功失败的后果，使照护与抚恤有实际费用，同时避免成长只能依赖重残。",
+          "extension_trigger": "具体伤势进入规划时，在发生当时确定功能损失、护理资源和复查条件，后续依同一病程推进。"
+        }
+      ],
+      "constraints": [
+        "本产物为WORLD_BIBLE候选；project_id：first-novel-pilot-20260912；book_id：guofeng-xuanhuan-01；generation_operation_id：63f8d2dc-c959-4f3c-b4a8-70d08a51a5de。仅供后续独立诊断，独立人工评审状态为NOT_REVIEWED。",
+        "作者意图来自creative_brief：authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1；继承creative_foundation：authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1。",
+        "其余冻结父输入为theme_contract：authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1；ending_intent：authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1；reader_promise：authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1。父关系由运行时绑定，本候选不增改父关系。",
+        "接纳边界为第0章。继承的人物、利益关系和目标属于初始设计条件；新增地理、价格、周期与制度属于候选世界条件，均不证明章节事件已经发生。",
+        "仅使用冻结输入、所附worldbuilding技能与knowledge:chapter-causal-cost:v1及本次原生设计；外部知识访问保持DENY_ALL，不引入旧Book、外部作品表达或未授权素材。",
+        "world_foundation_json的compiled_scope固定为单个字符串BOOK。首卷局部运行参数属于全书世界中的地域适用条件，不生成独立VOLUME或ARC资产，不伪造实现引用。",
+        "暂按120章三卷支持成长；首卷固定40章。本阶段不编制逐章排期、不生成第41章；后两卷仅保留师承归属与多队协作所需接口。",
+        "继承前三章奖金与随船试工席位的小胜利、前十章打法成长与关系变化窗口；世界成本必须容许奖励实际改善生活，不用新增事故立即收回。",
+        "听隙沿用接触兵刃、自身微弱真气和磨刀经验的条件；发现弱处不等于拥有击穿它的力量。",
+        "力量差距通过发力、续力、步法和容错表现。突破需要有效训练、资源及恢复时间，不能以技能命名或境界数字替代行动。",
+        "陶靖提出的优厚入门待遇、让出工法独立使用权及撤回联名承保条件同时保留；世界制度不预先替陆照接受或拒绝。",
+        "回澜门的险水护航、伤亡抚恤和供应贡献真实成立；独立方案必须安排这些业务的承担者与费用，不能靠击败个人自动恢复服务。",
+        "关键资源均须追踪来源、控制者、消耗、补给周期、运储和替代代价；任务价、货值、赔付额和具体库存由后续任务在出发前明确，不能临到结算补写。",
+        "新增路线基准、供应周期和年度截止条件一经后续合法采用即保持连续；停航、断供、涨价与绕行须有先行原因及可观察后果，不为主角暂停期限。",
+        "责任可由支付、补救劳动和双方认可的有限安排履行；合作退出不注销已承担义务，也不意味着终身依附。未经同意者不能被默认列为担保人。",
+        "遵守knowledge:chapter-causal-cost:v1：决定性行动须在正文中显露具体后果或不可逆代价，并可定位行动、后果和状态变化；不强制每次受伤。",
+        "保持第三人称限知。世界背景、势力目标和供给数据不自动成为陆照知识；正文仅通过合法接触、观察、询问和有来源的消息获得必要信息。",
+        "不批准、激活或修改Story Design、Planning Authority、Canon及知识状态，不以自报质量作为接纳证据。"
+      ],
+      "world_foundation": {
+        "rules": [
+          {
+            "rule_id": "rule:tingxi_contact",
+            "category": "technology_power",
+            "predicate": {
+              "field": "required_channel",
+              "value": "OWN_QI_THROUGH_HELD_BLADE_TOUCH",
+              "operator": "EQUALS",
+              "entity_key": "power:tingxi",
+              "state_kind": "power_state",
+              "requirement_id": "requirement:tingxi_contact"
+            },
+            "statement": "听隙必须经自身真气沿手中兵刃形成接触反馈；无隔空使用例外。持续运用消耗体力与注意，过载可伤掌或毁刃。",
+            "enforcement": "HARD",
+            "consequences": [
+              "必须实际持用并检查兵刃，接触机会影响行动选择。",
+              "出现麻木后继续强用须承担精细操作受损或更重伤害。"
+            ],
+            "applicability": [
+              "power_state",
+              "character_state"
+            ]
+          },
+          {
+            "rule_id": "rule:tingxi_information",
+            "category": "technology_power",
+            "predicate": {
+              "field": "information_domain",
+              "value": "CURRENT_HELD_BLADE_STRESS_AND_QI_DISCONTINUITY",
+              "operator": "EQUALS",
+              "entity_key": "power:tingxi",
+              "state_kind": "power_state",
+              "requirement_id": "requirement:tingxi_information"
+            },
+            "statement": "听隙信息限定于当前所持兵刃的应力偏移和导气断续，不读心、不读史、不复制招式，也不输出准确剩余寿命。陌生材质、包覆和震动可使判断失准。",
+            "enforcement": "HARD",
+            "consequences": [
+              "反馈必须经手艺经验解释，推断保留误差。",
+              "检查耗时，赶期限时只能缩小保证范围或承担误判风险。"
+            ],
+            "applicability": [
+              "power_state",
+              "character_knowledge",
+              "character_belief"
+            ]
+          },
+          {
+            "rule_id": "rule:blade_wear",
+            "category": "technology_power",
+            "predicate": {
+              "field": "structural_fatigue_reversible_by_sharpening",
+              "value": false,
+              "operator": "EQUALS",
+              "entity_key": "system:blade_maintenance",
+              "state_kind": "world_rule",
+              "requirement_id": "requirement:blade_wear"
+            },
+            "statement": "磨刀与听隙不能逆转结构疲劳或补回刃材；浅缺口可整修，重铸须另付新料、工时与等待。",
+            "enforcement": "HARD",
+            "consequences": [
+              "一次成功试手不能证明旧刃可无限重复承载。",
+              "整修与报废影响成本、供给和后续可接任务。"
+            ],
+            "applicability": [
+              "resource_state",
+              "power_state"
+            ]
+          },
+          {
+            "rule_id": "rule:power_gap",
+            "category": "technology_power",
+            "predicate": {
+              "field": "lower_tier_frontal_victory_over_intact_higher_tier_allowed",
+              "value": false,
+              "operator": "EQUALS",
+              "entity_key": "system:cultivation",
+              "state_kind": "world_rule",
+              "requirement_id": "requirement:power_gap"
+            },
+            "statement": "低能力层次不能正面击败完整状态的高层对手。先建立的伤疲、地形、协作与任务限制可以支持局部脱险，不构成抹平境界的例外。",
+            "enforcement": "HARD",
+            "consequences": [
+              "关键战斗须区分击败对手与完成保护、阻滞、撤退目标。",
+              "借地形协作要承担装备、时间、同伴职责或放弃追击的成本。"
+            ],
+            "applicability": [
+              "power_state",
+              "conflict_state"
+            ]
+          },
+          {
+            "rule_id": "rule:training_time",
+            "category": "technology_power",
+            "predicate": {
+              "field": "weixi_to_xingqi_min_effective_training_days",
+              "value": 12,
+              "operator": "AT_LEAST",
+              "entity_key": "system:cultivation",
+              "state_kind": "world_rule",
+              "requirement_id": "requirement:training_time"
+            },
+            "statement": "微息至行气的最低有效训练日为十二，末段连续三日须通过稳定测试；资源与最低时间均不保证突破。无用药或顿悟跳过下限的例外。",
+            "enforcement": "TEMPORAL",
+            "consequences": [
+              "训练占用挣钱和准备时间，食宿、药膏与兵器维护须有来源。",
+              "运气紊乱至少停练两日，恢复经检查后才继续计有效日。"
+            ],
+            "applicability": [
+              "power_state",
+              "character_state",
+              "timeline_event",
+              "resource_state"
+            ]
+          },
+          {
+            "rule_id": "rule:irreversibility",
+            "category": "core_laws",
+            "predicate": {
+              "field": "consequence_reversal_available",
+              "value": false,
+              "operator": "EQUALS",
+              "entity_key": "system:existence",
+              "state_kind": "world_rule",
+              "requirement_id": "requirement:irreversibility"
+            },
+            "statement": "死亡、已经消耗的钱物与过去时间不能以复活、时间回退或失忆免债恢复。正常休息和治疗是连续恢复，不是逆转后果。",
+            "enforcement": "HARD",
+            "consequences": [
+              "治疗、误工和照护须实际支付。",
+              "恢复战斗能力不自动恢复信任、积蓄和错过的机会。"
+            ],
+            "applicability": [
+              "world_state",
+              "character_state",
+              "consequence_state"
+            ]
+          },
+          {
+            "rule_id": "rule:contract_separation",
+            "category": "politics_factions",
+            "predicate": {
+              "field": "contest_automatically_grants_operating_rights",
+              "value": false,
+              "operator": "EQUALS",
+              "entity_key": "system:contract",
+              "state_kind": "world_rule",
+              "requirement_id": "requirement:contract_separation"
+            },
+            "statement": "比试不自动授予经营权，证据不替代服务，战斗不替代验收与结算；预付款、替代见证和分段验收须事前约定。",
+            "enforcement": "HARD",
+            "consequences": [
+              "试手仍可完整兑现奖金和试工席位。",
+              "独立合约必须另有准备、真实履约、费用承担与验收。"
+            ],
+            "applicability": [
+              "world_rule",
+              "faction_state",
+              "conflict_state",
+              "payoff_event"
+            ]
+          },
+          {
+            "rule_id": "rule:consent_and_liability",
+            "category": "society_class",
+            "predicate": {
+              "field": "risk_and_rights_changes_require_explicit_consent",
+              "value": true,
+              "operator": "EQUALS",
+              "entity_key": "system:contract",
+              "state_kind": "world_rule",
+              "requirement_id": "requirement:consent_and_liability"
+            },
+            "statement": "联名责任、工法授权和新增风险必须由具体当事人明确同意；退出未来合作不注销已发生责任，不能单方追溯免除损失。",
+            "enforcement": "HARD",
+            "consequences": [
+              "伙伴能够拒绝、议价和要求缩小范围，主角不能免费调用劳动。",
+              "误判须以实际支付、补救劳动或双方认可的有限履责安排处理。"
+            ],
+            "applicability": [
+              "relationship_state",
+              "faction_state",
+              "world_rule",
+              "consequence_state"
+            ]
+          },
+          {
+            "rule_id": "rule:annual_deadline",
+            "category": "space_time_geography",
+            "predicate": {
+              "field": "annual_signature_due_days_after_selection",
+              "value": 30,
+              "operator": "EQUALS",
+              "entity_key": "calendar:baishidu",
+              "state_kind": "world_rule",
+              "requirement_id": "requirement:annual_deadline"
+            },
+            "statement": "以选锋会日T0为基准，年度签约在其后三十日黄昏截止，新年度服务自其后三十六日起；主角离场和水位变化不自动延长日期。",
+            "enforcement": "TEMPORAL",
+            "consequences": [
+              "采购、休养和试行挤占有限筹备时间。",
+              "旧合同届满前继续运行，对手按自身截止安排人手与收入。"
+            ],
+            "applicability": [
+              "timeline_event",
+              "faction_state",
+              "world_rule"
+            ]
+          },
+          {
+            "rule_id": "rule:resource_supply",
+            "category": "ecology_resources",
+            "predicate": {
+              "field": "normal_delivery_interval_days",
+              "value": 6,
+              "operator": "EQUALS",
+              "entity_key": "resource:steel_supply",
+              "state_kind": "resource_state",
+              "requirement_id": "requirement:resource_supply"
+            },
+            "statement": "钢料常班每六日到渡一次；练功膏也按六日批次配制。替代采购必须有真实持货者，运输加工与库存成本不得省略。",
+            "enforcement": "QUANTITATIVE",
+            "consequences": [
+              "错过班期会改变成本或等待时间，不能凭钱跳过实际路程。",
+              "共购、现货和租借可缓解缺口，但带来付款、返还或性能限制。"
+            ],
+            "applicability": [
+              "resource_state",
+              "timeline_event",
+              "faction_state"
+            ]
+          },
+          {
+            "rule_id": "rule:information_delay",
+            "category": "information_communication",
+            "predicate": {
+              "field": "instant_remote_communication_available",
+              "value": false,
+              "operator": "EQUALS",
+              "entity_key": "system:communication",
+              "state_kind": "world_rule",
+              "requirement_id": "requirement:information_delay"
+            },
+            "statement": "消息经人、船或纸件行走，旗哨仅用于近距离预定指令；无跨地即时通信。见证、记录与传闻均有证明范围。",
+            "enforcement": "HARD",
+            "consequences": [
+              "核验消耗时间与费用，证人和文书必须实际到达。",
+              "世界中的信息不能自动成为陆照或整支势力共享的知识。"
+            ],
+            "applicability": [
+              "character_knowledge",
+              "character_belief",
+              "disclosure_event",
+              "timeline_event"
+            ]
+          },
+          {
+            "rule_id": "rule:paid_cooperation",
+            "category": "politics_factions",
+            "statement": "保障与劳动需要持续收入。回澜门倾向维护护航和抚恤资金，散户倾向保住收入与选择；内部可有分歧，不保证必然合作或让步。援助须明确出资者、范围和期限。",
+            "enforcement": "SOFT_CAUSAL",
+            "consequences": [
+              "剥离养刃收入会引起调价、缩减或重新议价压力，而非服务自动照旧。",
+              "独立队扩大任务须同时扩大人手与承担能力，伙伴拒绝可以使方案延后或缩小。"
+            ],
+            "applicability": [
+              "faction_state",
+              "relationship_state",
+              "resource_state"
+            ]
+          },
+          {
+            "rule_id": "rule:causal_cost",
+            "category": "core_laws",
+            "predicate": {
+              "field": "decisive_action_consequence_trace_required",
+              "value": true,
+              "operator": "EQUALS",
+              "entity_key": "system:causal_cost",
+              "state_kind": "world_rule",
+              "requirement_id": "requirement:causal_cost"
+            },
+            "statement": "依据knowledge:chapter-causal-cost:v1，决定性章节行动须在正文显露具体后果或不可逆代价，并建立可定位的状态变化。后果可以有利，不要求每次胜利受伤。",
+            "enforcement": "HARD",
+            "consequences": [
+              "审查应能定位行动、后果与新状态。",
+              "既有资源消耗和损失不得被胜利遮蔽，已经挣得的成长与收入也不得被任意撤销。"
+            ],
+            "applicability": [
+              "consequence_state",
+              "reward_event",
+              "payoff_event"
+            ]
+          }
+        ],
+        "entities": [
+          {
+            "kind": "POWER",
+            "entity_id": "power:tingxi",
+            "required_channel": "OWN_QI_THROUGH_HELD_BLADE_TOUCH",
+            "definition_status": "CANDIDATE_INITIAL_CONDITION",
+            "information_domain": "CURRENT_HELD_BLADE_STRESS_AND_QI_DISCONTINUITY"
+          },
+          {
+            "kind": "WORLD_SYSTEM",
+            "entity_id": "system:blade_maintenance",
+            "structural_fatigue_reversible_by_sharpening": false
+          },
+          {
+            "kind": "WORLD_SYSTEM",
+            "entity_id": "system:cultivation",
+            "final_consecutive_test_days": 3,
+            "weixi_to_xingqi_min_effective_training_days": 12,
+            "lower_tier_frontal_victory_over_intact_higher_tier_allowed": false
+          },
+          {
+            "kind": "WORLD_SYSTEM",
+            "entity_id": "system:existence",
+            "consequence_reversal_available": false
+          },
+          {
+            "kind": "WORLD_SYSTEM",
+            "entity_id": "system:contract",
+            "contest_automatically_grants_operating_rights": false,
+            "risk_and_rights_changes_require_explicit_consent": true
+          },
+          {
+            "kind": "WORLD_SYSTEM",
+            "entity_id": "system:communication",
+            "instant_remote_communication_available": false
+          },
+          {
+            "kind": "WORLD_SYSTEM",
+            "entity_id": "system:causal_cost",
+            "decisive_action_consequence_trace_required": true
+          },
+          {
+            "kind": "CALENDAR",
+            "entity_id": "calendar:baishidu",
+            "epoch_definition": "选锋会日T0；尚未编排章节事件",
+            "new_service_start_days_after_selection": 36,
+            "annual_signature_due_days_after_selection": 30
+          },
+          {
+            "kind": "RESOURCE",
+            "entity_id": "resource:steel_supply",
+            "source_location_id": "location:liaobu",
+            "destination_location_id": "location:baishidu",
+            "normal_delivery_interval_days": 6,
+            "ordinary_blade_processing_days": 3
+          },
+          {
+            "kind": "RESOURCE",
+            "entity_id": "resource:training_paste",
+            "controller": "本地药铺；门派可预付锁定部分份额",
+            "daily_portion_price_wen": 35,
+            "sealed_dry_storage_days": 60,
+            "normal_production_interval_days": 6
+          },
+          {
+            "kind": "RESOURCE",
+            "entity_id": "resource:wound_care",
+            "controller": "本地药铺与收费医者",
+            "sealed_storage_days": 10,
+            "normal_production_interval_days": 3
+          },
+          {
+            "kind": "RESOURCE",
+            "entity_id": "resource:food",
+            "controller": "周边农户、商号与渡口食铺",
+            "ordinary_sale_interval_days": 1
+          },
+          {
+            "kind": "FACTION",
+            "name": "回澜门",
+            "entity_id": "faction:huilan"
+          },
+          {
+            "kind": "FACTION",
+            "name": "独立匠人群体",
+            "entity_id": "faction:independent_artisans",
+            "organization_status": "分散经营；未来联名尚未发生"
+          },
+          {
+            "kind": "FACTION",
+            "name": "渡户群体",
+            "entity_id": "faction:ferry_households",
+            "organization_status": "各户独立承担船与船工生计"
+          },
+          {
+            "kind": "FACTION",
+            "name": "白石渡商号群体",
+            "entity_id": "faction:local_merchants",
+            "organization_status": "相互竞争的买方，非统一意志"
+          },
+          {
+            "kind": "FACTION",
+            "name": "白石渡渡务署",
+            "entity_id": "faction:ferry_office"
+          },
+          {
+            "kind": "LOCATION",
+            "name": "白石渡",
+            "entity_id": "location:baishidu"
+          },
+          {
+            "kind": "LOCATION",
+            "name": "上游料埠",
+            "entity_id": "location:liaobu"
+          },
+          {
+            "kind": "LOCATION",
+            "name": "下游石汊泊",
+            "entity_id": "location:shichabo"
+          },
+          {
+            "kind": "ROUTE",
+            "entity_id": "route:liaobu_baishidu",
+            "distance_li": 36,
+            "origin_location_id": "location:liaobu",
+            "normal_upstream_hours": 12,
+            "destination_location_id": "location:baishidu",
+            "normal_downstream_hours": 6
+          },
+          {
+            "kind": "ROUTE",
+            "entity_id": "route:baishidu_shichabo_water",
+            "distance_li": 24,
+            "origin_location_id": "location:baishidu",
+            "normal_upstream_hours": 8,
+            "destination_location_id": "location:shichabo",
+            "normal_downstream_hours": 4
+          },
+          {
+            "kind": "ROUTE",
+            "entity_id": "route:baishidu_shichabo_bank",
+            "distance_li": 30,
+            "origin_location_id": "location:baishidu",
+            "normal_walking_hours": 6,
+            "destination_location_id": "location:shichabo"
+          }
+        ],
+        "sections": {
+          "economy": {
+            "depth": "WORKING",
+            "content": "正常供应条件下，千文为一贯。成人基础食宿约二十五文每日，船工日工六十文，磨刀摊正常开工日净收入五十至八十文；普通临时武者护运日酬一百二十文，不含重大伤亡承保。普通养刃十至三十文，旧刃整修一百至三百文，普通新剑二至三贯。练功膏一日份三十五文，轻伤初次处理约一百二十文，复诊换药另计。以上为候选比较尺度，不是已经成交或持有的钱。护运报价须覆盖船租或折旧、船工、武者、食宿、养刃、停工、风险准备及利润；货物本金和综合承保不能偷藏在普通日酬中。门内武者的俸钱、训练与抚恤打包，不能直接与散户单项价比较。回澜门收入来自护航费、养刃利润与门内约定缴纳，抚恤储备和常备库存不能无限支取。具体奖金、押款、货值、赔付及门内待遇留给任务确定，须保留早期奖励改善生活与首卷远行收入的空间。"
+          },
+          "core_laws": {
+            "depth": "WORKING",
+            "content": "候选世界第一规则：可用本领必须有承载，承诺必须有承担者。身体承载真气，材料与维护承载兵刃，人、船、补给与报酬承载护运。声望、比试与善意不能代替这些条件。死亡不可逆；无复活、时间回退、失忆免债或系统赐予。所有硬限制同时约束陆照、伙伴与对手。决定性行动须显露具体后果或不可逆代价，并可定位状态变化；胜利允许保持有效。"
+          },
+          "society_class": {
+            "depth": "WORKING",
+            "content": "门内身份交换稳定俸钱、训练和章程内抚恤，也承担排班与任务约束；独立者保有择活和议价权，同时承担空档、采购与失手成本。船主不能把船工劳动当作自有免费资源。叶满汀关心家船与船工收入，杜衡关心俸钱、长辈照护及职责，这些继承动机不等于人物已作选择。工法的学习、独立使用、转授与共同改进属于不同授权事项；具体归属按事前约定确定，不能以授艺、付款、相救或师徒称谓自动推定全部转让。退出未来合作不注销既有责任，自愿帮助不产生终身依附。后续第二卷扩展师承权利，第三卷扩展共同成果和多队分配，不能追溯改写先前约定。"
+          },
+          "book:provenance": {
+            "depth": "SEED",
+            "book_id": "guofeng-xuanhuan-01",
+            "content": "本对象为世界基础候选；继承条件与新增局部参数均不证明已发生事件。接纳边界为第0章，不创建人物或世界实现引用，不批准、激活或变更任何Authority、Canon及知识状态。仅用冻结输入、所附worldbuilding技能和knowledge:chapter-causal-cost:v1；外部知识DENY_ALL。运行时绑定父关系，实体标识仅作本候选内的设计引用。",
+            "project_id": "first-novel-pilot-20260912",
+            "input_versions": {
+              "ending_intent": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1",
+              "creative_brief": "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1",
+              "reader_promise": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1",
+              "theme_contract": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1",
+              "creative_foundation": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1"
+            },
+            "quality_status": "CANDIDATE",
+            "human_review_status": "NOT_REVIEWED",
+            "generation_operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+            "accepted_through_chapter": 0
+          },
+          "history_culture": {
+            "depth": "SEED",
+            "content": "候选背景只保留当前制度所需成因：险水护航依赖熟练武者与长期照护费用，门派因此有把持续收费与抚恤相连的现实基础；散匠凭熟客认手艺、按件计价维持独立。渡口见证习惯是先读服务范围，再由双方及见证人各留副本；交刃时指出已知缺陷。请饭表达感谢或愿意再合作，不能替代工钱。礼数允许不同解释与违背，不能强制所有人物同声。上述为拟定初始背景，不是已经接纳的历史事件，也不设祖师阴谋或单一坏人来源。"
+          },
+          "technology_power": {
+            "depth": "WORKING",
+            "content": "当前编译微息、行气、贯劲三层能力，不宣称这是全世界修行上限。微息可短暂沿所持兵券运气，连发容易断续；行气可在迈步、接触、收招之间保持运气，稳定衔接攻守；贯劲可在受冲击后重组劲力，具备更高续力与容错。高层仍受视线、落脚、疲劳与武器承载限制，但低层不能正面击败完整状态高层。越级局部成果依赖先建立的任务、地形、协作或伤疲条件，并留下代价。微息进入行气至少十二个有效训练日，末段连续三日通过步法、握持与呼吸配合的稳定测试；最低时间不保证突破，境界也不赠送剑法。既有训练只有合法起点依据才计入。听隙必须由自身真气沿手中兵刃运行，以磨刀经验解释触觉反馈；只辨当前应力偏移与导气断续，不读取寿命答案、招式、过往、记忆或人心。陌生材质、包覆和震动使判断失准；碰撞不等于检查对方整柄兵器。持续运用会指端麻木，强用可伤掌或毁刃。磨刀可以修整毛刺和浅缺口，不能补回刃材、逆转结构疲劳；重铸需要新料与炉工。"
+          },
+          "ecology_resources": {
+            "depth": "WORKING",
+            "content": "只编译首卷必需资源。钢料来自上游料埠的加工与集货，常规到渡每六日一班，常备原料按月向更上游采购；矿区位置与储量暂不展开，也不参与当前解困。商号控制在途批次，门内工坊和独立铁匠按付款取得份额。普通剑胚到料后另需三日加工；锻制耗炭、工时和废料。钢料及磨具须防水防锈；旧料可替代但须检验，不能按新料寿命承保。练功膏由本地药铺用季收干药每六日配一批，密封干燥存放六十日，启封后一日份当日使用；药铺控制配制与零售，门派凭预付款锁定部分份额。每个使用日耗一份，只缓解训练酸胀；不用膏可训练，但恢复可能更慢。干药受潮或季收不足须通过可见减产与库存变化产生后果。常用伤药每三日配制，密封十日，洁净布和煮水每日消耗；药铺售药、医者收费处理，粗布与清水只能替代部分清洁需求，不能等效替代治疗。粮食由周边农户与商号供应，渡口日常售卖，船上按人日携带并防潮；省食会影响体力和恢复。加急、共购、租借与外购均要交代持货者、钱、加工和实际行程。"
+          },
+          "politics_factions": {
+            "depth": "WORKING",
+            "content": "回澜门维护险水护航、工坊就业及抚恤，要求把养刃并入年度合约以稳定收入；其贡献真实，争议在控制范围和分配。陶靖的优厚入门条件继续同时包括让出工法独立使用权和撤回联名承保，本候选不代陆照选择。独立匠人、渡户只是利益有交集的分散人群，未来联名须逐一得到同意；不存在已成立并已服从陆照的独立队。商号以交货和可预测费用为目标，自行选服务者。渡务署负责泊位、航道告示、合同副本与有限争议执行，经费来自渡务收费，无免费无限护航能力。比试只授明示奖金及试工机会。独立合同须提前写明签署者、服务航段、货值上限、期限、价格、验收人、退出及责任安排；押款、具名保障或商号同意的分段付款可供议价，并非强制唯一方式。有限约定不得单方转嫁损失，隐瞒缺陷或擅自扩险仍须处理由此产生的责任争议。登记不证明履约，裁决不制造钱。部分业务可以独立，门派保有实际服务及合理报酬，具体成交仍属未来事件。"
+          },
+          "life_death_disease": {
+            "depth": "WORKING",
+            "content": "疲劳通过饮食、睡眠和停用恢复，过载延长恢复；听隙麻木影响精细握持与磨刀，继续强用可伤掌。轻度运气紊乱至少停练两日，经检查恢复后才能重新计有效训练日；真实创伤按发生时建立的伤势与复查条件恢复，不能把两日下限当作所有伤势的上限。药物辅助止血、清洁和愈合，不跳过组织恢复、不解除已发生误工。休养可以安排不受伤处限制的劳动，仍须计入工时与恢复负担。死亡不可逆，长期伤残的照护须有收入来源；不得通过临时新药取消杜衡已建立的赡养压力。"
+          },
+          "space_time_geography": {
+            "depth": "WORKING",
+            "content": "首卷只定三点：白石渡、上游料埠、下游石汊泊。料埠至白石渡水程三十六里，白石渡至石汊泊二十四里；正常水情下常载货船顺流每小时六里、逆流每小时三里，因此前段顺流六小时、逆流十二小时，后段顺流四小时、逆流八小时。这些只算实际航行，装卸、候泊、夜间停船和停航另计。白石渡至石汊泊岸路三十里，普通步行每小时五里，需六小时；料埠至白石渡无连续可行的沿岸近路。具体阻截地形必须在局部规划中提前建立。当前处于水位渐落时节，现场水尺决定当日可航条件，不把常年枯水趋势当作确定灾情。选锋会日定义为T0，年度合同签订截止为T0后三十日黄昏，新年度服务自T0后三十六日起；这是候选初始日历，未排章节。旧合同在届满前继续收费运行；对手调度、采购和期限不因陆照离场停止。"
+          },
+          "information_communication": {
+            "depth": "WORKING",
+            "content": "消息依人、船、纸件与近距离旗哨传递，无跨地即时通信。旗哨只表达预先约定的少量指令，河弯、雨雾与噪声可阻断。书信使用既定路线和行程，最快到达仍需实际运送。渡务署知道已登记事项，工坊知道自己的检修，药铺知道自己的批次，船户知道亲历航程与自家船况；跨账核验需授权、费用或争议程序。回澜门内部按岗位分配信息，陶靖与杜衡不自动共享所有信息；散户和商号同样没有全体共享的账本。见证只能证明亲见事项，货物验收与证言真假须分别判断。信息在世界中存在不等于陆照已知；每条关键消息须在后续记录来源、载体、发出与到达时间、接收人及可信程度。"
+          }
+        },
+        "genre_profile": "jiefeng-guofeng-wuxia-growth.v1",
+        "compiled_scope": "BOOK",
+        "contract_version": "world-foundation.v1"
+      },
+      "constraint_envelope": {
+        "role": "WORLD_BIBLE",
+        "creative_brief": {
+          "content_hash": "sha256:73245902d79e29929ba55f40a18663be298a419db12bfa05ee0ea6af70b3427f",
+          "asset_version_id": "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1"
+        },
+        "contract_version": "foundation-generation.v1",
+        "world_compilation": {
+          "compiled_scope": "BOOK",
+          "contract_version": "world-foundation.v1"
+        },
+        "foundation_parent_bindings": {
+          "ENDING_INTENT": {
+            "content_hash": "sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57",
+            "asset_version_id": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1"
+          },
+          "READER_PROMISE": {
+            "content_hash": "sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787",
+            "asset_version_id": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1"
+          },
+          "THEME_CONTRACT": {
+            "content_hash": "sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2",
+            "asset_version_id": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1"
+          },
+          "CREATIVE_FOUNDATION": {
+            "content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6",
+            "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1"
+          }
+        }
+      },
+      "deferred_dimensions": [
+        {
+          "reason": "当前冲突不依赖神祇、教团或神判；渡口礼俗已足以支撑见证、人情与生计。",
+          "trigger": "未来任务确实涉及宗教组织拥有的资源、司法权限或人物信仰选择时，先界定其实际权力与费用，再扩展。",
+          "dimension": "religion"
+        },
+        {
+          "reason": "第二、三卷尚无具体任务，不预设全国地图、跨域捷径或终局地点。",
+          "trigger": "陆照取得并选择外地工作、需要核算目的地与补给时，在相应范围编译路线、距离、季节和消息延迟。",
+          "dimension": "space_time_geography：白石渡以外"
+        },
+        {
+          "reason": "当前三个能力层次足以建立成长和实战差距；完整境界榜会提前消耗远期空间。",
+          "trigger": "进入更大门派学习，或任务实际需要超过贯劲层的对手时，先建立训练前提、对抗边界和维护成本，不回溯提升旧人物能力。",
+          "dimension": "technology_power：更高境界与门派专长"
+        },
+        {
+          "reason": "首卷只需要理解险水服务、师承信用与养刃收入的来源，不需要开国史或祖师秘辛。",
+          "trigger": "某项具体权利必须依赖旧约、继承或历史证据裁定时，补足必要年月、保存者及可核验记录。",
+          "dimension": "history_culture：王朝通史与门派谱系"
+        },
+        {
+          "reason": "普通钢料、药材和船运已能形成有效稀缺；奇材可能架空磨刀经验与现有采购成本。",
+          "trigger": "已有兵器材料确实不能满足新任务时，先明确新材料来源、产量、加工失败率和替代路线，再允许其进入解决方案。",
+          "dimension": "ecology_resources：远域奇材与异兽"
+        },
+        {
+          "reason": "当前需要疲劳、伤病恢复和抚恤规则，不需要寿元竞争或大规模疫灾。",
+          "trigger": "角色确实遭遇持续疾病或跨长期时间任务时，扩展病程和照护条件；不得新增逆转死亡、失忆免债或时间回退能力。",
+          "dimension": "life_death_disease：复杂疫病与长寿"
+        },
+        {
+          "reason": "首卷的现金、押款和有限联名足以运行；不预造遍及江湖的统一信用体系。",
+          "trigger": "第三卷形成具体多队任务前，明确分账、垫资、共同成果归属、退出交接和争议处理，不让首卷约定自动取得异地效力。",
+          "dimension": "economy：跨地金融与多队结算"
+        }
+      ],
+      "prohibited_outcomes": [
+        "不得修改冻结人物、欲望、听隙边界、陶靖入门条件或三卷递进方向。",
+        "不得将本候选条件、拟发生的承保失败、护运成功或结局选择写成已接纳历史及人物既有知识。",
+        "不得用隐藏血统、系统赠予、复制绝技、新增神兵或临时顿悟解释胜利。",
+        "不得让听隙隔空鉴敌、读心、读取过往、无成本修复兵器或替代境界与基本功。",
+        "不得让低境界陆照正面击败完整状态的高境界对手；局部脱险必须依靠已建立条件并付出具体成本。",
+        "不得让磨刀恢复已经耗尽的刃材寿命，或让药物、复活、失忆和时间回退撤销后果。",
+        "不得让一次比试、一份证据、一场演说或单次战斗自动授予渡口经营权、形成可持续合同或清偿债务。",
+        "不得把回澜门写成无贡献恶人集团，或清除一人后让护航、抚恤与供给自行恢复。",
+        "不得让独立匠人和渡户天然同心、免费劳动、无限担保，或让伙伴为了陆照放弃生计与拒绝权。",
+        "不得把道歉当作赔偿，把退出合作当作免除既有责任，或默认未同意者承担损失。",
+        "不得以无限赔偿、持续重伤或立即没收奖励证明担当；已挣得的收入、技能和生活改善应保持有效。",
+        "不得为反转改变路线距离、合同条件、采购周期和已经建立的事实，也不得因主角离场暂停对手行动。",
+        "不得把世界背景与势力内部账目直接灌入限知叙述，或把传闻和推测写作确定事实。",
+        "不得用制度讲义、库存清单、境界名目替代场景、战斗、人物趣味和主动选择。",
+        "不得把独立、入门或合作预判为唯一道德答案，不得把伙伴或对手写成观点传声筒。",
+        "不得以首卷胜利结束全书，或为续卷令白石渡的实际履约、收入和关系回报立即失效。",
+        "不得在本阶段生成逐章安排、第41章、世界或人物实现引用，或虚构Authority版本。",
+        "不得批准、激活、写入Canon及知识状态，不得自报评估通过或独立人工评审完成。"
+      ],
+      "foundation_parent_bindings": {
+        "ENDING_INTENT": {
+          "content_hash": "sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57",
+          "asset_version_id": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1"
+        },
+        "READER_PROMISE": {
+          "content_hash": "sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787",
+          "asset_version_id": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1"
+        },
+        "THEME_CONTRACT": {
+          "content_hash": "sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2",
+          "asset_version_id": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1"
+        },
+        "CREATIVE_FOUNDATION": {
+          "content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6",
+          "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1"
+        }
+      }
+    },
+    "execution_evidence": {
+      "attempt_id": "52c82596-6eb1-4bda-8e34-f1a938f8ad9d",
+      "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+      "fencing_token": 1,
+      "commit_authority": "STORY_DESIGN_AUTHORITY",
+      "cost_receipt_ref": "authority-asset-version:b2d4ac85-e155-441f-88da-f8b1304ef7ea",
+      "route_snapshot_id": "production_execution/routes/38114301eef452d14b1d",
+      "usage_receipt_ref": "authority-asset-version:a2ff26c4-db6e-4838-ac4b-4a3e63edf129",
+      "input_manifest_ref": "production_execution/inputs/38114301eef452d14b1d",
+      "context_bundle_hash": "sha256:69d685eefb492dda7e6fa02aa491454b73372085eb43583874d3c2ea9d7a1835",
+      "output_manifest_ref": "authority-asset-version:583a14b1-b162-4278-84ca-58619fa858f7",
+      "production_verified": false,
+      "external_receipt_ref": "47ddae96-5824-4f78-bc2a-afc4cd855767",
+      "real_provider_proven": true,
+      "fixture_protocol_only": false,
+      "external_effect_backed": true,
+      "validation_manifest_ref": "authority-asset-version:41db91f0-d177-49cd-9ab4-5c775aaa8f64",
+      "capability_execution_ref": "b76bd2f3-0a85-5364-a1ed-c1d13baf3bf5",
+      "capability_execution_hash": "sha256:269dd3d42b9a8d88312cf9bc5ada81b16ec0d27271b60e6e6c7d1c8192d559de",
+      "capability_runtime_binding_ref": "sha256:93fdc19c797349d2f5a7899122081ba5de1815f04355210a85305bc25d62bfcd",
+      "capability_runtime_binding_hash": "sha256:8a12b40a189d39a1c085ad014a45adad3b34410e1bcb0dabed8f99e10ba0755e",
+      "context_bundle_asset_version_id": "31cfb50f-2c8f-44ac-885d-891e86d0be89",
+      "capability_pack_attempt_snapshot_id": "sha256:93fdc19c797349d2f5a7899122081ba5de1815f04355210a85305bc25d62bfcd",
+      "production_execution_gateway_backed": true,
+      "capability_pack_attempt_snapshot_hash": "sha256:8a12b40a189d39a1c085ad014a45adad3b34410e1bcb0dabed8f99e10ba0755e",
+      "narrative_intelligence_selection_digest": "sha256:257f06ac4fa522656d515eb9eed77ef9eafea7afd57ec3b5be19a0881ee1f4b1"
+    },
+    "constraint_envelope": {
+      "role": "WORLD_BIBLE",
+      "creative_brief": {
+        "content_hash": "sha256:73245902d79e29929ba55f40a18663be298a419db12bfa05ee0ea6af70b3427f",
+        "asset_version_id": "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1"
+      },
+      "contract_version": "foundation-generation.v1",
+      "world_compilation": {
+        "compiled_scope": "BOOK",
+        "contract_version": "world-foundation.v1"
+      },
+      "foundation_parent_bindings": {
+        "ENDING_INTENT": {
+          "content_hash": "sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57",
+          "asset_version_id": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1"
+        },
+        "READER_PROMISE": {
+          "content_hash": "sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787",
+          "asset_version_id": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1"
+        },
+        "THEME_CONTRACT": {
+          "content_hash": "sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2",
+          "asset_version_id": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1"
+        },
+        "CREATIVE_FOUNDATION": {
+          "content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6",
+          "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1"
+        }
+      }
+    },
+    "deferred_dimensions": [
+      {
+        "reason": "当前冲突不依赖神祇、教团或神判；渡口礼俗已足以支撑见证、人情与生计。",
+        "trigger": "未来任务确实涉及宗教组织拥有的资源、司法权限或人物信仰选择时，先界定其实际权力与费用，再扩展。",
+        "dimension": "religion"
+      },
+      {
+        "reason": "第二、三卷尚无具体任务，不预设全国地图、跨域捷径或终局地点。",
+        "trigger": "陆照取得并选择外地工作、需要核算目的地与补给时，在相应范围编译路线、距离、季节和消息延迟。",
+        "dimension": "space_time_geography：白石渡以外"
+      },
+      {
+        "reason": "当前三个能力层次足以建立成长和实战差距；完整境界榜会提前消耗远期空间。",
+        "trigger": "进入更大门派学习，或任务实际需要超过贯劲层的对手时，先建立训练前提、对抗边界和维护成本，不回溯提升旧人物能力。",
+        "dimension": "technology_power：更高境界与门派专长"
+      },
+      {
+        "reason": "首卷只需要理解险水服务、师承信用与养刃收入的来源，不需要开国史或祖师秘辛。",
+        "trigger": "某项具体权利必须依赖旧约、继承或历史证据裁定时，补足必要年月、保存者及可核验记录。",
+        "dimension": "history_culture：王朝通史与门派谱系"
+      },
+      {
+        "reason": "普通钢料、药材和船运已能形成有效稀缺；奇材可能架空磨刀经验与现有采购成本。",
+        "trigger": "已有兵器材料确实不能满足新任务时，先明确新材料来源、产量、加工失败率和替代路线，再允许其进入解决方案。",
+        "dimension": "ecology_resources：远域奇材与异兽"
+      },
+      {
+        "reason": "当前需要疲劳、伤病恢复和抚恤规则，不需要寿元竞争或大规模疫灾。",
+        "trigger": "角色确实遭遇持续疾病或跨长期时间任务时，扩展病程和照护条件；不得新增逆转死亡、失忆免债或时间回退能力。",
+        "dimension": "life_death_disease：复杂疫病与长寿"
+      },
+      {
+        "reason": "首卷的现金、押款和有限联名足以运行；不预造遍及江湖的统一信用体系。",
+        "trigger": "第三卷形成具体多队任务前，明确分账、垫资、共同成果归属、退出交接和争议处理，不让首卷约定自动取得异地效力。",
+        "dimension": "economy：跨地金融与多队结算"
+      }
+    ],
+    "prohibited_outcomes": [
+      "不得修改冻结人物、欲望、听隙边界、陶靖入门条件或三卷递进方向。",
+      "不得将本候选条件、拟发生的承保失败、护运成功或结局选择写成已接纳历史及人物既有知识。",
+      "不得用隐藏血统、系统赠予、复制绝技、新增神兵或临时顿悟解释胜利。",
+      "不得让听隙隔空鉴敌、读心、读取过往、无成本修复兵器或替代境界与基本功。",
+      "不得让低境界陆照正面击败完整状态的高境界对手；局部脱险必须依靠已建立条件并付出具体成本。",
+      "不得让磨刀恢复已经耗尽的刃材寿命，或让药物、复活、失忆和时间回退撤销后果。",
+      "不得让一次比试、一份证据、一场演说或单次战斗自动授予渡口经营权、形成可持续合同或清偿债务。",
+      "不得把回澜门写成无贡献恶人集团，或清除一人后让护航、抚恤与供给自行恢复。",
+      "不得让独立匠人和渡户天然同心、免费劳动、无限担保，或让伙伴为了陆照放弃生计与拒绝权。",
+      "不得把道歉当作赔偿，把退出合作当作免除既有责任，或默认未同意者承担损失。",
+      "不得以无限赔偿、持续重伤或立即没收奖励证明担当；已挣得的收入、技能和生活改善应保持有效。",
+      "不得为反转改变路线距离、合同条件、采购周期和已经建立的事实，也不得因主角离场暂停对手行动。",
+      "不得把世界背景与势力内部账目直接灌入限知叙述，或把传闻和推测写作确定事实。",
+      "不得用制度讲义、库存清单、境界名目替代场景、战斗、人物趣味和主动选择。",
+      "不得把独立、入门或合作预判为唯一道德答案，不得把伙伴或对手写成观点传声筒。",
+      "不得以首卷胜利结束全书，或为续卷令白石渡的实际履约、收入和关系回报立即失效。",
+      "不得在本阶段生成逐章安排、第41章、世界或人物实现引用，或虚构Authority版本。",
+      "不得批准、激活、写入Canon及知识状态，不得自报评估通过或独立人工评审完成。"
+    ],
+    "generator_operation_name": "world.design.generate",
+    "foundation_parent_bindings": {
+      "ENDING_INTENT": {
+        "content_hash": "sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57",
+        "asset_version_id": "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1"
+      },
+      "READER_PROMISE": {
+        "content_hash": "sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787",
+        "asset_version_id": "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1"
+      },
+      "THEME_CONTRACT": {
+        "content_hash": "sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2",
+        "asset_version_id": "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1"
+      },
+      "CREATIVE_FOUNDATION": {
+        "content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6",
+        "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1"
+      }
+    },
+    "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+  },
+  "updated_at": "2026-09-13 18:24:45.578359+00:00"
+}

@@ -1,0 +1,155 @@
+{
+  "source": "CURRENT_USER_PROMPT",
+  "registration_executor": "AI_CODE_AGENT",
+  "registered_by": "first-novel-pilot-operator",
+  "source_operation_id": "860c99c5-5883-4f0e-a49f-a2a48e1110df",
+  "actual_code_sha": "13d1570284b87631a76d75b83f37a3b57563c7b4",
+  "independent_human_review": "NOT_REVIEWED",
+  "before": {
+    "operation": {
+      "operation_id": "860c99c5-5883-4f0e-a49f-a2a48e1110df",
+      "status": "FAILED_RETRYABLE",
+      "version": 3,
+      "command_payload": {
+        "payload": {
+          "book_id": "guofeng-xuanhuan-01",
+          "actor_id": "creation-synthesis-worker",
+          "trace_id": "trace:story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+          "project_id": "first-novel-pilot-20260912",
+          "logical_key": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34:CREATIVE_FOUNDATION:0",
+          "workspace_id": "guofeng-xuanhuan-01-workspace",
+          "repair_number": 0,
+          "repair_reason": "",
+          "correlation_id": "bf2aa6be-2ff1-47d8-946d-7b04e4b2d025",
+          "input_versions": {
+            "creative_brief": "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1"
+          },
+          "arc_working_set": {},
+          "idempotency_key": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34:CREATIVE_FOUNDATION:0:generate",
+          "parent_version_id": "",
+          "narrative_search_id": "",
+          "auto_approve_low_risk": false,
+          "narrative_realization": {},
+          "repair_of_candidate_id": "",
+          "generator_operation_name": "creative.candidates.generate",
+          "opening_execution_binding": {},
+          "execution_contract_version": "1.15.0",
+          "change_evidence_version_ids": [],
+          "narrative_search_branch_key": "",
+          "related_arc_plan_version_ids": [],
+          "governance_action_version_ids": [],
+          "dependent_arc_plan_version_ids": [],
+          "arc_scope_volume_plan_version_ids": [],
+          "narrative_search_hard_constraints": [],
+          "narrative_search_planning_horizon": {},
+          "parent_agent_session_operation_id": "",
+          "narrative_search_strategy_directive": "",
+          "narrative_search_desired_transformation": {},
+          "narrative_search_accepted_through_chapter": 0,
+          "narrative_search_parent_state_asset_version_id": ""
+        },
+        "project_id": "first-novel-pilot-20260912",
+        "input_asset_version_ids": [
+          "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1"
+        ]
+      }
+    },
+    "effects": [
+      {
+        "external_effect_id": "9bcb9635-4022-4002-bdb2-d1112d547193",
+        "status": "READY",
+        "dispatch_count": 0
+      }
+    ],
+    "reservations": [
+      {
+        "reservation_id": "df99827c-336d-42d2-a7c3-c2275be1f8e4",
+        "status": "RELEASED"
+      }
+    ]
+  },
+  "registered_at": "2026-09-13T17:39:02.530441+00:00",
+  "cancellation_request": {
+    "cancel_command_id": "c5f01f1b-4fa8-4cdc-9151-9f67b384cef0",
+    "replayed": false,
+    "status": "CANCELLATION_REQUESTED",
+    "version": 4
+  },
+  "cancellation_resolution": {
+    "status": "CANCELLED",
+    "version": 5
+  },
+  "registration": {
+    "operation_id": "ceacd38d-7da6-4341-92dd-a6a5e29c8e09",
+    "status": "SUCCEEDED",
+    "continuation_id": "planning-runtime-continuation:860c99c5-5883-4f0e-a49f-a2a48e1110df",
+    "asset_version_id": "01380dea-cfc4-4115-89a7-9aa72c922300",
+    "content_hash": "sha256:267f608281f5ae3b8c900d0e8ecd64b01bedd68df0049ec544198ec6653259d8",
+    "source_operation_id": "860c99c5-5883-4f0e-a49f-a2a48e1110df",
+    "target_release_sha": "13d1570284b87631a76d75b83f37a3b57563c7b4",
+    "replayed": false
+  },
+  "after": {
+    "operation": {
+      "operation_id": "860c99c5-5883-4f0e-a49f-a2a48e1110df",
+      "status": "CANCELLED",
+      "version": 5,
+      "command_payload": {
+        "payload": {
+          "book_id": "guofeng-xuanhuan-01",
+          "actor_id": "creation-synthesis-worker",
+          "trace_id": "trace:story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34",
+          "project_id": "first-novel-pilot-20260912",
+          "logical_key": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34:CREATIVE_FOUNDATION:0",
+          "workspace_id": "guofeng-xuanhuan-01-workspace",
+          "repair_number": 0,
+          "repair_reason": "",
+          "correlation_id": "bf2aa6be-2ff1-47d8-946d-7b04e4b2d025",
+          "input_versions": {
+            "creative_brief": "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1"
+          },
+          "arc_working_set": {},
+          "idempotency_key": "story-formation:7946151997637ef25a89bea86205c03b2003b5d5c351861d65b101fbe5bc9a34:CREATIVE_FOUNDATION:0:generate",
+          "parent_version_id": "",
+          "narrative_search_id": "",
+          "auto_approve_low_risk": false,
+          "narrative_realization": {},
+          "repair_of_candidate_id": "",
+          "generator_operation_name": "creative.candidates.generate",
+          "opening_execution_binding": {},
+          "execution_contract_version": "1.15.0",
+          "change_evidence_version_ids": [],
+          "narrative_search_branch_key": "",
+          "related_arc_plan_version_ids": [],
+          "governance_action_version_ids": [],
+          "dependent_arc_plan_version_ids": [],
+          "arc_scope_volume_plan_version_ids": [],
+          "narrative_search_hard_constraints": [],
+          "narrative_search_planning_horizon": {},
+          "parent_agent_session_operation_id": "",
+          "narrative_search_strategy_directive": "",
+          "narrative_search_desired_transformation": {},
+          "narrative_search_accepted_through_chapter": 0,
+          "narrative_search_parent_state_asset_version_id": ""
+        },
+        "project_id": "first-novel-pilot-20260912",
+        "input_asset_version_ids": [
+          "authority-output:8b56bfaf-f2ef-4663-84a6-f21c60667b75:creative.brief:v1"
+        ]
+      }
+    },
+    "effects": [
+      {
+        "external_effect_id": "9bcb9635-4022-4002-bdb2-d1112d547193",
+        "status": "CANCELLED",
+        "dispatch_count": 0
+      }
+    ],
+    "reservations": [
+      {
+        "reservation_id": "df99827c-336d-42d2-a7c3-c2275be1f8e4",
+        "status": "RELEASED"
+      }
+    ]
+  }
+}

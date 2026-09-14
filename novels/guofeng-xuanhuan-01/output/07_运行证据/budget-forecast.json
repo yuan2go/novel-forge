@@ -1,0 +1,87 @@
+{
+  "recorded_at": "2026-09-13T15:46:07.110678+00:00",
+  "target_chapters": 40,
+  "native_usage_at_start": {
+    "contract_hash": "sha256:95937b896a41feb3d9bdb54daeba4555900f330e39139ff8730940137f166426",
+    "project_id": "first-novel-pilot-20260912",
+    "book_id": "first-novel-pilot-a",
+    "phases": {
+      "SOURCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "DESIGN": {
+        "calls_used_or_reserved": 10,
+        "conservative_tokens": 293336,
+        "recorded_actual_tokens": 293336,
+        "unmeasured_reserved_tokens": 0
+      },
+      "CREATION_EARLY": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "CREATION_LATE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0
+      },
+      "REPAIR": {
+        "calls_used_or_reserved": 1,
+        "conservative_tokens": 26699,
+        "recorded_actual_tokens": 26699,
+        "unmeasured_reserved_tokens": 0
+      }
+    },
+    "project_total": {
+      "calls_used_or_reserved": 11,
+      "conservative_tokens": 320035,
+      "recorded_actual_tokens": 320035,
+      "unmeasured_reserved_tokens": 0
+    },
+    "shared_total": {
+      "calls_used_or_reserved": 11,
+      "conservative_tokens": 320035,
+      "recorded_actual_tokens": 320035,
+      "unmeasured_reserved_tokens": 0
+    },
+    "reservation_ids": [
+      "ef7cb1fa-35a3-4c53-8e28-908b7bdaadae",
+      "f2482034-f4e3-4997-9c4c-aa2947ba335b",
+      "9e1276e5-1ded-4001-ba32-5f3b9e8737c4",
+      "c4bdf5c7-8057-4975-aac8-48918d589b31",
+      "3f5a15d3-a340-4197-84b0-907c34cf791b",
+      "7af6a0fa-49fd-4d7e-8534-8b5527a28ca2",
+      "d00b168f-de6b-484a-b198-ae1ea6f20ba1",
+      "cb1febeb-89d2-4a82-95ef-caa26c42c412",
+      "4eae9351-8a12-4f77-b86a-36b3837e1d6f",
+      "3b24d961-5661-4a00-9d2d-6b2cee7c6e43",
+      "56be04e7-e58f-43e8-af0f-f4073a85f8dd"
+    ],
+    "evidence_class": "POSTGRESQL_BUDGET_LEDGER",
+    "creation_opportunity": null
+  },
+  "available_calls": 449,
+  "minimum_calls_per_chapter": 15,
+  "minimum_new_calls_for_40_chapters": 600,
+  "lower_bound_exclusions": [
+    "Foundation",
+    "upper plans",
+    "semantic evaluations",
+    "group planning",
+    "retrieval",
+    "checkpoint review",
+    "repair"
+  ],
+  "status": "FULL_VOLUME_EXCEEDS_CUMULATIVE_CAP",
+  "policy": "Preserve target and quality gates; deliver actual accepted prefix; recalibrate after first three; never declare partial volume complete.",
+  "sources": [
+    "src/novel_forge/modules/chapter_authority/definitions.py",
+    "src/novel_forge/modules/book_authority/supervisor.py",
+    "src/novel_forge/modules/story_planning_runtime/world_preparation.py"
+  ]
+}

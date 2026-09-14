@@ -1,0 +1,167 @@
+{
+  "observed_at": "2026-09-13T19:43:37.005288+00:00",
+  "failure": {
+    "code": "PermissionError",
+    "message": "Planning Generation actor must be the trusted Principal",
+    "opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8"
+  },
+  "assessment": {
+    "recovery_assessment_id": "book-opening-recovery-assessment:85fba51d0d4a6d63a65896a9e465222d603f0313bea6859fe4fc76dc7f717e5a",
+    "assessment_kind": "RECOVERY",
+    "opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8",
+    "disposition": "PROVEN_NO_EFFECT",
+    "snapshot_hash": "sha256:7becb46ea5c12e258e1eae012d643f2f4b4a41cf6895b77f6e266a32bc2adf82",
+    "snapshot": {
+      "budget": {
+        "scope": {
+          "currency": "UNKNOWN",
+          "owner_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8",
+          "revision": 1,
+          "owner_kind": "BOOK_OPENING",
+          "project_id": "first-novel-pilot-20260912",
+          "started_at": "2026-09-13T19:37:04.858880+00:00",
+          "deadline_at": "2026-09-14T07:37:04.858880+00:00",
+          "policy_hash": "sha256:870b8c64e5e9aac9f2155ec0c56a60b1be7d7be407e6ece00bbd635317ff625f",
+          "budget_scope_id": "budget-scope:4461cc6e9bc9234d811c15c9d0b45c6542f5e7e0bb582d3ef6bf9dd25e27fb0b",
+          "budget_timezone": "UTC",
+          "policy_snapshot": {
+            "token_limit": 7680000,
+            "execution_mode": "PROVIDER_ALLOWED",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913:unused-balance-reallocation-v2",
+            "cost_observability": "UNKNOWN",
+            "provider_call_limit": 60,
+            "per_call_token_limit": 160000
+          },
+          "stable_idempotency_key": "book-opening-budget:book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8",
+          "created_by_operation_id": "2fdc046a-d912-4377-ad00-bd95f3b79a7b",
+          "policy_contract_version": "book-opening-provider-budget.v2"
+        },
+        "usage": {
+          "cost_status": "UNKNOWN",
+          "status_counts": {},
+          "committed_amount": null,
+          "committed_tokens": 0,
+          "provider_call_count": 0
+        },
+        "outcome": "ELIGIBLE",
+        "reasons": [],
+        "request": {
+          "cost_status": "UNKNOWN",
+          "execution_mode": "PROVIDER_ALLOWED",
+          "requested_calls": 1,
+          "accounting_basis": "ACCOUNT_ENTITLEMENT",
+          "requested_amount": null,
+          "requested_tokens": 160000
+        },
+        "headroom": {
+          "tokens": 7680000,
+          "cost_amount": null,
+          "provider_calls": 60
+        },
+        "reservations": [],
+        "window_state": "ACTIVE",
+        "snapshot_hash": "sha256:34416aa9c5c4256a33e77512722cc30cfafbf20ed7b062413460a7c46b9fb284",
+        "evidence_links": [],
+        "budget_scope_id": "budget-scope:4461cc6e9bc9234d811c15c9d0b45c6542f5e7e0bb582d3ef6bf9dd25e27fb0b",
+        "contract_version": "provider-budget-authority-snapshot.v2",
+        "budget_policy_hash": "sha256:870b8c64e5e9aac9f2155ec0c56a60b1be7d7be407e6ece00bbd635317ff625f",
+        "legacy_attributions": [],
+        "budget_scope_revision": 1,
+        "budget_snapshot_digest": "sha256:34416aa9c5c4256a33e77512722cc30cfafbf20ed7b062413460a7c46b9fb284"
+      },
+      "opening": {
+        "version": 1,
+        "lifecycle": "FAILED",
+        "opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8",
+        "budget_scope_id": "budget-scope:4461cc6e9bc9234d811c15c9d0b45c6542f5e7e0bb582d3ef6bf9dd25e27fb0b",
+        "workflow_graph_hash": "sha256:d14964d613d7796ae2b33431c4e8bafe18f961f8dce6eeb6474ad4460c2b0f02",
+        "current_execution_id": "book-opening-execution:ea23b41ba5e310d2a4f77722619340a5b67fa7d7fac81028bacd3228a0f179b0",
+        "budget_contract_state": "BOUND",
+        "budget_scope_revision": 1,
+        "frozen_request_digest": "sha256:4abdeb5e70ab45ab5eb0a076b45cc1e39558f21c6b0f491f8ef455c30631d846",
+        "workflow_graph_revision": 1,
+        "current_workflow_node_id": "book-opening-node:3cb535a5d2ca5b9e017aaad7366a3860ffe042ca4ed03a0202317d07eabb0aca",
+        "workflow_contract_version": "book-opening-workflow-v1",
+        "execution_contract_version": "book-opening-execution-v3",
+        "current_execution_generation": 1
+      },
+      "runtime": {
+        "lease_id": "runtime-lease:e71a3840-e899-435b-ba45-c944f0f60852",
+        "worker_id": "creation-synthesis-worker",
+        "attempt_id": "runtime-attempt:51efa28f-ad3e-4a18-a265-5c3494aae258",
+        "input_hash": "sha256:cce06b60e3267c08e94d76f43d0b859418032563f91bc06fe434730dec25fabf",
+        "lease_status": "RELEASED",
+        "fencing_token": 1,
+        "lease_expired": true,
+        "attempt_status": "FAILED",
+        "runtime_job_id": "runtime-job:cd094e6eb4247f82b109c3250d390d6a5ee501ca0993d066bf63ca50bdc2372c",
+        "lease_expires_at": "2026-09-13 19:38:04.944156+00:00",
+        "lease_loss_policy": "AUTHORITY_CONVERGENCE_REQUIRED",
+        "runtime_job_status": "FAILED"
+      },
+      "execution": {
+        "version": 3,
+        "lifecycle": "FAILED",
+        "generation": 1,
+        "workflow_node_id": "book-opening-node:3cb535a5d2ca5b9e017aaad7366a3860ffe042ca4ed03a0202317d07eabb0aca",
+        "opening_execution_id": "book-opening-execution:ea23b41ba5e310d2a4f77722619340a5b67fa7d7fac81028bacd3228a0f179b0",
+        "policy_snapshot_hash": "sha256:2ffe0352ace6b114962d2007c043316b14252e1ee6b4a9c3b23e237a89e043b0",
+        "source_checkpoint_id": "",
+        "source_checkpoint_hash": "",
+        "authority_contract_hash": "sha256:4329b16d14f5c2995195b13de299c6e32d458bc8090f1764e371b887ff673264",
+        "workflow_transition_kind": "ADMISSION",
+        "source_checkpoint_sequence": 0
+      },
+      "checkpoint": {
+        "entries": [],
+        "sequence": 0,
+        "checkpoint_id": "",
+        "checkpoint_hash": ""
+      },
+      "external_effect": {
+        "digest": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "evidence": [],
+        "classification": "PROVEN_NO_EFFECT"
+      },
+      "semantic_evaluation": {
+        "lifecycle": "",
+        "generation": 0,
+        "head_version": 0,
+        "operation_id": "",
+        "operation_status": "",
+        "execution_version": 0,
+        "evaluator_actor_id": "",
+        "candidate_content_hash": "",
+        "evaluation_execution_id": "",
+        "candidate_asset_version_id": ""
+      },
+      "policy_config_digest": "sha256:1e7e430b5b331a5ba2db847bba52381e19d1d223ad8c02ed10f483014ddc5495",
+      "authority_version_digest": "sha256:e66d19de200ec95fa6bf841953e9b6199c0e36445c5256be59e9fcd58a93c1dd"
+    },
+    "replayed": false
+  },
+  "registration_executor": "AI_CODE_AGENT",
+  "native_principal": "first-novel-pilot-operator",
+  "decision_source": "CURRENT_USER_PROMPT:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01",
+  "independent_human_review": "NOT_REVIEWED",
+  "recovery_receipt": {
+    "recovery_receipt_id": "book-opening-recovery-receipt:68deb74025eb5e935c6c371ff6109df7295d116dc4bfd79d185f54cea1a36f53",
+    "receipt_kind": "RECOVERY_ADMISSION",
+    "opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8",
+    "recovery_assessment_id": "book-opening-recovery-assessment:85fba51d0d4a6d63a65896a9e465222d603f0313bea6859fe4fc76dc7f717e5a",
+    "recovery_intent_id": "book-opening-recovery-intent:703fbdbfc0c23e29f6dd808ee5bed35bc1189e4c9f3458793830680b39921c6e",
+    "result_hash": "sha256:9a670f6c208ce31c836d548ed8b3f47cf7cc8c1d250c029934514dd5d0596a35",
+    "result": {
+      "opening_run_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8",
+      "runtime_job_id": "runtime-job:0cd139ca69634231692ab5a80c5e888adf3ad2c5ab817be2a582215639c3a850",
+      "provider_invoked": false,
+      "recovery_intent_id": "book-opening-recovery-intent:703fbdbfc0c23e29f6dd808ee5bed35bc1189e4c9f3458793830680b39921c6e",
+      "execution_generation": 2,
+      "opening_execution_id": "book-opening-execution:dd17a9def195af21070d9f3f91fa7f84a5f6795bfd84ebbe5b0660da805b865a",
+      "replacement_evaluation_execution_id": "",
+      "replacement_evaluation_operation_id": ""
+    },
+    "replayed": false
+  }
+}
