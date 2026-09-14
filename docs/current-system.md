@@ -48,6 +48,32 @@ styles without the new policy retain the v1 contract.
 
 ## Scoped worker approval and local Codex execution
 
+Production composition now freezes model selection through
+`ProductionProviderRouter` before Chapter, Planning and Source Provider admission.
+Business stages select task policies; the production composition ignores their
+former model environment defaults. Decisions retain candidate capabilities, pricing,
+benchmark observations, quality constraints, retry-chain and budget snapshots as
+immutable `routing_decision` assets. Command Kernel remains the reservation,
+settlement and unknown-outcome Authority. Policy floors and confidence penalties are
+`CONFIGURABLE_POLICY`, not proven literary quality invariants.
+
+The cost-aware replacement is incomplete and is **not production ready**. Its
+calibrated numeric quality projection currently covers Chapter draft evidence;
+other task families remain blocked rather than receiving invented quality scores.
+There is no governed cold-start challenger or mixed DeepSeek/Codex entitlement lane,
+and per-work critical-task overrides are not yet wired. Existing explicit-profile
+Codex validation remains available, but production routing does not compose that
+backend as an escalation candidate. Historical decisions without routing evidence
+remain legacy/unknown; they are not reconstructed as cost-aware decisions. A rollout
+must not treat the replacement as compatible with unfinished legacy Provider work.
+
+The DeepSeek Adapter uses the official chat-completions protocol, frozen reasoning
+and pricing identities, structured JSON, bounded socket timeout and actual usage/cache
+receipts. It has no remote query, cancellation or idempotency guarantee. Durable
+unknown outcomes require reconciliation before another paid attempt. Cost currently
+uses a frozen peak-price upper bound; it is not a Provider bill or exact off-peak
+charge. Fixture and HTTP-contract tests do not establish accepted Chapter production.
+
 Formation claim and execution resolve the same configured Book worker Principal while
 retaining the initiating operator and decision actor. The worker role has only the
 execution permissions it needs. `AUTO` approval is a separate authorization bound to

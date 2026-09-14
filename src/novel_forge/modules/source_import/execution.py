@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 import hashlib
@@ -1330,8 +1332,20 @@ class PostgresContentIntelligenceExecutionPort:
             materialization=materialization,
         )
         provider_timeout = self.provider_timeout_seconds
+        routing_decision = None
+        provider_router = getattr(self.transport, "provider_router", None)
+        if provider_router is not None:
+            base_route, routing_decision = provider_router.select(
+                base_route, task_type=spec.stage, project_id=worker.project_id,
+                work_id=spec.target_scope.book_id, operation_id=worker.causation_id,
+                attempt_id=worker.attempt_id, stable_key=stable_key,
+                input_tokens=len(prompt.encode()) + 512,
+                output_tokens=self.provider_output_token_reserve,
+                trace_id=worker.trace_id, correlation_id=worker.correlation_id, cache_prefix=prompt.encode()[:512])
         envelope = ProviderRequestEnvelope(
             provider=base_route.model_profile.model_provider,
+            reasoning_effort=base_route.model_profile.reasoning_effort if base_route.model_profile.model_provider == "deepseek" else "",
+            pricing_policy_json=json.dumps(routing_decision["selected"]["candidate"]["pricing"], sort_keys=True) if routing_decision else "",
             model=base_route.model_profile.model_id,
             protocol=provider_request_protocol(base_route.model_profile.model_provider),
             input_text=prompt,
@@ -1377,6 +1391,7 @@ class PostgresContentIntelligenceExecutionPort:
             ),
         )
         admission_contract = {
+            **({"routing_decision": routing_decision} if routing_decision else {}),
             "schema_version": "novelos.provider_request_admission.v1",
             "provider_request_identity": envelope.to_identity_dict(),
             "provider_admission": provider_admission.to_dict(),
@@ -1449,6 +1464,7 @@ class PostgresContentIntelligenceExecutionPort:
                 "book_id": spec.target_scope.book_id,
                 "worker_id": worker.worker_id,
                 "capability_runtime": {
+                    **({"routing_decision": routing_decision} if routing_decision else {}),
                     "materialization_asset_version_id": (
                         materialization_document.asset_version_id
                     ),
@@ -1490,6 +1506,15 @@ class PostgresContentIntelligenceExecutionPort:
             provider_capability_profile=self.transport.capability_profile.to_dict(),
         )
         effect_id = str(effect["external_effect_id"])
+        routed_amount = self.max_cost_per_call
+        if routing_decision:
+            from novel_forge.modules.production_execution.routing_runtime import routed_reservation
+
+            routed_amount = routed_reservation(routing_decision,
+                input_tokens=max(0, provider_admission.total_reserved - self.provider_output_token_reserve),
+                output_tokens=self.provider_output_token_reserve)
+            if Decimal(routed_amount) > Decimal(self.max_cost_per_call):
+                raise KernelError("BUDGET_HARD_LIMIT", "routed Source call exceeds the per-call cap")
         reservation = reserve_provider_budget(
             self.database_url,
             BudgetReservationRequest(
@@ -1497,7 +1522,9 @@ class PostgresContentIntelligenceExecutionPort:
                 external_effect_id=effect_id,
                 project_id=worker.project_id,
                 stable_idempotency_key=f"budget:{stable_key}",
-                provider=self.transport.provider,
+                provider=base_route.model_profile.model_provider if routing_decision else self.transport.provider,
+                model_id=base_route.model_profile.model_id if routing_decision else "",
+                work_id=spec.target_scope.book_id if routing_decision else "",
                 currency=(
                     "UNKNOWN"
                     if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
@@ -1506,7 +1533,7 @@ class PostgresContentIntelligenceExecutionPort:
                 estimated_amount=(
                     None
                     if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
-                    else self.max_cost_per_call
+                    else routed_amount
                 ),
                 estimated_tokens=int(provider_admission.total_reserved),
                 caps=self.budget_caps,
@@ -1759,9 +1786,12 @@ class PostgresContentIntelligenceExecutionPort:
         reservation_id: str,
     ) -> ChapterExecutionBinding:
         base = self.transport.routes["quality_source_originality"]
+        routing_decision = provider_admission.content.get("contract", provider_admission.content).get("routing_decision")
+        if routing_decision:
+            base = self.transport.provider_router._selected_route(base, routing_decision)
         suffix = spec.capability.replace(".", "-")
         profile = ModelProfile(
-            profile_id=f"source-intelligence.{suffix}.default",
+            profile_id=f"source-intelligence.{suffix}.default" + ("." + _token(base.model_profile.profile_id) if routing_decision else ""),
             profile_version=1,
             backend_id=base.model_profile.backend_id,
             runtime_class=base.model_profile.runtime_class,
@@ -1776,7 +1806,7 @@ class PostgresContentIntelligenceExecutionPort:
             capability_probe_ref=base.model_profile.capability_probe_ref,
         )
         policy = RoutePolicy(
-            policy_id=f"source-intelligence.{suffix}.route",
+            policy_id=f"source-intelligence.{suffix}.route" + ("." + _token(profile.profile_id) if routing_decision else ""),
             policy_version=1,
             default_model_profile_id=profile.profile_id,
             allowed_model_profile_ids=(profile.profile_id,),
@@ -1857,7 +1887,7 @@ class PostgresContentIntelligenceExecutionPort:
         )
         route = RouteSnapshot(
             route_snapshot_id=route_ref,
-            route_decision_id=f"route-decision:{_token(route_ref)}",
+            route_decision_id=routing_decision["decision_id"] if routing_decision else f"route-decision:{_token(route_ref)}",
             operation_id=worker.causation_id,
             attempt_id=worker.attempt_id,
             policy_id=policy.policy_id,

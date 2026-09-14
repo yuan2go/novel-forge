@@ -2583,6 +2583,8 @@ class BudgetReservationRequest:
     expected_budget_scope_revision: int | None = None
     accounting_basis: str = "PRICED"
     cost_authorization_ref: str = ""
+    model_id: str = ""
+    work_id: str = ""
 
 
 def reserve_provider_budget(
@@ -2747,7 +2749,8 @@ def reserve_provider_budget_in_uow(
                    NULLIF(operation.command_payload->'payload'->>'book_id',''),
                    NULLIF(operation.command_payload->>'book_id',''),
                    ''
-               )
+               ), effect.model_id,
+               effect.request_payload #>> '{_production_execution,book_id}'
         FROM authority_operation AS operation
         JOIN authority_external_effect AS effect
           ON effect.external_effect_id = %s AND effect.operation_id = operation.operation_id
@@ -2757,6 +2760,9 @@ def reserve_provider_budget_in_uow(
         [request.external_effect_id, request.operation_id],
     )
     operation_scope = uow.cursor.fetchone()
+    if operation_scope and ((request.model_id and str(operation_scope[3]) != request.model_id)
+        or (request.work_id and str(operation_scope[4]) != request.work_id)):
+        raise KernelError("BUDGET_SCOPE_CONFLICT", "budget model or work differs from frozen Effect")
     expected_book_id = str((locked_budget_scope or {}).get("book_id") or "")
     if (
         operation_scope is None
@@ -3763,6 +3769,7 @@ _USAGE_CAP_DIMENSIONS = frozenset(
         "provider_project_daily",
         "provider_project_total",
         "global_daily",
+        "global_total", "global_monthly", "project_monthly", "work_total", "model_project_total",
     }
 )
 
@@ -3794,10 +3801,31 @@ def _canonical_usage_caps(
     return caps
 
 
+def _extended_budget_dimensions(request: BudgetReservationRequest) -> dict[str, tuple[str, list[Any]]]:
+    return {
+        "global_total": ("currency=%s", [request.currency]),
+        "global_monthly": (
+            "currency=%s AND date_trunc('month',created_at AT TIME ZONE %s) = date_trunc('month',NOW() AT TIME ZONE %s)",
+            [request.currency, request.budget_timezone, request.budget_timezone]),
+        "project_monthly": (
+            "project_id=%s AND date_trunc('month',created_at AT TIME ZONE %s) = date_trunc('month',NOW() AT TIME ZONE %s)",
+            [request.project_id, request.budget_timezone, request.budget_timezone]),
+        "work_total": (
+            "project_id=%s AND external_effect_id IN (SELECT external_effect_id FROM authority_external_effect WHERE project_id=%s AND request_payload #>> '{_production_execution,book_id}'=%s)",
+            [request.project_id, request.project_id, request.work_id]),
+        "model_project_total": (
+            "project_id=%s AND provider=%s AND external_effect_id IN (SELECT external_effect_id FROM authority_external_effect WHERE project_id=%s AND model_id=%s)",
+            [request.project_id, request.provider, request.project_id, request.model_id]),
+    }
+
+
 def _usage_cap_dimension(
     request: BudgetReservationRequest, dimension: str
 ) -> tuple[str, list[Any]]:
+    if (dimension == "work_total" and not request.work_id) or (dimension == "model_project_total" and not request.model_id):
+        raise KernelError("BUDGET_SCOPE_IDENTITY_REQUIRED", dimension)
     dimensions: dict[str, tuple[str, list[Any]]] = {
+        **_extended_budget_dimensions(request),
         "operation_total": ("operation_id = %s", [request.operation_id]),
         "chapter_total": (
             "project_id = %s AND chapter = %s",
@@ -3886,6 +3914,7 @@ def _enforce_caps(
             "BUDGET_TIMEZONE_INVALID", "budget timezone is invalid"
         ) from exc
     dimensions = {
+        **_extended_budget_dimensions(request),
         "operation_total": ("operation_id = %s", [request.operation_id]),
         "chapter_total": (
             "project_id = %s AND chapter = %s",
@@ -3915,6 +3944,8 @@ def _enforce_caps(
         ),
     }
     for dimension, cap in caps.items():
+        if (dimension == "work_total" and not request.work_id) or (dimension == "model_project_total" and not request.model_id):
+            raise KernelError("BUDGET_SCOPE_IDENTITY_REQUIRED", dimension)
         if dimension not in dimensions or (
             dimension == "chapter_total" and request.chapter is None
         ):

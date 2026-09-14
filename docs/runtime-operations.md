@@ -286,6 +286,30 @@ be promoted past the existing fixture ceiling into production Planning.
 
 ## Credentialed Provider qualification
 
+The cost-aware router replacement is not release-qualified. In `production`, model
+selection is centralized in the Provider gateway composition; in `validation`, the
+existing explicit-profile qualification path remains available. Setting
+`NOVEL_FORGE_PROVIDER_ROUTER=quality-cost-v1` also selects the router in an isolated
+validation environment. DeepSeek requires `DEEPSEEK_API_KEY` from the process secret
+environment, a positive `NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL` and
+`NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT`. Never put credentials into task contexts,
+model-call assets, pricing policies or command-line arguments.
+
+`novel-forge authority-provider-routing explain --project-id <id>
+--task-context-file <path>` performs no inference. It projects current benchmark and
+retry evidence against the caller's explicit budget snapshot; actual dispatch always
+rechecks locked authoritative budgets. `replay --project-id <id> --decision-id <id>`
+reads the immutable decision. `metrics --project-id <id>` projects routing counts,
+settled/reserved cost, usage and benchmark statistics. These read operations require
+the existing `content.authority.query` permission. Estimated upper bounds must not be
+reported as actual billed cost. Missing calibrated benchmark evidence blocks routing;
+operators must not seed fixture scores as production quality evidence.
+
+The routing migration identified by the canonical migration manifest adds indexes only. It does not rewrite
+Provider identities or backfill historical routing decisions. Unfinished legacy
+Provider executions and mixed Codex entitlement runs are not qualified for migration
+to the new router; the production-ready assertion remains `NO`.
+
 Credentialed Provider qualification is intentionally separate from P0. The only live
 runner is `make real-provider-qualification`; the D0 contract probe and worker remain
 fixture-only and cannot send with a credential. The live runner requires a clean worktree,

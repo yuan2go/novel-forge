@@ -237,8 +237,15 @@ def _model_budget_settlement(
         supports_cost
         and str(cost.get("availability") or "").upper() == "AVAILABLE"
         and str(cost.get("source") or "").lower() != "not_provided"
+        and cost.get("measurement") != "ESTIMATED_UPPER_BOUND"
     )
-    actual_amount = result.cost_amount if cost_available else reserved_amount
+    usage_pricing = (
+        supports_usage and bool(frozen_capability_profile.get("supports_usage_pricing"))
+        and cost.get("source") == "usage_pricing_upper_bound"
+        and cost.get("measurement") == "ESTIMATED_UPPER_BOUND"
+        and bool(cost.get("pricing_version")) and bool(cost.get("pricing_snapshot"))
+    )
+    actual_amount = result.cost_amount if cost_available or usage_pricing else reserved_amount
     return (
         actual_amount,
         actual_tokens,
@@ -249,7 +256,7 @@ def _model_budget_settlement(
                 else "RESERVATION_CEILING"
             ),
             "cost_settlement_basis": (
-                "PROVIDER_COST_RECEIPT" if cost_available else "RESERVATION_CEILING"
+                "PROVIDER_COST_RECEIPT" if cost_available else "FROZEN_USAGE_PRICING_UPPER_BOUND" if usage_pricing else "RESERVATION_CEILING"
             ),
         },
     )
@@ -862,6 +869,15 @@ class ExternalEffectChapterModelPort:
                 "PROVIDER_ADMISSION_REQUIRED",
                 "Production Execution has no Provider admission binder",
             )
+        routing_decision = dict(effect_request_payload.get("_production_execution", {}).get("capability_runtime", {}).get("routing_decision") or {})
+        if routing_decision:
+            from novel_forge.modules.production_execution.routing_runtime import routed_reservation
+
+            upper_bound = routed_reservation(routing_decision,
+                input_tokens=max(0, bounded_reservation_tokens - provider_output_token_ceiling),
+                output_tokens=provider_output_token_ceiling)
+            bounded_reservation_amount = self._bounded_reservation_amount(upper_bound)
+        selected_model = (routing_decision.get("selected") or {}).get("candidate", {}).get("model")
         effect = plan_external_effect(
             self.database_url,
             context,
@@ -873,7 +889,7 @@ class ExternalEffectChapterModelPort:
             max_attempts=2,
             reversible=False,
             completion_policy="synchronous_final",
-            model_id=str(
+            model_id=str(selected_model or
                 getattr(self.adapter, "model_id_for_stage", lambda _stage: "")(stage)
             ),
             request_timeout_seconds=provider_request_timeout_seconds,
@@ -930,7 +946,9 @@ class ExternalEffectChapterModelPort:
                 external_effect_id=str(effect["external_effect_id"]),
                 project_id=request.project_id,
                 stable_idempotency_key=f"budget:{stable_key}",
-                provider=self.adapter.provider,
+                provider=(routing_decision.get("selected") or {}).get("candidate", {}).get("provider") or self.adapter.provider,
+                model_id=str(selected_model or ""),
+                work_id=str(effect_request_payload["_production_execution"]["book_id"]) if routing_decision else "",
                 currency=(
                     "UNKNOWN"
                     if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
@@ -1658,7 +1676,7 @@ class ExternalEffectChapterModelPort:
                     "trace_id": request.trace_id,
                     "external_effect_id": external_effect_id,
                     "availability": "UNAVAILABLE" if cost_unknown else "AVAILABLE",
-                    "measurement": "UNKNOWN" if cost_unknown else "MEASURED",
+                    "measurement": "UNKNOWN" if cost_unknown else str(cost.get("measurement") or "MEASURED"),
                     "amount": None if cost_unknown else str(cost.get("amount") or "0"),
                     "currency": (
                         "UNKNOWN"
@@ -1751,7 +1769,7 @@ class ExternalEffectChapterModelPort:
                     "trace_id": request.trace_id,
                     "external_effect_id": external_effect_id,
                     "availability": "UNAVAILABLE" if cost_unknown else "AVAILABLE",
-                    "measurement": "UNKNOWN" if cost_unknown else "MEASURED",
+                    "measurement": "UNKNOWN" if cost_unknown else str(cost_evidence.get("measurement") or "MEASURED"),
                     "amount": None if cost_unknown else result.cost_amount,
                     "currency": "UNKNOWN" if cost_unknown else result.currency,
                     "accounting_basis": accounting_basis,

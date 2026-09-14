@@ -3708,6 +3708,8 @@ class PostgresPlanningExecutionPreparer:
         if provider_stage is not None:
             stable_key = f"{operation_id}:{definition.capability}:{stage_identity}:v1"
         planning_route = self.planning_route
+        routing_decision = None
+        provider_router = getattr(self.execution_transport, "provider_router", None)
         authoritative_envelope = build_planning_constraint_envelope(
             project_id=command.project_id,
             book_id=command.book_id,
@@ -3900,6 +3902,14 @@ class PostgresPlanningExecutionPreparer:
                 materialization=materialization,
             )
             output_reserve = int(stable_request_payload["max_output_tokens"])
+            if provider_router is not None:
+                planning_route, routing_decision = provider_router.select(
+                    planning_route, task_type=stage_name,
+                    project_id=command.project_id, work_id=command.book_id,
+                    operation_id=operation_id, attempt_id=attempt_id,
+                    stable_key=stable_key, input_tokens=len(prompt.encode()) + 512,
+                    output_tokens=output_reserve, trace_id=command.trace_id,
+                    correlation_id=command.correlation_id, cache_prefix=prompt.encode()[:512])
             route_identity = ":".join(
                 (
                     command.generator_operation_name,
@@ -3911,6 +3921,8 @@ class PostgresPlanningExecutionPreparer:
             )
             envelope = ProviderRequestEnvelope(
                 provider=planning_route.model_profile.model_provider,
+                reasoning_effort=planning_route.model_profile.reasoning_effort if planning_route.model_profile.model_provider == "deepseek" else "",
+                pricing_policy_json=json.dumps(routing_decision["selected"]["candidate"]["pricing"], sort_keys=True) if routing_decision else "",
                 model=planning_route.model_profile.model_id,
                 protocol=provider_request_protocol(
                     planning_route.model_profile.model_provider
@@ -4006,7 +4018,10 @@ class PostgresPlanningExecutionPreparer:
             request_payload = {
                 **stable_request_payload,
                 "_production_execution": {
+                    **({"book_id": command.book_id, "project_id": command.project_id,
+                        "operation_id": operation_id, "attempt_id": attempt_id} if routing_decision else {}),
                     "capability_runtime": {
+                        **({"routing_decision": routing_decision} if routing_decision else {}),
                         "snapshot_id": attempt_snapshot.snapshot_id,
                         "snapshot_hash": attempt_snapshot.snapshot_hash,
                         "materialization_asset_version_id": (
@@ -4090,6 +4105,16 @@ class PostgresPlanningExecutionPreparer:
                     "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
                     "Planning retry materialization differs from the frozen Effect",
                 )
+        if provider_router is not None:
+            from novel_forge.modules.production_execution.routing_runtime import routed_reservation
+
+            routing_decision = request_payload["_production_execution"]["capability_runtime"]["routing_decision"]
+            planning_route = provider_router._selected_route(self.planning_route, routing_decision)
+            provider_reservation_amount = routed_reservation(routing_decision,
+                input_tokens=max(0, provider_reservation_tokens - int(stable_request_payload["max_output_tokens"])),
+                output_tokens=int(stable_request_payload["max_output_tokens"]))
+            if Decimal(provider_reservation_amount) > Decimal(self.max_cost_per_call):
+                raise KernelError("BUDGET_HARD_LIMIT", "routed Planning call exceeds the per-call cap")
         effect = plan_external_effect(
             self.database_url,
             effect_context,
@@ -4131,7 +4156,9 @@ class PostgresPlanningExecutionPreparer:
                     stable_idempotency_key=(
                         f"budget:{stable_key}:attempt:{attempt_id}"
                     ),
-                    provider=self.execution_transport.provider,
+                    provider=planning_route.model_profile.model_provider if routing_decision else self.execution_transport.provider,
+                    model_id=planning_route.model_profile.model_id if routing_decision else "",
+                    work_id=command.book_id if routing_decision else "",
                     currency=(
                         "UNKNOWN"
                         if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
@@ -4180,6 +4207,7 @@ class PostgresPlanningExecutionPreparer:
             definition=definition,
             capability=capability,
             planning_route=planning_route,
+            routing_decision=routing_decision,
             context_document=context_document,
             input_documents=input_documents,
             effect_id=effect_id,
@@ -4254,6 +4282,7 @@ class PostgresPlanningExecutionPreparer:
         frozen: Any,
         stage_name: str,
         stage_identity: str,
+        routing_decision: Mapping[str, Any] | None = None,
     ) -> tuple[_PlanningExecutionBinding, dict[str, AuthorityAssetDocument]]:
         graph = self._operation_graph(operation_id, command.project_id)
         suffix = (
@@ -4373,7 +4402,7 @@ class PostgresPlanningExecutionPreparer:
         )
         route = RouteSnapshot(
             route_snapshot_id=route_ref,
-            route_decision_id=f"route-decision:{_token(route_ref)}",
+            route_decision_id=routing_decision["decision_id"] if routing_decision else f"route-decision:{_token(route_ref)}",
             operation_id=operation_id,
             attempt_id=attempt_id,
             policy_id=policy.policy_id,

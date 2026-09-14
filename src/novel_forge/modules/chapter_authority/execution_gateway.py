@@ -669,6 +669,7 @@ class PostgresChapterExecutionContractBinder:
         self.pack_required = pack_required
         self.workflow_definition_ref = workflow_definition_ref
         self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
+        self.provider_router: Any = None
 
     def freeze_before_external_effect(
         self,
@@ -729,6 +730,7 @@ class PostgresChapterExecutionContractBinder:
             )
         graph = self._operation_graph(operation_id, project_id)
         route = self.routes[stage]
+        routing_decision = None
         attempt_snapshot = self._resolve_pack_snapshot(
             project_id=project_id,
             workspace_id=workspace_id,
@@ -930,8 +932,18 @@ class PostgresChapterExecutionContractBinder:
                 "PROVIDER_ADMISSION_INPUT_INCOMPLETE",
                 "Provider admission requires stable identity, timeout, and output reserve",
             )
+        if self.provider_router is not None:
+            route, routing_decision = self.provider_router.select(route, task_type=stage,
+                project_id=project_id, work_id=book_id, operation_id=operation_id,
+                attempt_id=attempt_id, stable_key=stable_idempotency_key,
+                input_tokens=len(prompt.encode()) + route.token_safety_margin + route.token_framing_overhead,
+                output_tokens=output_reserve, trace_id=str(request_payload["trace_id"]),
+                correlation_id=str(request_payload["correlation_id"]), cache_prefix=prompt.encode()[:512])
+            route_identity = routing_decision["decision_id"]
         envelope = ProviderRequestEnvelope(
             provider=route.model_profile.model_provider,
+            reasoning_effort=route.model_profile.reasoning_effort if route.model_profile.model_provider == "deepseek" else "",
+            pricing_policy_json=json.dumps(routing_decision["selected"]["candidate"]["pricing"], sort_keys=True) if routing_decision else "",
             model=route.model_profile.model_id,
             protocol=provider_request_protocol(route.model_profile.model_provider),
             input_text=prompt,
@@ -1041,6 +1053,8 @@ class PostgresChapterExecutionContractBinder:
             "token_accounting_contract": token_contract.to_dict(),
             "provider_admission": admission.to_dict(),
         }
+        if routing_decision is not None:
+            effect_binding["routing_decision"] = routing_decision
         if embedding_output_contract is not None:
             effect_binding["embedding_output_contract"] = embedding_output_contract
         return ChapterCapabilityPreflight(
@@ -1106,6 +1120,8 @@ class PostgresChapterExecutionContractBinder:
             )
         graph = self._operation_graph(operation_id, project_id)
         route = self.routes[stage]
+        if self.provider_router is not None:
+            route, _routing_decision = self.provider_router.select_for_payload(route, request_payload)
         definition = default_capability_registry().resolve(
             chapter_stage_capability(stage)
         )
@@ -1463,7 +1479,7 @@ class PostgresChapterExecutionContractBinder:
         )
         snapshot = RouteSnapshot(
             route_snapshot_id=route_ref,
-            route_decision_id=f"route-decision:{token}",
+            route_decision_id=str((capability_runtime or {}).get("routing_decision", {}).get("decision_id") or f"route-decision:{token}"),
             operation_id=operation_id,
             attempt_id=attempt_id,
             policy_id=route.route_policy.policy_id,
@@ -4387,6 +4403,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
                 "account entitlement requires aggregate Provider call and token caps"
             )
         self.execution_binders: dict[str, Any] = {}
+        self.provider_router: Any = None
         self._sessions: dict[str, ChapterExecutionGatewaySession] = {}
         self._lock = Lock()
         all_real = all(
@@ -4412,6 +4429,11 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             supports_cost_receipt=True,
             reconciliation_mode=self.reconciliation_mode,
             real_provider_validation_eligible=all_real,
+            supports_usage_pricing=bool(self.provider_adapters) and all(
+                getattr(adapter.capability_profile, "supports_usage_pricing", False)
+                or adapter.capability_profile.supports_cost_receipt
+                for adapter in self.provider_adapters.values()
+            ),
         )
 
     def execute(
@@ -4532,6 +4554,8 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         return self._session(project_id)
 
     def register_execution_binder(self, domain: str, binder: Any) -> None:
+        if self.provider_router is not None:
+            binder.provider_router = self.provider_router
 
         normalized = domain.strip().lower()
         if not normalized or normalized in self.execution_binders:
@@ -4790,20 +4814,74 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         handle: ExecutionHandle,
         result: Any,
     ) -> dict[str, Any]:
-        route = self.routes[binding.request.stage]
         execution_record = session.evidence_store.get_record(
             binding.request.execution_id
         )
+        raw_evidence = execution_record.raw_evidence
+        fixture_only = (
+            handle.transport.value == "SCRIPTED_FIXTURE"
+            or raw_evidence.get("fixture_protocol_only") is True
+        )
+        remote_receipt = execution_record.provider_result
+        process_receipt = execution_record.process_receipt
+        receipt_proves_call = bool(
+            not fixture_only
+            and raw_evidence.get("real_model_call") is not False
+            and (
+                (
+                    handle.transport.value == "REMOTE_PROVIDER_API"
+                    and remote_receipt is not None
+                    and remote_receipt.request_sent
+                    and remote_receipt.handle is not None
+                    and handle.provider_request_id
+                    == remote_receipt.handle.provider_request_id
+                    and bool(handle.provider_request_id)
+                    and remote_receipt.evidence.get("fixture_protocol_only") is not True
+                    and remote_receipt.evidence.get("real_model_call") is not False
+                )
+                or (
+                    handle.transport.value == "LOCAL_CLI_REMOTE_INFERENCE"
+                    and process_receipt is not None
+                    and process_receipt.receipt_id == handle.local_execution_receipt_id
+                    and process_receipt.execution_id == binding.request.execution_id
+                    and raw_evidence.get("terminal_event_observed") is True
+                    and (raw_evidence.get("usage") or {}).get("measurement") == "MEASURED"
+                )
+            )
+        )
+        frozen_eligible = False
+        if receipt_proves_call:
+            runtime = get_database_runtime(self.database_url)
+            with runtime.connection() as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        """SELECT provider_capability_profile,request_payload,model_id
+                           FROM authority_external_effect
+                           WHERE external_effect_id=%s AND project_id=%s AND operation_id=%s""",
+                        [binding.request.external_effect_id, binding.request.project_id,
+                         binding.request.operation_id],
+                    )
+                    frozen = cursor.fetchone()
+            if frozen is not None:
+                capability, request_payload, model_id = frozen
+                identity = (request_payload.get("_production_execution") or {}).get(
+                    "capability_runtime", {}).get("provider_request_identity") or {}
+                frozen_eligible = bool(
+                    (capability or {}).get("real_provider_validation_eligible") is True
+                    and request_payload.get("stage") == binding.request.stage
+                    and model_id == binding.route_snapshot.model_id
+                    and (not identity or (
+                        identity.get("provider") == binding.route_snapshot.model_provider
+                        and identity.get("model") == binding.route_snapshot.model_id
+                    ))
+                )
         evidence: dict[str, Any] = {
-            "provider_id": route.model_profile.model_provider,
-            "model_id": route.model_profile.model_id,
+            "provider_id": binding.route_snapshot.model_provider,
+            "model_id": binding.route_snapshot.model_id,
             "prompt_version": binding.input_manifest.prompt_bundle_version,
             "skill_version": binding.input_manifest.skill_bundle_version,
-            "real_model_call": (
-                route.real_provider_validation_eligible
-                and handle.transport.value != "SCRIPTED_FIXTURE"
-            ),
-            "fixture_protocol_only": handle.transport.value == "SCRIPTED_FIXTURE",
+            "real_model_call": receipt_proves_call and frozen_eligible,
+            "fixture_protocol_only": fixture_only,
             "production_verified": False,
             "production_execution": {
                 "execution_request": binding.request.to_dict(),

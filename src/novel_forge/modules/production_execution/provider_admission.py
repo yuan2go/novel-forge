@@ -8,6 +8,7 @@ from typing import Any, Mapping
 
 PROVIDER_ADMISSION_CONTRACT_VERSION = "provider-token-admission-v1"
 _SUPPORTED_METHODS = {
+    "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1": ("deepseek", "PROVEN_UPPER_BOUND"),
     "OPENAI_UTF8_BYTES_UPPER_BOUND_V1": ("openai", "PROVEN_UPPER_BOUND"),
     "SCRIPTED_UTF8_BYTES_EXACT_V1": ("scripted_provider_v2", "EXACT"),
     "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1": (
@@ -31,6 +32,8 @@ _REQUIRED_COMPLETE_COVERAGE = frozenset(
 
 
 def provider_request_protocol(provider: str) -> str:
+    if provider == "deepseek":
+        return "deepseek-chat-completions-json-v1"
     if provider == "openai":
         return "openai-responses-text-envelope-v1"
     if provider == "scripted_provider_v2":
@@ -57,6 +60,8 @@ class ProviderRequestEnvelope:
     max_output_tokens: int
     timeout_seconds: int
     stable_idempotency_key: str
+    reasoning_effort: str = ""
+    pricing_policy_json: str = ""
 
     def __post_init__(self) -> None:
         if not all(
@@ -74,7 +79,12 @@ class ProviderRequestEnvelope:
             raise ValueError("Provider request envelope limits must be positive")
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        payload = asdict(self)
+        if not self.reasoning_effort:
+            payload.pop("reasoning_effort")
+        if not self.pricing_policy_json:
+            payload.pop("pricing_policy_json")
+        return payload
 
     @property
     def input_text_hash(self) -> str:
@@ -82,6 +92,8 @@ class ProviderRequestEnvelope:
 
     def to_identity_dict(self) -> dict[str, Any]:
         return {
+            **({"reasoning_effort": self.reasoning_effort} if self.reasoning_effort else {}),
+            **({"pricing_policy_json": self.pricing_policy_json} if self.pricing_policy_json else {}),
             "provider": self.provider,
             "model": self.model,
             "protocol": self.protocol,
@@ -98,6 +110,8 @@ class ProviderRequestEnvelope:
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "ProviderRequestEnvelope":
         return cls(
+            pricing_policy_json=str(payload.get("pricing_policy_json") or ""),
+            reasoning_effort=str(payload.get("reasoning_effort") or ""),
             provider=str(payload.get("provider") or ""),
             model=str(payload.get("model") or ""),
             protocol=str(payload.get("protocol") or ""),
@@ -112,6 +126,8 @@ class ProviderRequestEnvelope:
         cls, payload: Mapping[str, Any], *, input_text: str
     ) -> "ProviderRequestEnvelope":
         envelope = cls(
+            pricing_policy_json=str(payload.get("pricing_policy_json") or ""),
+            reasoning_effort=str(payload.get("reasoning_effort") or ""),
             provider=str(payload.get("provider") or ""),
             model=str(payload.get("model") or ""),
             protocol=str(payload.get("protocol") or ""),
@@ -312,8 +328,8 @@ def build_route_token_accounting_contract(
         evidence_ref = "fixture-protocol:scripted-byte-meter:v1"
         context_limit = model_context_limit or _SCRIPTED_PROVIDER_CONTEXT_BYTES
     elif (
-        provider == "openai"
-        and accounting_method == "OPENAI_UTF8_BYTES_UPPER_BOUND_V1"
+        ((provider == "openai" and accounting_method == "OPENAI_UTF8_BYTES_UPPER_BOUND_V1")
+         or (provider == "deepseek" and accounting_method == "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"))
         and model_context_limit > 0
         and accounting_evidence_ref
     ):
@@ -341,6 +357,7 @@ def build_route_token_accounting_contract(
         model=model,
         route_identity=route_identity,
         meter_identity=(
+            "deepseek-byte-token-upper-bound" if provider == "deepseek" else
             "openai-byte-token-upper-bound"
             if provider == "openai"
             else "codex-cli-application-stdin-byte-upper-bound"

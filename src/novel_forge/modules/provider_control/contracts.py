@@ -25,6 +25,8 @@ class ProviderCapabilityProfile:
     reconciliation_mode: str
     real_provider_validation_eligible: bool
     contract_version: str = "provider-capability-v2"
+    durable_intent_required: bool = False
+    supports_usage_pricing: bool = False
 
     def __post_init__(self) -> None:
         if not self.provider:
@@ -39,12 +41,16 @@ class ProviderCapabilityProfile:
                 raise ValueError("only a v2-controlled adapter can validate a real provider")
             if not self.supports_request_timeout:
                 raise ValueError("real provider validation requires an SDK request timeout")
-            if not self.supports_provider_idempotency:
+            if not self.supports_provider_idempotency and not self.durable_intent_required:
                 raise ValueError("real provider validation requires provider-side idempotency")
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["control_level"] = self.control_level.value
+        if not self.durable_intent_required:
+            payload.pop("durable_intent_required")
+        if not self.supports_usage_pricing:
+            payload.pop("supports_usage_pricing")
         return payload
 
 
@@ -105,7 +111,10 @@ class ProviderInvocationResult:
             "not_found", "ambiguous", "cancelled", "already_completed",
         }:
             raise ValueError("provider invocation outcome is invalid")
-        if self.request_sent and self.handle is None:
+        if self.request_sent and self.handle is None and not (
+            self.outcome in {"unknown", "ambiguous", "retryable_failure", "final_failure"}
+            and self.evidence.get("submission_state") in {"UNKNOWN", "REJECTED_BEFORE_EXECUTION"}
+        ):
             raise ValueError("a sent provider request requires a provider request handle")
         if self.handle is not None and not self.handle.provider_request_id:
             raise ValueError("provider request ID is required after submission")
@@ -154,6 +163,8 @@ def capability_profile_from_dict(payload: dict[str, Any]) -> ProviderCapabilityP
             payload.get("real_provider_validation_eligible")
         ),
         contract_version=str(payload.get("contract_version") or "provider-capability-v2"),
+        durable_intent_required=bool(payload.get("durable_intent_required")),
+        supports_usage_pricing=bool(payload.get("supports_usage_pricing")),
     )
 
 

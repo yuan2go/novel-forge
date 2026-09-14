@@ -64,6 +64,16 @@ def build_provider_adapter_registry(
                 "OpenAI Provider composition requires the OPENAI_API_KEY secret"
             )
         factory.register("openai", lambda: build_openai_provider_adapter(api_key))
+    if "deepseek" in adapter_ids:
+        from .deepseek import DeepSeekProviderAdapter
+        from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
+
+        deepseek_key = str(values.get("DEEPSEEK_API_KEY") or "").strip()
+        if not deepseek_key:
+            raise RuntimeError("DeepSeek composition requires DEEPSEEK_API_KEY")
+        factory.register("deepseek", lambda: DeepSeekProviderAdapter(
+            deepseek_key, pricing={item.model: item.pricing for item in deepseek_candidates(available=True)},
+        ))
     try:
         return factory.build_registry(adapter_ids)
     except ValueError as exc:

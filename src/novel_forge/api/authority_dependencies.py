@@ -345,6 +345,24 @@ def build_production_execution_composition(
         str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
     )
     environment = runtime_environment.value
+    router_enabled = runtime_environment is RuntimeEnvironment.PRODUCTION or str(values.get("NOVEL_FORGE_PROVIDER_ROUTER") or "").strip() == "quality-cost-v1"
+    if router_enabled:
+        from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
+
+        templates = dict(values)
+        default_candidate = deepseek_candidates(available=True)[0]
+        for stage_name in ("MODEL", "MEMO", "DRAFT", "REVIEW", "REVISION", "REREVIEW",
+                           "CANON_EXTRACTION", "CANON_SUPPORT", "QUALITY", "READER_OUTCOME",
+                           "NARRATIVE_EVALUATOR", "AGENT", "PLANNING"):
+            templates[f"NOVEL_FORGE_{stage_name}_PROVIDER"] = default_candidate.provider
+            templates[f"NOVEL_FORGE_{stage_name}_MODEL"] = default_candidate.model
+        templates["NOVEL_FORGE_REASONING_EFFORT"] = default_candidate.reasoning
+        templates["NOVEL_FORGE_AGENT_REASONING_EFFORT"] = default_candidate.reasoning
+        templates["NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"] = default_candidate.reasoning
+        templates["NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT"] = str(default_candidate.context_limit)
+        templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD"] = "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"
+        templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF"] = default_candidate.capability_version
+        values = templates
     registry = provider_registry or build_provider_adapter_registry(
         environment=runtime_environment,
         provider_ids=configured_chapter_provider_ids(values),
@@ -682,7 +700,7 @@ def build_production_execution_composition(
             policy.fallback_policy_ref,
             policy.fallback_policy_version,
         )
-        if codex_cli and repository_artifacts is not None and stage != "agent_session":
+        if (codex_cli or router_enabled) and repository_artifacts is not None and stage != "agent_session":
             system_artifact = repository_artifacts.resolve(
                 ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
                 "prompt-system:chapter-generation-pack",
@@ -1105,6 +1123,7 @@ def build_production_execution_composition(
                         working_directory=settings.root,
                     ),
                     record_store=store,
+                    structured_result_validator=validate_codex_result,
                 )
             )
         gateway = ProductionExecutionGateway(backends, admission)
@@ -1117,6 +1136,10 @@ def build_production_execution_composition(
         "project_daily": "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CALL_LIMIT",
         "provider_project_daily": "NOVEL_FORGE_PROVIDER_DAILY_CALL_LIMIT",
         "global_daily": "NOVEL_FORGE_GLOBAL_DAILY_PROVIDER_CALL_LIMIT",
+        "global_total": "NOVEL_FORGE_GLOBAL_PROVIDER_CALL_LIMIT",
+        "global_monthly": "NOVEL_FORGE_GLOBAL_MONTHLY_PROVIDER_CALL_LIMIT",
+        "work_total": "NOVEL_FORGE_WORK_PROVIDER_CALL_LIMIT",
+        "model_project_total": "NOVEL_FORGE_MODEL_PROJECT_CALL_LIMIT",
     }
     token_cap_environment = {
         "project_total": "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT",
@@ -1125,6 +1148,10 @@ def build_production_execution_composition(
         "project_daily": "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_TOKEN_LIMIT",
         "provider_project_daily": "NOVEL_FORGE_PROVIDER_DAILY_TOKEN_LIMIT",
         "global_daily": "NOVEL_FORGE_GLOBAL_DAILY_PROVIDER_TOKEN_LIMIT",
+        "global_total": "NOVEL_FORGE_GLOBAL_PROVIDER_TOKEN_LIMIT",
+        "global_monthly": "NOVEL_FORGE_GLOBAL_MONTHLY_PROVIDER_TOKEN_LIMIT",
+        "work_total": "NOVEL_FORGE_WORK_PROVIDER_TOKEN_LIMIT",
+        "model_project_total": "NOVEL_FORGE_MODEL_PROJECT_TOKEN_LIMIT",
     }
     provider_call_caps = {
         dimension: int(str(values[environment_name]))
@@ -1157,6 +1184,16 @@ def build_production_execution_composition(
         provider_call_caps=provider_call_caps,
         provider_token_caps=provider_token_caps,
     )
+    if router_enabled:
+        from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+        from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
+
+        model_gateway.provider_router = ProductionProviderRouter(
+            settings.database_url, candidates=deepseek_candidates(available=True),
+            task_money_limit=max_cost_per_call,
+            task_token_limit=int(values.get("NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT") or 0),
+            soft_money_limit=str(values.get("NOVEL_FORGE_ROUTER_SOFT_COST_PER_TASK") or "") or None,
+        )
     shared_budget_caps = {
         key: str(values[value])
         for key, value in (
@@ -1165,6 +1202,10 @@ def build_production_execution_composition(
             ("operation_total", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
             ("provider_project_daily", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
             ("global_daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),
+            ("global_total", "NOVEL_FORGE_GLOBAL_PROVIDER_CAP"),
+            ("global_monthly", "NOVEL_FORGE_GLOBAL_MONTHLY_PROVIDER_CAP"),
+            ("work_total", "NOVEL_FORGE_WORK_PROVIDER_CAP"),
+            ("model_project_total", "NOVEL_FORGE_MODEL_PROJECT_CAP"),
         )
         if str(values.get(value) or "").strip()
     }
@@ -1172,6 +1213,10 @@ def build_production_execution_composition(
         raise RuntimeError(
             "account entitlement cannot use monetary Provider cap configuration"
         )
+    if model_gateway.provider_router is not None:
+        model_gateway.provider_router.money_caps = dict(shared_budget_caps)
+        model_gateway.provider_router.token_caps = dict(provider_token_caps)
+        model_gateway.provider_router.call_caps = dict(provider_call_caps)
     chapter_total_budget_cap = str(
         values.get("NOVEL_FORGE_CHAPTER_PROVIDER_CAP") or ""
     ).strip()
@@ -2045,6 +2090,10 @@ def build_story_planning_generation_application(
     planning_provider = (
         str(values.get("NOVEL_FORGE_PLANNING_PROVIDER") or "").strip().lower()
     )
+    if transport.provider_router is not None:
+        planning_model = base_route.model_profile.model_id
+        planning_reasoning_effort = base_route.model_profile.reasoning_effort
+        planning_provider = base_route.model_profile.model_provider
     if runtime_environment.controlled:
         if not planning_model or not planning_reasoning_effort or not planning_provider:
             raise RuntimeError(
