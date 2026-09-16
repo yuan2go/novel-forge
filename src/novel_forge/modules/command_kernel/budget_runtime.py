@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
@@ -618,7 +618,7 @@ def acquire_budget_locks_in_uow(
 ) -> None:
     """INVARIANT: Acquire the Command Kernel's canonical budget advisory lock prefix.
 
-    Every path takes sorted currency locks before sorted scope locks.  Callers
+    Every path takes the shared usage lock, then currency and scope locks. Callers
     may then lock the BudgetScope owner row, followed by Operation/Effect and
     Reservation rows.  This order prevents cap-query insert phantoms without
     introducing a recovery-versus-reservation lock inversion.
@@ -636,6 +636,10 @@ def acquire_budget_locks_in_uow(
             for scope_id in budget_scope_ids
             if str(scope_id).strip()
         }
+    )
+    uow.cursor.execute(
+        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+        ["authority-provider-budget:shared-usage"],
     )
     for currency in currency_keys:
         uow.cursor.execute(
@@ -2894,6 +2898,7 @@ def reserve_provider_budget_in_uow(
                 code,
                 "budget scope does not authorize a new Provider reservation",
             )
+    _enforce_routing_chain_budget(uow.cursor, request, amount)
     _enforce_agent_session_aggregate(
         uow.cursor,
         request,
@@ -2924,6 +2929,8 @@ def reserve_provider_budget_in_uow(
                 "UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"
             ),
             "cost_authorization_ref": request.cost_authorization_ref,
+            "model_id": request.model_id,
+            "work_id": request.work_id,
             "call_caps": call_caps,
             "token_caps": token_caps,
             "budget_scope_id": effective_budget_scope_id,
@@ -3113,6 +3120,195 @@ def reserve_provider_budget_in_uow(
         "call_caps": call_caps,
         "token_caps": token_caps,
     }
+
+
+def _enforce_routing_chain_budget(
+    cursor: Any,
+    request: BudgetReservationRequest,
+    amount: Decimal | None,
+    *,
+    check_attempts: bool = True,
+) -> None:
+    cursor.execute(
+        """SELECT request_payload #> '{_production_execution,capability_runtime,routing_decision}',
+                  request_payload->>'max_output_tokens'
+           FROM authority_external_effect WHERE external_effect_id=%s AND project_id=%s""",
+        [request.external_effect_id, request.project_id],
+    )
+    row = cursor.fetchone()
+    decision = row[0] if row else None
+    if not decision:
+        return
+    task = decision.get("task") or {}
+    limits = task.get("budget_snapshot") or {}
+    chain_id = task.get("chain_id")
+    if (
+        not chain_id
+        or not limits.get("task_token_limit")
+        or not limits.get("task_money_limit")
+    ):
+        raise KernelError(
+            "ROUTING_BUDGET_CONTRACT_REQUIRED",
+            "routed effect lacks frozen chain limits",
+        )
+    candidate = (decision.get("selected") or {}).get("candidate") or {}
+    price = candidate.get("pricing") or {}
+    if (
+        decision.get("status") != "SELECTED"
+        or task.get("project_id") != request.project_id
+        or task.get("operation_id") != request.operation_id
+        or task.get("work_id") != request.work_id
+        or candidate.get("provider") != request.provider
+        or candidate.get("model") != request.model_id
+    ):
+        raise KernelError(
+            "ROUTING_BUDGET_IDENTITY_CONFLICT",
+            "reservation differs from selected route",
+        )
+    if (
+        price.get("accounting_basis") != request.accounting_basis.strip().upper()
+        or price.get("currency") != request.currency
+    ):
+        raise KernelError(
+            "ROUTING_BUDGET_ACCOUNTING_CONFLICT",
+            "reservation differs from frozen route accounting",
+        )
+    policy = decision.get("escalation_policy") or {}
+    try:
+        max_attempts = int(policy["max_attempts"])
+        max_escalations = int(policy["max_escalations"])
+        token_limit = int(limits["task_token_limit"])
+        money_limit = _amount(str(limits["task_money_limit"]))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise KernelError(
+            "ROUTING_BUDGET_CONTRACT_REQUIRED",
+            "routed effect has invalid frozen limits",
+        ) from exc
+    if max_attempts <= 0 or max_escalations < 0 or token_limit <= 0 or money_limit <= 0:
+        raise KernelError(
+            "ROUTING_BUDGET_CONTRACT_REQUIRED",
+            "routed effect has invalid frozen limits",
+        )
+    if candidate.get("provider") == "codex-cli" and (
+        not candidate.get("escalation_only")
+        or request.accounting_basis != "ACCOUNT_ENTITLEMENT"
+    ):
+        raise KernelError(
+            "ROUTING_ESCALATION_AUTHORIZATION_CONFLICT",
+            "Codex routing requires authorized entitlement escalation",
+        )
+    if candidate.get("provider") == "deepseek" and request.accounting_basis != "PRICED":
+        raise KernelError(
+            "ROUTING_BUDGET_ACCOUNTING_CONFLICT",
+            "DeepSeek routing requires priced accounting",
+        )
+    if check_attempts and amount is not None:
+        try:
+            output_tokens = int(row[1])
+            input_rate = _amount(str(price["input_miss_per_million"]))
+            output_rate = _amount(str(price["output_per_million"]))
+        except (KeyError, TypeError, ValueError) as exc:
+            raise KernelError(
+                "ROUTING_BUDGET_CONTRACT_REQUIRED",
+                "priced route lacks frozen token and price ceilings",
+            ) from exc
+        if output_tokens <= 0 or request.estimated_tokens < output_tokens:
+            raise KernelError(
+                "ROUTING_BUDGET_CONTRACT_REQUIRED",
+                "reservation does not cover frozen Provider output ceiling",
+            )
+        required_amount = (
+            input_rate * (request.estimated_tokens - output_tokens)
+            + output_rate * output_tokens
+        ) / Decimal(1_000_000)
+        if amount < required_amount:
+            raise KernelError(
+                "ROUTING_BUDGET_RESERVATION_INSUFFICIENT",
+                "reservation is below the frozen uncached price ceiling",
+            )
+    cursor.execute(
+        f"""SELECT COALESCE(sum(CASE WHEN b.status='SETTLED' THEN b.settled_amount ELSE b.reserved_amount END),0),
+                  COALESCE(sum(CASE WHEN b.status='SETTLED' THEN b.actual_tokens ELSE greatest(b.actual_tokens,b.estimated_tokens) END),0)
+           FROM (SELECT * FROM authority_budget_reservation WHERE {provider_usage_accounted_sql()}) b
+           JOIN authority_external_effect e USING(external_effect_id)
+           WHERE b.project_id=%s AND b.operation_id=%s AND b.stable_idempotency_key<>%s
+             AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,task,chain_id}}'=%s""",
+        [
+            request.project_id,
+            request.operation_id,
+            request.stable_idempotency_key,
+            chain_id,
+        ],
+    )
+    spent, tokens = cursor.fetchone()
+    if int(tokens) + request.estimated_tokens > token_limit:
+        raise KernelError(
+            "BUDGET_TOKEN_CAP_EXCEEDED", "execution chain token limit would be exceeded"
+        )
+    if amount is not None and Decimal(spent) + amount > money_limit:
+        raise KernelError(
+            "BUDGET_CAP_EXCEEDED", "execution chain monetary limit would be exceeded"
+        )
+    if not check_attempts:
+        return
+    cursor.execute(
+        """SELECT count(*), count(*) FILTER (
+                    WHERE e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,selected,candidate,escalation_only}'='true'),
+                  bool_or(b.status IN ('RESERVED','HELD_UNKNOWN')),
+                  bool_or(e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED'))
+           FROM authority_budget_reservation b JOIN authority_external_effect e USING(external_effect_id)
+           WHERE b.project_id=%s AND b.operation_id=%s AND b.stable_idempotency_key<>%s
+             AND b.status<>'REJECTED'
+             AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}'=%s""",
+        [
+            request.project_id,
+            request.operation_id,
+            request.stable_idempotency_key,
+            chain_id,
+        ],
+    )
+    attempts, escalations, pending, unknown = cursor.fetchone()
+    if int(attempts) + 1 > max_attempts:
+        raise KernelError(
+            "ROUTING_CHAIN_ATTEMPTS_EXHAUSTED",
+            "execution chain reservation attempts exhausted",
+        )
+    if unknown or pending:
+        raise KernelError(
+            "ROUTING_CHAIN_RECONCILIATION_REQUIRED",
+            "previous chain reservation must finish before another attempt",
+        )
+    if candidate.get("escalation_only"):
+        if (
+            request.accounting_basis != "ACCOUNT_ENTITLEMENT"
+            or request.cost_authorization_ref != candidate.get("authorization_ref")
+        ):
+            raise KernelError(
+                "ROUTING_ESCALATION_AUTHORIZATION_CONFLICT",
+                "escalation authorization differs from reservation",
+            )
+        if int(escalations) + 1 > max_escalations:
+            raise KernelError(
+                "ROUTING_ESCALATION_LIMIT_REACHED",
+                "execution chain escalation attempts exhausted",
+            )
+        cursor.execute(
+            f"""SELECT count(*) FROM authority_budget_reservation
+                WHERE provider=%s AND evidence->>'cost_authorization_ref'=%s
+                  AND NOT (project_id=%s AND stable_idempotency_key=%s)
+                  AND {provider_usage_accounted_sql()}""",
+            [
+                request.provider,
+                request.cost_authorization_ref,
+                request.project_id,
+                request.stable_idempotency_key,
+            ],
+        )
+        if int(cursor.fetchone()[0]) + 1 > int(candidate.get("quota_remaining") or 0):
+            raise KernelError(
+                "BUDGET_CALL_CAP_EXCEEDED",
+                "Codex authorization call allowance exhausted",
+            )
 
 
 def _reservation_replay_disposition(status: str) -> str:
@@ -3324,6 +3520,10 @@ def settle_provider_budget_in_uow(
         and bool(request.token_caps)
     ):
         try:
+            _enforce_routing_chain_budget(
+                uow.cursor, replace(request, estimated_tokens=actual_tokens), amount,
+                check_attempts=False,
+            )
             _enforce_usage_caps(
                 uow.cursor,
                 request,
@@ -3744,7 +3944,7 @@ def unresolved_cli_outcomes(cursor: Any, project_id: str) -> list[dict[str, Any]
 
 def provider_project_usage(cursor: Any, project_id: str) -> dict[str, Any]:
     cursor.execute(
-        f"""SELECT count(DISTINCT external_effect_id),
+        f"""SELECT count(*),
             COALESCE(sum(CASE WHEN status='SETTLED' THEN actual_tokens
                 ELSE greatest(actual_tokens,estimated_tokens) END),0),
             COALESCE(sum(actual_tokens),0),
@@ -3862,7 +4062,11 @@ def _usage_cap_dimension(
         raise KernelError(
             "BUDGET_CAP_INVALID", "chapter_total budget cap requires a chapter"
         )
-    return dimensions[dimension]
+    where, parameters = dimensions[dimension]
+    if dimension in {"global_total", "global_daily", "global_monthly"}:
+        where = where.replace("currency=%s", "TRUE").replace("currency = %s", "TRUE")
+        parameters = parameters[1:]
+    return where, parameters
 
 
 def _enforce_usage_caps(
@@ -3877,7 +4081,7 @@ def _enforce_usage_caps(
         for dimension, cap in caps.items():
             where, params = _usage_cap_dimension(request, dimension)
             aggregate = (
-                "COUNT(DISTINCT external_effect_id)"
+                "COUNT(*)"
                 if kind == "call"
                 else "COALESCE(SUM(CASE WHEN status='SETTLED' THEN actual_tokens "
                 "ELSE GREATEST(actual_tokens,estimated_tokens) END),0)"
@@ -3886,10 +4090,10 @@ def _enforce_usage_caps(
                 f"""
                 SELECT {aggregate}
                 FROM authority_budget_reservation
-                WHERE {where} AND stable_idempotency_key <> %s
+                WHERE {where} AND NOT (project_id=%s AND stable_idempotency_key=%s)
                   AND {provider_usage_accounted_sql()}
                 """,
-                [*params, request.stable_idempotency_key],
+                [*params, request.project_id, request.stable_idempotency_key],
             )
             committed = int(cursor.fetchone()[0])
             requested = 1 if kind == "call" else tokens
@@ -3959,10 +4163,10 @@ def _enforce_caps(
                 CASE WHEN status = 'SETTLED' THEN settled_amount ELSE reserved_amount END
             ), 0)
             FROM authority_budget_reservation
-            WHERE {where} AND stable_idempotency_key <> %s
+            WHERE {where} AND NOT (project_id=%s AND stable_idempotency_key=%s)
               AND status IN ('RESERVED', 'HELD_UNKNOWN', 'SETTLED')
             """,
-            [*params, request.stable_idempotency_key],
+            [*params, request.project_id, request.stable_idempotency_key],
         )
         committed = Decimal(cursor.fetchone()[0])
         if committed + amount > cap:
@@ -4179,7 +4383,14 @@ def _reservation(
                    NULLIF(to_jsonb(reservation)->>'settled_cost_status',''),
                    CASE WHEN reservation.status='SETTLED' THEN 'KNOWN'
                         ELSE 'PENDING' END
-               )
+               ),
+               (SELECT effect.model_id FROM authority_external_effect effect
+                 WHERE effect.external_effect_id=reservation.external_effect_id
+                   AND effect.project_id=reservation.project_id),
+               (SELECT effect.request_payload #>> '{{_production_execution,book_id}}'
+                  FROM authority_external_effect effect
+                 WHERE effect.external_effect_id=reservation.external_effect_id
+                   AND effect.project_id=reservation.project_id)
         FROM authority_budget_reservation AS reservation
         WHERE reservation_id = %s AND project_id = %s{suffix}
         """,
@@ -4217,6 +4428,8 @@ def _reservation(
                 "accounting_basis",
                 "estimated_cost_status",
                 "settled_cost_status",
+                "effect_model_id",
+                "effect_work_id",
             ),
             row,
             strict=True,
@@ -4251,6 +4464,16 @@ def _request_from_row(row: dict[str, Any]) -> BudgetReservationRequest:
         project_id=str(row["project_id"]),
         stable_idempotency_key=str(row["stable_idempotency_key"]),
         provider=str(row["provider"]),
+        model_id=str(
+            row.get("effect_model_id")
+            or dict(row.get("evidence") or {}).get("model_id")
+            or ""
+        ),
+        work_id=str(
+            row.get("effect_work_id")
+            or dict(row.get("evidence") or {}).get("work_id")
+            or ""
+        ),
         currency=str(row["currency"]),
         estimated_amount=(
             str(row["estimated_amount"])

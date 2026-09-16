@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260914_0135_cost_routing_indexes",
+  "migration_head": "20260916_0136_provider_routing_policy",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4786,6 +4786,14 @@
         {
           "path": "src/novel_forge/modules/provider_control/deepseek.py",
           "symbol": "DeepSeekProviderAdapter"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_policy.py",
+          "symbol": "task_requirements"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_feedback.py",
+          "symbol": "domain_gate_outcomes"
         }
       ],
       "commands_operations": [
@@ -4796,6 +4804,10 @@
         {
           "path": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
           "symbol": "configure_creative_budget"
+        },
+        {
+          "path": "src/novel_forge/modules/authority_handler_runtime/policy_commands.py",
+          "symbol": "configure_owned_policy"
         }
       ],
       "state_ownership": {
@@ -4850,6 +4862,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260914_0135_cost_routing_indexes.py",
           "locator": "MIGRATION_ID = \"20260914_0135_cost_routing_indexes\"",
           "id": "20260914_0135_cost_routing_indexes"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260916_0136_provider_routing_policy.py",
+          "locator": "MIGRATION_ID = \"20260916_0136_provider_routing_policy\"",
+          "id": "20260916_0136_provider_routing_policy"
         }
       ],
       "external_effects": {
@@ -7942,7 +7959,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:076f75ee64e8385bb6198797bb48704c8d31087ec307163f304ea2f6ca14c053"
+    "implementation_tree_sha": "sha256:0b3406f4ad1f4f707ee62f011ace8f39c065499b7f47c2ea095ff33abe56d63d"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

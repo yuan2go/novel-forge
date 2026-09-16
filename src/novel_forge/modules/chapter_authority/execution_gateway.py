@@ -932,13 +932,14 @@ class PostgresChapterExecutionContractBinder:
                 "PROVIDER_ADMISSION_INPUT_INCOMPLETE",
                 "Provider admission requires stable identity, timeout, and output reserve",
             )
-        if self.provider_router is not None:
+        if self.provider_router is not None and embedding_output_contract is None:
             route, routing_decision = self.provider_router.select(route, task_type=stage,
                 project_id=project_id, work_id=book_id, operation_id=operation_id,
                 attempt_id=attempt_id, stable_key=stable_idempotency_key,
                 input_tokens=len(prompt.encode()) + route.token_safety_margin + route.token_framing_overhead,
                 output_tokens=output_reserve, trace_id=str(request_payload["trace_id"]),
-                correlation_id=str(request_payload["correlation_id"]), cache_prefix=prompt.encode()[:512])
+                correlation_id=str(request_payload["correlation_id"]), cache_prefix=prompt.encode()[:512],
+                request_input=provider_inputs, input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(), chapter=int(metadata.get("chapter") or 0))
             route_identity = routing_decision["decision_id"]
         envelope = ProviderRequestEnvelope(
             provider=route.model_profile.model_provider,
@@ -1120,7 +1121,7 @@ class PostgresChapterExecutionContractBinder:
             )
         graph = self._operation_graph(operation_id, project_id)
         route = self.routes[stage]
-        if self.provider_router is not None:
+        if self.provider_router is not None and route.embedding_dimensions == 0:
             route, _routing_decision = self.provider_router.select_for_payload(route, request_payload)
         definition = default_capability_registry().resolve(
             chapter_stage_capability(stage)

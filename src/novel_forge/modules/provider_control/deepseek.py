@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from datetime import datetime, timezone
+from decimal import Decimal
 from email.utils import parsedate_to_datetime
 import json
 import socket
@@ -9,7 +11,16 @@ from typing import Any, Callable, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-from novel_forge.modules.production_execution.cost_routing import PricingSnapshot
+from novel_forge.modules.production_execution.cost_routing import (
+    PricingSnapshot,
+    snapshot_hash,
+)
+from novel_forge.modules.production_execution.routing_catalog import (
+    deepseek_expected_price_multiplier,
+    deepseek_model_revision,
+    deepseek_model_routing_available,
+    deepseek_pricing_period,
+)
 from novel_forge.modules.production_execution.provider_admission import (
     ProviderAdmissionReceipt,
     ProviderRequestEnvelope,
@@ -42,12 +53,14 @@ class DeepSeekProviderAdapter:
         *,
         pricing: Mapping[str, PricingSnapshot],
         transport: Callable[..., Any] | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         if not api_key.strip() or not pricing:
             raise ValueError("DEEPSEEK_CREDENTIAL_AND_PRICING_REQUIRED")
         self._api_key = api_key
         self.pricing = dict(pricing)
         self._transport = transport or build_opener(_NoRedirect()).open
+        self._clock = clock or (lambda: datetime.now(timezone.utc))
         self.capability_profile = ProviderCapabilityProfile(
             provider=self.provider,
             control_level=ProviderControlLevel.V2_CONTROLLED,
@@ -80,22 +93,33 @@ class DeepSeekProviderAdapter:
             or request.timeout_seconds != envelope.timeout_seconds
         ):
             raise ValueError("PROVIDER_REQUEST_IDENTITY_DRIFT")
-        if envelope.model not in self.pricing or envelope.reasoning_effort not in {
-            "low",
-            "high",
-            "max",
-            "none",
-        }:
+        if (
+            envelope.protocol != "deepseek-chat-completions-json-v1"
+            or envelope.model not in self.pricing
+            or not deepseek_model_routing_available(envelope.model)
+            or envelope.reasoning_effort
+            not in {
+                "low",
+                "high",
+                "max",
+                "none",
+            }
+        ):
             raise ValueError("DEEPSEEK_MODEL_OR_REASONING_NOT_ADMITTED")
         if not envelope.pricing_policy_json:
             raise ValueError("DEEPSEEK_FROZEN_PRICING_REQUIRED")
         price = PricingSnapshot(**json.loads(envelope.pricing_policy_json))
+        if price != self.pricing[envelope.model]:
+            raise ValueError("DEEPSEEK_FROZEN_PRICING_DRIFT")
         if price.accounting_basis != "PRICED" or price.currency != "USD":
             raise ValueError("DEEPSEEK_PRICING_CONTRACT_INVALID")
-        now = datetime.now(timezone.utc)
+        requested_model_revision = deepseek_model_revision(envelope.model)
+        submitted_at = self._clock()
+        if submitted_at.tzinfo is None:
+            raise ValueError("DEEPSEEK_CLOCK_TIMEZONE_REQUIRED")
         if (
             not datetime.fromisoformat(price.effective_from)
-            <= now
+            <= submitted_at
             < datetime.fromisoformat(price.effective_until)
         ):
             raise ValueError("DEEPSEEK_PRICING_EXPIRED")
@@ -131,12 +155,15 @@ class DeepSeekProviderAdapter:
                 content = json.loads(raw)
         except HTTPError as exc:
             status = exc.code
-            retry_after = _retry_after(exc.headers.get("Retry-After", ""))
+            retry_after = _retry_after(
+                exc.headers.get("Retry-After", "") if exc.headers else ""
+            )
             failure = {
                 400: "CONTRACT_REJECTION",
                 401: "AUTHENTICATION_FAILED",
                 402: "PROVIDER_BUDGET_EXHAUSTED",
                 403: "POLICY_REJECTION",
+                408: "TIMEOUT",
                 422: "CONTRACT_REJECTION",
                 429: "RATE_LIMIT",
                 503: "PROVIDER_UNAVAILABLE",
@@ -145,7 +172,7 @@ class DeepSeekProviderAdapter:
                 "retryable_failure"
                 if status in {429, 503}
                 else "unknown"
-                if status >= 500
+                if status == 408 or status >= 500
                 else "final_failure"
             )
             return self._failure(
@@ -154,9 +181,9 @@ class DeepSeekProviderAdapter:
                 started,
                 http_status=status,
                 retry_after_seconds=retry_after,
-                submission_state="REJECTED_BEFORE_EXECUTION"
-                if status < 500 or status == 503
-                else "UNKNOWN",
+                submission_state=(
+                    "UNKNOWN" if outcome == "unknown" else "REJECTED_BEFORE_EXECUTION"
+                ),
             )
         except (TimeoutError, socket.timeout):
             return self._failure("unknown", "TIMEOUT", started)
@@ -165,7 +192,14 @@ class DeepSeekProviderAdapter:
         except (ValueError, OSError):
             return self._failure("unknown", "MALFORMED_PROVIDER_RECEIPT", started)
         try:
-            return self._completed(content, request, price, started)
+            return self._completed(
+                content,
+                request,
+                price,
+                requested_model_revision,
+                submitted_at,
+                started,
+            )
         except (ValueError, TypeError, KeyError, IndexError):
             return self._failure("unknown", "MALFORMED_PROVIDER_RECEIPT", started)
 
@@ -174,43 +208,132 @@ class DeepSeekProviderAdapter:
         content: Mapping[str, Any],
         request: ProviderInvocationRequest,
         price: PricingSnapshot,
+        requested_model_revision: str,
+        submitted_at: datetime,
         started: float,
     ) -> ProviderInvocationResult:
         usage = content["usage"]
         input_tokens = usage["prompt_tokens"]
         output_tokens = usage["completion_tokens"]
-        cached = usage.get("prompt_cache_hit_tokens")
-        missed = usage.get("prompt_cache_miss_tokens")
+        total_tokens = usage["total_tokens"]
+        cached = usage["prompt_cache_hit_tokens"]
+        missed = usage["prompt_cache_miss_tokens"]
         if any(
             type(value) is not int or value < 0
-            for value in (input_tokens, output_tokens)
+            for value in (
+                input_tokens,
+                output_tokens,
+                total_tokens,
+                cached,
+                missed,
+            )
         ):
             raise ValueError("DEEPSEEK_USAGE_INVALID")
-        cache_known = type(cached) is int and type(missed) is int
-        if cache_known and (min(cached, missed) < 0 or cached + missed != input_tokens):
+        if (
+            cached + missed != input_tokens
+            or input_tokens + output_tokens != total_tokens
+        ):
             raise ValueError("DEEPSEEK_CACHE_USAGE_INVALID")
-        request_id = str(content["id"])
-        served_model = str(content["model"])
-        if not request_id or not served_model:
+        reasoning_tokens = dict(usage.get("completion_tokens_details") or {}).get(
+            "reasoning_tokens"
+        )
+        if reasoning_tokens is not None and (
+            type(reasoning_tokens) is not int
+            or reasoning_tokens < 0
+            or reasoning_tokens > output_tokens
+        ):
+            raise ValueError("DEEPSEEK_REASONING_USAGE_INVALID")
+        request_id = content["id"]
+        served_model = content["model"]
+        system_fingerprint = content["system_fingerprint"]
+        if (
+            not isinstance(request_id, str)
+            or not request_id
+            or not isinstance(served_model, str)
+            or not served_model
+            or not isinstance(system_fingerprint, str)
+            or not system_fingerprint
+            or content["object"] != "chat.completion"
+        ):
             raise ValueError("DEEPSEEK_RESPONSE_IDENTITY_REQUIRED")
+        created = content["created"]
+        if type(created) is not int or created <= 0:
+            raise ValueError("DEEPSEEK_RESPONSE_TIME_INVALID")
+        provider_created_at = datetime.fromtimestamp(created, timezone.utc)
+        completed_at = self._clock()
+        if completed_at.tzinfo is None:
+            raise ValueError("DEEPSEEK_CLOCK_TIMEZONE_REQUIRED")
+        if (
+            abs((provider_created_at - submitted_at).total_seconds()) > 300
+            or provider_created_at < datetime.fromisoformat(price.effective_from)
+            or provider_created_at >= datetime.fromisoformat(price.effective_until)
+        ):
+            raise ValueError("DEEPSEEK_RESPONSE_TIME_INVALID")
         choice = content["choices"][0]
-        text = str(choice["message"].get("content") or "")
-        failure = ""
-        if choice.get("finish_reason") == "length":
-            failure = "OUTPUT_CAPACITY_EXCEEDED"
-        elif choice.get("finish_reason") != "stop":
-            failure = "POLICY_REJECTION"
+        if not isinstance(choice, Mapping) or not isinstance(
+            choice.get("message"), Mapping
+        ):
+            raise ValueError("DEEPSEEK_MESSAGE_INVALID")
+        raw_text = choice["message"].get("content")
+        if raw_text is not None and not isinstance(raw_text, str):
+            raise ValueError("DEEPSEEK_MESSAGE_INVALID")
+        text = raw_text or ""
+        finish_reason = choice.get("finish_reason")
+        failure = {
+            "stop": "",
+            "length": "OUTPUT_CAPACITY_EXCEEDED",
+            "content_filter": "POLICY_REJECTION",
+            "insufficient_system_resource": "PROVIDER_UNAVAILABLE",
+        }.get(finish_reason)
+        if failure is None:
+            raise ValueError("DEEPSEEK_FINISH_REASON_INVALID")
         try:
             output = json.loads(text)
             if not isinstance(output, dict):
-                failure = "MALFORMED_STRUCTURED_OUTPUT"
+                output = {}
+                if not failure:
+                    failure = "MALFORMED_STRUCTURED_OUTPUT"
         except ValueError:
-            failure, output = "MALFORMED_STRUCTURED_OUTPUT", {}
+            output = {}
+            if not failure:
+                failure = "MALFORMED_STRUCTURED_OUTPUT"
+        reservation_ceiling = price.amount(input_tokens, output_tokens, cached)
+        price_periods = {
+            deepseek_pricing_period(value)
+            for value in (submitted_at, provider_created_at, completed_at)
+        }
+        if len(price_periods) > 1:
+            amount = reservation_ceiling
+            pricing_period = "BOUNDARY_CROSSING"
+            pricing_time_basis = "PEAK_CEILING"
+            measurement = "ESTIMATED_UPPER_BOUND"
+            pricing_multiplier = Decimal("1")
+        else:
+            pricing_period = price_periods.pop()
+            pricing_time_basis = "PROVIDER_CREATED_ASSUMPTION"
+            measurement = "PRICED_FROM_PROVIDER_USAGE"
+            pricing_multiplier = Decimal(
+                deepseek_expected_price_multiplier(provider_created_at)
+            )
+            amount = reservation_ceiling * pricing_multiplier
+        pricing_snapshot = asdict(price)
+        served_model_identity_hash = snapshot_hash(
+            {
+                "provider": self.provider,
+                "requested_model_id": request.model,
+                "requested_model_revision": requested_model_revision,
+                "served_model_id": served_model,
+                "system_fingerprint": system_fingerprint,
+            }
+        )
         evidence = {
             "result": output,
             "provider_id": self.provider,
             "model_id": request.model,
+            "model_revision": requested_model_revision,
             "served_model_id": served_model,
+            "system_fingerprint": system_fingerprint,
+            "served_model_identity_hash": served_model_identity_hash,
             "reasoning_effort": request.request_payload.get("reasoning_effort"),
             "request_hash": request.request_hash,
             "real_model_call": True,
@@ -218,40 +341,53 @@ class DeepSeekProviderAdapter:
             "production_verified": False,
             "latency_seconds": time.monotonic() - started,
             "usage": {
+                "availability": "AVAILABLE",
+                "measurement": "PROVIDER_REPORTED",
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
-                "prompt_cache_hit_tokens": cached if cache_known else None,
-                "prompt_cache_miss_tokens": missed if cache_known else None,
-                "cache_usage_status": "OBSERVED" if cache_known else "UNKNOWN",
-                "reasoning_tokens": dict(
-                    usage.get("completion_tokens_details") or {}
-                ).get("reasoning_tokens"),
+                "total_tokens": total_tokens,
+                "prompt_cache_hit_tokens": cached,
+                "prompt_cache_miss_tokens": missed,
+                "cache_usage_status": "OBSERVED",
+                "reasoning_tokens": reasoning_tokens,
             },
             "cost": {
-                "amount": str(
-                    price.amount(
-                        input_tokens, output_tokens, cached if cache_known else 0
-                    )
+                "amount": format(amount.normalize(), "f"),
+                "reservation_ceiling_amount": format(
+                    reservation_ceiling.normalize(), "f"
                 ),
                 "currency": price.currency,
-                "source": "usage_pricing_upper_bound",
+                "source": "usage_pricing",
                 "availability": "AVAILABLE",
-                "measurement": "ESTIMATED_UPPER_BOUND",
+                "measurement": measurement,
                 "estimated": True,
                 "provider_billed": False,
+                "accounting_basis": price.accounting_basis,
                 "pricing_version": price.version,
+                "pricing_period": pricing_period,
+                "pricing_multiplier": str(pricing_multiplier),
+                "pricing_time_basis": pricing_time_basis,
+                "provider_created_at": provider_created_at.isoformat(),
                 "provider_billed_amount": None,
-                "pricing_snapshot": {key: value for key, value in vars(price).items()},
+                "pricing_snapshot_hash": snapshot_hash(pricing_snapshot),
+                "pricing_snapshot": pricing_snapshot,
             },
-            "finish_reason": choice.get("finish_reason"),
+            "finish_reason": finish_reason,
             "failure_class": failure,
         }
+        outcome = (
+            "retryable_failure"
+            if finish_reason == "insufficient_system_resource"
+            else "final_failure"
+            if failure
+            else "success"
+        )
         return ProviderInvocationResult(
-            "final_failure" if failure else "success",
+            outcome,
             ProviderInvocationHandle(
                 request_id,
                 request_id,
-                datetime.now(timezone.utc).isoformat(),
+                provider_created_at.isoformat(),
                 "synchronous",
                 False,
                 False,

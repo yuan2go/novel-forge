@@ -819,10 +819,16 @@ def build_production_execution_composition(
             )
             for stage, route in routes.items()
         }
+    codex_escalation_enabled = router_enabled and str(values.get("NOVEL_FORGE_ROUTER_CODEX_ESCALATION") or "").lower() == "true"
+    if codex_escalation_enabled:
+        escalation_model = str(values.get("NOVEL_FORGE_CODEX_ESCALATION_MODEL") or "").strip()
+        if not escalation_model or int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT") or 0) <= 0:
+            raise RuntimeError("Codex escalation requires an explicit model and finite call allowance")
+        codex_models.add(escalation_model)
     if codex_models:
         if len(codex_models) != 1:
             raise RuntimeError("this phase requires one explicit Codex model")
-        if any(
+        if not router_enabled and any(
             route.model_profile.runtime_class
             is not ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
             for route in routes.values()
@@ -833,6 +839,11 @@ def build_production_execution_composition(
     cost_accounting_basis = (
         str(values.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") or "PRICED").strip().upper()
     )
+    codex_accounting_basis = cost_accounting_basis
+    if codex_escalation_enabled:
+        if codex_accounting_basis != "ACCOUNT_ENTITLEMENT":
+            raise RuntimeError("Codex escalation requires governed account entitlement")
+        cost_accounting_basis = "PRICED"
     if cost_accounting_basis not in {"PRICED", "ACCOUNT_ENTITLEMENT"}:
         raise RuntimeError("unsupported Codex cost accounting mode")
     if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and not codex_models:
@@ -913,7 +924,7 @@ def build_production_execution_composition(
                 "controlled Codex requires an absolute executable, empty isolated "
                 "workspace, and absolute persistent execution root"
             )
-        if cost_accounting_basis == "PRICED":
+        if codex_accounting_basis == "PRICED":
             required_pricing = {
                 "pricing_ref": str(
                     values.get("NOVEL_FORGE_CODEX_PRICING_REF") or ""
@@ -1163,7 +1174,7 @@ def build_production_execution_composition(
         for dimension, environment_name in token_cap_environment.items()
         if str(values.get(environment_name) or "").strip()
     }
-    if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and (
+    if codex_accounting_basis == "ACCOUNT_ENTITLEMENT" and (
         provider_call_caps.get("project_total", 0) <= 0
         or provider_token_caps.get("project_total", 0) <= 0
     ):
@@ -1188,8 +1199,31 @@ def build_production_execution_composition(
         from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
         from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
 
+        candidates = list(deepseek_candidates(available=True))
+        if codex_escalation_enabled:
+            from novel_forge.modules.production_execution.cost_routing import ModelCandidate, PricingSnapshot
+            assert codex_entitlement is not None
+            context_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0)
+            output_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT") or 0)
+            candidates.append(ModelCandidate(
+                candidate_id=f"codex-cli:{codex_model}:high", provider="codex-cli", model=codex_model,
+                reasoning="high", tier="escalation", capabilities=("structured_output", "text"),
+                context_limit=context_limit, output_limit=output_limit,
+                pricing=PricingSnapshot(
+                    version=codex_entitlement.configuration_ref,
+                    effective_from=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM") or ""),
+                    effective_until=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_UNTIL") or ""),
+                    input_miss_per_million="0", input_hit_per_million="0", output_per_million="0",
+                    currency="UNKNOWN", source=codex_entitlement.authorization_ref,
+                    accounting_basis="ACCOUNT_ENTITLEMENT"),
+                capability_version=codex_entitlement.configuration_ref,
+                model_revision=codex_entitlement.configuration_ref,
+                escalation_only=True,
+                quota_remaining=int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
+                authorization_ref=codex_entitlement.authorization_ref,
+            ))
         model_gateway.provider_router = ProductionProviderRouter(
-            settings.database_url, candidates=deepseek_candidates(available=True),
+            settings.database_url, candidates=candidates,
             task_money_limit=max_cost_per_call,
             task_token_limit=int(values.get("NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT") or 0),
             soft_money_limit=str(values.get("NOVEL_FORGE_ROUTER_SOFT_COST_PER_TASK") or "") or None,

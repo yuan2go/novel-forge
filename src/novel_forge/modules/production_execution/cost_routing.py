@@ -33,6 +33,7 @@ class TaskPolicy:
     confidence_penalty: float
     max_attempts: int = 4
     max_escalations: int = 1
+    quality_metric: str = "CALIBRATED_SCORE"
 
     def __post_init__(self) -> None:
         if self.risk not in {"LOW", "MEDIUM", "HIGH"}:
@@ -41,6 +42,8 @@ class TaskPolicy:
             raise ValueError("ROUTING_QUALITY_POLICY_INVALID")
         if min(self.minimum_samples, self.max_escalations) < 0 or self.max_attempts < 1:
             raise ValueError("ROUTING_CHAIN_POLICY_INVALID")
+        if self.quality_metric not in {"CALIBRATED_SCORE", "DOMAIN_GATE_ACCEPTANCE"}:
+            raise ValueError("ROUTING_QUALITY_METRIC_INVALID")
 
 
 QUALITY_POLICIES = {
@@ -125,7 +128,7 @@ TASK_TAXONOMY = {
         "HIGH",
     ),
 }
-POLICY_VERSION = "quality-constrained-routing.v1"
+POLICY_VERSION = "quality-constrained-routing.v2"
 
 
 def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> TaskPolicy:
@@ -144,6 +147,10 @@ def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> Tas
         policy.confidence_penalty,
         policy.max_attempts,
         policy.max_escalations,
+        "DOMAIN_GATE_ACCEPTANCE"
+        if task_type.endswith(".generate")
+        or task_type == "source.deconstruction.observe"
+        else "CALIBRATED_SCORE",
     )
 
 
@@ -215,6 +222,8 @@ class ModelCandidate:
     escalation_only: bool = False
     quota_remaining: int = 0
     authorization_ref: str = ""
+    model_revision: str = ""
+    estimated_price_multiplier: str = "1"
 
     def __post_init__(self) -> None:
         if not all(
@@ -230,6 +239,9 @@ class ModelCandidate:
             raise ValueError("ROUTING_CAPABILITY_IDENTITY_REQUIRED")
         if min(self.context_limit, self.output_limit) <= 0:
             raise ValueError("ROUTING_CAPACITY_INVALID")
+        multiplier = Decimal(self.estimated_price_multiplier)
+        if not multiplier.is_finite() or not 0 < multiplier <= 1:
+            raise ValueError("ROUTING_PRICE_MULTIPLIER_INVALID")
 
 
 @dataclass(frozen=True)
@@ -243,13 +255,18 @@ class BenchmarkObservation:
     retried: bool | None
     repaired: bool | None
     escalated: bool | None
-    latency_seconds: float
+    latency_seconds: float | None
     input_tokens: int
     output_tokens: int
     cache_hit_tokens: int
     actual_cost: str | None
     judge_score: float | None = None
     evidence_kind: str = "REAL_PROVIDER"
+    domain_gate_accepted: bool | None = None
+    outcome_refs: tuple[str, ...] = ()
+    cache_prefix_hash: str = ""
+    priced_cost: str | None = None
+    served_model_identity_hash: str = ""
 
     def __post_init__(self) -> None:
         for value in (self.quality_score, self.judge_score):
@@ -265,7 +282,7 @@ class BenchmarkObservation:
                 self.input_tokens,
                 self.output_tokens,
                 self.cache_hit_tokens,
-                self.latency_seconds,
+                self.latency_seconds or 0,
             )
             < 0
             or self.cache_hit_tokens > self.input_tokens
@@ -293,21 +310,65 @@ def benchmark_snapshot(
         -maximum_samples:
     ]
     scores = [row.quality_score for row in rows if row.quality_score is not None]
-    n = len(scores)
+    domain_outcomes = [
+        row.domain_gate_accepted for row in rows if row.domain_gate_accepted is not None
+    ]
+    n = (
+        len(domain_outcomes)
+        if policy.quality_metric == "DOMAIN_GATE_ACCEPTANCE"
+        else len(scores)
+    )
     uncertainty = n < policy.minimum_samples
     average = mean(scores) if scores else 0.0
     penalty = policy.confidence_penalty * min(
         1, math.sqrt(policy.minimum_samples / max(1, n))
     )
-    quality = max(0.0, average - penalty - (pstdev(scores) / math.sqrt(n) if n else 0))
+    quality = max(
+        0.0,
+        average - penalty - (pstdev(scores) / math.sqrt(len(scores)) if scores else 0),
+    )
+    if policy.quality_metric == "DOMAIN_GATE_ACCEPTANCE":
+        probability = mean(domain_outcomes) if domain_outcomes else 0.0
+        z = 1.645
+        quality = (
+            max(
+                0.0,
+                (
+                    probability
+                    + z * z / (2 * n)
+                    - z
+                    * math.sqrt(
+                        probability * (1 - probability) / n + z * z / (4 * n * n)
+                    )
+                )
+                / (1 + z * z / n)
+                - policy.confidence_penalty / math.sqrt(n),
+            )
+            if n
+            else 0.0
+        )
     decisions = [row for row in rows if row.accepted is not None]
+    latencies = sorted(
+        row.latency_seconds for row in rows if row.latency_seconds is not None
+    )
     result: dict[str, Any] = {
         "sample_count": len(rows),
-        "quality_sample_count": n,
+        "served_model_identity_hashes": sorted(
+            {
+                row.served_model_identity_hash
+                for row in rows
+                if row.served_model_identity_hash
+            }
+        ),
+        "quality_sample_count": len(scores),
+        "quality_metric": policy.quality_metric,
+        "metric_sample_count": n,
+        "domain_gate_sample_count": len(domain_outcomes),
         "uncertain": uncertainty,
         "predicted_quality": quality,
         "quality_mean": average,
         "quality_distribution": sorted(scores),
+        "outcome_refs": sorted({ref for row in rows for ref in row.outcome_refs}),
         "confidence_penalty": penalty,
         "judge_score": mean(
             [row.judge_score for row in rows if row.judge_score is not None]
@@ -339,10 +400,9 @@ def benchmark_snapshot(
                 ],
             }.items()
         },
-        "latency_seconds": sorted(row.latency_seconds for row in rows)[
-            int((len(rows) - 1) * 0.95)
-        ]
-        if rows
+        "latency_sample_count": len(latencies),
+        "latency_seconds": latencies[int((len(latencies) - 1) * 0.95)]
+        if latencies
         else None,
         "input_tokens": sum(row.input_tokens for row in rows),
         "output_tokens": sum(row.output_tokens for row in rows),
@@ -362,6 +422,16 @@ def benchmark_snapshot(
             )
         ),
         "cost_unknown_samples": sum(row.actual_cost is None for row in rows),
+        "priced_usage_cost": str(
+            sum(
+                (
+                    Decimal(row.priced_cost)
+                    for row in rows
+                    if row.priced_cost is not None
+                ),
+                Decimal(0),
+            )
+        ),
         "evidence_refs": [row.evidence_ref for row in rows],
         "window_days": window_days,
         "maximum_samples": maximum_samples,
@@ -395,6 +465,11 @@ class RoutingTask:
     budget_snapshot: Mapping[str, Any] = field(default_factory=dict)
     cache_prefix_hash: str = ""
     chain_id: str = ""
+    input_hash: str = ""
+    request_hash: str = ""
+    stable_key: str = ""
+    declared_requirements: Mapping[str, Any] = field(default_factory=dict)
+    policy_snapshot: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not all(
@@ -521,6 +596,7 @@ class CostAwareRouter:
                     "QUALITY_FAILURE",
                     "CANON_CONFLICT",
                     "CONTEXT_OVERFLOW",
+                    "OUTPUT_CAPACITY_EXCEEDED",
                     "SCHEMA_REJECTION",
                     "MALFORMED_STRUCTURED_OUTPUT",
                     "PROVIDER_UNAVAILABLE",
@@ -531,14 +607,26 @@ class CostAwareRouter:
             if len(previous) >= 2:
                 reasons.append("ROUTE_RETRY_LIMIT_REACHED")
             if any(
+                item.get("status") in {"READY", "DISPATCHING", "DISPATCHED"}
+                for item in task.history
+            ):
+                reasons.append("CHAIN_EXECUTION_IN_FLIGHT")
+            if any(
                 item.get("retry_after_until")
                 and datetime.fromisoformat(str(item["retry_after_until"])) > now
                 for item in previous
             ):
                 reasons.append("RETRY_AFTER_ACTIVE")
+            cache_rows = [
+                row
+                for row in observations.get(candidate.candidate_id, ())
+                if not task.cache_prefix_hash
+                or row.cache_prefix_hash == task.cache_prefix_hash
+            ]
+            cache_evidence = benchmark_snapshot(cache_rows, now=now, policy=policy)
             cache_tokens = (
                 min(task.reusable_prefix_tokens, task.input_tokens)
-                * evidence["cache_hit_ratio"]
+                * cache_evidence["cache_hit_ratio"]
                 if task.cache_eligible
                 else 0
             )
@@ -548,7 +636,9 @@ class CostAwareRouter:
                 if evidence["mean_output_tokens"] is not None
                 else task.output_tokens
             )
-            estimated = price.amount(task.input_tokens, expected_output, cache_tokens)
+            estimated = price.amount(
+                task.input_tokens, expected_output, cache_tokens
+            ) * Decimal(candidate.estimated_price_multiplier)
             worst_case = price.amount(task.input_tokens, task.output_tokens)
             candidate_budget = task.budget_snapshot.get("candidates", {}).get(
                 candidate.candidate_id, {}
@@ -571,7 +661,9 @@ class CostAwareRouter:
                 reasons.append("BUDGET_HARD_LIMIT")
             latency = evidence["latency_seconds"]
             if task.latency_sla_seconds and (
-                latency is None or latency > task.latency_sla_seconds
+                latency is None
+                or evidence["latency_sample_count"] < policy.minimum_samples
+                or latency > task.latency_sla_seconds
             ):
                 reasons.append("LATENCY_SLA_UNPROVEN")
             acceptance = evidence["acceptance_rate"]
@@ -614,6 +706,7 @@ class CostAwareRouter:
                     if price.accounting_basis == "PRICED"
                     else None,
                     "cache_tokens_estimate": cache_tokens,
+                    "cache_evidence_refs": cache_evidence["evidence_refs"],
                     "soft_limit_pressure": soft_pressure,
                 }
             )

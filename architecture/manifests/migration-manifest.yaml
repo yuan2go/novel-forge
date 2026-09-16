@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260914_0135_cost_routing_indexes",
+  "head": "20260916_0136_provider_routing_policy",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -138,6 +138,7 @@
     "20260914_0132_planning_runtime_continuation",
     "20260914_0133_formation_evaluation_recovery",
     "20260914_0134_opening_capacity_continuation",
-    "20260914_0135_cost_routing_indexes"
+    "20260914_0135_cost_routing_indexes",
+    "20260916_0136_provider_routing_policy"
   ]
 }

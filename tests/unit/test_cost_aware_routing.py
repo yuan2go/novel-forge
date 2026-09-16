@@ -191,3 +191,205 @@ def test_unknown_outcome_requires_reconciliation_and_decision_is_immutable():
     original["policy"]["quality_floor"] = 0
     assert decision.to_dict()["policy"]["quality_floor"] == 0.60
     assert decision.to_dict()["status"] == "BLOCKED"
+
+
+def test_domain_acceptance_is_a_distinct_measured_metric_not_a_literary_score():
+    from novel_forge.modules.production_execution.cost_routing import (
+        benchmark_snapshot,
+        task_policy,
+    )
+
+    observations = [
+        replace(
+            row,
+            quality_score=None,
+            domain_gate_accepted=True,
+            outcome_refs=("qualification:" + row.evidence_ref,),
+        )
+        for row in samples(n=50)
+    ]
+    policy = task_policy("book_plan.generate")
+    benchmark = benchmark_snapshot(observations, now=NOW, policy=policy)
+    assert benchmark["quality_metric"] == "DOMAIN_GATE_ACCEPTANCE"
+    assert benchmark["quality_distribution"] == []
+    assert benchmark["quality_sample_count"] == 0
+    assert benchmark["predicted_quality"] >= policy.quality_floor
+    assert not benchmark["uncertain"]
+    failed = [replace(row, domain_gate_accepted=False) for row in observations[:20]]
+    assert (
+        benchmark_snapshot(failed + observations[20:], now=NOW, policy=policy)[
+            "predicted_quality"
+        ]
+        < policy.quality_floor
+    )
+    unreviewed = [
+        replace(row, domain_gate_accepted=None, schema_success=True)
+        for row in observations
+    ]
+    assert (
+        benchmark_snapshot(unreviewed, now=NOW, policy=policy)["predicted_quality"] == 0
+    )
+
+
+def test_work_and_chapter_policy_cannot_weaken_quality_or_select_a_model():
+    from novel_forge.modules.production_execution.routing_policy import (
+        task_requirements,
+        validate_routing_policy,
+    )
+
+    policy = {
+        "policy_version": "critical-chapter-v1",
+        "reason": "climax continuity",
+        "task_overrides": [
+            {
+                "work_id": "novel",
+                "task_type": "draft",
+                "risk": "HIGH",
+                "quality_floor": 0.9,
+            },
+            {
+                "work_id": "novel",
+                "task_type": "draft",
+                "chapter": 9,
+                "risk": "MEDIUM",
+                "quality_floor": 0.8,
+            },
+        ],
+    }
+    requirements = task_requirements(
+        policy, work_id="novel", task_type="draft", chapter=9
+    )
+    assert requirements["risk"] == "HIGH"
+    assert requirements["quality_floor"] == 0.9
+    assert task_requirements(policy, work_id="unrelated", task_type="draft") == {}
+    policy["task_overrides"][0]["quality_floor"] = 0.1
+    with pytest.raises(ValueError, match="DOWNGRADE_FORBIDDEN"):
+        validate_routing_policy(policy)
+    policy["task_overrides"][0]["quality_floor"] = 0.9
+    policy["task_overrides"][0]["model"] = "cheapest"
+    with pytest.raises(Exception, match="SCHEMA_INVALID"):
+        validate_routing_policy(policy)
+
+
+def test_cache_history_from_another_prefix_does_not_discount_route():
+    context = task(
+        cache_eligible=True, reusable_prefix_tokens=1000, cache_prefix_hash="current"
+    )
+    cheap, costly = candidate(), candidate("pro", "2")
+    historical = [
+        replace(row, cache_prefix_hash="another") for row in samples(cached=1000)
+    ]
+    decision = route(context, [cheap, costly], {"flash": samples(), "pro": historical})
+    assert decision["selected"]["candidate"]["candidate_id"] == "flash"
+    assert all(row["cache_tokens_estimate"] == 0 for row in decision["candidates"])
+
+
+@pytest.mark.parametrize("state", ["READY", "DISPATCHING", "DISPATCHED"])
+def test_authoritative_inflight_effect_blocks_overlapping_chain(state):
+    result = route(
+        task(history=({"status": state},)), [candidate()], {"flash": samples()}
+    )
+    assert "CHAIN_EXECUTION_IN_FLIGHT" in result["candidates"][0]["rejected_reasons"]
+
+
+def test_missing_latency_is_uncertain_under_sla():
+    observations = [replace(row, latency_seconds=None) for row in samples()]
+    result = route(task(latency_sla_seconds=30), [candidate()], {"flash": observations})
+    assert result["status"] == "BLOCKED"
+    assert result["candidates"][0]["benchmark"]["latency_seconds"] is None
+
+
+@pytest.mark.parametrize(
+    "drift",
+    [
+        "none",
+        "attempt_id",
+        "book_id",
+        "input",
+        "admission",
+        "decision",
+        "protocol",
+        "reasoning_effort",
+        "pricing_policy_json",
+    ],
+)
+def test_frozen_route_requires_original_scope_input_and_admission(drift):
+    from copy import deepcopy
+    import json
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+    from novel_forge.modules.production_execution.routing_runtime import (
+        ProductionProviderRouter,
+    )
+
+    original = route(
+        task(
+            input_hash="sha256:prompt",
+            request_hash=snapshot_hash({"text": "original"}),
+            stable_key="stable",
+        ),
+        [candidate()],
+        {"flash": samples()},
+    )
+    frozen = {**deepcopy(original), "asset_version_id": "decision-version"}
+    identity = {
+        "input_text_hash": "sha256:prompt",
+        "stable_idempotency_key": "stable",
+        "max_output_tokens": 100,
+        "provider": "deepseek",
+        "model": "flash",
+        "protocol": "deepseek-chat-completions-json-v1",
+        "reasoning_effort": "high",
+        "pricing_policy_json": json.dumps(original["selected"]["candidate"]["pricing"]),
+    }
+    documents = {
+        "decision-version": SimpleNamespace(
+            asset_type="routing_decision", content=original
+        ),
+        "admission-version": SimpleNamespace(
+            asset_type="provider_request_admission_manifest",
+            content_hash="sha256:admission",
+            content={"provider_request_identity": identity},
+        ),
+    }
+    payload = {
+        "stage": "classification",
+        "input": {"text": "original"},
+        "_production_execution": {
+            "project_id": "project",
+            "operation_id": "operation",
+            "attempt_id": "attempt",
+            "book_id": "book",
+            "capability_runtime": {
+                "routing_decision": frozen,
+                "provider_admission_asset_version_id": "admission-version",
+                "provider_admission_content_hash": "sha256:admission",
+            },
+        },
+    }
+    if drift in {"attempt_id", "book_id"}:
+        payload["_production_execution"][drift] = "different"
+    elif drift == "input":
+        payload["input"]["text"] = "different"
+    elif drift == "admission":
+        identity["input_text_hash"] = "sha256:other"
+    elif drift == "decision":
+        frozen["selected"]["candidate"]["model"] = "other"
+    elif drift in {"protocol", "reasoning_effort", "pricing_policy_json"}:
+        identity[drift] = "{}" if drift == "pricing_policy_json" else "other"
+    router = ProductionProviderRouter(
+        "unused", candidates=[candidate()], task_money_limit="1", task_token_limit=10000
+    )
+    router.registry.query.require = Mock(
+        side_effect=lambda **kw: documents[kw["asset_version_id"]]
+    )
+    router._selected_route = Mock(return_value="selected")
+    if drift == "none":
+        assert router.select_for_payload(None, payload)[0] == "selected"
+    else:
+        with pytest.raises(KernelError):
+            router.select_for_payload(None, payload)
+        router._selected_route.assert_not_called()

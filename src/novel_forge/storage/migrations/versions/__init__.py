@@ -137,6 +137,7 @@ from . import (
     v20260914_0133_formation_evaluation_recovery,
     v20260914_0134_opening_capacity_continuation,
     v20260914_0135_cost_routing_indexes,
+    v20260916_0136_provider_routing_policy,
 )
 
 VERSION_MODULES = [
@@ -276,6 +277,7 @@ VERSION_MODULES = [
     v20260914_0133_formation_evaluation_recovery,
     v20260914_0134_opening_capacity_continuation,
     v20260914_0135_cost_routing_indexes,
+    v20260916_0136_provider_routing_policy,
 ]
 
 __all__ = ["VERSION_MODULES"]

@@ -143,3 +143,73 @@ class RuntimePolicyPostgresTests(unittest.TestCase):
             self.authority.configure(
                 **{**self.command, "project_id": "another-project"}
             )
+
+    def test_router_policy_is_operator_owned_and_applied_by_canonical_selector(
+        self,
+    ) -> None:
+        from types import SimpleNamespace
+
+        from novel_forge.modules.authority_handler_runtime.policy_commands import (
+            configure_owned_policy,
+        )
+        from novel_forge.modules.production_execution.routing_catalog import (
+            deepseek_candidates,
+        )
+        from novel_forge.modules.production_execution.routing_runtime import (
+            ProductionProviderRouter,
+        )
+
+        policy = {
+            "policy_version": "critical-chapter-v1",
+            "reason": "critical reversal requires stronger evidence",
+            "task_overrides": [
+                {
+                    "work_id": f"book:{self.project_id}",
+                    "task_type": "draft",
+                    "chapter": 3,
+                    "risk": "HIGH",
+                    "quality_floor": 0.95,
+                }
+            ],
+        }
+        command = {key: value for key, value in self.command.items() if key != "policy"}
+        command.update(
+            database_url=DATABASE_URL,
+            owner="PROVIDER_ROUTING",
+            content=policy,
+            application_build_id="router-policy-test",
+            commit_sha="f" * 40,
+        )
+        denied = replace(self.principal, principal_type=PrincipalType.SERVICE)
+        with self.assertRaises(PermissionError):
+            configure_owned_policy(**{**command, "principal": denied})
+        configured = configure_owned_policy(**command)
+        self.assertEqual(configured["status"], "SUCCEEDED")
+        self.assertTrue(configure_owned_policy(**command)["replayed"])
+        router = ProductionProviderRouter(
+            DATABASE_URL,
+            candidates=deepseek_candidates(available=True),
+            task_money_limit="1",
+            task_token_limit=10000,
+        )
+        _, decision = router.select(
+            SimpleNamespace(),
+            task_type="draft",
+            project_id=self.project_id,
+            work_id=f"book:{self.project_id}",
+            operation_id=configured["operation_id"],
+            attempt_id="explain-only",
+            stable_key="policy-explain",
+            input_tokens=100,
+            output_tokens=100,
+            trace_id="policy-explain",
+            correlation_id="policy-explain",
+            chapter=3,
+            dry_run=True,
+        )
+        self.assertEqual(decision["policy"]["quality_floor"], 0.95)
+        self.assertEqual(decision["policy"]["risk"], "HIGH")
+        self.assertEqual(
+            decision["task"]["policy_snapshot"]["actor_id"], self.principal.principal_id
+        )
+        self.assertEqual(decision["status"], "BLOCKED")

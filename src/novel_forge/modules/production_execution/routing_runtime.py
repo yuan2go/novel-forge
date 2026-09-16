@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+import json
 from typing import Any, Mapping, Sequence
 
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
@@ -12,6 +13,7 @@ from novel_forge.storage.authority_asset_store import (
     AuthorityAssetWriter,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.versioned_policy_repository import policy_hash
 
 from .cost_routing import (
     BenchmarkObservation,
@@ -30,6 +32,33 @@ class PostgresRoutingRegistry:
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
 
+    def policy(self, project_id: str) -> dict[str, Any]:
+        from .routing_policy import OWNER, validate_routing_policy
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT v.content,v.content_hash,v.actor_id,s.selected_by_operation_id
+                   FROM authority_runtime_policy_selection s
+                   JOIN authority_runtime_policy_version v USING(owner,project_id,policy_version)
+                   WHERE s.owner=%s AND s.project_id=%s""",
+                [OWNER, project_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            return {}
+        content, digest, actor, operation = row
+        if policy_hash(content) != digest:
+            raise KernelError(
+                "RUNTIME_POLICY_HASH_MISMATCH", "routing policy integrity failed"
+            )
+        validate_routing_policy(content)
+        return {
+            "policy": content,
+            "policy_hash": digest,
+            "actor_id": actor,
+            "operation_id": operation,
+        }
+
     def observations(
         self, *, project_id: str, task_type: str, candidate: ModelCandidate
     ) -> list[BenchmarkObservation]:
@@ -47,7 +76,9 @@ class PostgresRoutingRegistry:
                                 AND previous.created_at<effect.created_at
                                 AND previous.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}'
                                   = effect.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}')
-                            ELSE NULL END
+                            ELSE NULL END,
+                          effect.request_payload #> '{_production_execution,capability_runtime,routing_decision}',
+                          quality.asset_version_id
                    FROM authority_asset_version version
                    JOIN authority_asset asset ON asset.asset_id=version.asset_id
                    CROSS JOIN LATERAL (SELECT COALESCE(version.content->'provider_evidence',version.content) AS evidence) model
@@ -64,7 +95,7 @@ class PostgresRoutingRegistry:
                        ORDER BY v.created_at DESC LIMIT 1
                    ) generated ON true
                    LEFT JOIN LATERAL (
-                       SELECT v.content FROM authority_asset_version v
+                       SELECT v.content,v.asset_version_id FROM authority_asset_version v
                        JOIN authority_asset a ON a.asset_id=v.asset_id
                        WHERE a.project_id=asset.project_id AND a.asset_type='quality_score_report'
                          AND v.content->>'target_asset_version_id'=generated.asset_version_id
@@ -88,20 +119,82 @@ class PostgresRoutingRegistry:
                 ],
             )
             rows = uow.cursor.fetchall()
+            from .routing_feedback import domain_gate_outcomes
+
+            gate_outcomes = (
+                domain_gate_outcomes(
+                    uow.cursor,
+                    project_id=project_id,
+                    effect_ids=[
+                        str(
+                            (
+                                row[2]
+                                .get("provider_evidence", row[2])
+                                .get("production_execution")
+                                or {}
+                            )
+                            .get("execution_request", {})
+                            .get("external_effect_id")
+                            or ""
+                        )
+                        for row in rows
+                    ],
+                )
+                if task_type.endswith(".generate")
+                or task_type == "source.deconstruction.observe"
+                else {}
+            )
         observations = []
         seen_effects = set()
-        for reference, occurred_at, content, quality, accepted, retried in rows:
+        latest_served_identity = ""
+        for (
+            reference,
+            occurred_at,
+            content,
+            quality,
+            accepted,
+            retried,
+            decision,
+            quality_ref,
+        ) in rows:
             evidence = content.get("provider_evidence", content)
+            if evidence.get("fixture_protocol_only") or content.get(
+                "fixture_protocol_only"
+            ):
+                continue
+            observed_revision = (
+                ((decision or {}).get("selected") or {})
+                .get("candidate", {})
+                .get("model_revision")
+            )
+            if (
+                candidate.model_revision
+                and candidate.model_revision != observed_revision
+            ):
+                continue
             usage = evidence.get("usage") or {}
             execution = evidence.get("production_execution") or {}
             result = execution.get("execution_result") or {}
             process = execution.get("process_evidence") or {}
+            served_identity = str(
+                process.get("served_model_identity_hash")
+                or evidence.get("served_model_identity_hash")
+                or ""
+            )
+            if candidate.provider == "deepseek":
+                if not served_identity:
+                    continue
+                if not latest_served_identity:
+                    latest_served_identity = served_identity
+                if served_identity != latest_served_identity:
+                    continue
             effect_id = (execution.get("execution_request") or {}).get(
                 "external_effect_id"
             )
             if not effect_id or effect_id in seen_effects:
                 continue
             seen_effects.add(effect_id)
+            gate = gate_outcomes.get(effect_id, {})
             calibrated = (
                 bool(quality)
                 and not quality.get("fixture")
@@ -125,7 +218,7 @@ class PostgresRoutingRegistry:
             failure = process.get("failure_class")
             rejected = (quality or {}).get("gate") == "FAILED" or result.get(
                 "outcome"
-            ) in {"FAILED_FINAL", "FAILED_RETRYABLE"}
+            ) in {"FINAL_FAILURE", "RETRYABLE_FAILURE"}
             cost = evidence.get("cost") or {}
             observations.append(
                 BenchmarkObservation(
@@ -133,7 +226,11 @@ class PostgresRoutingRegistry:
                     occurred_at=occurred_at.isoformat(),
                     quality_score=score,
                     judge_score=score,
-                    accepted=True if accepted else False if rejected else None,
+                    accepted=True
+                    if accepted
+                    else False
+                    if rejected
+                    else gate.get("accepted"),
                     schema_success=result.get("outcome") == "SUCCEEDED",
                     canon_conflict=True
                     if failure == "CANON_CONFLICT"
@@ -141,13 +238,26 @@ class PostgresRoutingRegistry:
                     retried=retried,
                     repaired=True if task_type == "revision" else None,
                     escalated=candidate.escalation_only,
-                    latency_seconds=float(process.get("latency_seconds") or 0),
+                    latency_seconds=float(process["latency_seconds"])
+                    if process.get("latency_seconds") is not None
+                    else None,
                     input_tokens=int(usage.get("input_tokens") or 0),
                     output_tokens=int(usage.get("output_tokens") or 0),
                     cache_hit_tokens=int(usage.get("prompt_cache_hit_tokens") or 0),
                     actual_cost=cost.get("amount")
                     if cost.get("provider_billed") is True
                     else None,
+                    domain_gate_accepted=gate.get("accepted"),
+                    outcome_refs=tuple(gate.get("evidence_refs", ()))
+                    + (("asset-version:" + quality_ref,) if quality_ref else ()),
+                    cache_prefix_hash=(decision or {})
+                    .get("task", {})
+                    .get("cache_prefix_hash", ""),
+                    priced_cost=cost.get("amount")
+                    if cost.get("source")
+                    in {"usage_pricing", "usage_pricing_upper_bound"}
+                    else None,
+                    served_model_identity_hash=served_identity,
                 )
             )
         return observations
@@ -161,13 +271,22 @@ class PostgresRoutingRegistry:
             uow.cursor.execute(
                 """SELECT effect.external_effect_id, effect.status, dispatch.created_at,
                           effect.request_payload #> '{_production_execution,capability_runtime,routing_decision}',
-                          dispatch.evidence
+                          dispatch.evidence,
+                          quality.content
                    FROM authority_external_effect effect
                    LEFT JOIN LATERAL (
                        SELECT evidence,created_at FROM authority_external_effect_dispatch
                        WHERE external_effect_id=effect.external_effect_id
                        ORDER BY generation DESC LIMIT 1
                    ) dispatch ON true
+                   LEFT JOIN LATERAL (
+                     SELECT q.content FROM authority_asset_version generated
+                     JOIN authority_asset_version q ON q.content->>'target_asset_version_id'=generated.asset_version_id
+                     JOIN authority_asset qa ON qa.asset_id=q.asset_id AND qa.project_id=effect.project_id
+                       AND qa.asset_type='quality_score_report'
+                     WHERE generated.content #>> '{provider_evidence,production_execution,execution_request,external_effect_id}'=effect.external_effect_id
+                       AND q.governance='CLEAR' ORDER BY q.created_at LIMIT 1
+                   ) quality ON true
                    WHERE effect.project_id=%s AND effect.operation_id=%s
                      AND effect.request_payload->>'stage'=%s
                      AND effect.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}'=%s
@@ -176,7 +295,7 @@ class PostgresRoutingRegistry:
             )
             rows = uow.cursor.fetchall()
         history = []
-        for effect_id, status, updated_at, decision, evidence in rows:
+        for effect_id, status, updated_at, decision, evidence, quality in rows:
             if not decision:
                 continue
             selected = (decision.get("selected") or {}).get("candidate") or {}
@@ -196,6 +315,16 @@ class PostgresRoutingRegistry:
                 }
                 else process.get("failure_class", "")
             )
+            if not failure and (quality or {}).get("gate") == "FAILED":
+                failure = (
+                    "CANON_CONFLICT"
+                    if any(
+                        item.get("dimension") == "canon_consistency"
+                        and item.get("gate_status") == "FAILED"
+                        for item in quality.get("dimensions", ())
+                    )
+                    else "QUALITY_FAILURE"
+                )
             history.append(
                 {
                     "external_effect_id": effect_id,
@@ -288,6 +417,9 @@ class ProductionProviderRouter:
         quality_floor: float = 0,
         dry_run: bool = False,
         cache_prefix: bytes = b"",
+        input_hash: str = "",
+        request_input: Mapping[str, Any] | None = None,
+        chapter: int = 0,
     ) -> tuple[Any, dict[str, Any]]:
         logical_ref = (
             "production_execution/routing/"
@@ -317,8 +449,15 @@ class ProductionProviderRouter:
                         "input_tokens": input_tokens,
                         "output_tokens": output_tokens,
                         "work_id": work_id,
-                        "risk": risk,
-                        "quality_floor": quality_floor,
+                        "input_hash": input_hash,
+                        "request_hash": snapshot_hash(request_input)
+                        if request_input is not None
+                        else "",
+                        "declared_requirements": {
+                            "risk": risk,
+                            "quality_floor": quality_floor,
+                            "chapter": chapter,
+                        },
                         "cache_prefix_hash": snapshot_hash(cache_prefix.hex())
                         if cache_prefix
                         else "",
@@ -378,21 +517,71 @@ class ProductionProviderRouter:
             cache_prefix_hash=snapshot_hash(cache_prefix.hex()) if cache_prefix else "",
             budget_snapshot={
                 "scope": "execution_chain",
+                "task_money_limit": self.task_money_limit,
+                "task_token_limit": self.task_token_limit,
                 "money_used_or_reserved": str(money_used),
                 "tokens_used_or_reserved": int(tokens_used),
                 "admission_recheck_required": True,
                 "candidates": budgets,
             },
         )
+        now = datetime.now(timezone.utc)
+        from .routing_catalog import deepseek_pricing_period
+
+        candidates = tuple(
+            replace(
+                candidate,
+                estimated_price_multiplier="0.5"
+                if deepseek_pricing_period(now) == "OFF_PEAK"
+                else "1",
+            )
+            if candidate.provider == "deepseek"
+            else candidate
+            for candidate in self.candidates
+        )
         observations = {
             candidate.candidate_id: self.registry.observations(
                 project_id=project_id, task_type=task_type, candidate=candidate
             )
-            for candidate in self.candidates
+            for candidate in candidates
         }
-        decision = CostAwareRouter().explain(
-            task, self.candidates, observations, now=datetime.now(timezone.utc)
+        from .routing_policy import task_requirements
+
+        policy_snapshot = self.registry.policy(project_id)
+        requirements = (
+            task_requirements(
+                policy_snapshot["policy"],
+                work_id=work_id,
+                task_type=task_type,
+                chapter=chapter,
+            )
+            if policy_snapshot
+            else {}
         )
+        if requirements:
+            ranks = {"": -1, "LOW": 0, "MEDIUM": 1, "HIGH": 2}
+            requirements["risk"] = max(
+                (risk, requirements.get("risk", "")), key=ranks.__getitem__
+            )
+            requirements["quality_floor"] = max(
+                quality_floor, requirements.get("quality_floor", 0)
+            )
+        task = replace(
+            task,
+            input_hash=input_hash,
+            request_hash=snapshot_hash(request_input)
+            if request_input is not None
+            else "",
+            stable_key=stable_key,
+            declared_requirements={
+                "risk": risk,
+                "quality_floor": quality_floor,
+                "chapter": chapter,
+            },
+            policy_snapshot=policy_snapshot,
+            **requirements,
+        )
+        decision = CostAwareRouter().explain(task, candidates, observations, now=now)
         snapshot = (
             decision.to_dict()
             if dry_run
@@ -439,6 +628,16 @@ class ProductionProviderRouter:
                     "remaining_calls": None,
                     "scopes": {},
                 }
+                if candidate.escalation_only:
+                    uow.cursor.execute(
+                        f"""SELECT count(*) FROM authority_budget_reservation
+                            WHERE provider=%s AND evidence->>'cost_authorization_ref'=%s
+                              AND {provider_usage_accounted_sql()}""",
+                        [candidate.provider, candidate.authorization_ref],
+                    )
+                    result["remaining_calls"] = max(
+                        0, candidate.quota_remaining - int(uow.cursor.fetchone()[0])
+                    )
                 for kind, caps in (
                     ("money", self.money_caps),
                     ("tokens", self.token_caps),
@@ -448,10 +647,13 @@ class ProductionProviderRouter:
                         if scope == "chapter_total":
                             continue
                         where, parameters = _usage_cap_dimension(request, scope)
+                        if kind == "money" and scope.startswith("global_"):
+                            where += " AND currency=%s"
+                            parameters = [*parameters, candidate.pricing.currency]
                         aggregate = {
                             "money": "COALESCE(sum(CASE WHEN status='SETTLED' THEN settled_amount ELSE reserved_amount END),0)",
                             "tokens": "COALESCE(sum(CASE WHEN status='SETTLED' THEN actual_tokens ELSE greatest(actual_tokens,estimated_tokens) END),0)",
-                            "calls": "count(DISTINCT external_effect_id)",
+                            "calls": "count(*)",
                         }[kind]
                         uow.cursor.execute(
                             f"SELECT {aggregate} FROM authority_budget_reservation WHERE {where} AND {provider_usage_accounted_sql()}",
@@ -487,20 +689,37 @@ class ProductionProviderRouter:
                 "PROVIDER_ROUTING_BLOCKED", str(snapshot.get("decision_id"))
             )
         candidate = snapshot["selected"]["candidate"]
+        fixture = candidate["provider"] == "scripted_provider_v2"
+        if (
+            fixture
+            and base.model_profile.runtime_class
+            is not ExecutionRuntimeClass.SCRIPTED_FIXTURE
+        ):
+            raise KernelError(
+                "ROUTING_FIXTURE_BOUNDARY_VIOLATION", candidate["candidate_id"]
+            )
         suffix = snapshot_hash(candidate).split(":")[-1][:20]
         profile = replace(
             base.model_profile,
             profile_id=base.model_profile.profile_id + "." + suffix,
-            backend_id="codex-cli"
+            backend_id=base.model_profile.backend_id
+            if fixture
+            else "codex-cli"
             if candidate["provider"] == "codex-cli"
             else "remote-provider-" + candidate["provider"],
             model_provider=candidate["provider"],
             model_id=candidate["model"],
             reasoning_effort=candidate["reasoning"],
-            runtime_class=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+            runtime_class=ExecutionRuntimeClass.SCRIPTED_FIXTURE
+            if fixture
+            else ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
             if candidate["provider"] == "codex-cli"
             else ExecutionRuntimeClass.REMOTE_PROVIDER_API,
-            capability_probe_ref="capability-probe:"
+            capability_probe_ref=base.model_profile.capability_probe_ref
+            if fixture
+            else "capability-probe:codex-cli:real-runtime-v1"
+            if candidate["provider"] == "codex-cli"
+            else "capability-probe:"
             + candidate["provider"]
             + ":provider-capability-v2",
         )
@@ -516,6 +735,8 @@ class ProductionProviderRouter:
                 model_context_limit=candidate["context_limit"],
                 token_accounting_method="DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"
                 if candidate["provider"] == "deepseek"
+                else "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"
+                if candidate["provider"] == "codex-cli"
                 else base.token_accounting_method,
                 token_accounting_evidence_ref=candidate["capability_version"],
             )
@@ -527,14 +748,82 @@ class ProductionProviderRouter:
         metadata = payload["_production_execution"]
         frozen = (metadata.get("capability_runtime") or {}).get("routing_decision")
         if frozen:
+            version_id = str(frozen.get("asset_version_id") or "")
+            document = self.registry.query.require(
+                project_id=str(metadata["project_id"]), asset_version_id=version_id
+            )
+            content = {
+                key: value for key, value in frozen.items() if key != "asset_version_id"
+            }
+            expected_id = "routing-decision:" + snapshot_hash(
+                {key: value for key, value in content.items() if key != "decision_id"}
+            ).removeprefix("sha256:")
+            if (
+                document.asset_type != "routing_decision"
+                or document.content != content
+                or content.get("decision_id") != expected_id
+            ):
+                raise KernelError("ROUTING_DECISION_INTEGRITY_FAILURE", version_id)
+            task = content["task"]
+            if (
+                any(
+                    task.get(key) != str(metadata.get(key) or "")
+                    for key in ("project_id", "operation_id", "attempt_id")
+                )
+                or task.get("work_id") != metadata.get("book_id")
+                or task.get("task_type") != payload.get("stage")
+                or task.get("request_hash") != snapshot_hash(payload.get("input"))
+            ):
+                raise KernelError("ROUTING_DECISION_SCOPE_MISMATCH", version_id)
+            admission = self.registry.query.require(
+                project_id=task["project_id"],
+                asset_version_id=str(
+                    metadata["capability_runtime"].get(
+                        "provider_admission_asset_version_id"
+                    )
+                    or ""
+                ),
+            )
+            identity = admission.content.get("contract", admission.content).get(
+                "provider_request_identity", {}
+            )
+            selected = content["selected"]["candidate"]
+            from .provider_admission import provider_request_protocol
+
+            try:
+                admitted_pricing = json.loads(
+                    identity.get("pricing_policy_json") or "null"
+                )
+            except (TypeError, ValueError) as exc:
+                raise KernelError(
+                    "ROUTING_ADMISSION_IDENTITY_MISMATCH", version_id
+                ) from exc
+            if (
+                admission.asset_type != "provider_request_admission_manifest"
+                or admission.content_hash
+                != metadata["capability_runtime"].get("provider_admission_content_hash")
+                or identity.get("input_text_hash") != task.get("input_hash")
+                or identity.get("stable_idempotency_key") != task.get("stable_key")
+                or identity.get("max_output_tokens") != task.get("output_tokens")
+                or identity.get("provider") != selected["provider"]
+                or identity.get("model") != selected["model"]
+                or identity.get("protocol")
+                != provider_request_protocol(selected["provider"])
+                or str(identity.get("reasoning_effort") or "")
+                != (selected["reasoning"] if selected["provider"] == "deepseek" else "")
+                or admitted_pricing != selected["pricing"]
+            ):
+                raise KernelError("ROUTING_ADMISSION_IDENTITY_MISMATCH", version_id)
             return self._selected_route(base, frozen), dict(frozen)
         raise KernelError("ROUTING_FROZEN_DECISION_REQUIRED", str(payload.get("stage")))
 
 
 def routed_reservation(
     decision: Mapping[str, Any], *, input_tokens: int, output_tokens: int
-) -> str:
+) -> str | None:
     from .cost_routing import PricingSnapshot
 
     price = PricingSnapshot(**decision["selected"]["candidate"]["pricing"])
+    if price.accounting_basis == "ACCOUNT_ENTITLEMENT":
+        return None
     return str(price.amount(input_tokens, output_tokens))

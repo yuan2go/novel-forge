@@ -297,18 +297,39 @@ model-call assets, pricing policies or command-line arguments.
 
 `novel-forge authority-provider-routing explain --project-id <id>
 --task-context-file <path>` performs no inference. It projects current benchmark and
-retry evidence against the caller's explicit budget snapshot; actual dispatch always
-rechecks locked authoritative budgets. `replay --project-id <id> --decision-id <id>`
+retry evidence through the canonical runtime composition and current ledger; actual
+dispatch rechecks locked authoritative budgets. The context includes a stable key, work,
+operation, attempt, task type, input/output estimates and declared quality requirements.
+Optional `request_input` and `cache_prefix` bind the business input and reusable prefix. `replay --project-id <id> --decision-id <id>`
 reads the immutable decision. `metrics --project-id <id>` projects routing counts,
 settled/reserved cost, usage and benchmark statistics. These read operations require
 the existing `content.authority.query` permission. Estimated upper bounds must not be
 reported as actual billed cost. Missing calibrated benchmark evidence blocks routing;
 operators must not seed fixture scores as production quality evidence.
 
-The routing migration identified by the canonical migration manifest adds indexes only. It does not rewrite
-Provider identities or backfill historical routing decisions. Unfinished legacy
-Provider executions and mixed Codex entitlement runs are not qualified for migration
-to the new router; the production-ready assertion remains `NO`.
+`configure --project-id <id> --workspace-id <id> --idempotency-key <key>
+--policy-file <path>` uses the existing versioned policy command and requires a local
+operator with `book.authority.execute`. Policy content contains `policy_version`, an
+audit `reason`, and `task_overrides` with `work_id`, `task_type`, `risk`, `quality_floor`,
+optional `chapter`, positive `latency_sla_seconds` and `escalation_reason`. Overrides
+cannot lower the default floor/risk or select a Provider/model.
+
+Optional Codex escalation requires `NOVEL_FORGE_ROUTER_CODEX_ESCALATION=true`, an explicit
+`NOVEL_FORGE_CODEX_ESCALATION_MODEL`, positive `NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT`,
+`NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT`, `NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT`,
+and timezone-aware `NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM` / `VALID_UNTIL`, together with
+the existing verified CLI/entitlement configuration. Unavailable configured lanes fail
+closed; disabling the lane does not authorize a quality downgrade. Call limits count
+accounted reservation generations, including paid retries, while released unsent calls
+do not consume capacity. Shared usage locks prevent USD and entitlement reservations
+from racing through global token/call caps.
+
+The current routing migration extends the existing versioned policy owner constraint
+and adds a chain lookup index. It does not rewrite Provider identities or backfill
+historical decisions. Unfinished legacy Provider executions, cross-operation Planning
+semantic retry and mixed-accounting Book Opening budgets require explicit migration
+and authorization. Independent quality calibration is still missing for several task
+families and no complete governed cold-start lane exists; production readiness is `NO`.
 
 Credentialed Provider qualification is intentionally separate from P0. The only live
 runner is `make real-provider-qualification`; the D0 contract probe and worker remain

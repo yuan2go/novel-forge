@@ -238,14 +238,21 @@ def _model_budget_settlement(
         and str(cost.get("availability") or "").upper() == "AVAILABLE"
         and str(cost.get("source") or "").lower() != "not_provided"
         and cost.get("measurement") != "ESTIMATED_UPPER_BOUND"
+        and cost.get("source") not in {"usage_pricing", "usage_pricing_upper_bound"}
+        and cost.get("provider_billed") is True
     )
     usage_pricing = (
         supports_usage and bool(frozen_capability_profile.get("supports_usage_pricing"))
-        and cost.get("source") == "usage_pricing_upper_bound"
-        and cost.get("measurement") == "ESTIMATED_UPPER_BOUND"
+        and cost.get("source") in {"usage_pricing_upper_bound", "usage_pricing"}
+        and cost.get("measurement") in {"ESTIMATED_UPPER_BOUND", "PRICED_FROM_PROVIDER_USAGE"}
         and bool(cost.get("pricing_version")) and bool(cost.get("pricing_snapshot"))
     )
-    actual_amount = result.cost_amount if cost_available or usage_pricing else reserved_amount
+    legacy_pricing = bool(
+        supports_cost and cost.get("measurement") == "ESTIMATED"
+        and cost.get("pricing_ref") and cost.get("pricing_snapshot_hash")
+        and cost.get("calculation_basis")
+    )
+    actual_amount = result.cost_amount if cost_available or usage_pricing or legacy_pricing else reserved_amount
     return (
         actual_amount,
         actual_tokens,
@@ -256,7 +263,11 @@ def _model_budget_settlement(
                 else "RESERVATION_CEILING"
             ),
             "cost_settlement_basis": (
-                "PROVIDER_COST_RECEIPT" if cost_available else "FROZEN_USAGE_PRICING_UPPER_BOUND" if usage_pricing else "RESERVATION_CEILING"
+                "PROVIDER_COST_RECEIPT" if cost_available
+                else "LEGACY_PRICING_ESTIMATE" if legacy_pricing
+                else "FROZEN_USAGE_PRICING" if usage_pricing and cost.get("measurement") == "PRICED_FROM_PROVIDER_USAGE"
+                else "FROZEN_USAGE_PRICING_UPPER_BOUND" if usage_pricing
+                else "RESERVATION_CEILING"
             ),
         },
     )
@@ -351,9 +362,28 @@ def _model_failed_provider_budget_decision(
         measurement is not None
         and reserved_amount is not None
         and frozen_capability_profile.get("supports_cost_receipt") is True
+        and measurement[1].get("provider_billed") is True
+        and measurement[1].get("source") not in {"usage_pricing", "usage_pricing_upper_bound"}
+    )
+    usage_priced = bool(
+        measurement is not None
+        and usage_authoritative
+        and reserved_amount is not None
+        and frozen_capability_profile.get("supports_usage_pricing") is True
+        and measurement[1].get("source") in {"usage_pricing", "usage_pricing_upper_bound"}
+        and measurement[1].get("pricing_version")
+        and measurement[1].get("pricing_snapshot")
+    )
+    legacy_pricing = bool(
+        measurement is not None
+        and usage_authoritative and reserved_amount is not None
+        and frozen_capability_profile.get("supports_cost_receipt") is True
+        and measurement[1].get("measurement") == "ESTIMATED"
+        and measurement[1].get("pricing_ref") and measurement[1].get("pricing_snapshot_hash")
+        and measurement[1].get("calculation_basis")
     )
     measurement_authoritative = usage_authoritative and (
-        cost_authoritative or reserved_amount is None
+        cost_authoritative or usage_priced or legacy_pricing or reserved_amount is None
     )
     if usage_authoritative:
         assert measurement is not None
@@ -363,7 +393,7 @@ def _model_failed_provider_budget_decision(
         ) + int(usage.get("output_tokens") or 0)
     else:
         actual_tokens = reserved_tokens
-    if cost_authoritative:
+    if cost_authoritative or usage_priced or legacy_pricing:
         assert measurement is not None
         _usage, cost = measurement
         actual_amount: str | None = str(cost.get("amount") or "0")
@@ -381,6 +411,8 @@ def _model_failed_provider_budget_decision(
         "cost_settlement_basis": (
             "PROVIDER_COST_RECEIPT"
             if cost_authoritative
+            else "LEGACY_PRICING_ESTIMATE" if legacy_pricing
+            else "FROZEN_USAGE_PRICING" if usage_priced
             else (
                 "ACCOUNT_ENTITLEMENT_UNKNOWN"
                 if reserved_amount is None
@@ -870,13 +902,18 @@ class ExternalEffectChapterModelPort:
                 "Production Execution has no Provider admission binder",
             )
         routing_decision = dict(effect_request_payload.get("_production_execution", {}).get("capability_runtime", {}).get("routing_decision") or {})
+        cost_accounting_basis = self.cost_accounting_basis
+        account_authorization_ref = self.account_authorization_ref
         if routing_decision:
             from novel_forge.modules.production_execution.routing_runtime import routed_reservation
 
             upper_bound = routed_reservation(routing_decision,
                 input_tokens=max(0, bounded_reservation_tokens - provider_output_token_ceiling),
                 output_tokens=provider_output_token_ceiling)
-            bounded_reservation_amount = self._bounded_reservation_amount(upper_bound)
+            selected = routing_decision["selected"]["candidate"]
+            cost_accounting_basis = selected["pricing"]["accounting_basis"]
+            account_authorization_ref = selected.get("authorization_ref", "")
+            bounded_reservation_amount = None if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else self._bounded_reservation_amount(upper_bound)
         selected_model = (routing_decision.get("selected") or {}).get("candidate", {}).get("model")
         effect = plan_external_effect(
             self.database_url,
@@ -951,7 +988,7 @@ class ExternalEffectChapterModelPort:
                 work_id=str(effect_request_payload["_production_execution"]["book_id"]) if routing_decision else "",
                 currency=(
                     "UNKNOWN"
-                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
                     else "USD"
                 ),
                 estimated_amount=bounded_reservation_amount,
@@ -962,13 +999,13 @@ class ExternalEffectChapterModelPort:
                     or 0
                 )
                 or None,
-                caps=self.budget_caps,
+                caps={} if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else self.budget_caps,
                 call_caps=self.provider_call_caps,
                 token_caps=self.provider_token_caps,
                 budget_scope_id=budget_scope_id,
                 expected_budget_scope_revision=budget_scope_revision,
-                accounting_basis=self.cost_accounting_basis,
-                cost_authorization_ref=self.account_authorization_ref,
+                accounting_basis=cost_accounting_basis,
+                cost_authorization_ref=account_authorization_ref,
             ),
         )
         execution_binding = None
@@ -1935,7 +1972,7 @@ def _failed_provider_measurement(
         not isinstance(usage, Mapping)
         or not isinstance(cost, Mapping)
         or str(usage.get("availability") or "").upper() != "AVAILABLE"
-        or str(usage.get("measurement") or "").upper() != "MEASURED"
+        or str(usage.get("measurement") or "").upper() not in {"MEASURED", "PROVIDER_REPORTED"}
         or str(cost.get("availability") or "").upper() != "AVAILABLE"
     ):
         return None

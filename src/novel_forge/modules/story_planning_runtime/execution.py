@@ -2812,10 +2812,25 @@ def _planning_budget_settlement(
         supports_cost_receipt
         and str(cost.get("availability") or "").upper() == "AVAILABLE"
         and _is_nonnegative_decimal(reported_amount)
+        and cost.get("source") not in {"usage_pricing", "usage_pricing_upper_bound"}
+        and cost.get("provider_billed") is True
     )
-    amount = reported_amount if cost_authoritative else reserved_amount
+    usage_priced = bool(
+        usage_authoritative
+        and cost.get("source") in {"usage_pricing", "usage_pricing_upper_bound"}
+        and cost.get("measurement") in {"PRICED_FROM_PROVIDER_USAGE", "ESTIMATED_UPPER_BOUND"}
+        and cost.get("pricing_version") and cost.get("pricing_snapshot")
+        and _is_nonnegative_decimal(reported_amount)
+    )
+    legacy_pricing = bool(
+        usage_authoritative and supports_cost_receipt
+        and cost.get("measurement") == "ESTIMATED"
+        and cost.get("pricing_ref") and cost.get("pricing_snapshot_hash")
+        and cost.get("calculation_basis") and _is_nonnegative_decimal(reported_amount)
+    )
+    amount = reported_amount if cost_authoritative or usage_priced or legacy_pricing else reserved_amount
     cost_basis = (
-        "PROVIDER_COST_RECEIPT" if cost_authoritative else "RESERVATION_CEILING"
+        "PROVIDER_COST_RECEIPT" if cost_authoritative else "LEGACY_PRICING_ESTIMATE" if legacy_pricing else "FROZEN_USAGE_PRICING" if usage_priced else "RESERVATION_CEILING"
     )
     return {
         "amount": amount,
@@ -2911,7 +2926,7 @@ def _planning_failed_provider_measurement(
         not isinstance(usage, Mapping)
         or not isinstance(cost, Mapping)
         or str(usage.get("availability") or "").upper() != "AVAILABLE"
-        or str(usage.get("measurement") or "").upper() != "MEASURED"
+        or str(usage.get("measurement") or "").upper() not in {"MEASURED", "PROVIDER_REPORTED"}
         or str(cost.get("availability") or "").upper() != "AVAILABLE"
         or not _is_nonnegative_decimal(str(cost.get("amount") or ""))
     ):
@@ -3909,7 +3924,8 @@ class PostgresPlanningExecutionPreparer:
                     operation_id=operation_id, attempt_id=attempt_id,
                     stable_key=stable_key, input_tokens=len(prompt.encode()) + 512,
                     output_tokens=output_reserve, trace_id=command.trace_id,
-                    correlation_id=command.correlation_id, cache_prefix=prompt.encode()[:512])
+                    correlation_id=command.correlation_id, cache_prefix=prompt.encode()[:512],
+                request_input=stable_request_payload["input"], input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest())
             route_identity = ":".join(
                 (
                     command.generator_operation_name,
@@ -4105,15 +4121,20 @@ class PostgresPlanningExecutionPreparer:
                     "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
                     "Planning retry materialization differs from the frozen Effect",
                 )
+        cost_accounting_basis = self.cost_accounting_basis
+        account_authorization_ref = self.account_authorization_ref
         if provider_router is not None:
             from novel_forge.modules.production_execution.routing_runtime import routed_reservation
 
             routing_decision = request_payload["_production_execution"]["capability_runtime"]["routing_decision"]
-            planning_route = provider_router._selected_route(self.planning_route, routing_decision)
+            planning_route, routing_decision = provider_router.select_for_payload(self.planning_route, request_payload)
+            selected = routing_decision["selected"]["candidate"]
+            cost_accounting_basis = selected["pricing"]["accounting_basis"]
+            account_authorization_ref = selected.get("authorization_ref", "")
             provider_reservation_amount = routed_reservation(routing_decision,
                 input_tokens=max(0, provider_reservation_tokens - int(stable_request_payload["max_output_tokens"])),
                 output_tokens=int(stable_request_payload["max_output_tokens"]))
-            if Decimal(provider_reservation_amount) > Decimal(self.max_cost_per_call):
+            if provider_reservation_amount is not None and Decimal(provider_reservation_amount) > Decimal(self.max_cost_per_call):
                 raise KernelError("BUDGET_HARD_LIMIT", "routed Planning call exceeds the per-call cap")
         effect = plan_external_effect(
             self.database_url,
@@ -4161,12 +4182,12 @@ class PostgresPlanningExecutionPreparer:
                     work_id=command.book_id if routing_decision else "",
                     currency=(
                         "UNKNOWN"
-                        if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                        if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
                         else "USD"
                     ),
                     estimated_amount=provider_reservation_amount,
                     estimated_tokens=provider_reservation_tokens,
-                    caps=self.budget_caps,
+                    caps={} if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else self.budget_caps,
                     call_caps=self.provider_call_caps,
                     token_caps=self.provider_token_caps,
                     budget_scope_id=str(provider_token_contract["budget_scope_id"]),
@@ -4175,8 +4196,8 @@ class PostgresPlanningExecutionPreparer:
                         if provider_token_contract["budget_scope_revision"] is not None
                         else None
                     ),
-                    accounting_basis=self.cost_accounting_basis,
-                    cost_authorization_ref=self.account_authorization_ref,
+                    accounting_basis=cost_accounting_basis,
+                    cost_authorization_ref=account_authorization_ref,
                 ),
             )
             if not bool(reservation.get("execution_authorized")):
