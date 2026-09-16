@@ -260,6 +260,7 @@ def test_planning_failed_sent_provider_uses_trusted_measurement() -> None:
                         "cost": {
                             "availability": "AVAILABLE",
                             "amount": "0.4",
+                            "provider_billed": True,
                             "currency": "USD",
                         },
                     }

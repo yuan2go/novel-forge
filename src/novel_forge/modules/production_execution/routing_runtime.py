@@ -4,7 +4,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -27,8 +27,14 @@ from .contracts import ExecutionRuntimeClass
 
 
 class PostgresRoutingRegistry:
-    def __init__(self, database_url: str) -> None:
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        outcome_projection: Callable[..., dict[str, dict[str, Any]]] | None = None,
+    ) -> None:
         self.database_url = database_url
+        self.outcome_projection = outcome_projection
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
 
@@ -119,10 +125,8 @@ class PostgresRoutingRegistry:
                 ],
             )
             rows = uow.cursor.fetchall()
-            from .routing_feedback import domain_gate_outcomes
-
             gate_outcomes = (
-                domain_gate_outcomes(
+                self.outcome_projection(
                     uow.cursor,
                     project_id=project_id,
                     effect_ids=[
@@ -140,8 +144,11 @@ class PostgresRoutingRegistry:
                         for row in rows
                     ],
                 )
-                if task_type.endswith(".generate")
-                or task_type == "source.deconstruction.observe"
+                if self.outcome_projection is not None
+                and (
+                    task_type.endswith(".generate")
+                    or task_type == "source.deconstruction.observe"
+                )
                 else {}
             )
         observations = []
@@ -387,8 +394,11 @@ class ProductionProviderRouter:
         money_caps: Mapping[str, str] | None = None,
         token_caps: Mapping[str, int] | None = None,
         call_caps: Mapping[str, int] | None = None,
+        outcome_projection: Callable[..., dict[str, dict[str, Any]]] | None = None,
     ) -> None:
-        self.registry = PostgresRoutingRegistry(database_url)
+        self.registry = PostgresRoutingRegistry(
+            database_url, outcome_projection=outcome_projection
+        )
         self.candidates = tuple(candidates)
         self.task_money_limit = task_money_limit
         self.task_token_limit = task_token_limit

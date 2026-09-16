@@ -351,7 +351,7 @@ class _RecordingUow:
         self.cursor = _RecordingCursor()
 
 
-def test_budget_lock_interface_uses_currency_then_scope_in_sorted_order() -> None:
+def test_budget_lock_interface_uses_usage_then_currency_then_scope_order() -> None:
     uow = _RecordingUow()
 
     acquire_budget_locks_in_uow(
@@ -361,6 +361,7 @@ def test_budget_lock_interface_uses_currency_then_scope_in_sorted_order() -> Non
     )
 
     assert uow.cursor.params == [
+        "authority-provider-budget:shared-usage",
         "authority-provider-budget:EUR",
         "authority-provider-budget:USD",
         "authority-provider-budget-scope:scope:a",

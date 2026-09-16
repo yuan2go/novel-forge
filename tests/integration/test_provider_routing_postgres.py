@@ -1046,7 +1046,7 @@ def fixture_planning_feedback(scope, defect="", *, accepted=True):
     "defect", ["", "generation", "incomplete", "fixture", "hash", "partial"]
 )
 def test_planning_feedback_requires_complete_independent_fixture_lineage(scope, defect):
-    from novel_forge.modules.production_execution.routing_feedback import (
+    from novel_forge.modules.authority_handler_runtime.routing_feedback import (
         domain_gate_outcomes,
     )
 
@@ -1067,7 +1067,7 @@ def test_planning_feedback_requires_complete_independent_fixture_lineage(scope, 
 
 
 def test_planning_feedback_retains_failed_fixture_domain_review(scope):
-    from novel_forge.modules.production_execution.routing_feedback import (
+    from novel_forge.modules.authority_handler_runtime.routing_feedback import (
         planning_gate_outcomes,
     )
 
@@ -1199,7 +1199,7 @@ def fixture_source_feedback(scope, *, decision="ACCEPT_IN_SCOPE", defect=""):
 def test_source_feedback_projects_target_acceptance_not_reviewer_quality(
     scope, decision, defect, accepted
 ):
-    from novel_forge.modules.production_execution.routing_feedback import (
+    from novel_forge.modules.authority_handler_runtime.routing_feedback import (
         domain_gate_outcomes,
     )
 

@@ -349,8 +349,6 @@ class ChapterGatewayAgentExecutionPreparer:
         decision = payload.get("_production_execution", {}).get("capability_runtime", {}).get("routing_decision") or {}
         selected = (decision.get("selected") or {}).get("candidate") or {}
         routed_amount = None
-        cost_accounting_basis = self.cost_accounting_basis
-        account_authorization_ref = self.account_authorization_ref
         if decision:
             from novel_forge.modules.production_execution.routing_runtime import routed_reservation
 

@@ -269,6 +269,10 @@ def test_work_and_chapter_policy_cannot_weaken_quality_or_select_a_model():
     policy["task_overrides"][0]["model"] = "cheapest"
     with pytest.raises(Exception, match="SCHEMA_INVALID"):
         validate_routing_policy(policy)
+    del policy["task_overrides"][0]["model"]
+    policy["task_overrides"][0]["latency_sla_seconds"] = 0
+    with pytest.raises(Exception, match="SCHEMA_INVALID"):
+        validate_routing_policy(policy)
 
 
 def test_cache_history_from_another_prefix_does_not_discount_route():

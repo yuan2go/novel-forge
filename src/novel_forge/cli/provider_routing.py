@@ -64,7 +64,13 @@ def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
             principal=principal,
         )
     principal.require("content.authority.query", args.project_id)
-    registry = PostgresRoutingRegistry(settings.database_url)
+    from novel_forge.modules.authority_handler_runtime.routing_feedback import (
+        domain_gate_outcomes,
+    )
+
+    registry = PostgresRoutingRegistry(
+        settings.database_url, outcome_projection=domain_gate_outcomes
+    )
     if args.action == "replay":
         document = registry.query.require(
             project_id=args.project_id, asset_id=args.decision_id

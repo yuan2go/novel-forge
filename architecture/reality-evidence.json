@@ -4792,7 +4792,7 @@
           "symbol": "task_requirements"
         },
         {
-          "path": "src/novel_forge/modules/production_execution/routing_feedback.py",
+          "path": "src/novel_forge/modules/authority_handler_runtime/routing_feedback.py",
           "symbol": "domain_gate_outcomes"
         }
       ],
@@ -7959,7 +7959,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:0b3406f4ad1f4f707ee62f011ace8f39c065499b7f47c2ea095ff33abe56d63d"
+    "implementation_tree_sha": "sha256:ba24e0f8c4db5b0546678ba11a31e4831898ef1341ff6b882b65ace9b0a3e1fa"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

@@ -9,7 +9,7 @@ from novel_forge.modules.story_design_authority.qualification import (
     validate_narrative_qualification,
 )
 
-from .cost_routing import snapshot_hash
+from novel_forge.modules.production_execution.cost_routing import snapshot_hash
 
 
 def normalized_evidence(content: Mapping[str, Any]) -> Mapping[str, Any]:

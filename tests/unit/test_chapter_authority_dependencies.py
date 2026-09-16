@@ -509,6 +509,9 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
 
         router = execution.gateway.provider_router
         self.assertIsNotNone(router)
+        from novel_forge.modules.authority_handler_runtime.routing_feedback import domain_gate_outcomes
+
+        self.assertIs(router.registry.outcome_projection, domain_gate_outcomes)
         candidates = router.candidates
         deepseek = [item for item in candidates if item.provider == "deepseek"]
         codex = [item for item in candidates if item.provider == "codex-cli"]

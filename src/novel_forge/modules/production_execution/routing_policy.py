@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Mapping
+
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.service import _validate_json_schema
 
 from .cost_routing import task_policy
 
@@ -40,13 +44,35 @@ POLICY_SCHEMA = {
 
 
 def validate_routing_policy(content: Mapping[str, Any]) -> None:
-    from novel_forge.modules.chapter_authority.provider_output_contracts import (
-        validate_chapter_provider_output_against_schema,
-    )
-
-    validate_chapter_provider_output_against_schema(
-        "provider_routing_policy", POLICY_SCHEMA, dict(content)
-    )
+    try:
+        _validate_json_schema(POLICY_SCHEMA, dict(content))
+        if not all(content[key].strip() for key in ("policy_version", "reason")):
+            raise ValueError("policy identity and reason are required")
+        for item in content["task_overrides"]:
+            _validate_json_schema(
+                POLICY_SCHEMA["properties"]["task_overrides"]["items"], item
+            )
+            if not all(item[key].strip() for key in ("work_id", "task_type")):
+                raise ValueError("work and task identity are required")
+            if item["risk"] not in ("LOW", "MEDIUM", "HIGH"):
+                raise ValueError("risk is invalid")
+            for key in ("quality_floor", "latency_sla_seconds"):
+                if key in item and (
+                    isinstance(item[key], bool)
+                    or not math.isfinite(item[key])
+                    or item[key] <= 0
+                ):
+                    raise ValueError(key + " must be positive and finite")
+            if item["quality_floor"] > 1:
+                raise ValueError("quality floor exceeds one")
+            if "chapter" in item and (
+                type(item["chapter"]) is not int or item["chapter"] <= 0
+            ):
+                raise ValueError("chapter must be a positive integer")
+    except (KernelError, ValueError, TypeError) as exc:
+        raise KernelError(
+            "ROUTING_POLICY_SCHEMA_INVALID", "routing policy violates its contract"
+        ) from exc
     seen = set()
     for item in content["task_overrides"]:
         identity = (item["work_id"], item["task_type"], item.get("chapter"))

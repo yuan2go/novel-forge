@@ -1198,6 +1198,7 @@ def build_production_execution_composition(
     if router_enabled:
         from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
         from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
+        from novel_forge.modules.authority_handler_runtime.routing_feedback import domain_gate_outcomes
 
         candidates = list(deepseek_candidates(available=True))
         if codex_escalation_enabled:
@@ -1227,6 +1228,7 @@ def build_production_execution_composition(
             task_money_limit=max_cost_per_call,
             task_token_limit=int(values.get("NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT") or 0),
             soft_money_limit=str(values.get("NOVEL_FORGE_ROUTER_SOFT_COST_PER_TASK") or "") or None,
+            outcome_projection=domain_gate_outcomes,
         )
     shared_budget_caps = {
         key: str(values[value])
