@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from decimal import Decimal
 import json
 from uuid import uuid4
 from pathlib import Path
@@ -18,6 +19,61 @@ from novel_forge.modules.production_execution.routing_runtime import (
     PostgresRoutingRegistry,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+
+def _priced_observation_metrics(observations: list[Any]) -> dict[str, Any]:
+    buckets = {
+        "production": [row for row in observations if row.production_eligible],
+        "benchmark_challenger": [
+            row
+            for row in observations
+            if row.evidence_class == "BENCHMARK_CHALLENGER"
+        ],
+        "unclassified": [
+            row
+            for row in observations
+            if not row.production_eligible
+            and row.evidence_class != "BENCHMARK_CHALLENGER"
+        ],
+    }
+    result: dict[str, Any] = {}
+    for name, rows in buckets.items():
+        priced = [row for row in rows if row.priced_cost is not None]
+        cost = sum((Decimal(row.priced_cost) for row in priced), Decimal(0))
+        accepted = sum(row.accepted is True for row in rows)
+        complete = len(priced) == len(rows)
+        calibrated = [row.quality_score for row in rows if row.quality_score is not None]
+        quality_per_cost = (
+            sum((Decimal(str(score)) for score in calibrated), Decimal(0)) / cost
+            if rows and complete and len(calibrated) == len(rows) and cost > 0
+            else None
+        )
+        result.update(
+            {
+                f"{name}_sample_count": len(rows),
+                f"{name}_accepted_output_count": accepted,
+                f"{name}_priced_usage_cost": str(cost),
+                f"{name}_cost_unknown_samples": len(rows) - len(priced),
+                f"{name}_priced_cost_per_accepted_output": (
+                    str(cost / accepted) if accepted and complete else None
+                ),
+                f"{name}_calibrated_quality_per_priced_dollar": (
+                    str(quality_per_cost) if quality_per_cost is not None else None
+                ),
+                f"{name}_quality_per_cost_metric": (
+                    "CALIBRATED_SCORE"
+                    if quality_per_cost is not None
+                    else None
+                ),
+            }
+        )
+    result["priced_cost_per_accepted_output"] = result[
+        "production_priced_cost_per_accepted_output"
+    ]
+    result["quality_per_priced_dollar"] = result[
+        "production_calibrated_quality_per_priced_dollar"
+    ]
+    return result
 
 
 def add_provider_routing_parser(subparsers: Any) -> None:
@@ -120,6 +176,7 @@ def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
             input_hash=task.input_hash,
             request_input=request_input,
             cache_prefix=cache_prefix,
+            lineage_operation_ids=task.lineage_operation_ids,
             dry_run=True,
         )
         return {
@@ -187,7 +244,7 @@ def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
             """SELECT DISTINCT v.content #> '{selected,candidate}'
                FROM authority_asset a JOIN authority_asset_version v USING(asset_id)
                WHERE a.project_id=%s AND a.asset_type='routing_decision'
-                 AND v.content->>'status'='SELECTED'""",
+                 AND v.content->>'status' IN ('SELECTED','BENCHMARK_SELECTED')""",
             [args.project_id],
         )
         candidate_snapshots = [row[0] for row in uow.cursor.fetchall()]
@@ -211,25 +268,14 @@ def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
                 now=datetime.now(timezone.utc),
                 policy=task_policy(task_type),
             )
-            accepted = sum(row.accepted is True for row in observations)
-            priced = [row for row in observations if row.priced_cost is not None]
-            from decimal import Decimal
-
-            usage_cost = sum((Decimal(row.priced_cost) for row in priced), Decimal(0))
+            priced_metrics = _priced_observation_metrics(observations)
             benchmarks.append(
                 {
                     "task_type": task_type,
                     "candidate_id": candidate.candidate_id,
                     "model_revision": candidate.model_revision,
                     **snapshot,
-                    "priced_cost_per_accepted_output": str(usage_cost / accepted)
-                    if accepted and len(priced) == len(observations)
-                    else None,
-                    "quality_per_priced_dollar": snapshot["predicted_quality"]
-                    * len(observations)
-                    / float(usage_cost)
-                    if usage_cost and len(priced) == len(observations)
-                    else None,
+                    **priced_metrics,
                 }
             )
     return {

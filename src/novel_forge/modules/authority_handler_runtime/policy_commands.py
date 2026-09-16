@@ -85,12 +85,12 @@ def owned_policy_definition(
     }
     return {
         "name": name,
-        "definition_version": "1.3.0" if production_book_budget else "1.2.0" if single_book_budget else DEFINITION_VERSION,
+        "definition_version": "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
         "family": owner.lower(),
         "enabled": True,
         "definition_status": "implemented_validation_pending",
-        "command_schema_version": f"{name}.command.v3" if production_book_budget else f"{name}.command.v2" if single_book_budget else f"{name}.command.v1",
-        "result_schema_version": f"{name}.result.v3" if production_book_budget else f"{name}.result.v2" if single_book_budget else f"{name}.result.v1",
+        "command_schema_version": f"{name}.command.v3" if production_book_budget else f"{name}.command.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.command.v1",
+        "result_schema_version": f"{name}.result.v3" if production_book_budget else f"{name}.result.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.result.v1",
         "command_schema": command_schema,
         "result_schema": result_schema,
         "input_contract": command_schema,

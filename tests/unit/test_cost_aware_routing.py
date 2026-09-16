@@ -107,6 +107,15 @@ def test_absent_stale_and_fixture_benchmarks_fail_closed():
         assert "BENCHMARK_INSUFFICIENT" in result["candidates"][0]["rejected_reasons"]
 
 
+def test_routing_task_requires_a_root_to_current_operation_lineage():
+    lineage = task(lineage_operation_ids=("root-operation", "operation"))
+    assert lineage.lineage_operation_ids == ("root-operation", "operation")
+    with pytest.raises(ValueError, match="ROUTING_TASK_LINEAGE_INVALID"):
+        task(lineage_operation_ids=("operation", "root-operation"))
+    with pytest.raises(ValueError, match="ROUTING_TASK_LINEAGE_INVALID"):
+        task(lineage_operation_ids=("operation", "operation"))
+
+
 def test_high_risk_uncertainty_and_budget_never_lower_floor():
     context = task(task_type="critical_chapter", remaining_money="0.0001")
     result = route(context, [candidate()], {"flash": samples()})
@@ -132,7 +141,13 @@ def test_soft_limit_is_visible_and_does_not_remove_qualified_routes():
 
 
 @pytest.mark.parametrize(
-    "failure", ["QUALITY_FAILURE", "SCHEMA_REJECTION", "CONTEXT_OVERFLOW"]
+    "failure",
+    [
+        "QUALITY_FAILURE",
+        "SCHEMA_REJECTION",
+        "CONTEXT_OVERFLOW",
+        "AMBIGUOUS_JUDGE",
+    ],
 )
 def test_failed_route_is_excluded(failure):
     context = task(history=({"candidate_id": "flash", "failure_class": failure},))
@@ -164,7 +179,7 @@ def test_codex_requires_threshold_authorization_quota_and_no_loop():
     assert route(task(), [codex], {"codex": samples()})["status"] == "BLOCKED"
     context = task(
         history=tuple(
-            {"candidate_id": "flash", "failure_class": "QUALITY_FAILURE"}
+            {"candidate_id": "flash", "failure_class": "AMBIGUOUS_JUDGE"}
             for _ in range(2)
         )
     )
@@ -229,6 +244,40 @@ def test_domain_acceptance_is_a_distinct_measured_metric_not_a_literary_score():
     assert (
         benchmark_snapshot(unreviewed, now=NOW, policy=policy)["predicted_quality"] == 0
     )
+
+
+def test_benchmark_challengers_qualify_without_becoming_production_acceptance():
+    from novel_forge.modules.production_execution.cost_routing import (
+        benchmark_snapshot,
+        task_policy,
+    )
+
+    production = replace(
+        samples(n=1)[0],
+        evidence_ref="production",
+        accepted=False,
+    )
+    challengers = [
+        replace(
+            row,
+            evidence_ref=f"challenger:{number}",
+            evidence_class="BENCHMARK_CHALLENGER",
+            production_eligible=False,
+        )
+        for number, row in enumerate(samples(n=30))
+    ]
+    snapshot = benchmark_snapshot(
+        [production, *challengers],
+        now=NOW,
+        policy=task_policy("classification"),
+    )
+
+    assert snapshot["sample_count"] == 31
+    assert snapshot["benchmark_challenger_sample_count"] == 30
+    assert snapshot["production_eligible_sample_count"] == 1
+    assert snapshot["qualification_acceptance_rate"] == pytest.approx(30 / 31)
+    assert snapshot["production_acceptance_rate"] == 0
+    assert snapshot["acceptance_rate"] == 0
 
 
 def test_work_and_chapter_policy_cannot_weaken_quality_or_select_a_model():
@@ -315,6 +364,7 @@ def test_missing_latency_is_uncertain_under_sla():
         "protocol",
         "reasoning_effort",
         "pricing_policy_json",
+        "lineage",
     ],
 )
 def test_frozen_route_requires_original_scope_input_and_admission(drift):
@@ -382,6 +432,15 @@ def test_frozen_route_requires_original_scope_input_and_admission(drift):
         identity["input_text_hash"] = "sha256:other"
     elif drift == "decision":
         frozen["selected"]["candidate"]["model"] = "other"
+    elif drift == "lineage":
+        original["task"]["lineage_operation_ids"] = ["operation", "root"]
+        original["decision_id"] = "routing-decision:" + snapshot_hash(
+            {key: value for key, value in original.items() if key != "decision_id"}
+        ).removeprefix("sha256:")
+        frozen = {**deepcopy(original), "asset_version_id": "decision-version"}
+        payload["_production_execution"]["capability_runtime"][
+            "routing_decision"
+        ] = frozen
     elif drift in {"protocol", "reasoning_effort", "pricing_policy_json"}:
         identity[drift] = "{}" if drift == "pricing_policy_json" else "other"
     router = ProductionProviderRouter(

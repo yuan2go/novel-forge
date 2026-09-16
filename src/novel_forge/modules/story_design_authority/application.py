@@ -241,6 +241,23 @@ class PostgresStoryDesignAssetAuthority:
                 "GENERATOR_DEFINITION_NOT_FOUND",
                 "unknown Story Design GeneratorDefinition",
             )
+        if command.transition in {
+            DesignTransition.QUALIFY, DesignTransition.SUBMIT_APPROVAL,
+            DesignTransition.APPROVE, DesignTransition.ACTIVATE,
+        }:
+            from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+            candidate = AuthorityAssetQuery(self.database_url).require(
+                project_id=command.project_id, asset_version_id=command.asset_version_id,
+            )
+            if (
+                candidate.content.get("routing_eligibility") == "BENCHMARK_ONLY"
+                or candidate.content.get("routing_bootstrap_authorization")
+            ):
+                raise KernelError(
+                    "PLANNING_BENCHMARK_ONLY",
+                    "bootstrap candidate evidence cannot be promoted into production",
+                )
         current_state: dict[str, Any] | None = None
         if command.transition is not DesignTransition.ENROLL:
             current_state = self.require(

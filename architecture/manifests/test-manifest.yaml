@@ -8,6 +8,54 @@
   ],
   "classification_rules": [
     {
+      "id": "routing-bootstrap-contract",
+      "patterns": [
+        "tests/unit/test_routing_bootstrap.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "production-execution",
+      "capability": "routing-bootstrap-contract",
+      "production_target": "src/novel_forge/modules/production_execution/routing_bootstrap.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "planning-bootstrap-contract",
+      "patterns": [
+        "tests/unit/test_planning_routing_bootstrap.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "story-planning-runtime",
+      "capability": "planning-bootstrap-contract",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "planning-bootstrap-postgres",
+      "patterns": [
+        "tests/integration/test_planning_routing_bootstrap_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "story-planning-runtime",
+      "capability": "planning-bootstrap-postgres",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "routing-bootstrap-budget-postgres",
+      "patterns": [
+        "tests/integration/test_routing_bootstrap_budget_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "command-kernel",
+      "capability": "routing-bootstrap-budget-postgres",
+      "production_target": "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
       "id": "routing-evidence-budget",
       "patterns": [
         "tests/integration/test_provider_routing_postgres.py"

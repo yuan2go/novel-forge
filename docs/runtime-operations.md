@@ -314,6 +314,26 @@ audit `reason`, and `task_overrides` with `work_id`, `task_type`, `risk`, `quali
 optional `chapter`, positive `latency_sla_seconds` and `escalation_reason`. Overrides
 cannot lower the default floor/risk or select a Provider/model.
 
+For initial Planning evidence collection, the same policy may contain
+`bootstrap_authorizations`. Each grant requires `authorization_id`, audit `reason`,
+`environment: validation`, `purpose: BENCHMARK_CHALLENGER`, `production_eligible: false`,
+exact `book_id`, generation `task_type`, `logical_key`, `generation_idempotency_key`,
+the canonical `input_versions_hash`, `command_hash`, `candidate_id`, `model_revision`, timezone-aware
+`expires_at`, positive `maximum_calls`, `maximum_tokens`, `maximum_amount`, and `currency:
+USD`. The current challenger lane supports priced DeepSeek execution. A local operator
+passes only `routing_bootstrap_authorization_id` to the existing Planning generation
+command; admission freezes the governed grant. Production environments reject it.
+`command_hash` covers the normalized public Planning command, including default fields,
+with only the authorization ID and server snapshot omitted. Multi-stage world preparation
+requires its own governed evidence and is excluded from this single-stage sampling grant.
+The router emits `BENCHMARK_SELECTED` with the original quality exclusions preserved;
+Kernel checks immutable decision identity, expiry and locked aggregate quota before send.
+Reusing an authorization ID in a later policy version does not reset its quota.
+Historical replay uses the frozen grant, while a new send must still precede expiry.
+Candidates remain ineligible for production even after an explicit independent evaluation.
+No automatic judge or repair is authorized by the generator grant. Independent calibrated
+evaluation remains necessary; a model cannot establish its own qualification.
+
 Optional Codex escalation requires `NOVEL_FORGE_ROUTER_CODEX_ESCALATION=true`, an explicit
 `NOVEL_FORGE_CODEX_ESCALATION_MODEL`, positive `NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT`,
 `NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT`, `NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT`,
@@ -323,13 +343,22 @@ closed; disabling the lane does not authorize a quality downgrade. Call limits c
 accounted reservation generations, including paid retries, while released unsent calls
 do not consume capacity. Shared usage locks prevent USD and entitlement reservations
 from racing through global token/call caps.
+Book Opening's immutable budget policy may explicitly add an `account_entitlement_lane`
+with its Codex model, authorization reference/version and finite call/token quota. The
+deployment supplies it through `NOVEL_FORGE_BOOK_OPENING_ACCOUNT_ENTITLEMENT_POLICY` as
+JSON; composition requires an exact match with the configured Codex escalation identity.
+A priced envelope without that lane still rejects entitlement execution. Both lanes consume
+the parent call/token budget; progress reports retain unknown entitlement monetary cost
+separately from priced USD expenditure.
 
 The current routing migration extends the existing versioned policy owner constraint
 and adds a chain lookup index. It does not rewrite Provider identities or backfill
-historical decisions. Unfinished legacy Provider executions, cross-operation Planning
-semantic retry and mixed-accounting Book Opening budgets require explicit migration
-and authorization. Independent quality calibration is still missing for several task
-families and no complete governed cold-start lane exists; production readiness is `NO`.
+historical decisions. Planning semantic repair follows durable predecessor relationships
+and freezes their Operation identities into subsequent routing decisions; task budgets and
+failure/escalation bounds span that lineage. Unfinished legacy Provider executions retain
+their original identity and require reconciliation. Independent quality calibration is
+still missing for several task families, and no accepted real-Provider Chapter chain has
+qualified this router replacement; production readiness remains `NO`.
 
 Credentialed Provider qualification is intentionally separate from P0. The only live
 runner is `make real-provider-qualification`; the D0 contract probe and worker remain

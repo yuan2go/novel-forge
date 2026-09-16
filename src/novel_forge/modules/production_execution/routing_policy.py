@@ -5,6 +5,9 @@ from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.service import _validate_json_schema
+from novel_forge.modules.command_kernel.routing_bootstrap import (
+    validate_bootstrap_authorization,
+)
 
 from .cost_routing import task_policy
 
@@ -18,6 +21,7 @@ POLICY_SCHEMA = {
     "properties": {
         "policy_version": {"type": "string", "minLength": 1},
         "reason": {"type": "string", "minLength": 1},
+        "bootstrap_authorizations": {"type": "array", "items": {"type": "object"}},
         "task_overrides": {
             "type": "array",
             "items": {
@@ -48,6 +52,18 @@ def validate_routing_policy(content: Mapping[str, Any]) -> None:
         _validate_json_schema(POLICY_SCHEMA, dict(content))
         if not all(content[key].strip() for key in ("policy_version", "reason")):
             raise ValueError("policy identity and reason are required")
+        authorization_ids = set()
+        for grant in content.get("bootstrap_authorizations", []):
+            validate_bootstrap_authorization(grant)
+            task_policy(grant["task_type"])
+            if (
+                not grant["task_type"].endswith(".generate")
+                or grant["authorization_id"] in authorization_ids
+            ):
+                raise ValueError(
+                    "bootstrap authorization must identify one Planning generation"
+                )
+            authorization_ids.add(grant["authorization_id"])
         for item in content["task_overrides"]:
             _validate_json_schema(
                 POLICY_SCHEMA["properties"]["task_overrides"]["items"], item
@@ -69,7 +85,7 @@ def validate_routing_policy(content: Mapping[str, Any]) -> None:
                 type(item["chapter"]) is not int or item["chapter"] <= 0
             ):
                 raise ValueError("chapter must be a positive integer")
-    except (KernelError, ValueError, TypeError) as exc:
+    except (KernelError, ValueError, TypeError, ArithmeticError) as exc:
         raise KernelError(
             "ROUTING_POLICY_SCHEMA_INVALID", "routing policy violates its contract"
         ) from exc

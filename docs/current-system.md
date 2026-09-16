@@ -65,18 +65,26 @@ project into task-specific benchmark metrics. A domain gate acceptance probabili
 not a calibrated literary score. Model revisions and observed DeepSeek service cohorts
 remain separate; missing legacy identity cannot qualify a current model. Classification,
 MKAOS extraction, and judges without independent calibration remain unqualified.
-There is no governed cold-start challenger that can bootstrap every task family without
-weakening production quality admission. The configured production router therefore
-blocks when sufficient evidence is absent.
+Planning has an explicitly authorized, bounded validation challenger path. Its immutable
+decisions retain unknown quality and the original production rejection reasons; generated
+candidates remain `BENCHMARK_ONLY` and cannot be qualified, approved or activated for
+production. Independent evaluation can contribute benchmark observations, with challenger
+and production acceptance reported separately. This path does not provide independent
+judge calibration or bootstrap every task family. Ordinary production routing blocks
+when sufficient quality evidence is absent.
 
 The existing versioned policy Authority governs per-work/task/chapter risk and quality
 increases. Optional Codex escalation reuses the actual CLI backend, explicit entitlement
 identity, configuration revision, finite call/token limits and expiry. Mixed accounting
-is frozen per reservation; entitlement is not free USD. Existing Book Opening envelopes
-must independently authorize the selected accounting basis. Planning's frozen-effect
-recovery still preserves its original route; automatic semantic retry across Planning
-operations is not closed. Historical decisions remain legacy/unknown, with no fabricated
-routing or Provider identities.
+is frozen per reservation; entitlement is not free USD. Book Opening envelopes must
+explicitly authorize a finite entitlement lane alongside priced execution. Both lanes
+share parent call/token limits, while USD and unknown subscription cost remain separate.
+Planning's frozen-effect recovery preserves its original route. New repair Operations
+derive a bounded root-to-current lineage from durable repair relationships and share
+failure, escalation and task budget history. Historical decisions remain legacy/unknown,
+with no fabricated routing or Provider identities.
+The current four-attempt routing bound and eight-Operation repair traversal bound are
+`CURRENT_RUNTIME_FACT`; neither establishes a permanent business invariant.
 
 DeepSeek uses the official chat-completions protocol, explicit low/high/max reasoning,
 structured JSON, bounded timeout, and observed usage/cache receipts. The current API

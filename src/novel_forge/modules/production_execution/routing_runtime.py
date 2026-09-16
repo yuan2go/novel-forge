@@ -26,6 +26,22 @@ from .cost_routing import (
 from .contracts import ExecutionRuntimeClass
 
 
+def _routing_operation_lineage(
+    operation_id: str, lineage_operation_ids: Sequence[str]
+) -> tuple[str, ...]:
+    lineage = tuple(str(item) for item in lineage_operation_ids) or (operation_id,)
+    if (
+        lineage[-1] != operation_id
+        or len(set(lineage)) != len(lineage)
+        or any(not item for item in lineage)
+    ):
+        raise KernelError(
+            "ROUTING_OPERATION_LINEAGE_INVALID",
+            "routing operation lineage must be unique and end at the current Operation",
+        )
+    return lineage
+
+
 class PostgresRoutingRegistry:
     def __init__(
         self,
@@ -78,7 +94,8 @@ class PostgresRoutingRegistry:
                               AND outcome.content->>'accepted_draft_asset_version_id'=generated.asset_version_id),
                           CASE WHEN effect.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}' IS NOT NULL
                             THEN EXISTS(SELECT 1 FROM authority_external_effect previous
-                              WHERE previous.project_id=effect.project_id AND previous.operation_id=effect.operation_id
+                              WHERE previous.project_id=effect.project_id
+                                AND COALESCE(effect.request_payload #> '{_production_execution,capability_runtime,routing_decision,task,lineage_operation_ids}',jsonb_build_array(effect.operation_id)) ? previous.operation_id
                                 AND previous.created_at<effect.created_at
                                 AND previous.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}'
                                   = effect.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}')
@@ -227,6 +244,23 @@ class PostgresRoutingRegistry:
                 "outcome"
             ) in {"FINAL_FAILURE", "RETRYABLE_FAILURE"}
             cost = evidence.get("cost") or {}
+            if (
+                (decision or {}).get("status") == "BENCHMARK_SELECTED"
+                and (decision or {}).get("mode") == "BENCHMARK_CHALLENGER"
+                and (decision or {}).get("production_eligible") is False
+            ):
+                evidence_class = "BENCHMARK_CHALLENGER"
+                production_eligible = False
+            elif (
+                (decision or {}).get("status") == "SELECTED"
+                and not (decision or {}).get("bootstrap_authorization")
+                and (decision or {}).get("production_eligible") is not False
+            ):
+                evidence_class = "PRODUCTION_OUTCOME"
+                production_eligible = True
+            else:
+                evidence_class = "UNCLASSIFIED_REAL_PROVIDER"
+                production_eligible = False
             observations.append(
                 BenchmarkObservation(
                     evidence_ref="asset-version:" + reference,
@@ -265,15 +299,29 @@ class PostgresRoutingRegistry:
                     in {"usage_pricing", "usage_pricing_upper_bound"}
                     else None,
                     served_model_identity_hash=served_identity,
+                    evidence_class=evidence_class,
+                    production_eligible=production_eligible,
                 )
             )
         return observations
 
     def history(
-        self, *, project_id: str, operation_id: str, task_type: str, chain_id: str = ""
+        self,
+        *,
+        project_id: str,
+        task_type: str,
+        chain_id: str = "",
+        operation_id: str = "",
+        operation_ids: Sequence[str] = (),
     ) -> tuple[dict[str, Any], ...]:
         if not chain_id:
             return ()
+        lineage = tuple(operation_ids) or ((operation_id,) if operation_id else ())
+        if not lineage or len(set(lineage)) != len(lineage):
+            raise KernelError(
+                "ROUTING_OPERATION_LINEAGE_INVALID",
+                "routing history requires a unique Operation lineage",
+            )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """SELECT effect.external_effect_id, effect.status, dispatch.created_at,
@@ -294,13 +342,22 @@ class PostgresRoutingRegistry:
                      WHERE generated.content #>> '{provider_evidence,production_execution,execution_request,external_effect_id}'=effect.external_effect_id
                        AND q.governance='CLEAR' ORDER BY q.created_at LIMIT 1
                    ) quality ON true
-                   WHERE effect.project_id=%s AND effect.operation_id=%s
+                   WHERE effect.project_id=%s AND effect.operation_id=ANY(%s::text[])
                      AND effect.request_payload->>'stage'=%s
                      AND effect.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}'=%s
                    ORDER BY effect.created_at LIMIT 10""",
-                [project_id, operation_id, task_type, chain_id],
+                [project_id, list(lineage), task_type, chain_id],
             )
             rows = uow.cursor.fetchall()
+            gate_outcomes = (
+                self.outcome_projection(
+                    uow.cursor,
+                    project_id=project_id,
+                    effect_ids=[str(row[0]) for row in rows],
+                )
+                if self.outcome_projection is not None
+                else {}
+            )
         history = []
         for effect_id, status, updated_at, decision, evidence, quality in rows:
             if not decision:
@@ -330,6 +387,21 @@ class PostgresRoutingRegistry:
                         and item.get("gate_status") == "FAILED"
                         for item in quality.get("dimensions", ())
                     )
+                    else "QUALITY_FAILURE"
+                )
+            gate = gate_outcomes.get(str(effect_id), {})
+            if not failure and (
+                gate.get("accepted") is False or gate.get("failure_class")
+            ):
+                failure = (
+                    gate.get("failure_class")
+                    if gate.get("failure_class")
+                    in {
+                        "QUALITY_FAILURE",
+                        "CANON_CONFLICT",
+                        "SCHEMA_REJECTION",
+                        "AMBIGUOUS_JUDGE",
+                    }
                     else "QUALITY_FAILURE"
                 )
             history.append(
@@ -395,6 +467,7 @@ class ProductionProviderRouter:
         token_caps: Mapping[str, int] | None = None,
         call_caps: Mapping[str, int] | None = None,
         outcome_projection: Callable[..., dict[str, dict[str, Any]]] | None = None,
+        execution_environment: str = "production",
     ) -> None:
         self.registry = PostgresRoutingRegistry(
             database_url, outcome_projection=outcome_projection
@@ -406,6 +479,7 @@ class ProductionProviderRouter:
         self.money_caps = dict(money_caps or {})
         self.token_caps = dict(token_caps or {})
         self.call_caps = dict(call_caps or {})
+        self.execution_environment = execution_environment
         if self.task_token_limit <= 0 or Decimal(task_money_limit) <= 0:
             raise ValueError("ROUTING_POSITIVE_TASK_BUDGET_REQUIRED")
 
@@ -430,7 +504,9 @@ class ProductionProviderRouter:
         input_hash: str = "",
         request_input: Mapping[str, Any] | None = None,
         chapter: int = 0,
+        lineage_operation_ids: Sequence[str] = (),
     ) -> tuple[Any, dict[str, Any]]:
+        lineage = _routing_operation_lineage(operation_id, lineage_operation_ids)
         logical_ref = (
             "production_execution/routing/"
             + snapshot_hash(
@@ -453,7 +529,9 @@ class ProductionProviderRouter:
                     "asset_version_id": existing.asset_version_id,
                 }
                 original = snapshot["task"]
-                if any(
+                if tuple(
+                    original.get("lineage_operation_ids") or (operation_id,)
+                ) != lineage or any(
                     original.get(key) != value
                     for key, value in {
                         "input_tokens": input_tokens,
@@ -478,12 +556,22 @@ class ProductionProviderRouter:
             except KernelError as exc:
                 if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
                     raise
-        chain_id = snapshot_hash(
-            stable_key.replace(f"{operation_id}:{attempt_id}:", f"{operation_id}:", 1)
+        normalized_stable_key = stable_key.replace(
+            f"{operation_id}:{attempt_id}:", f"{operation_id}:", 1
         )
+        if len(lineage) > 1:
+            if not normalized_stable_key.startswith(operation_id + ":"):
+                raise KernelError(
+                    "ROUTING_OPERATION_LINEAGE_INVALID",
+                    "repair successor stable key is outside its Operation lineage",
+                )
+            normalized_stable_key = (
+                lineage[0] + normalized_stable_key[len(operation_id) :]
+            )
+        chain_id = snapshot_hash(normalized_stable_key)
         history = self.registry.history(
             project_id=project_id,
-            operation_id=operation_id,
+            operation_ids=lineage,
             task_type=task_type,
             chain_id=chain_id,
         )
@@ -491,12 +579,12 @@ class ProductionProviderRouter:
             uow.cursor.execute(
                 """SELECT COALESCE(sum(CASE WHEN status='SETTLED' THEN settled_amount ELSE reserved_amount END),0),
                           COALESCE(sum(CASE WHEN status='SETTLED' THEN actual_tokens ELSE estimated_tokens END),0)
-                   FROM authority_budget_reservation WHERE project_id=%s AND operation_id=%s
+                   FROM authority_budget_reservation WHERE project_id=%s AND operation_id=ANY(%s::text[])
                      AND status IN ('RESERVED','HELD_UNKNOWN','SETTLED')
                      AND external_effect_id IN (SELECT external_effect_id FROM authority_external_effect
-                       WHERE project_id=%s AND operation_id=%s AND request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}'=%s)
+                       WHERE project_id=%s AND operation_id=ANY(%s::text[]) AND request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}'=%s)
                    """,
-                [project_id, operation_id, project_id, operation_id, chain_id],
+                [project_id, list(lineage), project_id, list(lineage), chain_id],
             )
             money_used, tokens_used = uow.cursor.fetchone()
         remaining_money = max(Decimal(0), Decimal(self.task_money_limit) - money_used)
@@ -534,6 +622,7 @@ class ProductionProviderRouter:
                 "admission_recheck_required": True,
                 "candidates": budgets,
             },
+            lineage_operation_ids=lineage,
         )
         now = datetime.now(timezone.utc)
         from .routing_catalog import deepseek_pricing_period
@@ -592,6 +681,19 @@ class ProductionProviderRouter:
             **requirements,
         )
         decision = CostAwareRouter().explain(task, candidates, observations, now=now)
+        from novel_forge.modules.command_kernel.routing_bootstrap import (
+            load_bootstrap_authorization,
+        )
+        from .routing_bootstrap import benchmark_decision
+
+        with AuthorityUnitOfWork(self.registry.database_url) as uow:
+            bootstrap = load_bootstrap_authorization(
+                uow.cursor, project_id=project_id, operation_id=operation_id
+            )
+        if bootstrap:
+            decision = benchmark_decision(
+                decision, bootstrap, environment=self.execution_environment
+            )
         snapshot = (
             decision.to_dict()
             if dry_run
@@ -692,9 +794,33 @@ class ProductionProviderRouter:
                 budgets[candidate.candidate_id] = result
         return budgets
 
-    @staticmethod
-    def _selected_route(base: Any, snapshot: Mapping[str, Any]) -> Any:
-        if snapshot.get("status") != "SELECTED":
+    def _selected_route(self, base: Any, snapshot: Mapping[str, Any]) -> Any:
+        if snapshot.get("status") == "BENCHMARK_SELECTED":
+            from novel_forge.modules.command_kernel.routing_bootstrap import (
+                load_bootstrap_authorization,
+            )
+
+            task = snapshot["task"]
+            with AuthorityUnitOfWork(self.registry.database_url) as uow:
+                bootstrap = load_bootstrap_authorization(
+                    uow.cursor,
+                    project_id=task["project_id"],
+                    operation_id=task["operation_id"],
+                    check_expiry=False,
+                )
+            if (
+                self.execution_environment != "validation"
+                or not bootstrap
+                or snapshot.get("bootstrap_authorization") != bootstrap
+                or snapshot.get("production_eligible") is not False
+            ):
+                raise KernelError(
+                    "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
+                    "benchmark route lacks its admitted validation grant",
+                )
+        elif snapshot.get("status") != "SELECTED" or snapshot.get(
+            "bootstrap_authorization"
+        ):
             raise KernelError(
                 "PROVIDER_ROUTING_BLOCKED", str(snapshot.get("decision_id"))
             )
@@ -775,6 +901,17 @@ class ProductionProviderRouter:
             ):
                 raise KernelError("ROUTING_DECISION_INTEGRITY_FAILURE", version_id)
             task = content["task"]
+            frozen_lineage = task.get("lineage_operation_ids") or ()
+            if frozen_lineage and not isinstance(frozen_lineage, (list, tuple)):
+                raise KernelError("ROUTING_DECISION_SCOPE_MISMATCH", version_id)
+            try:
+                _routing_operation_lineage(
+                    str(task.get("operation_id") or ""), frozen_lineage
+                )
+            except KernelError as exc:
+                raise KernelError(
+                    "ROUTING_DECISION_SCOPE_MISMATCH", version_id
+                ) from exc
             if (
                 any(
                     task.get(key) != str(metadata.get(key) or "")

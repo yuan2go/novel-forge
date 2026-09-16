@@ -168,15 +168,127 @@ def planning_gate_outcomes(
         accepted = (
             False if "FAIL" in statuses else True if statuses == {"PASS"} else None
         )
-        if accepted is not None:
+        qualification_status = (
+            "FAIL"
+            if "FAIL" in statuses
+            else "PASS"
+            if statuses == {"PASS"}
+            else "INSUFFICIENT"
+            if "INSUFFICIENT" in statuses
+            else ""
+        )
+        if accepted is not None or qualification_status == "INSUFFICIENT":
             result[effect_id] = {
                 "accepted": accepted,
                 "metric": "DOMAIN_GATE_ACCEPTANCE.v1",
+                "qualification_status": qualification_status,
                 "evidence_refs": [
                     "narrative-qualification:" + r[1]["qualification_id"] for r in rows
                 ],
                 "evaluation_operation_id": evaluation_id,
             }
+    return result
+
+
+def planning_validation_failures(
+    cursor: Any, *, project_id: str, effect_ids: Sequence[str]
+) -> dict[str, dict[str, Any]]:
+    if not effect_ids:
+        return {}
+    cursor.execute(
+        """SELECT effect.external_effect_id,validation.validation_report_id,
+                  validation.generation_operation_id,validation.validation_kind,
+                  validation.report,validation.report_hash,
+                  candidate.asset_version_id,candidate.content_hash,candidate.content,
+                  model.asset_version_id,model.content_hash,model.content
+           FROM authority_story_planning_validation_report validation
+           JOIN authority_asset_version candidate
+             ON candidate.asset_version_id=validation.candidate_asset_version_id
+           JOIN authority_asset candidate_asset ON candidate_asset.asset_id=candidate.asset_id
+             AND candidate_asset.project_id=validation.project_id
+             AND candidate_asset.asset_type='planning_generation_candidate'
+           JOIN authority_story_planning_generation generation
+             ON generation.operation_id=validation.generation_operation_id
+             AND generation.project_id=validation.project_id
+             AND generation.candidate_asset_version_id=candidate.asset_version_id
+           JOIN authority_story_planning_candidate generated
+             ON generated.generation_id=generation.generation_id
+             AND generated.project_id=validation.project_id
+             AND generated.candidate_asset_version_id=candidate.asset_version_id
+             AND generated.content_hash=candidate.content_hash
+           JOIN authority_external_effect effect
+             ON effect.external_effect_id=candidate.content #>> '{execution_evidence,external_receipt_ref}'
+             AND effect.project_id=validation.project_id
+             AND effect.operation_id=validation.generation_operation_id
+             AND effect.status='SUCCEEDED'
+           JOIN authority_asset model_asset ON model_asset.project_id=validation.project_id
+             AND model_asset.asset_type='model_call_log'
+           JOIN authority_asset_version model ON model.asset_id=model_asset.asset_id
+             AND COALESCE(model.content->'provider_evidence',model.content)
+                 #>> '{production_execution,execution_request,external_effect_id}'=effect.external_effect_id
+           WHERE validation.project_id=%s AND effect.external_effect_id=ANY(%s)
+             AND validation.status='FAIL'
+             AND validation.validation_kind IN ('STRUCTURAL','SEMANTIC')
+           ORDER BY validation.created_at,validation.validation_report_id,
+                    model.created_at DESC,model.asset_version_id""",
+        [project_id, list(effect_ids)],
+    )
+    result: dict[str, dict[str, Any]] = {}
+    for (
+        effect_id,
+        validation_id,
+        generation_operation_id,
+        validation_kind,
+        report,
+        report_hash,
+        candidate_id,
+        candidate_hash,
+        candidate,
+        model_id,
+        model_hash,
+        model,
+    ) in cursor.fetchall():
+        if effect_id in result:
+            continue
+        execution = candidate.get("execution_evidence") or {}
+        evidence = _real_evidence(model)
+        request = (
+            (evidence or {})
+            .get("production_execution", {})
+            .get("execution_request", {})
+        )
+        if (
+            evidence is None
+            or model_hash != snapshot_hash(model)
+            or candidate_hash != snapshot_hash(candidate)
+            or report_hash != snapshot_hash(report)
+            or validation_id != report_hash
+            or report.get("status") != "FAIL"
+            or report.get("validation_kind") != validation_kind
+            or report.get("candidate_asset_version_id") != candidate_id
+            or execution.get("operation_id") != generation_operation_id
+            or execution.get("external_receipt_ref") != effect_id
+            or execution.get("real_provider_proven") is not True
+            or execution.get("fixture_protocol_only") is True
+            or request.get("project_id") != project_id
+            or request.get("operation_id") != generation_operation_id
+            or request.get("external_effect_id") != effect_id
+        ):
+            continue
+        result[effect_id] = {
+            "accepted": False,
+            "failure_class": "SCHEMA_REJECTION"
+            if validation_kind == "STRUCTURAL"
+            else "QUALITY_FAILURE",
+            "metric": "DOMAIN_GATE_ACCEPTANCE.v1",
+            "validation_kind": validation_kind,
+            "error_code": str(report.get("error_code") or ""),
+            "evidence_refs": [
+                "planning-validation:" + report_hash,
+                "asset-version:" + candidate_id,
+                "asset-version:" + model_id,
+            ],
+        }
     return result
 
 
@@ -285,7 +397,37 @@ def source_gate_outcomes(
 def domain_gate_outcomes(
     cursor: Any, *, project_id: str, effect_ids: Sequence[str]
 ) -> dict[str, dict[str, Any]]:
+    planning = planning_gate_outcomes(
+        cursor, project_id=project_id, effect_ids=effect_ids
+    )
+    failures = planning_validation_failures(
+        cursor, project_id=project_id, effect_ids=effect_ids
+    )
+    for effect_id, failure in failures.items():
+        qualification = planning.get(effect_id, {})
+        evidence_refs = list(
+            dict.fromkeys(
+                [
+                    *qualification.get("evidence_refs", ()),
+                    *failure.get("evidence_refs", ()),
+                ]
+            )
+        )
+        if (
+            failure["validation_kind"] == "SEMANTIC"
+            and qualification.get("qualification_status") == "INSUFFICIENT"
+        ):
+            failure = {
+                **failure,
+                "accepted": None,
+                "failure_class": "AMBIGUOUS_JUDGE",
+            }
+        planning[effect_id] = {
+            **qualification,
+            **failure,
+            "evidence_refs": evidence_refs,
+        }
     return {
-        **planning_gate_outcomes(cursor, project_id=project_id, effect_ids=effect_ids),
+        **planning,
         **source_gate_outcomes(cursor, project_id=project_id, effect_ids=effect_ids),
     }
