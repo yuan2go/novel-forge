@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `36c5e70e05c061800d7a71a715837fe78e8435d6`
+Reality baseline: `7bc9317a61b6c5e76120f3abfafed1830e7c7956`
 Baseline implementation identity:
-`sha256:0b3406f4ad1f4f707ee62f011ace8f39c065499b7f47c2ea095ff33abe56d63d`
+`sha256:ba24e0f8c4db5b0546678ba11a31e4831898ef1341ff6b882b65ace9b0a3e1fa`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "36c5e70e05c061800d7a71a715837fe78e8435d6",
-    "implementation_tree_sha": "sha256:0b3406f4ad1f4f707ee62f011ace8f39c065499b7f47c2ea095ff33abe56d63d"
+    "sha": "7bc9317a61b6c5e76120f3abfafed1830e7c7956",
+    "implementation_tree_sha": "sha256:ba24e0f8c4db5b0546678ba11a31e4831898ef1341ff6b882b65ace9b0a3e1fa"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
