@@ -9,19 +9,19 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `54aac08570589f1cfd326e7b1c08ffe4a23bd3bf`
+Reality baseline: `96c482d12ed2e4e6b6e207372e63f4e76595ad6a`
 Baseline implementation identity:
-`sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6`
+`sha256:6e2a6693fc0f5274bc3eb54ae836475c687576c5fff36c379fe55e605793ff84`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-19",
+  "reviewed_on": "2026-09-20",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "54aac08570589f1cfd326e7b1c08ffe4a23bd3bf",
-    "implementation_tree_sha": "sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6"
+    "sha": "96c482d12ed2e4e6b6e207372e63f4e76595ad6a",
+    "implementation_tree_sha": "sha256:6e2a6693fc0f5274bc3eb54ae836475c687576c5fff36c379fe55e605793ff84"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -138,7 +138,7 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-09-19): WP02 adds a versioned accepted-prose task window only to Review/ReReview, with paired quotations for Revision. Existing role Context projection and complete Provider request admission remain authoritative; no new Memory owner, retrieval index, Digest, retention or GC contract is added. The window uses deterministic ending excerpts with explicit exclusions and does not close Gates B–E or prove semantic coverage outside those excerpts.
+Current scope review (2026-09-20): WP02 adds a versioned accepted-prose task window only to Review/ReReview, with paired quotations for Revision. Existing role Context projection and complete Provider request admission remain authoritative; no new Memory owner, retrieval index, Digest, retention or GC contract is added. The window uses deterministic ending excerpts with explicit exclusions and does not close Gates B–E or prove semantic coverage outside those excerpts.
 
 
 Gate A is implemented by the effective policy compiler, v8 Context manifest and frozen

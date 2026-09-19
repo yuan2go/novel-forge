@@ -2,14 +2,36 @@ from pathlib import Path
 import re
 import sys
 import unittest
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS, downgrade_plan, pending_migrations, validate_migration_chain
+from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS, downgrade_migrations, downgrade_plan, pending_migrations, validate_migration_chain
 from novel_forge.storage.migrations.versions import v20260909_0124_corpus_fk_indexes
 
 
 class PostgresMigrationTests(unittest.TestCase):
+    def test_forward_opening_delete_fix_cannot_be_rolled_back_silently(self):
+        connection = MagicMock()
+        cursor = connection.__enter__.return_value.cursor.return_value.__enter__.return_value
+        cursor.fetchall.return_value = [
+            (migration.migration_id, "2026-09-20T00:00:00Z")
+            for migration in MIGRATIONS
+        ]
+        with patch("novel_forge.storage.migrations.runner._connect", return_value=connection):
+            with self.assertRaisesRegex(
+                ValueError, "missing downgrade statements for: 20260920_0137_opening_delete_fence"
+            ):
+                downgrade_migrations(
+                    "unused-test-connection",
+                    target_revision="20260916_0136_provider_routing_policy",
+                    execute=True,
+                )
+        statements = [call.args[0].strip() for call in cursor.execute.call_args_list]
+        self.assertEqual(len(statements), 2)
+        self.assertTrue(statements[0].startswith("CREATE TABLE IF NOT EXISTS nf_schema_migrations"))
+        self.assertTrue(statements[1].startswith("SELECT migration_id, applied_at"))
+
     def test_corpus_foreign_key_repair_indexes_every_missing_key_shape(self):
         expected = {
             ("authority_corpus_source", ("workspace_id",)),

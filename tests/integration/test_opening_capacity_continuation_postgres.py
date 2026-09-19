@@ -97,6 +97,9 @@ def test_capacity_continuation_is_causal_idempotent_and_fences_failed_source(mon
     with pytest.raises(psycopg.errors.CheckViolation, match="CAPACITY_PREDECESSOR_FENCED"):
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute("UPDATE authority_book_opening_run SET updated_at=NOW() WHERE opening_run_id=%s", [original.opening_run_id])
+    with pytest.raises(psycopg.errors.CheckViolation, match="CAPACITY_PREDECESSOR_FENCED"):
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("DELETE FROM authority_book_opening_run WHERE opening_run_id=%s", [original.opening_run_id])
     assert successor_app.claim_next_node_execution(worker_id=fixture.principal.principal_id, project_id=fixture.project_id, lease_seconds=30, expected_opening_run_id=successor["opening_run_id"]) is not None
 
 

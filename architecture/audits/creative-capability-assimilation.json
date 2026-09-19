@@ -12292,8 +12292,8 @@
   "native_extensions": {
     "WP02": {
       "baseline_sha": "6c3de26f8c6ae2ac8cd5c0b3062da3ff9cc1d389",
-      "implementation_sha": "54aac08570589f1cfd326e7b1c08ffe4a23bd3bf",
-      "implementation_tree_sha": "sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6",
+      "implementation_sha": "96c482d12ed2e4e6b6e207372e63f4e76595ad6a",
+      "implementation_tree_sha": "sha256:6e2a6693fc0f5274bc3eb54ae836475c687576c5fff36c379fe55e605793ff84",
       "evidence_state": "EXECUTABLE",
       "proof_ceiling": "SCRIPTED_PROVIDER_POSTGRESQL_PRODUCTION_WIRING_ONLY",
       "creative_validation_status": "READY_FOR_AUTHORIZATION",
@@ -12331,8 +12331,8 @@
         "provider_budget": "Complete rendered request is accounted by existing Provider admission; source screening does not replace token admission.",
         "limitations": "No semantic entity selector or proof all causal dependencies outside included ranges are covered."
       },
-      "data_impact": "Existing Book chapter request JSON, Chapter frozen preparation_report, AssetVersion and ExternalEffect; no new table, migration, Authority, scheduler or ledger.",
-      "migration_head": "20260916_0136_provider_routing_policy",
+      "data_impact": "Existing Book chapter request JSON, Chapter frozen preparation_report, AssetVersion and ExternalEffect; no cross-chapter table, Authority, scheduler or ledger. Package includes a minimal forward fix to the existing Opening DELETE trigger; no rows, columns, indexes, FKs or frozen contracts rewritten.",
+      "migration_head": "20260920_0137_opening_delete_fence",
       "diagnosis": "Six cross-chapter categories, five judgment kinds, exact target/source identities and Unicode quotes. Stable same-category identities and explicit repair lineage. No inferred hard constraints; historical-only editorial findings remain HOLD.",
       "repair": "Only located edits inside current diagnosed spans; exact output reconstruction, explicit resolution for every prior issue and nine preservation dimensions. Original candidate retained on unresolved blocking issues or preservation regression.",
       "recovery": "Post-receipt/pre-domain-commit fault injection and application reconstruction reuse exact request/window/effect/receipt with one dispatch and settlement. Stale accepted frontier fails closed. Existing Kernel UNKNOWN reconciliation remains unchanged.",
@@ -12393,13 +12393,36 @@
         {
           "path": "tests/integration/test_cross_chapter_prose_review_postgres.py",
           "sha256": "e340dc4c0c033b142e3ca9ea7facd54ac569a57b6590b2b39314bc183eac0569"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260920_0137_opening_delete_fence.py",
+          "sha256": "b6f193cad3e8217424cad405af83e1c82c3a440dfd505256c73b55d492ee03bb"
+        },
+        {
+          "path": "tests/integration/test_authority_migrations_postgres.py",
+          "sha256": "c50d9d419a5291bb4659b75bb8dd61566a56faa9960481b73d822581d68fe125"
+        },
+        {
+          "path": "tests/integration/test_opening_capacity_continuation_postgres.py",
+          "sha256": "bf12006a00620ede65bb7fca7d10c62cbaaa0ccbdc2f16ef9ceb82286d867fc8"
+        },
+        {
+          "path": "tests/integration/test_provider_routing_postgres.py",
+          "sha256": "cd6117e6dc476269755930402bf0df90589f736e5c8dabdd5b3f1d3384e8244a"
+        },
+        {
+          "path": "tests/unit/test_postgres_migrations.py",
+          "sha256": "7e451c708b7dc86419a1ef68eef323dbeb993eef6ecc559eb5ef634554e53981"
         }
       ],
       "focused_validation": {
         "unit_contract_and_candidate_selection": "PASS",
         "postgresql_vertical_acceptance": "PASS",
         "postgresql_receipt_commit_loss_recovery": "PASS",
-        "postgresql_context_overflow_no_effect": "PASS"
+        "postgresql_context_overflow_no_effect": "PASS",
+        "opening_delete_fresh_upgrade_and_fence": "PASS",
+        "routing_qualification_evidence_refs": "PASS",
+        "forward_only_migration_rollback": "PASS"
       },
       "exact_sha_governance": "Required by docs/development.md; final commit and actual gate result are reported in PR, not inferred from focused tests.",
       "real_provider": "NOT_RUN",
@@ -12413,7 +12436,14 @@
         "Historical-only editorial findings need an existing legal consumer before expansion; no Retcon Authority introduced."
       ],
       "next_recommendation": "Complete bounded WP02 creative validation before WP03 Conditional Craft; no real-Provider dispatch without explicit finite budget and applicable qualification.",
-      "copyright_boundary": "Native clean implementation. No external code, prompts or protected fiction copied; Chinese test prose is original."
+      "copyright_boundary": "Native clean implementation. No external code, prompts or protected fiction copied; Chinese test prose is original.",
+      "gate_repair": {
+        "owner": "Book Opening Authority",
+        "migration": "20260920_0137_opening_delete_fence",
+        "invariant": "Unfenced DELETE continues to terminal immutability guards; capacity predecessors remain fenced.",
+        "compatibility": "Function-only forward migration, no data rewrite, existing readers and frozen requests unchanged. Rollback requires a subsequent forward fix.",
+        "routing_test": "Assert exact persisted qualification outcome_refs alongside failure classification; runtime projection unchanged."
+      }
     }
   }
 }
