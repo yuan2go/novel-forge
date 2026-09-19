@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 import hashlib
@@ -1330,8 +1332,22 @@ class PostgresContentIntelligenceExecutionPort:
             materialization=materialization,
         )
         provider_timeout = self.provider_timeout_seconds
+        routing_decision = None
+        provider_router = getattr(self.transport, "provider_router", None)
+        if provider_router is not None:
+            base_route, routing_decision = provider_router.select(
+                base_route, task_type=spec.stage, project_id=worker.project_id,
+                work_id=spec.target_scope.book_id, operation_id=worker.causation_id,
+                attempt_id=worker.attempt_id, stable_key=stable_key,
+                input_tokens=len(prompt.encode()) + 512,
+                output_tokens=self.provider_output_token_reserve,
+                trace_id=worker.trace_id, correlation_id=worker.correlation_id, cache_prefix=prompt.encode()[:prompt_evidence["reusable_prefix_bytes"]],
+                request_input=spec.input_payload,
+                input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest())
         envelope = ProviderRequestEnvelope(
             provider=base_route.model_profile.model_provider,
+            reasoning_effort=base_route.model_profile.reasoning_effort if base_route.model_profile.model_provider == "deepseek" else "",
+            pricing_policy_json=json.dumps(routing_decision["selected"]["candidate"]["pricing"], sort_keys=True) if routing_decision else "",
             model=base_route.model_profile.model_id,
             protocol=provider_request_protocol(base_route.model_profile.model_provider),
             input_text=prompt,
@@ -1377,6 +1393,7 @@ class PostgresContentIntelligenceExecutionPort:
             ),
         )
         admission_contract = {
+            **({"routing_decision": routing_decision} if routing_decision else {}),
             "schema_version": "novelos.provider_request_admission.v1",
             "provider_request_identity": envelope.to_identity_dict(),
             "provider_admission": provider_admission.to_dict(),
@@ -1449,6 +1466,7 @@ class PostgresContentIntelligenceExecutionPort:
                 "book_id": spec.target_scope.book_id,
                 "worker_id": worker.worker_id,
                 "capability_runtime": {
+                    **({"routing_decision": routing_decision} if routing_decision else {}),
                     "materialization_asset_version_id": (
                         materialization_document.asset_version_id
                     ),
@@ -1490,6 +1508,20 @@ class PostgresContentIntelligenceExecutionPort:
             provider_capability_profile=self.transport.capability_profile.to_dict(),
         )
         effect_id = str(effect["external_effect_id"])
+        routed_amount = self.max_cost_per_call
+        cost_accounting_basis = self.cost_accounting_basis
+        account_authorization_ref = self.account_authorization_ref
+        if routing_decision:
+            from novel_forge.modules.production_execution.routing_runtime import routed_reservation
+
+            routed_amount = routed_reservation(routing_decision,
+                input_tokens=max(0, provider_admission.total_reserved - self.provider_output_token_reserve),
+                output_tokens=self.provider_output_token_reserve)
+            selected = routing_decision["selected"]["candidate"]
+            cost_accounting_basis = selected["pricing"]["accounting_basis"]
+            account_authorization_ref = selected.get("authorization_ref", "")
+            if routed_amount is not None and Decimal(routed_amount) > Decimal(self.max_cost_per_call):
+                raise KernelError("BUDGET_HARD_LIMIT", "routed Source call exceeds the per-call cap")
         reservation = reserve_provider_budget(
             self.database_url,
             BudgetReservationRequest(
@@ -1497,19 +1529,23 @@ class PostgresContentIntelligenceExecutionPort:
                 external_effect_id=effect_id,
                 project_id=worker.project_id,
                 stable_idempotency_key=f"budget:{stable_key}",
-                provider=self.transport.provider,
+                provider=base_route.model_profile.model_provider if routing_decision else self.transport.provider,
+                model_id=base_route.model_profile.model_id if routing_decision else "",
+                work_id=spec.target_scope.book_id if routing_decision else "",
                 currency=(
                     "UNKNOWN"
-                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
                     else "USD"
                 ),
                 estimated_amount=(
                     None
-                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
-                    else self.max_cost_per_call
+                    if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else routed_amount
                 ),
                 estimated_tokens=int(provider_admission.total_reserved),
-                caps=self.budget_caps,
+                caps={}
+                if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                else self.budget_caps,
                 call_caps=capped_usage(
                     self.provider_call_caps, curated_budget.get("project_call_ceiling")
                 ),
@@ -1517,8 +1553,8 @@ class PostgresContentIntelligenceExecutionPort:
                     self.provider_token_caps,
                     curated_budget.get("project_token_ceiling"),
                 ),
-                accounting_basis=self.cost_accounting_basis,
-                cost_authorization_ref=self.account_authorization_ref,
+                accounting_basis=cost_accounting_basis,
+                cost_authorization_ref=account_authorization_ref,
             ),
         )
         binding = self._binding(
@@ -1529,6 +1565,7 @@ class PostgresContentIntelligenceExecutionPort:
             documents=documents,
             context=context,
             provider_admission=admission_document,
+            request_payload=request_payload,
             effect_id=effect_id,
             stable_key=stable_key,
             reservation_id=str(reservation["reservation_id"]),
@@ -1598,42 +1635,33 @@ class PostgresContentIntelligenceExecutionPort:
             )
         assert isinstance(usage, Mapping)
         assert isinstance(cost, Mapping)
-        total_tokens = _recorded_token_usage(usage)
-        if total_tokens is None:
-            resolve_provider_budget_failure(
-                self.database_url,
-                reservation_id=str(reservation["reservation_id"]),
-                project_id=worker.project_id,
-                external_state_unknown=True,
-            )
-            raise KernelError(
-                "SOURCE_PEP_USAGE_UNKNOWN",
-                "returned output has no observed token total; reservation remains held",
-            )
-        amount = (
-            None
-            if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
-            else str(cost.get("amount") or cost.get("amount_usd") or "0")
+        settlement = _source_budget_settlement(
+            usage=usage,
+            cost=cost,
+            fixture=bool(evidence.get("fixture_protocol_only")),
+            capability_profile=self.transport.capability_profile.to_dict(),
+            accounting_basis=cost_accounting_basis,
+            reserved_amount=(
+                None
+                if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                else str(routed_amount)
+            ),
+            reserved_tokens=int(provider_admission.total_reserved),
+            provider_id=str(
+                evidence.get("provider_id") or base_route.model_profile.model_provider
+            ),
+            model_id=str(evidence.get("model_id") or base_route.model_profile.model_id),
+            real_model_call=bool(evidence.get("real_model_call")),
         )
         settle_provider_budget(
             self.database_url,
             reservation_id=str(reservation["reservation_id"]),
             project_id=worker.project_id,
-            actual_amount=amount,
-            actual_tokens=total_tokens,
+            actual_amount=settlement["amount"],
+            actual_tokens=settlement["total_tokens"],
             evidence={
-                "provider_id": str(evidence.get("provider_id") or ""),
-                "model_id": str(evidence.get("model_id") or ""),
-                "real_model_call": bool(evidence.get("real_model_call")),
-                "fixture": bool(evidence.get("fixture_protocol_only")),
-                "accounting_basis": self.cost_accounting_basis,
-                "cost_status": (
-                    "UNKNOWN"
-                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
-                    else "KNOWN"
-                ),
+                **settlement["evidence"],
                 "token_accounting_precision": token_contract.precision,
-                "actual_token_source": "PROVIDER_USAGE_RECEIPT",
             },
         )
         return evidence
@@ -1654,7 +1682,11 @@ class PostgresContentIntelligenceExecutionPort:
                            END,
                            reservation.reservation_id,
                            reservation.status,
-                           effect.request_payload
+                           effect.request_payload, reservation.evidence,
+                           reservation.reserved_amount, reservation.estimated_tokens,
+                           COALESCE(NULLIF(to_jsonb(reservation)->>'accounting_basis',''),'PRICED'),
+                           effect.model_id, reservation.provider,
+                           effect.provider_capability_profile
                     FROM authority_external_effect AS effect
                     JOIN LATERAL (
                         SELECT evidence
@@ -1665,7 +1697,8 @@ class PostgresContentIntelligenceExecutionPort:
                         LIMIT 1
                     ) AS dispatch ON TRUE
                     LEFT JOIN LATERAL (
-                        SELECT reservation_id, status
+                        SELECT reservation_id, status, evidence, reserved_amount,
+                               estimated_tokens, provider, accounting_basis
                         FROM authority_budget_reservation
                         WHERE external_effect_id=effect.external_effect_id
                         ORDER BY created_at DESC
@@ -1695,18 +1728,6 @@ class PostgresContentIntelligenceExecutionPort:
         if row[2] and str(row[3]) in {"RESERVED", "HELD_UNKNOWN"}:
             assert isinstance(usage, Mapping)
             assert isinstance(cost, Mapping)
-            total_tokens = _recorded_token_usage(usage)
-            if total_tokens is None:
-                resolve_provider_budget_failure(
-                    self.database_url,
-                    reservation_id=str(row[2]),
-                    project_id=worker.project_id,
-                    external_state_unknown=True,
-                )
-                raise KernelError(
-                    "SOURCE_PEP_USAGE_UNKNOWN",
-                    "replay cannot invent a token receipt or reset the reservation",
-                )
             request_payload = row[4] if isinstance(row[4], Mapping) else {}
             production = request_payload.get("_production_execution", {})
             runtime = (
@@ -1714,28 +1735,47 @@ class PostgresContentIntelligenceExecutionPort:
                 if isinstance(production, Mapping)
                 else {}
             )
+            selected = (
+                (runtime.get("routing_decision") or {}).get("selected") or {}
+            ).get("candidate") or {}
+            accounting_basis = str(row[8] or "PRICED")
             token_contract = (
                 runtime.get("token_accounting_contract", {})
                 if isinstance(runtime, Mapping)
                 else {}
             )
+            settlement = _source_budget_settlement(
+                usage=usage,
+                cost=cost,
+                fixture=bool(evidence.get("fixture_protocol_only")),
+                capability_profile=(row[11] if isinstance(row[11], Mapping) else {}),
+                accounting_basis=accounting_basis,
+                reserved_amount=(str(row[6]) if row[6] is not None else None),
+                reserved_tokens=int(row[7]),
+                provider_id=str(
+                    evidence.get("provider_id")
+                    or selected.get("provider")
+                    or row[10]
+                    or ""
+                ),
+                model_id=str(
+                    evidence.get("model_id") or selected.get("model") or row[9] or ""
+                ),
+                real_model_call=bool(evidence.get("real_model_call")),
+            )
             settle_provider_budget(
                 self.database_url,
                 reservation_id=str(row[2]),
                 project_id=worker.project_id,
-                actual_amount=(
-                    None
-                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
-                    else str(cost.get("amount") or cost.get("amount_usd") or "0")
-                ),
-                actual_tokens=total_tokens,
+                actual_amount=settlement["amount"],
+                actual_tokens=settlement["total_tokens"],
                 evidence={
+                    **settlement["evidence"],
                     "replayed_after_worker_failure": True,
                     "external_effect_id": str(row[0]),
                     "token_accounting_precision": str(
                         token_contract.get("precision") or ""
                     ),
-                    "actual_token_source": "PROVIDER_USAGE_RECEIPT",
                 },
             )
         return {
@@ -1754,14 +1794,18 @@ class PostgresContentIntelligenceExecutionPort:
         documents: tuple[AuthorityAssetDocument, ...],
         context: AuthorityAssetDocument,
         provider_admission: AuthorityAssetDocument,
+        request_payload: Mapping[str, Any],
         effect_id: str,
         stable_key: str,
         reservation_id: str,
     ) -> ChapterExecutionBinding:
         base = self.transport.routes["quality_source_originality"]
+        routing_decision = provider_admission.content.get("contract", provider_admission.content).get("routing_decision")
+        if routing_decision:
+            base, routing_decision = self.transport.provider_router.select_for_payload(base, request_payload)
         suffix = spec.capability.replace(".", "-")
         profile = ModelProfile(
-            profile_id=f"source-intelligence.{suffix}.default",
+            profile_id=f"source-intelligence.{suffix}.default" + ("." + _token(base.model_profile.profile_id) if routing_decision else ""),
             profile_version=1,
             backend_id=base.model_profile.backend_id,
             runtime_class=base.model_profile.runtime_class,
@@ -1776,7 +1820,7 @@ class PostgresContentIntelligenceExecutionPort:
             capability_probe_ref=base.model_profile.capability_probe_ref,
         )
         policy = RoutePolicy(
-            policy_id=f"source-intelligence.{suffix}.route",
+            policy_id=f"source-intelligence.{suffix}.route" + ("." + _token(profile.profile_id) if routing_decision else ""),
             policy_version=1,
             default_model_profile_id=profile.profile_id,
             allowed_model_profile_ids=(profile.profile_id,),
@@ -1857,7 +1901,7 @@ class PostgresContentIntelligenceExecutionPort:
         )
         route = RouteSnapshot(
             route_snapshot_id=route_ref,
-            route_decision_id=f"route-decision:{_token(route_ref)}",
+            route_decision_id=routing_decision["decision_id"] if routing_decision else f"route-decision:{_token(route_ref)}",
             operation_id=worker.causation_id,
             attempt_id=worker.attempt_id,
             policy_id=policy.policy_id,
@@ -2169,6 +2213,172 @@ def _recorded_token_usage(usage: Mapping[str, Any]) -> int | None:
             else None
         )
     return None
+
+
+def _source_budget_settlement(
+    *,
+    usage: Mapping[str, Any],
+    cost: Mapping[str, Any],
+    fixture: bool,
+    capability_profile: Mapping[str, Any],
+    accounting_basis: str,
+    reserved_amount: str | None,
+    reserved_tokens: int,
+    provider_id: str,
+    model_id: str,
+    real_model_call: bool | None = None,
+) -> dict[str, Any]:
+    measured_tokens = _recorded_token_usage(usage)
+    reported_amount = cost.get("amount")
+    amount = str(reported_amount) if reported_amount is not None else None
+    try:
+        valid_amount = (
+            amount is not None and Decimal(amount).is_finite() and Decimal(amount) >= 0
+        )
+    except (ArithmeticError, ValueError):
+        valid_amount = False
+    usage_authoritative = bool(
+        capability_profile.get("supports_usage_receipt")
+        and measured_tokens is not None
+        and measured_tokens > 0
+    )
+    if accounting_basis == "ACCOUNT_ENTITLEMENT":
+        token_basis = (
+            "PROVIDER_USAGE_RECEIPT" if usage_authoritative else "RESERVATION_CEILING"
+        )
+        return {
+            "amount": None,
+            "total_tokens": measured_tokens if usage_authoritative else reserved_tokens,
+            "token_settlement_basis": token_basis,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "evidence": {
+                "provider_id": provider_id,
+                "model_id": model_id,
+                "real_model_call": bool(real_model_call),
+                "fixture": fixture,
+                "accounting_basis": "ACCOUNT_ENTITLEMENT",
+                "cost_status": "UNKNOWN",
+                "provider_billed": None,
+                "actual_token_source": token_basis,
+                "token_settlement_basis": token_basis,
+                "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            },
+        }
+    if accounting_basis != "PRICED":
+        raise KernelError(
+            "SOURCE_BUDGET_SETTLEMENT_UNSUPPORTED",
+            "Source settlement accounting basis is not yet supported",
+        )
+    try:
+        valid_reserved_amount = (
+            reserved_amount is not None
+            and Decimal(reserved_amount).is_finite()
+            and Decimal(reserved_amount) >= 0
+        )
+    except (ArithmeticError, ValueError):
+        valid_reserved_amount = False
+    if not valid_reserved_amount or reserved_tokens < 0:
+        raise KernelError(
+            "SOURCE_BUDGET_SETTLEMENT_INVALID",
+            "priced Source settlement requires a valid frozen reservation ceiling",
+        )
+    if fixture and (measured_tokens is None or not valid_amount):
+        raise KernelError(
+            "SOURCE_FIXTURE_BUDGET_EVIDENCE_INVALID",
+            "scripted Source budget evidence is malformed",
+        )
+    usage_pricing = bool(
+        not fixture
+        and usage_authoritative
+        and capability_profile.get("supports_usage_pricing")
+        and cost.get("source") in {"usage_pricing", "usage_pricing_upper_bound"}
+        and cost.get("measurement")
+        in {"PRICED_FROM_PROVIDER_USAGE", "ESTIMATED_UPPER_BOUND"}
+        and cost.get("pricing_version")
+        and isinstance(cost.get("pricing_snapshot"), Mapping)
+        and valid_amount
+    )
+    cost_authoritative = bool(
+        not fixture
+        and capability_profile.get("supports_cost_receipt")
+        and str(cost.get("availability") or "").upper() == "AVAILABLE"
+        and cost.get("source")
+        not in {"usage_pricing", "usage_pricing_upper_bound", "not_provided"}
+        and cost.get("provider_billed") is True
+        and valid_amount
+    )
+    legacy_pricing = bool(
+        not fixture
+        and usage_authoritative
+        and capability_profile.get("supports_cost_receipt")
+        and cost.get("measurement") == "ESTIMATED"
+        and cost.get("pricing_ref")
+        and cost.get("pricing_snapshot_hash")
+        and cost.get("calculation_basis")
+        and valid_amount
+    )
+    safe_cost_keys = (
+        "availability",
+        "source",
+        "measurement",
+        "estimated",
+        "provider_billed",
+        "currency",
+        "pricing_ref",
+        "pricing_version",
+        "pricing_period",
+        "pricing_multiplier",
+        "pricing_time_basis",
+        "pricing_snapshot_hash",
+        "pricing_snapshot",
+        "reservation_ceiling_amount",
+        "provider_created_at",
+        "calculation_basis",
+    )
+    token_basis = (
+        "FIXTURE_RECEIPT"
+        if fixture
+        else "PROVIDER_USAGE_RECEIPT"
+        if usage_authoritative
+        else "RESERVATION_CEILING"
+    )
+    cost_basis = (
+        "FIXTURE_RECEIPT"
+        if fixture
+        else "PROVIDER_COST_RECEIPT"
+        if cost_authoritative
+        else "LEGACY_PRICING_ESTIMATE"
+        if legacy_pricing
+        else "FROZEN_USAGE_PRICING"
+        if usage_pricing
+        else "RESERVATION_CEILING"
+    )
+    settled_amount = (
+        amount
+        if fixture or cost_authoritative or legacy_pricing or usage_pricing
+        else str(reserved_amount)
+    )
+    evidence = {
+        "provider_id": provider_id,
+        "model_id": model_id,
+        "real_model_call": bool(real_model_call),
+        "fixture": fixture,
+        "accounting_basis": accounting_basis,
+        "cost_status": "KNOWN",
+        "actual_token_source": token_basis,
+        "token_settlement_basis": token_basis,
+        "cost_settlement_basis": cost_basis,
+        **{key: cost[key] for key in safe_cost_keys if key in cost},
+    }
+    return {
+        "amount": settled_amount,
+        "total_tokens": (
+            measured_tokens if fixture or usage_authoritative else reserved_tokens
+        ),
+        "token_settlement_basis": token_basis,
+        "cost_settlement_basis": cost_basis,
+        "evidence": evidence,
+    }
 
 
 def _order_compound_observations(

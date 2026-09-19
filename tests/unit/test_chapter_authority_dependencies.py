@@ -23,6 +23,50 @@ from novel_forge.modules.provider_control import (
 )
 
 
+def _mixed_router_environment(root: Path) -> dict[str, str]:
+    executable = root / "codex-test"
+    executable.write_text("#!/bin/sh\nprintf 'codex-test 1.0\\n'\n", encoding="utf-8")
+    executable.chmod(0o700)
+    workspace = root / "isolated-workspace"
+    workspace.mkdir()
+    executable_sha256 = "sha256:" + hashlib.sha256(executable.read_bytes()).hexdigest()
+    return {
+        "NOVEL_FORGE_ENVIRONMENT": "validation",
+        "NOVEL_FORGE_PROVIDER_ROUTER": "quality-cost-v1",
+        "NOVEL_FORGE_ROUTER_CODEX_ESCALATION": "true",
+        "NOVEL_FORGE_CODEX_ESCALATION_MODEL": "gpt-test",
+        "NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT": "3",
+        "NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT": "200000",
+        "NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT": "32000",
+        "NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM": "2026-09-01T00:00:00+00:00",
+        "NOVEL_FORGE_CODEX_ESCALATION_VALID_UNTIL": "2027-01-01T00:00:00+00:00",
+        "NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT",
+        "NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF": "authorization:codex-test",
+        "NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF": "account:codex-test",
+        "NOVEL_FORGE_CODEX_CLI_VERSION": "codex-test 1.0",
+        "NOVEL_FORGE_CODEX_EXECUTABLE_SHA256": executable_sha256,
+        "NOVEL_FORGE_CODEX_CONFIGURATION_REF": "sha256:" + "4" * 64,
+        "NOVEL_FORGE_CODEX_EXECUTABLE": str(executable),
+        "NOVEL_FORGE_CODEX_HOME": str(root),
+        "NOVEL_FORGE_CODEX_WORKSPACE": str(workspace),
+        "NOVEL_FORGE_CODEX_EXECUTION_ROOT": str(root / "executions"),
+        "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT": "20",
+        "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT": "2000000",
+        "NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT": "500000",
+        "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "2",
+        "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(root / "objects"),
+        "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
+        "NOVEL_FORGE_APPLICATION_BUILD_ID": "mixed-router-test",
+        "NOVEL_FORGE_COMMIT_SHA": "a" * 40,
+        "NOVEL_FORGE_RUNTIME_HOST_ID": "host:mixed-router-test",
+        "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "auth:deepseek-test",
+        "NOVEL_FORGE_PROMPT_SYSTEM_INSTRUCTION_HASH": "sha256:" + "1" * 64,
+        "NOVEL_FORGE_PROMPT_TEMPLATE_HASH": "sha256:" + "2" * 64,
+        "NOVEL_FORGE_SKILL_BUNDLE_HASH": "sha256:" + "3" * 64,
+        "DEEPSEEK_API_KEY": "non-networked-test-credential",
+    }
+
+
 class ChapterAuthorityDependenciesTests(unittest.TestCase):
     def test_shipped_chapter_capability_pack_compiles_for_readiness(self) -> None:
         report = chapter_capability_pack_compilation_report(
@@ -436,6 +480,102 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             backend.account_entitlement.authorization_ref,
             "task-authorization:classical-corpus-20260908",
         )
+
+    def test_mixed_router_composes_priced_deepseek_and_entitled_codex_lanes(
+        self,
+    ) -> None:
+        repository_root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            environment = _mixed_router_environment(root)
+            with (
+                patch(
+                    "novel_forge.storage.object_store.MinioObjectStore",
+                    return_value=SimpleNamespace(client=object()),
+                ),
+                patch(
+                    "novel_forge.api.authority_dependencies.observe_codex_cli_version",
+                    return_value="codex-test 1.0",
+                ),
+            ):
+                execution = build_production_execution_composition(
+                    IndustrialSettings(
+                        root=repository_root,
+                        database_url="postgresql://authority",
+                    ),
+                    env=environment,
+                )
+                session = execution.gateway.session_factory("project:mixed-router")
+
+        router = execution.gateway.provider_router
+        self.assertIsNotNone(router)
+        from novel_forge.modules.authority_handler_runtime.routing_feedback import domain_gate_outcomes
+
+        self.assertIs(router.registry.outcome_projection, domain_gate_outcomes)
+        candidates = router.candidates
+        deepseek = [item for item in candidates if item.provider == "deepseek"]
+        codex = [item for item in candidates if item.provider == "codex-cli"]
+        self.assertEqual(len(deepseek), 3)
+        self.assertEqual(len(codex), 1)
+        self.assertTrue(
+            all(item.pricing.accounting_basis == "PRICED" for item in deepseek)
+        )
+        self.assertTrue(all(item.model_revision for item in deepseek))
+        self.assertEqual(codex[0].pricing.accounting_basis, "ACCOUNT_ENTITLEMENT")
+        self.assertEqual(codex[0].authorization_ref, "authorization:codex-test")
+        self.assertEqual(codex[0].model_revision, "sha256:" + "4" * 64)
+        self.assertTrue(codex[0].escalation_only)
+        self.assertEqual(codex[0].quota_remaining, 3)
+        self.assertEqual(execution.cost_accounting_basis, "PRICED")
+        self.assertEqual(
+            execution.account_authorization_ref, "authorization:codex-test"
+        )
+        self.assertEqual(
+            session.gateway.backends.resolve(
+                "remote-provider-deepseek"
+            ).provider_adapter.provider,
+            "deepseek",
+        )
+        codex_backend = session.gateway.backends.resolve("codex-cli")
+        self.assertIsNone(codex_backend.pricing)
+        self.assertEqual(
+            codex_backend.account_entitlement.authorization_ref,
+            "authorization:codex-test",
+        )
+
+    def test_configured_mixed_router_fails_closed_when_codex_lane_is_unavailable(
+        self,
+    ) -> None:
+        repository_root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            environment = _mixed_router_environment(root)
+            Path(environment["NOVEL_FORGE_CODEX_EXECUTABLE"]).unlink()
+            with self.assertRaisesRegex(RuntimeError, "controlled Codex"):
+                build_production_execution_composition(
+                    IndustrialSettings(
+                        root=repository_root,
+                        database_url="postgresql://authority",
+                    ),
+                    env=environment,
+                )
+
+    def test_configured_mixed_router_fails_closed_when_deepseek_lane_is_unavailable(
+        self,
+    ) -> None:
+        repository_root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            environment = _mixed_router_environment(root)
+            environment.pop("DEEPSEEK_API_KEY")
+            with self.assertRaisesRegex(RuntimeError, "DeepSeek credential"):
+                build_production_execution_composition(
+                    IndustrialSettings(
+                        root=repository_root,
+                        database_url="postgresql://authority",
+                    ),
+                    env=environment,
+                )
 
 
 if __name__ == "__main__":

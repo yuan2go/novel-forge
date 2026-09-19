@@ -8,6 +8,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
@@ -361,6 +362,32 @@ def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
 
 
 class ProductionExecutionGatewayTests(unittest.TestCase):
+    def _model_call_evidence(self, contract_set, gateway, store, handle, result,
+                             *, eligible=True, frozen_model=None):
+        from novel_forge.modules.chapter_authority.execution_gateway import (
+            ChapterExecutionBinding, ChapterExecutionGatewaySession,
+            ProductionExecutionGatewayExternalEffectAdapter,
+        )
+
+        _, _, _, route, manifest, request = contract_set
+        adapter = object.__new__(ProductionExecutionGatewayExternalEffectAdapter)
+        adapter.database_url = "postgresql://fixture/not-accessed"
+        runtime = MagicMock()
+        cursor = runtime.connection.return_value.__enter__.return_value.cursor.return_value.__enter__.return_value
+        cursor.fetchone.return_value = (
+            {"real_provider_validation_eligible": eligible},
+            {"stage": request.stage, "_production_execution": {"capability_runtime": {
+                "provider_request_identity": {"provider": route.model_provider,
+                    "model": frozen_model or route.model_id},
+            }}}, route.model_id,
+        )
+        with patch("novel_forge.modules.chapter_authority.execution_gateway.get_database_runtime", return_value=runtime):
+            return adapter._evidence(
+                binding=ChapterExecutionBinding(request, route, manifest),
+                session=ChapterExecutionGatewaySession(gateway, store),
+                handle=handle, result=result,
+            )
+
     def _gateway(self, backend, contract_set):
         capability, profile, policy, route, manifest, request = contract_set
         source = StaticExecutionContractSource(
@@ -688,6 +715,28 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         self.assertEqual(
             transport.last_request.budget_reservation_id, request.budget_reservation_id
         )
+        for eligible, frozen_model, expected in (
+            (False, None, False), (True, None, True), (True, "drifted-model", False),
+        ):
+            with self.subTest(eligible=eligible, frozen_model=frozen_model):
+                evidence = self._model_call_evidence(contract_set, gateway,
+                    backend.record_store, handle, result,
+                    eligible=eligible, frozen_model=frozen_model)
+                self.assertEqual(evidence["real_model_call"], expected)
+        record = backend.record_store.get_record(request.execution_id)
+        for flags in ({"fixture_protocol_only": True}, {"real_model_call": False}):
+            with self.subTest(receipt_flags=flags):
+                record.raw_evidence.update(flags)
+                evidence = self._model_call_evidence(contract_set, gateway,
+                    backend.record_store, handle, result)
+                self.assertFalse(evidence["real_model_call"])
+                for key in flags:
+                    record.raw_evidence.pop(key)
+        receipt = record.provider_result
+        record.provider_result = None
+        self.assertFalse(self._model_call_evidence(contract_set, gateway,
+            backend.record_store, handle, result)["real_model_call"])
+        record.provider_result = receipt
 
         duplicate = gateway.submit(request)
         self.assertEqual(duplicate.contract_hash, handle.contract_hash)
@@ -935,6 +984,15 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             receipt = directory.read_receipt(request.execution_id)
             self.assertTrue(receipt.authority_bound)
             self.assertIsNone(receipt.provider_request_id)
+            self.assertFalse(self._model_call_evidence(contract_set, gateway,
+                record_store, handle, result)["real_model_call"])
+            record = record_store.get_record(request.execution_id)
+            record.raw_evidence.update({"terminal_event_observed": True,
+                "usage": {"measurement": "MEASURED", "total_tokens": 5}})
+            self.assertTrue(self._model_call_evidence(contract_set, gateway,
+                record_store, handle, result)["real_model_call"])
+            self.assertFalse(self._model_call_evidence(contract_set, gateway,
+                record_store, handle, result, eligible=False)["real_model_call"])
 
     def test_codex_cli_backend_cancels_running_verified_process_only(self) -> None:
         contract_set = contracts(

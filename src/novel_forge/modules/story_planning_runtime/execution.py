@@ -119,6 +119,7 @@ from .domain import (
     CHAPTER_SCHEDULE_FIELDS,
     FrozenPlanningInput,
     STORY_PLANNING_MAX_ATTEMPTS,
+    STORY_PLANNING_OPERATION_DEFINITION_REF,
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     StoryPlanningGenerationCommand,
     build_planning_constraint_envelope,
@@ -155,6 +156,148 @@ _PLANNING_STAGES = frozenset(
 # the Effect from terminalizing while the Operation still has retry budget and
 # prevents nested retry amplification.
 PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS = STORY_PLANNING_MAX_ATTEMPTS
+PLANNING_ROUTING_LINEAGE_MAX_OPERATIONS = 8
+
+
+def require_candidate_repair_operation(
+    cursor: Any, *, candidate_asset_version_id: str, project_id: str,
+    book_id: str, generator_operation_name: str, logical_key: str,
+) -> str:
+    cursor.execute(
+        """SELECT generation.operation_id,candidate.content_hash,version.content_hash,version.content
+           FROM authority_story_planning_candidate candidate
+           JOIN authority_story_planning_generation generation USING(generation_id)
+           JOIN authority_asset_version version ON version.asset_version_id=candidate.candidate_asset_version_id
+           JOIN authority_asset asset ON asset.asset_id=version.asset_id
+           JOIN authority_operation operation ON operation.operation_id=generation.operation_id
+           WHERE candidate.candidate_asset_version_id=%s AND candidate.project_id=%s
+             AND generation.project_id=candidate.project_id AND generation.book_id=%s
+             AND candidate.book_id=generation.book_id AND generation.generator_operation_name=%s
+             AND generation.logical_key=%s AND asset.project_id=candidate.project_id
+             AND asset.asset_type='planning_generation_candidate'
+             AND operation.status IN ('WAITING_GATE','SUCCEEDED')
+             AND operation.project_id=generation.project_id
+             AND operation.command_payload #>> '{payload,book_id}'=generation.book_id
+             AND operation.definition_name='story_planning.generate'""",
+        [candidate_asset_version_id, project_id, book_id, generator_operation_name, logical_key],
+    )
+    row = cursor.fetchone()
+    content = dict(row[3]) if row and isinstance(row[3], Mapping) else {}
+    if (
+        not row or row[1] != row[2] or row[2] != canonical_hash(content)
+        or content.get("project_id") != project_id or content.get("book_id") != book_id
+        or content.get("logical_key") != logical_key
+        or content.get("generator_operation_name") != generator_operation_name
+        or (content.get("execution_evidence") or {}).get("operation_id") != row[0]
+    ):
+        raise KernelError(
+            "PLANNING_ROUTING_LINEAGE_INVALID",
+            "repair candidate must retain its exact materialized generation Operation and immutable content",
+        )
+    return str(row[0])
+
+
+def _planning_repair_routing_lineage(
+    database_url: str,
+    *,
+    project_id: str,
+    book_id: str,
+    generator_operation_name: str,
+    operation_id: str,
+    repair_of_operation_id: str,
+    repair_of_candidate_id: str = "",
+) -> tuple[str, ...]:
+    if not repair_of_operation_id and not repair_of_candidate_id:
+        return (operation_id,)
+    definition_name = STORY_PLANNING_OPERATION_DEFINITION_REF.split("@", 1)[0]
+    runtime = get_database_runtime(database_url)
+    lineage: list[str] = []
+    seen: set[str] = set()
+    current_id = operation_id
+    expected_logical_key = ""
+    expected_repair_number: int | None = None
+    with runtime.connection() as connection, connection.cursor() as cursor:
+        while True:
+            if current_id in seen:
+                raise KernelError(
+                    "PLANNING_ROUTING_LINEAGE_CYCLE",
+                    "Planning repair routing lineage contains a cycle",
+                )
+            if len(lineage) >= PLANNING_ROUTING_LINEAGE_MAX_OPERATIONS:
+                raise KernelError(
+                    "PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED",
+                    "Planning repair routing lineage exceeds its bounded depth",
+                )
+            seen.add(current_id)
+            cursor.execute(
+                """SELECT project_id,command_payload #>> '{payload,book_id}',definition_name,command_payload->'payload',
+                          causation_operation_id
+                   FROM authority_operation
+                   WHERE operation_id=%s AND project_id=%s""",
+                [current_id, project_id],
+            )
+            row = cursor.fetchone()
+            if row is None or not isinstance(row[3], Mapping):
+                raise KernelError(
+                    "PLANNING_ROUTING_LINEAGE_INVALID",
+                    "Planning repair routing lineage operation is unavailable",
+                )
+            payload = dict(row[3])
+            logical_key = str(payload.get("logical_key") or "")
+            try:
+                repair_number = int(payload.get("repair_number") or 0)
+            except (TypeError, ValueError) as exc:
+                raise KernelError(
+                    "PLANNING_ROUTING_LINEAGE_INVALID",
+                    "Planning repair routing lineage has invalid repair identity",
+                ) from exc
+            predecessor = str(payload.get("repair_of_operation_id") or "")
+            candidate_predecessor = str(payload.get("repair_of_candidate_id") or "")
+            if not lineage and (
+                predecessor != repair_of_operation_id
+                or candidate_predecessor != repair_of_candidate_id
+            ):
+                raise KernelError("PLANNING_ROUTING_LINEAGE_INVALID", "repair references differ from the frozen command")
+            if candidate_predecessor:
+                if predecessor:
+                    raise KernelError("PLANNING_ROUTING_LINEAGE_INVALID", "repair cannot mix raw-result and candidate predecessors")
+                predecessor = require_candidate_repair_operation(
+                    cursor, candidate_asset_version_id=candidate_predecessor,
+                    project_id=project_id, book_id=book_id,
+                    generator_operation_name=generator_operation_name, logical_key=logical_key,
+                )
+            allowed_causation = {predecessor}
+            if candidate_predecessor:
+                allowed_causation.update({"", str(payload.get("parent_agent_session_operation_id") or "")})
+            if (
+                str(row[0]) != project_id
+                or str(row[1]) != book_id
+                or str(row[2]) != definition_name
+                or str(payload.get("project_id") or "") != project_id
+                or str(payload.get("book_id") or "") != book_id
+                or str(payload.get("generator_operation_name") or "")
+                != generator_operation_name
+                or not logical_key
+                or (expected_logical_key and logical_key != expected_logical_key)
+                or (
+                    expected_repair_number is not None
+                    and repair_number != expected_repair_number - 1
+                )
+                or (predecessor and str(row[4] or "") not in allowed_causation)
+            ):
+                raise KernelError(
+                    "PLANNING_ROUTING_LINEAGE_INVALID",
+                    "Planning repair routing lineage crosses its frozen task scope",
+                )
+            if not lineage:
+                expected_logical_key = logical_key
+            lineage.append(current_id)
+            if not predecessor:
+                break
+            expected_repair_number = repair_number
+            current_id = predecessor
+    lineage.reverse()
+    return tuple(lineage)
 
 
 def _planning_narrative_intelligence_need(
@@ -2812,10 +2955,25 @@ def _planning_budget_settlement(
         supports_cost_receipt
         and str(cost.get("availability") or "").upper() == "AVAILABLE"
         and _is_nonnegative_decimal(reported_amount)
+        and cost.get("source") not in {"usage_pricing", "usage_pricing_upper_bound"}
+        and cost.get("provider_billed") is True
     )
-    amount = reported_amount if cost_authoritative else reserved_amount
+    usage_priced = bool(
+        usage_authoritative
+        and cost.get("source") in {"usage_pricing", "usage_pricing_upper_bound"}
+        and cost.get("measurement") in {"PRICED_FROM_PROVIDER_USAGE", "ESTIMATED_UPPER_BOUND"}
+        and cost.get("pricing_version") and cost.get("pricing_snapshot")
+        and _is_nonnegative_decimal(reported_amount)
+    )
+    legacy_pricing = bool(
+        usage_authoritative and supports_cost_receipt
+        and cost.get("measurement") == "ESTIMATED"
+        and cost.get("pricing_ref") and cost.get("pricing_snapshot_hash")
+        and cost.get("calculation_basis") and _is_nonnegative_decimal(reported_amount)
+    )
+    amount = reported_amount if cost_authoritative or usage_priced or legacy_pricing else reserved_amount
     cost_basis = (
-        "PROVIDER_COST_RECEIPT" if cost_authoritative else "RESERVATION_CEILING"
+        "PROVIDER_COST_RECEIPT" if cost_authoritative else "LEGACY_PRICING_ESTIMATE" if legacy_pricing else "FROZEN_USAGE_PRICING" if usage_priced else "RESERVATION_CEILING"
     )
     return {
         "amount": amount,
@@ -2911,7 +3069,7 @@ def _planning_failed_provider_measurement(
         not isinstance(usage, Mapping)
         or not isinstance(cost, Mapping)
         or str(usage.get("availability") or "").upper() != "AVAILABLE"
-        or str(usage.get("measurement") or "").upper() != "MEASURED"
+        or str(usage.get("measurement") or "").upper() not in {"MEASURED", "PROVIDER_REPORTED"}
         or str(cost.get("availability") or "").upper() != "AVAILABLE"
         or not _is_nonnegative_decimal(str(cost.get("amount") or ""))
     ):
@@ -3708,6 +3866,8 @@ class PostgresPlanningExecutionPreparer:
         if provider_stage is not None:
             stable_key = f"{operation_id}:{definition.capability}:{stage_identity}:v1"
         planning_route = self.planning_route
+        routing_decision = None
+        provider_router = getattr(self.execution_transport, "provider_router", None)
         authoritative_envelope = build_planning_constraint_envelope(
             project_id=command.project_id,
             book_id=command.book_id,
@@ -3900,6 +4060,36 @@ class PostgresPlanningExecutionPreparer:
                 materialization=materialization,
             )
             output_reserve = int(stable_request_payload["max_output_tokens"])
+            if provider_router is not None:
+                routing_lineage = _planning_repair_routing_lineage(
+                    self.database_url,
+                    project_id=command.project_id,
+                    book_id=command.book_id,
+                    generator_operation_name=command.generator_operation_name,
+                    operation_id=operation_id,
+                    repair_of_operation_id=command.repair_of_operation_id,
+                    repair_of_candidate_id=command.repair_of_candidate_id,
+                )
+                planning_route, routing_decision = provider_router.select(
+                    planning_route,
+                    task_type=stage_name,
+                    project_id=command.project_id,
+                    work_id=command.book_id,
+                    operation_id=operation_id,
+                    attempt_id=attempt_id,
+                    stable_key=stable_key,
+                    input_tokens=len(prompt.encode()) + 512,
+                    output_tokens=output_reserve,
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                    cache_prefix=prompt.encode()[
+                        : prompt_evidence["reusable_prefix_bytes"]
+                    ],
+                    request_input=stable_request_payload["input"],
+                    input_hash="sha256:"
+                    + hashlib.sha256(prompt.encode()).hexdigest(),
+                    lineage_operation_ids=routing_lineage,
+                )
             route_identity = ":".join(
                 (
                     command.generator_operation_name,
@@ -3911,6 +4101,8 @@ class PostgresPlanningExecutionPreparer:
             )
             envelope = ProviderRequestEnvelope(
                 provider=planning_route.model_profile.model_provider,
+                reasoning_effort=planning_route.model_profile.reasoning_effort if planning_route.model_profile.model_provider == "deepseek" else "",
+                pricing_policy_json=json.dumps(routing_decision["selected"]["candidate"]["pricing"], sort_keys=True) if routing_decision else "",
                 model=planning_route.model_profile.model_id,
                 protocol=provider_request_protocol(
                     planning_route.model_profile.model_provider
@@ -4006,7 +4198,10 @@ class PostgresPlanningExecutionPreparer:
             request_payload = {
                 **stable_request_payload,
                 "_production_execution": {
+                    **({"book_id": command.book_id, "project_id": command.project_id,
+                        "operation_id": operation_id, "attempt_id": attempt_id} if routing_decision else {}),
                     "capability_runtime": {
+                        **({"routing_decision": routing_decision} if routing_decision else {}),
                         "snapshot_id": attempt_snapshot.snapshot_id,
                         "snapshot_hash": attempt_snapshot.snapshot_hash,
                         "materialization_asset_version_id": (
@@ -4090,6 +4285,21 @@ class PostgresPlanningExecutionPreparer:
                     "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
                     "Planning retry materialization differs from the frozen Effect",
                 )
+        cost_accounting_basis = self.cost_accounting_basis
+        account_authorization_ref = self.account_authorization_ref
+        if provider_router is not None:
+            from novel_forge.modules.production_execution.routing_runtime import routed_reservation
+
+            routing_decision = request_payload["_production_execution"]["capability_runtime"]["routing_decision"]
+            planning_route, routing_decision = provider_router.select_for_payload(self.planning_route, request_payload)
+            selected = routing_decision["selected"]["candidate"]
+            cost_accounting_basis = selected["pricing"]["accounting_basis"]
+            account_authorization_ref = selected.get("authorization_ref", "")
+            provider_reservation_amount = routed_reservation(routing_decision,
+                input_tokens=max(0, provider_reservation_tokens - int(stable_request_payload["max_output_tokens"])),
+                output_tokens=int(stable_request_payload["max_output_tokens"]))
+            if provider_reservation_amount is not None and Decimal(provider_reservation_amount) > Decimal(self.max_cost_per_call):
+                raise KernelError("BUDGET_HARD_LIMIT", "routed Planning call exceeds the per-call cap")
         effect = plan_external_effect(
             self.database_url,
             effect_context,
@@ -4131,15 +4341,17 @@ class PostgresPlanningExecutionPreparer:
                     stable_idempotency_key=(
                         f"budget:{stable_key}:attempt:{attempt_id}"
                     ),
-                    provider=self.execution_transport.provider,
+                    provider=planning_route.model_profile.model_provider if routing_decision else self.execution_transport.provider,
+                    model_id=planning_route.model_profile.model_id if routing_decision else "",
+                    work_id=command.book_id if routing_decision else "",
                     currency=(
                         "UNKNOWN"
-                        if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                        if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
                         else "USD"
                     ),
                     estimated_amount=provider_reservation_amount,
                     estimated_tokens=provider_reservation_tokens,
-                    caps=self.budget_caps,
+                    caps={} if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else self.budget_caps,
                     call_caps=self.provider_call_caps,
                     token_caps=self.provider_token_caps,
                     budget_scope_id=str(provider_token_contract["budget_scope_id"]),
@@ -4148,8 +4360,8 @@ class PostgresPlanningExecutionPreparer:
                         if provider_token_contract["budget_scope_revision"] is not None
                         else None
                     ),
-                    accounting_basis=self.cost_accounting_basis,
-                    cost_authorization_ref=self.account_authorization_ref,
+                    accounting_basis=cost_accounting_basis,
+                    cost_authorization_ref=account_authorization_ref,
                 ),
             )
             if not bool(reservation.get("execution_authorized")):
@@ -4180,6 +4392,7 @@ class PostgresPlanningExecutionPreparer:
             definition=definition,
             capability=capability,
             planning_route=planning_route,
+            routing_decision=routing_decision,
             context_document=context_document,
             input_documents=input_documents,
             effect_id=effect_id,
@@ -4254,6 +4467,7 @@ class PostgresPlanningExecutionPreparer:
         frozen: Any,
         stage_name: str,
         stage_identity: str,
+        routing_decision: Mapping[str, Any] | None = None,
     ) -> tuple[_PlanningExecutionBinding, dict[str, AuthorityAssetDocument]]:
         graph = self._operation_graph(operation_id, command.project_id)
         suffix = (
@@ -4373,7 +4587,7 @@ class PostgresPlanningExecutionPreparer:
         )
         route = RouteSnapshot(
             route_snapshot_id=route_ref,
-            route_decision_id=f"route-decision:{_token(route_ref)}",
+            route_decision_id=routing_decision["decision_id"] if routing_decision else f"route-decision:{_token(route_ref)}",
             operation_id=operation_id,
             attempt_id=attempt_id,
             policy_id=policy.policy_id,

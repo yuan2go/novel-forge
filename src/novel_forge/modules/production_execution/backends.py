@@ -887,6 +887,7 @@ class RemoteProviderExecutionBackend:
         admission: AdmissionController,
         payload_resolver: ExecutionPayloadResolver,
         record_store: ExecutionRecordStore,
+        structured_result_validator: Any = None,
     ) -> None:
         if capability_profile.backend_id != backend_id:
             raise ValueError("remote backend capability identity mismatch")
@@ -955,6 +956,7 @@ class RemoteProviderExecutionBackend:
         self.admission = admission
         self.payload_resolver = payload_resolver
         self.record_store = record_store
+        self.structured_result_validator = structured_result_validator
 
     def submit(self, request: ExecutionRequest) -> ExecutionHandle:
         admission = self.admission.admit(request, self.capability_profile)
@@ -1124,6 +1126,15 @@ class RemoteProviderExecutionBackend:
             ),
         )
         evidence = dict(provider_result.evidence)
+        if provider_result.outcome == "success" and self.structured_result_validator is not None:
+            try:
+                evidence["result"] = dict(self.structured_result_validator(
+                    request.stage, payload.output_schema or {}, evidence.get("result")))
+            except ValueError:
+                evidence["failure_class"] = "SCHEMA_REJECTION"
+                provider_result = replace(provider_result, outcome="final_failure", evidence=evidence)
+            else:
+                provider_result = replace(provider_result, evidence=evidence)
         evidence.setdefault("output_schema_version", payload.output_schema_version)
         evidence["submission_phase"] = "PROVIDER_RESULT_RECORDED"
         record.handle = handle

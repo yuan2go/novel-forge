@@ -154,6 +154,22 @@ class _PlanningGenerationHandler:
                 "Planning Generation payload must be an object",
             )
         command = _command_from_payload(payload)
+        bootstrap = payload.get("routing_bootstrap_authorization")
+        if bool(command.routing_bootstrap_authorization_id) != bool(bootstrap) or (
+            bootstrap
+            and (
+                not isinstance(bootstrap, Mapping)
+                or bootstrap.get("project_id") != command.project_id
+                or bootstrap.get("environment") != "validation"
+                or not isinstance(bootstrap.get("authorization"), Mapping)
+                or bootstrap["authorization"].get("authorization_id")
+                != command.routing_bootstrap_authorization_id
+            )
+        ):
+            raise KernelError(
+                "PLANNING_BOOTSTRAP_AUTHORIZATION_MISSING",
+                "bootstrap candidate requires its server-frozen authorization",
+            )
         if (
             command.project_id != request.project_id
             or command.workspace_id != request.workspace_id
@@ -294,6 +310,16 @@ class _PlanningGenerationHandler:
                 }
             )
             world_refs = (action.asset_version_id,)
+        content = candidate.authority_content(
+            project_id=command.project_id,
+            book_id=command.book_id,
+            constraint_envelope=envelope,
+        )
+        if knowledge_policy:
+            content["knowledge_translation_policy_version"] = knowledge_policy
+        if bootstrap:
+            content["routing_eligibility"] = "BENCHMARK_ONLY"
+            content["routing_bootstrap_authorization"] = dict(bootstrap)
         return AuthorityHandlerOutput(
             # WHY: One generic worker Operation has one frozen output contract.
             # The concrete candidate kind remains frozen in the Generator
@@ -302,11 +328,7 @@ class _PlanningGenerationHandler:
             asset_type="planning_generation_candidate",
             output_key="story_planning.candidate",
             role="primary",
-            content={**candidate.authority_content(
-                project_id=command.project_id,
-                book_id=command.book_id,
-                constraint_envelope=envelope,
-            ), **({"knowledge_translation_policy_version": knowledge_policy} if knowledge_policy else {})},
+            content=content,
             qualification_policy="story-planning-candidate-only-v1",
             reference_asset_version_ids=(
                 *(item.asset_version_id for item in inputs),
@@ -430,6 +452,15 @@ class StoryPlanningGenerationApplication:
             raise PermissionError(
                 "Planning Generation actor must be the trusted Principal"
             )
+        environment = (
+            str(getattr(getattr(self.execution_binder, "resolver", None), "environment", ""))
+            if command.routing_bootstrap_authorization_id else ""
+        )
+        if command.routing_bootstrap_authorization_id and environment != "validation":
+            raise KernelError(
+                "ROUTING_BOOTSTRAP_ENVIRONMENT_FORBIDDEN",
+                "benchmark challengers require the validation runtime",
+            )
         self._probe(execution_probe)
         continuation = None
         if command.runtime_continuation_id:
@@ -493,22 +524,64 @@ class StoryPlanningGenerationApplication:
             if repair_source["diagnostic"] != dict(command.repair_result_diagnostic or {}):
                 raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "the frozen result repair diagnosis changed")
             input_assets.append({"asset_version_id": repair_source["asset_version_id"], "content_hash": repair_source["content_hash"]})
+        causation_operation_id = (
+            (continuation["source_operation_id"] if continuation else "")
+            or command.repair_of_operation_id
+            or command.parent_agent_session_operation_id
+            or None
+        )
         if command.repair_of_candidate_id:
+            from .execution import require_candidate_repair_operation
+
             repair_asset = self._require_asset(
                 project_id=command.project_id,
                 asset_version_id=command.repair_of_candidate_id,
             )
+            if (
+                repair_asset["content"].get("routing_eligibility") == "BENCHMARK_ONLY"
+                or repair_asset["content"].get("routing_bootstrap_authorization")
+            ):
+                raise KernelError(
+                    "PLANNING_BENCHMARK_ONLY",
+                    "bootstrap candidates cannot become production repair inputs",
+                )
             input_assets.append(
                 {
                     "asset_version_id": repair_asset["asset_version_id"],
                     "content_hash": repair_asset["content_hash"],
                 }
             )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                source_operation_id = require_candidate_repair_operation(
+                    uow.cursor, candidate_asset_version_id=command.repair_of_candidate_id,
+                    project_id=command.project_id, book_id=command.book_id,
+                    generator_operation_name=command.generator_operation_name,
+                    logical_key=command.logical_key,
+                )
+                uow.cursor.execute(
+                    "SELECT causation_operation_id FROM authority_operation WHERE project_id=%s AND definition_name=%s AND idempotency_scope='book:story-planning-generation' AND idempotency_key=%s",
+                    [command.project_id, STORY_PLANNING_GENERATION_DEFINITION, command.idempotency_key],
+                )
+                retained = uow.cursor.fetchone()
+            causation_operation_id = retained[0] if retained else source_operation_id
         input_assets = self._replay_ordered_input_assets(
             command=command,
             resolved_input_assets=_canonical_admission_assets(input_assets),
         )
         payload = _command_payload(command)
+        if command.routing_bootstrap_authorization_id:
+            from novel_forge.modules.authority_handler_runtime.routing_bootstrap import (
+                freeze_planning_bootstrap_authorization,
+            )
+
+            payload["routing_bootstrap_authorization"] = (
+                freeze_planning_bootstrap_authorization(
+                    database_url=self.database_url,
+                    command_payload=payload,
+                    principal=principal,
+                    environment=environment,
+                )
+            )
         self._probe(execution_probe)
         admitted = admit_command(
             self.database_url,
@@ -530,9 +603,7 @@ class StoryPlanningGenerationApplication:
                     or command.repair_of_operation_id
                     or command.repair_of_candidate_id
                 ),
-                "causation_operation_id": (
-                    (continuation["source_operation_id"] if continuation else "") or command.repair_of_operation_id or command.parent_agent_session_operation_id or None
-                ),
+                "causation_operation_id": causation_operation_id,
                 "input": {
                     "project_id": command.project_id,
                     "input_asset_version_ids": [
@@ -742,6 +813,8 @@ class StoryPlanningGenerationApplication:
     ) -> PlanningGenerationResult:
         if advanced.status is not PlanningGenerationStatus.EVALUATION_PENDING:
             return advanced
+        if generation_command.routing_bootstrap_authorization_id:
+            return advanced
         candidate = self._require_asset(
             project_id=generation_command.project_id,
             asset_version_id=advanced.candidate_asset_version_id,
@@ -803,6 +876,11 @@ class StoryPlanningGenerationApplication:
     ) -> dict[str, Any]:
         generation = self.require_candidate(candidate_asset_version_id)
         principal.require("story_planning.authority.approve", generation["project_id"])
+        if generation.get("routing_eligibility") == "BENCHMARK_ONLY":
+            raise KernelError(
+                "PLANNING_BENCHMARK_ONLY",
+                "bootstrap candidates cannot be approved for production",
+            )
         if _requires_formation_decision_evidence(str(generation["logical_key"])):
             require_worker_scoped_auto_decision(
                 principal=principal,
@@ -871,6 +949,11 @@ class StoryPlanningGenerationApplication:
     ) -> dict[str, Any]:
         generation = self.require_candidate(candidate_asset_version_id)
         principal.require("story_planning.authority.activate", generation["project_id"])
+        if generation.get("routing_eligibility") == "BENCHMARK_ONLY":
+            raise KernelError(
+                "PLANNING_BENCHMARK_ONLY",
+                "bootstrap candidates cannot become active production plans",
+            )
         if _requires_formation_decision_evidence(str(generation["logical_key"])):
             require_worker_scoped_auto_decision(
                 principal=principal,
@@ -1419,14 +1502,18 @@ class StoryPlanningGenerationApplication:
                 )
             return None
         frozen_payload = dict(row[1])
+        public_frozen_payload = {
+            key: value for key, value in frozen_payload.items()
+            if key != "routing_bootstrap_authorization"
+        }
         if row[2] == "CANCELLED" and not row[4]:
             from .runtime_continuation import follow
             current_payload = _command_payload(command)
-            if {key: value for key, value in frozen_payload.items() if key != "execution_contract_version"} == {key: value for key, value in current_payload.items() if key != "execution_contract_version"}:
+            if {key: value for key, value in public_frozen_payload.items() if key != "execution_contract_version"} == {key: value for key, value in current_payload.items() if key != "execution_contract_version"}:
                 resumed = follow(self, str(row[0]), _command_from_payload(frozen_payload), principal=principal)
                 if resumed is not None:
                     return resumed
-        if frozen_payload != _command_payload(command):
+        if public_frozen_payload != _command_payload(command):
             raise KernelError(
                 "PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT",
                 "replay must use the exact immutable admitted Planning command",
@@ -1436,11 +1523,21 @@ class StoryPlanningGenerationApplication:
             return follow(self, str(row[0]), command, principal=principal)
         if row[2] == "FAILED_FINAL" and not row[4]:
             return self._repair_unmaterialized_result(command, operation_id=str(row[0]), principal=principal)
-        if row[2] != "SUCCEEDED" or not row[4]:
+        if not row[4] or (
+            row[2] != "SUCCEEDED"
+            and not (row[2] == "WAITING_GATE" and row[3] in {"REPAIR_REQUIRED", "REJECTED"})
+        ):
             return None
         state = self.story_design.require(
             project_id=command.project_id, asset_version_id=str(row[4])
         )
+        if command.routing_bootstrap_authorization_id and row[3] in {
+            "EVALUATION_PENDING", "REPAIR_REQUIRED", "REJECTED",
+        }:
+            return PlanningGenerationResult(
+                str(row[0]), str(row[4]), PlanningGenerationStatus(row[3]), state,
+                replayed=True,
+            )
         if row[3] == "REPAIR_REQUIRED":
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute(
@@ -1501,6 +1598,11 @@ class StoryPlanningGenerationApplication:
     def _repair_unmaterialized_result(self, command: StoryPlanningGenerationCommand, *, operation_id: str, principal: Principal, execution_probe: Callable[[], object] | None = None) -> PlanningGenerationResult:
         from .result_recovery import MAXIMUM_RESULT_REPAIRS, require_result_repair_source
 
+        if command.routing_bootstrap_authorization_id:
+            raise KernelError(
+                "PLANNING_BOOTSTRAP_REPAIR_REQUIRES_AUTHORIZATION",
+                "invalid bootstrap output is retained; a new challenger requires explicit authorization",
+            )
         maximum = min(MAXIMUM_RESULT_REPAIRS, GENERATOR_CATALOG[command.generator_operation_name].maximum_structural_regenerations)
         if command.repair_number >= maximum:
             raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
@@ -1522,7 +1624,7 @@ class StoryPlanningGenerationApplication:
         return self.generate(repaired, principal=principal, execution_probe=execution_probe)
 
     def frozen_generation_command(self, operation_id: str) -> dict[str, Any]:
-        return _command_payload(self._generation_command(operation_id))
+        return self._frozen_generation_payload(operation_id)
 
     def require_generation(self, operation_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1571,6 +1673,9 @@ class StoryPlanningGenerationApplication:
         return dict(zip(fields, row, strict=True))
 
     def _generation_command(self, operation_id: str) -> StoryPlanningGenerationCommand:
+        return _command_from_payload(self._frozen_generation_payload(operation_id))
+
+    def _frozen_generation_payload(self, operation_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -1587,7 +1692,7 @@ class StoryPlanningGenerationApplication:
                 "PLANNING_GENERATION_COMMAND_MISSING",
                 "frozen Planning Generation command is unavailable",
             )
-        return _command_from_payload(dict(row[0]))
+        return dict(row[0])
 
     def find_frozen_generation_command(
         self,
@@ -1742,8 +1847,13 @@ class StoryPlanningGenerationApplication:
                        design_state.generator_definition_version,
                        candidate.content_hash,
                        definition.definition->>'approval_policy_key',
-                       definition.definition->>'activation_policy_key'
+                       definition.definition->>'activation_policy_key',
+                       CASE WHEN candidate_version.content->>'routing_eligibility'='BENCHMARK_ONLY'
+                              OR candidate_version.content ? 'routing_bootstrap_authorization'
+                            THEN 'BENCHMARK_ONLY' ELSE '' END
                 FROM authority_story_planning_candidate AS candidate
+                JOIN authority_asset_version AS candidate_version
+                  ON candidate_version.asset_version_id=candidate.candidate_asset_version_id
                 JOIN authority_story_planning_generation AS generation
                   ON generation.generation_id=candidate.generation_id
                 JOIN authority_story_design_version_state AS design_state
@@ -1780,6 +1890,7 @@ class StoryPlanningGenerationApplication:
             "content_hash",
             "approval_policy_key",
             "activation_policy_key",
+            "routing_eligibility",
         )
         result = dict(zip(fields, row, strict=True))
         from novel_forge.modules.story_design_authority import PlanningScope
@@ -1991,6 +2102,13 @@ class StoryPlanningGenerationApplication:
                 evidence={"passed": True, "validation_report": evidence},
             )
         if state["qualification"] == "STRUCTURALLY_VALID":
+            if command.routing_bootstrap_authorization_id:
+                self._update_generation_status(operation_id, "EVALUATION_PENDING")
+                return PlanningGenerationResult(
+                    operation_id, candidate_asset_version_id,
+                    PlanningGenerationStatus.EVALUATION_PENDING, state,
+                    replayed=replayed,
+                )
             try:
                 qualification = self._require_narrative_qualification_summary(
                     operation_id=operation_id,
@@ -2172,6 +2290,11 @@ class StoryPlanningGenerationApplication:
                 state,
             )
         self._update_generation_status(operation_id, "REPAIR_REQUIRED")
+        if command.routing_bootstrap_authorization_id:
+            return PlanningGenerationResult(
+                operation_id, candidate_asset_version_id,
+                PlanningGenerationStatus.REPAIR_REQUIRED, state,
+            )
         repaired = replace(
             command,
             runtime_continuation_id="",
@@ -2304,6 +2427,15 @@ class StoryPlanningGenerationApplication:
             }
             for row in rows
         }
+        if any(
+            item["content"].get("routing_eligibility") == "BENCHMARK_ONLY"
+            or item["content"].get("routing_bootstrap_authorization")
+            for item in by_id.values()
+        ):
+            raise KernelError(
+                "PLANNING_BENCHMARK_ONLY",
+                "bootstrap candidates cannot become active production inputs",
+            )
         plan_by_id = {
             str(row[0]): {
                 "contract_type": PlanContractType(str(row[1])),
@@ -3163,6 +3295,7 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         "repair_reason": command.repair_reason,
         "repair_number": command.repair_number,
         "auto_approve_low_risk": command.auto_approve_low_risk,
+        **({"routing_bootstrap_authorization_id": command.routing_bootstrap_authorization_id} if command.routing_bootstrap_authorization_id else {}),
         "parent_agent_session_operation_id": (
             command.parent_agent_session_operation_id
         ),
@@ -3231,6 +3364,7 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         repair_reason=str(payload.get("repair_reason") or ""),
         repair_number=int(payload.get("repair_number") or 0),
         auto_approve_low_risk=bool(payload.get("auto_approve_low_risk", False)),
+        routing_bootstrap_authorization_id=str(payload.get("routing_bootstrap_authorization_id") or ""),
         parent_agent_session_operation_id=str(
             payload.get("parent_agent_session_operation_id") or ""
         ),
