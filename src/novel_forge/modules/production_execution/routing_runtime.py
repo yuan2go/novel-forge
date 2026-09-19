@@ -4,6 +4,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
+import math
 from typing import Any, Callable, Mapping, Sequence
 
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
@@ -109,6 +110,7 @@ class PostgresRoutingRegistry:
                        ORDER BY v.created_at DESC LIMIT 1
                    ) quality ON true
                    WHERE asset.project_id=%s AND asset.asset_type='model_call_log'
+                     AND effect.external_effect_id IS NOT NULL
                      AND COALESCE(version.content->>'stage',model.evidence #>> '{production_execution,execution_request,stage}')=%s
                      AND model.evidence->>'provider_id'=%s
                      AND model.evidence->>'model_id'=%s
@@ -173,7 +175,9 @@ class PostgresRoutingRegistry:
                 ((decision or {}).get("selected") or {})
                 .get("candidate", {})
                 .get("model_revision")
-            )
+            ) or (evidence.get("production_execution") or {}).get(
+                "process_evidence", {}
+            ).get("model_revision")
             if (
                 candidate.model_revision
                 and candidate.model_revision != observed_revision
@@ -269,6 +273,61 @@ class PostgresRoutingRegistry:
             )
         return observations
 
+    def available_candidates(
+        self, *, project_id: str, candidates: Sequence[ModelCandidate], now: datetime
+    ) -> tuple[ModelCandidate, ...]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT COALESCE(
+                            effect.request_payload #>> '{_production_execution,capability_runtime,routing_decision,selected,candidate,provider}',
+                            dispatch.evidence->>'provider_id'),effect.model_id,COALESCE(dispatch.finished_at,dispatch.updated_at,dispatch.created_at),
+                          dispatch.evidence #> '{production_execution,process_evidence}',
+                          effect.external_effect_id
+                   FROM authority_external_effect effect
+                   JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
+                   WHERE effect.project_id=%s AND effect.model_id=ANY(%s)
+                     AND dispatch.evidence #>> '{production_execution,process_evidence,failure_class}'
+                         IN ('RATE_LIMIT','PROVIDER_UNAVAILABLE','AUTHENTICATION_FAILED','PROVIDER_BUDGET_EXHAUSTED')
+                     AND EXTRACT(EPOCH FROM (%s - COALESCE(dispatch.finished_at,dispatch.updated_at,dispatch.created_at)))
+                         < CASE WHEN jsonb_typeof(dispatch.evidence #> '{production_execution,process_evidence,retry_after_seconds}')='number'
+                           THEN (dispatch.evidence #>> '{production_execution,process_evidence,retry_after_seconds}')::numeric
+                           ELSE 300 END
+                   ORDER BY dispatch.created_at DESC""",
+                [project_id, [candidate.model for candidate in candidates], now],
+            )
+            failures = uow.cursor.fetchall()
+        result = []
+        for candidate in candidates:
+            for provider, model, occurred_at, evidence, effect_id in failures:
+                if provider != candidate.provider or model != candidate.model:
+                    continue
+                failure = evidence["failure_class"]
+                delay = evidence.get("retry_after_seconds")
+                if (
+                    not isinstance(delay, (int, float))
+                    or not math.isfinite(delay)
+                    or delay < 0
+                ):
+                    delay = (
+                        300
+                        if failure
+                        in {"AUTHENTICATION_FAILED", "PROVIDER_BUDGET_EXHAUSTED"}
+                        else 30
+                    )
+                try:
+                    until = occurred_at + timedelta(seconds=delay)
+                except OverflowError:
+                    until = datetime.max.replace(tzinfo=occurred_at.tzinfo)
+                if until > now:
+                    candidate = replace(
+                        candidate,
+                        available=False,
+                        availability_reason=f"{failure}:{effect_id}:until:{until.isoformat()}",
+                    )
+                    break
+            result.append(candidate)
+        return tuple(result)
+
     def history(
         self, *, project_id: str, operation_id: str, task_type: str, chain_id: str = ""
     ) -> tuple[dict[str, Any], ...]:
@@ -282,7 +341,7 @@ class PostgresRoutingRegistry:
                           quality.content
                    FROM authority_external_effect effect
                    LEFT JOIN LATERAL (
-                       SELECT evidence,created_at FROM authority_external_effect_dispatch
+                       SELECT evidence,COALESCE(finished_at,updated_at,created_at) AS created_at FROM authority_external_effect_dispatch
                        WHERE external_effect_id=effect.external_effect_id
                        ORDER BY generation DESC LIMIT 1
                    ) dispatch ON true
@@ -301,6 +360,15 @@ class PostgresRoutingRegistry:
                 [project_id, operation_id, task_type, chain_id],
             )
             rows = uow.cursor.fetchall()
+            gate_outcomes = (
+                self.outcome_projection(
+                    uow.cursor,
+                    project_id=project_id,
+                    effect_ids=[row[0] for row in rows],
+                )
+                if self.outcome_projection is not None and rows
+                else {}
+            )
         history = []
         for effect_id, status, updated_at, decision, evidence, quality in rows:
             if not decision:
@@ -332,6 +400,11 @@ class PostgresRoutingRegistry:
                     )
                     else "QUALITY_FAILURE"
                 )
+            if (
+                not failure
+                and gate_outcomes.get(effect_id, {}).get("accepted") is False
+            ):
+                failure = "QUALITY_FAILURE"
             history.append(
                 {
                     "external_effect_id": effect_id,
@@ -339,6 +412,9 @@ class PostgresRoutingRegistry:
                     "failure_class": failure,
                     "status": status,
                     "escalation": selected.get("escalation_only", False),
+                    "outcome_refs": gate_outcomes.get(effect_id, {}).get(
+                        "evidence_refs", []
+                    ),
                 }
             )
             delay = process.get("retry_after_seconds")
@@ -538,16 +614,20 @@ class ProductionProviderRouter:
         now = datetime.now(timezone.utc)
         from .routing_catalog import deepseek_pricing_period
 
-        candidates = tuple(
-            replace(
-                candidate,
-                estimated_price_multiplier="0.5"
-                if deepseek_pricing_period(now) == "OFF_PEAK"
-                else "1",
-            )
-            if candidate.provider == "deepseek"
-            else candidate
-            for candidate in self.candidates
+        candidates = self.registry.available_candidates(
+            project_id=project_id,
+            now=now,
+            candidates=tuple(
+                replace(
+                    candidate,
+                    estimated_price_multiplier="0.5"
+                    if deepseek_pricing_period(now) == "OFF_PEAK"
+                    else "1",
+                )
+                if candidate.provider == "deepseek"
+                else candidate
+                for candidate in self.candidates
+            ),
         )
         observations = {
             candidate.candidate_id: self.registry.observations(

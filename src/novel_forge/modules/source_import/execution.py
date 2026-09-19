@@ -1341,7 +1341,7 @@ class PostgresContentIntelligenceExecutionPort:
                 attempt_id=worker.attempt_id, stable_key=stable_key,
                 input_tokens=len(prompt.encode()) + 512,
                 output_tokens=self.provider_output_token_reserve,
-                trace_id=worker.trace_id, correlation_id=worker.correlation_id, cache_prefix=prompt.encode()[:512],
+                trace_id=worker.trace_id, correlation_id=worker.correlation_id, cache_prefix=prompt.encode()[:prompt_evidence["reusable_prefix_bytes"]],
                 request_input=spec.input_payload,
                 input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest())
         envelope = ProviderRequestEnvelope(

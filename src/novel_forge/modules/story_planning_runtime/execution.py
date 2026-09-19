@@ -3924,7 +3924,7 @@ class PostgresPlanningExecutionPreparer:
                     operation_id=operation_id, attempt_id=attempt_id,
                     stable_key=stable_key, input_tokens=len(prompt.encode()) + 512,
                     output_tokens=output_reserve, trace_id=command.trace_id,
-                    correlation_id=command.correlation_id, cache_prefix=prompt.encode()[:512],
+                    correlation_id=command.correlation_id, cache_prefix=prompt.encode()[:prompt_evidence["reusable_prefix_bytes"]],
                 request_input=stable_request_payload["input"], input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest())
             route_identity = ":".join(
                 (

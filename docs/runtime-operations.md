@@ -307,6 +307,13 @@ the existing `content.authority.query` permission. Estimated upper bounds must n
 reported as actual billed cost. Missing calibrated benchmark evidence blocks routing;
 operators must not seed fixture scores as production quality evidence.
 
+`EFFECT_RETRY_DEFERRED` means the latest durable dispatch has an active rate-limit or
+availability backoff. Do not create a parallel task to evade it. Inspect the referenced
+dispatch and retry after its deadline. Availability snapshots cover the same project and
+model; Pro high and max share that model's cooldown. Historical decisions keep the
+original availability evidence. Current cooldown defaults are runtime policy, not a
+Provider service guarantee.
+
 `configure --project-id <id> --workspace-id <id> --idempotency-key <key>
 --policy-file <path>` uses the existing versioned policy command and requires a local
 operator with `book.authority.execute`. Policy content contains `policy_version`, an

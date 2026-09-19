@@ -69,6 +69,13 @@ There is no governed cold-start challenger that can bootstrap every task family 
 weakening production quality admission. The configured production router therefore
 blocks when sufficient evidence is absent.
 
+Quality predictions are bounded by observed schema and acceptance yield, so failed
+outputs cannot disappear behind scores from successful outputs. Cache estimates use
+measured hit tokens from the same stable instruction prefix. Recent dispatch failures
+temporarily remove an affected model from new decisions across task chains. Kernel
+reservation and dispatch also enforce retry deferral on the frozen existing effect.
+Independent Planning and Source outcome references participate in retry history.
+
 The existing versioned policy Authority governs per-work/task/chapter risk and quality
 increases. Optional Codex escalation reuses the actual CLI backend, explicit entitlement
 identity, configuration revision, finite call/token limits and expiry. Mixed accounting

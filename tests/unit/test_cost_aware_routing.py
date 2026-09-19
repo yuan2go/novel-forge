@@ -95,6 +95,34 @@ def test_quality_floor_precedes_price_and_equal_quality_uses_effective_cost():
     assert result["selected"]["candidate"]["candidate_id"] == "flash"
 
 
+def test_failed_outputs_cannot_hide_behind_surviving_high_quality_scores():
+    successes = samples(n=10)
+    failures = [
+        replace(
+            row,
+            evidence_ref="failed:" + row.evidence_ref,
+            quality_score=None,
+            accepted=False,
+            schema_success=False,
+        )
+        for row in samples(n=20)
+    ]
+    result = route(task(), [candidate()], {"flash": successes + failures})
+    benchmark = result["candidates"][0]["benchmark"]
+    assert benchmark["conditional_content_quality"] > 0.9
+    assert benchmark["predicted_quality"] == pytest.approx(1 / 3)
+    assert result["status"] == "BLOCKED"
+
+
+def test_cache_cost_uses_observed_tokens_without_discounting_the_prefix_twice():
+    result = route(
+        task(cache_eligible=True, reusable_prefix_tokens=500),
+        [candidate()],
+        {"flash": samples(cached=500)},
+    )
+    assert result["selected"]["cache_tokens_estimate"] == 500
+
+
 def test_absent_stale_and_fixture_benchmarks_fail_closed():
     for evidence in (
         [],

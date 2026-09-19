@@ -304,6 +304,50 @@ def test_http_failure_without_retry_after_headers_is_sanitized():
     assert "secret" not in json.dumps(result.evidence)
 
 
+@pytest.mark.parametrize(
+    "code,failure",
+    [
+        ("context_length_exceeded", "CONTEXT_OVERFLOW"),
+        ("invalid_json_schema", "SCHEMA_REJECTION"),
+        ("unknown", "CONTRACT_REJECTION"),
+    ],
+)
+def test_contract_failure_classification_never_persists_remote_error_text(
+    code, failure
+):
+    def transport(request, **kwargs):
+        raise HTTPError(
+            request.full_url,
+            400,
+            "private",
+            {},
+            BytesIO(
+                json.dumps(
+                    {
+                        "error": {
+                            "code": code,
+                            "message": "private credential and source text",
+                        },
+                    }
+                ).encode()
+            ),
+        )
+
+    result = adapter(transport).invoke(invocation())
+    assert result.evidence["failure_class"] == failure
+    assert "private" not in json.dumps(result.evidence)
+
+
+def test_provider_aborted_response_preserves_paid_usage():
+    result = adapter(
+        lambda *args, **kwargs: BytesIO(json.dumps(response(finish="aborted")).encode())
+    ).invoke(invocation())
+    assert result.outcome == "final_failure"
+    assert result.evidence["failure_class"] == "CANCELLED"
+    assert result.evidence["usage"]["total_tokens"] == 100
+    assert result.evidence["cost"]["amount"]
+
+
 @pytest.mark.parametrize("raised", [TimeoutError("secret"), URLError("secret")])
 def test_transport_ambiguity_fails_closed(raised):
     def transport(*args, **kwargs):

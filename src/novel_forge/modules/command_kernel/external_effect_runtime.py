@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any
 from uuid import uuid4
@@ -395,6 +397,30 @@ def plan_external_effect(
     return result
 
 
+def require_effect_retry_ready(cursor: Any, effect_id: str) -> None:
+    cursor.execute(
+        """SELECT status,evidence,COALESCE(finished_at,updated_at,created_at),NOW()
+           FROM authority_external_effect_dispatch WHERE external_effect_id=%s
+           ORDER BY generation DESC LIMIT 1""",
+        [effect_id],
+    )
+    row = cursor.fetchone()
+    if row is None or row[0] != "FAILED_RETRYABLE":
+        return
+    process = (row[1] or {}).get("production_execution", {}).get("process_evidence", {})
+    if process.get("failure_class") not in {"RATE_LIMIT", "PROVIDER_UNAVAILABLE"}:
+        return
+    delay = process.get("retry_after_seconds")
+    if not isinstance(delay, (int, float)) or not math.isfinite(delay) or delay < 0:
+        delay = 30
+    try:
+        ready_at = row[2] + timedelta(seconds=delay)
+    except OverflowError:
+        ready_at = datetime.max.replace(tzinfo=row[2].tzinfo)
+    if row[3] < ready_at:
+        raise KernelError("EFFECT_RETRY_DEFERRED", "Provider retry is deferred until " + ready_at.isoformat())
+
+
 def prepare_effect_dispatch(
     database_url: str,
     context: EffectCommandContext,
@@ -407,6 +433,7 @@ def prepare_effect_dispatch(
         _require_context(repository, context)
         effect = repository.get_for_update(effect_id)
         _require_project(effect, context.project_id)
+        require_effect_retry_ready(uow.cursor, effect_id)
         result = repository.prepare_dispatch(effect, str(uuid4()))
         reconciliation_required = bool(result.get("reconciliation_required"))
         if reconciliation_required:

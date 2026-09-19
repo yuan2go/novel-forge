@@ -938,7 +938,7 @@ class PostgresChapterExecutionContractBinder:
                 attempt_id=attempt_id, stable_key=stable_idempotency_key,
                 input_tokens=len(prompt.encode()) + route.token_safety_margin + route.token_framing_overhead,
                 output_tokens=output_reserve, trace_id=str(request_payload["trace_id"]),
-                correlation_id=str(request_payload["correlation_id"]), cache_prefix=prompt.encode()[:512],
+                correlation_id=str(request_payload["correlation_id"]), cache_prefix=prompt.encode()[:prompt_evidence["reusable_prefix_bytes"]],
                 request_input=provider_inputs, input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(), chapter=int(metadata.get("chapter") or 0))
             route_identity = routing_decision["decision_id"]
         envelope = ProviderRequestEnvelope(
@@ -4090,6 +4090,8 @@ def _materialize_production_codex_prompt(
     )
     evidence = {
         "materialization_hash": str(materialization.get("materialization_hash") or ""),
+        "reusable_prefix_bytes": len(prompt.split("</governed_skill>", 1)[0].encode())
+        + len("</governed_skill>".encode()),
         "fully_rendered_prompt_hash": prompt_hash,
         "required_reader_facing_language": required_language,
         "provider_prompt_projection_version": "authority-projection-task-provider-v1",
@@ -4228,6 +4230,8 @@ def _materialize_source_intelligence_prompt(
     }
     return prompt, {
         "materialization_hash": str(materialization.get("materialization_hash") or ""),
+        "reusable_prefix_bytes": len(prompt.split("</prompt_template>", 1)[0].encode())
+        + len("</prompt_template>".encode()),
         "fully_rendered_prompt_hash": prompt_hash,
         "stage": stage,
         "source_bytes_transient_only": True,

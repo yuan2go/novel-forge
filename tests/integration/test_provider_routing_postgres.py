@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, replace
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -217,6 +218,91 @@ def test_cold_start_persists_block_and_never_dispatches(scope):
         cursor.execute(
             "SELECT count(*) FROM authority_external_effect WHERE operation_id=%s",
             [scope[1]],
+        )
+        assert cursor.fetchone()[0] == 0
+
+
+def test_rate_limit_on_another_chain_blocks_only_the_affected_model_until_retry_after(
+    scope,
+):
+    registry = PostgresRoutingRegistry(DATABASE_URL)
+    candidates = deepseek_candidates(available=True)
+    decision = frozen_budget_decision(scope)
+    decision["selected"] = {"candidate": asdict(candidates[1])}
+    request = replace(
+        budget_request(scope, decision=decision), model_id=candidates[1].model
+    )
+    now = datetime.now(timezone.utc)
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "UPDATE authority_external_effect SET model_id=%s WHERE external_effect_id=%s",
+            [candidates[1].model, request.external_effect_id],
+        )
+        cursor.execute(
+            """INSERT INTO authority_external_effect_dispatch
+               (dispatch_id,external_effect_id,generation,status,payload_hash,evidence,created_at)
+               VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s,%s)""",
+            [
+                identifier("dispatch"),
+                request.external_effect_id,
+                "hash",
+                Jsonb(
+                    {
+                        "production_execution": {
+                            "process_evidence": {
+                                "failure_class": "RATE_LIMIT",
+                                "retry_after_seconds": 60,
+                            }
+                        },
+                    }
+                ),
+                now,
+            ],
+        )
+    selected = registry.available_candidates(
+        project_id=scope[0],
+        candidates=candidates,
+        now=now,
+    )
+    assert [item.available for item in selected] == [True, False, False]
+    assert request.external_effect_id in selected[1].availability_reason
+    assert all(
+        item.available
+        for item in registry.available_candidates(
+            project_id=scope[0],
+            candidates=candidates,
+            now=now + timedelta(seconds=61),
+        )
+    )
+    assert all(
+        item.available
+        for item in registry.available_candidates(
+            project_id="another-project",
+            candidates=candidates,
+            now=now,
+        )
+    )
+    from novel_forge.modules.command_kernel.external_effect_runtime import (
+        prepare_effect_dispatch,
+    )
+
+    with pytest.raises(KernelError, match="EFFECT_RETRY_DEFERRED"):
+        reserve_provider_budget(DATABASE_URL, request)
+    with pytest.raises(KernelError, match="EFFECT_RETRY_DEFERRED"):
+        prepare_effect_dispatch(
+            DATABASE_URL,
+            EffectCommandContext(scope[1], scope[0], "test", "test", "test"),
+            effect_id=request.external_effect_id,
+        )
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s",
+            [request.external_effect_id],
+        )
+        assert cursor.fetchone()[0] == 1
+        cursor.execute(
+            "SELECT count(*) FROM authority_budget_reservation WHERE external_effect_id=%s",
+            [request.external_effect_id],
         )
         assert cursor.fetchone()[0] == 0
 

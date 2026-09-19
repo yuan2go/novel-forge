@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from email.utils import parsedate_to_datetime
 import json
+import math
 import socket
 import time
 from typing import Any, Callable, Mapping
@@ -168,6 +169,8 @@ class DeepSeekProviderAdapter:
                 429: "RATE_LIMIT",
                 503: "PROVIDER_UNAVAILABLE",
             }.get(status, "PROVIDER_UNAVAILABLE")
+            if status in {400, 422}:
+                failure = _contract_failure(exc)
             outcome = (
                 "retryable_failure"
                 if status in {429, 503}
@@ -284,6 +287,7 @@ class DeepSeekProviderAdapter:
             "length": "OUTPUT_CAPACITY_EXCEEDED",
             "content_filter": "POLICY_REJECTION",
             "insufficient_system_resource": "PROVIDER_UNAVAILABLE",
+            "aborted": "CANCELLED",
         }.get(finish_reason)
         if failure is None:
             raise ValueError("DEEPSEEK_FINISH_REASON_INVALID")
@@ -443,7 +447,8 @@ def _retry_after(value: str) -> float | None:
     if not value:
         return None
     try:
-        return max(0, float(value))
+        seconds = float(value)
+        return max(0, seconds) if math.isfinite(seconds) else None
     except ValueError:
         try:
             return max(
@@ -454,3 +459,20 @@ def _retry_after(value: str) -> float | None:
             )
         except (TypeError, ValueError):
             return None
+
+
+def _contract_failure(response: HTTPError) -> str:
+    try:
+        payload = json.loads(response.read(65536))
+        error = payload.get("error") or {}
+        code = str(error.get("code") or "").lower()
+        message = str(error.get("message") or "").lower()
+    except (OSError, ValueError, AttributeError, TypeError):
+        return "CONTRACT_REJECTION"
+    if code in {"context_length_exceeded", "max_context_length_exceeded"} or (
+        "context" in message and any(word in message for word in ("exceed", "maximum"))
+    ):
+        return "CONTEXT_OVERFLOW"
+    if code in {"invalid_json_schema", "invalid_response_format"}:
+        return "SCHEMA_REJECTION"
+    return "CONTRACT_REJECTION"

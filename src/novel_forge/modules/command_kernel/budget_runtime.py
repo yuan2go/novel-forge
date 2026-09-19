@@ -3251,6 +3251,9 @@ def _enforce_routing_chain_budget(
         )
     if not check_attempts:
         return
+    from .external_effect_runtime import require_effect_retry_ready
+
+    require_effect_retry_ready(cursor, request.external_effect_id)
     cursor.execute(
         """SELECT count(*), count(*) FILTER (
                     WHERE e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,selected,candidate,escalation_only}'='true'),

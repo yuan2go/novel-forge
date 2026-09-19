@@ -128,7 +128,7 @@ TASK_TAXONOMY = {
         "HIGH",
     ),
 }
-POLICY_VERSION = "quality-constrained-routing.v2"
+POLICY_VERSION = "quality-constrained-routing.v3"
 
 
 def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> TaskPolicy:
@@ -348,6 +348,12 @@ def benchmark_snapshot(
             else 0.0
         )
     decisions = [row for row in rows if row.accepted is not None]
+    schema_yield = mean([int(row.schema_success) for row in rows]) if rows else 0.0
+    acceptance = (
+        mean([int(bool(row.accepted)) for row in decisions]) if decisions else None
+    )
+    conditional_quality = quality
+    quality = min(quality, schema_yield, acceptance if acceptance is not None else 1.0)
     latencies = sorted(
         row.latency_seconds for row in rows if row.latency_seconds is not None
     )
@@ -366,6 +372,8 @@ def benchmark_snapshot(
         "domain_gate_sample_count": len(domain_outcomes),
         "uncertain": uncertainty,
         "predicted_quality": quality,
+        "conditional_content_quality": conditional_quality,
+        "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
         "quality_mean": average,
         "quality_distribution": sorted(scores),
         "outcome_refs": sorted({ref for row in rows for ref in row.outcome_refs}),
@@ -375,12 +383,9 @@ def benchmark_snapshot(
         )
         if any(row.judge_score is not None for row in rows)
         else None,
-        "acceptance_rate": mean([int(bool(row.accepted)) for row in decisions])
-        if decisions
-        else None,
-        "schema_success": mean([int(row.schema_success) for row in rows])
-        if rows
-        else 0,
+        "acceptance_rate": acceptance,
+        "acceptance_sample_count": len(decisions),
+        "schema_success": schema_yield,
         **{
             name: mean(values) if values else None
             for name, values in {
@@ -411,6 +416,9 @@ def benchmark_snapshot(
         else None,
         "cache_hit_ratio": sum(row.cache_hit_tokens for row in rows)
         / max(1, sum(row.input_tokens for row in rows)),
+        "mean_cache_hit_tokens": mean([row.cache_hit_tokens for row in rows])
+        if rows
+        else 0,
         "actual_cost": str(
             sum(
                 (
@@ -625,8 +633,11 @@ class CostAwareRouter:
             ]
             cache_evidence = benchmark_snapshot(cache_rows, now=now, policy=policy)
             cache_tokens = (
-                min(task.reusable_prefix_tokens, task.input_tokens)
-                * cache_evidence["cache_hit_ratio"]
+                min(
+                    task.reusable_prefix_tokens,
+                    task.input_tokens,
+                    cache_evidence["mean_cache_hit_tokens"],
+                )
                 if task.cache_eligible
                 else 0
             )
