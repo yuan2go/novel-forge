@@ -4794,6 +4794,18 @@
         {
           "path": "src/novel_forge/modules/authority_handler_runtime/routing_feedback.py",
           "symbol": "domain_gate_outcomes"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_bootstrap.py",
+          "symbol": "benchmark_decision"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+          "symbol": "verify_routing_bootstrap_budget"
+        },
+        {
+          "path": "src/novel_forge/modules/authority_handler_runtime/routing_bootstrap.py",
+          "symbol": "freeze_planning_bootstrap_authorization"
         }
       ],
       "commands_operations": [
@@ -4921,6 +4933,10 @@
         {
           "path": "tests/unit/test_cost_aware_routing.py",
           "symbol": "test_failed_outputs_cannot_hide_behind_surviving_high_quality_scores"
+        },
+        {
+          "path": "tests/integration/test_planning_routing_bootstrap_postgres.py",
+          "symbol": "test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7967,7 +7983,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:f8be7359c0d17501e5e009641f5ab4c49c2d850f9d9d70e725458f5e27ea7e78"
+    "implementation_tree_sha": "sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

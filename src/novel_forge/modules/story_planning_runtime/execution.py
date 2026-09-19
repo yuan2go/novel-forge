@@ -119,6 +119,7 @@ from .domain import (
     CHAPTER_SCHEDULE_FIELDS,
     FrozenPlanningInput,
     STORY_PLANNING_MAX_ATTEMPTS,
+    STORY_PLANNING_OPERATION_DEFINITION_REF,
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     StoryPlanningGenerationCommand,
     build_planning_constraint_envelope,
@@ -155,6 +156,148 @@ _PLANNING_STAGES = frozenset(
 # the Effect from terminalizing while the Operation still has retry budget and
 # prevents nested retry amplification.
 PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS = STORY_PLANNING_MAX_ATTEMPTS
+PLANNING_ROUTING_LINEAGE_MAX_OPERATIONS = 8
+
+
+def require_candidate_repair_operation(
+    cursor: Any, *, candidate_asset_version_id: str, project_id: str,
+    book_id: str, generator_operation_name: str, logical_key: str,
+) -> str:
+    cursor.execute(
+        """SELECT generation.operation_id,candidate.content_hash,version.content_hash,version.content
+           FROM authority_story_planning_candidate candidate
+           JOIN authority_story_planning_generation generation USING(generation_id)
+           JOIN authority_asset_version version ON version.asset_version_id=candidate.candidate_asset_version_id
+           JOIN authority_asset asset ON asset.asset_id=version.asset_id
+           JOIN authority_operation operation ON operation.operation_id=generation.operation_id
+           WHERE candidate.candidate_asset_version_id=%s AND candidate.project_id=%s
+             AND generation.project_id=candidate.project_id AND generation.book_id=%s
+             AND candidate.book_id=generation.book_id AND generation.generator_operation_name=%s
+             AND generation.logical_key=%s AND asset.project_id=candidate.project_id
+             AND asset.asset_type='planning_generation_candidate'
+             AND operation.status IN ('WAITING_GATE','SUCCEEDED')
+             AND operation.project_id=generation.project_id
+             AND operation.command_payload #>> '{payload,book_id}'=generation.book_id
+             AND operation.definition_name='story_planning.generate'""",
+        [candidate_asset_version_id, project_id, book_id, generator_operation_name, logical_key],
+    )
+    row = cursor.fetchone()
+    content = dict(row[3]) if row and isinstance(row[3], Mapping) else {}
+    if (
+        not row or row[1] != row[2] or row[2] != canonical_hash(content)
+        or content.get("project_id") != project_id or content.get("book_id") != book_id
+        or content.get("logical_key") != logical_key
+        or content.get("generator_operation_name") != generator_operation_name
+        or (content.get("execution_evidence") or {}).get("operation_id") != row[0]
+    ):
+        raise KernelError(
+            "PLANNING_ROUTING_LINEAGE_INVALID",
+            "repair candidate must retain its exact materialized generation Operation and immutable content",
+        )
+    return str(row[0])
+
+
+def _planning_repair_routing_lineage(
+    database_url: str,
+    *,
+    project_id: str,
+    book_id: str,
+    generator_operation_name: str,
+    operation_id: str,
+    repair_of_operation_id: str,
+    repair_of_candidate_id: str = "",
+) -> tuple[str, ...]:
+    if not repair_of_operation_id and not repair_of_candidate_id:
+        return (operation_id,)
+    definition_name = STORY_PLANNING_OPERATION_DEFINITION_REF.split("@", 1)[0]
+    runtime = get_database_runtime(database_url)
+    lineage: list[str] = []
+    seen: set[str] = set()
+    current_id = operation_id
+    expected_logical_key = ""
+    expected_repair_number: int | None = None
+    with runtime.connection() as connection, connection.cursor() as cursor:
+        while True:
+            if current_id in seen:
+                raise KernelError(
+                    "PLANNING_ROUTING_LINEAGE_CYCLE",
+                    "Planning repair routing lineage contains a cycle",
+                )
+            if len(lineage) >= PLANNING_ROUTING_LINEAGE_MAX_OPERATIONS:
+                raise KernelError(
+                    "PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED",
+                    "Planning repair routing lineage exceeds its bounded depth",
+                )
+            seen.add(current_id)
+            cursor.execute(
+                """SELECT project_id,command_payload #>> '{payload,book_id}',definition_name,command_payload->'payload',
+                          causation_operation_id
+                   FROM authority_operation
+                   WHERE operation_id=%s AND project_id=%s""",
+                [current_id, project_id],
+            )
+            row = cursor.fetchone()
+            if row is None or not isinstance(row[3], Mapping):
+                raise KernelError(
+                    "PLANNING_ROUTING_LINEAGE_INVALID",
+                    "Planning repair routing lineage operation is unavailable",
+                )
+            payload = dict(row[3])
+            logical_key = str(payload.get("logical_key") or "")
+            try:
+                repair_number = int(payload.get("repair_number") or 0)
+            except (TypeError, ValueError) as exc:
+                raise KernelError(
+                    "PLANNING_ROUTING_LINEAGE_INVALID",
+                    "Planning repair routing lineage has invalid repair identity",
+                ) from exc
+            predecessor = str(payload.get("repair_of_operation_id") or "")
+            candidate_predecessor = str(payload.get("repair_of_candidate_id") or "")
+            if not lineage and (
+                predecessor != repair_of_operation_id
+                or candidate_predecessor != repair_of_candidate_id
+            ):
+                raise KernelError("PLANNING_ROUTING_LINEAGE_INVALID", "repair references differ from the frozen command")
+            if candidate_predecessor:
+                if predecessor:
+                    raise KernelError("PLANNING_ROUTING_LINEAGE_INVALID", "repair cannot mix raw-result and candidate predecessors")
+                predecessor = require_candidate_repair_operation(
+                    cursor, candidate_asset_version_id=candidate_predecessor,
+                    project_id=project_id, book_id=book_id,
+                    generator_operation_name=generator_operation_name, logical_key=logical_key,
+                )
+            allowed_causation = {predecessor}
+            if candidate_predecessor:
+                allowed_causation.update({"", str(payload.get("parent_agent_session_operation_id") or "")})
+            if (
+                str(row[0]) != project_id
+                or str(row[1]) != book_id
+                or str(row[2]) != definition_name
+                or str(payload.get("project_id") or "") != project_id
+                or str(payload.get("book_id") or "") != book_id
+                or str(payload.get("generator_operation_name") or "")
+                != generator_operation_name
+                or not logical_key
+                or (expected_logical_key and logical_key != expected_logical_key)
+                or (
+                    expected_repair_number is not None
+                    and repair_number != expected_repair_number - 1
+                )
+                or (predecessor and str(row[4] or "") not in allowed_causation)
+            ):
+                raise KernelError(
+                    "PLANNING_ROUTING_LINEAGE_INVALID",
+                    "Planning repair routing lineage crosses its frozen task scope",
+                )
+            if not lineage:
+                expected_logical_key = logical_key
+            lineage.append(current_id)
+            if not predecessor:
+                break
+            expected_repair_number = repair_number
+            current_id = predecessor
+    lineage.reverse()
+    return tuple(lineage)
 
 
 def _planning_narrative_intelligence_need(
@@ -3918,14 +4061,35 @@ class PostgresPlanningExecutionPreparer:
             )
             output_reserve = int(stable_request_payload["max_output_tokens"])
             if provider_router is not None:
+                routing_lineage = _planning_repair_routing_lineage(
+                    self.database_url,
+                    project_id=command.project_id,
+                    book_id=command.book_id,
+                    generator_operation_name=command.generator_operation_name,
+                    operation_id=operation_id,
+                    repair_of_operation_id=command.repair_of_operation_id,
+                    repair_of_candidate_id=command.repair_of_candidate_id,
+                )
                 planning_route, routing_decision = provider_router.select(
-                    planning_route, task_type=stage_name,
-                    project_id=command.project_id, work_id=command.book_id,
-                    operation_id=operation_id, attempt_id=attempt_id,
-                    stable_key=stable_key, input_tokens=len(prompt.encode()) + 512,
-                    output_tokens=output_reserve, trace_id=command.trace_id,
-                    correlation_id=command.correlation_id, cache_prefix=prompt.encode()[:prompt_evidence["reusable_prefix_bytes"]],
-                request_input=stable_request_payload["input"], input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest())
+                    planning_route,
+                    task_type=stage_name,
+                    project_id=command.project_id,
+                    work_id=command.book_id,
+                    operation_id=operation_id,
+                    attempt_id=attempt_id,
+                    stable_key=stable_key,
+                    input_tokens=len(prompt.encode()) + 512,
+                    output_tokens=output_reserve,
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                    cache_prefix=prompt.encode()[
+                        : prompt_evidence["reusable_prefix_bytes"]
+                    ],
+                    request_input=stable_request_payload["input"],
+                    input_hash="sha256:"
+                    + hashlib.sha256(prompt.encode()).hexdigest(),
+                    lineage_operation_ids=routing_lineage,
+                )
             route_identity = ":".join(
                 (
                     command.generator_operation_name,

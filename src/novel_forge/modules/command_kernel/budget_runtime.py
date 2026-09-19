@@ -105,6 +105,30 @@ def canonical_budget_policy(policy: Mapping[str, Any]) -> dict[str, Any]:
             raw["cost_limit_usd"] = _decimal_text(cost_limit)
             if "per_call_cost_limit_usd" in raw:
                 raw["per_call_cost_limit_usd"] = _decimal_text(per_call_cost)
+    if "account_entitlement_lane" in raw:
+        lane = raw["account_entitlement_lane"]
+        if (
+            execution_mode != "PROVIDER_ALLOWED"
+            or str(raw.get("accounting_basis") or "PRICED") != "PRICED"
+            or not isinstance(lane, Mapping)
+            or "account_entitlement_lane" in lane
+            or lane.get("accounting_basis") != "ACCOUNT_ENTITLEMENT"
+            or lane.get("execution_mode") != "PROVIDER_ALLOWED"
+            or lane.get("provider") != "codex-cli"
+            or lane.get("currency") != "UNKNOWN"
+            or not str(lane.get("model_id") or "").strip()
+            or not str(lane.get("authorization_version") or "").strip()
+        ):
+            raise KernelError("BUDGET_SCOPE_POLICY_INVALID", "mixed accounting requires an explicit versioned Codex entitlement lane")
+        lane = canonical_budget_policy(lane)["policy_snapshot"]
+        if (
+            int(lane["provider_call_limit"]) > int(raw["provider_call_limit"])
+            or int(lane["token_limit"]) > int(raw["token_limit"])
+            or int(lane.get("per_call_token_limit", lane["token_limit"]))
+                > int(raw.get("per_call_token_limit", raw["token_limit"]))
+        ):
+            raise KernelError("BUDGET_SCOPE_POLICY_INVALID", "entitlement lane exceeds its parent usage allowance")
+        raw["account_entitlement_lane"] = lane
     normalized = _canonical_value(raw)
     if not isinstance(normalized, dict):  # pragma: no cover - Mapping guarantees it
         raise AssertionError("canonical budget policy must be an object")
@@ -248,12 +272,14 @@ def resolve_provider_token_reservation_contract(
             currency=currency,
         )
         if binding is not None:
-            allowance = next_provider_budget_allowance(binding["policy_snapshot"])
-            policy = canonical_budget_policy(binding["policy_snapshot"])[
-                "policy_snapshot"
-            ]
+            policy = canonical_budget_policy(binding["policy_snapshot"])["policy_snapshot"]
+            if normalized_basis == "ACCOUNT_ENTITLEMENT" and policy.get("account_entitlement_lane"):
+                policy = dict(policy["account_entitlement_lane"])
+            allowance = next_provider_budget_allowance(policy)
             policy_basis = str(policy.get("accounting_basis") or "PRICED")
-            if policy_basis != normalized_basis:
+            if policy_basis != normalized_basis or (
+                normalized_basis == "PRICED" and currency.upper() != str(binding["currency"]).upper()
+            ):
                 raise KernelError(
                     "BUDGET_SCOPE_CONFLICT",
                     "Opening BudgetScope accounting basis differs from Provider runtime",
@@ -520,6 +546,8 @@ class BudgetScopeRequest:
             )
         policy = canonical_budget_policy(self.policy_snapshot)
         currency = self.currency.strip().upper()
+        if policy["policy_snapshot"].get("account_entitlement_lane") and currency != "USD":
+            raise KernelError("BUDGET_SCOPE_POLICY_INVALID", "mixed accounting keeps the priced parent in USD")
         budget_scope_id = self.budget_scope_id.strip() or deterministic_budget_scope_id(
             project_id=self.project_id,
             owner_kind=owner_kind,
@@ -930,7 +958,7 @@ def resolve_book_opening_budget_scope_in_uow(
         int(scope["revision"]) != scope_revision
         or str(scope["owner_kind"]) != "BOOK_OPENING"
         or str(scope["owner_id"]) != opening_run_id
-        or str(scope["currency"]).upper() != currency.strip().upper()
+        or not _scope_currency_authorized(scope, currency)
     ):
         raise KernelError(
             "BOOK_OPENING_BUDGET_SCOPE_DRIFT",
@@ -1322,6 +1350,11 @@ def assert_provider_execution_authorized(
 ) -> dict[str, Any]:
     """SECURITY: Hard-stop immediately before a Provider request can leave the process."""
     with AuthorityUnitOfWork(database_url) as uow:
+        from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_dispatch
+
+        verify_routing_bootstrap_dispatch(
+            uow.cursor, external_effect_id=external_effect_id, project_id=project_id,
+        )
         uow.cursor.execute(
             """
             SELECT effect.opening_run_id,effect.budget_scope_id,
@@ -1547,6 +1580,9 @@ def assert_provider_execution_authorized(
                 "BOOK_OPENING_PROVIDER_EXECUTION_NOT_AUTHORIZED",
                 "budget, reservation, replacement gate or Opening fence is stale",
             )
+        _enforce_scope_entitlement_lane(
+            uow, scope, _request_from_row(_reservation(uow, str(reservation_id), project_id, lock=True))
+        )
         return {
             "book_opening_bound": True,
             "execution_authorized": True,
@@ -1675,6 +1711,7 @@ def assess_budget_scope_in_uow(
     expected_revision: int | None = None,
     locked_scope: Mapping[str, Any] | None = None,
     use_policy_next_provider_allowance: bool = False,
+    requested_accounting_basis: str = "",
 ) -> dict[str, Any]:
     if requested_tokens < 0 or requested_calls < 0:
         raise KernelError(
@@ -1724,8 +1761,14 @@ def assess_budget_scope_in_uow(
         )
     policy = canonical_policy["policy_snapshot"]
     accounting_basis = str(policy.get("accounting_basis") or "PRICED").upper()
+    entitlement_lane = dict(policy.get("account_entitlement_lane") or {})
+    request_basis = requested_accounting_basis or accounting_basis
+    if request_basis != accounting_basis and not (
+        request_basis == "ACCOUNT_ENTITLEMENT" and entitlement_lane
+    ):
+        raise KernelError("BUDGET_ASSESSMENT_INVALID", "requested accounting lane is not authorized")
     amount: Decimal | None
-    if accounting_basis == "ACCOUNT_ENTITLEMENT":
+    if request_basis == "ACCOUNT_ENTITLEMENT":
         if requested_amount is not None:
             raise KernelError(
                 "BUDGET_ASSESSMENT_INVALID",
@@ -1768,7 +1811,7 @@ def assess_budget_scope_in_uow(
                    NULLIF(to_jsonb(reservation)->>'settled_cost_status',''),
                    CASE WHEN reservation.status='SETTLED' THEN 'KNOWN'
                         ELSE 'PENDING' END
-               )
+               ), reservation.evidence
         FROM authority_budget_reservation AS reservation
         WHERE budget_scope_id=%s AND project_id=%s
         ORDER BY reservation_id
@@ -1794,6 +1837,7 @@ def assess_budget_scope_in_uow(
         "accounting_basis",
         "estimated_cost_status",
         "settled_cost_status",
+        "evidence",
     )
     reservations = [
         dict(zip(reservation_columns, row, strict=True))
@@ -1957,15 +2001,12 @@ def assess_budget_scope_in_uow(
     evidence_links = [
         dict(zip(link_columns, row, strict=True)) for row in uow.cursor.fetchall()
     ]
-    provider_call_count = sum(
-        1
-        for reservation in reservations
-        if reservation["status"] in {"RESERVED", "HELD_UNKNOWN", "SETTLED"}
-        or (
-            reservation["status"] == "RELEASED"
-            and int(reservation["actual_tokens"]) > 0
-        )
+    uow.cursor.execute(
+        f"SELECT reservation_id FROM authority_budget_reservation WHERE reservation_id=ANY(%s::text[]) AND {provider_usage_accounted_sql()}",
+        [[str(item["reservation_id"]) for item in reservations]],
     )
+    accounted_reservations = {str(row[0]) for row in uow.cursor.fetchall()}
+    provider_call_count = len(accounted_reservations)
     committed_tokens = 0
     committed_amount = Decimal("0")
     status_counts: dict[str, int] = {}
@@ -1974,7 +2015,13 @@ def assess_budget_scope_in_uow(
         status = str(reservation["status"])
         reservation_basis = str(reservation.get("accounting_basis") or "PRICED").upper()
         if reservation_basis != accounting_basis:
-            reasons.append("reservation_accounting_basis_drift")
+            if not (
+                entitlement_lane and reservation_basis == "ACCOUNT_ENTITLEMENT"
+                and reservation["currency"] == "UNKNOWN"
+                and dict(reservation.get("evidence") or {}).get("budget_lane_policy_hash")
+                    == _canonical_hash(entitlement_lane)
+            ):
+                reasons.append("reservation_accounting_basis_drift")
         status_counts[status] = status_counts.get(status, 0) + 1
         if status == "SETTLED":
             committed_tokens += int(reservation["actual_tokens"])
@@ -1984,8 +2031,8 @@ def assess_budget_scope_in_uow(
             committed_tokens += int(reservation["estimated_tokens"])
             if reservation_basis == "PRICED":
                 committed_amount += Decimal(reservation["reserved_amount"])
-        elif status == "RELEASED" and int(reservation["actual_tokens"]) > 0:
-            committed_tokens += int(reservation["actual_tokens"])
+        elif status == "RELEASED" and str(reservation["reservation_id"]) in accounted_reservations:
+            committed_tokens += max(int(reservation["actual_tokens"]), int(reservation["estimated_tokens"]))
         if status == "HELD_UNKNOWN" or bool(reservation["budget_breach"]):
             reasons.append("budget_external_state_ambiguous")
         reservation_revision = reservation["budget_scope_revision"]
@@ -2098,18 +2145,30 @@ def assess_budget_scope_in_uow(
             if reasons
             else BudgetAssessmentOutcome.ELIGIBLE
         )
+    entitlement_reservations = [item for item in reservations
+        if item.get("accounting_basis") == "ACCOUNT_ENTITLEMENT"
+        and str(item["reservation_id"]) in accounted_reservations]
+    entitlement_tokens = sum(
+        int(item["actual_tokens"]) if item["status"] == "SETTLED"
+        else max(int(item["estimated_tokens"]), int(item["actual_tokens"]))
+        for item in entitlement_reservations
+    )
     usage = {
         "provider_call_count": provider_call_count,
         "committed_tokens": committed_tokens,
         "committed_amount": (
             None
-            if accounting_basis == "ACCOUNT_ENTITLEMENT"
+            if accounting_basis == "ACCOUNT_ENTITLEMENT" or entitlement_lane
             else _decimal_text(committed_amount)
         ),
         "cost_status": (
-            "UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"
+            "UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" or entitlement_lane else "KNOWN"
         ),
         "status_counts": status_counts,
+        **({"priced_committed_amount_usd": _decimal_text(committed_amount),
+            "account_entitlement_cost_status": "UNKNOWN",
+            "account_entitlement_call_count": len(entitlement_reservations),
+            "account_entitlement_tokens": entitlement_tokens} if entitlement_lane else {}),
     }
     headroom = {
         "provider_calls": call_headroom,
@@ -2118,6 +2177,16 @@ def assess_budget_scope_in_uow(
             _decimal_text(cost_headroom) if cost_headroom is not None else None
         ),
     }
+    if entitlement_lane:
+        headroom["account_entitlement"] = {
+            "provider_calls": max(0, int(entitlement_lane["provider_call_limit"]) - len(entitlement_reservations)),
+            "tokens": max(0, int(entitlement_lane["token_limit"]) - entitlement_tokens),
+            "cost_amount": None, "cost_status": "UNKNOWN",
+            "authorization_version": entitlement_lane["authorization_version"],
+            "policy_hash": _canonical_hash(entitlement_lane),
+        }
+        headroom["priced_cost_amount_usd"] = headroom["cost_amount"]
+        headroom["cost_amount"] = None
     snapshot = canonical_budget_snapshot(
         scope=scope,
         reservations=reservations,
@@ -2133,9 +2202,9 @@ def assess_budget_scope_in_uow(
             "requested_calls": requested_calls,
             "requested_tokens": requested_tokens,
             "requested_amount": _decimal_text(amount) if amount is not None else None,
-            "accounting_basis": accounting_basis,
+            "accounting_basis": request_basis,
             "cost_status": (
-                "UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"
+                "UNKNOWN" if request_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"
             ),
         },
     )
@@ -2568,6 +2637,75 @@ def _record_budget_scope(
     )
 
 
+def _scope_currency_authorized(scope: Mapping[str, Any], currency: str) -> bool:
+    return str(scope["currency"]).upper() == currency.strip().upper() or (
+        currency.strip().upper() == "UNKNOWN"
+        and bool(dict(scope.get("policy_snapshot") or {}).get("account_entitlement_lane"))
+    )
+
+
+def _enforce_scope_entitlement_lane(
+    uow: AuthorityUnitOfWork,
+    scope: Mapping[str, Any] | None,
+    request: "BudgetReservationRequest",
+    *,
+    tokens: int | None = None,
+    check_usage: bool = True,
+) -> dict[str, Any]:
+    if scope is None:
+        return {}
+    canonical = canonical_budget_policy(dict(scope["policy_snapshot"]))
+    if canonical["policy_hash"] != scope["policy_hash"]:
+        raise KernelError("BUDGET_SCOPE_POLICY_DRIFT", "budget scope policy hash differs")
+    lane = dict(canonical["policy_snapshot"].get("account_entitlement_lane") or {})
+    if not lane or request.accounting_basis != "ACCOUNT_ENTITLEMENT":
+        return {}
+    if (
+        request.provider != lane["provider"] or request.model_id != lane["model_id"]
+        or request.currency != lane["currency"]
+        or request.cost_authorization_ref != lane["authorization_ref"]
+    ):
+        raise KernelError("BUDGET_SCOPE_CONFLICT", "reservation differs from frozen entitlement lane")
+    uow.cursor.execute(
+        """SELECT request_payload #> '{_production_execution,capability_runtime,routing_decision,selected,candidate}'
+           FROM authority_external_effect WHERE external_effect_id=%s AND project_id=%s""",
+        [request.external_effect_id, request.project_id],
+    )
+    row = uow.cursor.fetchone()
+    candidate = dict(row[0] or {}) if row else {}
+    if (
+        candidate.get("provider") != lane["provider"]
+        or candidate.get("model") != lane["model_id"]
+        or candidate.get("authorization_ref") != lane["authorization_ref"]
+        or candidate.get("capability_version") != lane["authorization_version"]
+        or dict(candidate.get("pricing") or {}).get("version") != lane["authorization_version"]
+    ):
+        raise KernelError("BUDGET_SCOPE_CONFLICT", "selected route authorization version differs from frozen entitlement lane")
+    authorization = {"budget_lane_policy_hash": _canonical_hash(lane),
+                     "budget_lane_authorization_version": lane["authorization_version"]}
+    if not check_usage:
+        return authorization
+    uow.cursor.execute(
+        f"""SELECT count(*), COALESCE(sum(CASE WHEN status='SETTLED' THEN actual_tokens
+                     ELSE greatest(estimated_tokens,actual_tokens) END),0)
+            FROM authority_budget_reservation
+            WHERE budget_scope_id=%s AND accounting_basis='ACCOUNT_ENTITLEMENT'
+              AND NOT (project_id=%s AND stable_idempotency_key=%s)
+              AND {provider_usage_accounted_sql()}""",
+        [scope["budget_scope_id"], request.project_id, request.stable_idempotency_key],
+    )
+    calls, used_tokens = uow.cursor.fetchone()
+    requested_tokens = request.estimated_tokens if tokens is None else tokens
+    if int(calls) + 1 > int(lane["provider_call_limit"]):
+        raise KernelError("BUDGET_CALL_CAP_EXCEEDED", "Opening entitlement lane call quota exhausted")
+    if (
+        int(used_tokens) + requested_tokens > int(lane["token_limit"])
+        or requested_tokens > int(lane.get("per_call_token_limit", lane["token_limit"]))
+    ):
+        raise KernelError("BUDGET_TOKEN_CAP_EXCEEDED", "Opening entitlement lane token quota exhausted")
+    return authorization
+
+
 @dataclass(frozen=True, slots=True)
 class BudgetReservationRequest:
     operation_id: str
@@ -2667,17 +2805,6 @@ def reserve_provider_budget_in_uow(
         currency=request.currency,
     )
     if locked_budget_scope is not None:
-        scope_basis = str(
-            dict(locked_budget_scope.get("policy_snapshot") or {}).get(
-                "accounting_basis"
-            )
-            or "PRICED"
-        ).upper()
-        if scope_basis != accounting_basis:
-            raise KernelError(
-                "BUDGET_SCOPE_CONFLICT",
-                "reservation accounting basis differs from its BudgetScope",
-            )
         if request.estimated_tokens <= 0:
             raise KernelError(
                 "BOOK_OPENING_PROVIDER_TOKEN_CEILING_REQUIRED",
@@ -2705,7 +2832,7 @@ def reserve_provider_budget_in_uow(
             budget_scope_id=request.budget_scope_id,
             project_id=request.project_id,
         )
-        if str(locked_budget_scope["currency"]).upper() != request.currency.upper():
+        if not _scope_currency_authorized(locked_budget_scope, request.currency):
             raise KernelError(
                 "BUDGET_SCOPE_CONFLICT",
                 "budget reservation currency differs from its BudgetScope",
@@ -2721,8 +2848,12 @@ def reserve_provider_budget_in_uow(
         scope_policy = canonical_budget_policy(
             dict(locked_budget_scope.get("policy_snapshot") or {})
         )["policy_snapshot"]
+        if accounting_basis == "ACCOUNT_ENTITLEMENT" and scope_policy.get("account_entitlement_lane"):
+            scope_policy = dict(scope_policy["account_entitlement_lane"])
         scope_basis = str(scope_policy.get("accounting_basis") or "PRICED").upper()
-        if scope_basis != accounting_basis:
+        if scope_basis != accounting_basis or (
+            accounting_basis == "PRICED" and request.currency.upper() != str(locked_budget_scope["currency"]).upper()
+        ):
             raise KernelError(
                 "BUDGET_SCOPE_CONFLICT",
                 "reservation accounting basis differs from its BudgetScope",
@@ -2782,6 +2913,10 @@ def reserve_provider_budget_in_uow(
         )
     if locked_budget_scope is not None:
         revalidate_book_opening_budget_scope_in_uow(uow, locked_budget_scope)
+    from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_budget
+
+    verify_routing_bootstrap_budget(uow.cursor, request, amount, check_usage=False)
+    lane_evidence = _enforce_scope_entitlement_lane(uow, locked_budget_scope, request, check_usage=False)
     uow.cursor.execute(
         """
         SELECT reservation.reservation_id,reservation.operation_id,
@@ -2846,6 +2981,10 @@ def reserve_provider_budget_in_uow(
                 "budget stable key belongs to another request",
             )
         status = str(existing[7])
+        if lane_evidence and any(dict(existing[14] or {}).get(key) != value for key, value in lane_evidence.items()):
+            raise KernelError("BUDGET_SCOPE_CONFLICT", "replayed entitlement authorization differs from reservation")
+        if status == "RESERVED":
+            _enforce_scope_entitlement_lane(uow, locked_budget_scope, request)
         if status == "RESERVED" and locked_budget_scope is not None:
             _bind_budget_effect_in_uow(
                 uow,
@@ -2868,6 +3007,7 @@ def reserve_provider_budget_in_uow(
                 "UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"
             ),
         }
+    _enforce_scope_entitlement_lane(uow, locked_budget_scope, request)
     from novel_forge.modules.command_kernel.creative_budget_runtime import reserve_creative_budget_in_uow
     creative_budget = reserve_creative_budget_in_uow(uow, request)
     budget_scope_revision: int | None = None
@@ -2881,6 +3021,7 @@ def reserve_provider_budget_in_uow(
             requested_tokens=request.estimated_tokens,
             requested_calls=1,
             execution_mode="PROVIDER_ALLOWED",
+            requested_accounting_basis=accounting_basis,
             expected_revision=(
                 request.expected_budget_scope_revision
                 if request.expected_budget_scope_revision is not None
@@ -2929,6 +3070,7 @@ def reserve_provider_budget_in_uow(
                 "UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"
             ),
             "cost_authorization_ref": request.cost_authorization_ref,
+            **lane_evidence,
             "model_id": request.model_id,
             "work_id": request.work_id,
             "call_caps": call_caps,
@@ -3151,10 +3293,21 @@ def _enforce_routing_chain_budget(
             "ROUTING_BUDGET_CONTRACT_REQUIRED",
             "routed effect lacks frozen chain limits",
         )
+    lineage_operations = task.get("lineage_operation_ids", [request.operation_id])
+    if (
+        not isinstance(lineage_operations, list) or not lineage_operations
+        or any(not isinstance(value, str) or not value for value in lineage_operations)
+        or len(set(lineage_operations)) != len(lineage_operations)
+        or lineage_operations[-1] != request.operation_id
+    ):
+        raise KernelError("ROUTING_BUDGET_IDENTITY_CONFLICT", "routing lineage operation identities are invalid")
+    from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_budget
+
+    verify_routing_bootstrap_budget(cursor, request, amount, check_usage=check_attempts)
     candidate = (decision.get("selected") or {}).get("candidate") or {}
     price = candidate.get("pricing") or {}
     if (
-        decision.get("status") != "SELECTED"
+        decision.get("status") not in {"SELECTED", "BENCHMARK_SELECTED"}
         or task.get("project_id") != request.project_id
         or task.get("operation_id") != request.operation_id
         or task.get("work_id") != request.work_id
@@ -3231,11 +3384,11 @@ def _enforce_routing_chain_budget(
                   COALESCE(sum(CASE WHEN b.status='SETTLED' THEN b.actual_tokens ELSE greatest(b.actual_tokens,b.estimated_tokens) END),0)
            FROM (SELECT * FROM authority_budget_reservation WHERE {provider_usage_accounted_sql()}) b
            JOIN authority_external_effect e USING(external_effect_id)
-           WHERE b.project_id=%s AND b.operation_id=%s AND b.stable_idempotency_key<>%s
+           WHERE b.project_id=%s AND b.operation_id=ANY(%s::text[]) AND b.stable_idempotency_key<>%s
              AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,task,chain_id}}'=%s""",
         [
             request.project_id,
-            request.operation_id,
+            lineage_operations,
             request.stable_idempotency_key,
             chain_id,
         ],
@@ -3260,12 +3413,12 @@ def _enforce_routing_chain_budget(
                   bool_or(b.status IN ('RESERVED','HELD_UNKNOWN')),
                   bool_or(e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED'))
            FROM authority_budget_reservation b JOIN authority_external_effect e USING(external_effect_id)
-           WHERE b.project_id=%s AND b.operation_id=%s AND b.stable_idempotency_key<>%s
+           WHERE b.project_id=%s AND b.operation_id=ANY(%s::text[]) AND b.stable_idempotency_key<>%s
              AND b.status<>'REJECTED'
              AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}'=%s""",
         [
             request.project_id,
-            request.operation_id,
+            lineage_operations,
             request.stable_idempotency_key,
             chain_id,
         ],
@@ -3480,6 +3633,15 @@ def settle_provider_budget_in_uow(
             )
         amount = _amount(actual_amount)
         cost_status = "KNOWN"
+    from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_budget
+
+    verify_routing_bootstrap_budget(uow.cursor, _request_from_row(row), amount, check_usage=False)
+    lane_evidence = _enforce_scope_entitlement_lane(
+        uow, locked_scope, _request_from_row(row),
+        tokens=int(row["actual_tokens"]) if row["status"] == "SETTLED" else None,
+    )
+    if lane_evidence and any(dict(row.get("evidence") or {}).get(key) != value for key, value in lane_evidence.items()):
+        raise KernelError("BUDGET_SCOPE_CONFLICT", "settlement entitlement authorization differs from reservation")
     if row["status"] == "SETTLED":
         if row["settled_amount"] != amount or row["actual_tokens"] != actual_tokens:
             raise KernelError("BUDGET_SETTLEMENT_CONFLICT", "settlement replay differs")
@@ -3523,6 +3685,16 @@ def settle_provider_budget_in_uow(
         and bool(request.token_caps)
     ):
         try:
+            _enforce_scope_entitlement_lane(uow, locked_scope, request, tokens=actual_tokens)
+            if locked_scope is not None:
+                assessment = assess_budget_scope_in_uow(
+                    uow, budget_scope_id=str(locked_scope["budget_scope_id"]),
+                    project_id=project_id, requested_calls=0,
+                    requested_tokens=actual_tokens - int(row["estimated_tokens"]),
+                    requested_accounting_basis=accounting_basis, locked_scope=locked_scope,
+                )
+                if assessment["outcome"] != BudgetAssessmentOutcome.ELIGIBLE:
+                    raise KernelError("BUDGET_TOKEN_CAP_EXCEEDED", "Opening scope cannot cover actual entitlement usage")
             _enforce_routing_chain_budget(
                 uow.cursor, replace(request, estimated_tokens=actual_tokens), amount,
                 check_attempts=False,

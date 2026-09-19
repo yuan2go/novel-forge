@@ -36,6 +36,7 @@ from novel_forge.modules.story_planning_runtime import (
 from novel_forge.modules.story_planning_runtime.execution import (
     PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS,
     PostgresPlanningExecutionPreparer,
+    _planning_repair_routing_lineage,
     _recent_activated_repetition_keys,
     _realization_reference_contract,
     planning_fixture_response as _planning_fixture_response,
@@ -49,10 +50,191 @@ from novel_forge.modules.story_planning_runtime.application import (
 )
 from novel_forge.modules.story_planning_runtime import (
     application as planning_application,
+    execution as planning_execution,
 )
 
 
 HASH = "sha256:" + "a" * 64
+
+
+def _routing_lineage_runtime(rows):
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def execute(self, _query, parameters):
+            self.operation_id = parameters[0]
+
+        def fetchone(self):
+            return rows.get(self.operation_id)
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def cursor(self):
+            return Cursor()
+
+    return SimpleNamespace(connection=lambda: Connection())
+
+
+def _routing_lineage_row(predecessor, repair_number, **payload):
+    command = {
+        "project_id": "project-1",
+        "book_id": "book-1",
+        "generator_operation_name": "world.design.generate",
+        "logical_key": "world:1",
+        "repair_of_operation_id": predecessor,
+        "repair_number": repair_number,
+        **payload,
+    }
+    return (
+        "project-1",
+        "book-1",
+        "story_planning.generate",
+        command,
+        predecessor or None,
+    )
+
+
+def test_planning_repair_routing_lineage_is_rooted_in_durable_operations(monkeypatch):
+    rows = {
+        "repair-2": _routing_lineage_row("repair-1", 2),
+        "repair-1": _routing_lineage_row("root", 1),
+        "root": _routing_lineage_row("", 0),
+    }
+    monkeypatch.setattr(
+        "novel_forge.modules.story_planning_runtime.execution.get_database_runtime",
+        lambda _database_url: _routing_lineage_runtime(rows),
+    )
+    assert _planning_repair_routing_lineage(
+        "postgresql://unused",
+        project_id="project-1",
+        book_id="book-1",
+        generator_operation_name="world.design.generate",
+        operation_id="repair-2",
+        repair_of_operation_id="repair-1",
+    ) == ("root", "repair-1", "repair-2")
+
+
+@pytest.mark.parametrize("legacy_causation", [False, True])
+def test_candidate_repair_routing_lineage_uses_immutable_generation_source(monkeypatch, legacy_causation):
+    content = {
+        "project_id": "project-1", "book_id": "book-1", "logical_key": "world:1",
+        "generator_operation_name": "world.design.generate",
+        "execution_evidence": {"operation_id": "root"},
+    }
+    digest = canonical_hash(content)
+    successor = _routing_lineage_row("", 1, repair_of_candidate_id="candidate:root")
+    rows = {
+        "repair": (*successor[:4], None if legacy_causation else "root"),
+        "root": _routing_lineage_row("", 0),
+        "candidate:root": ("root", digest, digest, content),
+    }
+    monkeypatch.setattr(planning_execution, "get_database_runtime", lambda _: _routing_lineage_runtime(rows))
+    assert _planning_repair_routing_lineage(
+        "unused", project_id="project-1", book_id="book-1",
+        generator_operation_name="world.design.generate", operation_id="repair",
+        repair_of_operation_id="", repair_of_candidate_id="candidate:root",
+    ) == ("root", "repair")
+
+
+@pytest.mark.parametrize("defect", ["content_hash", "source_operation", "book_scope"])
+def test_candidate_repair_routing_lineage_rejects_unbound_candidate(monkeypatch, defect):
+    content = {
+        "project_id": "project-1", "book_id": "foreign" if defect == "book_scope" else "book-1",
+        "logical_key": "world:1", "generator_operation_name": "world.design.generate",
+        "execution_evidence": {"operation_id": "other" if defect == "source_operation" else "root"},
+    }
+    digest = canonical_hash(content)
+    rows = {
+        "repair": _routing_lineage_row("", 1, repair_of_candidate_id="candidate:root"),
+        "candidate:root": ("root", HASH if defect == "content_hash" else digest, digest, content),
+        "root": _routing_lineage_row("", 0),
+    }
+    monkeypatch.setattr(planning_execution, "get_database_runtime", lambda _: _routing_lineage_runtime(rows))
+    with pytest.raises(KernelError, match="PLANNING_ROUTING_LINEAGE_INVALID"):
+        _planning_repair_routing_lineage(
+            "unused", project_id="project-1", book_id="book-1",
+            generator_operation_name="world.design.generate", operation_id="repair",
+            repair_of_operation_id="", repair_of_candidate_id="candidate:root",
+        )
+
+
+@pytest.mark.parametrize(
+    "replacement",
+    [
+        {"book_id": "book-other"},
+        {"generator_operation_name": "character.cast.generate"},
+        {"logical_key": "world:other"},
+    ],
+)
+def test_planning_repair_routing_lineage_rejects_scope_drift(monkeypatch, replacement):
+    rows = {
+        "repair": _routing_lineage_row("root", 1),
+        "root": _routing_lineage_row("", 0, **replacement),
+    }
+    monkeypatch.setattr(
+        "novel_forge.modules.story_planning_runtime.execution.get_database_runtime",
+        lambda _database_url: _routing_lineage_runtime(rows),
+    )
+    with pytest.raises(KernelError, match="PLANNING_ROUTING_LINEAGE_INVALID"):
+        _planning_repair_routing_lineage(
+            "postgresql://unused",
+            project_id="project-1",
+            book_id="book-1",
+            generator_operation_name="world.design.generate",
+            operation_id="repair",
+            repair_of_operation_id="root",
+        )
+
+
+def test_planning_repair_routing_lineage_rejects_cycle(monkeypatch):
+    rows = {
+        "repair": _routing_lineage_row("root", 2),
+        "root": _routing_lineage_row("repair", 1),
+    }
+    monkeypatch.setattr(
+        "novel_forge.modules.story_planning_runtime.execution.get_database_runtime",
+        lambda _database_url: _routing_lineage_runtime(rows),
+    )
+    with pytest.raises(KernelError, match="PLANNING_ROUTING_LINEAGE_CYCLE"):
+        _planning_repair_routing_lineage(
+            "postgresql://unused",
+            project_id="project-1",
+            book_id="book-1",
+            generator_operation_name="world.design.generate",
+            operation_id="repair",
+            repair_of_operation_id="root",
+        )
+
+
+def test_planning_repair_routing_lineage_has_a_bounded_depth(monkeypatch):
+    rows = {
+        f"repair-{number}": _routing_lineage_row(
+            f"repair-{number - 1}" if number else "", number
+        )
+        for number in range(9)
+    }
+    monkeypatch.setattr(
+        "novel_forge.modules.story_planning_runtime.execution.get_database_runtime",
+        lambda _database_url: _routing_lineage_runtime(rows),
+    )
+    with pytest.raises(KernelError, match="PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED"):
+        _planning_repair_routing_lineage(
+            "postgresql://unused",
+            project_id="project-1",
+            book_id="book-1",
+            generator_operation_name="world.design.generate",
+            operation_id="repair-8",
+            repair_of_operation_id="repair-7",
+        )
 
 
 @pytest.mark.parametrize("removed", ["chapter_contract_schema_version", "narrative_architecture_version"])

@@ -893,14 +893,14 @@ def _budget_usage(
     policy = dict(budget.get("policy_snapshot") or {})
     deadline = budget.get("deadline_at")
     accounting_basis = str(policy.get("accounting_basis") or "PRICED").upper()
-    cost_observable = accounting_basis != "ACCOUNT_ENTITLEMENT"
+    cost_observable = accounting_basis != "ACCOUNT_ENTITLEMENT" and not policy.get("account_entitlement_lane")
     cost = (
         Decimal(str(budget.get("accounted_cost_usd") or "0"))
-        if cost_observable
+        if accounting_basis != "ACCOUNT_ENTITLEMENT"
         else None
     )
     settled_cost = (
-        Decimal(str(budget.get("settled_cost_usd") or "0")) if cost_observable else None
+        Decimal(str(budget.get("settled_cost_usd") or "0")) if accounting_basis != "ACCOUNT_ENTITLEMENT" else None
     )
     contract_state = str(opening.get("budget_contract_state") or "UNBOUND")
     expected_scope_id = str(opening.get("budget_scope_id") or "")
@@ -917,7 +917,7 @@ def _budget_usage(
     call_limit = int(policy.get("provider_call_limit") or 0)
     token_limit = int(policy.get("token_limit") or 0)
     cost_limit = (
-        Decimal(str(policy.get("cost_limit_usd") or "0")) if cost_observable else None
+        Decimal(str(policy.get("cost_limit_usd") or "0")) if accounting_basis != "ACCOUNT_ENTITLEMENT" else None
     )
     committed_calls = int(budget.get("committed_call_count") or 0)
     accounted_tokens = int(budget.get("accounted_tokens") or 0)
@@ -973,13 +973,17 @@ def _budget_usage(
             "limit": token_limit,
         },
         "cost_usd": {
-            "used": _decimal_text(cost) if cost is not None else None,
+            "used": _decimal_text(cost) if cost_observable and cost is not None else None,
             "settled": (
-                _decimal_text(settled_cost) if settled_cost is not None else None
+                _decimal_text(settled_cost) if cost_observable and settled_cost is not None else None
             ),
-            "limit": _decimal_text(cost_limit) if cost_limit is not None else None,
+            "limit": _decimal_text(cost_limit) if cost_observable and cost_limit is not None else None,
             "status": "KNOWN" if cost_observable else "UNKNOWN",
             "accounting_basis": accounting_basis,
+            **({"priced_lane_used": _decimal_text(Decimal(str(budget.get("accounted_cost_usd") or "0"))),
+                "priced_lane_limit": str(policy["cost_limit_usd"]),
+                "account_entitlement_cost_status": "UNKNOWN"}
+               if policy.get("account_entitlement_lane") else {}),
         },
         "reservation_count": int(budget.get("reservation_count") or 0),
         "budget_breach_count": int(budget.get("budget_breach_count") or 0),

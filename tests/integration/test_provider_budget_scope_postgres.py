@@ -54,6 +54,133 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
+    def test_priced_opening_has_no_implicit_account_entitlement_lane(self) -> None:
+        fixture = self._opening_scope()
+        scope = self._live_scope(fixture)
+        effect = plan_external_effect(DATABASE_URL,
+            EffectCommandContext(fixture["operation_id"], fixture["project_id"], "test", "test", "test"),
+            effect_type="model.invoke", provider="production_execution_gateway",
+            capability="model.fixture", stable_idempotency_key=identifier("unapproved-entitlement"),
+            request_payload={"fixture": True}, max_attempts=1, reversible=False)
+        with self.assertRaisesRegex(KernelError, "BOOK_OPENING_BUDGET_SCOPE_DRIFT"):
+            reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(
+                fixture["operation_id"], effect["external_effect_id"], fixture["project_id"],
+                identifier("budget"), "codex-cli", "UNKNOWN", None, 100,
+                budget_scope_id=scope["budget_scope_id"], accounting_basis="ACCOUNT_ENTITLEMENT",
+                cost_authorization_ref="configured-but-not-authorized-for-opening"))
+
+    def test_mixed_opening_lane_preserves_unknown_cost_and_serializes_entitlement_quota(self) -> None:
+        from dataclasses import replace
+        from tests.integration.test_provider_routing_postgres import frozen_budget_decision
+
+        fixture = self._opening_scope()
+        auth = identifier("opening-entitlement")
+        lane = {
+            "execution_mode": "PROVIDER_ALLOWED", "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "provider": "codex-cli", "model_id": "gpt-5.6-sol", "currency": "UNKNOWN",
+            "authorization_ref": auth, "authorization_version": "codex-config:v1",
+            "cost_observability": "UNKNOWN", "provider_call_limit": 1,
+            "token_limit": 2_000, "per_call_token_limit": 1_500,
+        }
+        values = self._request_values(fixture)
+        values["policy_snapshot"] = {
+            "execution_mode": "PROVIDER_ALLOWED", "provider_call_limit": 4,
+            "token_limit": 5_000, "per_call_token_limit": 2_000,
+            "cost_limit_usd": "2", "per_call_cost_limit_usd": "1",
+            "account_entitlement_lane": lane,
+        }
+        scope = self._live_scope(fixture, request=BudgetScopeRequest(**values))
+
+        def request_for(provider: str, *, version: str = "codex-config:v1", new_operation: bool = False) -> BudgetReservationRequest:
+            operation_id = fixture["operation_id"]
+            if new_operation:
+                operation_id = identifier("parallel-opening-call")
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute("SELECT command_payload FROM authority_operation WHERE operation_id=%s", [fixture["operation_id"]])
+                    command = cursor.fetchone()[0]
+                    insert_operation(cursor, operation_id=operation_id,
+                        definition_name=fixture["definition_name"], project_id=fixture["project_id"],
+                        workspace_id=fixture["workspace_id"], status="EXECUTING",
+                        root_operation_id=fixture["root_operation_id"],
+                        parent_operation_id=fixture["root_operation_id"],
+                        causation_operation_id=fixture["root_operation_id"], command_payload=command)
+            decision = frozen_budget_decision(
+                (fixture["project_id"], operation_id), provider=provider,
+                chain=identifier("opening-chain"), quota=5, tokens=5_000,
+            )
+            decision["task"]["work_id"] = fixture["book_id"]
+            candidate = decision["selected"]["candidate"]
+            candidate.update(authorization_ref=auth, capability_version=version)
+            candidate["pricing"]["version"] = version
+            effect = plan_external_effect(
+                DATABASE_URL,
+                EffectCommandContext(operation_id, fixture["project_id"], "test", "test", "test"),
+                effect_type="model.invoke", provider="production_execution_gateway",
+                capability="model.fixture", stable_idempotency_key=identifier("mixed-opening-effect"),
+                request_payload={"max_output_tokens": 40, "_production_execution": {
+                    "book_id": fixture["book_id"], "capability_runtime": {"routing_decision": decision},
+                }}, max_attempts=2, reversible=False, model_id=candidate["model"],
+            )
+            entitlement = provider == "codex-cli"
+            return BudgetReservationRequest(
+                operation_id=operation_id, external_effect_id=effect["external_effect_id"],
+                project_id=fixture["project_id"], stable_idempotency_key=identifier("mixed-opening-budget"),
+                provider=provider, currency="UNKNOWN" if entitlement else "USD",
+                estimated_amount=None if entitlement else ".5", estimated_tokens=1_000,
+                accounting_basis="ACCOUNT_ENTITLEMENT" if entitlement else "PRICED",
+                cost_authorization_ref=auth if entitlement else "", model_id=candidate["model"],
+                work_id=fixture["book_id"], budget_scope_id=scope["budget_scope_id"],
+                expected_budget_scope_revision=scope["revision"],
+            )
+
+        priced = request_for("deepseek")
+        with self.assertRaisesRegex(KernelError, "BUDGET_SCOPE_CONFLICT"):
+            reserve_provider_budget(DATABASE_URL, replace(priced, currency="UNKNOWN"))
+        priced_reservation = reserve_provider_budget(DATABASE_URL, priced)
+        settle_provider_budget(DATABASE_URL, reservation_id=priced_reservation["reservation_id"],
+            project_id=fixture["project_id"], actual_amount=".25", actual_tokens=100, evidence={"fixture": True})
+        with self.assertRaisesRegex(KernelError, "BUDGET_SCOPE_CONFLICT"):
+            reserve_provider_budget(DATABASE_URL, request_for("codex-cli", version="codex-config:v2"))
+        invalid_auth = replace(request_for("codex-cli"), cost_authorization_ref="unapproved-account")
+        with self.assertRaisesRegex(KernelError, "BUDGET_SCOPE_CONFLICT"):
+            reserve_provider_budget(DATABASE_URL, invalid_auth)
+        requests = [request_for("codex-cli"), request_for("codex-cli", new_operation=True)]
+
+        def reserve(request):
+            try:
+                return reserve_provider_budget(DATABASE_URL, request)
+            except KernelError as exc:
+                return {"status": exc.code}
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(reserve, requests))
+        self.assertEqual(sorted(result["status"] for result in results), ["BUDGET_CALL_CAP_EXCEEDED", "RESERVED"])
+        index = next(index for index, result in enumerate(results) if result["status"] == "RESERVED")
+        request, reserved = requests[index], results[index]
+        self.assertTrue(reserve_provider_budget(DATABASE_URL, request)["replayed"])
+        for repeated in (False, True):
+            settled = settle_provider_budget(DATABASE_URL, reservation_id=reserved["reservation_id"],
+                project_id=fixture["project_id"], actual_amount=None, actual_tokens=120,
+                evidence={"fixture": True})
+            self.assertEqual((settled["status"], settled["replayed"], settled["cost_status"]), ("SETTLED", repeated, "UNKNOWN"))
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT currency, settled_amount, evidence->>'budget_lane_authorization_version' FROM authority_budget_reservation WHERE reservation_id=%s", [reserved["reservation_id"]])
+            self.assertEqual(cursor.fetchone(), ("UNKNOWN", None, "codex-config:v1"))
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            assessment = assess_budget_scope_in_uow(uow, budget_scope_id=scope["budget_scope_id"],
+                project_id=fixture["project_id"], requested_calls=0, requested_amount="0")
+        self.assertEqual(assessment["outcome"], BudgetAssessmentOutcome.ELIGIBLE)
+        self.assertEqual(assessment["usage"]["provider_call_count"], 2)
+        self.assertEqual(assessment["usage"]["committed_tokens"], 220)
+        self.assertIsNone(assessment["usage"]["committed_amount"])
+        self.assertEqual(assessment["usage"]["priced_committed_amount_usd"], "0.25")
+        self.assertEqual(assessment["usage"]["cost_status"], "UNKNOWN")
+        self.assertEqual(assessment["usage"]["account_entitlement_call_count"], 1)
+        self.assertEqual(assessment["usage"]["account_entitlement_tokens"], 120)
+        self.assertIsNone(assessment["headroom"]["cost_amount"])
+        self.assertEqual(assessment["headroom"]["priced_cost_amount_usd"], "1.75")
+        self.assertEqual(assessment["headroom"]["account_entitlement"]["provider_calls"], 0)
+
     def test_scope_creation_is_semantically_idempotent_and_policy_drift_fails(
         self,
     ) -> None:

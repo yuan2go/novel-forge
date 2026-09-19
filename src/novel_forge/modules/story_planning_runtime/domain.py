@@ -270,6 +270,7 @@ class StoryPlanningGenerationCommand:
     repair_reason: str = ""
     repair_number: int = 0
     auto_approve_low_risk: bool = False
+    routing_bootstrap_authorization_id: str = ""
     parent_agent_session_operation_id: str = ""
     arc_working_set: Mapping[str, Any] | None = None
     narrative_search_id: str = ""
@@ -286,6 +287,15 @@ class StoryPlanningGenerationCommand:
     execution_contract_version: str = "1.16.0"
 
     def __post_init__(self) -> None:
+        if not isinstance(self.routing_bootstrap_authorization_id, str) or (
+            self.routing_bootstrap_authorization_id
+            and (
+                not self.routing_bootstrap_authorization_id.strip()
+                or self.auto_approve_low_risk
+                or self.execution_contract_version != "1.16.0"
+            )
+        ):
+            raise ValueError("Planning bootstrap requires its current candidate-only contract")
         if self.execution_contract_version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0"} or (
             self.execution_contract_version == "1.11.0"
             and self.world_preparation_request

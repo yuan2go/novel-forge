@@ -302,6 +302,14 @@ class PostgresHierarchicalPlanningAuthority:
             [project_id, asset_version_id],
         )
         row = uow.cursor.fetchone()
+        if row is not None and (
+            dict(row[3]).get("routing_eligibility") == "BENCHMARK_ONLY"
+            or dict(row[3]).get("routing_bootstrap_authorization")
+        ):
+            raise KernelError(
+                "PLANNING_BENCHMARK_ONLY",
+                "bootstrap candidate evidence cannot acquire an active plan binding",
+            )
         if (
             row is None
             or str(row[1]) != "ACTIVE"
@@ -753,7 +761,9 @@ class PostgresHierarchicalPlanningAuthority:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT version.asset_version_id, version.content_hash
+                SELECT version.asset_version_id, version.content_hash,
+                       version.content->>'routing_eligibility'='BENCHMARK_ONLY'
+                         OR version.content ? 'routing_bootstrap_authorization'
                 FROM authority_asset_version AS version
                 JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
                 WHERE asset.project_id=%s
@@ -761,7 +771,13 @@ class PostgresHierarchicalPlanningAuthority:
                 """,
                 [project_id, list(asset_version_ids)],
             )
-            found = {str(row[0]): str(row[1]) for row in uow.cursor.fetchall()}
+            rows = uow.cursor.fetchall()
+            if any(row[2] for row in rows):
+                raise KernelError(
+                    "PLANNING_BENCHMARK_ONLY",
+                    "bootstrap candidates cannot become active planning inputs",
+                )
+            found = {str(row[0]): str(row[1]) for row in rows}
         missing = sorted(set(asset_version_ids) - set(found))
         if missing:
             raise KernelError(

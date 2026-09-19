@@ -267,6 +267,8 @@ class BenchmarkObservation:
     cache_prefix_hash: str = ""
     priced_cost: str | None = None
     served_model_identity_hash: str = ""
+    evidence_class: str = "PRODUCTION_OUTCOME"
+    production_eligible: bool = True
 
     def __post_init__(self) -> None:
         for value in (self.quality_score, self.judge_score):
@@ -277,6 +279,16 @@ class BenchmarkObservation:
             or datetime.fromisoformat(self.occurred_at).tzinfo is None
         ):
             raise ValueError("BENCHMARK_EVIDENCE_IDENTITY_REQUIRED")
+        if self.evidence_class not in {
+            "PRODUCTION_OUTCOME",
+            "BENCHMARK_CHALLENGER",
+            "UNCLASSIFIED_REAL_PROVIDER",
+        }:
+            raise ValueError("BENCHMARK_EVIDENCE_CLASS_INVALID")
+        if self.production_eligible != (
+            self.evidence_class == "PRODUCTION_OUTCOME"
+        ):
+            raise ValueError("BENCHMARK_PRODUCTION_ELIGIBILITY_INVALID")
         if (
             min(
                 self.input_tokens,
@@ -348,17 +360,53 @@ def benchmark_snapshot(
             else 0.0
         )
     decisions = [row for row in rows if row.accepted is not None]
+    production_rows = [row for row in rows if row.production_eligible]
+    production_decisions = [
+        row for row in production_rows if row.accepted is not None
+    ]
+    benchmark_rows = [
+        row for row in rows if row.evidence_class == "BENCHMARK_CHALLENGER"
+    ]
+    benchmark_decisions = [
+        row for row in benchmark_rows if row.accepted is not None
+    ]
     schema_yield = mean([int(row.schema_success) for row in rows]) if rows else 0.0
-    acceptance = (
+    qualification_acceptance = (
         mean([int(bool(row.accepted)) for row in decisions]) if decisions else None
     )
+    production_acceptance = (
+        mean([int(bool(row.accepted)) for row in production_decisions])
+        if production_decisions
+        else None
+    )
+    scoring_acceptance = (
+        production_acceptance
+        if production_acceptance is not None
+        else qualification_acceptance
+    )
     conditional_quality = quality
-    quality = min(quality, schema_yield, acceptance if acceptance is not None else 1.0)
+    quality = min(
+        quality,
+        schema_yield,
+        scoring_acceptance if scoring_acceptance is not None else 1.0,
+    )
     latencies = sorted(
         row.latency_seconds for row in rows if row.latency_seconds is not None
     )
     result: dict[str, Any] = {
         "sample_count": len(rows),
+        "evidence_class_counts": {
+            evidence_class: sum(
+                row.evidence_class == evidence_class for row in rows
+            )
+            for evidence_class in (
+                "PRODUCTION_OUTCOME",
+                "BENCHMARK_CHALLENGER",
+                "UNCLASSIFIED_REAL_PROVIDER",
+            )
+        },
+        "production_eligible_sample_count": len(production_rows),
+        "benchmark_challenger_sample_count": len(benchmark_rows),
         "served_model_identity_hashes": sorted(
             {
                 row.served_model_identity_hash
@@ -383,8 +431,17 @@ def benchmark_snapshot(
         )
         if any(row.judge_score is not None for row in rows)
         else None,
-        "acceptance_rate": acceptance,
-        "acceptance_sample_count": len(decisions),
+        "qualification_acceptance_rate": qualification_acceptance,
+        "acceptance_rate": production_acceptance,
+        "acceptance_sample_count": len(production_decisions),
+        "production_acceptance_rate": production_acceptance,
+        "production_acceptance_sample_count": len(production_decisions),
+        "benchmark_acceptance_rate": mean(
+            [int(bool(row.accepted)) for row in benchmark_decisions]
+        )
+        if benchmark_decisions
+        else None,
+        "benchmark_acceptance_sample_count": len(benchmark_decisions),
         "schema_success": schema_yield,
         **{
             name: mean(values) if values else None
@@ -478,6 +535,7 @@ class RoutingTask:
     stable_key: str = ""
     declared_requirements: Mapping[str, Any] = field(default_factory=dict)
     policy_snapshot: Mapping[str, Any] = field(default_factory=dict)
+    lineage_operation_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not all(
@@ -501,6 +559,12 @@ class RoutingTask:
             or self.reusable_prefix_tokens > self.input_tokens
         ):
             raise ValueError("ROUTING_TASK_SIZE_INVALID")
+        if self.lineage_operation_ids and (
+            self.lineage_operation_ids[-1] != self.operation_id
+            or len(set(self.lineage_operation_ids)) != len(self.lineage_operation_ids)
+            or any(not item for item in self.lineage_operation_ids)
+        ):
+            raise ValueError("ROUTING_TASK_LINEAGE_INVALID")
         for value in (
             self.remaining_money,
             self.latency_cost_per_second,
@@ -545,6 +609,7 @@ class CostAwareRouter:
                 "CANON_CONFLICT",
                 "SCHEMA_REJECTION",
                 "MALFORMED_STRUCTURED_OUTPUT",
+                "AMBIGUOUS_JUDGE",
             }
             for item in failures
         )
@@ -607,6 +672,7 @@ class CostAwareRouter:
                     "OUTPUT_CAPACITY_EXCEEDED",
                     "SCHEMA_REJECTION",
                     "MALFORMED_STRUCTURED_OUTPUT",
+                    "AMBIGUOUS_JUDGE",
                     "PROVIDER_UNAVAILABLE",
                 }
                 for item in previous
@@ -677,7 +743,7 @@ class CostAwareRouter:
                 or latency > task.latency_sla_seconds
             ):
                 reasons.append("LATENCY_SLA_UNPROVEN")
-            acceptance = evidence["acceptance_rate"]
+            acceptance = evidence["qualification_acceptance_rate"]
             failure_load = (1 - evidence["schema_success"]) + sum(
                 evidence[key] if evidence[key] is not None else 0.5
                 for key in (

@@ -19,7 +19,10 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     plan_external_effect,
 )
 from novel_forge.modules.production_execution.cost_routing import (
+    BenchmarkObservation,
     CostAwareRouter,
+    ModelCandidate,
+    PricingSnapshot,
     RoutingTask,
 )
 from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
@@ -94,7 +97,13 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
     )
     for i in range(10):
         request = budget_request(
-            scope, decision={"selected": {"candidate": asdict(candidate)}}
+            scope,
+            decision={
+                "status": "BENCHMARK_SELECTED",
+                "mode": "BENCHMARK_CHALLENGER",
+                "production_eligible": False,
+                "selected": {"candidate": asdict(candidate)},
+            },
         )
         evidence = {
             "provider_id": candidate.provider,
@@ -172,6 +181,11 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
     )
     assert len(observations) == 10
     assert all(row.accepted is None for row in observations)
+    assert all(
+        row.evidence_class == "BENCHMARK_CHALLENGER"
+        and row.production_eligible is False
+        for row in observations
+    )
     decision = CostAwareRouter().explain(
         task, [candidate], {candidate.candidate_id: observations}
     )
@@ -186,6 +200,9 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
     assert replay.content == decision.to_dict()
     assert saved["asset_version_id"] == replay.asset_version_id
     assert replay.content["selected"]["benchmark"]["cache_hit_ratio"] == 0.8
+    assert replay.content["selected"]["benchmark"]["benchmark_challenger_sample_count"] == 10
+    assert replay.content["selected"]["benchmark"]["production_eligible_sample_count"] == 0
+    assert replay.content["selected"]["benchmark"]["production_acceptance_rate"] is None
 
 
 def test_cold_start_persists_block_and_never_dispatches(scope):
@@ -307,6 +324,86 @@ def test_rate_limit_on_another_chain_blocks_only_the_affected_model_until_retry_
         assert cursor.fetchone()[0] == 0
 
 
+def test_registry_retry_projection_spans_the_frozen_operation_lineage(scope):
+    # WHY: Real-shaped flags are synthetic test inputs; the test proves lineage SQL only.
+    project, root_operation = scope
+    repair_operation = identifier("retry-lineage-repair")
+    definition = identifier("retry-lineage-definition")
+    with transaction() as connection, connection.cursor() as cursor:
+        insert_definition(cursor, definition)
+        insert_operation(
+            cursor,
+            operation_id=repair_operation,
+            definition_name=definition,
+            project_id=project,
+            status="EXECUTING",
+            causation_operation_id=root_operation,
+        )
+    candidate = deepseek_candidates(available=True)[0]
+    chain_id = identifier("retry-lineage-chain")
+    for operation_id, lineage in (
+        (root_operation, [root_operation]),
+        (repair_operation, [root_operation, repair_operation]),
+    ):
+        decision = {
+            "status": "SELECTED",
+            "task": {
+                "chain_id": chain_id,
+                "lineage_operation_ids": lineage,
+            },
+            "selected": {"candidate": asdict(candidate)},
+        }
+        effect = feedback_effect(
+            (project, operation_id),
+            {
+                "stage": "draft",
+                "_production_execution": {
+                    "capability_runtime": {"routing_decision": decision}
+                },
+            },
+        )
+        write_asset(
+            (project, operation_id),
+            "model_call_log",
+            {
+                "stage": "draft",
+                "provider_evidence": {
+                    "provider_id": candidate.provider,
+                    "model_id": candidate.model,
+                    "real_model_call": True,
+                    "usage": {
+                        "input_tokens": 10,
+                        "output_tokens": 5,
+                        "prompt_cache_hit_tokens": 0,
+                    },
+                    "production_execution": {
+                        "execution_request": {
+                            "external_effect_id": effect,
+                            "stage": "draft",
+                        },
+                        "route_snapshot": {
+                            "reasoning_effort": candidate.reasoning
+                        },
+                        "execution_result": {"outcome": "SUCCEEDED"},
+                        "process_evidence": {
+                            "latency_seconds": 1,
+                            "served_model_identity_hash": "sha256:lineage-cohort",
+                        },
+                    },
+                },
+            },
+        )
+
+    observations = PostgresRoutingRegistry(DATABASE_URL).observations(
+        project_id=project,
+        task_type="draft",
+        candidate=candidate,
+    )
+
+    assert len(observations) == 2
+    assert sorted(row.retried for row in observations) == [False, True]
+
+
 def test_unknown_outcome_dominates_cause_and_successful_agent_turns_do_not_join_other_chains(
     scope,
 ):
@@ -376,6 +473,179 @@ def test_unknown_outcome_dominates_cause_and_successful_agent_turns_do_not_join_
     )
     assert len(history) == 1
     assert history[0]["failure_class"] == "UNKNOWN_EXTERNAL_OUTCOME"
+
+
+def test_planning_repair_lineage_accumulates_semantic_failures_for_bounded_escalation(
+    scope,
+):
+    from datetime import datetime, timezone
+
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+
+    project, root_operation = scope
+    repair_operation = identifier("planning-repair-operation")
+    definition = identifier("planning-repair-definition")
+    with transaction() as connection, connection.cursor() as cursor:
+        insert_definition(cursor, definition)
+        insert_operation(
+            cursor,
+            operation_id=repair_operation,
+            definition_name=definition,
+            project_id=project,
+            status="EXECUTING",
+        )
+    chain_id = snapshot_hash(f"{root_operation}:model.world:planning-pep-v2")
+    for operation_id, failure in (
+        (root_operation, "SCHEMA_REJECTION"),
+        (repair_operation, "CANON_CONFLICT"),
+    ):
+        effect_id = identifier("planning-lineage-effect")
+        decision = {
+            "task": {"chain_id": chain_id},
+            "selected": {
+                "candidate": {
+                    "candidate_id": "deepseek:deepseek-flash:low",
+                    "escalation_only": False,
+                }
+            },
+        }
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO authority_external_effect(
+                    external_effect_id,operation_id,project_id,effect_type,
+                    stable_idempotency_key,status,request_hash,request_payload
+                ) VALUES(%s,%s,%s,'model.invoke',%s,'SUCCEEDED',%s,%s)""",
+                [
+                    effect_id,
+                    operation_id,
+                    project,
+                    effect_id,
+                    effect_id,
+                    Jsonb(
+                        {
+                            "stage": "world.design.generate",
+                            "_production_execution": {
+                                "capability_runtime": {"routing_decision": decision}
+                            },
+                        }
+                    ),
+                ],
+            )
+            cursor.execute(
+                """INSERT INTO authority_external_effect_dispatch(
+                    dispatch_id,external_effect_id,generation,status,payload_hash,evidence
+                ) VALUES(%s,%s,1,'SUCCEEDED',%s,%s)""",
+                [
+                    identifier("planning-lineage-dispatch"),
+                    effect_id,
+                    effect_id,
+                    Jsonb(
+                        {
+                            "production_execution": {
+                                "process_evidence": {"failure_class": failure}
+                            }
+                        }
+                    ),
+                ],
+            )
+    registry = PostgresRoutingRegistry(DATABASE_URL)
+    assert len(
+        registry.history(
+            project_id=project,
+            operation_id=repair_operation,
+            task_type="world.design.generate",
+            chain_id=chain_id,
+        )
+    ) == 1
+    history = registry.history(
+        project_id=project,
+        operation_ids=(root_operation, repair_operation),
+        task_type="world.design.generate",
+        chain_id=chain_id,
+    )
+    assert [item["failure_class"] for item in history] == [
+        "SCHEMA_REJECTION",
+        "CANON_CONFLICT",
+    ]
+
+    flash = deepseek_candidates(available=True)[0]
+    codex = ModelCandidate(
+        candidate_id="codex-cli:gpt-5.6-sol:high",
+        provider="codex-cli",
+        model="gpt-5.6-sol",
+        reasoning="high",
+        tier="escalation",
+        capabilities=("structured_output", "text"),
+        context_limit=100_000,
+        output_limit=20_000,
+        pricing=PricingSnapshot(
+            version="codex-entitlement:test",
+            effective_from="2026-01-01T00:00:00+00:00",
+            effective_until="2027-01-01T00:00:00+00:00",
+            input_miss_per_million="0",
+            input_hit_per_million="0",
+            output_per_million="0",
+            currency="UNKNOWN",
+            source="authorization:test",
+            accounting_basis="ACCOUNT_ENTITLEMENT",
+        ),
+        capability_version="codex:test",
+        model_revision="codex:test",
+        escalation_only=True,
+        quota_remaining=1,
+        authorization_ref="authorization:test",
+    )
+    now = datetime.now(timezone.utc)
+    samples = tuple(
+        BenchmarkObservation(
+            evidence_ref=f"real:{candidate.candidate_id}:{number}",
+            occurred_at=now.isoformat(),
+            quality_score=0.99,
+            accepted=True,
+            schema_success=True,
+            canon_conflict=False,
+            retried=False,
+            repaired=False,
+            escalated=candidate.escalation_only,
+            latency_seconds=1,
+            input_tokens=100,
+            output_tokens=20,
+            cache_hit_tokens=0,
+            actual_cost=None,
+            domain_gate_accepted=True,
+        )
+        for candidate in (flash, codex)
+        for number in range(100)
+    )
+    observations = {
+        candidate.candidate_id: tuple(
+            row
+            for row in samples
+            if row.evidence_ref.startswith(f"real:{candidate.candidate_id}:")
+        )
+        for candidate in (flash, codex)
+    }
+    task = RoutingTask(
+        "world.design.generate",
+        project,
+        "book:test",
+        repair_operation,
+        "attempt:test",
+        100,
+        100,
+        1000,
+        "1",
+        history=history,
+        chain_id=chain_id,
+        lineage_operation_ids=(root_operation, repair_operation),
+    )
+    routed = CostAwareRouter().explain(task, (flash, codex), observations, now=now).to_dict()
+    assert routed["status"] == "SELECTED"
+    assert routed["selected"]["candidate"]["candidate_id"] == codex.candidate_id
+    assert routed["task"]["lineage_operation_ids"] == [
+        root_operation,
+        repair_operation,
+    ]
 
 
 @pytest.mark.parametrize(
@@ -941,7 +1211,15 @@ def feedback_effect(scope, payload=None):
     return effect
 
 
-def fixture_planning_feedback(scope, defect="", *, accepted=True):
+def fixture_planning_feedback(
+    scope,
+    defect="",
+    *,
+    accepted=True,
+    insufficient=False,
+    generation_real_provider=False,
+    generation_request_payload=None,
+):
     # WHY: Synthetic SQL lineage validates projection boundaries; these rows prove no real Provider capability.
     from novel_forge.modules.production_execution.cost_routing import snapshot_hash
     from novel_forge.modules.story_design_authority.qualification import (
@@ -955,7 +1233,7 @@ def fixture_planning_feedback(scope, defect="", *, accepted=True):
     seed_authority_project_book(project_id=project, book_id=book)
     operation = feedback_operation(scope, status="EXECUTING", book_id=book)
     scope = project, operation
-    effect = feedback_effect(scope)
+    effect = feedback_effect(scope, generation_request_payload)
     candidate = write_asset(
         scope,
         "planning_generation_candidate",
@@ -963,9 +1241,30 @@ def fixture_planning_feedback(scope, defect="", *, accepted=True):
             "execution_evidence": {
                 "external_receipt_ref": effect,
                 "operation_id": operation,
+                "real_provider_proven": generation_real_provider,
+                "fixture_protocol_only": defect == "generation_fixture",
             }
         },
     )
+    if generation_real_provider:
+        write_asset(
+            scope,
+            "model_call_log",
+            {
+                "stage": "chapter_plan.generate",
+                "provider_evidence": {
+                    "real_model_call": True,
+                    "fixture_protocol_only": defect == "generation_fixture",
+                    "production_execution": {
+                        "execution_request": {
+                            "external_effect_id": effect,
+                            "operation_id": operation,
+                            "project_id": project,
+                        }
+                    },
+                },
+            },
+        )
     evaluator_operation = feedback_operation(scope, status="EXECUTING")
     evaluator_scope = project, evaluator_operation
     evaluator_effect = feedback_effect(evaluator_scope)
@@ -975,7 +1274,11 @@ def fixture_planning_feedback(scope, defect="", *, accepted=True):
     )
     generator = "chapter_plan.generate"
     evaluation = scripted_qualification(generator)
-    if not accepted:
+    if insufficient:
+        evaluation["evaluations"][0]["criteria"][0].update(
+            verdict="INSUFFICIENT", repair_directive="More evidence is required."
+        )
+    elif not accepted:
         evaluation["evaluations"][0]["criteria"][0].update(
             verdict="FAIL", repair_directive="Fixture repair required."
         )
@@ -1128,6 +1431,50 @@ def fixture_planning_feedback(scope, defect="", *, accepted=True):
     return effect
 
 
+def planning_validation_failure(scope, effect, *, validation_kind):
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """SELECT version.asset_version_id,generation.operation_id
+               FROM authority_asset_version version
+               JOIN authority_asset asset ON asset.asset_id=version.asset_id
+               JOIN authority_story_planning_generation generation
+                 ON generation.candidate_asset_version_id=version.asset_version_id
+                AND generation.project_id=asset.project_id
+               WHERE asset.project_id=%s
+                 AND version.content #>> '{execution_evidence,external_receipt_ref}'=%s""",
+            [scope[0], effect],
+        )
+        candidate, operation = cursor.fetchone()
+        report = {
+            "status": "FAIL",
+            "validation_kind": validation_kind,
+            "error_code": "PLANNING_CONTRACT_INVALID"
+            if validation_kind == "STRUCTURAL"
+            else "NARRATIVE_SEMANTIC_QUALIFICATION_FAILED",
+            "message": "Fixture Authority rejection.",
+            "candidate_asset_version_id": candidate,
+        }
+        report_hash = snapshot_hash(report)
+        cursor.execute(
+            """INSERT INTO authority_story_planning_validation_report(
+                   validation_report_id,project_id,candidate_asset_version_id,
+                   generation_operation_id,validation_kind,status,report,report_hash
+               ) VALUES(%s,%s,%s,%s,%s,'FAIL',%s,%s)""",
+            [
+                report_hash,
+                scope[0],
+                candidate,
+                operation,
+                validation_kind,
+                Jsonb(report),
+                report_hash,
+            ],
+        )
+    return operation, report_hash
+
+
 @pytest.mark.parametrize(
     "defect", ["", "generation", "incomplete", "fixture", "hash", "partial"]
 )
@@ -1165,6 +1512,120 @@ def test_planning_feedback_retains_failed_fixture_domain_review(scope):
             ]["accepted"]
             is False
         )
+
+
+def test_routing_history_uses_independent_planning_qualification_failure(scope):
+    from novel_forge.modules.authority_handler_runtime.routing_feedback import (
+        domain_gate_outcomes,
+    )
+
+    chain_id = "sha256:" + "c" * 64
+    effect = fixture_planning_feedback(
+        scope,
+        accepted=False,
+        generation_request_payload={
+            "stage": "chapter_plan.generate",
+            "_production_execution": {
+                "capability_runtime": {
+                    "routing_decision": {
+                        "task": {"chain_id": chain_id},
+                        "selected": {
+                            "candidate": {
+                                "candidate_id": "deepseek:deepseek-flash:low",
+                                "escalation_only": False,
+                            }
+                        },
+                    }
+                }
+            },
+        },
+    )
+    registry = PostgresRoutingRegistry(
+        DATABASE_URL, outcome_projection=domain_gate_outcomes
+    )
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT operation_id FROM authority_external_effect WHERE external_effect_id=%s",
+            [effect],
+        )
+        generation_operation = cursor.fetchone()[0]
+
+    history = registry.history(
+        project_id=scope[0],
+        operation_id=generation_operation,
+        task_type="chapter_plan.generate",
+        chain_id=chain_id,
+    )
+
+    assert history == (
+        {
+            "external_effect_id": effect,
+            "candidate_id": "deepseek:deepseek-flash:low",
+            "failure_class": "QUALITY_FAILURE",
+            "status": "SUCCEEDED",
+            "escalation": False,
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    "validation_kind,insufficient,expected_failure,expected_accepted",
+    [
+        ("STRUCTURAL", False, "SCHEMA_REJECTION", False),
+        ("SEMANTIC", True, "AMBIGUOUS_JUDGE", None),
+    ],
+)
+def test_routing_history_uses_real_planning_authority_repair_failure(
+    scope, validation_kind, insufficient, expected_failure, expected_accepted
+):
+    from novel_forge.modules.authority_handler_runtime.routing_feedback import (
+        domain_gate_outcomes,
+    )
+
+    chain_id = "sha256:" + "d" * 64
+    effect = fixture_planning_feedback(
+        scope,
+        insufficient=insufficient,
+        generation_real_provider=True,
+        generation_request_payload={
+            "stage": "chapter_plan.generate",
+            "_production_execution": {
+                "capability_runtime": {
+                    "routing_decision": {
+                        "task": {"chain_id": chain_id},
+                        "selected": {
+                            "candidate": {
+                                "candidate_id": "deepseek:deepseek-flash:low",
+                                "escalation_only": False,
+                            }
+                        },
+                    }
+                }
+            },
+        },
+    )
+    operation, report_hash = planning_validation_failure(
+        scope, effect, validation_kind=validation_kind
+    )
+    registry = PostgresRoutingRegistry(
+        DATABASE_URL, outcome_projection=domain_gate_outcomes
+    )
+
+    with transaction() as connection, connection.cursor() as cursor:
+        projected = domain_gate_outcomes(
+            cursor, project_id=scope[0], effect_ids=[effect]
+        )
+    assert projected[effect]["accepted"] is expected_accepted
+    assert projected[effect]["failure_class"] == expected_failure
+    assert "planning-validation:" + report_hash in projected[effect]["evidence_refs"]
+
+    history = registry.history(
+        project_id=scope[0],
+        operation_id=operation,
+        task_type="chapter_plan.generate",
+        chain_id=chain_id,
+    )
+    assert history[0]["failure_class"] == expected_failure
 
 
 def fixture_source_feedback(scope, *, decision="ACCEPT_IN_SCOPE", defect=""):
@@ -1300,3 +1761,26 @@ def test_source_feedback_projects_target_acceptance_not_reviewer_quality(
     else:
         assert result[effect]["accepted"] is accepted
         assert result[effect]["metric"] == "DOMAIN_GATE_ACCEPTANCE.v1"
+
+
+@pytest.mark.parametrize("limits,error", [
+    ({"money": ".01"}, "BUDGET_CAP_EXCEEDED"),
+    ({"tokens": 150}, "BUDGET_TOKEN_CAP_EXCEEDED"),
+    ({"attempts": 1}, "ROUTING_CHAIN_ATTEMPTS_EXHAUSTED"),
+])
+def test_repair_successor_cannot_reset_frozen_lineage_budget(scope, limits, error):
+    from novel_forge.modules.command_kernel.budget_runtime import settle_provider_budget
+
+    first = budget_request(scope, decision=frozen_budget_decision(scope, **limits))
+    reserved = reserve_provider_budget(DATABASE_URL, first)
+    settle_provider_budget(DATABASE_URL, reservation_id=reserved["reservation_id"],
+        project_id=scope[0], actual_amount=".006", actual_tokens=100, evidence={"fixture": True})
+    operation, definition = identifier("repair-successor"), identifier("repair-definition")
+    with transaction() as connection, connection.cursor() as cursor:
+        insert_definition(cursor, definition)
+        insert_operation(cursor, operation_id=operation, definition_name=definition,
+                         project_id=scope[0], status="EXECUTING", causation_operation_id=scope[1])
+    decision = frozen_budget_decision((scope[0], operation), **limits)
+    decision["task"]["lineage_operation_ids"] = [scope[1], operation]
+    successor = budget_request((scope[0], operation), decision=decision)
+    assert reserve_outcome(successor) == error
