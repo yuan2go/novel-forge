@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `67718454528f5d9f06d6ab05287a9d573e876fe1`
+Reality baseline: `c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4`
 Baseline implementation identity:
-`sha256:f8be7359c0d17501e5e009641f5ab4c49c2d850f9d9d70e725458f5e27ea7e78`
+`sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "67718454528f5d9f06d6ab05287a9d573e876fe1",
-    "implementation_tree_sha": "sha256:f8be7359c0d17501e5e009641f5ab4c49c2d850f9d9d70e725458f5e27ea7e78"
+    "sha": "c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4",
+    "implementation_tree_sha": "sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -110,7 +110,7 @@ Baseline implementation identity:
 }
 -->
 
-Implementation delta review at `1511047d71888e62961b8a75f276bdd1ae166ef8` (2026-09-14; code-agent lifecycle review): The v3 production initializer now calls the existing Project Authority to create an independent secondary Workspace with Project CAS. It preserves the primary Workspace and its Book while retaining the shared lifetime budget. This adds no Source processing, twenty-work consumption, comparison-arm execution or receipt-interruption evidence for this proposal. G3 and G4 remain outstanding; this review adds no independent editorial or production qualification.
+Current scope review (2026-09-19): Provider routing now carries repair Operation lineage, separates benchmark challengers from production outcomes, and requires bounded bootstrap authorization before validation calls. Shared priced/account-entitlement lanes retain finite call/token accounting and unknown entitlement monetary cost. These changes do not execute the twenty-work analysis or four-arm creative experiment: G3/G4 remain outstanding. No real-Provider, independent editorial or production evidence is added by this document review.
 
 Prior implementation delta review at `b10a4a8c5cf6410ba1557ad850a90d12a632d9fe` (2026-09-13; code-agent review, not human qualification): The single-Book policy uses the same cumulative ledger for separate Source, design, early/late chapter and repair scopes. Author-guided Context compilation now keeps scoped fragment semantics and frozen provenance; it does not consume classical-source knowledge or establish any of the proposed four-arm outcomes. G3 and G4 remain outstanding. The relevant checks are native author Formation wiring and single-Book budget isolation; these are scripted engineering evidence, not real Provider or independent editorial evidence.
 
