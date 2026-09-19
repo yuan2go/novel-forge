@@ -21,8 +21,8 @@ WP02 实施从再次 fetch 的 `origin/main` `6c3de26f8c6ae2ac8cd5c0b3062da3ff9c
   "reviewed_on": "2026-09-20",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "c65398ebc036fc98701de93a382e3b06f5a6edc9",
-    "implementation_tree_sha": "sha256:f140b3940a5045b6ab89497ab42bb57f24ff63a65bd72624778e89985f3fe439"
+    "sha": "96c482d12ed2e4e6b6e207372e63f4e76595ad6a",
+    "implementation_tree_sha": "sha256:6e2a6693fc0f5274bc3eb54ae836475c687576c5fff36c379fe55e605793ff84"
   },
   "scope": [
     "src/novel_forge/modules",
@@ -367,4 +367,4 @@ Non-goals：全书无人值守重写；修改接纳历史；新增 Canon/Review/
 
 聚焦证据位于 `tests/unit/test_cross_chapter_prose_review.py` 和 `tests/integration/test_cross_chapter_prose_review_postgres.py`。后者经过真实 PostgreSQL Book/Chapter 调度、Capability Pack 激活、Provider 请求物化/预算 admission、Review→Revision→ReReview→Candidate Selection→Canon→Book Acceptance，传输响应为 scripted。故障场景在 receipt 已成功而业务报告未提交时中断并重建运行对象，复用同一 Effect/request/receipt、一次 dispatch/settlement；这是故障注入恢复证据，不冒称实际操作系统进程崩溃或真实模型质量。
 
-代码与 Prompt 接线改变后，仓库要求 clean committed exact-SHA `make pr-governance PR_BASE_SHA=6c3de26f8c6ae2ac8cd5c0b3062da3ff9cc1d389`，包含完整 P0。实际 gate 结果与最终 SHA 由 PR 记录，避免文档自引用 SHA。跨章能力复用现有 schema；包内附带的 Opening DELETE guard 前向修复需要 fresh/upgrade 与终态/continuation 回归。工程验证不证明六种诊断的真实语义准确率，也不证明小说质量已经提高。
+代码与 Prompt 接线改变后，仓库要求 clean committed exact-SHA `make pr-governance PR_BASE_SHA=5e47f269bc71f06e48ffda31338dce4012720b4c`，包含完整 P0。实际 gate 结果与最终 SHA 由 PR 记录，避免文档自引用 SHA。跨章能力复用现有 schema；包内附带的 Opening DELETE guard 前向修复需要 fresh/upgrade 与终态/continuation 回归。工程验证不证明六种诊断的真实语义准确率，也不证明小说质量已经提高。
