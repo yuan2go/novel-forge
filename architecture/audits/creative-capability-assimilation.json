@@ -11071,7 +11071,12 @@
       "implementation_priority": "P0",
       "wp02_plus_destination": "WP02; P2 / WP06",
       "acceptance_evidence_required": "Contradiction/repetition diagnosis cites two actual passages; summary-only input cannot claim prose coverage; reviewer independence recorded.",
-      "comparison_class": "MISSING_SPECIFIC_MECHANISM"
+      "comparison_class": "MISSING_SPECIFIC_MECHANISM",
+      "implementation_followup": {
+        "ref": "native_extensions.WP02",
+        "historical_comparison_preserved": true,
+        "current_disposition": "Native cross-chapter repair consumer implemented; real prose benefit remains unproven. Other WP destinations in this row remain unchanged."
+      }
     },
     {
       "id": "M09",
@@ -11390,7 +11395,12 @@
       "implementation_priority": "P0",
       "wp02_plus_destination": "WP02",
       "acceptance_evidence_required": "Read actual adjacent prose, validate both source spans; repair only current unaccepted candidate; blind human comparison and negative controls.",
-      "comparison_class": "MISSING_SPECIFIC_MECHANISM"
+      "comparison_class": "MISSING_SPECIFIC_MECHANISM",
+      "implementation_followup": {
+        "ref": "native_extensions.WP02",
+        "historical_comparison_preserved": true,
+        "current_disposition": "Native cross-chapter repair consumer implemented; real prose benefit remains unproven. Other WP destinations in this row remain unchanged."
+      }
     },
     {
       "id": "M15",
@@ -11610,7 +11620,12 @@
       "implementation_priority": "P1",
       "wp02_plus_destination": "WP02 and WP03",
       "acceptance_evidence_required": "Detect redundant retelling while preserving intentional motif/recap; current whole-chapter voice and POV retained.",
-      "comparison_class": "NATIVE_INSUFFICIENT"
+      "comparison_class": "NATIVE_INSUFFICIENT",
+      "implementation_followup": {
+        "ref": "native_extensions.WP02",
+        "historical_comparison_preserved": true,
+        "current_disposition": "Native cross-chapter repair consumer implemented; real prose benefit remains unproven. Other WP destinations in this row remain unchanged."
+      }
     },
     {
       "id": "M19",
@@ -12270,8 +12285,135 @@
       "REJECT_IMPLEMENTATION"
     ],
     "required_repository_count": 17,
-    "reference_join": "matrix.external_repository+exact_upstream_sha → repositories; matrix.native_chain_ids → native_chains; all local refs pinned to baseline",
+    "reference_join": "matrix.external_repository+exact_upstream_sha → repositories; matrix.native_chain_ids → native_chains; all local refs pinned to baseline; native_extensions bind later native implementation SHAs separately and do not revise the WP01 audit baseline",
     "runtime_consumer": "NONE; audit is linked only from its proposal; not a runtime manifest or qualification report",
     "audit_field_validation": "Validate field completeness, 17 unique upstream identities, all decision/owner/consumer joins, reviewed-file and license hashes, native reference existence/symbols and exact Git identities; this is audit integrity, not runtime or prose qualification."
+  },
+  "native_extensions": {
+    "WP02": {
+      "baseline_sha": "6c3de26f8c6ae2ac8cd5c0b3062da3ff9cc1d389",
+      "implementation_sha": "54aac08570589f1cfd326e7b1c08ffe4a23bd3bf",
+      "implementation_tree_sha": "sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6",
+      "evidence_state": "EXECUTABLE",
+      "proof_ceiling": "SCRIPTED_PROVIDER_POSTGRESQL_PRODUCTION_WIRING_ONLY",
+      "creative_validation_status": "READY_FOR_AUTHORIZATION",
+      "native_owners": [
+        "Book Authority",
+        "Chapter Authority",
+        "Review / Revision domain",
+        "Context Builder",
+        "Candidate Selection",
+        "Command Kernel / Production Execution"
+      ],
+      "production_chain": "Book accepted frontier under owning UoW -> frozen chapter request/preparation_report -> Review task/context and Capability Pack output contract -> existing Provider routing/admission/ExternalEffect/receipt -> paired ReviewIssue -> current candidate located Revision -> same-window explicit ReReview -> compare_candidates -> existing Quality/Canon support/grounding -> Book Acceptance",
+      "activation": {
+        "location": "frozen production_profile_version content.cross_chapter_review_policy",
+        "version": "accepted-prose-neighbours.v1",
+        "source_token_budget": "required positive bounded integer",
+        "maximum_previous_chapters_default": 2,
+        "constraint_class": "CONFIGURABLE_POLICY",
+        "legacy_contracts": "No opt-in means unchanged single-chapter contracts, including retry/recovery."
+      },
+      "contracts": [
+        "accepted-prose-snapshot.v1",
+        "cross-chapter-review-window.v1",
+        "cross-chapter-targeted-repair.v1",
+        "schema:chapter-provider-output:{stage}:cross-chapter-v1"
+      ],
+      "coverage": {
+        "states": [
+          "FULL",
+          "EXCERPT",
+          "NOT_INCLUDED"
+        ],
+        "policy": "whole-paragraph-ending.v1",
+        "selection": "Full prose when conservative UTF-8-byte screen fits, otherwise complete two ending paragraphs; immediate previous ending must fit. Excluded ranges never imply no issue.",
+        "provider_budget": "Complete rendered request is accounted by existing Provider admission; source screening does not replace token admission.",
+        "limitations": "No semantic entity selector or proof all causal dependencies outside included ranges are covered."
+      },
+      "data_impact": "Existing Book chapter request JSON, Chapter frozen preparation_report, AssetVersion and ExternalEffect; no new table, migration, Authority, scheduler or ledger.",
+      "migration_head": "20260916_0136_provider_routing_policy",
+      "diagnosis": "Six cross-chapter categories, five judgment kinds, exact target/source identities and Unicode quotes. Stable same-category identities and explicit repair lineage. No inferred hard constraints; historical-only editorial findings remain HOLD.",
+      "repair": "Only located edits inside current diagnosed spans; exact output reconstruction, explicit resolution for every prior issue and nine preservation dimensions. Original candidate retained on unresolved blocking issues or preservation regression.",
+      "recovery": "Post-receipt/pre-domain-commit fault injection and application reconstruction reuse exact request/window/effect/receipt with one dispatch and settlement. Stale accepted frontier fails closed. Existing Kernel UNKNOWN reconciliation remains unchanged.",
+      "observability": "Existing Chapter workspace projection exposes window/coverage/paired issues/edits/resolutions/preservation/selection, alongside existing provider/admission/budget/effect/receipt evidence.",
+      "evidence_files": [
+        {
+          "path": "src/novel_forge/modules/book_authority/prose_sources.py",
+          "sha256": "a6a12dc06647954b26cb8dada19c7691d003b56c65957413e7916f93e3d29cfc"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "sha256": "eff8242ad11aa4e844c61e04c1309c65501954d217f4dfb7181a3c8446443ba2"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/review_window.py",
+          "sha256": "c78ce3bf5afbf84aadf6971369de25745f2ae0e35160513011543d4311c1010e"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+          "sha256": "f7e9f889a9c275fbd745204101fb93858c214a947fc12b1135ef7265ecd19454"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/provider_views.py",
+          "sha256": "4a2dddd5efae919861e72e14138afcf2ea4252f943863377d7a6d50147665fc0"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+          "sha256": "473b02aa8be0a885cfd3f4503eb9617e4faf48ff133a9b1d88afd548e813253e"
+        },
+        {
+          "path": "src/novel_forge/modules/review/prose_window.py",
+          "sha256": "c1cec62978e6374ff152cf20d5f8561c7dd2f038b46d525ddbac372f6b1ad1b1"
+        },
+        {
+          "path": "src/novel_forge/modules/review/cross_chapter.py",
+          "sha256": "7e3d53ee1be119161c117cc3de8e1834d892feb416fd1d4cb74ce7f8393ac4e6"
+        },
+        {
+          "path": "src/novel_forge/modules/review/domain.py",
+          "sha256": "71c3cd6e68474940229bfa0cd29da610594b7fd091d5886211638fa60f8dc207"
+        },
+        {
+          "path": "src/novel_forge/modules/revision/domain.py",
+          "sha256": "f32d627e772d3b1bc833bfba5b9ef85c11808e8c8df83f2263ec9a1e6e5179e1"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+          "sha256": "6d886a61630ba4c22df9f60e06c96b1b7ac2b83aa19f7c59c6910763132ab4f6"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/queries.py",
+          "sha256": "73afe1330e4b4931d1107b57d75856d34eaa3dfb9ce5caa0fcc71a1e256f6b47"
+        },
+        {
+          "path": "tests/unit/test_cross_chapter_prose_review.py",
+          "sha256": "e3a78aa9a2dc8d6f758561636eff3b22dbcc03e726175063e0989f3bdf33925a"
+        },
+        {
+          "path": "tests/integration/test_cross_chapter_prose_review_postgres.py",
+          "sha256": "e340dc4c0c033b142e3ca9ea7facd54ac569a57b6590b2b39314bc183eac0569"
+        }
+      ],
+      "focused_validation": {
+        "unit_contract_and_candidate_selection": "PASS",
+        "postgresql_vertical_acceptance": "PASS",
+        "postgresql_receipt_commit_loss_recovery": "PASS",
+        "postgresql_context_overflow_no_effect": "PASS"
+      },
+      "exact_sha_governance": "Required by docs/development.md; final commit and actual gate result are reported in PR, not inferred from focused tests.",
+      "real_provider": "NOT_RUN",
+      "human_editorial": "NOT_RUN",
+      "long_form": "NOT_RUN",
+      "creative_quality_proven": false,
+      "production_proven": false,
+      "remaining_gaps": [
+        "Authorized bounded real-Provider A/B on six original Chinese action/relationship tasks, including negative controls and all failures.",
+        "Independent human editorial comparison; long-form benefit is not established by six tasks.",
+        "Historical-only editorial findings need an existing legal consumer before expansion; no Retcon Authority introduced."
+      ],
+      "next_recommendation": "Complete bounded WP02 creative validation before WP03 Conditional Craft; no real-Provider dispatch without explicit finite budget and applicable qualification.",
+      "copyright_boundary": "Native clean implementation. No external code, prompts or protected fiction copied; Chinese test prose is original."
+    }
   }
 }

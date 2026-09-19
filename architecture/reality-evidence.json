@@ -6301,6 +6301,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/control_policy.py",
           "symbol": "ControlPolicy"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/prose_sources.py",
+          "symbol": "freeze_accepted_prose"
         }
       ],
       "commands_operations": [
@@ -6397,6 +6401,10 @@
         {
           "path": "tests/integration/test_core_functional_loops_postgres.py",
           "symbol": "test_book_input_resolver_freezes_active_authorities_and_planning_pack"
+        },
+        {
+          "path": "tests/integration/test_cross_chapter_prose_review_postgres.py",
+          "symbol": "test_book_accepted_prose_drives_targeted_repair_and_acceptance"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -6814,6 +6822,10 @@
         {
           "path": "src/novel_forge/modules/chapter_quality_authority/qualification_application.py",
           "symbol": "PostgresQualityQualificationAuthority"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+          "symbol": "_ReviewHandler.execute"
         }
       ],
       "domain_symbols": [
@@ -6836,6 +6848,22 @@
         {
           "path": "src/novel_forge/modules/review/knowledge.py",
           "symbol": "validate_knowledge_checks"
+        },
+        {
+          "path": "src/novel_forge/modules/review/prose_window.py",
+          "symbol": "freeze_review_window"
+        },
+        {
+          "path": "src/novel_forge/modules/review/cross_chapter.py",
+          "symbol": "paired_diagnosis"
+        },
+        {
+          "path": "src/novel_forge/modules/review/cross_chapter.py",
+          "symbol": "apply_targeted_edits"
+        },
+        {
+          "path": "src/novel_forge/modules/review/cross_chapter.py",
+          "symbol": "resolution_checks"
         }
       ],
       "commands_operations": [
@@ -6854,7 +6882,8 @@
           "revision candidate",
           "quality group reports",
           "quality qualification evidence",
-          "publish and final release gates"
+          "publish and final release gates",
+          "immutable cross-chapter prose coverage and paired diagnosis lineage within existing Review artifacts"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -6922,6 +6951,18 @@
         {
           "path": "tests/integration/test_quality_qualification_postgres.py",
           "symbol": "TestQualityQualificationPostgres.test_campaign_subject_evidence_and_waiting_decision_are_idempotent"
+        },
+        {
+          "path": "tests/unit/test_cross_chapter_prose_review.py",
+          "symbol": "test_same_category_locations_are_distinct_and_lineage_survives_candidate_change"
+        },
+        {
+          "path": "tests/integration/test_cross_chapter_prose_review_postgres.py",
+          "symbol": "test_book_accepted_prose_drives_targeted_repair_and_acceptance"
+        },
+        {
+          "path": "tests/integration/test_cross_chapter_prose_review_postgres.py",
+          "symbol": "test_cross_chapter_context_overflow_keeps_candidate_and_creates_no_review_effect"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7983,7 +8024,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838"
+    "implementation_tree_sha": "sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -8276,6 +8317,22 @@
         {
           "path": "tests/integration/test_book_followup_authority_postgres.py",
           "symbol": "BookFollowupAuthorityPostgresTests.test_reader_outcome_uses_pep_external_effect_and_replays_once"
+        }
+      ]
+    },
+    {
+      "id": "cross-chapter-prose-window-policy",
+      "classification": "CONFIGURABLE_POLICY",
+      "statement": "Explicit Book production profiles select accepted-prose-neighbours.v1 with bounded source token budget; maximum_previous_chapters defaults to 2. FULL/EXCERPT/NOT_INCLUDED coverage does not imply whole-book or semantic quality proof. Existing frozen commands without this policy stay on their old contract.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/review/prose_window.py",
+          "symbol": "window_policy"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/prose_sources.py",
+          "symbol": "freeze_accepted_prose"
         }
       ]
     }

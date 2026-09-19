@@ -8,8 +8,8 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4`
-Baseline implementation identity: `sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838`
+Current-reality baseline: `54aac08570589f1cfd326e7b1c08ffe4a23bd3bf`
+Baseline implementation identity: `sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6`
 
 <!-- proposal-lifecycle
 {
@@ -18,8 +18,8 @@ Baseline implementation identity: `sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd3
   "reviewed_on": "2026-09-19",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4",
-    "implementation_tree_sha": "sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838"
+    "sha": "54aac08570589f1cfd326e7b1c08ffe4a23bd3bf",
+    "implementation_tree_sha": "sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -199,7 +199,7 @@ Baseline implementation identity: `sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd3
 }
 -->
 
-Current scope review (2026-09-19): Story Design qualification/approval/activation and Hierarchical Planning input/binding paths explicitly reject BENCHMARK_ONLY candidates and routing bootstrap authorization. Book progress exposes unknown entitlement cost separately from the priced lane. These checks preserve existing semantic ownership and do not resolve any of the seven remaining decisions, including human completion quorum and accepted-history correction. No creative or production qualification is added by this document review.
+Current scope review (2026-09-19): WP02 extends Book-owned accepted-prose freezing and the existing Chapter Review/Revision/Candidate Selection path. Historical accepted manuscripts remain read-only and Book Acceptance retains Canon/state atomicity. Scripted PostgreSQL and receipt-loss recovery do not resolve accepted-history corrections, independent human completion quorum or the other remaining industrial design decisions.
 
 Prior lifecycle baseline retained for provenance: `abe2e0df7c817ed5faf1fd07839f19d796304371`, `sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03`. The earlier review below is preserved.
 
