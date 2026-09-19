@@ -688,6 +688,9 @@ story inputs, proves absence of Effects, reservations, outputs and node receipts
 binds a new account-entitlement capacity policy within current cumulative headroom.
 The original failed run, policy and Operations remain immutable; a guarded successor
 pointer fences its old execution and preserves one active Opening per Book.
+The capacity fence rejects both updates and deletes of that predecessor. Other deletes
+continue through the terminal-history guard, which rejects COMPLETE and ABORTED rows;
+the capacity trigger does not silently suppress the delete before that guard executes.
 Qualified Foundation planning projections retain mandatory constraints once with
 auditable exact references, defer prose examples to prose stages, and replace an
 integrity-checked DENY_ALL empty retrieval query with its frozen need receipt.

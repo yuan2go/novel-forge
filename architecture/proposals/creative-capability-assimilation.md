@@ -18,11 +18,11 @@ WP02 实施从再次 fetch 的 `origin/main` `6c3de26f8c6ae2ac8cd5c0b3062da3ff9c
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-19",
+  "reviewed_on": "2026-09-20",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "54aac08570589f1cfd326e7b1c08ffe4a23bd3bf",
-    "implementation_tree_sha": "sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6"
+    "sha": "c65398ebc036fc98701de93a382e3b06f5a6edc9",
+    "implementation_tree_sha": "sha256:f140b3940a5045b6ab89497ab42bb57f24ff63a65bd72624778e89985f3fe439"
   },
   "scope": [
     "src/novel_forge/modules",
@@ -322,7 +322,7 @@ Owner 是 **Chapter Authority**（候选与 Review/Revision lifecycle），Conte
 
 ### Contract / schema / data impact
 
-已使用现有 Book request JSON、Chapter frozen preparation_report、Review/Revision AssetVersion 和 ExternalEffect；**没有新表或 migration**。后续验证不需要另建 schema。已消费的版本化内容合同：
+已使用现有 Book request JSON、Chapter frozen preparation_report、Review/Revision AssetVersion 和 ExternalEffect；**没有新表或跨章数据 migration**。包内 migration `20260920_0137_opening_delete_fence` 仅修复既有 Opening DELETE trigger 的返回行，保留终态与 predecessor fence；不改列、索引、约束或历史行，旧客户端读写合同兼容，回退必须追加前向修复。后续验证不需要另建 schema。已消费的版本化内容合同：
 
 - `cross-chapter-review-window.v1`：project/workspace/book、accepted-through、ordered source asset version/hash、chapter number、每源覆盖区间、full/excerpt 状态、窗口策略/预算版本、冻结摘要哈希。当前 target candidate 单独绑定，绝不冒充 accepted source。
 - 诊断保留现有目标 `evidence`（Unicode code-point start/end/quote），附 `supporting_evidence[]`（source version、text hash、start/end/quote）。所有引用必须来自 frozen allowlist，逐字匹配；hash/offset 不符是合同失败，不能降级成“模型大概看过”。
@@ -367,4 +367,4 @@ Non-goals：全书无人值守重写；修改接纳历史；新增 Canon/Review/
 
 聚焦证据位于 `tests/unit/test_cross_chapter_prose_review.py` 和 `tests/integration/test_cross_chapter_prose_review_postgres.py`。后者经过真实 PostgreSQL Book/Chapter 调度、Capability Pack 激活、Provider 请求物化/预算 admission、Review→Revision→ReReview→Candidate Selection→Canon→Book Acceptance，传输响应为 scripted。故障场景在 receipt 已成功而业务报告未提交时中断并重建运行对象，复用同一 Effect/request/receipt、一次 dispatch/settlement；这是故障注入恢复证据，不冒称实际操作系统进程崩溃或真实模型质量。
 
-代码与 Prompt 接线改变后，仓库要求 clean committed exact-SHA `make pr-governance PR_BASE_SHA=6c3de26f8c6ae2ac8cd5c0b3062da3ff9cc1d389`，包含完整 P0。实际 gate 结果与最终 SHA 由 PR 记录，避免文档自引用 SHA。无 schema/migration 变更；原 migration head 不变。工程验证不证明六种诊断的真实语义准确率，也不证明小说质量已经提高。
+代码与 Prompt 接线改变后，仓库要求 clean committed exact-SHA `make pr-governance PR_BASE_SHA=6c3de26f8c6ae2ac8cd5c0b3062da3ff9cc1d389`，包含完整 P0。实际 gate 结果与最终 SHA 由 PR 记录，避免文档自引用 SHA。跨章能力复用现有 schema；包内附带的 Opening DELETE guard 前向修复需要 fresh/upgrade 与终态/continuation 回归。工程验证不证明六种诊断的真实语义准确率，也不证明小说质量已经提高。

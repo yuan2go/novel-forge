@@ -8,18 +8,18 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `54aac08570589f1cfd326e7b1c08ffe4a23bd3bf`
-Baseline implementation identity: `sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6`
+Current-reality baseline: `c65398ebc036fc98701de93a382e3b06f5a6edc9`
+Baseline implementation identity: `sha256:f140b3940a5045b6ab89497ab42bb57f24ff63a65bd72624778e89985f3fe439`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-19",
+  "reviewed_on": "2026-09-20",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "54aac08570589f1cfd326e7b1c08ffe4a23bd3bf",
-    "implementation_tree_sha": "sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6"
+    "sha": "c65398ebc036fc98701de93a382e3b06f5a6edc9",
+    "implementation_tree_sha": "sha256:f140b3940a5045b6ab89497ab42bb57f24ff63a65bd72624778e89985f3fe439"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -199,7 +199,7 @@ Baseline implementation identity: `sha256:43bbb78dce729dd066d8c62d11a7d41592945f
 }
 -->
 
-Current scope review (2026-09-19): WP02 extends Book-owned accepted-prose freezing and the existing Chapter Review/Revision/Candidate Selection path. Historical accepted manuscripts remain read-only and Book Acceptance retains Canon/state atomicity. Scripted PostgreSQL and receipt-loss recovery do not resolve accepted-history corrections, independent human completion quorum or the other remaining industrial design decisions.
+Current scope review (2026-09-20): The function-only Opening DELETE migration restores terminal-history guard execution without changing frozen requests or historical rows. WP02 extends Book-owned accepted-prose freezing and the existing Chapter Review/Revision/Candidate Selection path. Historical accepted manuscripts remain read-only and Book Acceptance retains Canon/state atomicity. Scripted PostgreSQL and receipt-loss recovery do not resolve accepted-history corrections, independent human completion quorum or the other remaining industrial design decisions.
 
 Prior lifecycle baseline retained for provenance: `abe2e0df7c817ed5faf1fd07839f19d796304371`, `sha256:4fdeaef231e3670b3ffe8240045ee0879f58e05d4a648bf74eec9c06f5fb8d03`. The earlier review below is preserved.
 
