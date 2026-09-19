@@ -4,6 +4,7 @@ import hashlib
 import unittest
 
 import psycopg
+import pytest
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
@@ -17,6 +18,58 @@ from novel_forge.modules.runtime_job import RuntimeJobAuthority, RuntimeJobSpec
 from novel_forge.modules.runtime_job.application import canonical_payload_hash
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import DATABASE_URL, identifier
+from tests.integration.migration_window_postgres_support import (
+    disposable_database_at_migration,
+)
+
+
+@pytest.mark.parametrize(
+    "baseline",
+    ["20260625_0001_initial_industrial_schema", "20260916_0136_provider_routing_policy"],
+)
+def test_opening_delete_fence_fresh_and_upgrade(baseline):
+    with disposable_database_at_migration(
+        DATABASE_URL, prefix="opening_delete", target_migration_id=baseline
+    ) as url:
+        status = run_migrations(url)
+        assert status["ok"]
+        assert run_migrations(url) == status
+        with psycopg.connect(url) as connection:
+            connection.execute(
+                """CREATE TEMP TABLE opening_delete_probe (
+                    opening_run_id TEXT, lifecycle TEXT,
+                    capacity_successor_opening_run_id TEXT)"""
+            )
+            for name, function in (
+                ("authority_bo_capacity_predecessor_fence", "authority_bo_capacity_predecessor_fence"),
+                ("authority_book_opening_run_terminal_immutable", "authority_bo_run_terminal_immutable_guard"),
+            ):
+                connection.execute(sql.SQL(
+                    "CREATE TRIGGER {} BEFORE UPDATE OR DELETE ON opening_delete_probe "
+                    "FOR EACH ROW EXECUTE FUNCTION {}()"
+                ).format(sql.Identifier(name), sql.Identifier(function)))
+            connection.execute(
+                """INSERT INTO opening_delete_probe VALUES
+                    ('unfenced','FAILED',NULL), ('fenced','FAILED','successor'),
+                    ('complete','COMPLETE',NULL), ('aborted','ABORTED',NULL)"""
+            )
+            assert connection.execute(
+                "DELETE FROM opening_delete_probe WHERE opening_run_id='unfenced'"
+            ).rowcount == 1
+            for opening_id, error in (
+                ("fenced", "BOOK_OPENING_CAPACITY_PREDECESSOR_FENCED"),
+                ("complete", "BOOK_OPENING_RUN_TERMINAL_IMMUTABLE"),
+                ("aborted", "BOOK_OPENING_RUN_TERMINAL_IMMUTABLE"),
+            ):
+                with pytest.raises(psycopg.errors.CheckViolation, match=error):
+                    with connection.transaction():
+                        connection.execute(
+                            "DELETE FROM opening_delete_probe WHERE opening_run_id=%s",
+                            [opening_id],
+                        )
+            assert connection.execute(
+                "SELECT opening_run_id FROM opening_delete_probe ORDER BY opening_run_id"
+            ).fetchall() == [("aborted",), ("complete",), ("fenced",)]
 
 
 def database_url(database_name: str) -> str:

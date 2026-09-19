@@ -1549,6 +1549,16 @@ def test_routing_history_uses_independent_planning_qualification_failure(scope):
             [effect],
         )
         generation_operation = cursor.fetchone()[0]
+        cursor.execute(
+            """SELECT qualification_id FROM authority_narrative_design_qualification
+               WHERE project_id=%s AND generation_operation_id=%s
+               ORDER BY created_at,qualification_id""",
+            [scope[0], generation_operation],
+        )
+        qualification_refs = [
+            "narrative-qualification:" + row[0] for row in cursor.fetchall()
+        ]
+    assert len(qualification_refs) == 2
 
     history = registry.history(
         project_id=scope[0],
@@ -1564,6 +1574,7 @@ def test_routing_history_uses_independent_planning_qualification_failure(scope):
             "failure_class": "QUALITY_FAILURE",
             "status": "SUCCEEDED",
             "escalation": False,
+            "outcome_refs": qualification_refs,
         },
     )
 
