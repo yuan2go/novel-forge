@@ -27,6 +27,10 @@ def apply_revision_result(
             or review.get("context_bundle_version_id") != context_bundle_version_id
             or review.get("target_text_hash") != prose_hash(str(draft.get("text") or ""))):
             raise KernelError("REVISION_DIAGNOSIS_STALE", "revision must consume diagnostics for its exact source candidate and Context")
+    targeted = {}
+    if review.get("cross_chapter_window"):
+        from novel_forge.modules.review.cross_chapter import apply_targeted_edits
+        targeted = apply_targeted_edits(draft=draft, review=review, result=result)
     text = str(result.get("text") or "").strip()
     resolved = sorted({str(item) for item in result.get("resolved_issue_codes", []) if str(item).strip()})
     open_blocking = {
@@ -59,6 +63,7 @@ def apply_revision_result(
         raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "canon_assertions must be objects")
     return {
         **reconcile_revision_composition(draft, result),
+        **targeted,
         "project_id": project_id,
         "chapter": draft["chapter"],
         "title": draft["title"],

@@ -81,6 +81,7 @@ class SingleChapterRequest:
     context_version_refs: dict[str, Any] | None = None
     context_token_budget: int = 6000
     preparation_report: dict[str, Any] | None = None
+    accepted_prose_snapshot: dict[str, Any] | None = None
     idempotency_key: str = ""
 
 
@@ -624,7 +625,8 @@ def _command(
             "context_candidates": [dict(item) for item in request.context_candidates],
             "context_version_refs": dict(request.context_version_refs or {}),
             "context_token_budget": request.context_token_budget,
-            "preparation_report": dict(request.preparation_report or {}),
+            "preparation_report": {**dict(request.preparation_report or {}),
+                **({"accepted_prose_snapshot": request.accepted_prose_snapshot} if request.accepted_prose_snapshot is not None else {})},
             "chapter_idempotency_key": request.idempotency_key,
             "chapter_root_operation_id": root_operation_id or "",
             **dict(input_overrides or {}),

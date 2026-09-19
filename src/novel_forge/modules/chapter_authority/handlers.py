@@ -1328,11 +1328,14 @@ class _ReviewHandler:
         context = request.require_input("context_bundle")
         from novel_forge.modules.review.knowledge import knowledge_review_targets
         targets = knowledge_review_targets(context.content)
+        from .review_window import prepare_review_window, require_review_frontier
+        window = prepare_review_window(request, draft, context)
         reviewed = self.provider.invoke(
             request,
             stage="review",
-            payload={"draft": draft.content, "knowledge_review_targets": targets, "author_design_review_targets": draft.content.get("author_design_guidance") or {}},
+            payload={**({"cross_chapter_window": window, "target_candidate_asset_version_id": draft.asset_version_id} if window is not None else {}), "draft": draft.content, "knowledge_review_targets": targets, "author_design_review_targets": draft.content.get("author_design_guidance") or {}},
         )
+        require_review_frontier(request)
         return _model_output(
             ChapterNode.REVIEW,
             normalize_review_result(
@@ -1343,6 +1346,7 @@ class _ReviewHandler:
                 project_id=request.project_id,
                 context_bundle_version_id=context.asset_version_id,
                 knowledge_targets=targets,
+                cross_chapter_window=window,
             ),
             request=request,
             generated=reviewed,
@@ -1428,10 +1432,13 @@ class _ReReviewHandler:
         context = request.require_input("context_bundle")
         from novel_forge.modules.review.knowledge import knowledge_review_targets
         targets = knowledge_review_targets(context.content)
+        from .review_window import prepare_review_window, require_review_frontier
+        window = prepare_review_window(request, revision, context, review.content)
         reviewed = self.provider.invoke(
             request,
             stage="rereview",
             payload={
+                **({"cross_chapter_window": window, "target_candidate_asset_version_id": revision.asset_version_id} if window is not None else {}),
                 "draft": revision.content,
                 "original_draft": draft.content,
                 "review": review.content,
@@ -1440,6 +1447,7 @@ class _ReReviewHandler:
                 "author_design_review_targets": draft.content.get("author_design_guidance") or {},
             },
         )
+        require_review_frontier(request)
         return _model_output(
             ChapterNode.REREVIEW,
             normalize_rereview_result(
@@ -1545,6 +1553,8 @@ class _BestCandidateHandler:
                 review_asset_version_id=rereview.asset_version_id,
                 diagnostic_contract_version=str(rereview.content.get("diagnostic_contract_version") or ""),
                 resolution_checks=tuple(rereview.content.get("resolution_checks") or []),
+                cross_chapter_review=bool(rereview.content.get("cross_chapter_window")),
+                preservation_checks=tuple(rereview.content.get("preservation_checks") or []),
             ),
             minimum_net_improvement=threshold,
             correction_generation=generation,

@@ -32,6 +32,8 @@ class CandidateEvidence:
     diagnostic_contract_version: str = ""
     resolution_checks: tuple[dict[str, Any], ...] = ()
     workspace_asset_version_id: str = ""
+    cross_chapter_review: bool = False
+    preservation_checks: tuple[dict[str, Any], ...] = ()
 
 
 def retained_candidate_evidence(workspace_id: str, content: dict[str, Any]) -> CandidateEvidence:
@@ -88,7 +90,16 @@ def compare_candidates(
     diagnostic_selection = challenger.diagnostic_contract_version == "actionable-diagnostics.v1"
     supported_improvement = any(check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED" for check in challenger.resolution_checks)
     preservation_regressed = any(check.get("preservation") != "PRESERVED" for check in challenger.resolution_checks)
-    if diagnostic_selection and (not supported_improvement or preservation_regressed):
+    from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
+    if challenger.cross_chapter_review and (
+        set(previous.blocker_codes) & set(challenger.blocker_codes)
+        or any(check.get("status") != "PRESERVED" for check in challenger.preservation_checks)
+        or len(challenger.preservation_checks) != len(PRESERVATION_DIMENSIONS)
+    ):
+        selected = previous
+        reason = CandidateStopReason.ESCALATION_REQUIRED
+        improved = False
+    elif diagnostic_selection and (not supported_improvement or preservation_regressed):
         selected = previous
         reason = CandidateStopReason.ESCALATION_REQUIRED if preservation_regressed else CandidateStopReason.MARGINAL_IMPROVEMENT
         improved = False

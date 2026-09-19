@@ -1630,6 +1630,7 @@ class ChapterAuthorityScheduler:
             context_version_refs=dict(payload.get("context_version_refs") or {}),
             context_token_budget=int(payload.get("context_token_budget") or 6000),
             preparation_report=dict(payload.get("preparation_report") or {}),
+            accepted_prose_snapshot=(payload.get("preparation_report") or {}).get("accepted_prose_snapshot"),
             idempotency_key=str(payload.get("chapter_idempotency_key") or ""),
         )
 

@@ -1076,9 +1076,12 @@ class PostgresChapterExecutionContractBinder:
         causal_batch = bool(
             (inputs.get("execution_expectations") or {}).get("world_preparation")
         )
-        return chapter_provider_output_schema(
-            stage, causal_batch=causal_batch
-        ), chapter_provider_output_schema_ref(stage, causal_batch=causal_batch)
+        schema = chapter_provider_output_schema(stage, causal_batch=causal_batch)
+        schema_ref = chapter_provider_output_schema_ref(stage, causal_batch=causal_batch)
+        if inputs.get("cross_chapter_window") or (stage == "revision" and (inputs.get("review") or {}).get("cross_chapter_window")):
+            from novel_forge.modules.review.cross_chapter import extend_provider_schema
+            return extend_provider_schema(schema, stage), f"schema:chapter-provider-output:{stage}:cross-chapter-v1"
+        return schema, schema_ref
 
     def bind(
         self,

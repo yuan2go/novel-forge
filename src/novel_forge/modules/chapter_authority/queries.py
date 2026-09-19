@@ -367,6 +367,12 @@ class ChapterAuthorityQuery:
                         for item in attempt_rows]
         workspace = {
             "contract_version": "chapter-workspace.v1",
+            "cross_chapter_review_enabled": bool((evidence["command"].get("preparation_report") or {}).get("accepted_prose_snapshot")),
+            "cross_chapter_review": [
+                {"asset_version_id": item["asset_version_id"],
+                 **{key: item["content"][key] for key in ("cross_chapter_window", "cross_chapter_coverage", "issues", "issue_lineage", "resolution_checks", "preservation_checks") if key in item["content"]}}
+                for item in evidence["outputs"] if item["content"].get("cross_chapter_window")
+            ],
             "attempts": attempts,
             "creation_sources": creation,
             "book_run_id": row[7] if row else "", "authority": "READ_ONLY_PROJECTION",
