@@ -589,6 +589,7 @@ def normalize_review_result(
     project_id: str = "local-system",
     context_bundle_version_id: str = "legacy-context-bundle",
     knowledge_targets: list[dict[str, Any]] | None = None,
+    cross_chapter_window: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return evaluate_review_result(
         project_id=project_id,
@@ -599,6 +600,7 @@ def normalize_review_result(
         provider_evidence=provider_evidence,
         prose_text=str(draft.get("text") or ""),
         knowledge_targets=knowledge_targets,
+        cross_chapter_window=cross_chapter_window,
     )
 
 

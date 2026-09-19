@@ -8,11 +8,11 @@
 
 本提案只定义外部创作机制的原生吸收边界。代码、schema、migration、runtime wiring 和测试高于这里的判断；本文件不授权模型消费、业务数据变更或作品发布。
 
-审阅日期：2026-09-19。唯一实现基线为执行开始时 fetch 到的 `origin/main`：
+外部审计日期：2026-09-19。WP01 固定审计基线为当时 fetch 到的 `origin/main`：
 `c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4`；implementation identity：
 `sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838`；migration head：`20260916_0136_provider_routing_policy`。
 
-该路径当时尚未进入 main；已有提案位于 `origin/docs/creative-capability-assimilation-20260914` 的 `43b39710944b9de3c1ae7709e44165d92ae4298c`。本次在最新 main 上修订并带入同一路径，旧分支不是实现基线，也不另立总体蓝图。`PARTIALLY_IMPLEMENTED` 指复用的原生基础，不表示以下 WP02+ 已实施。
+WP02 实施从再次 fetch 的 `origin/main` `6c3de26f8c6ae2ac8cd5c0b3062da3ff9cc1d389` 开始。生命周期绑定当前实现；JSON 的 17 仓库、30 行矩阵和文件哈希仍属于 WP01 固定审计，`native_extensions.WP02` 单独绑定新增代码证据，不重写历史审计身份。`PARTIALLY_IMPLEMENTED` 现在包含跨章定向修订生产链，但不表示创作质量、真实 Provider 或 WP03+ 已验收。
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@
   "reviewed_on": "2026-09-19",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4",
-    "implementation_tree_sha": "sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838"
+    "sha": "54aac08570589f1cfd326e7b1c08ffe4a23bd3bf",
+    "implementation_tree_sha": "sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6"
   },
   "scope": [
     "src/novel_forge/modules",
@@ -54,20 +54,30 @@
     {
       "path": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
       "symbol": "compare_candidates"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/prose_sources.py",
+      "symbol": "freeze_accepted_prose"
+    },
+    {
+      "path": "src/novel_forge/modules/review/prose_window.py",
+      "symbol": "freeze_review_window"
+    },
+    {
+      "path": "src/novel_forge/modules/review/cross_chapter.py",
+      "symbol": "paired_diagnosis"
+    },
+    {
+      "path": "src/novel_forge/modules/review/cross_chapter.py",
+      "symbol": "apply_targeted_edits"
+    },
+    {
+      "path": "src/novel_forge/modules/review/cross_chapter.py",
+      "symbol": "resolution_checks"
     }
   ],
   "superseding_refs": [],
   "remaining_decisions": [
-    {
-      "id": "cross-chapter-prose-coverage",
-      "description": "DESIGN_REVIEW_REQUIRED: freeze bounded accepted-prose coverage and paired evidence semantics before extending the existing Chapter review contract; never claim whole-book coverage from a window.",
-      "evidence_refs": [
-        {
-          "path": "src/novel_forge/modules/review/diagnostics.py",
-          "symbol": "validate_diagnosis"
-        }
-      ]
-    },
     {
       "id": "actor-isolation-value",
       "description": "DESIGN_REVIEW_REQUIRED: compare isolated character decisions with existing WORLD_REASONER and DIRECTOR stages before adding Provider calls.",
@@ -101,12 +111,12 @@
   ],
   "remaining_work": [
     {
-      "id": "wp02-cross-chapter-repair",
-      "description": "Add bounded paired-prose diagnoses to the existing Chapter review/revision consumer, preserving accepted history.",
+      "id": "wp02-real-prose-validation",
+      "description": "READY_FOR_AUTHORIZATION: run bounded original Chinese prose A/B through the implemented production chain; retain all failures and obtain independent human editorial evidence before WP03. Engineering tests do not establish creative quality.",
       "evidence_refs": [
         {
-          "path": "src/novel_forge/modules/review/diagnostics.py",
-          "symbol": "validate_diagnosis"
+          "path": "tests/integration/test_cross_chapter_prose_review_postgres.py",
+          "symbol": "test_book_accepted_prose_drives_targeted_repair_and_acceptance"
         }
       ]
     },
@@ -170,9 +180,9 @@
 
 审计方式是固定 checkout 后按机制追踪入口、调用者、状态写入、失败分支和测试断言；没有运行外部代码、安装其依赖或消费真实 Provider。定向扫描与全文读取分开记录，目录中存在但未读取的文件仅标为 inventory。此审计覆盖全部候选仓库，不等于逐行安全审计、所有依赖审计或所有许可证权利清查。全部仓库均可访问；本次未观察到重命名、迁移或失效。
 
-本包静态追踪的上限是 `WIRED`；没有入口证据的对象只记 `CODE_EXISTS`。baseline Reality projection 的 `EXECUTABLE` 及历史工程 ceiling 在 JSON 中另列，不能冒充本次执行。`QUALIFIED` 必须绑定具体资格记录；`PRODUCTION_PROVEN`、真实长篇效果和独立编辑质量在本包均为 `NOT_PROVEN`。读取测试不等于运行测试；README、演示书、角色数量和自评分不升级证据。
+WP01 静态追踪的上限是 `WIRED`；没有入口证据的对象只记 `CODE_EXISTS`。baseline Reality projection 的 `EXECUTABLE` 及历史工程 ceiling 在 JSON 中另列，不能冒充本次执行。`QUALIFIED` 必须绑定具体资格记录；`PRODUCTION_PROVEN`、真实长篇效果和独立编辑质量仍为 `NOT_PROVEN`。读取测试不等于运行测试；README、演示书、角色数量和自评分不升级证据。
 
-审计 JSON 是提案引用的设计研究附件，无 runtime consumer，不进入 manifest、Reality projection 或业务读写。`architecture/evidence/` 仅保留受 Reality 引用的资格报告，故本附件不放在那里；`architecture/proposals/` 只放有 inline lifecycle 的 Markdown。后续语义设计仅修改本提案；JSON 只记录固定版本的证据、比较和处置。
+审计 JSON 是提案引用的设计研究附件，无 runtime consumer，不进入 manifest、Reality projection 或业务读写。`architecture/evidence/` 仅保留受 Reality 引用的资格报告，故本附件不放在那里；`architecture/proposals/` 只放有 inline lifecycle 的 Markdown。后续语义设计仅修改本提案；JSON 只记录固定版本的证据、比较、处置与单独标识的原生实施跟进；不注册运行事实或授权 Provider。
 
 ## A. Novel Forge 当前真实能力
 
@@ -186,7 +196,7 @@
 | N04 Context / Packs | owning operation → frozen retrieval union / `project_role_context` → ContextBundle / frozen CapabilityPack → `execution_gateway` / Provider views | 人物认知投影、来源隔离、预算与 replay 已存在。CHARACTER_REASONER 枚举不证明独立 actor stage；新 digest/index/GC 仍由既有 memory proposal 处理。 |
 | N05 Canon / Temporal / Graph | Chapter extraction + support → Canon approval → `PostgresBookAuthority.accept_chapter` → outcome/Canon/state/projection 原子绑定 → immutable reality/event index → Temporal API、下一章 Context | `TemporalQueryService` 和 `/product/temporal-query` 已接线，支持 state/knowledge/belief/relationship/promise 等 chapter-as-of 与 changes-between。accepted lineage、因果/关系/义务查询不是缺失能力；通用推断图、edition/retcon 不能据此视为完成。 |
 | N06 Draft / Craft / Memo | Chapter scheduler → Execution Intent / Chapter Memo → `_DraftHandler` → `compile_realization_contract` → Provider draft → `integrate_realization` | v2 从冻结 style policy 启用 whole-chapter + targeted specialisms；ACTION 已含空间/资源/行动回应/代价，DIALOGUE 已含目标/回避/声线，INTERIOR 含选择冲突。slot、词面 marker、Memo 字段通过只证明合同，不证明自然声线、精彩战斗或感情推进。 |
-| N07 Review / Revision | `_ReviewHandler` → `normalize_review_result` / `validate_diagnosis` → `_RevisionHandler` → rereview / `verified_resolutions` → `compare_candidates` → release gate | 有精确 Unicode span、preserve、acceptance criteria、未解 issue、候选保留与回退。当前 locator 校验单个候选正文；review task 没有有序跨章正文覆盖合同。现有 Context/retrieval 可以携带历史信息或片段，这不等于按版本完整覆盖跨章正文。分数阈值不是已校准的创作质量标尺。 |
+| N07 Review / Revision | `_ReviewHandler` → `normalize_review_result` / `validate_diagnosis` → `_RevisionHandler` → rereview / `verified_resolutions` → `compare_candidates` → release gate | 有精确 Unicode span、preserve、acceptance criteria、未解 issue、候选保留与回退。WP02 显式 policy 启用 Book 接纳正文冻结窗口、target/source 精确引文、局部 edits、逐项 resolution 和 preservation。旧任务继续单章合同。PostgreSQL scripted 纵向证据覆盖接纳及 receipt 后故障恢复；不证明模型语义判断准确。分数阈值不是已校准的创作质量标尺。 |
 | N08 Plan Change | planning API propose / decide / activate → `semantic_plan_diff` → recursive `asset_dependency_edge` / `record_impacts` → future stale / native resume | 已有级联影响、选择性失效与作者决定。`EXECUTED` 不可改写；`PLANNED`/`SPECULATIVE` 区分保留。不是所有语义影响都能靠已登记边自动发现，缺边检测需要具体失败案例。 |
 | N09 Reader / Follow-up | accepted snapshot → follow-up coordinator / worker → Reader Outcome Provider；LongformRecapHandler → `build_longform_recap_outputs` | Reader 读取接纳正文但为 advisory；计划调整是 proposal。**生产 recap handler 是冻结 observations 的确定性归纳，不是跨章全文审稿**；`execute_longform_analysis` 包装函数存在，不能把它当作 recap 已消费。 |
 | N10 Book completion | completion API → `PostgresBookCompletionAuthority` → closure case / immutable decision | 有 ending/promise/theme/character/relationship 闭合检查、CAS 和 replay；ACCEPTED 请求仍持久化为 BLOCKED，原生 human whole-book acceptance policy 未闭合。结构完成不等于全书质量验收。 |
@@ -214,7 +224,7 @@
 | cascading revision | 计划递归依赖与未来失效已实现，`KEEP_NATIVE`；接纳历史的补偿/新 edition 交既有工业提案，不新造 retcon 引擎。 |
 | battle/romance/humor/hook Craft | 现有 KnowledgeCard/Scene/Memo/Review 已有载体，`ADAPT_MECHANISM` 只吸收条件化机制和诊断差异。无需先建新模块。 |
 | modify/evaluate/keep-discard | 已有更严格候选/诊断保留，`KEEP_NATIVE`；拒绝 score-only 成功与 git rollback。 |
-| cross-chapter/whole-book audit | 状态与结构检查已有；有覆盖证据的跨章正文诊断不足，`EXTEND_NATIVE`，优先 WP02；whole-book human acceptance 仍待设计。 |
+| cross-chapter/whole-book audit | WP02 已扩展原生相邻正文 review/repair，`EXTEND_NATIVE` 的工程 consumer 已存在；真实 A/B 与人审仍缺，whole-book coverage/acceptance 仍待设计。 |
 | author diff/accept/reject | 语义 diff/批准/拒绝后端已在，Admin 也有 Review/KG/Context 屏幕；完整 manuscript journey 未实测。`ADAPT_MECHANISM`，小范围 WP05，不宣称 UI 完全缺失。 |
 | market trend | 有可参考的抓取/快照机制，尚无可迁移的授权、可比 cohort 与需求推断证据，`HOLD`。 |
 | coding-agent workspace | CLI execution 已有原生 ExternalEffect；另建自治文件工作区 `REJECT_IMPLEMENTATION`。 |
@@ -262,7 +272,7 @@
 
 | Gap | 真实缺口 / 去重后的最小边界 | native owner → consumer | 决策 / 依赖 |
 |---|---|---|---|
-| G01 跨章正文诊断 | 当前 Review 定位单稿，Recap 读 observations；缺冻结的跨章实际正文覆盖和双来源引用校验。先在当前章接纳前做相邻正文诊断与局部修订。 | Chapter Authority / Review / Context Builder → existing revision / rereview / Candidate Selection → Book Acceptance | `EXTEND_NATIVE`，WP02；仅先行开发项。 |
+| G01 跨章正文诊断的真实收益 | WP02 冻结窗口、配对定位、局部修订及恢复的 PostgreSQL 纵向工程缺口已闭合；仍缺真实模型对语义问题/有意变化的可靠区分和独立正文比较。 | Book accepted resolver → Chapter Review/Revision/ReReview → Candidate Selection → Canon/Book Acceptance | `EXTEND_NATIVE`；先完成 WP02 有限预算验证，禁止把 scripted PASS 当收益。 |
 | G02 条件化 craft 的真实收益 | 载体与采用链已完整；缺按具体失败场景验证的中文机制内容、判断一致性及独立正文证据。先验证现有链；失败定位到内容/Prompt/contract 后才修改。 | Source/MKAOS + Planning + Chapter → knowledge_checks / craft tasks / original prose | `ADAPT_MECHANISM`，WP03；复用 WP02 的诊断与对照，禁止先造“Craft Intelligence Authority”。 |
 | G03 actor 决策独立性 | role projection 不等于独立 actor call；是否比现有 WORLD_REASONER+DIRECTOR 更可靠尚未证明。 | World Preparation → generated candidate → Hierarchical Planning → current chapter | `ADAPT_MECHANISM`，WP04 仅受控实验；没有泄漏/动机反例及增益，不加调用。 |
 | G04 作者可理解的修订决定 | 后端语义 diff 与决定已有；完整 manuscript diff/keep/reject 的可用性、精确 base 和权限仍需实际走查。 | Chapter/Plan Change → author UI → native command | `ADAPT_MECHANISM`，WP05；先走查现有 Admin，不从截图推断。 |
@@ -279,7 +289,7 @@
 
 | 顺序 | 最小但完整工作包 | 前置 / 输出 / 停止条件 |
 |---|---|---|
-| P0 · WP02 | **跨章正文证据驱动的当前章定向修订**：冻结相邻已接纳正文；双来源诊断；原有 revision/rereview/keep-discard；真实对照 | N04/N07/N11。输出可定位 issue、实际修订稿及未改坏证据；若成本或 coverage 超限，显式不完成，不能报全文通过。详见 E。 |
+| P0 · WP02 验证 | **已有生产链的真实对照**：工程实现已接线并有 PostgreSQL 纵向及故障证据；下一步是有授权的六任务 A/B 和人工评阅 | N04/N07/N11。`READY_FOR_AUTHORIZATION`；无预算不调用真实 Provider。实际正文收益未证明前 WP03 保持 NO-GO。详见 E。 |
 | P1 · WP03 | **条件化 Craft 到正文**：先用现有 Card/translation/Memo/v2 realization 对战斗可读性、关系推进/声线各做一个完整切片；幽默与 hook 仅在失败证据要求时加入 | 复用 WP02 判断/修订证据；先改原生内容与 pack，不预设 schema。若现有链已足够，交付批准资产/真实正文证据即可，不强造代码。 |
 | P2 · WP04 | **人物私有决策对照实验**：在 World Preparation 内比较单 WORLD_REASONER 与最多必要 actor-scoped 调用；DIRECTOR 不取得 Canon 权限 | 先有信息泄漏/目标违背反例与预算；不依赖新存储。收益不优于成本或正文更机械，则保持现有路径。当前 HOLD 实施。 |
 | P2 · WP05 | **作者精确版本修订界面**：当前稿/候选/证据可见、accept/reject、stale-base 拦截和原生 resume | 先实际走查现有 Admin，优先只补一个 manuscript 决定流程；如缺手改候选 admission，须归 Chapter Authority，不能让 UI 直接更新正文。完整重设计 HOLD。 |
@@ -288,11 +298,11 @@
 
 每个包均须交付生产 consumer、失败/恢复路径及实际正文证据；原“最后才做生产实验”的独立 WP09 删除，创作验证并入每个包。WP02 不等待市场、graph、committee、UI 或 actor 新框架。无需因此新建通用 benchmark orchestrator；质量实验使用既有预算、Quality/Reader calibration 和版本化 evidence。
 
-## E. Next Work Package — WP02 跨章正文诊断与当前章定向修订
+## E. Next Work Package — WP02 有限预算正文验证（WP03 前置）
 
 ### Scope 与 native owner
 
-目标是让即将接纳的章节知道它与前文**实际写出的内容**是否发生无意重复、人物动机/关系断裂、声线漂移或空间/因果承接缺失，并只修复可定位的问题。先做一个生产纵向切片，不声称解决整本书。
+下一执行边界是验证已有 WP02 生产链是否实质改善当前未接纳候选。代码已经沿下述路径消费真实 Book 接纳正文；尚未调用真实 Provider，不预设模型能准确发现或修好无意重复、动机/关系断裂、声线漂移或空间/因果问题。
 
 Owner 是 **Chapter Authority**（候选与 Review/Revision lifecycle），Context Builder 负责 source isolation/预算投影，Review domain 负责诊断合同，Book Authority 提供 exact accepted input references。沿用现有 Candidate Selection、Canon grounding、Book Acceptance 和 Kernel ExternalEffect。Book Follow-up 将来复用 evidence 语义，不成为 WP02 的第二条执行路径。
 
@@ -302,7 +312,7 @@ Owner 是 **Chapter Authority**（候选与 Review/Revision lifecycle），Conte
 
 `Book accepted input resolver → Chapter admission/frozen inputs → Context Builder → _ReviewHandler → existing review capability/PEP/ExternalEffect → normalize_review_result → existing ReviewIssue → _RevisionHandler → rereview → compare_candidates → existing release/Canon support/Book Acceptance`。
 
-实施前复查这些现有 consumer，而不是新开 service：
+已实施的 consumer（后续实验须使用同一生产入口）：
 
 1. `book_authority/production.py`、`chapter_authority/application.py` 和调度输入解析：从已接纳 cursor 取得 ordered draft version/hash；跨项目、未接纳、重复、倒序或超前引用全部拒绝。输入在 owning UoW 内冻结；不在模型调用中回查“latest”。
 2. `context_builder` 与 `chapter_authority/execution_gateway.py`：将这组输入纳入 frozen Context/pack/route 的哈希及 token 预算；review 看受权正文，draft/character role 不因 review window 获得未公开世界知识。
@@ -312,17 +322,17 @@ Owner 是 **Chapter Authority**（候选与 Review/Revision lifecycle），Conte
 
 ### Contract / schema / data impact
 
-首选现有 immutable assets 与输入 manifest，**不预设新表或 migration**。新增的是已消费的版本化内容合同（建议名须服从现有命名，不另造 Authority）：
+已使用现有 Book request JSON、Chapter frozen preparation_report、Review/Revision AssetVersion 和 ExternalEffect；**没有新表或 migration**。后续验证不需要另建 schema。已消费的版本化内容合同：
 
-- `review_source_window`：project/workspace/book、accepted-through、ordered source asset version/hash、chapter number、每源覆盖区间、full/excerpt 状态、窗口策略/预算版本、冻结摘要哈希。当前 target candidate 单独绑定，绝不冒充 accepted source。
+- `cross-chapter-review-window.v1`：project/workspace/book、accepted-through、ordered source asset version/hash、chapter number、每源覆盖区间、full/excerpt 状态、窗口策略/预算版本、冻结摘要哈希。当前 target candidate 单独绑定，绝不冒充 accepted source。
 - 诊断保留现有目标 `evidence`（Unicode code-point start/end/quote），附 `supporting_evidence[]`（source version、text hash、start/end/quote）。所有引用必须来自 frozen allowlist，逐字匹配；hash/offset 不符是合同失败，不能降级成“模型大概看过”。
 - 保留 category、judgment_kind、violated_constraint、revision_goal、preserve、acceptance_criteria；审美偏好只允许 minor suggestion。可能的矛盾是模型判断，不新增“确定性文学真值”。
 - report 明确 coverage、not-reviewed sources、不可比较/缺证据理由及窗口身份；re-review 绑定原窗口和新 target。保护点必须能定位/复核，不能只有“保留原味”口号。
-- Attempt input、CapabilityPack、prompt/Skill、route/model/Provider、trace/span、model-call、usage/cost、quality gate、下游 revision/candidate 版本全部沿用现有账本。若实现发现 generic asset schema 无法维持必要 DB 约束，单独说明最小 migration 及兼容方案后按仓库 gate 实施；禁止先建冗余 window store。
+- Attempt input、CapabilityPack、prompt/Skill、route/model/Provider、trace/span、model-call、usage/cost、quality gate、下游 revision/candidate 版本全部沿用现有账本。Book owning UoW 原子冻结 accepted-prose-snapshot.v1；Review 以确定性窗口形成 task identity。Provider 的完整实际请求继续经过原生 token admission，UTF-8 字节筛选只用于保守选择来源，不替代路由计费。
 
 ### Failure / recovery / non-goals
 
-失败的模型调用或合同校验保留此前候选，追加失败证据；不以空 issues 当成功。UNKNOWN ExternalEffect 先 reconcile；重启重用已冻结 window/receipt；accepted head 变化不得悄悄换上下文，按当前 stale/re-admission 规则创建新版本。新模型响应无有效 pair/未修复 blocker 时继续保留 open issue。关联的历史章只能作为只读证据，若问题位于已接纳稿，输出 editorial/Plan Change proposal，不能倒写。
+失败的模型调用或合同校验保留此前候选，追加失败证据；不以空 issues 当成功。UNKNOWN ExternalEffect 先 reconcile；重启重用已冻结 window/receipt；accepted head 变化不得悄悄换上下文，按当前 stale/re-admission 规则创建新版本。新模型响应无有效 pair/未修复 blocker 时继续保留 open issue。关联历史章始终只读。当前 Review 只接受定位于当前候选的 diagnosis；历史稿独立错误没有合适的结构化 editorial consumer，仍是明确 gap/HOLD，不能伪装成当前问题或倒写历史。
 
 Non-goals：全书无人值守重写；修改接纳历史；新增 Canon/Review/Memory Authority；新 scheduler；新模型路由；多 Agent committee；通用 graph/RAG 平台；固定战斗套路；作者全站改版；市场抓取；宣称已经完成独立人审或长期文学质量证明。
 
@@ -345,12 +355,16 @@ Non-goals：全书无人值守重写；修改接纳历史；新增 Canon/Review/
 
 工程 PASS 与创作收益分别报告；只在有可归因的正文改善、负例不过修、无信息边界/Canon 回归且成本可接受时，建议扩大窗口或进入 WP03。六个任务也不能证明百章稳定性；长期关系/伏笔继续追踪且标未证明部分。
 
-所有模型调用走已接线 ProductionProviderRouter/ExternalEffect。实验开始前冻结 provider/model/reasoning、prompt/Skill/pack 版本、单次 token 上限、最多一次定向修订及 re-review 的额外调用上限、任务/全批有限预算与停止条件；评审调用也计费。先报价再申请/使用已有适用预算，不能假设 Codex CLI 免费或 entitlement 无限。当前无本实验专属预算授权，**真实 Provider 创作实验在 WP01 为 NOT_RUN**；WP02 工程实现可先完成可审查的纵向链路，但不得以 scripted PASS 结束创作验收或擅自放宽冷启动资格。
+所有模型调用走已接线 ProductionProviderRouter/ExternalEffect。实验开始前冻结 provider/model/reasoning、prompt/Skill/pack 版本、单次 token 上限、最多一次定向修订及 re-review 的额外调用上限、任务/全批有限预算与停止条件；评审调用也计费。先报价再申请/使用已有适用预算，不能假设 Codex CLI 免费或 entitlement 无限。当前无本实验专属预算授权，**WP02 REAL_PROVIDER / HUMAN_EDITORIAL / LONG_FORM 均为 NOT_RUN**，`CREATIVE_QUALITY_PROVEN=NO`、`PRODUCTION_PROVEN=NO`。状态为 `READY_FOR_AUTHORIZATION`，不得以 scripted PASS 结束创作验收或擅自放宽路由资格。六任务双臂各最多 review/revision/rereview 三次调用，即修订比较部分最多 36 次，另行预算化必要 Canon/acceptance 调用；执行前必须冻结全批 call/token/费用或 entitlement 上限，缺任一上限即不 dispatch。独立人审不是 Provider 角色。
 
-## 本包变更和验证边界
+## 当前实施边界与验证上限
 
-WP01 修订本提案和其机器可读审计附件，并在审阅 Provider 合并差异后刷新另外三份相关提案的失效 lifecycle baseline 与影响说明；没有发现必须在本包先修的、经复现确认的 native P0/P1，因此没有修改生产行为、schema、migration、runtime wiring、Prompt 或 Skill。外部实现的失败分支仅用于吸收决策，不在本仓库修补上游。
+新任务通过冻结 production profile 中的 `cross_chapter_review_policy` 显式启用：`version=accepted-prose-neighbours.v1`、正整数 `source_token_budget`、可选 `maximum_previous_chapters`（默认 2）。旧 profile/Attempt 不自动升级。覆盖策略 `whole-paragraph-ending.v1` 优先 FULL；超额时只保留完整末尾两段，较早来源可以 NOT_INCLUDED；紧邻前章结尾无法安全容纳或完整 Provider 请求超预算则 fail closed。未覆盖区间不作“无问题”结论；此策略不宣称已完整保留全文所有因果边界。
 
-必要检查为 proposal lifecycle、审计引用/哈希/字段完整性、documentation governance，以及仓库 every-change `make pr-governance PR_BASE_SHA=c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4`。具体结果和 final commit 由 PR 记录，不把提交后才能得到的 SHA 写进自身形成循环。实现 identity 不变时完整 P0 按治理为 `NOT_REQUIRED / SAME_IMPLEMENTATION`，实际执行状态为 `NOT_RUN`；外部 tests、真实 Provider、PostgreSQL 业务运行、人类编辑和长篇质量实验均 `NOT_RUN`。
+`review/prose_window.py` 校验来源与覆盖；`book_authority/prose_sources.py` 只从 COMMITTED accepted outcome 解析 best draft；`chapter_authority/review_window.py` 绑定当前候选及原窗口；`review/cross_chapter.py` 执行配对、lineage、targeted edit 与 resolution/preservation 合同。ReReview 复用原 window hash，并单独绑定新候选。高置信严重双源矛盾才允许语义 blocker；审美、有意重复、动机有据变化和不确定判断不能自动 blocker。当前窗口不投射新的 approved hard-constraint 清单，不能把历史空间细节升级成硬约束；已有 Canon/Plan gate 继续独立执行。
 
-本工作包的完成只表示 17 个候选已得到固定版本的代码级处置、重复设计被移除、下一实施边界可审查；**不声称正文质量已经提高**。
+现有 Chapter workspace 公开窗口、coverage、source/target、修订 edits、preservation/resolution 和候选保留原因，并保留已有 route/model/token/budget/Effect/receipt 查询。Draft 不获得历史窗口；Revision 只得到当前稿及诊断所需引用，Review/ReReview 才得到完整允许覆盖的历史窗口。
+
+聚焦证据位于 `tests/unit/test_cross_chapter_prose_review.py` 和 `tests/integration/test_cross_chapter_prose_review_postgres.py`。后者经过真实 PostgreSQL Book/Chapter 调度、Capability Pack 激活、Provider 请求物化/预算 admission、Review→Revision→ReReview→Candidate Selection→Canon→Book Acceptance，传输响应为 scripted。故障场景在 receipt 已成功而业务报告未提交时中断并重建运行对象，复用同一 Effect/request/receipt、一次 dispatch/settlement；这是故障注入恢复证据，不冒称实际操作系统进程崩溃或真实模型质量。
+
+代码与 Prompt 接线改变后，仓库要求 clean committed exact-SHA `make pr-governance PR_BASE_SHA=6c3de26f8c6ae2ac8cd5c0b3062da3ff9cc1d389`，包含完整 P0。实际 gate 结果与最终 SHA 由 PR 记录，避免文档自引用 SHA。无 schema/migration 变更；原 migration head 不变。工程验证不证明六种诊断的真实语义准确率，也不证明小说质量已经提高。

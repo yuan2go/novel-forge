@@ -2170,6 +2170,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                 else {}
             ),
             **({"knowledge_checks": raw["knowledge_checks"]} if "knowledge_checks" in raw else {}),
+            **({"preservation_checks": raw["preservation_checks"]} if "preservation_checks" in raw else {}),
         }
     if stage in {"memo", "canon_support"}:
         return dict(raw)
@@ -2338,6 +2339,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
         "text": text,
         "resolved_issue_codes": resolved,
         "scene_artifacts": raw.get("scene_artifacts", []),
+        **({"edits": raw["edits"]} if "edits" in raw else {}),
     }
 
 

@@ -1,0 +1,423 @@
+from copy import deepcopy
+from dataclasses import replace
+
+import pytest
+
+from novel_forge.modules.chapter_authority.candidate_selection import (
+    CandidateEvidence,
+    compare_candidates,
+)
+from novel_forge.modules.chapter_authority.provider_output_contracts import (
+    chapter_provider_output_schema,
+    validate_chapter_provider_output_against_schema,
+)
+from novel_forge.modules.chapter_authority.provider_views import (
+    build_provider_task_view,
+)
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.review.cross_chapter import (
+    apply_targeted_edits,
+    extend_provider_schema,
+    paired_diagnosis,
+)
+from novel_forge.modules.review.diagnostics import prose_hash
+from novel_forge.modules.review.domain import (
+    evaluate_review_result,
+    evaluate_rereview_result,
+)
+from novel_forge.modules.review.prose_window import (
+    CROSS_CHAPTER_CATEGORIES,
+    PRESERVATION_DIMENSIONS,
+    WINDOW_POLICY,
+    digest,
+    freeze_review_window,
+    validate_source_snapshot,
+    validate_support,
+)
+
+
+SOURCE = "沈舟左臂中箭，最后一枚雷符已经耗尽。\n他退入东门，许霜答应守住后路。"
+TARGET = "沈舟左臂完好，掏出雷符。\n他推开东门。"
+
+
+def source_snapshot(chapter=2, texts=(SOURCE,), budget=4000):
+    scope = dict(project_id="p", workspace_id="w", book_id="b", book_run_id="br")
+    value = {
+        **scope,
+        "contract_version": "accepted-prose-snapshot.v1",
+        "target_chapter_number": chapter,
+        "accepted_through_chapter": chapter - 1,
+        "window_policy": {
+            "version": WINDOW_POLICY,
+            "maximum_previous_chapters": 2,
+            "source_token_budget": budget,
+        },
+        "sources": [
+            {
+                **scope,
+                "chapter_number": i,
+                "asset_version_id": f"accepted:{i}",
+                "content_hash": digest({"text": text}),
+                "text_hash": prose_hash(text),
+                "text": text,
+                "acceptance_status": "COMMITTED",
+                "acceptance_operation_id": f"accept:{i}",
+            }
+            for i, text in enumerate(texts, max(1, chapter - len(texts)))
+        ],
+    }
+    value["snapshot_hash"] = digest(value)
+    return value
+
+
+def window(snapshot=None):
+    return freeze_review_window(
+        snapshot or source_snapshot(),
+        candidate_id="draft:2",
+        text=TARGET,
+        context_token_budget=16000,
+        protected_context={"approved_hard_constraints": []},
+    )
+
+
+def support(frozen=None):
+    source = (frozen or window())["sources"][-1]
+    return {
+        **{
+            key: source[key]
+            for key in (
+                "chapter_number",
+                "asset_version_id",
+                "content_hash",
+                "text_hash",
+            )
+        },
+        "start": 0,
+        "end": 7,
+        "quote": SOURCE[:7],
+        "relation_to_issue": "伤势应有承接",
+    }
+
+
+def issue(category="CAUSAL_CARRYOVER", start=0, end=7):
+    return {
+        "code": category,
+        "severity": "blocking",
+        "message": "伤势无因消失",
+        "category": category,
+        "judgment_kind": "SEMANTIC_CONTRADICTION",
+        "confidence": "HIGH",
+        "interpretation": "CONTINUITY_PROBLEM",
+        "evidence": {
+            "asset_version_id": "draft:2",
+            "text_hash": prose_hash(TARGET),
+            "start": start,
+            "end": end,
+            "quote": TARGET[start:end],
+        },
+        "supporting_evidence": [support()],
+        "lineage_code": None,
+        "violated_constraint": "承接伤势",
+        "revision_goal": "呈现伤势代价",
+        "preserve": ["推开东门"],
+        "acceptance_criteria": ["伤势限制动作"],
+    }
+
+
+def initial(issues=None):
+    return evaluate_review_result(
+        project_id="p",
+        target_asset_version_id="draft:2",
+        context_bundle_version_id="ctx",
+        chapter=2,
+        result={
+            "diagnostic_contract_version": "actionable-diagnostics.v1",
+            "decision": "NEEDS_REVISION",
+            "score": 60,
+            "issues": [issue()] if issues is None else issues,
+        },
+        provider_evidence={},
+        prose_text=TARGET,
+        cross_chapter_window=window(),
+    )
+
+
+def rereview_result(initial_review, text=TARGET, status="RESOLVED"):
+    location = {"start": 0, "end": len(text), "quote": text}
+    return {
+        "diagnostic_contract_version": "actionable-diagnostics.v1",
+        "decision": "PASSED",
+        "score": 99,
+        "issues": [],
+        "resolution_checks": [
+            {
+                "code": item["code"],
+                "status": status,
+                "preservation": "PRESERVED",
+                "evidence": location,
+                "supporting_evidence": item["supporting_evidence"],
+                "reason": "核对伤势与正文",
+            }
+            for item in initial_review["issues"]
+        ],
+        "preservation_checks": [
+            {
+                "dimension": dimension,
+                "status": "PRESERVED",
+                "evidence": location,
+                "reason": "与冻结约束及前稿比对",
+            }
+            for dimension in PRESERVATION_DIMENSIONS
+        ],
+        "knowledge_checks": [],
+    }
+
+
+def rereview(review, result):
+    return evaluate_rereview_result(
+        project_id="p",
+        original_draft_version_id="draft:2",
+        initial_review_version_id="review:2",
+        revision_version_id="revision:2",
+        context_bundle_version_id="ctx",
+        initial_review=review,
+        revision={"chapter": 2, "text": TARGET},
+        result=result,
+        provider_evidence={},
+    )
+
+
+def test_first_chapter_empty_window_and_frozen_replay():
+    snapshot = source_snapshot(chapter=1, texts=())
+    frozen = window(snapshot)
+    assert frozen["sources"] == []
+    assert frozen == window(deepcopy(snapshot))
+    assert frozen["target_candidate_text_hash"] == prose_hash(TARGET)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("chapter_number", 2),
+        ("book_id", "other"),
+        ("project_id", "other"),
+        ("workspace_id", "other"),
+        ("acceptance_status", "CANDIDATE"),
+        ("text_hash", "wrong"),
+    ],
+)
+def test_source_rejects_future_unaccepted_foreign_and_changed_prose(field, value):
+    snapshot = source_snapshot()
+    snapshot["sources"][0][field] = value
+    snapshot["snapshot_hash"] = digest(
+        {k: v for k, v in snapshot.items() if k != "snapshot_hash"}
+    )
+    with pytest.raises(KernelError):
+        validate_source_snapshot(snapshot)
+
+
+def test_full_excerpt_exclusion_and_overflow_are_explicit():
+    full = window()
+    assert full["sources"][0]["coverage"] == "FULL"
+    long = "远处的往事。" * 100 + "\n动作承接。\n当前结尾。"
+    partial = window(source_snapshot(chapter=3, texts=(SOURCE, long), budget=40))
+    assert [s["coverage"] for s in partial["sources"]] == ["NOT_INCLUDED", "EXCERPT"]
+    assert partial["sources"][1]["excerpts"][0]["text"] == "动作承接。\n当前结尾。"
+    assert partial["sources"][1]["excluded_ranges"]
+    with pytest.raises(KernelError, match="CROSS_CHAPTER_REVIEW_CONTEXT_INSUFFICIENT"):
+        window(source_snapshot(budget=1))
+    with pytest.raises(KernelError):
+        freeze_review_window(
+            source_snapshot(),
+            candidate_id="draft",
+            text=TARGET,
+            context_token_budget=1,
+            protected_context={},
+        )
+
+
+def test_exact_quote_outside_frozen_excerpt_is_not_reviewed_evidence():
+    prose = "前文真话。" * 100 + "\n动作承接。\n当前结尾。"
+    frozen = window(source_snapshot(texts=(prose,), budget=40))
+    source = frozen["sources"][0]
+    evidence = {
+        **support(),
+        **{
+            key: source[key]
+            for key in ("asset_version_id", "content_hash", "text_hash")
+        },
+        "start": 0,
+        "end": 5,
+        "quote": prose[:5],
+    }
+    with pytest.raises(KernelError, match="outside reviewed coverage"):
+        validate_support([evidence], frozen)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("quote", "虚构引文"),
+        ("start", -1),
+        ("end", 999),
+        ("asset_version_id", "unaccepted"),
+        ("text_hash", "wrong"),
+        ("content_hash", "wrong"),
+        ("chapter_number", 99),
+    ],
+)
+def test_support_requires_exact_source_hash_unicode_span_and_quote(field, value):
+    evidence = support()
+    evidence[field] = value
+    with pytest.raises(KernelError):
+        validate_support([evidence], window())
+
+
+def test_unicode_code_points_and_target_hash_are_checked():
+    text = "甲😀乙"
+    snapshot = source_snapshot(texts=(text,))
+    frozen = window(snapshot)
+    source = frozen["sources"][0]
+    evidence = {
+        **support(),
+        **{k: source[k] for k in ("asset_version_id", "content_hash", "text_hash")},
+        "start": 1,
+        "end": 2,
+        "quote": "😀",
+    }
+    assert (
+        validate_support([evidence], frozen)[0]["offset_unit"] == "UNICODE_CODE_POINT"
+    )
+    bad = issue()
+    bad["evidence"]["text_hash"] = "wrong"
+    with pytest.raises(KernelError):
+        initial([bad])
+
+
+@pytest.mark.parametrize("category", sorted(CROSS_CHAPTER_CATEGORIES))
+def test_all_cross_chapter_categories_retain_paired_evidence(category):
+    reviewed = initial([issue(category)])
+    assert reviewed["issues"][0]["supporting_evidence"][0]["quote"] == SOURCE[:7]
+    assert (
+        reviewed["cross_chapter_coverage"]["reviewed_sources"][0]["coverage"] == "FULL"
+    )
+
+
+def test_same_category_locations_are_distinct_and_lineage_survives_candidate_change():
+    review = initial([issue(), issue(start=8, end=12)])
+    assert len({item["code"] for item in review["issues"]}) == 2
+    relocated = issue(start=8, end=12)
+    relocated["lineage_code"] = review["issues"][0]["code"]
+    assert (
+        paired_diagnosis(relocated, text=TARGET, window=window(), prior=review)["code"]
+        == review["issues"][0]["code"]
+    )
+    relocated["supporting_evidence"][0].update(start=1, quote=SOURCE[1:7])
+    with pytest.raises(KernelError):
+        paired_diagnosis(relocated, text=TARGET, window=window(), prior=review)
+
+
+@pytest.mark.parametrize(
+    "interpretation",
+    ["INTENTIONAL_RECAP", "MOTIF", "REINTERPRETATION", "MOTIVATED_CHANGE"],
+)
+def test_intentional_repetition_or_change_cannot_become_blocker(interpretation):
+    value = issue("REDUNDANT_RETELLING")
+    value["interpretation"] = interpretation
+    with pytest.raises(KernelError):
+        initial([value])
+    assert initial([])["issues"] == []
+
+
+def test_targeted_edit_cannot_rewrite_unrelated_prose():
+    review = initial()
+    edit = {
+        "start": 0,
+        "end": 7,
+        "quote": TARGET[:7],
+        "replacement": "沈舟左臂带伤，",
+        "issue_codes": [review["issues"][0]["code"]],
+    }
+    result = {"edits": [edit], "text": edit["replacement"] + TARGET[7:]}
+    assert apply_targeted_edits(draft={"text": TARGET}, review=review, result=result)[
+        "targeted_edits"
+    ] == [edit]
+    result["text"] += "无关大改。"
+    with pytest.raises(KernelError):
+        apply_targeted_edits(draft={"text": TARGET}, review=review, result=result)
+
+
+def test_rereview_requires_every_prior_issue_and_preservation_dimension():
+    review = initial()
+    result = rereview_result(review)
+    after = rereview(review, result)
+    assert after["cross_chapter_window"] == review["cross_chapter_window"]
+    assert after["resolved_issue_codes"] == [review["issues"][0]["code"]]
+    result["resolution_checks"] = []
+    with pytest.raises(KernelError):
+        rereview(review, result)
+    result = rereview_result(review)
+    result["preservation_checks"].pop()
+    with pytest.raises(KernelError):
+        rereview(review, result)
+
+
+def test_high_score_cannot_replace_unresolved_or_regressed_candidate():
+    previous = CandidateEvidence("a", {}, 60, ("issue",), "review")
+    challenger = CandidateEvidence(
+        "b",
+        {},
+        99,
+        ("issue",),
+        "rereview",
+        "actionable-diagnostics.v1",
+        ({"status": "SATISFIED", "preservation": "PRESERVED"},),
+        cross_chapter_review=True,
+        preservation_checks=tuple(
+            {"status": "PRESERVED"} for _ in PRESERVATION_DIMENSIONS
+        ),
+    )
+
+    def selected(value):
+        return compare_candidates(
+            project_id="p",
+            chapter_root_operation_id="root",
+            previous=previous,
+            challenger=value,
+            minimum_net_improvement=1,
+        )["selected_asset_version_id"]
+
+    assert selected(challenger) == "a"
+    challenger = replace(challenger, blocker_codes=())
+    assert selected(challenger) == "b"
+    assert (
+        selected(replace(challenger, preservation_checks=({"status": "REGRESSED"},)))
+        == "a"
+    )
+
+
+def test_provider_views_isolate_history_and_schema_keeps_legacy_contract():
+    payload = {
+        "draft": {"text": TARGET},
+        "cross_chapter_window": window(),
+        "target_candidate_asset_version_id": "draft:2",
+    }
+    review = build_provider_task_view("review", payload)
+    assert review["cross_chapter_window"]["sources"][0]["excerpts"][0]["text"] == SOURCE
+    assert SOURCE not in str(build_provider_task_view("draft", payload))
+    old = chapter_provider_output_schema("review")
+    new = extend_provider_schema(old, "review")
+    assert "preservation_checks" not in old["properties"]
+    response = {
+        "score": 60,
+        "issues": [issue()],
+        "resolution_checks": [],
+        "knowledge_checks": [],
+        "preservation_checks": [],
+    }
+    assert (
+        validate_chapter_provider_output_against_schema("review", new, response)
+        == response
+    )
+    with pytest.raises(KernelError):
+        validate_chapter_provider_output_against_schema("review", old, response)

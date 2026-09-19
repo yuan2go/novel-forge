@@ -249,6 +249,49 @@ explicit checks; omission of an issue or a higher score does not establish resol
 Candidate selection preserves the earlier candidate when no checked improvement exists or
 required content regresses. Aesthetic suggestions cannot alone become objective blockers.
 
+A Book's frozen `production_profile` can explicitly enable `cross_chapter_review_policy`
+with `version: accepted-prose-neighbours.v1`, a positive `source_token_budget`, and
+`maximum_previous_chapters` (default 2, a configurable policy). Profiles without this
+policy and previously admitted Chapter commands retain their existing Review contract.
+Book chapter reservation freezes exact accepted manuscript references and text under the
+Book cursor lock. Chapter carries that snapshot in its existing preparation/input command;
+no additional store, scheduler or Authority is involved.
+
+The existing Review handler binds the current candidate and freezes
+`cross-chapter-review-window.v1`. Coverage is `FULL`, `EXCERPT`, or `NOT_INCLUDED`.
+`whole-paragraph-ending.v1` keeps complete final paragraphs when full prose does not fit,
+prioritizes the immediately preceding chapter, and reports every excluded range. The
+required previous ending, target, and existing role Context cannot be silently truncated.
+UTF-8 byte screening only selects coverage; the existing complete-request Provider token
+admission and budget reservation remain the hard bound. Insufficient context fails before
+Review dispatch. Uncovered prose receives no continuity assurance.
+
+Only Review and ReReview receive that accepted prose window. Revision receives the paired
+source evidence attached to its existing diagnoses. Target/source identities, hashes,
+Unicode spans and literal quotes are checked. Six categories cover retelling, causal and
+spatial carryover, motivation, relationships and voice. Serious semantic contradictions
+need high confidence and paired evidence to block; intentional narrative variation,
+aesthetic preferences and uncertainty cannot become cross-chapter blockers. A hard
+constraint claim must identify an explicitly approved frozen constraint; this extension
+does not promote inferred details into hard constraints.
+
+Cross-chapter repair uses ordered edits confined to diagnosed candidate locations;
+server-side reconstruction rejects changes elsewhere. ReReview retains the same source
+coverage, binds the new target hash, and requires explicit per-issue dispositions plus
+mission, event, knowledge, POV, voice, fact, causality, KnowledgeCard and resolved-issue
+preservation checks. Stable diagnosis codes distinguish multiple locations in one category
+and retain repair lineage. Candidate Selection keeps the prior candidate if a prior blocker
+remains, preservation regresses, or a new blocker appears. Existing Canon and Book
+acceptance remain independent downstream gates. Historical manuscripts remain read-only;
+there is no new historical repair/edition consumer.
+
+Workspace queries expose the window, paired issues, edits, resolution and comparison
+through existing artifacts, alongside route, admission, trace, receipt and budget evidence.
+Recovery uses the frozen command and durable Provider intent/receipt; a changed accepted
+frontier fails with `CROSS_CHAPTER_REVIEW_FRONTIER_STALE` rather than selecting new sources.
+Scripted PostgreSQL execution establishes this wiring and recovery contract, not the
+correctness of semantic literary judgments or actual creative improvement.
+
 Current Provider Canon extraction consumes final prose without inheriting Writer assertion
 or old revision state fields. Claims bind literal Unicode code-point spans, quotes and the
 candidate text hash. Canon proposal uses a separate Provider support review; unsupported,

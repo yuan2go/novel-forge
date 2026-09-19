@@ -797,6 +797,18 @@ class PostgresBookAuthority:
             )
             existing = uow.cursor.fetchone()
             if existing is None:
+                frozen_command = asdict(command)
+                uow.cursor.execute(
+                    "SELECT version.content FROM authority_asset_version version JOIN authority_asset asset USING(asset_id) WHERE version.asset_version_id=%s AND asset.project_id=%s AND asset.asset_type='production_profile'",
+                    [book["production_profile_version"], book["project_id"]],
+                )
+                profile_row = uow.cursor.fetchone()
+                prose_policy = (profile_row[0] if profile_row else {}).get("cross_chapter_review_policy")
+                if prose_policy is not None:
+                    from .prose_sources import freeze_accepted_prose
+                    frozen_command["accepted_prose_snapshot"] = freeze_accepted_prose(
+                        uow, book=book, chapter=command.chapter_number, policy=prose_policy,
+                    )
                 uow.repositories.book_authority.create_chapter_request(
                     {
                         "chapter_request_id": request_id,
@@ -817,7 +829,7 @@ class PostgresBookAuthority:
                             "production_profile_version"
                         ],
                         "stable_idempotency_key": stable_key,
-                        "command_payload": asdict(command),
+                        "command_payload": frozen_command,
                     }
                 )
                 if not uow.repositories.book_authority.reserve_chapter(
@@ -898,6 +910,7 @@ class PostgresBookAuthority:
                     or command.chapter_plan_content_hash
                 ),
                 context_candidates=context_candidates,
+                accepted_prose_snapshot=persisted_request["command_payload"].get("accepted_prose_snapshot"),
                 context_version_refs=command.context_version_refs,
                 context_token_budget=command.context_token_budget,
                 preparation_report=command.preparation_report,

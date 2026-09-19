@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
+from .prose_window import coverage_report
+
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
@@ -16,6 +18,8 @@ def evaluate_review_result(
     provider_evidence: dict[str, Any],
     prose_text: str | None = None,
     knowledge_targets: list[dict[str, Any]] | None = None,
+    cross_chapter_window: dict[str, Any] | None = None,
+    prior_review: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if not project_id or not target_asset_version_id or not context_bundle_version_id:
         raise KernelError("REVIEW_INPUT_INVALID", "project, target and context versions are required")
@@ -30,6 +34,11 @@ def evaluate_review_result(
         raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "review issues must be objects")
     from .diagnostics import DIAGNOSTIC_CONTRACT, prose_hash, validate_diagnosis
     actionable = result.get("diagnostic_contract_version") == DIAGNOSTIC_CONTRACT
+    if cross_chapter_window is not None:
+        from .prose_window import validate_window
+        validate_window(cross_chapter_window)
+        if not actionable:
+            raise KernelError("REVIEW_DIAGNOSIS_INCOMPLETE", "cross-chapter review requires actionable diagnostics")
     if actionable and prose_text is None:
         raise KernelError("REVIEW_SOURCE_REQUIRED", "actionable review requires exact candidate prose")
     normalized: list[dict[str, Any]] = []
@@ -40,6 +49,14 @@ def evaluate_review_result(
         message = str(item.get("message") or "").strip()
         if not code or severity not in {"blocking", "major", "minor"} or not message:
             raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "review issue is incomplete")
+        diagnosis = validate_diagnosis(item, str(prose_text)) if actionable and cross_chapter_window is None else {}
+        if cross_chapter_window is not None:
+            target = item.get("evidence") or {}
+            if target.get("asset_version_id") != target_asset_version_id or target.get("text_hash") != prose_hash(str(prose_text)):
+                raise KernelError("REVIEW_EVIDENCE_INVALID", "target evidence must bind the exact candidate version and hash")
+            from .cross_chapter import paired_diagnosis
+            diagnosis = paired_diagnosis(item, text=str(prose_text), window=cross_chapter_window, prior=prior_review)
+            code = diagnosis.get("code", code)
         if code in seen_codes:
             raise KernelError("REVIEW_ISSUE_IDENTITY_INVALID", "review issue codes must be unique so distinct diagnoses survive revision")
         seen_codes.add(code)
@@ -62,7 +79,8 @@ def evaluate_review_result(
                     "excerpt_digest": str(evidence.get("excerpt_digest") or ""),
                 },
                 "revision_strategy": str(item.get("revision_strategy") or message),
-                **(validate_diagnosis(item, str(prose_text)) if actionable else {}),
+                **diagnosis,
+                **({"target_text_hash": prose_hash(str(prose_text))} if actionable else {}),
             }
         )
     blocking_count = sum(item["severity"] == "blocking" for item in normalized)
@@ -78,6 +96,8 @@ def evaluate_review_result(
     if any(item["status"] == "MISAPPLIED" for item in knowledge_checks) and decision == "PASSED":
         decision = "NEEDS_REVISION"
     return {
+        **({"cross_chapter_window": cross_chapter_window,
+            "cross_chapter_coverage": coverage_report(cross_chapter_window)} if cross_chapter_window is not None else {}),
         "report_type": "ReviewReport",
         "project_id": project_id,
         "chapter": chapter,
@@ -118,7 +138,12 @@ def evaluate_rereview_result(
         provider_evidence=provider_evidence,
         prose_text=str(revision.get("text") or ""),
         knowledge_targets=(knowledge_targets if knowledge_targets is not None else initial_review.get("knowledge_targets", [])),
+        cross_chapter_window=initial_review.get("cross_chapter_window"),
+        prior_review=initial_review,
     )
+    if initial_review.get("cross_chapter_window"):
+        from .cross_chapter import resolution_checks
+        result = {**result, "resolution_checks": resolution_checks(result, initial_review, str(revision.get("text") or ""))}
     claimed = set(revision.get("resolution_claimed_issue_codes", []))
     from .diagnostics import open_diagnoses, require_review_score
     initial_by_code = {str(item["code"]): item for item in open_diagnoses(initial_review)}
@@ -176,6 +201,7 @@ def evaluate_rereview_result(
         "revision_version_id": revision_version_id,
         "issue_lineage": issue_lineage,
         "resolution_checks": list(result.get("resolution_checks") or []),
+        **({"preservation_checks": result["preservation_checks"]} if initial_review.get("cross_chapter_window") else {}),
         "resolved_issue_codes": sorted(resolved),
         "remaining_issue_codes": sorted(remaining),
         "unresolved_issues": [

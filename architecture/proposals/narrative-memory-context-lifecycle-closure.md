@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4`
+Reality baseline: `54aac08570589f1cfd326e7b1c08ffe4a23bd3bf`
 Baseline implementation identity:
-`sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838`
+`sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-09-19",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4",
-    "implementation_tree_sha": "sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838"
+    "sha": "54aac08570589f1cfd326e7b1c08ffe4a23bd3bf",
+    "implementation_tree_sha": "sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -138,7 +138,7 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-09-19): Production Execution now separates benchmark challenger evidence from production outcomes, carries bounded repair lineage into routing history/budget, and restricts bootstrap dispatch to an authorized validation environment. The Context compiler, role projection, retrieval representation and storage migration scope is unchanged by this delta. It supplies no structured Digest, scan watermark, retention, representation cutover or GC implementation; all three decisions and Gates B–E remain outstanding. No Provider or creative qualification is added by this document review.
+Current scope review (2026-09-19): WP02 adds a versioned accepted-prose task window only to Review/ReReview, with paired quotations for Revision. Existing role Context projection and complete Provider request admission remain authoritative; no new Memory owner, retrieval index, Digest, retention or GC contract is added. The window uses deterministic ending excerpts with explicit exclusions and does not close Gates B–E or prove semantic coverage outside those excerpts.
 
 
 Gate A is implemented by the effective policy compiler, v8 Context manifest and frozen

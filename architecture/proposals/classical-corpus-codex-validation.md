@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4`
+Reality baseline: `54aac08570589f1cfd326e7b1c08ffe4a23bd3bf`
 Baseline implementation identity:
-`sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838`
+`sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4",
-    "implementation_tree_sha": "sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838"
+    "sha": "54aac08570589f1cfd326e7b1c08ffe4a23bd3bf",
+    "implementation_tree_sha": "sha256:43bbb78dce729dd066d8c62d11a7d41592945fb63d3fb6287c9c9a374934eef6"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -110,7 +110,7 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-09-19): Provider routing now carries repair Operation lineage, separates benchmark challengers from production outcomes, and requires bounded bootstrap authorization before validation challenger calls. Shared priced/account-entitlement lanes retain finite call/token accounting and unknown entitlement monetary cost. These changes do not execute the twenty-work analysis or four-arm creative experiment: G3/G4 remain outstanding. No real-Provider, independent editorial or production evidence is added by this document review.
+Current scope review (2026-09-19): The WP02 native review extension does not change this proposal scope or perform corpus analysis. Its Chinese fixture prose is original, accepted manuscripts remain read-only, and real-Provider/editorial creative experiments remain outstanding. No upstream fiction or prompt is copied.
 
 Prior implementation delta review at `b10a4a8c5cf6410ba1557ad850a90d12a632d9fe` (2026-09-13; code-agent review, not human qualification): The single-Book policy uses the same cumulative ledger for separate Source, design, early/late chapter and repair scopes. Author-guided Context compilation now keeps scoped fragment semantics and frozen provenance; it does not consume classical-source knowledge or establish any of the proposed four-arm outcomes. G3 and G4 remain outstanding. The relevant checks are native author Formation wiring and single-Book budget isolation; these are scripted engineering evidence, not real Provider or independent editorial evidence.
 

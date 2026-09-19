@@ -8,6 +8,30 @@
   ],
   "classification_rules": [
     {
+      "id": "cross-chapter-prose-contract",
+      "patterns": [
+        "tests/unit/test_cross_chapter_prose_review.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "chapter-review-quality",
+      "capability": "cross-chapter-prose-contract",
+      "production_target": "src/novel_forge/modules/review/prose_window.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "cross-chapter-prose-postgres",
+      "patterns": [
+        "tests/integration/test_cross_chapter_prose_review_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-review-quality",
+      "capability": "cross-chapter-prose-postgres",
+      "production_target": "src/novel_forge/modules/book_authority/prose_sources.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
       "id": "routing-bootstrap-contract",
       "patterns": [
         "tests/unit/test_routing_bootstrap.py"

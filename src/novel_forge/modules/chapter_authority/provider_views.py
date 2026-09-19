@@ -495,7 +495,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             realization_contract=deepcopy(inputs.get("realization_contract")),
         )
     if stage == "review":
-        return _task(stage, chapter=_prose(inputs.get("draft")), creative_execution=deepcopy((inputs.get("draft") or {}).get("creative_execution") or {}), knowledge_review_targets=deepcopy(inputs.get("knowledge_review_targets") or []), author_design_review_targets=deepcopy(inputs.get("author_design_review_targets") or {}))
+        return _task(stage, **_cross_chapter_task(inputs), chapter=_prose(inputs.get("draft")), creative_execution=deepcopy((inputs.get("draft") or {}).get("creative_execution") or {}), knowledge_review_targets=deepcopy(inputs.get("knowledge_review_targets") or []), author_design_review_targets=deepcopy(inputs.get("author_design_review_targets") or {}))
     if stage == "revision":
         source = dict(inputs.get("draft") or {})
         payload: dict[str, Any] = {"chapter": _prose(source), "creative_execution": deepcopy(source.get("creative_execution") or {}), "knowledge_checks": deepcopy((inputs.get("review") or {}).get("knowledge_checks") or [])}
@@ -518,6 +518,15 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
                     "tasks": [{key: issue[key] for key in ("code", "category", "judgment_kind", "evidence_locator", "revision_goal", "preserve", "acceptance_criteria") if key in issue} for issue in open_diagnoses(dict(inputs.get("review") or {}))],
                     "instructions": "Repair each evidenced problem using its stated criterion. Keep unaffected choices, information boundaries, and voice. An aesthetic suggestion is optional; unknown or unresolved blockers remain open. Read adjacent passages for continuity after a local edit.",
                 }
+        review = dict(inputs.get("review") or {})
+        if review.get("cross_chapter_window"):
+            payload["targeted_repair"] = {
+                "contract_version": "cross-chapter-targeted-repair.v1",
+                "source_window_hash": review["cross_chapter_window"]["source_window_hash"],
+                "preservation_requirements": deepcopy(review["cross_chapter_window"]["preservation_requirements"]),
+                "instructions": "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. Return text equal to applying those edits only. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition.",
+            }
+            payload["chapter"]["text"] = str(source.get("text") or "")
         return _task(stage, **payload)
     if stage == "rereview":
         from novel_forge.modules.review.diagnostics import open_diagnoses
@@ -528,6 +537,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         ]
         return _task(
             stage,
+            **_cross_chapter_task(inputs),
             revised_chapter=_prose(revision),
             creative_execution=deepcopy((revision or {}).get("creative_execution") or {}),
             prior_diagnoses=issues,
@@ -2379,3 +2389,19 @@ def _scene_epistemic_scopes(plan: Mapping[str, Any]) -> list[dict[str, Any]]:
             }
         )
     return result
+
+
+def _cross_chapter_task(inputs: Mapping[str, Any]) -> dict[str, Any]:
+    window = inputs.get("cross_chapter_window")
+    if window is None:
+        return {}
+    from novel_forge.modules.review.prose_window import CROSS_CHAPTER_CATEGORIES, validate_window
+    from novel_forge.modules.review.diagnostics import prose_hash
+    validate_window(window)
+    candidate = inputs.get("revision") or inputs.get("draft") or {}
+    return {
+        "cross_chapter_window": deepcopy(window),
+        "cross_chapter_categories": sorted(CROSS_CHAPTER_CATEGORIES),
+        "target_identity": {"asset_version_id": inputs["target_candidate_asset_version_id"], "text_hash": prose_hash(str(candidate.get("text") or ""))},
+        "review_objective": "Diagnose cross-chapter continuity using only covered accepted prose. Sources are read-only; never repair history or turn a Review into Canon. Locate literal target and source Unicode spans with exact identities. Assess retelling, action/space, causal cost, motivation, relationship and voice. Distinguish intentional recap, motif, reinterpretation, new POV, information gain and motivated change. Aesthetic or uncertain judgment cannot block. No issue is a valid result. Return structured evidence, not chain-of-thought. ReReview must disposition every prior code and preservation dimension; reuse lineage_code only for that same problem. No claims about excluded prose.",
+    }
