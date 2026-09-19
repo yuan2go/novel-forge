@@ -302,6 +302,13 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
                 ),
             }
             execution = build_production_execution_composition(settings, env=env)
+            from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+
+            # A generative router with no qualified candidates must not replace
+            # the embedding model shared by document and query vector contracts.
+            execution.gateway.provider_router = ProductionProviderRouter(
+                DATABASE_URL, candidates=(), task_money_limit="1", task_token_limit=32_768,
+            )
             application = build_chapter_authority_application(
                 settings,
                 execution=execution,

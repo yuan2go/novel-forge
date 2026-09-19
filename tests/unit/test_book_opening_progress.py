@@ -929,3 +929,17 @@ def test_bound_budget_without_authority_row_requires_reconciliation() -> None:
     assert progress["blocking_reason"]["code"] == (
         "BOOK_OPENING_BUDGET_RECONCILIATION_REQUIRED"
     )
+
+
+def test_mixed_opening_cost_keeps_unknown_total_and_enforces_priced_lane() -> None:
+    from novel_forge.modules.book_authority.opening_progress import _budget_usage
+
+    snapshot = _snapshot(nodes=_canonical_nodes(), receipts=())
+    budget = {**snapshot.budget, "accounted_cost_usd": Decimal("2"),
+              "policy_snapshot": {**snapshot.budget["policy_snapshot"],
+                  "cost_limit_usd": "2", "account_entitlement_lane": {"currency": "UNKNOWN"}}}
+    usage = _budget_usage(opening=snapshot.opening, budget=budget, observed_at=NOW)
+    assert usage["cost_usd"]["used"] is None
+    assert usage["cost_usd"]["status"] == "UNKNOWN"
+    assert usage["cost_usd"]["priced_lane_used"] == "2"
+    assert "COST_LIMIT_REACHED" in usage["exhaustion_reasons"]

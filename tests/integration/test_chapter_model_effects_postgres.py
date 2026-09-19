@@ -1059,6 +1059,172 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         self.assertEqual(len(query.list_runtime_selections(project_id=project_id)), 1)
         self.assertEqual(query.list_runtime_usage(project_id=project_id), [])
 
+    def test_canonical_chapter_outcome_obeys_frozen_router_with_fixture_evidence(self) -> None:
+        from datetime import datetime, timezone
+        from unittest.mock import patch
+
+        from novel_forge.modules.production_execution.cost_routing import (
+            BenchmarkObservation, ModelCandidate, PricingSnapshot,
+        )
+        from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+        from tests.integration.capability_pack_postgres_support import CapabilityPackPostgresHarness
+
+        harness = CapabilityPackPostgresHarness("router-chapter-fixture", release_sha="e" * 40)
+        approved = harness.register_compile_approve(
+            "1.0.0", generation=1,
+            approval_scope=harness.approval_scope(
+                environments=("test",), runtime_profiles=("test",)
+            ), target_runtime_profile="test",
+        )
+        harness.register_agents(approved.compiled)
+        harness.activate(
+            harness.deploy(approved, environment="test", runtime_profile="test"),
+            environment="test",
+        )
+        candidate = ModelCandidate(
+            candidate_id="fixture:chapter-router-selected", provider="scripted_provider_v2",
+            model="scripted-router-selected", reasoning="high", tier="low",
+            capabilities=("structured_output", "text"), context_limit=2_000_000,
+            output_limit=100_000, capability_version="fixture-router.v1",
+            pricing=PricingSnapshot(
+                version="fixture-zero-cost.v1", effective_from="2000-01-01T00:00:00+00:00",
+                effective_until="9999-01-01T00:00:00+00:00", input_miss_per_million="0",
+                input_hit_per_million="0", output_per_million="0", source="fixture:zero-cost",
+            ),
+        )
+        router = ProductionProviderRouter(
+            DATABASE_URL, candidates=(candidate,), task_money_limit="1",
+            task_token_limit=2_000_000,
+        )
+        # Synthetic inputs exercise admission only; they are never stored as measured benchmarks.
+        observations = [BenchmarkObservation(
+            evidence_ref=f"fixture:synthetic-routing-input:{index}",
+            occurred_at=datetime.now(timezone.utc).isoformat(), quality_score=1.0,
+            accepted=True, schema_success=True, canon_conflict=False, retried=False,
+            repaired=False, escalated=False, latency_seconds=1, input_tokens=10,
+            output_tokens=10, cache_hit_tokens=0, actual_cost="0",
+        ) for index in range(200)]
+        project_id = harness.project_id
+        worker_id = "chapter-router-fixture-worker"
+        with tempfile.TemporaryDirectory() as directory:
+            settings = IndustrialSettings(root=Path(directory), database_url=DATABASE_URL)
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": harness.pack_id,
+                "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
+                "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
+                "NOVEL_FORGE_REVISION_PROVIDER": "mock",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(directory) / "objects"),
+                "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
+                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+            }
+            execution = build_production_execution_composition(settings, env=env)
+            execution.gateway.provider_router = router
+            application = build_chapter_authority_application(settings, execution=execution, env=env)
+            self.assertIs(application._model_port.capability_binder.provider_router, router)
+            self._seed_intrinsic_semantic_commit_policy(project_id)
+            request = SingleChapterRequest(
+                project_id=project_id, workspace_id=harness.workspace_id, actor_id=worker_id,
+                chapter=1, title="A Frozen Fixture Route", premise="A public choice costs a safe route home.",
+                trace_id=identifier("router-trace"), correlation_id=identifier("router-correlation"),
+                application_build_id="chapter-router-fixture-test", commit_sha="e" * 40,
+                context_candidates=self._release_evidence(
+                    project_id, scope_preseeded=True, workspace_id=harness.workspace_id,
+                ),
+            )
+            with patch.object(router.registry, "observations", return_value=observations) as measured_inputs:
+                result = application.run(request)
+                self.assertEqual((result.root_status, result.saga_status), ("SUCCEEDED", "SUCCEEDED"))
+                measured_inputs.assert_called()
+
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT external_effect_id, model_id, request_payload
+                   FROM authority_external_effect
+                   WHERE project_id=%s AND capability='model.draft' AND status='SUCCEEDED'""",
+                [project_id],
+            )
+            effects = cursor.fetchall()
+            self.assertEqual(len(effects), 1)
+            effect_id, selected_model, payload = effects[0]
+            self.assertEqual(selected_model, candidate.model)
+            decision = payload["_production_execution"]["capability_runtime"]["routing_decision"]
+            self.assertEqual(decision["status"], "SELECTED")
+            self.assertEqual(decision["selected"]["candidate"]["candidate_id"], candidate.candidate_id)
+            document = router.registry.query.require(
+                project_id=project_id, asset_version_id=decision["asset_version_id"],
+            )
+            self.assertEqual(document.content, {key: value for key, value in decision.items() if key != "asset_version_id"})
+            cursor.execute(
+                """SELECT status, provider, settled_amount FROM authority_budget_reservation
+                   WHERE project_id=%s AND external_effect_id=%s""", [project_id, effect_id],
+            )
+            reservations = cursor.fetchall()
+            self.assertEqual(len(reservations), 1)
+            self.assertEqual(reservations[0][:2], ("SETTLED", candidate.provider))
+            self.assertEqual(reservations[0][2], 0)
+            cursor.execute(
+                """SELECT version.content FROM authority_asset asset
+                   JOIN authority_asset_version version ON version.asset_id=asset.asset_id
+                   WHERE asset.project_id=%s AND asset.asset_type='model_call_log'
+                     AND version.content->>'external_effect_id'=%s""", [project_id, effect_id],
+            )
+            logs = cursor.fetchall()
+            self.assertEqual(len(logs), 1)
+            evidence = logs[0][0]["provider_evidence"]
+            self.assertEqual(evidence["model_id"], candidate.model)
+            self.assertFalse(evidence["real_model_call"])
+            recorded_execution = evidence["production_execution"]
+            self.assertEqual(recorded_execution["route_snapshot"]["model_id"], candidate.model)
+            self.assertEqual(recorded_execution["execution_result"]["outcome"], "SUCCEEDED")
+            self.assertEqual(recorded_execution["execution_handle"]["transport"], "SCRIPTED_FIXTURE")
+            self.assertEqual(recorded_execution["execution_handle"]["backend_id"], "scripted-fixture")
+            cursor.execute(
+                """SELECT effect.capability, effect.status, effect.model_id, budget.status
+                   FROM authority_external_effect effect
+                   JOIN authority_budget_reservation budget
+                     ON budget.external_effect_id=effect.external_effect_id
+                   WHERE effect.project_id=%s AND effect.provider='production_execution_gateway'""",
+                [project_id],
+            )
+            calls = cursor.fetchall()
+            self.assertEqual(len(calls), 12)
+            self.assertIn("model.quality_longform", {row[0] for row in calls})
+            self.assertTrue(all(row[1:] == ("SUCCEEDED", candidate.model, "SETTLED") for row in calls))
+            cursor.execute(
+                """SELECT asset.asset_type, version.asset_version_id, version.content
+                   FROM authority_asset asset
+                   JOIN authority_asset_version version ON version.asset_id=asset.asset_id
+                   WHERE asset.project_id=%s AND asset.asset_type IN (
+                     'quality_score_report','final_release_gate_report','narrative_runtime_measurement',
+                     'execution_commit_manifest','model_call_log')""", [project_id],
+            )
+            artifacts = cursor.fetchall()
+            reports = {kind: (ref, value) for kind, ref, value in artifacts}
+            quality_ref, quality = reports["quality_score_report"]
+            self.assertTrue(quality["fixture"])
+            self.assertEqual(quality["gate"], "PASSED_WITH_UNCALIBRATED")
+            final_gate = reports["final_release_gate_report"][1]
+            self.assertEqual(final_gate["gate"], "PASSED")
+            self.assertEqual(final_gate["accepted_asset_version_ids"]["quality"], quality_ref)
+            self.assertEqual(final_gate["release_status"], "INTERNAL_RELEASE_FINALIZED")
+            self.assertFalse(final_gate["external_publish_permitted"])
+            commits = [value for kind, _, value in artifacts if kind == "execution_commit_manifest"]
+            self.assertEqual(len(commits), 12)
+            self.assertTrue(all(value["validation_manifest_ref"] for value in commits))
+            model_logs = [value for kind, _, value in artifacts if kind == "model_call_log"]
+            self.assertEqual(len(model_logs), 12)
+            self.assertTrue(all(not value["provider_evidence"]["real_model_call"] for value in model_logs))
+            measurement = reports["narrative_runtime_measurement"][1]
+            self.assertEqual(measurement["proof_status"], "MEASURED_NOT_QUALIFIED")
+            self.assertEqual(measurement["metrics"]["provider_call_count"], 12)
+            self.assertEqual(set(measurement["evidence"]["provider_external_effect_ids"]), {
+                value["external_effect_id"] for value in model_logs
+            })
+        self.assertEqual(router.registry.observations(
+            project_id=project_id, task_type="draft", candidate=candidate,
+        ), [])
+
     def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(
         self,
     ) -> None:

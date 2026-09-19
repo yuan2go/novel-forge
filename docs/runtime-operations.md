@@ -286,6 +286,87 @@ be promoted past the existing fixture ceiling into production Planning.
 
 ## Credentialed Provider qualification
 
+The cost-aware router replacement is not release-qualified. In `production`, model
+selection is centralized in the Provider gateway composition; in `validation`, the
+existing explicit-profile qualification path remains available. Setting
+`NOVEL_FORGE_PROVIDER_ROUTER=quality-cost-v1` also selects the router in an isolated
+validation environment. DeepSeek requires `DEEPSEEK_API_KEY` from the process secret
+environment, a positive `NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL` and
+`NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT`. Never put credentials into task contexts,
+model-call assets, pricing policies or command-line arguments.
+
+`novel-forge authority-provider-routing explain --project-id <id>
+--task-context-file <path>` performs no inference. It projects current benchmark and
+retry evidence through the canonical runtime composition and current ledger; actual
+dispatch rechecks locked authoritative budgets. The context includes a stable key, work,
+operation, attempt, task type, input/output estimates and declared quality requirements.
+Optional `request_input` and `cache_prefix` bind the business input and reusable prefix. `replay --project-id <id> --decision-id <id>`
+reads the immutable decision. `metrics --project-id <id>` projects routing counts,
+settled/reserved cost, usage and benchmark statistics. These read operations require
+the existing `content.authority.query` permission. Estimated upper bounds must not be
+reported as actual billed cost. Missing calibrated benchmark evidence blocks routing;
+operators must not seed fixture scores as production quality evidence.
+
+`EFFECT_RETRY_DEFERRED` means the latest durable dispatch has an active rate-limit or
+availability backoff. Do not create a parallel task to evade it. Inspect the referenced
+dispatch and retry after its deadline. Availability snapshots cover the same project and
+model; Pro high and max share that model's cooldown. Historical decisions keep the
+original availability evidence. Current cooldown defaults are runtime policy, not a
+Provider service guarantee.
+
+`configure --project-id <id> --workspace-id <id> --idempotency-key <key>
+--policy-file <path>` uses the existing versioned policy command and requires a local
+operator with `book.authority.execute`. Policy content contains `policy_version`, an
+audit `reason`, and `task_overrides` with `work_id`, `task_type`, `risk`, `quality_floor`,
+optional `chapter`, positive `latency_sla_seconds` and `escalation_reason`. Overrides
+cannot lower the default floor/risk or select a Provider/model.
+
+For initial Planning evidence collection, the same policy may contain
+`bootstrap_authorizations`. Each grant requires `authorization_id`, audit `reason`,
+`environment: validation`, `purpose: BENCHMARK_CHALLENGER`, `production_eligible: false`,
+exact `book_id`, generation `task_type`, `logical_key`, `generation_idempotency_key`,
+the canonical `input_versions_hash`, `command_hash`, `candidate_id`, `model_revision`, timezone-aware
+`expires_at`, positive `maximum_calls`, `maximum_tokens`, `maximum_amount`, and `currency:
+USD`. The current challenger lane supports priced DeepSeek execution. A local operator
+passes only `routing_bootstrap_authorization_id` to the existing Planning generation
+command; admission freezes the governed grant. Production environments reject it.
+`command_hash` covers the normalized public Planning command, including default fields,
+with only the authorization ID and server snapshot omitted. Multi-stage world preparation
+requires its own governed evidence and is excluded from this single-stage sampling grant.
+The router emits `BENCHMARK_SELECTED` with the original quality exclusions preserved;
+Kernel checks immutable decision identity, expiry and locked aggregate quota before send.
+Reusing an authorization ID in a later policy version does not reset its quota.
+Historical replay uses the frozen grant, while a new send must still precede expiry.
+Candidates remain ineligible for production even after an explicit independent evaluation.
+No automatic judge or repair is authorized by the generator grant. Independent calibrated
+evaluation remains necessary; a model cannot establish its own qualification.
+
+Optional Codex escalation requires `NOVEL_FORGE_ROUTER_CODEX_ESCALATION=true`, an explicit
+`NOVEL_FORGE_CODEX_ESCALATION_MODEL`, positive `NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT`,
+`NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT`, `NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT`,
+and timezone-aware `NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM` / `VALID_UNTIL`, together with
+the existing verified CLI/entitlement configuration. Unavailable configured lanes fail
+closed; disabling the lane does not authorize a quality downgrade. Call limits count
+accounted reservation generations, including paid retries, while released unsent calls
+do not consume capacity. Shared usage locks prevent USD and entitlement reservations
+from racing through global token/call caps.
+Book Opening's immutable budget policy may explicitly add an `account_entitlement_lane`
+with its Codex model, authorization reference/version and finite call/token quota. The
+deployment supplies it through `NOVEL_FORGE_BOOK_OPENING_ACCOUNT_ENTITLEMENT_POLICY` as
+JSON; composition requires an exact match with the configured Codex escalation identity.
+A priced envelope without that lane still rejects entitlement execution. Both lanes consume
+the parent call/token budget; progress reports retain unknown entitlement monetary cost
+separately from priced USD expenditure.
+
+The current routing migration extends the existing versioned policy owner constraint
+and adds a chain lookup index. It does not rewrite Provider identities or backfill
+historical decisions. Planning semantic repair follows durable predecessor relationships
+and freezes their Operation identities into subsequent routing decisions; task budgets and
+failure/escalation bounds span that lineage. Unfinished legacy Provider executions retain
+their original identity and require reconciliation. Independent quality calibration is
+still missing for several task families, and no accepted real-Provider Chapter chain has
+qualified this router replacement; production readiness remains `NO`.
+
 Credentialed Provider qualification is intentionally separate from P0. The only live
 runner is `make real-provider-qualification`; the D0 contract probe and worker remain
 fixture-only and cannot send with a credential. The live runner requires a clean worktree,

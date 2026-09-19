@@ -48,6 +48,62 @@ styles without the new policy retain the v1 contract.
 
 ## Scoped worker approval and local Codex execution
 
+Production composition now freezes model selection through
+`ProductionProviderRouter` before Chapter, Planning and Source Provider admission.
+Business stages select task policies; the production composition ignores their
+former model environment defaults. Decisions retain candidate capabilities, pricing,
+benchmark observations, quality constraints, retry-chain and budget snapshots as
+immutable `routing_decision` assets. Command Kernel remains the reservation,
+settlement and unknown-outcome Authority. Policy floors and confidence penalties are
+`CONFIGURABLE_POLICY`, not proven literary quality invariants.
+Embedding execution retains its typed index/model/dimension compatibility contract;
+generative routing cannot substitute another vector space.
+
+The cost-aware replacement is **not production ready**. Chapter calibrated scores,
+independent Planning qualification decisions, and reconciled Source narrative reviews
+project into task-specific benchmark metrics. A domain gate acceptance probability is
+not a calibrated literary score. Model revisions and observed DeepSeek service cohorts
+remain separate; missing legacy identity cannot qualify a current model. Classification,
+MKAOS extraction, and judges without independent calibration remain unqualified.
+Planning has an explicitly authorized, bounded validation challenger path. Its immutable
+decisions retain unknown quality and the original production rejection reasons; generated
+candidates remain `BENCHMARK_ONLY` and cannot be qualified, approved or activated for
+production. Independent evaluation can contribute benchmark observations, with challenger
+and production acceptance reported separately. This path does not provide independent
+judge calibration or bootstrap every task family. Ordinary production routing blocks
+when sufficient quality evidence is absent.
+
+Quality predictions are bounded by observed schema and acceptance yield, so failed
+outputs cannot disappear behind scores from successful outputs. Cache estimates use
+measured hit tokens from the same stable instruction prefix. Recent dispatch failures
+temporarily remove an affected model from new decisions across task chains. Kernel
+reservation and dispatch also enforce retry deferral on the frozen existing effect.
+Independent Planning and Source outcome references participate in retry history.
+
+The existing versioned policy Authority governs per-work/task/chapter risk and quality
+increases. Optional Codex escalation reuses the actual CLI backend, explicit entitlement
+identity, configuration revision, finite call/token limits and expiry. Mixed accounting
+is frozen per reservation; entitlement is not free USD. Book Opening envelopes must
+explicitly authorize a finite entitlement lane alongside priced execution. Both lanes
+share parent call/token limits, while USD and unknown subscription cost remain separate.
+Planning's frozen-effect recovery preserves its original route. New repair Operations
+derive a bounded root-to-current lineage from durable repair relationships and share
+failure, escalation and task budget history. Historical decisions remain legacy/unknown,
+with no fabricated routing or Provider identities.
+The current four-attempt routing bound and eight-Operation repair traversal bound are
+`CURRENT_RUNTIME_FACT`; neither establishes a permanent business invariant.
+
+DeepSeek uses the official chat-completions protocol, explicit low/high/max reasoning,
+structured JSON, bounded timeout, and observed usage/cache receipts. The current API
+catalog maps `deepseek-flash` to V4.1 Flash and `deepseek-v4-pro` to V4 Pro; the live
+September 16 official pricing footnote retains Pro service after September 14. Old V4
+Flash aliases do not prove V4 Flash execution. Peak prices bound reservations; measured
+usage plus a frozen price schedule produces a price estimate, never a Provider invoice.
+A call crossing a price boundary retains the peak upper bound. Remote cancellation,
+query and idempotency are unavailable; unknown outcomes hold budget and require
+reconciliation. Fixture and HTTP-contract tests do not establish an accepted production
+Chapter or model quality.
+
 Formation claim and execution resolve the same configured Book worker Principal while
 retaining the initiating operator and decision actor. The worker role has only the
 execution permissions it needs. `AUTO` approval is a separate authorization bound to

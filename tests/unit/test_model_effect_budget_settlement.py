@@ -22,7 +22,9 @@ from novel_forge.modules.command_kernel.worker_execution import (
 )
 
 
-def _result(*, cost: dict[str, object], input_tokens: int = 1200) -> ModelProviderResult:
+def _result(
+    *, cost: dict[str, object], input_tokens: int = 1200
+) -> ModelProviderResult:
     return ModelProviderResult(
         output={"accepted": True},
         provider_id="provider-v2",
@@ -45,9 +47,7 @@ def _result(*, cost: dict[str, object], input_tokens: int = 1200) -> ModelProvid
 
 def test_real_provider_without_cost_receipt_keeps_reservation_ceiling() -> None:
     amount, tokens, evidence = _model_budget_settlement(
-        _result(
-            cost={"amount": "0", "currency": "USD", "source": "not_provided"}
-        ),
+        _result(cost={"amount": "0", "currency": "USD", "source": "not_provided"}),
         reserved_amount="2",
         reserved_tokens=100_000,
         frozen_capability_profile={
@@ -69,7 +69,8 @@ def test_frozen_authoritative_cost_receipt_settles_measured_amount() -> None:
         _result(
             cost={
                 "availability": "AVAILABLE",
-                "measurement": "ESTIMATED",
+                "measurement": "PROVIDER_REPORTED",
+                "provider_billed": True,
                 "amount": "0.375",
                 "currency": "USD",
                 "pricing_snapshot_hash": "sha256:" + "a" * 64,
@@ -247,6 +248,7 @@ def test_failed_sent_provider_uses_authoritative_measurement() -> None:
                         },
                         "cost": {
                             "availability": "AVAILABLE",
+                            "provider_billed": True,
                             "amount": "0.4",
                         },
                     }
@@ -277,6 +279,7 @@ def test_successful_receipt_is_settled_before_retryable_retrieval_rejection(
         _result(
             cost={
                 "availability": "AVAILABLE",
+                "provider_billed": True,
                 "amount": "0.375",
                 "currency": "USD",
             }
@@ -373,7 +376,9 @@ def test_successful_receipt_is_settled_before_retryable_retrieval_rejection(
         port.invoke(request, stage="retrieval", payload={"texts": ["frozen query"]})
 
     assert raised.value.code == "RETRIEVAL_EMBEDDING_OUTPUT_IDENTITY_MISMATCH"
-    assert WorkerFailureClassifier.classify(raised.value) == WorkerFailureClass.RETRYABLE
+    assert (
+        WorkerFailureClassifier.classify(raised.value) == WorkerFailureClass.RETRYABLE
+    )
     assert cursor.execute.call_args.args[1] == ["project", "original-effect"]
     assert reserve.call_args.args[1].external_effect_id == "original-effect"
     assert dispatch.call_count == int(not completed_effect)
@@ -389,3 +394,127 @@ def test_successful_receipt_is_settled_before_retryable_retrieval_rejection(
     cost_log.assert_called_once()
     assert model_log.call_args.kwargs["external_effect_id"] == "original-effect"
     assert cost_log.call_args.kwargs["external_effect_id"] == "original-effect"
+
+
+def test_usage_pricing_never_becomes_a_provider_billed_receipt() -> None:
+    cost = {
+        "availability": "AVAILABLE",
+        "source": "usage_pricing",
+        "provider_billed": False,
+        "measurement": "PRICED_FROM_PROVIDER_USAGE",
+        "amount": "0.0007",
+        "currency": "USD",
+        "pricing_version": "price-v1",
+        "pricing_snapshot": {"version": "price-v1"},
+    }
+    amount, tokens, evidence = _model_budget_settlement(
+        _result(cost=cost),
+        reserved_amount="2",
+        reserved_tokens=100_000,
+        frozen_capability_profile={
+            "supports_usage_receipt": True,
+            "supports_cost_receipt": True,
+            "supports_usage_pricing": True,
+        },
+    )
+    assert amount == "0.0007"
+    assert tokens == 1500
+    assert evidence["cost_settlement_basis"] == "FROZEN_USAGE_PRICING"
+    from novel_forge.modules.story_planning_runtime.execution import (
+        _planning_budget_settlement,
+    )
+
+    measured = _planning_budget_settlement(
+        usage={"input_tokens": 1200, "output_tokens": 300, "total_tokens": 1500},
+        cost=cost,
+        reserved_amount="2",
+        reserved_tokens=100_000,
+        supports_usage_receipt=True,
+        supports_cost_receipt=True,
+        fixture=False,
+    )
+    assert measured["amount"] == "0.0007"
+    assert measured["cost_basis"] == "FROZEN_USAGE_PRICING"
+    failure = _model_failed_provider_budget_decision(
+        dispatched={
+            "outcome": "final_failure",
+            "request_sent": True,
+            "provider_evidence": {
+                "production_execution": {
+                    "process_evidence": {
+                        "submission_phase": "PROVIDER_RESULT_RECORDED",
+                        "usage": {
+                            "availability": "AVAILABLE",
+                            "measurement": "PROVIDER_REPORTED",
+                            "input_tokens": 1200,
+                            "output_tokens": 300,
+                            "total_tokens": 1500,
+                        },
+                        "cost": cost,
+                    }
+                }
+            },
+        },
+        reserved_amount="2",
+        reserved_tokens=100_000,
+        frozen_capability_profile={
+            "supports_usage_receipt": True,
+            "supports_cost_receipt": True,
+            "supports_usage_pricing": True,
+        },
+    )
+    assert failure["actual_amount"] == "0.0007"
+    assert failure["cost_settlement_basis"] == "FROZEN_USAGE_PRICING"
+
+
+def test_missing_billing_proof_cannot_release_a_monetary_reservation() -> None:
+    from novel_forge.modules.source_import.execution import _source_budget_settlement
+    from novel_forge.modules.story_planning_runtime.execution import (
+        _planning_budget_settlement,
+    )
+
+    cost = {"availability": "AVAILABLE", "amount": "0.001"}
+    usage = {
+        "measurement": "PROVIDER_REPORTED",
+        "input_tokens": 1200,
+        "output_tokens": 300,
+        "total_tokens": 1500,
+    }
+    capabilities = {"supports_usage_receipt": True, "supports_cost_receipt": True}
+    amount, tokens, evidence = _model_budget_settlement(
+        _result(cost=cost),
+        reserved_amount="2",
+        reserved_tokens=100_000,
+        frozen_capability_profile=capabilities,
+    )
+    assert (amount, tokens, evidence["cost_settlement_basis"]) == (
+        "2",
+        1500,
+        "RESERVATION_CEILING",
+    )
+    planning = _planning_budget_settlement(
+        usage=usage,
+        cost=cost,
+        fixture=False,
+        supports_usage_receipt=True,
+        supports_cost_receipt=True,
+        reserved_amount="2",
+        reserved_tokens=100_000,
+    )
+    assert (planning["amount"], planning["cost_basis"]) == ("2", "RESERVATION_CEILING")
+    source = _source_budget_settlement(
+        usage=usage,
+        cost=cost,
+        fixture=False,
+        capability_profile=capabilities,
+        accounting_basis="PRICED",
+        reserved_amount="2",
+        reserved_tokens=100_000,
+        provider_id="provider",
+        model_id="model",
+        real_model_call=True,
+    )
+    assert (source["amount"], source["cost_settlement_basis"]) == (
+        "2",
+        "RESERVATION_CEILING",
+    )

@@ -351,7 +351,7 @@ class _RecordingUow:
         self.cursor = _RecordingCursor()
 
 
-def test_budget_lock_interface_uses_currency_then_scope_in_sorted_order() -> None:
+def test_budget_lock_interface_uses_usage_then_currency_then_scope_order() -> None:
     uow = _RecordingUow()
 
     acquire_budget_locks_in_uow(
@@ -361,6 +361,7 @@ def test_budget_lock_interface_uses_currency_then_scope_in_sorted_order() -> Non
     )
 
     assert uow.cursor.params == [
+        "authority-provider-budget:shared-usage",
         "authority-provider-budget:EUR",
         "authority-provider-budget:USD",
         "authority-provider-budget-scope:scope:a",
@@ -408,3 +409,31 @@ def test_budget_evidence_link_identity_is_generation_and_version_bound() -> None
                 "evidence_kind": "PROMPT",
             }
         )
+
+
+def test_mixed_opening_policy_is_explicit_versioned_and_currency_separated() -> None:
+    from types import SimpleNamespace
+    from novel_forge.api.authority_dependencies import _book_opening_provider_budget_policy
+    import json
+
+    lane = {"execution_mode": "PROVIDER_ALLOWED", "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "provider": "codex-cli", "model_id": "codex-test", "currency": "UNKNOWN",
+            "authorization_ref": "account:approved", "authorization_version": "config:v1",
+            "cost_observability": "UNKNOWN", "provider_call_limit": 2,
+            "token_limit": 200_000, "per_call_token_limit": 100_000}
+    candidate = SimpleNamespace(provider="codex-cli", escalation_only=True, model="codex-test",
+        authorization_ref="account:approved", capability_version="config:v1", quota_remaining=2,
+        pricing=SimpleNamespace(version="config:v1", accounting_basis="ACCOUNT_ENTITLEMENT", currency="UNKNOWN"))
+    execution = SimpleNamespace(cost_accounting_basis="PRICED", gateway=SimpleNamespace(
+        provider_router=SimpleNamespace(candidates=[candidate])))
+    assert "account_entitlement_lane" not in _book_opening_provider_budget_policy(execution, {})
+    policy = _book_opening_provider_budget_policy(execution, {
+        "NOVEL_FORGE_BOOK_OPENING_ACCOUNT_ENTITLEMENT_POLICY": json.dumps(lane)})
+    assert policy["cost_limit_usd"] == "96"
+    assert policy["account_entitlement_lane"] == lane
+    for invalid in ({"currency": "USD"}, {"authorization_version": ""}, {"cost_limit_usd": "0"}, {"provider_call_limit": 49}):
+        with pytest.raises(KernelError):
+            canonical_budget_policy({**policy, "account_entitlement_lane": {**lane, **invalid}})
+    with pytest.raises(ValueError, match="configured authorized route"):
+        _book_opening_provider_budget_policy(execution, {
+            "NOVEL_FORGE_BOOK_OPENING_ACCOUNT_ENTITLEMENT_POLICY": json.dumps({**lane, "authorization_version": "config:v2"})})

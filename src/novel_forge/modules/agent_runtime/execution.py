@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from dataclasses import dataclass
 from typing import Any, Mapping
 from uuid import NAMESPACE_URL, uuid5
@@ -344,6 +346,19 @@ class ChapterGatewayAgentExecutionPreparer:
                     }
                 )
                 payload = {**payload, "_production_execution": metadata}
+        decision = payload.get("_production_execution", {}).get("capability_runtime", {}).get("routing_decision") or {}
+        selected = (decision.get("selected") or {}).get("candidate") or {}
+        routed_amount = None
+        if decision:
+            from novel_forge.modules.production_execution.routing_runtime import routed_reservation
+
+            cost_accounting_basis = selected["pricing"]["accounting_basis"]
+            account_authorization_ref = selected.get("authorization_ref", "")
+            routed_amount = routed_reservation(decision,
+                input_tokens=max(0, provider_budget_tokens - provider_output_token_ceiling),
+                output_tokens=provider_output_token_ceiling)
+            if routed_amount is not None and Decimal(routed_amount) > Decimal(self.max_cost_per_call):
+                raise KernelError("BUDGET_HARD_LIMIT", "routed Agent call exceeds per-call cap")
         effect = plan_external_effect(
             self.database_url,
             effect_context,
@@ -355,7 +370,7 @@ class ChapterGatewayAgentExecutionPreparer:
             max_attempts=2,
             reversible=False,
             completion_policy="synchronous_final",
-            model_id=self.adapter.model_id_for_stage(stage),
+            model_id=selected.get("model") or self.adapter.model_id_for_stage(stage),
             request_timeout_seconds=self.lease_seconds * 5,
             reconciliation_mode=self.adapter.reconciliation_mode,
             provider_capability_profile=self.adapter.capability_profile.to_dict(),
@@ -382,7 +397,9 @@ class ChapterGatewayAgentExecutionPreparer:
                 external_effect_id=str(effect["external_effect_id"]),
                 project_id=str(operation["project_id"]),
                 stable_idempotency_key=f"budget:{stable_key}",
-                provider=self.adapter.provider,
+                provider=selected.get("provider") or self.adapter.provider,
+                model_id=str(selected.get("model") or ""),
+                work_id=str(command["book_id"]) if decision else "",
                 currency=(
                     "UNKNOWN"
                     if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
@@ -392,13 +409,13 @@ class ChapterGatewayAgentExecutionPreparer:
                     None
                     if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
                     else str(
-                        provider_token_contract.get("estimated_cost_amount")
+                        routed_amount or provider_token_contract.get("estimated_cost_amount")
                         or self.max_cost_per_call
                     )
                 ),
                 estimated_tokens=provider_budget_tokens,
                 chapter=int(command["chapter_number"]),
-                caps=self.budget_caps,
+                caps={} if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else self.budget_caps,
                 call_caps=dict(getattr(self, "provider_call_caps", {}) or {}),
                 token_caps=dict(getattr(self, "provider_token_caps", {}) or {}),
                 budget_scope_id=str(

@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import unittest
 from dataclasses import replace
+from types import SimpleNamespace
+
+from novel_forge.cli.provider_routing import _priced_observation_metrics
 
 from novel_forge.modules.production_execution import (
     CompletionMode,
@@ -70,6 +73,58 @@ def _model_profile(
 
 
 class ProductionExecutionRoutingTests(unittest.TestCase):
+    def test_provider_metrics_do_not_mix_challengers_with_production_acceptance(
+        self,
+    ) -> None:
+        rows = [
+            SimpleNamespace(
+                evidence_class="PRODUCTION_OUTCOME",
+                production_eligible=True,
+                accepted=True,
+                priced_cost="3",
+                quality_score=0.9,
+            ),
+            SimpleNamespace(
+                evidence_class="PRODUCTION_OUTCOME",
+                production_eligible=True,
+                accepted=False,
+                priced_cost="2",
+                quality_score=0.6,
+            ),
+            SimpleNamespace(
+                evidence_class="BENCHMARK_CHALLENGER",
+                production_eligible=False,
+                accepted=True,
+                priced_cost="7",
+                quality_score=0.8,
+            ),
+            SimpleNamespace(
+                evidence_class="UNCLASSIFIED_REAL_PROVIDER",
+                production_eligible=False,
+                accepted=True,
+                priced_cost="11",
+                quality_score=None,
+            ),
+        ]
+
+        metrics = _priced_observation_metrics(rows)
+
+        self.assertEqual(metrics["production_accepted_output_count"], 1)
+        self.assertEqual(metrics["production_priced_usage_cost"], "5")
+        self.assertEqual(metrics["priced_cost_per_accepted_output"], "5")
+        self.assertEqual(metrics["quality_per_priced_dollar"], "0.3")
+        self.assertEqual(
+            metrics["production_quality_per_cost_metric"], "CALIBRATED_SCORE"
+        )
+        self.assertEqual(metrics["benchmark_challenger_accepted_output_count"], 1)
+        self.assertEqual(
+            metrics["benchmark_challenger_priced_cost_per_accepted_output"], "7"
+        )
+        self.assertEqual(metrics["unclassified_priced_usage_cost"], "11")
+        self.assertIsNone(
+            metrics["unclassified_calibrated_quality_per_priced_dollar"]
+        )
+
     def _resolver(self, fallback: FallbackPolicy) -> RouteResolver:
         primary = _model_profile(
             "chapter.primary", "remote-provider-a", "openai", "gpt-primary"

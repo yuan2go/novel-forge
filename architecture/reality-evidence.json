@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260914_0134_opening_capacity_continuation",
+  "migration_head": "20260916_0136_provider_routing_policy",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4774,6 +4774,38 @@
         {
           "path": "src/novel_forge/modules/command_kernel/creative_budget_scope.py",
           "symbol": "require_business_scope"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/cost_routing.py",
+          "symbol": "CostAwareRouter"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_runtime.py",
+          "symbol": "ProductionProviderRouter"
+        },
+        {
+          "path": "src/novel_forge/modules/provider_control/deepseek.py",
+          "symbol": "DeepSeekProviderAdapter"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_policy.py",
+          "symbol": "task_requirements"
+        },
+        {
+          "path": "src/novel_forge/modules/authority_handler_runtime/routing_feedback.py",
+          "symbol": "domain_gate_outcomes"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_bootstrap.py",
+          "symbol": "benchmark_decision"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+          "symbol": "verify_routing_bootstrap_budget"
+        },
+        {
+          "path": "src/novel_forge/modules/authority_handler_runtime/routing_bootstrap.py",
+          "symbol": "freeze_planning_bootstrap_authorization"
         }
       ],
       "commands_operations": [
@@ -4784,6 +4816,10 @@
         {
           "path": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
           "symbol": "configure_creative_budget"
+        },
+        {
+          "path": "src/novel_forge/modules/authority_handler_runtime/policy_commands.py",
+          "symbol": "configure_owned_policy"
         }
       ],
       "state_ownership": {
@@ -4833,6 +4869,16 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260912_0130_creative_experiment_budget.py",
           "locator": "MIGRATION_ID = \"20260912_0130_creative_experiment_budget\"",
           "id": "20260912_0130_creative_experiment_budget"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260914_0135_cost_routing_indexes.py",
+          "locator": "MIGRATION_ID = \"20260914_0135_cost_routing_indexes\"",
+          "id": "20260914_0135_cost_routing_indexes"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260916_0136_provider_routing_policy.py",
+          "locator": "MIGRATION_ID = \"20260916_0136_provider_routing_policy\"",
+          "id": "20260916_0136_provider_routing_policy"
         }
       ],
       "external_effects": {
@@ -4875,6 +4921,22 @@
         {
           "path": "tests/integration/test_single_book_budget_postgres.py",
           "symbol": "test_native_single_book_scope_blocks_every_creative_path_before_reservation"
+        },
+        {
+          "path": "tests/integration/test_provider_routing_postgres.py",
+          "symbol": "test_cold_start_persists_block_and_never_dispatches"
+        },
+        {
+          "path": "tests/integration/test_provider_routing_postgres.py",
+          "symbol": "test_rate_limit_on_another_chain_blocks_only_the_affected_model_until_retry_after"
+        },
+        {
+          "path": "tests/unit/test_cost_aware_routing.py",
+          "symbol": "test_failed_outputs_cannot_hide_behind_surviving_high_quality_scores"
+        },
+        {
+          "path": "tests/integration/test_planning_routing_bootstrap_postgres.py",
+          "symbol": "test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7921,7 +7983,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:f2ff37fa36ec31862595c9a9a9383baabff13ec0b0956446bf443bd0b7adc713"
+    "implementation_tree_sha": "sha256:4b4a0cbca7dccbaf8e09dc6032c30c5c3d5dd320679560f6d2a4a918643cf838"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

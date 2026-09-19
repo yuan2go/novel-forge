@@ -9,6 +9,7 @@ from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -51,6 +52,7 @@ from novel_forge.modules.source_import.classical_corpus import resolve_work_spec
 from novel_forge.modules.source_import.methodologies import METHODOLOGY_VERSIONS
 from novel_forge.modules.source_import import analysis_profiles
 from novel_forge.modules.source_import.profiling import SourceContentType
+from novel_forge.modules.source_import import execution as source_execution
 from novel_forge.modules.source_authority import (
     PlanSourceReprocessingCommand,
     ReprocessingTarget,
@@ -126,6 +128,146 @@ class _UnknownOnceGitAdapter:
 
     def read_blob(self, repository_identity: str, object_id: str) -> bytes:
         return self.delegate.read_blob(repository_identity, object_id)
+
+
+class SourceBudgetSettlementTests(unittest.TestCase):
+    def test_usage_pricing_is_distinct_from_provider_billing(self) -> None:
+        settlement = source_execution._source_budget_settlement(
+            usage={
+                "measurement": "PROVIDER_REPORTED",
+                "input_tokens": 100,
+                "output_tokens": 49,
+                "total_tokens": 149,
+            },
+            cost={
+                "amount": "0.0000489",
+                "availability": "AVAILABLE",
+                "source": "usage_pricing",
+                "measurement": "PRICED_FROM_PROVIDER_USAGE",
+                "provider_billed": False,
+                "pricing_version": "deepseek-peak-ceiling:v1",
+                "pricing_snapshot": {"currency": "USD"},
+                "pricing_snapshot_hash": "sha256:" + "a" * 64,
+            },
+            fixture=False,
+            capability_profile={
+                "supports_usage_receipt": True,
+                "supports_cost_receipt": True,
+                "supports_usage_pricing": True,
+            },
+            accounting_basis="PRICED",
+            reserved_amount="0.10",
+            reserved_tokens=200,
+            provider_id="deepseek",
+            model_id="deepseek-flash",
+        )
+
+        self.assertEqual(settlement["amount"], "0.0000489")
+        self.assertEqual(settlement["total_tokens"], 149)
+        self.assertEqual(settlement["cost_settlement_basis"], "FROZEN_USAGE_PRICING")
+        self.assertFalse(settlement["evidence"]["provider_billed"])
+        self.assertEqual(
+            settlement["evidence"]["pricing_snapshot_hash"],
+            "sha256:" + "a" * 64,
+        )
+
+    def test_untrusted_priced_cost_uses_frozen_reservation_ceiling(self) -> None:
+        settlement = source_execution._source_budget_settlement(
+            usage={"measurement": "UNKNOWN", "total_tokens": 0},
+            cost={
+                "amount": "0",
+                "availability": "AVAILABLE",
+                "source": "usage_pricing",
+                "measurement": "PRICED_FROM_PROVIDER_USAGE",
+                "provider_billed": False,
+            },
+            fixture=False,
+            capability_profile={
+                "supports_usage_receipt": True,
+                "supports_cost_receipt": True,
+                "supports_usage_pricing": True,
+            },
+            accounting_basis="PRICED",
+            reserved_amount="0.10",
+            reserved_tokens=200,
+            provider_id="deepseek",
+            model_id="deepseek-flash",
+        )
+
+        self.assertEqual(settlement["amount"], "0.10")
+        self.assertEqual(settlement["total_tokens"], 200)
+        self.assertEqual(settlement["cost_settlement_basis"], "RESERVATION_CEILING")
+        self.assertEqual(settlement["token_settlement_basis"], "RESERVATION_CEILING")
+
+    def test_account_entitlement_keeps_monetary_cost_unknown(self) -> None:
+        settlement = source_execution._source_budget_settlement(
+            usage={"measurement": "PROVIDER_REPORTED", "total_tokens": 149},
+            cost={"amount": "99", "provider_billed": True},
+            fixture=False,
+            capability_profile={"supports_usage_receipt": True},
+            accounting_basis="ACCOUNT_ENTITLEMENT",
+            reserved_amount=None,
+            reserved_tokens=200,
+            provider_id="codex-cli",
+            model_id="gpt-test",
+        )
+
+        self.assertIsNone(settlement["amount"])
+        self.assertEqual(settlement["total_tokens"], 149)
+        self.assertEqual(
+            settlement["cost_settlement_basis"], "ACCOUNT_ENTITLEMENT_UNKNOWN"
+        )
+        self.assertEqual(settlement["evidence"]["cost_status"], "UNKNOWN")
+        self.assertFalse(settlement["evidence"]["real_model_call"])
+
+    def test_priced_fixture_receipt_remains_fixture_evidence(self) -> None:
+        settlement = source_execution._source_budget_settlement(
+            usage={"measurement": "MEASURED", "total_tokens": 12},
+            cost={"amount": "0.002", "measurement": "ESTIMATED"},
+            fixture=True,
+            capability_profile={
+                "supports_usage_receipt": True,
+                "supports_cost_receipt": True,
+            },
+            accounting_basis="PRICED",
+            reserved_amount="0.10",
+            reserved_tokens=200,
+            provider_id="scripted_provider_v2",
+            model_id="fixture-model",
+        )
+
+        self.assertEqual(settlement["amount"], "0.002")
+        self.assertEqual(settlement["total_tokens"], 12)
+        self.assertEqual(settlement["cost_settlement_basis"], "FIXTURE_RECEIPT")
+        self.assertTrue(settlement["evidence"]["fixture"])
+        self.assertFalse(settlement["evidence"]["real_model_call"])
+
+    def test_legacy_pricing_estimate_retains_historical_accounting(self) -> None:
+        settlement = source_execution._source_budget_settlement(
+            usage={"measurement": "MEASURED", "total_tokens": 12},
+            cost={
+                "amount": "0.002",
+                "measurement": "ESTIMATED",
+                "provider_billed": False,
+                "pricing_ref": "legacy-pricing:v1",
+                "pricing_snapshot_hash": "sha256:" + "b" * 64,
+                "calculation_basis": "application-visible estimate",
+            },
+            fixture=False,
+            capability_profile={
+                "supports_usage_receipt": True,
+                "supports_cost_receipt": True,
+            },
+            accounting_basis="PRICED",
+            reserved_amount="0.10",
+            reserved_tokens=200,
+            provider_id="codex-cli",
+            model_id="legacy-model",
+        )
+
+        self.assertEqual(settlement["amount"], "0.002")
+        self.assertEqual(settlement["cost_settlement_basis"], "LEGACY_PRICING_ESTIMATE")
+        self.assertFalse(settlement["evidence"]["provider_billed"])
 
 
 class SourceImportRuntimePostgresTests(unittest.TestCase):
@@ -292,22 +434,58 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             worker_id="source-import-production-composition-worker",
             lease_seconds=30,
         )
-        for _ in range(80):
-            ready = self._ready_source_operation_ids()
-            if not ready:
-                break
-            for operation_id in ready:
-                scheduler.run_or_recover(
-                    operation_id=operation_id, project_id=self.project_id
-                )
-        else:
-            self.fail("production Source Import composition did not quiesce")
+        with patch(
+            "novel_forge.modules.source_import.execution.settle_provider_budget",
+            return_value={"status": "RESERVED"},
+        ):
+            for _ in range(80):
+                ready = self._ready_source_operation_ids()
+                if not ready:
+                    break
+                for operation_id in ready:
+                    scheduler.run_or_recover(
+                        operation_id=operation_id, project_id=self.project_id
+                    )
+            else:
+                self.fail("production Source Import composition did not quiesce")
         routes = self._document_routes(admitted["import_job_id"])
         self.assertEqual(routes["theory.md"]["resolved_content_type"], "WRITING_THEORY")
         methodology_ids = {
             item["skill_id"] for item in routes["theory.md"]["methodologies"]
         }
         self.assertEqual(methodology_ids, {"multidisciplinary-knowledge"})
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT effect.request_payload #>> '{_source_intelligence,cache_key}',
+                          reservation.reservation_id
+                   FROM authority_external_effect effect
+                   JOIN authority_budget_reservation reservation
+                     USING(external_effect_id)
+                   WHERE effect.project_id=%s AND effect.status='SUCCEEDED'
+                     AND reservation.status='RESERVED'
+                     AND effect.request_payload ? '_source_intelligence'
+                   ORDER BY effect.created_at DESC LIMIT 1""",
+                [self.project_id],
+            )
+            cache_key, reservation_id = cursor.fetchone()
+        replay = composed.execution_port._replay_succeeded_effect(
+            worker=SimpleNamespace(project_id=self.project_id), cache_key=cache_key
+        )
+        self.assertTrue(replay["provider_execution_reused"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT cost.model,cost.evidence,reservation.status
+                   FROM authority_operation_cost_evidence cost
+                   JOIN authority_budget_reservation reservation
+                     ON cost.cost_evidence_id='budget-cost:' || reservation.reservation_id
+                   WHERE reservation.reservation_id=%s""",
+                [reservation_id],
+            )
+            model, cost_evidence, status = cursor.fetchone()
+        self.assertTrue(model)
+        self.assertEqual(status, "SETTLED")
+        self.assertTrue(cost_evidence["fixture"])
+        self.assertEqual(cost_evidence["cost_settlement_basis"], "FIXTURE_RECEIPT")
 
     def test_work_import_materializes_native_manifest_and_exact_replay(self) -> None:
         spec = resolve_work_spec("chinese-novel.sanguoyanyi")
