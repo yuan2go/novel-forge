@@ -145,7 +145,7 @@ def validate_bootstrap_history(
     campaigns: dict[str, Mapping[str, Any]] = {}
     groups: dict[tuple[str, str], str] = {}
     samples: dict[tuple[str, str], tuple[str, str, str]] = {}
-    inputs: dict[tuple[str, str], str] = {}
+    inputs: dict[tuple[str, str], tuple[str, str]] = {}
     for grant in [*previous, *grants]:
         key = grant["authorization_id"]
         if key in identities and identities[key] != grant:
@@ -174,10 +174,13 @@ def validate_bootstrap_history(
                               "a sample retains its data group, task and input versions")
         samples[sample] = binding
         source = (identity, grant["input_versions_hash"])
-        if source in inputs and inputs[source] != partition:
+        if source in inputs and inputs[source][1] != partition:
             raise KernelError("ROUTING_CAMPAIGN_HOLDOUT_LEAKAGE",
                               "identical inputs cannot acquire a new partition by renaming")
-        inputs[source] = partition
+        if source in inputs and inputs[source][0] != campaign["group_id"]:
+            raise KernelError("ROUTING_CAMPAIGN_INPUT_GROUP_REDEFINED",
+                              "identical inputs cannot become independent by renaming their data group")
+        inputs[source] = (campaign["group_id"], partition)
     if len(campaigns) > 1:
         raise KernelError("ROUTING_CAMPAIGN_PROJECT_REBIND_FORBIDDEN",
                           "a campaign project cannot reset usage by changing campaign identity")

@@ -392,7 +392,9 @@ exact `campaign_id`, `manifest_hash` (SHA-256), `sample_id`, `group_id`, `partit
 decimal-string `maximum_amount` and timezone-aware `expires_at`. Grant limits cannot
 exceed campaign limits. Policy versions retain authorization and campaign identity;
 renaming a run, sample or authorization does not reset the cumulative budget. A data group
-or identical input-version set cannot cross partitions. These checks do not detect
+or identical input-version set cannot cross partitions, and identical inputs cannot
+acquire another data group. Changing sample IDs inside one group does not increase
+independent qualification counts. These checks do not detect
 semantic paraphrases or replace an independently frozen dataset.
 `novel-forge authority-provider-routing campaign --project-id <id> --campaign-id <id>`
 reads all historical grants and native reservation/effect references, including failures

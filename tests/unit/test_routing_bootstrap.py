@@ -320,3 +320,12 @@ def test_campaign_cannot_be_evaded_by_a_new_unbound_authorization():
         validate_bootstrap_history([legacy], [grant])
     with pytest.raises(KernelError, match="CAMPAIGN_MEMBERSHIP_REQUIRED"):
         validate_bootstrap_history([grant, legacy], [])
+
+
+def test_identical_inputs_cannot_be_relabelled_as_an_independent_data_group():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history
+    grant = campaign_grant()
+    renamed = {**grant, "authorization_id": "renamed-grant", "campaign": {
+        **grant["campaign"], "sample_id": "renamed-sample", "group_id": "renamed-work"}}
+    with pytest.raises(KernelError, match="INPUT_GROUP_REDEFINED"):
+        validate_bootstrap_history([renamed], [grant])

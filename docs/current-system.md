@@ -78,7 +78,8 @@ group and experiment partition. Kernel aggregates their reservations across auth
 and policy versions. A campaign project cannot replace that identity or admit new unbound
 sampling grants. This quota covers bootstrap sampling; production, review and entitlement
 still require their existing project and Book budget policies. It is not a campaign-wide
-mixed-billing authorization. Router v4 counts independent first-attempt inputs for quality
+mixed-billing authorization. Router v4 counts first attempts per campaign data group
+(input hashes outside campaigns) for quality
 qualification, keeps retries in operational cost/yield, and excludes development and
 holdout partitions from qualification feedback. The provider view removes routing/grant
 metadata from narrative evaluation context; this does not establish evaluator calibration.

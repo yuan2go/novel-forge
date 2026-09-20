@@ -83,7 +83,7 @@ def write_asset(scope, kind, content):
     )
 
 
-@pytest.mark.parametrize("input_identity", ["unique", "repeated", "missing"])
+@pytest.mark.parametrize("input_identity", ["unique", "repeated", "missing", "renamed_sample"])
 def test_registry_projects_existing_model_and_quality_evidence_without_forging_acceptance(
     scope, input_identity,
 ):
@@ -106,6 +106,10 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
                 "task": {"input_hash": ("sha256:" + format(i if input_identity == "unique" else 0, "064x"))
                          if input_identity != "missing" else ""},
                 "selected": {"candidate": asdict(candidate)},
+                **({"bootstrap_authorization": {"authorization": {"campaign": {
+                    "campaign_id": "fixture", "manifest_hash": "sha256:" + "d" * 64,
+                    "group_id": "same-work", "sample_id": f"sample-{i}", "partition": "CALIBRATION"}}}}
+                   if input_identity == "renamed_sample" else {}),
             },
         )
         evidence = {
@@ -207,7 +211,7 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
     assert benchmark["benchmark_challenger_sample_count"] == 10
     assert benchmark["production_eligible_sample_count"] == 0
     assert benchmark["production_acceptance_rate"] is None
-    assert benchmark["metric_sample_count"] == {"unique": 10, "repeated": 1, "missing": 0}[input_identity]
+    assert benchmark["metric_sample_count"] == {"unique": 10, "repeated": 1, "missing": 0, "renamed_sample": 1}[input_identity]
 
 
 def test_cold_start_persists_block_and_never_dispatches(scope):

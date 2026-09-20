@@ -271,7 +271,7 @@ class PostgresRoutingRegistry:
             )
             sample_identity = (
                 snapshot_hash({key: campaign[key] for key in (
-                    "campaign_id", "manifest_hash", "sample_id",
+                    "campaign_id", "manifest_hash", "group_id",
                 )}) if campaign else str((decision or {}).get("task", {}).get("input_hash") or "")
             )
             observations.append(
