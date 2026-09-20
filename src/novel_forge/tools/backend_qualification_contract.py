@@ -63,6 +63,7 @@ P0_PROOF_SCOPE = {
         "agent-runtime",
         "postgresql-persistence-and-migrations",
         "retry-recovery-and-replay",
+        "narrative-craft-intelligence",
     ],
     "ceiling": "LOCAL_BACKEND_ENGINEERING",
     "does_not_establish": [
@@ -82,6 +83,7 @@ REQUIRED_SEMANTIC_SLICES = frozenset(
         "book_opening_recovery",
         "story_design_plan_change_activation",
         "bounded_retrieval_context",
+        "narrative_craft_engineering",
     }
 )
 DEPENDENCY_NAME_SEPARATOR = re.compile(r"[-_.]+")
