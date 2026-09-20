@@ -5056,6 +5056,14 @@
         {
           "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
           "symbol": "planning_schema_evidence_identity"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/provider_failure_accounting.py",
+          "symbol": "failed_provider_budget_decision"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/provider_failure_accounting.py",
+          "symbol": "failed_provider_submission_state"
         }
       ],
       "commands_operations": [
@@ -8478,7 +8486,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88"
+    "implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

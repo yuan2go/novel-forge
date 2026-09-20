@@ -1158,7 +1158,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute("""SELECT version.content FROM authority_operation_output_asset output
                 JOIN authority_asset_version version USING(asset_version_id)
-                JOIN authority_asset asset USING(asset_id)
+                JOIN authority_asset asset ON asset.asset_id=version.asset_id
                 WHERE output.operation_id=ANY(%s) AND asset.asset_type='model_call_log'""",
                 [[repaired["operation_id"], pending["operation_id"]]])
             failures = [row[0] for row in cursor.fetchall()]
