@@ -178,4 +178,95 @@ def reference_provider_result(cursor: Any, *, project_id: str, operation_id: str
     if not isinstance(evidence.get("result"), dict):
         raise KernelError("QUALITY_REFERENCE_PROVIDER_RESULT_MISSING", "native Provider result is unavailable")
     return {"result": evidence["result"], "model_call_asset_version_id": asset_id, "model_call_content_hash": digest,
-            "real_model_call": evidence.get("real_model_call") is True and not evidence.get("fixture_protocol_only")}
+            "real_model_call": evidence.get("real_model_call") is True and not any(
+                item.get(flag) is True for item in (content, evidence) for flag in ("fixture", "fixture_protocol_only"))}
+
+
+def reference_label_classes(cursor: Any, *, project_id: str, reference: Mapping[str, Any], stage: str) -> tuple[str, ...]:
+    classes = set()
+    statuses = {"PASSED": "PASS", "PASSED_WITH_WARNINGS": "PASS", "NEEDS_REVISION": "FAIL", "FAILED": "FAIL", "BLOCKED": "FAIL"}
+    for label in reference["labels"]:
+        status = statuses.get(label["status"])
+        if status is None or (stage not in {"review", "rereview"} and label["score_range"][1] - label["score_range"][0] > 20):
+            return ()
+        classes.add(status)
+        adjudication, _, _ = _native_label(cursor, project_id=project_id,
+            asset_version_id=label["adjudication_asset_version_id"], asset_type="adjudicated_evaluation",
+            operation_name="quality.adjudication.record", actor_field="adjudicator_id")
+        for asset_id in adjudication["source_human_evaluation_asset_version_ids"]:
+            human, _, _ = _native_label(cursor, project_id=project_id, asset_version_id=asset_id,
+                asset_type="human_evaluation", operation_name="quality.human_evaluation.record", actor_field="evaluator_id")
+            if ("FIXTURE" in human["evaluator_group"].upper()
+                or any(item.get("fixture_protocol_only") or item.get("fixture") for item in human["evidence"])):
+                return ()
+    return tuple(sorted(classes))
+
+
+def chapter_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list[str]) -> dict[str, dict[str, Any]]:
+    from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization, CHAPTER_REFERENCE_TASKS
+    from .reference_subject import require_chapter_sample_target
+
+    if not effect_ids:
+        return {}
+    cursor.execute("""SELECT effect.external_effect_id,effect.operation_id,model.content->>'attempt_id',operation.actor_id,
+        operation.command_payload->'payload',version.asset_version_id,version.content_hash,version.content
+        FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id)
+        JOIN authority_operation_output_asset output ON output.operation_id=operation.operation_id AND output.role='primary'
+        JOIN authority_asset_version version ON version.asset_version_id=output.asset_version_id AND version.content_hash=output.content_hash
+        JOIN authority_asset asset ON asset.asset_id=version.asset_id AND asset.project_id=operation.project_id
+        JOIN authority_asset_version model ON model.asset_version_id=version.content #>> '{reference_evaluation,model_call_asset_version_id}'
+          AND effect.external_effect_id=COALESCE(model.content->'provider_evidence',model.content) #>> '{production_execution,execution_request,external_effect_id}'
+        JOIN authority_attempt attempt ON attempt.attempt_id=model.content->>'attempt_id'
+          AND attempt.operation_id=operation.operation_id AND attempt.status='SUCCEEDED'
+        WHERE effect.project_id=%s AND effect.external_effect_id=ANY(%s) AND effect.status='SUCCEEDED'
+          AND operation.status='SUCCEEDED' AND asset.asset_type='chapter_provider_sample'
+          AND version.lifecycle='ACTIVE' AND version.eligibility='INELIGIBLE' AND version.governance='CLEAR'
+        ORDER BY version.created_at,version.asset_version_id""", [project_id, effect_ids])
+    rows = cursor.fetchall()
+    outcomes = {}
+    for effect_id, operation_id, attempt_id, actor, payload, asset_id, digest, content in rows:
+        stage = content.get("stage")
+        if (stage not in CHAPTER_REFERENCE_TASKS.values() or digest != authorization_hash(content)
+            or content.get("production_eligible") is not False or content.get("routing_eligibility") != "BENCHMARK_ONLY"):
+            continue
+        try:
+            snapshot = load_bootstrap_authorization(cursor, project_id=project_id, operation_id=operation_id, check_expiry=False)
+            grant = snapshot["authorization"] if snapshot else {}
+            if (grant.get("purpose") != "REFERENCE_EVALUATION" or content.get("authorization_id") != grant.get("authorization_id")
+                or content.get("campaign") != grant.get("campaign") or payload.get("generator_operation_name") != stage):
+                continue
+            provider = reference_provider_result(cursor, project_id=project_id, operation_id=operation_id, attempt_id=attempt_id, stage=stage)
+            if not provider["real_model_call"]:
+                continue
+            subject = require_chapter_sample_target(cursor, project_id=project_id, payload=payload) if (
+                payload["chapter_sampling"].get("generation_sample") is not None) else None
+            reference = require_chapter_reference(cursor, project_id=project_id, stage=stage,
+                input_versions=payload["input_versions"], binding=payload["reference_evaluation"], evaluator_actor_id=actor,
+                chapter=payload["chapter"], generation_sample=subject)
+            agreement = {**chapter_reference_agreement(reference, stage=stage, result=provider["result"]),
+                **{key: value for key, value in provider.items() if key != "result"}}
+            if agreement != content.get("reference_evaluation"):
+                continue
+            classes = reference_label_classes(cursor, project_id=project_id, reference=reference, stage=stage)
+            if not classes:
+                continue
+            cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s AND content_hash=%s",
+                [reference["target_asset_version_id"], reference["target_content_hash"]])
+            target = cursor.fetchone()[0]
+            prose = (target.get("sampled_output") or target).get("text")
+            if not isinstance(prose, str) or not prose.strip():
+                continue
+        except (KernelError, ValueError, TypeError, KeyError):
+            continue
+        agreed = all(item["status_agrees"] and (stage in {"review", "rereview"} or item["score_in_range"] is True)
+            for item in agreement["comparisons"])
+        outcomes[effect_id] = {"accepted": None, "metric": "REFERENCE_AGREEMENT.v1", "reference_agreed": agreed,
+            "reference_label_classes": classes,
+            "reference_protocol_hash": authorization_hash({"protocol_version": reference["binding"]["protocol_version"],
+                "evaluation_versions": sorted({item["evaluation_version"] for item in reference["labels"]}),
+                "dimensions": sorted(item["dimension"] for item in reference["labels"]), "agreement_contract": "REFERENCE_AGREEMENT.v1"}),
+            "reference_sample_identity": authorization_hash({"task_type": stage, "text": " ".join(prose.split())}),
+            "failure_class": "" if agreed else "QUALITY_FAILURE",
+            "evidence_refs": ["asset-version:" + asset_id, "asset-version:" + provider["model_call_asset_version_id"],
+                *("asset-version:" + item["adjudication_asset_version_id"] for item in agreement["comparisons"])]}
+    return outcomes

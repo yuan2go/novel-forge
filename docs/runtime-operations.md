@@ -628,7 +628,14 @@ Provider admission and shared campaign accounting. Each review consumes the `REF
 allocation; its business Chapter still comes from the original generator. No formal
 review Operation or accepted draft is required for this sampling call, and the ordinary
 Chapter Authority still refuses the ineligible sample as a production input. Quality-group
-sample targets and trusted evaluator admission remain separate gaps.
+sample targets remain a separate gap. `novel-forge authority-provider-routing metrics` reads the
+same native reference outcome projection used by later decisions. For reviewer tasks,
+inspect `REFERENCE_AGREEMENT`, `reference_label_strata`, evidence class, producer hash
+and outcome references separately from generation quality or accepted prose. Fixture
+human labels, broad score ranges, absent positive/negative strata, duplicate prose,
+retries and holdout evidence cannot establish reviewer eligibility. A disagreement is
+retained as an evaluator failure. This native feedback supplies routing evidence; it does
+not activate a formal Quality profile or promote any sample.
 
 For semantic evaluator reference sampling, first register independent operator labels
 through `story_design.review.author` with the exact benchmark candidate as its only

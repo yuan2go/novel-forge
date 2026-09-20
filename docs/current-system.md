@@ -117,8 +117,21 @@ frontier checks. The approved reviewer Pack supplies its own Skill and Schema; t
 preflight producer hash is checked again by Router before any Effect. The target keeps
 its physical sample type and ineligible state. Replay uses the existing Attempt Pack
 snapshot. Quality-group sampling still requires a frozen native Quality task and target.
-The sampling result cannot activate a Quality profile or qualify itself. Calibrated
-reviewer admission and generator feedback admission remain unimplemented.
+The sampling result cannot activate a Quality profile or qualify itself. Router policy
+`quality-constrained-routing.v6` reads native Chapter reference outcomes using a separate
+`REFERENCE_AGREEMENT` metric. The projection revalidates the native grant, target, labels,
+real receipt and recomputed agreement. Fixture labels and calls do not contribute.
+Reference protocol/version hashes, risk and context-length bands stay separate; mixed
+reference protocols cannot qualify a candidate. Identical normalized prose is one sample
+even after renaming its campaign group. Both
+positive and negative label strata must satisfy sample coverage and the unchanged quality
+floor using separate conservative binary lower bounds; literary scores and production
+acceptance remain separate. Development and holdout partitions remain excluded.
+The current maximum score-reference interval width is 20 points on the 0–100 scale
+(`UNRESOLVED_DESIGN_CONSTRAINT`): it rejects uninformative broad labels and still requires
+campaign protocol review. These admission estimates do not prove non-inferiority or
+reader preference. Formal Quality profile use and generator feedback admission remain
+unimplemented; Narrative operator proxy labels alone cannot qualify a semantic evaluator.
 This does not prove judge calibration or bootstrap every task family. Ordinary production
 routing blocks when sufficient quality evidence is absent.
 

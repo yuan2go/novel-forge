@@ -5298,6 +5298,10 @@
         {
           "path": "src/novel_forge/modules/command_kernel/provider_failure_accounting.py",
           "symbol": "successful_provider_budget_settlement"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/reference_sampling.py",
+          "symbol": "chapter_reference_outcomes"
         }
       ],
       "commands_operations": [
@@ -5498,6 +5502,10 @@
         {
           "path": "tests/unit/test_routing_bootstrap.py",
           "symbol": "test_reference_model_arms_cannot_relabel_the_same_frozen_sample"
+        },
+        {
+          "path": "tests/unit/test_cost_aware_routing.py",
+          "symbol": "test_reference_agreement_requires_both_label_strata_and_preserves_failed_first_attempts"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8760,7 +8768,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:d6e4a91f778a82676f1b147ec0c32a1ea0359b75d83b1003e2c17f5f4aa6cec4"
+    "implementation_tree_sha": "sha256:b51299a8868d8f3e7fdbf434f751daf104010484d11eefd10b44c6d583cfcc12"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -9069,6 +9077,22 @@
         {
           "path": "src/novel_forge/modules/book_authority/prose_sources.py",
           "symbol": "freeze_accepted_prose"
+        }
+      ]
+    },
+    {
+      "id": "reviewer-reference-admission-bounds",
+      "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
+      "statement": "Chapter reviewer admission uses native independent reference agreement, separate positive and negative strata, exact producer and protocol versions, matching risk and context-length bands. The 20-point maximum score-label range and binary lower-bound policy require campaign protocol review; they do not prove literary quality, non-inferiority or reader preference. Formal Quality profile use remains a separate gap.",
+      "design_review_required": true,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/reference_sampling.py",
+          "symbol": "reference_label_classes"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/cost_routing.py",
+          "symbol": "benchmark_snapshot"
         }
       ]
     }

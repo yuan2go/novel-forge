@@ -640,3 +640,43 @@ def test_chapter_evidence_compatibility_projects_only_unreachable_context_types(
         assert chapter_producer_contract_identity(prompt, changed) != expected
     sample["tool_permissions"]["allowed"].append("storage.object.put")
     assert chapter_producer_contract_identity(prompt, sample) != expected
+
+
+def test_reference_agreement_requires_both_label_strata_and_preserves_failed_first_attempts():
+    from novel_forge.modules.production_execution.cost_routing import benchmark_snapshot, task_policy
+
+    reference_task = task(task_type="review")
+    observations = [replace(row, quality_score=None, accepted=None, evidence_class="REFERENCE_EVALUATION",
+        production_eligible=False, reference_agreed=True, reference_label_classes=("PASS" if i % 2 else "FAIL",),
+        sample_identity=str(i), experiment_partition="CALIBRATION", reference_risk="MEDIUM",
+        reference_protocol_hash="sha256:" + "1" * 64) for i, row in enumerate(samples(n=80))]
+    for name in ("review", "rereview", "quality_structural", "quality_longform"):
+        result = route(replace(reference_task, task_type=name), [candidate()], {"flash":
+            [replace(row, reference_risk=task_policy(name).risk) for row in observations]})
+        assert result["status"] == "SELECTED"
+        benchmark = result["selected"]["benchmark"]
+        assert benchmark["quality_metric"] == "REFERENCE_AGREEMENT"
+        assert benchmark["metric_sample_count"] == 80
+        assert benchmark["quality_sample_count"] == 0
+        assert benchmark["production_acceptance_rate"] is None
+        assert benchmark["reference_label_strata"]["FAIL"]["sample_count"] == 40
+    for bad in (
+        [replace(row, reference_label_classes=("PASS",)) for row in observations],
+        [replace(row, reference_risk="LOW") for row in observations],
+        [replace(row, input_tokens=100_000) for row in observations],
+        [replace(row, reference_protocol_hash="sha256:" + str(i % 2) * 64) for i, row in enumerate(observations)],
+        [replace(row, experiment_partition="HOLDOUT") for row in observations],
+        [replace(row, reference_agreed=i % 2 == 1) for i, row in enumerate(observations)],
+        [replace(row, sample_identity="same-prose") for row in observations],
+        [replace(row, retried=True) for row in observations],
+    ):
+        assert route(reference_task, [candidate()], {"flash": bad})["status"] == "BLOCKED"
+    failures = [replace(row, evidence_ref="failure:" + row.evidence_ref, reference_agreed=None,
+        reference_label_classes=(), sample_identity="failed:" + row.sample_identity, schema_success=False,
+        accepted=False) for row in observations]
+    result = route(reference_task, [candidate()], {"flash": observations + failures})
+    assert result["status"] == "BLOCKED"
+    assert result["candidates"][0]["benchmark"]["schema_success"] == 0.5
+    first = replace(observations[0], reference_agreed=False)
+    repaired = replace(first, evidence_ref="replacement", reference_agreed=True, retried=True)
+    assert benchmark_snapshot([first, repaired], now=NOW, policy=task_policy("review"))["reference_agreement_rate"] == 0

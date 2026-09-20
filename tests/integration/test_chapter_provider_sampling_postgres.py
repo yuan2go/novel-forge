@@ -66,7 +66,7 @@ def native_reviewer_source(h, tmp_path, original, stage):
     return {**original, "operation_id": row[0], "effect_request_payload": row[1], "dispatch_evidence": row[2]}
 
 
-def fixture_adjudicated_reference(h, original, stage, *, sample_target=None):
+def fixture_adjudicated_reference(h, original, stage, *, sample_target=None, live_shape=False):
     from novel_forge.modules.content_authority import CONTENT_CODECS
     from novel_forge.modules.content_authority.application import ContentAuthorityApplication, ContentOperationRequest
     from novel_forge.modules.chapter_quality_authority.reference_sampling import reference_dimensions
@@ -108,9 +108,9 @@ def fixture_adjudicated_reference(h, original, stage, *, sample_target=None):
             actor = h.principal("fixture-human-" + str(ordinal)).principal_id
             humans.append(author("quality.human_evaluation.record", actor, {"evaluation": {
                 **shared, "evaluation_id": h.project_id + ":" + dimension + ":human:" + str(ordinal),
-                "evaluator_id": actor, "evaluator_group": "SCRIPTED_INTEGRATION_FIXTURE",
+                "evaluator_id": actor, "evaluator_group": "synthetic-native-shaped-contract-test" if live_shape else "SCRIPTED_INTEGRATION_FIXTURE",
                 "evaluator_identity_class": "PROFESSIONAL_EDITOR", "score": entry.get("score"),
-                "confidence": 0.8, "evidence": [{"fixture_protocol_only": True, "span": [0, 5]}], "blind": True,
+                "confidence": 0.8, "evidence": [{"fixture_protocol_only": not live_shape, "span": [0, 5]}], "blind": True,
             }}, [target]))
         actor = h.principal("fixture-adjudicator").principal_id
         adjudications.append(author("quality.adjudication.record", actor, {"adjudication": {
@@ -125,7 +125,7 @@ def fixture_adjudicated_reference(h, original, stage, *, sample_target=None):
 @pytest.mark.parametrize("stage,scenario", [
     *(("draft", scenario) for scenario in ("success", "unknown_then_reconciled", "terminal_failure", "producer_drift")),
     ("review", "success"), ("review", "unknown_then_reconciled"), ("quality_structural", "success"),
-    ("revision", "success"),
+    ("revision", "success"), ("review", "reference_feedback"),
 ])
 def test_native_chapter_sample_replays_without_formal_chapter_mutation(
     tmp_path, scenario, stage
@@ -143,7 +143,7 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
     if stage != "draft":
         original = native_reviewer_source(h, tmp_path, original, stage)
         if stage != "revision":
-            reference = fixture_adjudicated_reference(h, original, stage)
+            reference = fixture_adjudicated_reference(h, original, stage, live_shape=scenario == "reference_feedback")
     original_runtime = original["effect_request_payload"]["_production_execution"][
         "capability_runtime"
     ]
@@ -441,6 +441,14 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
             evidence = fixture_evidence(kwargs)
             assert evidence["fixture_protocol_only"]
             evidence.update(real_model_call=False, production_verified=False)
+            if scenario == "reference_feedback":
+                evidence.update(real_model_call=True, fixture_protocol_only=False, provider_id=candidate.provider, model_id=candidate.model)
+                evidence["production_execution"]["route_snapshot"]["reasoning_effort"] = candidate.reasoning
+                evidence["production_execution"].setdefault("process_evidence", {})["served_model_identity_hash"] = "sha256:" + "e" * 64
+                if len(calls) == 2:
+                    evidence["result"]["decision"] = "PASSED" if evidence["result"]["decision"] != "PASSED" else "NEEDS_REVISION"
+                    if evidence["result"]["decision"] == "PASSED":
+                        evidence["result"]["issues"] = []
             return ProviderResult(
                 "success",
                 "chapter-sample-fixture:" + kwargs["stable_idempotency_key"],
@@ -460,7 +468,7 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
                     uow.cursor.execute("SELECT count(*) FROM authority_budget_reservation WHERE operation_id=%s", [admitted["operation_id"]])
                     assert uow.cursor.fetchone() == (0,)
                 continue
-            if scenario == "success":
+            if scenario in {"success", "reference_feedback"}:
                 tick = scheduler.tick(
                     project_id=h.project_id, root_operation_id=admitted["operation_id"]
                 )
@@ -583,8 +591,8 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
             assert outputs[0][2]["production_eligible"] is False
             if reference:
                 agreement = outputs[0][2]["reference_evaluation"]
-                assert agreement["status_accuracy"] == 1
-                assert agreement["real_model_call"] is False
+                assert agreement["status_accuracy"] == (0 if scenario == "reference_feedback" and len(calls) == 2 else 1)
+                assert agreement["real_model_call"] is (scenario == "reference_feedback")
                 assert agreement["calibration_claim_allowed"] is False
                 assert agreement["production_qualification_eligible"] is False
             else:
@@ -594,6 +602,24 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
                 [original["operation_id"]],
             )
             assert uow.cursor.fetchone() == ("SUCCEEDED",)
+        from novel_forge.modules.authority_handler_runtime.routing_feedback import domain_gate_outcomes
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s", [admitted["operation_id"]])
+            effect_id = uow.cursor.fetchone()[0]
+            projected = domain_gate_outcomes(uow.cursor, project_id=h.project_id, effect_ids=[effect_id])
+        if scenario == "reference_feedback":
+            assert projected[effect_id]["reference_agreed"] is (len(calls) == 1)
+            assert projected[effect_id]["reference_label_classes"] == (("PASS" if original["dispatch_evidence"]["result"]["decision"] == "PASSED" else "FAIL"),)
+            assert projected[effect_id]["accepted"] is None
+            registry = PostgresRoutingRegistry(DATABASE_URL, outcome_projection=domain_gate_outcomes)
+            observations = registry.observations(project_id=h.project_id, task_type=stage, candidate=candidate,
+                producer_contract_hash=authorization_hash(formal_contract))
+            assert len(observations) == 1
+            assert observations[0].reference_agreed is (len(calls) == 1)
+            assert observations[0].evidence_class == "REFERENCE_EVALUATION"
+            assert observations[0].sample_identity == projected[effect_id]["reference_sample_identity"]
+        else:
+            assert not projected
     if cold_start:
         install_chapter_validation_pack(DATABASE_URL, repository_root=ROOT, project_id=h.project_id,
             workspace_id=h.workspace_id, book_id=h.book_ids[0], application_build_id=h.application_build_id,

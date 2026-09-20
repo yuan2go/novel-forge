@@ -168,10 +168,7 @@ class PostgresRoutingRegistry:
                     ],
                 )
                 if self.outcome_projection is not None
-                and (
-                    task_type.endswith(".generate")
-                    or task_type == "source.deconstruction.observe"
-                )
+                and rows
                 else {}
             )
         observations = []
@@ -257,7 +254,7 @@ class PostgresRoutingRegistry:
                 and (decision or {}).get("mode") == "BENCHMARK_CHALLENGER"
                 and (decision or {}).get("production_eligible") is False
             ):
-                evidence_class = "BENCHMARK_CHALLENGER"
+                evidence_class = ("REFERENCE_EVALUATION" if (decision or {}).get("bootstrap_authorization", {}).get("authorization", {}).get("purpose") == "REFERENCE_EVALUATION" else "BENCHMARK_CHALLENGER")
                 production_eligible = False
             elif (
                 (decision or {}).get("status") == "SELECTED"
@@ -278,6 +275,8 @@ class PostgresRoutingRegistry:
                     "campaign_id", "manifest_hash", "group_id",
                 )}) if campaign else str((decision or {}).get("task", {}).get("input_hash") or "")
             )
+            if gate.get("reference_sample_identity"):
+                sample_identity = gate["reference_sample_identity"]
             observations.append(
                 BenchmarkObservation(
                     evidence_ref="asset-version:" + reference,
@@ -306,6 +305,10 @@ class PostgresRoutingRegistry:
                     if cost.get("provider_billed") is True
                     else None,
                     domain_gate_accepted=gate.get("accepted") if sample_identity else None,
+                    reference_agreed=gate.get("reference_agreed") if sample_identity else None,
+                    reference_label_classes=tuple(gate.get("reference_label_classes", ())) if sample_identity else (),
+                    reference_protocol_hash=gate.get("reference_protocol_hash", ""),
+                    reference_risk=(decision or {}).get("policy", {}).get("risk", "") if gate.get("reference_agreed") is not None else "",
                     outcome_refs=tuple(gate.get("evidence_refs", ()))
                     + (("asset-version:" + quality_ref,) if quality_ref else ()),
                     cache_prefix_hash=(decision or {})
