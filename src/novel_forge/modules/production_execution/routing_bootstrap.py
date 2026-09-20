@@ -6,6 +6,7 @@ from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.routing_bootstrap import (
+    bootstrap_candidate_accounting_matches,
     validate_bootstrap_authorization,
     validate_bootstrap_producer,
 )
@@ -44,19 +45,17 @@ def benchmark_decision(
         ):
             row["rejected_reasons"].append("BENCHMARK_AUTHORIZED_TARGET_MISMATCH")
             continue
-        if (
-            candidate["provider"] != "deepseek"
-            or candidate["pricing"]["accounting_basis"] != "PRICED"
-        ):
-            row["rejected_reasons"].append("BENCHMARK_PRICED_PROVIDER_REQUIRED")
+        if not bootstrap_candidate_accounting_matches(grant, candidate):
+            row["rejected_reasons"].append("BENCHMARK_ACCOUNTING_AUTHORIZATION_MISMATCH")
         row["rejected_reasons"] = [
             reason
             for reason in row["rejected_reasons"]
             if reason not in {"QUALITY_FLOOR_NOT_MET", "BENCHMARK_INSUFFICIENT"}
         ]
-        if row["estimated_total_tokens"] > grant["maximum_tokens"] or Decimal(
-            row["reservation_upper_bound"] or "0"
-        ) > Decimal(grant["maximum_amount"]):
+        if (row["estimated_total_tokens"] > grant["maximum_tokens"]
+            or grant["maximum_amount"] is not None and Decimal(
+                row["reservation_upper_bound"] or "0"
+            ) > Decimal(grant["maximum_amount"])):
             row["rejected_reasons"].append("BENCHMARK_AUTHORIZATION_BUDGET_EXCEEDED")
         if not row["rejected_reasons"]:
             selected = row

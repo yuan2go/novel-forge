@@ -90,7 +90,7 @@ def test_chapter_sample_rejects_changed_source_inputs_or_book_scope():
         validate_chapter_sample_origin(payload, (origin[0], "3.3.0", source, inputs), project_id="project")
 
 
-def ordinary_decision(**candidate_overrides):
+def ordinary_decision(*, task_overrides=None, **candidate_overrides):
     candidate = ModelCandidate(
         "flash",
         "deepseek",
@@ -126,11 +126,69 @@ def ordinary_decision(**candidate_overrides):
         producer_contract_hash=authorization_hash({"fixture_prompt": "v1"}),
     )
     return CostAwareRouter().explain(
-        task,
+        replace(task, **(task_overrides or {})),
         [replace(candidate, **candidate_overrides)],
         {},
         now=datetime(2026, 9, 16, tzinfo=timezone.utc),
     )
+
+
+def entitlement_grant():
+    return {**campaign_grant(), "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "cost_authorization_ref": "fixture-codex-account", "currency": "UNKNOWN", "maximum_amount": None}
+
+
+def codex_benchmark_decision(*, candidate_overrides=None, task_overrides=None, grant_overrides=None):
+    grant = {**entitlement_grant(), **(grant_overrides or {})}
+    _, _, snapshot = contract()
+    snapshot.update(authorization=grant, authorization_hash=authorization_hash(grant))
+    ordinary = ordinary_decision(
+        **{"provider": "codex-cli", "model": "fixture-codex-model", "escalation_only": True,
+           "quota_remaining": 1, "authorization_ref": "fixture-codex-account",
+           "pricing": PricingSnapshot("fixture-account-v1", "2026-01-01T00:00:00+00:00",
+               "2099-01-01T00:00:00+00:00", "0", "0", "0", currency="UNKNOWN", source="fixture-account",
+               accounting_basis="ACCOUNT_ENTITLEMENT"), **(candidate_overrides or {})},
+        task_overrides={"risk": "HIGH", "escalation_reason": "authorized high-risk calibration control", **(task_overrides or {})},
+    )
+    return ordinary, benchmark_decision(ordinary, snapshot, environment="validation").to_dict()
+
+
+def test_codex_sampling_retains_unknown_money_and_production_escalation_restrictions():
+    ordinary, sampled = codex_benchmark_decision()
+    assert ordinary.to_dict()["status"] == "BLOCKED"
+    assert sampled["status"] == "BENCHMARK_SELECTED"
+    assert sampled["production_eligible"] is False
+    assert sampled["selected"]["reservation_upper_bound"] is None
+    assert "BENCHMARK_INSUFFICIENT" in sampled["selected"]["production_rejected_reasons"]
+    _, blocked = codex_benchmark_decision(task_overrides={"escalation_reason": ""})
+    assert blocked["status"] == "BLOCKED"
+    assert "ESCALATION_THRESHOLD_NOT_MET" in blocked["candidates"][0]["rejected_reasons"]
+
+
+@pytest.mark.parametrize("changes,reason", [
+    ({"available": False}, "PROVIDER_UNAVAILABLE:"),
+    ({"quota_remaining": 0}, "ESCALATION_CAPACITY_OR_AUTHORIZATION_MISSING"),
+    ({"authorization_ref": "another-account"}, "BENCHMARK_ACCOUNTING_AUTHORIZATION_MISMATCH"),
+    ({"model_revision": "changed-model"}, "BENCHMARK_AUTHORIZED_TARGET_MISMATCH"),
+    ({"escalation_only": False}, "BENCHMARK_ACCOUNTING_AUTHORIZATION_MISMATCH"),
+])
+def test_codex_sampling_cannot_bypass_account_quota_availability_or_identity(changes, reason):
+    _, result = codex_benchmark_decision(candidate_overrides=changes)
+    assert result["status"] == "BLOCKED"
+    assert reason in result["candidates"][0]["rejected_reasons"]
+
+
+@pytest.mark.parametrize("changes", [
+    {"maximum_amount": "0"}, {"currency": "USD"}, {"cost_authorization_ref": ""},
+    {"accounting_basis": "PRICED"}, {"maximum_tokens": 0},
+])
+def test_entitlement_sampling_never_accepts_zero_usd_or_missing_authority(changes):
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_authorization
+
+    with pytest.raises(ValueError):
+        validate_bootstrap_authorization({**entitlement_grant(), **changes})
+    with pytest.raises(ValueError):
+        validate_bootstrap_authorization({key: value for key, value in entitlement_grant().items() if key != "campaign"})
 
 
 def test_benchmark_grant_preserves_unknown_quality_and_production_rejections():

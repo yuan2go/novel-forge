@@ -84,13 +84,13 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         "candidate_id",
         "model_revision",
         "expires_at",
-        "maximum_amount",
         "currency",
         "purpose",
     }
-    if set(grant) - {"campaign", "reference_evaluation", "producer_contract_hash"} != strings | {
+    if set(grant) - {"campaign", "reference_evaluation", "producer_contract_hash", "accounting_basis", "cost_authorization_ref"} != strings | {
         "maximum_calls",
         "maximum_tokens",
+        "maximum_amount",
         "production_eligible",
     }:
         raise ValueError("ROUTING_BOOTSTRAP_CONTRACT_INVALID")
@@ -102,9 +102,24 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         grant["environment"] != "validation"
         or grant["purpose"] not in {"BENCHMARK_CHALLENGER", "REFERENCE_EVALUATION"}
         or grant["production_eligible"] is not False
-        or grant["currency"] != "USD"
     ):
         raise ValueError("ROUTING_BOOTSTRAP_BOUNDARY_INVALID")
+    basis = grant.get("accounting_basis", "PRICED")
+    if basis == "ACCOUNT_ENTITLEMENT":
+        if (grant["maximum_amount"] is not None or grant["currency"] != "UNKNOWN"
+            or not isinstance(grant.get("cost_authorization_ref"), str)
+            or not grant["cost_authorization_ref"].strip() or "campaign" not in grant):
+            raise ValueError("ROUTING_BOOTSTRAP_ENTITLEMENT_INVALID")
+        amount = None
+    elif basis == "PRICED":
+        if (not isinstance(grant["maximum_amount"], str) or not grant["maximum_amount"].strip()
+            or grant["currency"] != "USD" or "cost_authorization_ref" in grant):
+            raise ValueError("ROUTING_BOOTSTRAP_ACCOUNTING_INVALID")
+        amount = Decimal(grant["maximum_amount"])
+        if not amount.is_finite() or amount <= 0:
+            raise ValueError("ROUTING_BOOTSTRAP_LIMIT_INVALID")
+    else:
+        raise ValueError("ROUTING_BOOTSTRAP_ACCOUNTING_INVALID")
     reference = grant.get("reference_evaluation")
     if grant["purpose"] == "REFERENCE_EVALUATION":
         if grant["task_type"] not in {"narrative_semantic_evaluation", *CHAPTER_REFERENCE_TASKS.values()} or "campaign" not in grant:
@@ -123,12 +138,7 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         for key in ("maximum_calls", "maximum_tokens")
     ):
         raise ValueError("ROUTING_BOOTSTRAP_QUOTA_INVALID")
-    amount = Decimal(grant["maximum_amount"])
-    if (
-        not amount.is_finite()
-        or amount <= 0
-        or datetime.fromisoformat(grant["expires_at"]).tzinfo is None
-    ):
+    if datetime.fromisoformat(grant["expires_at"]).tzinfo is None:
         raise ValueError("ROUTING_BOOTSTRAP_LIMIT_INVALID")
     for digest in (grant["input_versions_hash"], grant["command_hash"], *(
         (grant["producer_contract_hash"],) if "producer_contract_hash" in grant else ()
@@ -145,11 +155,23 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         if (
             grant["maximum_calls"] > campaign["maximum_calls"]
             or grant["maximum_tokens"] > campaign["maximum_tokens"]
-            or amount > Decimal(campaign["maximum_amount"])
+            or amount is not None and amount > Decimal(campaign["maximum_amount"])
             or datetime.fromisoformat(grant["expires_at"])
             > datetime.fromisoformat(campaign["expires_at"])
         ):
             raise ValueError("ROUTING_CAMPAIGN_GRANT_EXCEEDS_TOTAL")
+
+
+def bootstrap_candidate_accounting_matches(grant: Mapping[str, Any], candidate: Mapping[str, Any]) -> bool:
+    pricing = candidate.get("pricing") or {}
+    basis = grant.get("accounting_basis", "PRICED")
+    if pricing.get("accounting_basis") != basis or pricing.get("currency") != grant["currency"]:
+        return False
+    if basis == "ACCOUNT_ENTITLEMENT":
+        return (candidate.get("provider") == "codex-cli"
+                and candidate.get("escalation_only") is True
+                and candidate.get("authorization_ref") == grant["cost_authorization_ref"])
+    return candidate.get("provider") == "deepseek"
 
 
 def validate_bootstrap_producer(
@@ -514,8 +536,7 @@ def _verified_effect(
         or task.get("project_id") != project_id
         or candidate.get("candidate_id") != grant["candidate_id"]
         or candidate.get("model_revision") != grant["model_revision"]
-        or candidate.get("provider") != "deepseek"
-        or candidate.get("pricing", {}).get("accounting_basis") != "PRICED"
+        or not bootstrap_candidate_accounting_matches(grant, candidate)
     ):
         raise KernelError(
             "ROUTING_BOOTSTRAP_DECISION_CONFLICT",
@@ -568,15 +589,20 @@ def verify_routing_bootstrap_budget(
     if verified is None:
         return
     _, grant = verified
-    if (
-        amount is None
-        or request.currency != "USD"
-        or request.accounting_basis != "PRICED"
-    ):
+    basis = grant.get("accounting_basis", "PRICED")
+    entitlement = basis == "ACCOUNT_ENTITLEMENT"
+    if (request.accounting_basis != basis or request.currency != grant["currency"]
+        or entitlement and (amount is not None or request.provider != "codex-cli"
+                            or request.cost_authorization_ref != grant["cost_authorization_ref"])
+        or not entitlement and (amount is None or request.provider != "deepseek")):
         raise KernelError(
             "ROUTING_BOOTSTRAP_ACCOUNTING_INVALID",
-            "benchmark execution requires priced accounting",
+            "benchmark accounting must retain its exact authorized Provider lane",
         )
+    if entitlement:
+        from .creative_budget_runtime import require_provider_campaign_entitlement
+
+        require_provider_campaign_entitlement(cursor, project_id=request.project_id, grant=grant)
     if not check_usage:
         return
     from .budget_runtime import provider_usage_accounted_sql
@@ -588,7 +614,12 @@ def verify_routing_bootstrap_budget(
         scopes.append((campaign, prefix + ["campaign", "campaign_id"], campaign["campaign_id"], "CAMPAIGN"))
     for quota, path, identity, label in scopes:
         cursor.execute(
-            f"""SELECT count(*),COALESCE(sum(CASE WHEN b.status='SETTLED' THEN b.settled_amount ELSE b.reserved_amount END),0),COALESCE(sum(CASE WHEN b.status='SETTLED' THEN b.actual_tokens ELSE greatest(b.actual_tokens,b.estimated_tokens) END),0),bool_or(b.status IN ('RESERVED','HELD_UNKNOWN'))
+            f"""SELECT count(*),COALESCE(sum(CASE WHEN b.accounting_basis='PRICED' THEN
+                greatest(COALESCE((b.evidence->>'actual_amount')::numeric,0),
+                    CASE WHEN b.status='SETTLED' THEN b.settled_amount ELSE b.reserved_amount END) ELSE 0 END),0),
+                COALESCE(sum(greatest(b.actual_tokens,COALESCE((b.evidence->>'actual_tokens')::bigint,0),
+                    CASE WHEN b.status='SETTLED' THEN 0 ELSE b.estimated_tokens END)),0),
+                bool_or(b.status IN ('RESERVED','HELD_UNKNOWN'))
             FROM (SELECT * FROM authority_budget_reservation WHERE {provider_usage_accounted_sql()}) b JOIN authority_external_effect e USING(external_effect_id)
             WHERE b.project_id=%s AND e.request_payload #>> %s::text[]=%s""",
             [request.project_id, path, identity],
@@ -613,7 +644,8 @@ def verify_routing_bootstrap_budget(
         if (
             int(calls) + 1 > quota["maximum_calls"]
             or int(tokens) + request.estimated_tokens > quota["maximum_tokens"]
-            or Decimal(spent) + amount > Decimal(quota["maximum_amount"])
+            or quota["maximum_amount"] is not None
+            and Decimal(spent) + (amount if amount is not None else Decimal(0)) > Decimal(quota["maximum_amount"])
         ):
             raise KernelError(
                 f"ROUTING_{label}_QUOTA_EXCEEDED",

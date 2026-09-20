@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Mapping
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -58,6 +58,22 @@ def _policy_for(cursor: Any, project_id: str, *, required: bool = False) -> dict
 
 def _arm(plan: dict[str, Any], project_id: str) -> dict[str, Any]:
     return next(a for a in plan["arms"] if a["project_id"] == project_id)
+
+
+def require_provider_campaign_entitlement(cursor: Any, *, project_id: str, grant: Mapping[str, Any]) -> None:
+    selected = _policy_for(cursor, project_id, required=True)
+    plan = selected["policy"]["comparison_budget"]
+    campaign = grant.get("campaign") or {}
+    lanes = [lane for lane in plan.get("entitlements", [])
+             if lane["provider"] == "codex-cli" and lane["authorization_ref"] == grant.get("cost_authorization_ref")]
+    if (plan["contract_version"] != _contract().PROVIDER_CAMPAIGN_VERSION
+        or plan["experiment_id"] != campaign.get("campaign_id")
+        or plan.get("manifest_hash") != campaign.get("manifest_hash")
+        or _arm(plan, project_id)["book_id"] != grant["book_id"]
+        or len(lanes) != 1 or grant["maximum_calls"] > lanes[0]["calls"]
+        or grant["maximum_tokens"] > lanes[0]["tokens"]
+        or datetime.fromisoformat(grant["expires_at"]) > datetime.fromisoformat(plan["expires_at"])):
+        raise KernelError("CREATIVE_BUDGET_ENTITLEMENT_MISMATCH", "benchmark entitlement requires the exact frozen whole-campaign authorization")
 
 
 def _validate_reallocation(plan: dict[str, Any], previous: dict[str, Any], *, project_id: str) -> None:

@@ -111,6 +111,14 @@ reviewer admission and generator feedback admission remain unimplemented.
 This does not prove judge calibration or bootstrap every task family. Ordinary production
 routing blocks when sufficient quality evidence is absent.
 
+World preparation is still a calibration-entry gap in the Planning owner. The normal
+Book supervisor supplies `world_preparation_request` for ChapterPlan generation, and
+`PlanningWorldPreparation.prepare` then executes `world_candidates.generate` followed by
+`world_candidates.evaluate`. The current single-stage Planning bootstrap rejects this
+request. These two tasks are required by that production chain; removing them from a
+campaign's coverage matrix would not qualify continuous Book production. The missing
+entry belongs with Planning preparation and its existing Pack/Router/Kernel boundaries.
+
 Planning sampling grants may bind a frozen campaign identity, manifest hash, sample/data
 group and experiment partition. Kernel aggregates their reservations across authorization
 and policy versions. A campaign project cannot replace that identity or admit new unbound
@@ -122,6 +130,15 @@ quota alone is not mixed-billing authorization. Router v5 counts first attempts 
 qualification, keeps retries in operational cost/yield, and excludes development and
 holdout partitions from qualification feedback. The provider view removes routing/grant
 metadata from narrative evaluation context; this does not establish evaluator calibration.
+
+Validation bootstrap may also target the configured Codex escalation candidate under
+an explicit `ACCOUNT_ENTITLEMENT` grant. Its amount is null and currency is `UNKNOWN`;
+the exact account authorization and finite calls/tokens must also fit the native
+whole-campaign entitlement lane. The ordinary high-risk/escalation, availability and
+capacity restrictions still apply. A priced grant cannot select the subscription lane
+or change the authorized account. Campaign queries report priced USD and entitlement
+usage separately, with mixed total monetary cost unknown. This capability does not
+prove that a real Codex escalation has executed or that its result is better.
 
 New Chapter, Planning and Source decisions bind the materialized Prompt/Skill, provider
 view versions, Context policy and output schema to a producer-contract hash. Native

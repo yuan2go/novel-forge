@@ -442,6 +442,21 @@ Development and holdout
 observations are excluded from automatic qualification feedback. Release of held-out
 evidence and full-family reference-evaluator bootstrap remain implementation gaps.
 
+For an explicitly authorized Codex validation control, the existing bootstrap grant
+sets `accounting_basis: ACCOUNT_ENTITLEMENT`, `cost_authorization_ref` to the configured
+account authorization, `maximum_amount: null`, and `currency: UNKNOWN`. Its finite
+`maximum_calls`/`maximum_tokens`, campaign identity, manifest and expiry must match the
+selected `creative-provider-campaign-budget.v4` policy and fit its Codex entitlement
+lane. The common campaign `maximum_amount` still caps priced USD; it does not price
+subscription usage. Omitting the whole-campaign authorization fails before reservation.
+Use the existing governed task policy for a justified high-risk control; bootstrap
+does not relax the production escalation threshold, account capacity, model revision,
+availability or Provider admission. Kernel rejects cross-account or priced/subscription
+substitution. Expired calls can still reconcile and settle their original reservations.
+The campaign query's `priced_settled_or_reserved_usd` excludes subscription use;
+`settled_or_reserved_usd` is null when entitlement use is present, and `entitlements`
+reports its calls/tokens with unknown USD. Neither field verifies an invoice.
+
 For Source sampling, POST `/product/source-imports/provider-samples?dry_run=true` with
 `project_id`, `source_operation_id`, `authorization_id` and `idempotency_key`. The local
 operator preflight reads an existing frozen Source Provider task and returns its exact

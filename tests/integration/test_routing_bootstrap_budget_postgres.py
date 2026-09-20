@@ -47,7 +47,8 @@ class _ExplicitFixtureTransport(FakeDeterministicProvider):
 
 
 @pytest.mark.parametrize("scenario", ["success", "timeout_after"])
-def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(tmp_path, scenario):
+@pytest.mark.parametrize("accounting_basis", ["PRICED", "ACCOUNT_ENTITLEMENT"])
+def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(tmp_path, scenario, accounting_basis):
     ensure_migrated()
     project = identifier("bootstrap-kernel-fixture")
     workspace, book = f"workspace:{project}", f"book:{project}"
@@ -62,6 +63,14 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
         routing_bootstrap_authorization_id="bootstrap-kernel:grant",
     )
     candidate = deepseek_candidates(available=True)[0]
+    entitlement = accounting_basis == "ACCOUNT_ENTITLEMENT"
+    if entitlement:
+        candidate = replace(candidate, candidate_id="fixture-codex", provider="codex-cli", model="fixture-codex-model",
+            model_revision="sha256:" + "f" * 64,
+            escalation_only=True, authorization_ref="fixture-codex-entitlement", quota_remaining=5,
+            pricing=replace(candidate.pricing, accounting_basis=accounting_basis, currency="UNKNOWN",
+                version="fixture-account-v1", source="fixture-account-authorization",
+                input_miss_per_million="0", input_hit_per_million="0", output_per_million="0"))
     expiry = datetime.now(timezone.utc) + timedelta(hours=1)
     grant = {
         "authorization_id": command.routing_bootstrap_authorization_id,
@@ -80,10 +89,16 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
                      "maximum_calls": 1, "maximum_tokens": 4096, "maximum_amount": "0.1",
                      "expires_at": expiry.isoformat()},
     }
+    if entitlement:
+        grant.update(accounting_basis=accounting_basis, currency="UNKNOWN", maximum_amount=None,
+                     cost_authorization_ref=candidate.authorization_ref)
+    overrides = [{"work_id": book, "task_type": command.generator_operation_name,
+                  "risk": "HIGH", "quality_floor": 0.9,
+                  "escalation_reason": "explicit fixture-only high-risk control"}] if entitlement else []
     configure_owned_policy(
         database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
         content={"policy_version": "bootstrap-kernel:v1", "reason": "fixture authorization",
-                 "task_overrides": [], "bootstrap_authorizations": [grant]},
+                 "task_overrides": overrides, "bootstrap_authorizations": [grant]},
         project_id=project, workspace_id=workspace, idempotency_key=f"{project}:policy",
         trace_id=command.trace_id, correlation_id=command.correlation_id,
         application_build_id="bootstrap-kernel-test", commit_sha=RELEASE_SHA, principal=principal,
@@ -104,9 +119,11 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
             return (expiry + timedelta(seconds=1)).astimezone(tz)
 
     campaign_error = ""
+    campaign_configured = False
 
     class BudgetCheckingBinder(_ExternalEffectPepFixturePlanningBinder):
         def execute(self, **kwargs):
+            nonlocal campaign_configured
             operation, attempt = kwargs["operation_id"], kwargs["attempt_id"]
             stable_key = f"{operation}:{attempt}:fixture-bootstrap"
             _, decision = router.select(composition.gateway.routes["draft"],
@@ -121,14 +138,15 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
             context = EffectCommandContext(operation, project, principal.principal_id, command.trace_id, command.correlation_id)
             effect = plan_external_effect(DATABASE_URL, context,
                 effect_type="model.invoke", provider="production_execution_gateway",
-                capability="model.book_plan.generate", stable_idempotency_key=stable_key,
+                capability="planning.book.generate", stable_idempotency_key=stable_key,
                 request_payload={"stage": command.generator_operation_name, "max_output_tokens": 100,
-                    "input": {"fixture": True}, "_production_execution": {"book_id": book,
+                    "input": {"planning_command": {"repair_number": 0}}, "_production_execution": {"book_id": book, "attempt_id": attempt,
                     "capability_runtime": {"routing_decision": decision}}},
                 max_attempts=4, reversible=False, model_id=candidate.model, completion_policy="synchronous_final")
             request = BudgetReservationRequest(operation, effect["external_effect_id"], project,
-                f"budget:{stable_key}:generation:1", candidate.provider, "USD", ".001", 200,
-                model_id=candidate.model, work_id=book)
+                f"budget:{stable_key}:generation:1", candidate.provider, "UNKNOWN" if entitlement else "USD", None if entitlement else ".001", 200,
+                model_id=candidate.model, work_id=book, accounting_basis=accounting_basis,
+                cost_authorization_ref=candidate.authorization_ref if entitlement else "")
             forged = plan_external_effect(DATABASE_URL, context,
                 effect_type="model.invoke", provider="production_execution_gateway",
                 capability="model.book_plan.generate", stable_idempotency_key=stable_key + ":forged",
@@ -139,6 +157,25 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
             with pytest.raises(KernelError, match="ROUTING_DECISION_INTEGRITY_FAILURE"):
                 reserve_provider_budget(DATABASE_URL, replace(request,
                     external_effect_id=forged["external_effect_id"], stable_idempotency_key=request.stable_idempotency_key + ":forged"))
+            if entitlement and not campaign_configured:
+                from tests.unit.test_creative_budget_contract import provider_campaign_policy
+
+                with pytest.raises(KernelError, match="CREATIVE_BUDGET_AUTHORIZATION_REQUIRED"):
+                    reserve_provider_budget(DATABASE_URL, request)
+                policy = provider_campaign_policy()
+                plan = policy["comparison_budget"]
+                plan.update(experiment_id=grant["campaign"]["campaign_id"], manifest_hash=grant["campaign"]["manifest_hash"])
+                plan["arms"][0].update(project_id=project, book_id=book)
+                plan["entitlements"][0].update(tokens=4096)
+                policy["authorization"].update(project_id=project, book_id=book)
+                configure_owned_policy(database_url=DATABASE_URL, owner="CREATIVE_EXPERIMENT_BUDGET",
+                    content=policy, project_id=project, workspace_id=workspace, idempotency_key=project + ":whole-campaign",
+                    trace_id=command.trace_id, correlation_id=command.correlation_id,
+                    application_build_id="bootstrap-kernel-test", commit_sha=RELEASE_SHA, principal=principal)
+                campaign_configured = True
+            if entitlement:
+                with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_ACCOUNTING_INVALID"):
+                    reserve_provider_budget(DATABASE_URL, replace(request, cost_authorization_ref="another-account"))
             if campaign_error:
                 with pytest.raises(KernelError, match=campaign_error):
                     reserve_provider_budget(DATABASE_URL, request)
@@ -161,11 +198,13 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
             # Explicit fixture settlement checks authorization after expiry; no paid Provider was called.
             with patch("novel_forge.modules.command_kernel.routing_bootstrap.datetime", ExpiredClock):
                 settled = settle_provider_budget(DATABASE_URL, reservation_id=reserved["reservation_id"],
-                    project_id=project, actual_amount=".0001", actual_tokens=30, evidence={"fixture": True})
+                    project_id=project, actual_amount=None if entitlement else ".0001", actual_tokens=30, evidence={"fixture": True})
                 assert settled["status"] == "SETTLED"
                 assert reserve_provider_budget(DATABASE_URL, request)["replayed"]
             retry = replace(request, stable_idempotency_key=f"budget:{stable_key}:generation:3")
             code = "ROUTING_BOOTSTRAP_QUOTA_EXCEEDED" if scenario == "success" else "ROUTING_BOOTSTRAP_RECONCILIATION_REQUIRED"
+            if entitlement:
+                code = "BUDGET_IDEMPOTENCY_CONFLICT"
             with pytest.raises(KernelError, match=code):
                 reserve_provider_budget(DATABASE_URL, retry)
             return super().execute(**kwargs)
@@ -187,18 +226,27 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
     configure_owned_policy(
         database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
         content={"policy_version": "bootstrap-kernel:v2", "reason": "fixture second sample",
-                 "task_overrides": [], "bootstrap_authorizations": [second]},
+                 "task_overrides": overrides, "bootstrap_authorizations": [second]},
         project_id=project, workspace_id=workspace, idempotency_key=f"{project}:policy-two",
         trace_id=command.trace_id, correlation_id=command.correlation_id,
         application_build_id="bootstrap-kernel-test", commit_sha=RELEASE_SHA, principal=principal,
     )
     campaign_error = ("ROUTING_CAMPAIGN_QUOTA_EXCEEDED" if scenario == "success"
                       else "ROUTING_CAMPAIGN_RECONCILIATION_REQUIRED")
+    if entitlement:
+        campaign_error = "CREATIVE_BUDGET_EXHAUSTED"
     assert application.generate(command, principal=principal).candidate_asset_version_id
     report = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=project, campaign_id="campaign:" + project)
     assert report["usage"]["calls_used_or_reserved"] == 1
     assert report["usage"]["conservative_tokens"] == 30
-    assert float(report["usage"]["settled_or_reserved_usd"]) == .0001
+    if entitlement:
+        assert report["usage"]["settled_or_reserved_usd"] is None
+        assert report["usage"]["total_monetary_cost_status"] == "UNKNOWN"
+        assert report["usage"]["unpriced_calls"] == 1
+        assert report["usage"]["entitlements"] == [{"provider": "codex-cli", "authorization_ref": candidate.authorization_ref,
+                                                   "calls_used_or_reserved": 1, "conservative_tokens": 30, "usd": None}]
+    else:
+        assert float(report["usage"]["settled_or_reserved_usd"]) == .0001
     assert len(report["grants"]) == 2
     assert report["scope"] == "BOOTSTRAP_SAMPLING_ONLY"
     assert report["state"] == ("ACCOUNTED" if scenario == "success" else "RECONCILIATION_REQUIRED")

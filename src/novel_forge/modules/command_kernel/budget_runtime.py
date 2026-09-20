@@ -3413,14 +3413,15 @@ def _enforce_routing_chain_budget(
 
     require_effect_retry_ready(cursor, request.external_effect_id)
     cursor.execute(
-        """SELECT count(*), count(*) FILTER (
-                    WHERE e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,selected,candidate,escalation_only}'='true'),
+        f"""SELECT count(*), count(*) FILTER (
+                    WHERE b.usage_accounted AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,selected,candidate,escalation_only}}'='true'),
                   bool_or(b.status IN ('RESERVED','HELD_UNKNOWN')),
                   bool_or(e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED'))
-           FROM authority_budget_reservation b JOIN authority_external_effect e USING(external_effect_id)
+           FROM (SELECT *,{provider_usage_accounted_sql()} AS usage_accounted FROM authority_budget_reservation) b
+           JOIN authority_external_effect e USING(external_effect_id)
            WHERE b.project_id=%s AND b.operation_id=ANY(%s::text[]) AND b.stable_idempotency_key<>%s
              AND b.status<>'REJECTED'
-             AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}'=%s""",
+             AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,task,chain_id}}'=%s""",
         [
             request.project_id,
             lineage_operations,

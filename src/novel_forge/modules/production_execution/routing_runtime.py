@@ -352,7 +352,8 @@ class PostgresRoutingRegistry:
                           b.status,b.accounted,b.currency,b.evidence->>'accounting_basis',
                           b.estimated_tokens,b.actual_tokens,b.reserved_amount,b.settled_amount,
                           e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,bootstrap_authorization,authorization,authorization_id}}',
-                          e.request_payload #> '{{_production_execution,capability_runtime,routing_decision,bootstrap_authorization,authorization,campaign}}'
+                          e.request_payload #> '{{_production_execution,capability_runtime,routing_decision,bootstrap_authorization,authorization,campaign}}',
+                          b.provider,b.evidence->>'cost_authorization_ref',b.evidence
                    FROM (SELECT *,{provider_usage_accounted_sql()} AS accounted
                          FROM authority_budget_reservation) b
                    JOIN authority_external_effect e USING(external_effect_id)
@@ -363,7 +364,7 @@ class PostgresRoutingRegistry:
             columns = ("reservation_id", "operation_id", "external_effect_id", "effect_status",
                        "reservation_status", "usage_accounted", "currency", "accounting_basis",
                        "estimated_tokens", "actual_tokens", "reserved_amount", "settled_amount",
-                       "authorization_id", "campaign")
+                       "authorization_id", "campaign", "provider", "cost_authorization_ref", "budget_evidence")
             reservations = [dict(zip(columns, row, strict=True)) for row in uow.cursor.fetchall()]
             uow.cursor.execute(
                 """SELECT operation.operation_id,operation.status,operation.definition_name,
@@ -395,16 +396,34 @@ class PostgresRoutingRegistry:
         used = [row for row in reservations if row["usage_accounted"]]
         pending = [row for row in reservations if row["reservation_status"] in {"RESERVED", "HELD_UNKNOWN"}
                    or row["effect_status"] in {"UNKNOWN", "SENT_UNKNOWN", "UNKNOWN_AMBIGUOUS", "RECONCILIATION_REQUIRED"}]
+        entitlement_usage: dict[tuple[str, str], dict[str, Any]] = {}
+        priced_usd = Decimal(0)
+        tokens = 0
+        for row in used:
+            actual = max(int(row["actual_tokens"] or 0), int(row["budget_evidence"].get("actual_tokens") or 0))
+            counted = actual if row["reservation_status"] == "SETTLED" else max(actual, int(row["estimated_tokens"] or 0))
+            tokens += counted
+            if row["accounting_basis"] == "ACCOUNT_ENTITLEMENT":
+                key = (row["provider"], row["cost_authorization_ref"])
+                lane = entitlement_usage.setdefault(key, {"provider": key[0], "authorization_ref": key[1],
+                    "calls_used_or_reserved": 0, "conservative_tokens": 0, "usd": None})
+                lane["calls_used_or_reserved"] += 1
+                lane["conservative_tokens"] += counted
+            else:
+                recorded = Decimal(str(row["budget_evidence"].get("actual_amount") or "0"))
+                priced_usd += max(recorded, Decimal(row["settled_amount"] or 0) if row["reservation_status"] == "SETTLED"
+                                  else Decimal(row["reserved_amount"] or 0))
         return {
             "source": "POSTGRESQL_AUTHORITY_PROJECTION", "project_id": project_id,
             "scope": "BOOTSTRAP_SAMPLING_ONLY", "campaign": campaign_contract(matched[0]["campaign"]),
             "grants": matched, "reservations": reservations, "operations": operations,
             "usage": {"calls_used_or_reserved": len(used),
-                      "conservative_tokens": sum(int(row["actual_tokens"] or 0) if row["reservation_status"] == "SETTLED"
-                          else max(int(row["actual_tokens"] or 0), int(row["estimated_tokens"] or 0)) for row in used),
-                      "settled_or_reserved_usd": str(sum((Decimal(row["settled_amount"] or 0)
-                          if row["reservation_status"] == "SETTLED" else Decimal(row["reserved_amount"] or 0)
-                          for row in used), Decimal(0)))},
+                      "conservative_tokens": tokens,
+                      "settled_or_reserved_usd": None if entitlement_usage else str(priced_usd),
+                      "priced_settled_or_reserved_usd": str(priced_usd),
+                      "entitlements": list(entitlement_usage.values()),
+                      "unpriced_calls": sum(lane["calls_used_or_reserved"] for lane in entitlement_usage.values()),
+                      "total_monetary_cost_status": "UNKNOWN" if entitlement_usage else "PRICED_ESTIMATE"},
             "unresolved_effect_ids": sorted({row["external_effect_id"] for row in pending}),
             "state": "RECONCILIATION_REQUIRED" if pending else "ACCOUNTED",
             "invoice_status": "NOT_VERIFIED", "production_qualification": "NOT_PROVEN",

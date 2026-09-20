@@ -5168,6 +5168,10 @@
         {
           "path": "src/novel_forge/modules/chapter_quality_authority/reference_sampling.py",
           "symbol": "reference_provider_result"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
+          "symbol": "require_provider_campaign_entitlement"
         }
       ],
       "domain_symbols": [
@@ -5466,6 +5470,18 @@
         {
           "path": "tests/unit/test_quality_calibration_v2.py",
           "symbol": "test_reference_quality_compares_every_dimension_and_separates_status_from_score"
+        },
+        {
+          "path": "tests/unit/test_routing_bootstrap.py",
+          "symbol": "test_codex_sampling_retains_unknown_money_and_production_escalation_restrictions"
+        },
+        {
+          "path": "tests/unit/test_routing_bootstrap.py",
+          "symbol": "test_codex_sampling_cannot_bypass_account_quota_availability_or_identity"
+        },
+        {
+          "path": "tests/unit/test_routing_bootstrap.py",
+          "symbol": "test_entitlement_sampling_never_accepts_zero_usd_or_missing_authority"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8728,7 +8744,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:db0df8c0b5c58ab1d923601243f09a2ea108bbb2eba4db0065a1520d023b866e"
+    "implementation_tree_sha": "sha256:3e648d21e8761fe6b6c110f3dbc0dc2a57cfd621d8b8dd3035d3be44eb4f9ae7"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
