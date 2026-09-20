@@ -49,7 +49,8 @@ def test_craft_origin_upgrade_preserves_legacy_source_candidates_and_enforces_ne
             cursor.execute("SELECT candidate.asset_version_id,candidate.execution_asset_version_id,candidate.candidate_hash,candidate.abstraction_policy_version,candidate.status,version.content,version.content_hash,candidate.created_at FROM authority_mkaos_knowledge_candidate candidate JOIN authority_asset_version version ON version.asset_version_id=candidate.asset_version_id WHERE candidate.knowledge_candidate_id=%s", [legacy[0]])
             before = cursor.fetchone()
         status = run_migrations(url)
-        assert status["ok"] is True and status["current"] == LATEST_MIGRATION_ID == MIGRATION
+        assert status["ok"] is True and status["current"] == LATEST_MIGRATION_ID
+        assert MIGRATION in {item["migration_id"] for item in status["applied"]}
         assert run_migrations(url) == status
         with psycopg.connect(url) as connection, connection.cursor() as cursor:
             cursor.execute("SELECT candidate.asset_version_id,candidate.execution_asset_version_id,candidate.candidate_hash,candidate.abstraction_policy_version,candidate.status,version.content,version.content_hash,candidate.created_at FROM authority_mkaos_knowledge_candidate candidate JOIN authority_asset_version version ON version.asset_version_id=candidate.asset_version_id WHERE candidate.knowledge_candidate_id=%s", [legacy[0]])
@@ -86,7 +87,8 @@ def test_craft_origin_upgrade_preserves_legacy_source_candidates_and_enforces_ne
 def test_craft_origin_fresh_migration_and_rerun_install_validated_constraints():
     with disposable_database_at_migration(DATABASE_URL, prefix="craft_origin_fresh", target_migration_id="20260625_0001_initial_industrial_schema") as url:
         status = run_migrations(url)
-        assert status["ok"] is True and status["current"] == MIGRATION
+        assert status["ok"] is True and status["current"] == LATEST_MIGRATION_ID
+        assert MIGRATION in {item["migration_id"] for item in status["applied"]}
         assert run_migrations(url) == status
         with psycopg.connect(url) as connection:
             rows = connection.execute("SELECT conname,convalidated FROM pg_constraint WHERE conname IN ('authority_mkaos_candidate_origin_ck','authority_mkaos_candidate_craft_identity_ck') ORDER BY conname").fetchall()
