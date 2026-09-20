@@ -1,0 +1,38 @@
+{
+  "sources": [
+    {
+      "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "final_url": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "http_status": 200,
+      "sha256": "sha256:2fecee48bf6ad791bce38d1d5504d8ad5c8b0fd4da93e6dc198ae88ff1a4506a",
+      "bytes": 23149,
+      "retrieved_at": "2026-09-20T10:39:20.218925+00:00"
+    },
+    {
+      "url": "https://api-docs.deepseek.com/guides/thinking_mode",
+      "final_url": "https://api-docs.deepseek.com/guides/thinking_mode/",
+      "http_status": 200,
+      "sha256": "sha256:8f7d45a2a97d7a18d480130d24f26a4a4f6f4c8de2b4cc39be86438e9d6da5b3",
+      "bytes": 108576,
+      "retrieved_at": "2026-09-20T10:39:21.361695+00:00"
+    },
+    {
+      "url": "https://learn.chatgpt.com/docs/auth",
+      "final_url": "https://learn.chatgpt.com/docs/auth",
+      "http_status": 200,
+      "sha256": "sha256:dbcc4b5233d19898ff7941a01cd4c9f4602f2bda200c7a24a410e897d85a003e",
+      "bytes": 550799,
+      "retrieved_at": "2026-09-20T10:39:20.381493+00:00"
+    },
+    {
+      "url": "https://learn.chatgpt.com/docs/models",
+      "final_url": "https://learn.chatgpt.com/docs/models",
+      "http_status": 200,
+      "sha256": "sha256:28cc682aa40842a74ba0a7e4348e14cc090f7c20c80001dc10b176520aeddac0",
+      "bytes": 647643,
+      "retrieved_at": "2026-09-20T10:39:20.506770+00:00"
+    }
+  ],
+  "page_content_retained": false,
+  "model_availability_or_entitlement_proven": false
+}
