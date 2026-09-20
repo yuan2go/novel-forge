@@ -105,6 +105,7 @@ from .profiling import (
     resolve_profile,
 )
 from .object_store_adapter import SourceImportObjectStoreAdapter
+from .sampling import finish_sample, sampling_authorization
 
 
 class ContentIntelligenceExecutionPort(Protocol):
@@ -300,6 +301,16 @@ class SourceImportApplication:
         from .corpus_ingestion.runtime import CorpusIngestionRuntime
 
         return CorpusIngestionRuntime(self).create(**kwargs)
+
+    def prepare_provider_sample(self, **kwargs: Any) -> dict[str, Any]:
+        from .sampling import prepare_sample
+
+        return prepare_sample(self, **kwargs)
+
+    def admit_provider_sample(self, **kwargs: Any) -> dict[str, Any]:
+        from .sampling import admit_sample
+
+        return admit_sample(self, **kwargs)
 
     def create_import(
         self,
@@ -783,6 +794,9 @@ class SourceImportApplication:
                 if str(work[1]) == "DISCOVERY"
                 else "PARTIALLY_COMPLETED"
             )
+            if payload.get("source_sampling"):
+                uow.commit()
+                return
             uow.cursor.execute(
                 """
                 UPDATE authority_source_import_job
@@ -800,6 +814,7 @@ class SourceImportApplication:
             uow.commit()
 
     def execute_fenced(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
+        sampling_authorization(self, worker)
         definition = self._operation_definition(worker.causation_id, worker.project_id)
         if definition == "source.import.corpus.analysis":
             from .corpus_ingestion.curated_analysis import execute_curated_analysis
@@ -3278,6 +3293,13 @@ class SourceImportApplication:
                 project_id=worker.project_id,
                 logical_document_scope_hash=scope.scope_hash,
             )
+        if payload.get("source_sampling"):
+            executed = port.execute_classification(
+                worker=worker, logical_document_scope_hash=scope.scope_hash,
+                classifier_contract=policy.classifier_contract,
+                classification_evidence=evidence.to_dict(), source_segments=tuple(segments),
+            )
+            return finish_sample(self, worker, executed)
         if current is not None and current["operation_status"] != "SUCCEEDED":
             raise KernelError(
                 "SOURCE_PROFILE_RECOVERY_REQUIRED",
@@ -3905,7 +3927,7 @@ class SourceImportApplication:
                 and current["methodology_content_hash"] == item.methodology_content_hash
             )
 
-        if all(
+        if not payload.get("source_sampling") and all(
             reusable_current(item, current_by_analyzer[item.analyzer_id])
             for item in analyzers
         ):
@@ -4019,6 +4041,8 @@ class SourceImportApplication:
             compound_analyzers=compound_analyzers,
             sampling_manifest=dict(task.get("sampling_manifest") or {}),
         )
+        if payload.get("source_sampling"):
+            return finish_sample(self, worker, executed)
         if "evidence_spans" in executed:
             spans = [ObservationEvidenceSpan(**{k: v for k, v in item.items() if k != "evidence_span_id"}) for item in executed["evidence_spans"]]
         if compound_analyzers:
@@ -4320,7 +4344,7 @@ class SourceImportApplication:
                 status="RUNNING",
             )
             uow.commit()
-        if reusable_candidate is not None:
+        if reusable_candidate is not None and not payload.get("source_sampling"):
             result = {
                 **reusable_candidate,
                 "status": reusable_candidate["candidate_status"],
@@ -4359,6 +4383,8 @@ class SourceImportApplication:
             observation=dict(observation_content["observation"]),
             evidence_spans=evidence_spans,
         )
+        if payload.get("source_sampling"):
+            return finish_sample(self, worker, executed)
         candidate = self.mkaos_authority.execute_candidate(
             CommitKnowledgeCandidateCommand(
                 project_id=worker.project_id,
@@ -4493,6 +4519,7 @@ class SourceImportApplication:
                 AND work.work_kind IN ('DECONSTRUCTION', 'MKAOS_EXTRACTION')
                 AND work.status IN ('PLANNED', 'RUNNING', 'FAILED_RETRYABLE')
                 AND operation.command_payload->'payload'->>'source_transform_id'=%s
+                AND NOT (operation.command_payload->'payload' ? 'source_sampling')
             )
             """,
             [
@@ -5130,6 +5157,7 @@ class SourceImportApplication:
         payload: dict[str, Any],
         input_assets: tuple[dict[str, Any], ...],
         ready: bool = True,
+        causation_operation_id: str = "",
     ) -> str:
         resolved_inputs = self._resolve_input_assets(project_id, input_assets)
         admitted = admit_command(
@@ -5148,7 +5176,7 @@ class SourceImportApplication:
                 "causation_id": causation_id,
                 "parent_operation_id": parent_operation_id,
                 "root_operation_id": self._root_operation(parent_operation_id),
-                "causation_operation_id": parent_operation_id,
+                "causation_operation_id": causation_operation_id or parent_operation_id,
                 "input": {
                     "project_id": project_id,
                     "workspace_id": workspace_id,

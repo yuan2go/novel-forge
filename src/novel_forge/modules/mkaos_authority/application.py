@@ -2019,6 +2019,8 @@ def _execution_proof(content: Any) -> dict[str, bool]:
             "MKAOS_EXECUTION_EVIDENCE_INVALID",
             "execution evidence content must be an object",
         )
+    if content.get("qualification_status") == "BENCHMARK_ONLY":
+        raise KernelError("SOURCE_BENCHMARK_CANNOT_COMMIT", "calibration evidence cannot commit a knowledge candidate")
     gateway_backed = bool(
         content.get("production_execution_gateway_backed")
         or content.get("gateway") == "ProductionExecutionGateway"

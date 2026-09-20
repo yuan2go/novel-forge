@@ -316,6 +316,8 @@ def execute_reading(app, worker, payload):
             else None,
         )
     except KernelError as exc:
+        if payload.get("source_sampling"):
+            raise
         if (
             exc.code != "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
             and not exc.code.startswith(
@@ -325,6 +327,10 @@ def execute_reading(app, worker, payload):
             raise
         return _invalid_result(app, worker, job, payload, exc)
     curated_provider_gate(app.database_url, worker)
+    if payload.get("source_sampling"):
+        from ..sampling import finish_sample
+
+        return finish_sample(app, worker, executed)
     evidence = _input_evidence(app, worker, payload)
     result = {
         "phase": payload["phase"],

@@ -5036,6 +5036,18 @@
         {
           "path": "src/novel_forge/modules/story_design_authority/evaluation_runtime.py",
           "symbol": "NarrativeSemanticEvaluationApplication._validate_reference_predecessor"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/sampling.py",
+          "symbol": "prepare_sample"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/sampling.py",
+          "symbol": "admit_sample"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/sampling.py",
+          "symbol": "finish_sample"
         }
       ],
       "commands_operations": [
@@ -5184,6 +5196,10 @@
         {
           "path": "tests/integration/test_routing_bootstrap_budget_postgres.py",
           "symbol": "test_native_reference_evaluation_stays_out_of_domain_qualification"
+        },
+        {
+          "path": "tests/integration/test_source_import_runtime_postgres.py",
+          "symbol": "SourceImportRuntimePostgresTests.test_native_source_sampling_isolates_model_arms_and_domain_commits"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8446,7 +8462,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:d95f0e396bc8c988e9ec32a27ef23de9c3f8e1257ad5851a8c28a07c26d057a5"
+    "implementation_tree_sha": "sha256:2a0f369f4e29d34f5d56bbf9dcd9d0401c568c0188050d3a389640d95bbfb408"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

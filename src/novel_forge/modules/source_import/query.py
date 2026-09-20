@@ -498,7 +498,7 @@ class SourceImportQuery:
         self._require(principal, project_id)
         with AuthorityUnitOfWork(self.database_url) as uow:
             rows = SourceImportRepository(uow.cursor).list_work(
-                project_id=project_id, import_job_id=import_job_id
+                project_id=project_id, import_job_id=import_job_id, include_samples=True,
             )
         return [_serializable(row) for row in rows]
 

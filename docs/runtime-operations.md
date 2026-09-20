@@ -405,6 +405,29 @@ treat the sampling ceiling as authorization for those activities. Development an
 observations are excluded from automatic qualification feedback. Release of held-out
 evidence and full-family reference-evaluator bootstrap remain implementation gaps.
 
+For Source sampling, POST `/product/source-imports/provider-samples?dry_run=true` with
+`project_id`, `source_operation_id`, `authorization_id` and `idempotency_key`. The local
+operator preflight reads an existing frozen Source Provider task and returns its exact
+command/input hashes without admission or a Provider call. Register the matching grant
+through the same routing policy command, with `book_id: source-corpus:<project_id>` and
+the returned native task (`source.content.classify`, `source.deconstruction.observe`, or
+`source.mkaos.extract`). Source grants require a campaign. POST the identical request
+without `dry_run` to admit the sample; the existing Source Import worker executes it.
+The current chapter-reading observation and review handlers retain their original
+Context, Schema and source-consumption gates. Reprocessing commands are not sample inputs.
+Read sample outputs through the existing import work and campaign queries. Replaying the
+same request preserves its Operation and settlement; `SOURCE_SAMPLE_RECOVERY_REQUIRED`
+blocks a new request for the same campaign/sample/model arm, including unknown outcomes.
+For a terminal arm with no ExternalEffects, pass its exact `predecessor_operation_id`
+in a new explicitly granted request. The replacement preserves operator, input versions,
+original Source task and full campaign sample, and appends native causation lineage.
+Arms with ExternalEffects must use existing receipt reconciliation; a terminal Provider
+failure replacement is not yet supported by the Source sampler. Successful sample receipts may
+be projected after grant expiry, but new sends still require unexpired authorization.
+Sample outputs never advance the original Source import or become production knowledge.
+The current sampler does not automatically release Source observations into Router quality
+qualification; independent task-specific evaluation and feedback admission remain required.
+
 For semantic evaluator reference sampling, first register independent operator labels
 through `story_design.review.author` with the exact benchmark candidate as its only
 candidate input. This authoring command may read the ineligible candidate solely for

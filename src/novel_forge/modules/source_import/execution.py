@@ -1233,6 +1233,12 @@ class PostgresContentIntelligenceExecutionPort:
             binding = SourceAuthorityRepository(uow.cursor).catalog_execution_binding(
                 worker.project_id, worker.causation_id
             )
+            from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
+
+            bootstrap = load_bootstrap_authorization(
+                uow.cursor, project_id=worker.project_id, operation_id=worker.causation_id,
+                check_expiry=False,
+            )
         frozen_runtime = (binding or {}).get("budget", {}).get("reading_runtime")
         cache_key = _hash(
             {
@@ -1243,6 +1249,7 @@ class PostgresContentIntelligenceExecutionPort:
                 "input": spec.input_payload,
                 "context_contract": spec.context_contract,
                 **({"reading_runtime": frozen_runtime} if frozen_runtime else {}),
+                **({"bootstrap_authorization": bootstrap} if bootstrap else {}),
             }
         )
         replay = self._replay_succeeded_effect(worker=worker, cache_key=cache_key)
@@ -2089,6 +2096,12 @@ class PostgresContentIntelligenceExecutionPort:
             "capability_runtime": dict(execution.get("capability_runtime") or {}),
             **domain_binding,
         }
+        from .sampling import sampling_authorization
+
+        benchmark = bool(sampling_authorization(self, worker))
+        if benchmark:
+            content.update(qualification_status="BENCHMARK_ONLY", production_verified=False,
+                           production_qualification_eligible=False)
         if spec.kind == "mkaos" and content["real_provider_proven"] and not content["fixture_protocol_only"]:
             from novel_forge.modules.provider_qualification.source_binding import source_runtime_identity
             content["provider_runtime_qualification_scope"] = source_runtime_identity(execution)
@@ -2113,6 +2126,7 @@ class PostgresContentIntelligenceExecutionPort:
                 qualification_policy="source-content-intelligence-execution-v1",
                 trace_id=worker.trace_id,
                 correlation_id=worker.correlation_id,
+                eligibility="INELIGIBLE" if benchmark else "ELIGIBLE",
             )
         )
 

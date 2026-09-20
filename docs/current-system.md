@@ -80,13 +80,21 @@ Migration 0139 binds this sampling gate to the immutable grant and benchmark/ref
 lineage, and rejects reference Operations in the domain qualification table. A terminal
 no-effect/failure replacement preserves its predecessor; successful and unknown effects
 cannot be resent under a renamed arm.
+Source Import also samples frozen native classification, deconstruction (including the
+current chapter-reading observation/review phases) and MKAOS extraction Operations under
+explicit campaign grants. Sampling uses the existing worker, Source work records, Router
+and Kernel budget. Its receipt cache is grant-specific; benchmark outputs and model logs
+are ineligible and cannot commit Source Profiles, Observations or Knowledge Candidates.
+Sampling does not advance the original import or schedule production descendants. Reusing
+the request resumes the same arm; a renamed arm requires recovery of the existing one.
+This does not calibrate Source reviewers or authorize reference material for production.
 This does not prove judge calibration or bootstrap every task family. Ordinary production
 routing blocks when sufficient quality evidence is absent.
 
 Planning sampling grants may bind a frozen campaign identity, manifest hash, sample/data
 group and experiment partition. Kernel aggregates their reservations across authorization
 and policy versions. A campaign project cannot replace that identity or admit new unbound
-sampling grants. This quota covers authorized generation and reference sampling;
+sampling grants. This quota covers authorized Planning, Source and reference sampling;
 production, ordinary review and entitlement
 still require their existing project and Book budget policies. It is not a campaign-wide
 mixed-billing authorization. Router v4 counts first attempts per campaign data group

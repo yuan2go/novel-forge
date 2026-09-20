@@ -19,6 +19,25 @@ from novel_forge.modules.source_import.execution_contracts import (
 from novel_forge.modules.source_authority.deconstruction import AnalyzerContract
 
 
+@pytest.mark.parametrize("owner", ["classification", "deconstruction", "knowledge"])
+def test_benchmark_execution_cannot_be_committed_by_source_or_knowledge_authority(owner):
+    from novel_forge.modules.source_authority.profiling_application import _classification_execution_binding
+    from novel_forge.modules.source_authority.deconstruction_application import _execution_proof as observation_proof
+    from novel_forge.modules.mkaos_authority.application import _execution_proof as knowledge_proof
+
+    content = {"qualification_status": "BENCHMARK_ONLY", "production_execution_gateway_backed": True,
+               "real_provider_proven": True, "production_verified": True}
+    with pytest.raises(KernelError, match="SOURCE_BENCHMARK_CANNOT_COMMIT"):
+        if owner == "classification":
+            _classification_execution_binding({"content": content}, evidence_class="PROVIDER_QUALIFIED",
+                scope_hash="scope", classifier_contract_hash="classifier", classification_input_hash="input",
+                classification_output_hash="output", allow_fixture=False)
+        elif owner == "deconstruction":
+            observation_proof(content, evidence_class="PROVIDER_QUALIFIED")
+        else:
+            knowledge_proof(content)
+
+
 def test_actual_reading_manifest_uses_materialized_bytes_and_context_roles():
     from novel_forge.modules.source_import.corpus_ingestion.reading_evidence import (
         materialized_input_manifest,

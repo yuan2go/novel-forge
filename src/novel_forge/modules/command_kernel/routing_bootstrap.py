@@ -11,6 +11,13 @@ from novel_forge.storage.versioned_policy_repository import policy_hash
 from .errors import KernelError
 
 
+SOURCE_BOOTSTRAP_TASKS = {
+    "source.import.document.profile": "source.content.classify",
+    "source.import.deconstruction.execute": "source.deconstruction.observe",
+    "source.import.mkaos.extract": "source.mkaos.extract",
+}
+
+
 def authorization_hash(value: Any) -> str:
     return (
         "sha256:"
@@ -82,6 +89,8 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         validate_reference_evaluation_binding(reference)
     elif reference is not None or grant["task_type"] == "narrative_semantic_evaluation":
         raise ValueError("ROUTING_REFERENCE_AUTHORIZATION_REQUIRED")
+    if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and "campaign" not in grant:
+        raise ValueError("ROUTING_SOURCE_CAMPAIGN_REQUIRED")
     if any(
         type(grant[key]) is not int or grant[key] <= 0
         for key in ("maximum_calls", "maximum_tokens")
@@ -295,12 +304,40 @@ def load_bootstrap_authorization(
         "1.16.0",
         "book:story-planning-generation",
     )
+    if payload.get("source_sampling"):
+        contract = (row[1], "1.4.0", "project:source-import")
+        if SOURCE_BOOTSTRAP_TASKS.get(row[1]) != payload.get("generator_operation_name"):
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Source sampling requires its native task contract")
     if tuple(row[1:4]) != contract or row[4] != payload.get("idempotency_key"):
         raise KernelError(
             "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
             "benchmark authorization requires its exact admitted native operation contract",
         )
     grant = validate_bootstrap_scope(snapshot, payload, check_expiry=check_expiry)
+    if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and not payload.get("source_sampling"):
+        raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Source grant requires a Source sampling operation")
+    if payload.get("source_sampling"):
+        source = payload["source_sampling"]
+        cursor.execute(
+            "SELECT definition_name,definition_version,command_payload->'payload',input_asset_snapshot FROM authority_operation WHERE project_id=%s AND operation_id=%s",
+            [project_id, source.get("source_operation_id")],
+        )
+        origin = cursor.fetchone()
+        if (
+            not origin or tuple(origin[:2]) != tuple(row[1:3])
+            or origin[2].get("routing_bootstrap_authorization_id")
+            or source != {"source_operation_id": payload.get("logical_key"),
+                          "source_command_hash": authorization_hash(origin[2])}
+            or payload.get("book_id") != f"source-corpus:{project_id}"
+            or grant["purpose"] != "BENCHMARK_CHALLENGER" or not grant.get("campaign")
+            or payload.get("input_versions") != origin[3]
+            or payload != {**origin[2], **{key: payload[key] for key in (
+                "project_id", "book_id", "generator_operation_name", "logical_key", "idempotency_key",
+                "input_versions", "source_sampling", "routing_bootstrap_authorization_id", "routing_bootstrap_authorization",
+                "source_predecessor_operation_id",
+            )}}
+        ):
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Source sample differs from its frozen original task")
     cursor.execute(
         "SELECT content,content_hash,actor_id,created_by_operation_id FROM authority_runtime_policy_version WHERE owner='PROVIDER_ROUTING' AND project_id=%s AND policy_version=%s",
         [project_id, snapshot.get("policy_version")],

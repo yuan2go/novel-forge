@@ -1463,6 +1463,8 @@ def _execution_proof(
             "DECONSTRUCTION_EXECUTION_EVIDENCE_INVALID",
             "execution evidence content must be an object",
         )
+    if content.get("qualification_status") == "BENCHMARK_ONLY":
+        raise KernelError("SOURCE_BENCHMARK_CANNOT_COMMIT", "calibration evidence cannot commit a Source Observation")
     if evidence_class == "DETERMINISTIC":
         usage = content.get("usage")
         cost = content.get("cost")

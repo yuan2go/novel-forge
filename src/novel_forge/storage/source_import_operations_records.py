@@ -118,7 +118,8 @@ class SourceImportOperationsRecords:
             count(DISTINCT u.unit_id) FILTER(WHERE w.result->>'semantic_evidence'='AGENT_REVIEW_ONLY')
             FROM authority_source_import_work w
             LEFT JOIN LATERAL jsonb_array_elements_text(COALESCE(w.result->'coverage'->'target_units','[]')) u(unit_id) ON true
-            WHERE w.project_id=%s AND w.import_job_id=%s AND w.work_kind='DECONSTRUCTION'""",
+            WHERE w.project_id=%s AND w.import_job_id=%s AND w.work_kind='DECONSTRUCTION'
+              AND NOT EXISTS (SELECT 1 FROM authority_operation o WHERE o.operation_id=w.operation_id AND o.command_payload->'payload' ? 'source_sampling')""",
             [project, job],
         )
         row = self.cursor.fetchone()
@@ -147,6 +148,7 @@ class SourceImportOperationsRecords:
             FROM authority_source_import_work w JOIN authority_operation o USING(operation_id,project_id)
             WHERE w.project_id=%s AND w.import_job_id=%s
               AND o.command_payload->'payload' ? 'narrative_reading'
+              AND NOT (o.command_payload->'payload' ? 'source_sampling')
             ORDER BY o.created_at,o.operation_id LIMIT 10001""",
             [project, job],
         )
@@ -225,6 +227,7 @@ class SourceImportOperationsRecords:
         self.cursor.execute(
             """SELECT w.work_kind,w.status,o.status,count(*) FROM authority_source_import_work w
             JOIN authority_operation o USING(operation_id,project_id) WHERE w.project_id=%s AND w.import_job_id=%s
+              AND NOT (o.command_payload->'payload' ? 'source_sampling')
             GROUP BY w.work_kind,w.status,o.status ORDER BY 1,2,3""",
             [project, job],
         )
@@ -483,6 +486,7 @@ class SourceImportOperationsRecords:
             """WITH RECURSIVE chain AS (
             SELECT w.operation_id AS target,o.parent_operation_id,o.command_payload,0 AS depth FROM authority_source_import_work w
             JOIN authority_operation o USING(operation_id,project_id) WHERE w.project_id=%s AND w.import_job_id=%s
+              AND NOT (o.command_payload->'payload' ? 'source_sampling')
             UNION ALL SELECT c.target,p.parent_operation_id,p.command_payload,c.depth+1 FROM chain c
             JOIN authority_operation p ON p.operation_id=c.parent_operation_id AND p.project_id=%s
             WHERE c.depth<20 AND NOT(c.command_payload->'payload' ? 'member_processing_id')
