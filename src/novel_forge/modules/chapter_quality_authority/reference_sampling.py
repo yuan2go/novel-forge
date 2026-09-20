@@ -168,7 +168,8 @@ def reference_provider_result(cursor: Any, *, project_id: str, operation_id: str
           AND effect.operation_id=%s AND effect.operation_id=output.operation_id
           AND effect.project_id=asset.project_id AND effect.status='SUCCEEDED'
         WHERE asset.project_id=%s AND asset.asset_type='model_call_log'
-          AND version.content->>'attempt_id'=%s AND version.content->>'stage'=%s
+          AND COALESCE(version.content->>'attempt_id',COALESCE(version.content->'provider_evidence',version.content)
+            #>> '{production_execution,execution_request,attempt_id}')=%s AND version.content->>'stage'=%s
         ORDER BY version.created_at DESC""", [operation_id, project_id, attempt_id, stage])
     rows = cursor.fetchall()
     if len(rows) != 1 or rows[0][1] != authorization_hash(rows[0][0]):
@@ -340,7 +341,7 @@ def admitted_reference_calibration(request: Any, result: Any, *, stage: str, tar
 
 def reference_decision_qualifies(decision: Mapping[str, Any], *, evidence: Mapping[str, Any], stage: str) -> bool:
     from dataclasses import asdict
-    from novel_forge.modules.production_execution.cost_routing import REFERENCE_TASKS, reference_context_bucket, task_policy
+    from novel_forge.modules.production_execution.cost_routing import POLICY_VERSION, REFERENCE_TASKS, reference_context_bucket, task_policy
 
     selected = decision.get("selected") or {}
     candidate = selected.get("candidate") or {}
@@ -352,7 +353,7 @@ def reference_decision_qualifies(decision: Mapping[str, Any], *, evidence: Mappi
     route = execution.get("route_snapshot") or {}
     process = execution.get("process_evidence") or {}
     strata = benchmark.get("reference_label_strata") or {}
-    if (stage not in REFERENCE_TASKS or decision.get("schema_version") != "quality-constrained-routing.v7"
+    if (stage not in REFERENCE_TASKS or decision.get("schema_version") != POLICY_VERSION
         or decision.get("status") != "SELECTED" or decision.get("bootstrap_authorization")
         or decision.get("production_eligible") is False or selected.get("rejected_reasons")
         or candidate.get("provider") not in {"deepseek", "codex-cli"}

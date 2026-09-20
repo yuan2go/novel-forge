@@ -100,6 +100,14 @@ def exercise_world_generator_sample(app, harness, *, book_id, source_operation_i
         evidence = deepcopy(original_evidence)
         evidence.update(fixture_protocol_only=True, real_model_call=False, production_verified=False)
         evidence["production_execution"]["execution_request"] = adapter.binding.request.to_dict()
+        if command.generation_sample is not None:
+            # WHY: This synthetic native-shaped receipt tests read projection in the isolated fixture DB only.
+            evidence.update(fixture_protocol_only=False, real_model_call=True)
+            evidence["provider_id"], evidence["model_id"] = candidate.provider, candidate.model
+            evidence["production_execution"]["route_snapshot"]["reasoning_effort"] = candidate.reasoning
+            evidence["production_execution"]["process_evidence"].update(
+                served_model_identity_hash="sha256:" + "f" * 64, model_revision=candidate.model_revision)
+            evidence["result"]["evaluations"][0]["preferred_path_id"] = "missing-fixture-path"
         return ProviderResult("success", "fixture-world-sample:" + kwargs["stable_idempotency_key"], evidence)
 
     scheduler = ContentAuthorityScheduler(database_url, registry=app.registry, worker_id=app.worker_id)
@@ -125,7 +133,7 @@ def exercise_world_generator_sample(app, harness, *, book_id, source_operation_i
         base=generator_context, stage=frozen.stage, source=frozen.source)
     assert derived == frozen.context.content
     sample_target = {key: samples[0][key] for key in ("asset_version_id", "content_hash")}
-    sample_reference = fixture_world_reference(app, harness, frozen, sample_target=sample_target)
+    sample_reference = fixture_world_reference(app, harness, frozen, sample_target=sample_target, projection_fixture=True)
     assert sample_reference["adjudications"]
     from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
     from novel_forge.modules.command_kernel.errors import KernelError
@@ -163,6 +171,9 @@ def exercise_world_generator_sample(app, harness, *, book_id, source_operation_i
     assert sample["reference_evaluation"]["calibration_claim_allowed"] is False
     assert all("fixture-world-blind" not in str(call["request_payload"]["input"]) for call in calls)
     assert PostgresRoutingRegistry(database_url).campaign(project_id=project_id, campaign_id=project_id)["usage"]["calls_used_or_reserved"] == 2
+    from novel_forge.modules.authority_handler_runtime.routing_feedback import domain_gate_outcomes
+    with AuthorityUnitOfWork(database_url) as uow:
+        assert not domain_gate_outcomes(uow.cursor, project_id=project_id, effect_ids=[item["external_effect_id"] for item in result["effects"]])
     command = replace(command, generation_sample=sample_target, reference_evaluation=sample_reference,
         authorization_id="fixture-world-coldstart", idempotency_key=project_id + ":world-coldstart")
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
@@ -197,10 +208,24 @@ def exercise_world_generator_sample(app, harness, *, book_id, source_operation_i
     assert result["status"] == "SUCCEEDED" and len(calls) == 3
     sample = next(item["sample"] for item in result["outputs"] if item["asset_type"] == "world_provider_sample")
     assert sample["generation_sample"] == sample_target
-    assert sample["reference_evaluation"]["score_range_agreement"] < 1
+    assert sample["reference_evaluation"] is None
+    assert sample["rule_validation"]["status"] == "FAILED"
+    assert sample["rule_validation"]["code"] == "WORLD_DIRECTOR_REFERENCE_INVALID"
     assert sample["production_eligible"] is False
     assert all(item["eligibility"] == "INELIGIBLE" for item in result["outputs"] if item["asset_type"] in {"world_provider_sample", "context_bundle"})
     assert PostgresRoutingRegistry(database_url).campaign(project_id=project_id, campaign_id=project_id)["usage"]["calls_used_or_reserved"] == 3
+    with AuthorityUnitOfWork(database_url) as uow:
+        outcomes = domain_gate_outcomes(uow.cursor, project_id=project_id, effect_ids=[item["external_effect_id"] for item in result["effects"]])
+        assert len(outcomes) == 1
+        projected = next(iter(outcomes.values()))
+        assert projected["reference_agreed"] is False and projected["accepted"] is None
+        assert projected["reference_label_classes"] == ("FAIL",)
+        assert projected["failure_class"] == "QUALITY_FAILURE"
+    observations = PostgresRoutingRegistry(database_url, outcome_projection=domain_gate_outcomes).observations(
+        project_id=project_id, task_type="world_candidates.evaluate", candidate=candidate)
+    assert len(observations) == 1 and observations[0].reference_agreed is False
+    assert observations[0].reference_protocol_hash == projected["reference_protocol_hash"]
+    assert observations[0].reference_context_tokens > 0 and observations[0].production_eligible is False
     with AuthorityUnitOfWork(database_url) as uow:
         with pytest.raises(KernelError, match="AUTHORITY_INPUT_NOT_ELIGIBLE"):
             uow.repositories.chapter_authority.frozen_inputs(project_id, [sample_target])
@@ -208,7 +233,7 @@ def exercise_world_generator_sample(app, harness, *, book_id, source_operation_i
         prepare_world_sample(app, replace(command, generation_sample={**sample_target, "content_hash": "sha256:" + "0" * 64}), principal=operator)
 
 
-def fixture_world_reference(app, harness, frozen, *, sample_target=None):
+def fixture_world_reference(app, harness, frozen, *, sample_target=None, projection_fixture=False):
     from novel_forge.modules.content_authority import CONTENT_CODECS
     from novel_forge.modules.content_authority.application import ContentAuthorityApplication, ContentOperationRequest
     from novel_forge.modules.hierarchical_planning.causal_domain import DIRECTOR_DIMENSIONS
@@ -236,8 +261,8 @@ def fixture_world_reference(app, harness, frozen, *, sample_target=None):
 
             humans = [author("quality.human_evaluation.record", "world-fixture-human-" + str(i),
                 {**shared, "evaluation_id": harness.project_id + ":" + target["asset_version_id"] + ":" + dimension + ":" + str(i),
-                 "evaluator_group": "SCRIPTED_INTEGRATION_FIXTURE", "evaluator_identity_class": "PROFESSIONAL_EDITOR",
-                 "score": 0, "confidence": 0.8, "evidence": [{"fixture_protocol_only": True}], "blind": True}, [target]) for i in (1, 2)]
+                 "evaluator_group": "SYNTHETIC_NATIVE_SHAPE" if projection_fixture else "SCRIPTED_INTEGRATION_FIXTURE", "evaluator_identity_class": "PROFESSIONAL_EDITOR",
+                 "score": 0, "confidence": 0.8, "evidence": [{"note": "Synthetic database projection regression"}] if projection_fixture else [{"fixture_protocol_only": True}], "blind": True}, [target]) for i in (1, 2)]
             adjudications.append(author("quality.adjudication.record", "world-fixture-adjudicator",
                 {**shared, "adjudication_id": harness.project_id + ":" + target["asset_version_id"] + ":" + dimension + ":adjudication",
                  "adjudicator_identity_class": "PROFESSIONAL_EDITOR", "score_range": [0, 0],

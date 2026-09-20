@@ -313,6 +313,76 @@ def require_frozen_world_execution(database_url: str, *, operation_id: str, comm
         raise KernelError("WORLD_SAMPLE_EXECUTION_SCOPE_INVALID", "frozen World execution requires its exact native sample grant and origin")
 
 
+def world_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list[str]) -> dict[str, dict[str, Any]]:
+    from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
+    from novel_forge.modules.chapter_quality_authority.reference_sampling import reference_label_classes, reference_provider_result
+    from novel_forge.modules.hierarchical_planning.causal_domain import DIRECTOR_DIMENSIONS
+
+    if not effect_ids:
+        return {}
+    cursor.execute("""SELECT effect.external_effect_id,effect.operation_id,attempt.attempt_id,operation.actor_id,
+        operation.command_payload->'payload',version.asset_version_id,version.content_hash,version.content
+        FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id)
+        JOIN authority_operation_output_asset output ON output.operation_id=operation.operation_id AND output.role='primary'
+        JOIN authority_asset_version version ON version.asset_version_id=output.asset_version_id AND version.content_hash=output.content_hash
+        JOIN authority_asset asset ON asset.asset_id=version.asset_id AND asset.project_id=operation.project_id
+        JOIN authority_attempt attempt ON attempt.operation_id=operation.operation_id AND attempt.status='SUCCEEDED'
+        WHERE effect.project_id=%s AND effect.external_effect_id=ANY(%s) AND effect.status='SUCCEEDED'
+          AND operation.status='SUCCEEDED' AND operation.definition_name='world.provider.sample.evaluate'
+          AND asset.asset_type='world_provider_sample' AND version.lifecycle='ACTIVE'
+          AND version.eligibility='INELIGIBLE' AND version.governance='CLEAR'
+          AND version.content #>> '{execution_evidence,external_receipt_ref}'=effect.external_effect_id
+        ORDER BY version.created_at,version.asset_version_id""", [project_id, effect_ids])
+    outcomes = {}
+    for effect_id, operation_id, attempt_id, actor, payload, asset_id, digest, content in cursor.fetchall():
+        stage = "world_candidates.evaluate"
+        if (content.get("stage") != stage or digest != authorization_hash(content)
+            or content.get("production_eligible") is not False or content.get("routing_eligibility") != "BENCHMARK_ONLY"):
+            continue
+        try:
+            snapshot = load_bootstrap_authorization(cursor, project_id=project_id, operation_id=operation_id, check_expiry=False)
+            grant = snapshot["authorization"] if snapshot else {}
+            if (grant.get("purpose") != "REFERENCE_EVALUATION" or grant.get("task_type") != stage
+                or content.get("authorization_id") != grant.get("authorization_id") or content.get("campaign") != grant.get("campaign")
+                or payload.get("generator_operation_name") != stage):
+                continue
+            provider = reference_provider_result(cursor, project_id=project_id, operation_id=operation_id, attempt_id=attempt_id, stage=stage)
+            if not provider["real_model_call"] or provider["result"] != content.get("sampled_output"):
+                continue
+            metadata = payload["world_sampling"]
+            database_url = cursor.connection.info.dsn
+            frozen = require_world_sample_source(database_url, project_id=project_id, book_id=payload["book_id"],
+                source_operation_id=metadata["source_operation_id"], stage=stage, generation_sample=metadata.get("generation_sample"))
+            if (content.get("source_operation_id") != metadata["source_operation_id"]
+                or content.get("source") != _binding(frozen.source) or content.get("context") != _binding(frozen.context)
+                or metadata.get("stage_hash") != authorization_hash(dict(frozen.stage.task))
+                or content.get("generation_sample") != metadata.get("generation_sample")):
+                continue
+            reference = require_world_reference(database_url, frozen=frozen, binding=payload["reference_evaluation"], evaluator_actor_id=actor)
+            reviewed = world_sample_result_review(frozen, provider["result"], reference)
+            if (reviewed["rule_validation"] != content.get("rule_validation")
+                or reviewed["reference_evaluation"] != content.get("reference_evaluation")):
+                continue
+            classes = reference_label_classes(cursor, project_id=project_id, reference=reference, stage=stage)
+            if not classes:
+                continue
+        except (KernelError, ValueError, TypeError, KeyError):
+            continue
+        agreed = reviewed["rule_validation"]["status"] == "PASSED" and reviewed["reference_evaluation"] is not None and all(
+            item["score_in_range"] for item in reviewed["reference_evaluation"]["comparisons"])
+        outcomes[effect_id] = {"accepted": None, "metric": "REFERENCE_AGREEMENT.v1", "reference_agreed": agreed,
+            "reference_label_classes": classes,
+            "reference_protocol_hash": authorization_hash({"protocol_version": reference["binding"]["protocol_version"],
+                "evaluation_versions": sorted({item["evaluation_version"] for item in reference["labels"]}),
+                "dimensions": sorted(DIRECTOR_DIMENSIONS), "agreement_contract": "world-reference-agreement.v1",
+                "world_policy": frozen.source.content["contract"]["policy"]}),
+            "reference_sample_identity": authorization_hash({"task_type": stage, "generated_portfolio": frozen.stage.task["generated_portfolio"]}),
+            "failure_class": "" if agreed else "QUALITY_FAILURE",
+            "evidence_refs": ["asset-version:" + asset_id, "asset-version:" + provider["model_call_asset_version_id"],
+                *("asset-version:" + item["adjudication_asset_version_id"] for item in reference["labels"])]}
+    return outcomes
+
+
 def world_sample_definitions(*, application_build_id: str, commit_sha: str,
                              reference_samples: bool = False) -> tuple[dict[str, Any], ...]:
     from .application import story_planning_generation_definition

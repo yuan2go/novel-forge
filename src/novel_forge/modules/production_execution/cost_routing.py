@@ -172,8 +172,8 @@ TASK_TAXONOMY = {
     ),
 }
 REFERENCE_TASKS = frozenset({"review", "rereview", "quality_structural", "quality_commercial",
-    "quality_source_originality", "quality_longform", "quality_platform"})
-POLICY_VERSION = "quality-constrained-routing.v7"
+    "quality_source_originality", "quality_longform", "quality_platform", "world_candidates.evaluate"})
+POLICY_VERSION = "quality-constrained-routing.v8"
 
 
 def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> TaskPolicy:

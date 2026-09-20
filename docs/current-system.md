@@ -118,7 +118,7 @@ preflight producer hash is checked again by Router before any Effect. The target
 its physical sample type and ineligible state. Replay uses the existing Attempt Pack
 snapshot. Quality-group sampling still requires a frozen native Quality task and target.
 The sampling result cannot activate a Quality profile or qualify itself. Router policy
-`quality-constrained-routing.v7` reads native Chapter reference outcomes using a separate
+`quality-constrained-routing.v8` reads native Chapter and World reference outcomes using a separate
 `REFERENCE_AGREEMENT` metric. The projection revalidates the native grant, target, labels,
 real receipt and recomputed agreement. Fixture labels and calls do not contribute.
 Reference protocol/version hashes, risk and context-length bands stay separate; mixed
@@ -158,7 +158,15 @@ and Context from the original generator Context and producer artifacts without r
 formal World generation or Director Context. The derived Context remains ineligible;
 its hash, sample origin and separate reference grant are checked again before dispatch.
 Provider source-policy eligibility does not promote that Context to business eligibility.
-Trusted evaluator admission and production feedback admission remain gaps. Both World tasks are required by the
+World evaluator reference outcomes now feed the same routing benchmark. Projection
+revalidates native source, grant, receipt, target and independent labels, recomputes rule
+and score-range results, and counts rule failures as disagreements. Repeated portfolio
+content cannot gain extra sample credit through renamed campaign groups. Director
+dimension names and the frozen World policy define protocol scope; per-candidate IDs
+do not define a new evaluation protocol. Fixture calls or labels supply no qualifying
+reference evidence. Sufficient compatible positive and negative strata can admit a new
+World evaluator call; this does not qualify its generator or activate sample outputs.
+World generator feedback admission remains a gap. Both World tasks are required by the
 continuous Book chain and must remain in its calibration coverage matrix.
 
 Planning sampling grants may bind a frozen campaign identity, manifest hash, sample/data
