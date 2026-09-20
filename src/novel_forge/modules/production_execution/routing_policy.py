@@ -7,6 +7,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.service import _validate_json_schema
 from novel_forge.modules.command_kernel.routing_bootstrap import (
     SOURCE_BOOTSTRAP_TASKS,
+    CHAPTER_BOOTSTRAP_TASKS,
     validate_bootstrap_authorization,
     validate_bootstrap_history,
 )
@@ -61,7 +62,8 @@ def validate_routing_policy(content: Mapping[str, Any]) -> None:
             if (
                 not (grant["task_type"].endswith(".generate")
                      or grant["task_type"] == "narrative_semantic_evaluation"
-                     or grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values())
+                     or grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values()
+                     or grant["task_type"] in CHAPTER_BOOTSTRAP_TASKS.values())
                 or grant["authorization_id"] in authorization_ids
             ):
                 raise ValueError(

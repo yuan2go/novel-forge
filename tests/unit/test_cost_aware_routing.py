@@ -601,3 +601,42 @@ def test_planning_schema_identity_preserves_independent_bindings_and_contract_sh
     different_shape = planning_provider_output_schema(PlanContractType.VOLUME, logical_key="volume:c",
         parent_version_id="parent:c", dependency_version_ids=("input:c", "input:d"))
     assert planning_schema_evidence_identity(different_shape, "volume:v1") != identity
+
+
+def test_chapter_evidence_compatibility_projects_only_unreachable_context_types():
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.execution_gateway import chapter_producer_contract_identity
+
+    artifact = {"ref": "fixture", "version": "1", "content_hash": "sha256:" + "a" * 64}
+    prompt = {"system_instruction": artifact, "prompt_template": artifact, "skill": artifact,
+              "output_schema_ref": "fixture-schema", "output_schema_hash": "sha256:" + "b" * 64,
+              "allowed_tools": ["model.provider.invoke"]}
+    materialization = {
+        "schema_version": "novelos.chapter_capability_materialization.v1", "stage": "draft",
+        "pack_artifacts": {"context_policy": {**artifact, "content": {
+            "allowed_asset_types": ["context_bundle", "chapter_plan"],
+            "forbidden_asset_types": ["raw_source_chunk"], "max_tokens": 16000,
+            "source_isolation": "ABSTRACT_ASSETS_ONLY", "reject_cross_project": True,
+        }}, "tool_policy": {**artifact, "content": {
+            "default": "DENY", "explicit_tool_refs": ["model.provider.invoke", "storage.object.put"],
+            "audit_high_and_critical": True,
+        }}},
+        "tool_permissions": {"allowed": ["model.provider.invoke"], "denied": ["storage.object.put"],
+                             "default": "DENY", "governing_policy_hash": "formal"},
+    }
+    expected = chapter_producer_contract_identity(prompt, materialization)
+    sample = deepcopy(materialization)
+    sample["pack_artifacts"]["context_policy"]["content"]["allowed_asset_types"].append("draft_chapter")
+    sample["pack_artifacts"]["context_policy"]["content_hash"] = "sha256:" + "c" * 64
+    sample["tool_permissions"]["governing_policy_hash"] = "sample"
+    sample["tool_permissions"]["denied"] = []
+    sample["pack_artifacts"]["tool_policy"]["content"]["explicit_tool_refs"] = ["model.provider.invoke"]
+    assert chapter_producer_contract_identity(prompt, sample) == expected
+    for key, value in [("max_tokens", 8000), ("source_isolation", "RAW_ALLOWED"),
+                       ("reject_cross_project", False), ("allowed_asset_types", ["chapter_plan"]),
+                       ("forbidden_asset_types", [])]:
+        changed = deepcopy(sample)
+        changed["pack_artifacts"]["context_policy"]["content"][key] = value
+        assert chapter_producer_contract_identity(prompt, changed) != expected
+    sample["tool_permissions"]["allowed"].append("storage.object.put")
+    assert chapter_producer_contract_identity(prompt, sample) != expected

@@ -19,6 +19,13 @@ from novel_forge.modules.chapter_authority.contracts import (
 )
 from novel_forge.modules.chapter_authority.definitions import chapter_definition_version
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.routing_bootstrap import (
+    CHAPTER_SAMPLE_DEFINITION_VERSION, chapter_sample_definition_name, load_bootstrap_authorization,
+)
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+from .definitions import CHAPTER_SAMPLE_COMPLETION_TOPIC, CHAPTER_SAMPLE_OUTPUT_KEY
 
 
 ChapterExecutionResult = AuthorityExecutionResult
@@ -32,15 +39,23 @@ class _ChapterHandlerAdapter:
     fencing_token: int
     worker_id: str
     database_url: str
+    sampling: bool = False
 
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
+        snapshot = None
+        if self.sampling:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                snapshot = load_bootstrap_authorization(uow.cursor, project_id=request.project_id,
+                                                       operation_id=request.operation_id, check_expiry=False)
+            if snapshot is None:
+                raise KernelError("CHAPTER_SAMPLE_AUTHORIZATION_REQUIRED", "sample materialization requires its frozen authorization")
         chapter_request = ChapterHandlerRequest(
             operation_id=request.operation_id,
             project_id=request.project_id,
             workspace_id=request.workspace_id,
             trace_id=request.trace_id,
             correlation_id=request.correlation_id,
-            command=request.command,
+            command=request.command["payload"] if self.sampling else request.command,
             inputs=tuple(
                 ChapterInputAsset(
                     asset_version_id=item.asset_version_id,
@@ -57,6 +72,25 @@ class _ChapterHandlerAdapter:
             database_url=self.database_url,
         )
         output = self.registry.require(self.node).execute(chapter_request)
+        if snapshot is not None:
+            grant = snapshot["authorization"]
+            return AuthorityHandlerOutput(
+                asset_type="chapter_provider_sample", output_key=CHAPTER_SAMPLE_OUTPUT_KEY, role="primary",
+                content={
+                    "schema_version": "chapter-provider-sample.v1", "routing_eligibility": "BENCHMARK_ONLY",
+                    "production_eligible": False, "stage": self.node.value,
+                    "source_operation_id": chapter_request.command["chapter_sampling"]["source_operation_id"],
+                    "authorization_id": grant["authorization_id"], "campaign": grant["campaign"],
+                    "sampled_asset_type": output.asset_type, "sampled_output": output.content,
+                    "uncommitted_auxiliary_candidates": [
+                        {"asset_type": item.asset_type, "output_key": item.output_key, "content": item.content}
+                        for item in output.auxiliary_outputs if item.role != "execution_commit_evidence"
+                    ],
+                },
+                qualification_policy="chapter-provider-sample.v1", eligibility="INELIGIBLE",
+                reference_asset_version_ids=tuple(item.asset_version_id for item in request.inputs),
+                evidence={"authority_family": "chapter", "production_eligible": False},
+            )
         return AuthorityHandlerOutput(
             asset_type=output.asset_type,
             output_key=output.output_key,
@@ -92,22 +126,21 @@ def execute_chapter_handler(
     node: ChapterNode,
     registry: ChapterHandlerRegistry,
     execution_probe: Callable[[], object] | None = None,
+    sampling: bool = False,
 ) -> ChapterExecutionResult:
     return execute_authority_handler(
         database_url,
         command=command,
         execution_probe=execution_probe,
         registration=AuthorityHandlerRegistration(
-            definition_name=node.definition_name,
-            definition_version=chapter_definition_version(
-                registry.model_effects_required
-            ),
-            handler_key=node.handler_key,
-            handler_contract_version="chapter-authority-handler-v2",
-            output_asset_type=node.asset_type,
-            output_key=node.output_key,
+            definition_name=chapter_sample_definition_name(node.value) if sampling else node.definition_name,
+            definition_version=CHAPTER_SAMPLE_DEFINITION_VERSION if sampling else chapter_definition_version(registry.model_effects_required),
+            handler_key="novel_forge.chapter_authority.sample." + node.value if sampling else node.handler_key,
+            handler_contract_version="chapter-provider-sample.v1" if sampling else "chapter-authority-handler-v2",
+            output_asset_type="chapter_provider_sample" if sampling else node.asset_type,
+            output_key=CHAPTER_SAMPLE_OUTPUT_KEY if sampling else node.output_key,
             role="primary",
-            completion_topic=node.completion_topic,
+            completion_topic=CHAPTER_SAMPLE_COMPLETION_TOPIC if sampling else node.completion_topic,
             handler=_ChapterHandlerAdapter(
                 node,
                 registry,
@@ -115,6 +148,7 @@ def execute_chapter_handler(
                 command.fencing_token,
                 command.worker_id,
                 database_url,
+                sampling=sampling,
             ),
         ),
     )

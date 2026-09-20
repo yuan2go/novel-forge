@@ -8,6 +8,18 @@
   ],
   "classification_rules": [
     {
+      "id": "chapter-provider-sampling",
+      "patterns": [
+        "tests/integration/test_chapter_provider_sampling_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "chapter-authority",
+      "capability": "chapter-provider-sampling",
+      "production_target": "src/novel_forge/modules/chapter_authority/sampling.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
       "id": "narrative-craft-migration",
       "patterns": [
         "tests/integration/test_narrative_craft_migration_upgrade_postgres.py"

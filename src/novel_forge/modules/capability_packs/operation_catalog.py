@@ -11,6 +11,8 @@ from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_MODEL_WORKFLOW_DEFINITION_ID,
     CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION,
     chapter_operation_definitions,
+    CHAPTER_SAMPLE_WORKFLOW_ID,
+    chapter_provider_sample_definitions,
 )
 from novel_forge.modules.chapter_authority.execution_gateway import (
     chapter_stage_capability,
@@ -312,6 +314,24 @@ def chapter_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
 
 
+def chapter_sampling_workflow_binding_catalog() -> WorkflowBindingCatalog:
+    from novel_forge.modules.command_kernel.routing_bootstrap import (
+        CHAPTER_BOOTSTRAP_TASKS, CHAPTER_SAMPLE_DEFINITION_VERSION,
+        chapter_sample_definition_name,
+    )
+
+    formal = chapter_workflow_binding_catalog()
+    return WorkflowBindingCatalog(
+        CHAPTER_SAMPLE_WORKFLOW_ID, CHAPTER_SAMPLE_DEFINITION_VERSION,
+        (WorkflowBinding(
+            node_id=stage, operation_name=chapter_sample_definition_name(stage), stage=stage,
+            handler_key="novel_forge.chapter_authority.sample." + stage,
+            capability_id=formal.resolve(stage).capability_id, depends_on=(),
+            primary_output_asset_type="chapter_provider_sample",
+        ) for stage in CHAPTER_BOOTSTRAP_TASKS.values()),
+    )
+
+
 def story_planning_workflow_binding_catalog() -> WorkflowBindingCatalog:
     from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_CAPABILITIES
 
@@ -402,6 +422,7 @@ def governed_workflow_binding_catalog(
 ) -> WorkflowBindingCatalog:
     catalogs = (
         chapter_workflow_binding_catalog(),
+        chapter_sampling_workflow_binding_catalog(),
         story_planning_workflow_binding_catalog(),
         reader_outcome_workflow_binding_catalog(),
         narrative_evaluation_workflow_binding_catalog(),
@@ -422,11 +443,13 @@ def chapter_operation_definition_catalog(
     *, release_sha: str, application_build_id: str = "novel-forge-capability-compiler"
 ) -> InMemoryOperationDefinitionCatalog:
     return InMemoryOperationDefinitionCatalog(
-        chapter_operation_definitions(
+        (*chapter_operation_definitions(
             application_build_id=application_build_id,
             commit_sha=release_sha,
             model_effects_required=True,
-        )
+        ), *chapter_provider_sample_definitions(
+            application_build_id=application_build_id, commit_sha=release_sha,
+        ))
     )
 
 

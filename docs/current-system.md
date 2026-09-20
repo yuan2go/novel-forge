@@ -95,13 +95,21 @@ reserved usage, and ambiguous usage remains held. Failure model logs remain evid
 Unknown outcomes checkpoint for reconciliation; known terminal Provider failure is not
 turned into an automatic retry of the same task.
 This does not calibrate Source reviewers or authorize reference material for production.
+Chapter memo, draft, revision and Canon extraction also have native campaign sampling
+Operations. They freeze an existing stage command and inputs, use a separately approved
+Capability Pack binding with the original handler, and complete only an ineligible sample.
+Their single-step Saga, Router, Provider admission, Agent Runtime, ExternalEffect and budget
+remain native; the source production Saga and Book acceptance cannot consume the sample.
+Both synchronous and reconciled model receipts use one Kernel settlement policy. Failures
+without measurements retain model-call evidence, and later success appends separate evidence.
+Chapter reviewer reference calibration and generator feedback admission remain unimplemented.
 This does not prove judge calibration or bootstrap every task family. Ordinary production
 routing blocks when sufficient quality evidence is absent.
 
 Planning sampling grants may bind a frozen campaign identity, manifest hash, sample/data
 group and experiment partition. Kernel aggregates their reservations across authorization
 and policy versions. A campaign project cannot replace that identity or admit new unbound
-sampling grants. This quota covers authorized Planning, Source and reference sampling;
+sampling grants. This quota covers authorized Planning, Source, Chapter generator and reference sampling;
 production, ordinary review and entitlement
 still require their existing project and Book budget policies. It is not a campaign-wide
 mixed-billing authorization. Router v5 counts first attempts per campaign data group

@@ -443,6 +443,46 @@ Sample outputs never advance the original Source import or become production kno
 The current sampler does not automatically release Source observations into Router quality
 qualification; independent task-specific evaluation and feedback admission remain required.
 
+Chapter generator sampling uses `POST /product/production/chapter-authority/provider-samples?dry_run=true`
+with `project_id`, `actor_id`, `source_operation_id`, `authorization_id`, `idempotency_key`
+and optional `predecessor_operation_id`. The trusted Principal supplies the effective actor.
+The source must be an existing frozen native `chapter.memo.generate`, `chapter.draft.generate`,
+`chapter.revision.apply` or `chapter.canon.extract` Operation at definition version `3.4.1`.
+The returned task types are respectively `memo`, `draft`, `revision` and `canon_extraction`;
+use the returned book, command and input identities in the same campaign grant. Dry-run
+performs no admission or Provider call. Admit the identical request without `dry_run`.
+The existing Chapter worker consumes its own root Operation through the original handler,
+Router, Provider admission, Attempt, ExternalEffect and Agent Runtime. It does not join or
+advance the source Chapter Saga. The worker root is the single registered Saga step;
+Saga coordination follows terminal worker completion, so ordinary Chapter orchestration
+cannot admit production descendants from a sample.
+
+Install the separately approved `chapter_provider_sampling@1.0.0` binding through
+`install_chapter_validation_pack(..., provider_sampling=True)` in the existing Capability
+Pack authority workflow. It derives `<configured_chapter_pack_id>.provider_sampling`
+from the supplied Chapter pack and retains its Prompt, Skill, Schema and source isolation.
+Only the four generator nodes remain; their typed completion requires an `INELIGIBLE`
+`chapter_provider_sample` and its successful model Effect. The expanded external input
+contract accepts the frozen predecessor artifacts but never commits those sampled outputs
+as formal Chapter/Canon assets. Formal Chapter definitions and quality gates are unchanged.
+Chapter producer compatibility projects Context allowance onto the exact physical types
+reachable by that stage and Tool allowance onto that stage's default-deny permissions;
+Prompt, Schema, remaining Context policy and all original materialization hashes remain
+bound. This prevents administrative workflow differences from fragmenting identical
+producer evidence without borrowing quality from different semantic contracts.
+
+`GET /product/production/chapter-authority/provider-samples/{operation_id}?project_id=<id>`
+returns the frozen command, sample content, output hashes, Attempts and Effect references.
+Successful replay materializes no second Provider call. Unknown outcomes retain their
+reservation and use the same native receipt reconciliation; they cannot be replaced.
+A terminal no-effect/proven-failed arm may have an explicitly granted successor preserving
+its predecessor, actor, input and campaign identity. Failure model-call evidence is retained
+separately from later successful recovery evidence. Kernel receipt recovery and Chapter
+synchronous completion use the same settlement policy: missing real receipts retain
+conservative usage, explicit fixture receipts remain fixtures, and subscription charges
+remain unknown rather than zero. The sampler does not yet admit independently calibrated
+Chapter reviewers or publish generator quality observations; those remain explicit gaps.
+
 For semantic evaluator reference sampling, first register independent operator labels
 through `story_design.review.author` with the exact benchmark candidate as its only
 candidate input. This authoring command may read the ineligible candidate solely for

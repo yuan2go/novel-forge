@@ -231,6 +231,35 @@ def _provider_route_context_types(
     return ("context_bundle",)
 
 
+def chapter_producer_contract_identity(
+    prompt_evidence: Mapping[str, Any], materialization: Mapping[str, Any],
+) -> dict[str, Any]:
+    identity = producer_contract_identity(prompt_evidence, materialization)
+    artifact = materialization["pack_artifacts"]["context_policy"]
+    policy = dict(artifact["content"])
+    reachable = set(_provider_route_context_types(str(materialization["stage"]), retrieval_projection=False))
+    policy["allowed_asset_types"] = sorted(reachable.intersection(policy["allowed_asset_types"]))
+    identity["schema_version"] = "routing-chapter-producer-contract.v2"
+    identity["context_policy"] = {
+        "ref": artifact["ref"], "version": artifact["version"],
+        "projection": "chapter-stage-physical-context.v1", "content_hash": canonical_hash(policy),
+    }
+    tools = materialization["tool_permissions"]
+    if tools["default"] != "DENY":
+        raise KernelError("CHAPTER_CAPABILITY_TOOL_POLICY_INVALID", "evidence requires default-deny stage tools")
+    tool_artifact = materialization["pack_artifacts"]["tool_policy"]
+    tool_policy = dict(tool_artifact["content"])
+    tool_policy["explicit_tool_refs"] = sorted(set(tool_policy["explicit_tool_refs"]).intersection(tools["allowed"]))
+    identity["tool_policy"] = {
+        "ref": tool_artifact["ref"], "version": tool_artifact["version"],
+        "projection": "chapter-stage-tools.v1", "content_hash": canonical_hash(tool_policy),
+    }
+    identity["effective_tool_permissions"] = {
+        "default": "DENY", "allowed": sorted(tools["allowed"]), "invoked": sorted(tools.get("invoked", [])),
+    }
+    return identity
+
+
 def _provider_token_contract(
     route: "ChapterExecutionRoute",
     *,
@@ -731,6 +760,8 @@ class PostgresChapterExecutionContractBinder:
                 "Capability preflight requires a governed Capability Pack",
             )
         graph = self._operation_graph(operation_id, project_id)
+        if graph["definition_name"].startswith("chapter.provider.sample.") and self.provider_router is None:
+            raise KernelError("CHAPTER_SAMPLE_ROUTER_REQUIRED", "sampling must resolve its authorized candidate through the native Router")
         route = self.routes[stage]
         routing_decision = None
         attempt_snapshot = self._resolve_pack_snapshot(
@@ -941,7 +972,7 @@ class PostgresChapterExecutionContractBinder:
                 input_tokens=len(prompt.encode()) + route.token_safety_margin + route.token_framing_overhead,
                 output_tokens=output_reserve, trace_id=str(request_payload["trace_id"]),
                 correlation_id=str(request_payload["correlation_id"]), cache_prefix=prompt.encode()[:prompt_evidence["reusable_prefix_bytes"]],
-                producer_contract=producer_contract_identity(prompt_evidence, contract),
+                producer_contract=chapter_producer_contract_identity(prompt_evidence, contract),
                 request_input=provider_inputs, input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(), chapter=int(metadata.get("chapter") or 0))
             route_identity = routing_decision["decision_id"]
         envelope = ProviderRequestEnvelope(
@@ -1796,6 +1827,8 @@ class PostgresChapterExecutionContractBinder:
     @staticmethod
     def _origin_chain(*, graph: Mapping[str, str], stage: str) -> tuple[str, ...]:
         del stage
+        if graph["definition_name"].startswith("chapter.provider.sample."):
+            return (graph["definition_name"],)
         return ("chapter.slice.run", graph["definition_name"])
 
     @staticmethod
@@ -1867,15 +1900,22 @@ class PostgresChapterExecutionContractBinder:
         graph: Mapping[str, str],
         route: ChapterExecutionRoute,
     ) -> CapabilityPackAttemptSnapshot | None:
+        sampling = graph["definition_name"].startswith("chapter.provider.sample.")
+        if sampling and (not self.capability_pack_id or self.pack_environment != "validation"):
+            raise KernelError("CHAPTER_SAMPLE_PACK_REQUIRED", "Chapter sampling requires its approved validation pack")
         if not self.capability_pack_id:
             return None
+        from .definitions import CHAPTER_SAMPLE_WORKFLOW_REF
+
+        workflow_ref = CHAPTER_SAMPLE_WORKFLOW_REF if sampling else self.workflow_definition_ref
+        pack_id = self.capability_pack_id + ".provider_sampling" if sampling else self.capability_pack_id
         try:
             return self.pack_resolver.freeze_attempt_snapshot(
                 CapabilityPackResolutionRequest(
                     project_id=project_id,
                     workspace_id=workspace_id,
                     book_id=book_id,
-                    workflow_definition_ref=self.workflow_definition_ref,
+                    workflow_definition_ref=workflow_ref,
                     workflow_node_id="canon_proposal"
                     if stage == "canon_support"
                     else stage,
@@ -1886,7 +1926,7 @@ class PostgresChapterExecutionContractBinder:
                     operation_definition_ref=(
                         f"{graph['definition_name']}@{graph['definition_version']}"
                     ),
-                    pack_id=self.capability_pack_id,
+                    pack_id=pack_id,
                 ),
                 operation_id=operation_id,
                 attempt_id=attempt_id,
@@ -1903,6 +1943,7 @@ class PostgresChapterExecutionContractBinder:
                     "CAPABILITY_PACK_SCOPE_NOT_FOUND",
                 }
                 and not self.pack_required
+                and not sampling
             ):
                 return None
             raise

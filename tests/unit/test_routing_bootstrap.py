@@ -63,6 +63,32 @@ def contract():
     return payload, grant, snapshot
 
 
+def test_chapter_sample_rejects_changed_source_inputs_or_book_scope():
+    from copy import deepcopy
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_chapter_sample_origin
+
+    source = {"book_id": "book", "chapter": 3, "preparation_report": {"craft": "approved"}}
+    inputs = [{"asset_version_id": "context:v1", "content_hash": "sha256:" + "a" * 64}]
+    origin = ("chapter.draft.generate", "3.4.1", source, inputs)
+    payload = {
+        **source, "project_id": "project", "generator_operation_name": "draft",
+        "logical_key": "native-draft", "idempotency_key": "sample-1",
+        "input_versions": inputs, "routing_bootstrap_authorization_id": "grant",
+        "chapter_predecessor_operation_id": "",
+        "chapter_sampling": {"source_operation_id": "native-draft", "source_command_hash": authorization_hash(source)},
+    }
+    validate_chapter_sample_origin(payload, origin, project_id="project")
+    for key, value in (("book_id", "another-book"), ("chapter", 4),
+                       ("input_versions", []), ("generator_operation_name", "memo"),
+                       ("preparation_report", {}), ("unexpected_override", True)):
+        changed = deepcopy(payload)
+        changed[key] = value
+        with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_SCOPE_MISMATCH"):
+            validate_chapter_sample_origin(changed, origin, project_id="project")
+    with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_SCOPE_MISMATCH"):
+        validate_chapter_sample_origin(payload, (origin[0], "3.3.0", source, inputs), project_id="project")
+
+
 def ordinary_decision(**candidate_overrides):
     candidate = ModelCandidate(
         "flash",

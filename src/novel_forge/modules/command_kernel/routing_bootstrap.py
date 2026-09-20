@@ -17,6 +17,22 @@ SOURCE_BOOTSTRAP_TASKS = {
     "source.import.mkaos.extract": "source.mkaos.extract",
 }
 
+CHAPTER_BOOTSTRAP_TASKS = {
+    "chapter.memo.generate": "memo",
+    "chapter.draft.generate": "draft",
+    "chapter.revision.apply": "revision",
+    "chapter.canon.extract": "canon_extraction",
+}
+CHAPTER_SAMPLE_DEFINITION_VERSION = "1.0.0"
+CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE = "book:chapter-provider-sample"
+CHAPTER_SAMPLE_SOURCE_VERSION = "3.4.1"
+
+
+def chapter_sample_definition_name(task_type: str) -> str:
+    if task_type not in CHAPTER_BOOTSTRAP_TASKS.values():
+        raise ValueError("CHAPTER_SAMPLE_TASK_UNSUPPORTED")
+    return "chapter.provider.sample." + task_type
+
 
 def authorization_hash(value: Any) -> str:
     return (
@@ -91,6 +107,8 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         raise ValueError("ROUTING_REFERENCE_AUTHORIZATION_REQUIRED")
     if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and "campaign" not in grant:
         raise ValueError("ROUTING_SOURCE_CAMPAIGN_REQUIRED")
+    if grant["task_type"] in CHAPTER_BOOTSTRAP_TASKS.values() and "campaign" not in grant:
+        raise ValueError("ROUTING_CHAPTER_CAMPAIGN_REQUIRED")
     if any(
         type(grant[key]) is not int or grant[key] <= 0
         for key in ("maximum_calls", "maximum_tokens")
@@ -280,6 +298,39 @@ def validate_bootstrap_scope(
     return grant
 
 
+def validate_chapter_sample_origin(
+    payload: Mapping[str, Any], origin: Any, *, project_id: str,
+) -> None:
+    try:
+        if not origin or len(origin) != 4:
+            raise ValueError("source operation is absent")
+        definition, version, command, inputs = origin
+        metadata = {
+            "project_id", "generator_operation_name", "logical_key", "idempotency_key",
+            "input_versions", "chapter_sampling", "chapter_predecessor_operation_id",
+            "routing_bootstrap_authorization_id",
+        }
+        if "routing_bootstrap_authorization" in payload:
+            metadata.add("routing_bootstrap_authorization")
+        if (
+            definition not in CHAPTER_BOOTSTRAP_TASKS or version != CHAPTER_SAMPLE_SOURCE_VERSION
+            or not isinstance(command, Mapping) or not command.get("book_id")
+            or any(key in command for key in ("chapter_sampling", "routing_bootstrap_authorization_id"))
+            or payload.get("project_id") != project_id
+            or payload.get("generator_operation_name") != CHAPTER_BOOTSTRAP_TASKS[definition]
+            or payload.get("input_versions") != inputs
+            or payload.get("chapter_sampling") != {
+                "source_operation_id": payload.get("logical_key"),
+                "source_command_hash": authorization_hash(command),
+            }
+            or payload != {**command, **{key: payload[key] for key in metadata}}
+        ):
+            raise ValueError("frozen source contract differs")
+    except (KeyError, TypeError, ValueError) as exc:
+        raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
+                          "Chapter sample differs from its frozen native task") from exc
+
+
 def load_bootstrap_authorization(
     cursor: Any, *, project_id: str, operation_id: str, check_expiry: bool = True
 ) -> Mapping[str, Any] | None:
@@ -308,6 +359,12 @@ def load_bootstrap_authorization(
         contract = (row[1], "1.4.0", "project:source-import")
         if SOURCE_BOOTSTRAP_TASKS.get(row[1]) != payload.get("generator_operation_name"):
             raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Source sampling requires its native task contract")
+    if payload.get("chapter_sampling"):
+        try:
+            contract = (chapter_sample_definition_name(payload.get("generator_operation_name")),
+                        CHAPTER_SAMPLE_DEFINITION_VERSION, CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE)
+        except ValueError as exc:
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Chapter sampling requires its native task contract") from exc
     if tuple(row[1:4]) != contract or row[4] != payload.get("idempotency_key"):
         raise KernelError(
             "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
@@ -316,6 +373,24 @@ def load_bootstrap_authorization(
     grant = validate_bootstrap_scope(snapshot, payload, check_expiry=check_expiry)
     if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and not payload.get("source_sampling"):
         raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Source grant requires a Source sampling operation")
+    if grant["task_type"] in CHAPTER_BOOTSTRAP_TASKS.values() and not payload.get("chapter_sampling"):
+        raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Chapter grant requires a Chapter sampling operation")
+    if payload.get("chapter_sampling"):
+        cursor.execute(
+            "SELECT definition_name,definition_version,command_payload,input_asset_snapshot FROM authority_operation WHERE project_id=%s AND operation_id=%s",
+            [project_id, payload["chapter_sampling"].get("source_operation_id")],
+        )
+        validate_chapter_sample_origin(payload, cursor.fetchone(), project_id=project_id)
+        cursor.execute(
+            "SELECT input_asset_snapshot FROM authority_operation WHERE project_id=%s AND operation_id=%s",
+            [project_id, operation_id],
+        )
+        admitted_inputs = cursor.fetchone()
+        fields = ("asset_version_id", "content_hash")
+        if not admitted_inputs or [
+            tuple(item.get(field) for field in fields) for item in admitted_inputs[0]
+        ] != [tuple(item.get(field) for field in fields) for item in payload["input_versions"]]:
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Chapter sample input bindings differ from its authorized source")
     if payload.get("source_sampling"):
         source = payload["source_sampling"]
         cursor.execute(

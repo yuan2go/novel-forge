@@ -135,6 +135,8 @@ class ChapterAuthorityScheduler:
 
     def tick(self, *, project_id: str, root_operation_id: str) -> ChapterSchedulerTick:
         root, saga, children = self._graph_state(project_id, root_operation_id)
+        if root["definition_snapshot"].get("policy", {}).get("routing_bootstrap_sample") is True:
+            return self._tick_provider_sample(project_id, root, saga)
         context = GraphCommandContext(
             project_id=project_id,
             actor_id=self.worker_id,
@@ -455,6 +457,40 @@ class ChapterAuthorityScheduler:
             recovery_mode="quality_correction_terminal_replay",
         )
 
+    def _tick_provider_sample(
+        self, project_id: str, root: dict[str, Any], saga: dict[str, Any],
+    ) -> ChapterSchedulerTick:
+        from novel_forge.modules.command_kernel.routing_bootstrap import (
+            CHAPTER_BOOTSTRAP_TASKS, CHAPTER_SAMPLE_DEFINITION_VERSION,
+            chapter_sample_definition_name,
+        )
+
+        definition = root["definition_snapshot"]
+        source_name = definition["policy"].get("source_definition_name")
+        stage = CHAPTER_BOOTSTRAP_TASKS.get(source_name)
+        if (stage is None or definition["name"] != chapter_sample_definition_name(stage)
+            or definition["definition_version"] != CHAPTER_SAMPLE_DEFINITION_VERSION):
+            raise KernelError("CHAPTER_SAMPLE_DEFINITION_INVALID", "sample definition identity is invalid")
+        operation_id = str(root["operation_id"])
+        operation = self._child(operation_id, project_id)
+        terminal = {"SUCCEEDED", "FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}
+        recovery_mode = "terminal_replay"
+        node = next(item for item in ChapterNode if item.value == stage)
+        if operation["status"] not in terminal:
+            request = self._request_from_root({
+                **root, "command_payload": root["command_payload"]["payload"],
+            })
+            recovery_mode = self._execute_node(request, node, operation, sampling=True)
+        status = self._operation_status(operation_id, project_id)
+        saga_status = str(saga["status"])
+        if status in terminal:
+            coordinated = coordinate_saga(self.database_url, GraphCommandContext(
+                project_id, self.worker_id, root["trace_id"], root["correlation_id"],
+            ), str(saga["saga_id"]))
+            saga_status = str(coordinated["status"])
+        return ChapterSchedulerTick(operation_id, str(saga["saga_id"]), saga_status,
+                                    operation_id, stage, status, recovery_mode)
+
     def pending_roots(self, *, limit: int = 20) -> tuple[tuple[str, str], ...]:
         if limit <= 0:
             raise ValueError("pending root limit must be positive")
@@ -465,10 +501,12 @@ class ChapterAuthorityScheduler:
                 FROM authority_operation AS operation
                 JOIN authority_saga AS saga
                   ON saga.root_operation_id = operation.operation_id
-                WHERE operation.definition_name = 'chapter.slice.run'
-                  AND operation.status IN (
-                    'EXECUTING', 'WAITING_CHILDREN', 'FAILED_RETRYABLE',
-                    'CANCELLATION_REQUESTED', 'WAITING_GATE'
+                WHERE (
+                    (operation.definition_name = 'chapter.slice.run'
+                     AND operation.status IN ('EXECUTING', 'WAITING_CHILDREN',
+                       'FAILED_RETRYABLE', 'CANCELLATION_REQUESTED', 'WAITING_GATE'))
+                    OR (operation.definition_name LIKE 'chapter.provider.sample.%%'
+                        AND operation.definition_version = '1.0.0')
                   )
                   AND saga.status NOT IN (
                     'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED',
@@ -1196,6 +1234,7 @@ class ChapterAuthorityScheduler:
         request: SingleChapterRequest,
         node: ChapterNode,
         operation: dict[str, Any],
+        *, sampling: bool = False,
     ) -> str:
         operation_id = str(operation["operation_id"])
         project_id = request.project_id
@@ -1317,6 +1356,7 @@ class ChapterAuthorityScheduler:
                     command=worker,
                     node=node,
                     registry=self.registry,
+                    sampling=sampling,
                     execution_probe=lambda: probe_operation_execution(
                         self.database_url,
                         operation_id=operation_id,

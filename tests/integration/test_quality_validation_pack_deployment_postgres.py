@@ -130,3 +130,22 @@ def test_quality_validation_packs_deploy_to_one_exact_book_scope() -> None:
         and release_sha == harness.release_sha
         for _pack_id, status, project_id, workspace_id, book_id, release_sha in rows
     )
+
+
+def test_chapter_sampling_pack_uses_separate_native_definitions_and_approval_scope() -> None:
+    harness = CapabilityPackPostgresHarness("chapter-sampling-deployment")
+    register_validation_runtime_definitions(
+        DATABASE_URL, application_build_id=harness.application_build_id, commit_sha=harness.release_sha,
+    )
+    result = install_chapter_validation_pack(
+        DATABASE_URL, repository_root=ROOT, project_id=harness.project_id,
+        workspace_id=harness.workspace_id, book_id=harness.book_ids[0],
+        application_build_id=harness.application_build_id, commit_sha=harness.release_sha,
+        compiler=harness.compiler, approver=harness.approver, agent_admin=harness.agent_admin,
+        pack_id_override=harness.pack_id, provider_sampling=True,
+    )
+    assert result["pack_id"] == harness.pack_id + ".provider_sampling"
+    nodes = result["compilation"]["compiled"]["workflow_nodes"]
+    assert {node["node_id"] for node in nodes} == {"memo", "draft", "revision", "canon_extraction"}
+    assert all(node["definition_name"].startswith("chapter.provider.sample.") for node in nodes)
+    assert all(node["authoritative_completion_contract"]["required_asset_selectors"][0]["eligibility"] == "INELIGIBLE" for node in nodes)

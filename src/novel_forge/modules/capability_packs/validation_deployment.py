@@ -32,6 +32,8 @@ from novel_forge.modules.capability_packs.longform_profiles import (
 )
 from novel_forge.modules.chapter_authority.definitions import (
     chapter_operation_definitions,
+    chapter_provider_sample_definitions,
+    CHAPTER_SAMPLE_WORKFLOW_ID,
 )
 from novel_forge.modules.production_execution.capability_registry import (
     capability_contract_version,
@@ -90,7 +92,9 @@ def register_validation_runtime_definitions(
         )
     )
     with AuthorityUnitOfWork(database_url) as uow:
-        for item in (planning, reader, narrative_evaluation, *chapter):
+        for item in (planning, reader, narrative_evaluation, *chapter, *chapter_provider_sample_definitions(
+            application_build_id=application_build_id, commit_sha=commit_sha,
+        )):
             uow.repositories.definitions.register(item)
         uow.commit()
     return {
@@ -115,6 +119,7 @@ def install_chapter_validation_pack(
     pack_path: str | Path = "config/capability_packs/chapter_generation_pack.json",
     pack_id_override: str = "",
     pack_version_override: str = "",
+    provider_sampling: bool = False,
     runtime_environment: str = "validation",
 ) -> dict[str, Any]:
     root = Path(repository_root).resolve()
@@ -128,11 +133,27 @@ def install_chapter_validation_pack(
         manifest["identity"]["pack_id"] = pack_id_override
     if pack_version_override:
         manifest["identity"]["version"] = pack_version_override
+    if provider_sampling:
+        if runtime_environment != "validation":
+            raise ValueError("Chapter sampling packs are restricted to validation")
+        manifest = chapter_provider_sampling_manifest(
+            manifest, application_build_id=application_build_id, commit_sha=commit_sha,
+        )
     resolver = default_chapter_artifact_resolver(root)
     catalog = {
         "schema_version": "novelos.capability_pack.artifact_catalog.v1",
         "artifacts": [item.to_dict() for item in resolver.artifacts()],
     }
+    if provider_sampling:
+        from .artifacts import artifact_content_hash
+
+        for artifact in catalog["artifacts"]:
+            if artifact["ref"] == manifest["context_sources"]["policy_id"]:
+                artifact["content"]["allowed_asset_types"] = manifest["context_sources"]["allowed_asset_types"]
+                artifact["content_hash"] = artifact_content_hash(artifact["content"])
+            elif artifact["ref"] == manifest["tool_permissions"]["policy_id"]:
+                artifact["content"]["explicit_tool_refs"] = ["model.provider.invoke"]
+                artifact["content_hash"] = artifact_content_hash(artifact["content"])
     workflow = dict(manifest.get("workflow_template") or {})
     return _install_validation_manifest(
         database_url,
@@ -154,6 +175,60 @@ def install_chapter_validation_pack(
         expected_activation_version=0,
         runtime_environment=runtime_environment,
     )
+
+
+def chapter_provider_sampling_manifest(
+    source: Mapping[str, Any], *, application_build_id: str, commit_sha: str,
+) -> dict[str, Any]:
+    from novel_forge.modules.command_kernel.routing_bootstrap import (
+        CHAPTER_SAMPLE_DEFINITION_VERSION, CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE,
+    )
+
+    manifest = deepcopy(dict(source))
+    manifest["identity"].update({
+        "pack_id": str(manifest["identity"]["pack_id"]) + ".provider_sampling",
+        "name": "Chapter Provider Sampling Pack",
+        "description": "Governed isolated samples using the frozen Chapter generation contracts.",
+    })
+    definitions = {item["policy"]["source_definition_name"]: item for item in
+                   chapter_provider_sample_definitions(application_build_id=application_build_id, commit_sha=commit_sha)}
+    workflow = manifest["workflow_template"]
+    workflow.update({"workflow_id": CHAPTER_SAMPLE_WORKFLOW_ID,
+                     "workflow_version": CHAPTER_SAMPLE_DEFINITION_VERSION,
+                     "idempotency_scope": CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE})
+    nodes = []
+    for node in workflow["nodes"]:
+        definition = definitions.get(node["operation_name"])
+        if definition is None:
+            continue
+        node.update({
+            "operation_name": definition["name"],
+            "operation_definition_ref": definition["name"] + "@" + CHAPTER_SAMPLE_DEFINITION_VERSION,
+            "operation_definition_hash": definition_hash(definition),
+            "handler_key": definition["handler_key"], "depends_on": [],
+            "output_asset_types": ["chapter_provider_sample"],
+            "retry_policy": {**definition["retry_policy"], "retryable_errors": []},
+        })
+        nodes.append(node)
+    workflow["nodes"] = nodes
+    workflow["completion"] = {
+        "required_terminal_nodes": [node["node_id"] for node in nodes],
+        "required_evidence": ["trace", "audit"],
+        "required_output_asset_types": ["chapter_provider_sample"],
+    }
+    manifest["context_sources"]["allowed_asset_types"] = sorted({
+        *manifest["context_sources"]["allowed_asset_types"],
+        *(item for node in nodes for item in node["input_asset_types"]),
+    })
+    model_tool = next(item for item in manifest["tool_permissions"]["tools"] if item["tool_ref"] == "model.provider.invoke")
+    model_tool["allowed_operations"] = [node["node_id"] for node in nodes]
+    manifest["tool_permissions"]["tools"] = [model_tool]
+    manifest["evaluation"]["required_gates"] = [{
+        "gate_id": "sample_source_isolation", "judge_capability_id": "quality.originality.judge",
+        "blocking": True, "threshold": 1, "required_evidence": ["chapter_provider_sample"],
+    }]
+    manifest["evaluation"]["metrics"] = []
+    return manifest
 
 
 def install_longform_validation_pack(

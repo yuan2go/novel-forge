@@ -14,6 +14,43 @@ class ChapterAuthorityQuery:
             raise ValueError("PostgreSQL database_url is required")
         self.database_url = database_url
 
+    def require_provider_sample(self, *, project_id: str, operation_id: str) -> dict[str, Any]:
+        from novel_forge.modules.command_kernel.routing_bootstrap import (
+            CHAPTER_BOOTSTRAP_TASKS, CHAPTER_SAMPLE_DEFINITION_VERSION, chapter_sample_definition_name,
+        )
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT operation_id,status,definition_name,definition_version,command_payload->'payload',
+                          trace_id,correlation_id,causation_operation_id
+                   FROM authority_operation WHERE project_id=%s AND operation_id=%s
+                     AND definition_name=ANY(%s) AND definition_version=%s""",
+                [project_id, operation_id, [chapter_sample_definition_name(stage) for stage in CHAPTER_BOOTSTRAP_TASKS.values()],
+                 CHAPTER_SAMPLE_DEFINITION_VERSION],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                raise KernelError("CHAPTER_SAMPLE_NOT_FOUND", "Chapter sample is absent from the authorized project")
+            result = dict(zip(("operation_id", "status", "definition_name", "definition_version", "input_snapshot",
+                               "trace_id", "correlation_id", "causation_operation_id"), row, strict=True))
+            uow.cursor.execute(
+                """SELECT o.asset_version_id,o.content_hash,o.output_key,o.role,a.asset_type,v.eligibility,
+                          CASE WHEN a.asset_type='chapter_provider_sample' THEN v.content ELSE NULL END
+                   FROM authority_operation_output_asset o JOIN authority_asset_version v USING(asset_version_id)
+                   JOIN authority_asset a ON a.asset_id=v.asset_id WHERE o.operation_id=%s ORDER BY o.created_at,o.output_key""",
+                [operation_id],
+            )
+            result["outputs"] = [dict(zip(("asset_version_id", "content_hash", "output_key", "role", "asset_type", "eligibility", "sample"), row, strict=True)) for row in uow.cursor.fetchall()]
+            uow.cursor.execute(
+                "SELECT attempt_id,attempt_number,status,result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number", [operation_id],
+            )
+            result["attempts"] = [dict(zip(("attempt_id", "attempt_number", "status", "result"), row, strict=True)) for row in uow.cursor.fetchall()]
+            uow.cursor.execute(
+                "SELECT external_effect_id,status,capability FROM authority_external_effect WHERE operation_id=%s ORDER BY created_at", [operation_id],
+            )
+            result["effects"] = [dict(zip(("external_effect_id", "status", "capability"), row, strict=True)) for row in uow.cursor.fetchall()]
+        return {**result, "production_eligible": False}
+
     def list_runs(self, *, project_id: str, limit: int = 100, book_run_id: str = "") -> list[dict[str, Any]]:
         if not project_id:
             raise ValueError("project_id is required for chapter run queries")

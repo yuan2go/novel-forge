@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .sampling import ChapterProviderSampleCommand
 
 from novel_forge.modules.chapter_authority.handlers import (
     build_chapter_handler_registry,
@@ -54,6 +58,8 @@ class ChapterAuthorityApplication:
         if not database_url or not worker_id:
             raise ValueError("PostgreSQL database and worker identity are required")
         self.database_url = database_url
+        self.application_build_id = application_build_id
+        self.commit_sha = commit_sha
         self.agent_binding_recorder = agent_binding_recorder
         self._model_port = ExternalEffectChapterModelPort(
             database_url,
@@ -101,6 +107,16 @@ class ChapterAuthorityApplication:
         self.allow_synchronous_fixture = allow_synchronous_fixture
         self.runtime_fault_injector = runtime_fault_injector
         self.query = ChapterAuthorityQuery(database_url)
+
+    def prepare_provider_sample(self, command: ChapterProviderSampleCommand, *, principal: Principal) -> dict[str, Any]:
+        from .sampling import prepare_provider_sample
+
+        return prepare_provider_sample(self, command, principal=principal)
+
+    def admit_provider_sample(self, command: ChapterProviderSampleCommand, *, principal: Principal) -> dict[str, Any]:
+        from .sampling import admit_provider_sample
+
+        return admit_provider_sample(self, command, principal=principal)
 
     def run(self, request: SingleChapterRequest) -> ChapterSliceResult:
         if not self.allow_synchronous_fixture:

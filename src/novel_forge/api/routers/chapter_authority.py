@@ -4,6 +4,9 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field
+
+from novel_forge.modules.chapter_authority.sampling import ChapterProviderSampleCommand
 
 from novel_forge.api.authority_dependencies import (
     authority_release_identity,
@@ -21,6 +24,16 @@ from novel_forge.modules.production_preparation import ProductionPreparationRequ
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
+class ChapterProviderSampleRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1, max_length=200)
+    actor_id: str = Field(min_length=1, max_length=200)
+    source_operation_id: str = Field(min_length=1, max_length=200)
+    authorization_id: str = Field(min_length=1, max_length=200)
+    idempotency_key: str = Field(min_length=1, max_length=512)
+    predecessor_operation_id: str = Field(default="", max_length=200)
+
+
 def create_router(ctx: ProductRouterContext) -> APIRouter:
     globals().update(ctx.models)
     AuthorityChapterRunRequest = ctx.models["AuthorityChapterRunRequest"]
@@ -30,6 +43,35 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         prefix="/product/production/chapter-authority",
         tags=["product-chapter-authority"],
     )
+
+    @router.post("/provider-samples", status_code=202)
+    def provider_sample(request: ChapterProviderSampleRequest, dry_run: bool = False) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id,
+            )
+            command = ChapterProviderSampleCommand(**{**request.model_dump(), "actor_id": principal.principal_id})
+            app = _application(ctx)
+            if dry_run:
+                return app.prepare_provider_sample(command, principal=principal)
+            return app.admit_provider_sample(command, principal=principal)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    @router.get("/provider-samples/{operation_id}")
+    def provider_sample_result(operation_id: str, project_id: str = Query(..., min_length=1)) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("chapter.authority.query", project_id)
+            return _application(ctx).query.require_provider_sample(project_id=project_id, operation_id=operation_id)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except KernelError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     @router.post("/commands", status_code=202)
     def admit_authoritative_chapter(

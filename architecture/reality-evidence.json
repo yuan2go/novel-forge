@@ -5246,6 +5246,18 @@
         {
           "path": "src/novel_forge/modules/command_kernel/provider_failure_accounting.py",
           "symbol": "failed_provider_submission_state"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/sampling.py",
+          "symbol": "admit_provider_sample"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/scheduler.py",
+          "symbol": "ChapterAuthorityScheduler._tick_provider_sample"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/provider_failure_accounting.py",
+          "symbol": "successful_provider_budget_settlement"
         }
       ],
       "commands_operations": [
@@ -5406,6 +5418,10 @@
         {
           "path": "tests/unit/test_cost_aware_routing.py",
           "symbol": "test_planning_schema_identity_preserves_independent_bindings_and_contract_shape"
+        },
+        {
+          "path": "tests/integration/test_chapter_provider_sampling_postgres.py",
+          "symbol": "test_native_chapter_sample_replays_without_formal_chapter_mutation"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8668,7 +8684,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed"
+    "implementation_tree_sha": "sha256:6d5a2bf25faac0892c1c0b6738ca0064f98a6b7e37838e657296c8f7357879e0"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
