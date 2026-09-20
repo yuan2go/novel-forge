@@ -106,6 +106,12 @@ Chapter review, rereview and five Quality groups additionally support reference 
 against native adjudications backed by independent blind human-evaluation records. The
 labels are excluded from Provider input and compared afterward with the exact ModelCallLog.
 This checks recorded identity, scope and agreement; it does not certify human judgment.
+Native human evaluation and adjudication commands have a separate `2.2.0` definition for
+annotating an exact completed Chapter generator sample. Admission requires an authenticated
+local operator, the sample hash and its native benchmark grant. Only that ineligible input
+is readable; annotation neither promotes the sample nor certifies the author's expertise.
+Reviewer sampling still requires a frozen native reviewer task; annotation alone does not
+remove that cold-start dependency.
 The sampling result cannot activate a Quality profile or qualify itself. Calibrated
 reviewer admission and generator feedback admission remain unimplemented.
 This does not prove judge calibration or bootstrap every task family. Ordinary production

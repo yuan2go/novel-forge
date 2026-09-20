@@ -66,26 +66,32 @@ def native_reviewer_source(h, tmp_path, original, stage):
     return {**original, "operation_id": row[0], "effect_request_payload": row[1], "dispatch_evidence": row[2]}
 
 
-def fixture_adjudicated_reference(h, original, stage):
+def fixture_adjudicated_reference(h, original, stage, *, sample_target=None):
     from novel_forge.modules.content_authority import CONTENT_CODECS
     from novel_forge.modules.content_authority.application import ContentAuthorityApplication, ContentOperationRequest
     from novel_forge.modules.chapter_quality_authority.reference_sampling import reference_dimensions
 
     app = ContentAuthorityApplication(DATABASE_URL, application_build_id=h.application_build_id,
         commit_sha=h.release_sha, integration_proven=CONTENT_CODECS, trusted_only=True)
-    with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        uow.cursor.execute("""SELECT version.asset_version_id,version.content_hash FROM authority_asset_version version
+    if sample_target is None:
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("""SELECT version.asset_version_id,version.content_hash FROM authority_asset_version version
             JOIN authority_asset asset USING(asset_id) JOIN authority_operation operation ON operation.project_id=asset.project_id
             WHERE operation.operation_id=%s AND asset.asset_type=%s
               AND EXISTS (SELECT 1 FROM jsonb_array_elements(operation.input_asset_snapshot) input
                           WHERE input->>'asset_version_id'=version.asset_version_id)""",
             [original["operation_id"], "draft_chapter" if stage == "review" else "best_draft_candidate"])
-        target = dict(zip(("asset_version_id", "content_hash"), uow.cursor.fetchone(), strict=True))
-    result = original["dispatch_evidence"]["result"]
+            target = dict(zip(("asset_version_id", "content_hash"), uow.cursor.fetchone(), strict=True))
+        result = original["dispatch_evidence"]["result"]
+    else:
+        target = sample_target
+        result = {"decision": "PASSED"}
 
     def author(name, actor, payload, inputs):
+        if sample_target is not None:
+            payload = {**payload, "reference_sample": target}
         written = app.execute(ContentOperationRequest(name, h.project_id, h.workspace_id, actor,
-            "fixture", "fixture", h.project_id + ":" + actor + ":" + payload[next(iter(payload))]["dimension"],
+            "fixture", "fixture", h.project_id + ":" + target["asset_version_id"] + ":" + actor + ":" + payload[next(iter(payload))]["dimension"],
             payload, tuple(inputs)), principal=Principal(principal_id=actor, principal_type=PrincipalType.LOCAL_OPERATOR,
                 permissions=frozenset({"content.authority.execute", "content.operation:" + name}),
                 project_scope=frozenset({h.project_id}), authentication_source="integration-fixture"))
@@ -513,6 +519,32 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
         )
         assert result["status"] == "SUCCEEDED"
         assert not result["production_eligible"]
+        if stage == "draft" and scenario == "success":
+            target = next({key: item[key] for key in ("asset_version_id", "content_hash")}
+                          for item in result["outputs"] if item["asset_type"] == "chapter_provider_sample")
+            labels = fixture_adjudicated_reference(h, original, "review", sample_target=target)
+            from novel_forge.modules.chapter_quality_authority.reference_sampling import require_adjudicated_reference
+            from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_annotation
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                from novel_forge.storage.chapter_authority_repositories import AuthorityHandlerRepository
+                with pytest.raises(KernelError, match="AUTHORITY_INPUT_NOT_ELIGIBLE"):
+                    AuthorityHandlerRepository(uow.cursor).frozen_inputs(h.project_id, [target])
+                verified = require_adjudicated_reference(uow.cursor, project_id=h.project_id, binding=labels,
+                    target_id=target["asset_version_id"], target_hash=target["content_hash"],
+                    generators=[principal.principal_id], evaluator_actor_id="another-fixture-evaluator", chapter=1,
+                    expected_dimensions=("review_decision",), allowed_statuses={"PASSED", "NEEDS_REVISION", "BLOCKED"})
+                assert verified["production_qualification_eligible"] is False
+                for invalid in (
+                    {"reference_sample": {**target, "content_hash": "sha256:" + "f" * 64},
+                     "evaluation": {"subject_asset_version_id": target["asset_version_id"], "evaluator_id": "author"}},
+                    {"reference_sample": target,
+                     "evaluation": {"subject_asset_version_id": target["asset_version_id"], "evaluator_id": "different-author"}},
+                ):
+                    with pytest.raises(KernelError, match="QUALITY_REFERENCE_"):
+                        require_reference_annotation(uow.cursor, project_id=h.project_id,
+                            definition_name="quality.human_evaluation.record", payload=invalid, actor_id="author")
+                uow.cursor.execute("SELECT eligibility FROM authority_asset_version WHERE asset_version_id=%s", [target["asset_version_id"]])
+                assert uow.cursor.fetchone() == ("INELIGIBLE",)
         with pytest.raises(KernelError, match="CHAPTER_SAMPLE_NOT_FOUND"):
             app.query.require_provider_sample(
                 project_id="another-project", operation_id=admitted["operation_id"]

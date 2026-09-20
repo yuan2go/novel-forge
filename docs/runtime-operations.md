@@ -552,6 +552,19 @@ retain the same Kernel budget and reference scope. This entry reuses existing na
 review tasks and labeled drafts; authoring a new reference corpus, admitting a calibrated
 evaluator and closing generator feedback are not implied by this sampling path.
 
+To annotate a completed Chapter generator sample, use the existing
+`POST /product/content-authority/commands` with `quality.human_evaluation.record` or
+`quality.adjudication.record`, the ordinary label payload and
+`reference_sample: {asset_version_id, content_hash}` inside that payload. Freeze the
+same sample in `input_assets`; adjudication also freezes its human records. The
+authenticated local operator must match `evaluator_id` or `adjudicator_id`. Admission
+selects the separate `2.2.0` definition and verifies the successful native sample,
+its original campaign grant and exact hash again during execution. Other inputs retain
+ordinary eligibility checks. The sample remains ineligible and cannot become accepted
+prose, Canon or production knowledge. Record actual independent labels only: this
+input exception supplies no human expertise, reader preference or reviewer admission.
+Reviewer sampling still requires its existing native reviewer task.
+
 For semantic evaluator reference sampling, first register independent operator labels
 through `story_design.review.author` with the exact benchmark candidate as its only
 candidate input. This authoring command may read the ineligible candidate solely for

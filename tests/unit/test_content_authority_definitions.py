@@ -72,6 +72,17 @@ class ContentAuthorityDefinitionTests(unittest.TestCase):
             all(item["definition_status"] == "handler_bound" for item in definitions)
         )
 
+    def test_reference_annotation_exception_is_versioned_and_scoped(self):
+        ordinary = content_operation_definitions(application_build_id="test", commit_sha="a" * 40)
+        references = content_operation_definitions(application_build_id="test", commit_sha="a" * 40,
+                                                   reference_annotations=True)
+        self.assertEqual({item["name"] for item in references}, {
+            "quality.human_evaluation.record", "quality.adjudication.record"})
+        self.assertTrue(all(item["definition_version"] == "2.2.0" and
+                            item["policy"]["reference_sample_annotation_input_allowed"] for item in references))
+        self.assertTrue(all(item["definition_version"] == "2.1.1" and
+                            "reference_sample_annotation_input_allowed" not in item["policy"] for item in ordinary))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -57,6 +57,7 @@ class AuthorityHandlerRepository:
         repair_result_asset_version_id: str = "",
         plan_change_candidate_asset_version_id: str = "",
         semantic_revalidation_target_asset_version_id: str = "",
+        reference_sample_asset_version_id: str = "",
     ) -> list[dict[str, Any]]:
         resolved: list[dict[str, Any]] = []
         for snapshot in snapshots:
@@ -126,6 +127,11 @@ class AuthorityHandlerRepository:
                 and row[5] == "INELIGIBLE"
                 and row[6] == "CLEAR"
             )
+            reference_sample = (
+                asset_version_id == reference_sample_asset_version_id
+                and row[1] == "chapter_provider_sample"
+                and row[4] == "ACTIVE" and row[5] == "INELIGIBLE" and row[6] == "CLEAR"
+            )
             story_design_candidate = (
                 asset_version_id == story_design_candidate_asset_version_id
                 and row[1] == "planning_generation_candidate"
@@ -162,6 +168,7 @@ class AuthorityHandlerRepository:
                 and not repair_candidate
                 and not repair_result
                 and not plan_change_candidate
+                and not reference_sample
             ):
                 raise KernelError(
                     "AUTHORITY_INPUT_NOT_ELIGIBLE",
@@ -177,6 +184,7 @@ class AuthorityHandlerRepository:
                     or repair_candidate
                     or repair_result
                     or plan_change_candidate
+                    or reference_sample
                 )
                 else {None, "ELIGIBLE"}
             )

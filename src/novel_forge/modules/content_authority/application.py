@@ -5,7 +5,7 @@ from typing import Any, Collection
 from uuid import uuid4
 
 from novel_forge.modules.authority_handler_runtime import AuthorityExecutionResult
-from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.content_authority.definitions import (
@@ -77,10 +77,14 @@ class ContentAuthorityApplication:
         *,
         principal: Principal | None = None,
     ) -> ContentOperationAdmission:
+        reference_annotation = "reference_sample" in request.payload
+        if reference_annotation and (principal is None or principal.principal_type is not PrincipalType.LOCAL_OPERATOR):
+            raise PermissionError("sample annotations require an authenticated local operator")
         definitions = content_operation_definitions(
             application_build_id=self.application_build_id,
             commit_sha=self.commit_sha,
             integration_proven=self.integration_proven,
+            reference_annotations=reference_annotation,
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             for definition in definitions:
@@ -95,6 +99,18 @@ class ContentAuthorityApplication:
             principal.require("content.authority.execute", request.project_id)
             principal.require(definition_permission, request.project_id)
             actor_id = principal.principal_id
+        definition_version = CONTENT_DEFINITION_VERSION
+        if reference_annotation:
+            from novel_forge.modules.chapter_quality_authority.reference_subject import (
+                REFERENCE_ANNOTATION_VERSION, require_reference_annotation,
+            )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                subject_id = require_reference_annotation(uow.cursor, project_id=request.project_id,
+                    definition_name=request.definition_name, payload=request.payload, actor_id=actor_id)
+            if not any(item["asset_version_id"] == subject_id and item["content_hash"] == request.payload["reference_sample"]["content_hash"]
+                       for item in request.input_assets):
+                raise ValueError("reference annotation must freeze its exact sample input")
+            definition_version = REFERENCE_ANNOTATION_VERSION
         admission = AdmissionContext(
             actor_id=actor_id,
             permissions=permissions,
@@ -106,7 +122,7 @@ class ContentAuthorityApplication:
             self.database_url,
             {
                 "definition_name": request.definition_name,
-                "definition_version": CONTENT_DEFINITION_VERSION,
+                "definition_version": definition_version,
                 "project_id": request.project_id,
                 "workspace_id": request.workspace_id,
                 "actor_id": actor_id,

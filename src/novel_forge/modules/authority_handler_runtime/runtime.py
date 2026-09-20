@@ -314,8 +314,17 @@ def _load_request(
         repair_result_id = ""
         plan_change_candidate_id = ""
         semantic_revalidation_target_id = ""
+        reference_sample_id = ""
         policy = dict(snapshot.get("policy") or {})
         payload = dict(operation["command_payload"].get("payload") or {})
+        if policy.get("reference_sample_annotation_input_allowed") is True:
+            from novel_forge.modules.chapter_quality_authority.reference_subject import (
+                REFERENCE_ANNOTATION_VERSION, require_reference_annotation,
+            )
+            if operation["definition_version"] != REFERENCE_ANNOTATION_VERSION:
+                raise KernelError("QUALITY_REFERENCE_ANNOTATION_INVALID", "sample annotation requires its versioned native definition")
+            reference_sample_id = require_reference_annotation(uow.cursor, project_id=operation["project_id"],
+                definition_name=operation["definition_name"], payload=payload, actor_id=operation["actor_id"])
         if policy.get("evaluation_candidate_asset_input_allowed") is True:
             evaluation_candidate_id = str(
                 payload.get("candidate_asset_version_id") or ""
@@ -349,6 +358,7 @@ def _load_request(
             semantic_revalidation_target_asset_version_id=(
                 semantic_revalidation_target_id
             ),
+            reference_sample_asset_version_id=reference_sample_id,
         )
     return AuthorityHandlerRequest(
         operation_id=operation["operation_id"],
