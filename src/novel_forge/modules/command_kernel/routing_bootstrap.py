@@ -427,7 +427,8 @@ def validate_world_sample_origin(cursor: Any, *, project_id: str, operation_id: 
         rows = cursor.fetchall()
         if len(rows) != 1 or authorization_hash(rows[0][0]) != binding.get("content_hash"):
             raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World sample evidence differs from its native origin")
-        if kind == "context" and authorization_hash(rows[0][0].get("world_preparation")) != metadata.get("stage_hash"):
+        context_hash = metadata.get("base_stage_hash") if metadata.get("generation_sample") else metadata.get("stage_hash")
+        if kind == "context" and authorization_hash(rows[0][0].get("world_preparation")) != context_hash:
             raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World sample role task differs from frozen Context")
         if kind == "context":
             frozen_context = rows[0][0]["world_preparation"]
@@ -441,7 +442,19 @@ def validate_world_sample_origin(cursor: Any, *, project_id: str, operation_id: 
         if binding not in expected_inputs:
             expected_inputs.append(binding)
     if payload["generator_operation_name"] == "world_candidates.evaluate":
-        expected_inputs.append(frozen_context.get("generation_ref"))
+        if metadata.get("generation_sample"):
+            from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
+
+            subject = require_reference_subject(cursor, project_id=project_id, binding=metadata["generation_sample"],
+                allowed_types=frozenset({"world_provider_sample"}))
+            if (subject["content"].get("source_operation_id") != metadata["source_operation_id"]
+                or subject["content"].get("context") != metadata["context"]
+                or subject["content"].get("source") != metadata["source"]
+                or frozen_context.get("role") != "WORLD_REASONER"):
+                raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World reference target must retain its generator origin")
+            expected_inputs.append(metadata["generation_sample"])
+        else:
+            expected_inputs.append(frozen_context.get("generation_ref"))
     if payload.get("input_versions") != expected_inputs:
         raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World sample cannot replace or omit original Planning dependencies")
     cursor.execute("SELECT input_asset_snapshot FROM authority_operation WHERE project_id=%s AND operation_id=%s",
@@ -491,7 +504,10 @@ def load_bootstrap_authorization(
         stage = payload.get("generator_operation_name")
         if stage not in WORLD_SAMPLE_TASKS:
             raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World sampling requires its native task contract")
-        contract = ("world.provider.sample." + stage.rsplit(".", 1)[1], WORLD_SAMPLE_DEFINITION_VERSION,
+        reference_sample = payload["world_sampling"].get("generation_sample") is not None
+        if reference_sample and stage != "world_candidates.evaluate":
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "only a reference evaluator may read a World generator sample")
+        contract = ("world.provider.sample." + stage.rsplit(".", 1)[1], "1.1.0" if reference_sample else WORLD_SAMPLE_DEFINITION_VERSION,
                     WORLD_SAMPLE_IDEMPOTENCY_SCOPE)
     if tuple(row[1:4]) != contract or row[4] != payload.get("idempotency_key"):
         raise KernelError(

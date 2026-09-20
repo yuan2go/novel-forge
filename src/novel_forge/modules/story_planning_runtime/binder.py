@@ -218,7 +218,7 @@ class PostgresPlanningExecutionBundleResolver:
                 workspace_id=command.workspace_id,
                 book_id=command.book_id,
                 workflow_definition_ref=(
-                    "world_provider_sampling@1.0.0" if world_sample is not None else
+                    world_sample.workflow_ref if world_sample is not None else
                     "story_planning_generators@1.10.0"
                     if command.execution_contract_version == "1.11.0"
                     and self.workflow_definition_ref.startswith(
@@ -231,9 +231,9 @@ class PostgresPlanningExecutionBundleResolver:
                 runtime_profile=self.runtime_profile,
                 release_channel=self.release_channel,
                 release_sha=self.release_sha,
-                operation_definition_ref=("world.provider.sample." + world_sample.stage.name.rsplit(".", 1)[1] + "@1.0.0"
+                operation_definition_ref=("world.provider.sample." + world_sample.stage.name.rsplit(".", 1)[1] + "@" + world_sample.definition_version
                                           if world_sample is not None else f"story_planning.generate@{command.execution_contract_version}"),
-                pack_id=self.pack_id + ".world_sampling" if world_sample is not None else self.pack_id,
+                pack_id=self.pack_id + world_sample.pack_suffix if world_sample is not None else self.pack_id,
             ),
             operation_id=operation_id,
             attempt_id=attempt_id,

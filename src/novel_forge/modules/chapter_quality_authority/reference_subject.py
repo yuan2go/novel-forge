@@ -13,10 +13,12 @@ REFERENCE_ANNOTATION_DEFINITIONS = {
     "quality.adjudication.record": "adjudication",
 }
 REFERENCE_ANNOTATION_VERSION = "2.2.0"
+WORLD_REFERENCE_ANNOTATION_VERSION = "2.3.0"
 
 
 def require_reference_subject(
     cursor: Any, *, project_id: str, binding: Mapping[str, Any],
+    allowed_types: frozenset[str] = frozenset({"chapter_provider_sample"}),
 ) -> dict[str, Any]:
     if (not isinstance(binding, Mapping) or set(binding) != {"asset_version_id", "content_hash"}
         or any(not isinstance(value, str) or not value for value in binding.values())):
@@ -34,7 +36,9 @@ def require_reference_subject(
     if len(rows) != 1:
         raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "reference subject must be a completed native sample")
     kind, content, digest, operation_id, actor_id = rows[0]
-    if (kind != "chapter_provider_sample" or content.get("stage") not in CHAPTER_GENERATOR_TASKS.values()
+    stages = {"chapter_provider_sample": set(CHAPTER_GENERATOR_TASKS.values()),
+              "world_provider_sample": {"world_candidates.generate"}}
+    if (kind not in allowed_types or content.get("stage") not in stages.get(kind, set())
         or digest != binding["content_hash"] or digest != authorization_hash(content)
         or content.get("routing_eligibility") != "BENCHMARK_ONLY" or content.get("production_eligible") is not False):
         raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "annotation cannot reinterpret an arbitrary ineligible asset")
@@ -49,13 +53,14 @@ def require_reference_subject(
 
 def require_reference_annotation(
     cursor: Any, *, project_id: str, definition_name: str, payload: Mapping[str, Any], actor_id: str,
+    allowed_types: frozenset[str] = frozenset({"chapter_provider_sample"}),
 ) -> str:
     key = REFERENCE_ANNOTATION_DEFINITIONS.get(definition_name)
     annotation = payload.get(key) if key else None
     if not isinstance(annotation, Mapping):
         raise KernelError("QUALITY_REFERENCE_ANNOTATION_INVALID", "only native reference human evaluation and adjudication may read a sample")
     binding = payload.get("reference_sample")
-    subject = require_reference_subject(cursor, project_id=project_id, binding=binding)
+    subject = require_reference_subject(cursor, project_id=project_id, binding=binding, allowed_types=allowed_types)
     author_field = "evaluator_id" if key == "evaluation" else "adjudicator_id"
     if annotation.get("subject_asset_version_id") != subject["asset_version_id"] or annotation.get(author_field) != actor_id:
         raise KernelError("QUALITY_REFERENCE_ANNOTATION_INVALID", "reference annotation must retain the exact target and authenticated author")

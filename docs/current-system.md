@@ -126,9 +126,14 @@ forbidden. Native Router, admission, ExternalEffect, settlement and recovery ret
 owners. Results are ineligible World samples; they cannot materialize a World action or
 activate a ChapterPlan. Reference sampling uses independent native adjudications outside
 Provider input and records score disagreement separately from World rule validation.
-World evaluator sampling still requires an existing native evaluation Context and generation
-target. Sampling a generator output as a new Director target, trusted evaluator admission
-and production feedback admission remain gaps. Both World tasks are required by the
+World reference sampling at definition version `1.1.0` also accepts an exact native
+`world_provider_sample` generation output. Native Content annotation version `2.3.0`
+permits independent labels for that ineligible target. Planning derives the Director task
+and Context from the original generator Context and producer artifacts without reading a
+formal World generation or Director Context. The derived Context remains ineligible;
+its hash, sample origin and separate reference grant are checked again before dispatch.
+Provider source-policy eligibility does not promote that Context to business eligibility.
+Trusted evaluator admission and production feedback admission remain gaps. Both World tasks are required by the
 continuous Book chain and must remain in its calibration coverage matrix.
 
 Planning sampling grants may bind a frozen campaign identity, manifest hash, sample/data

@@ -14,6 +14,7 @@ from .world_preparation import PlanningProviderStage, PlanningWorldPreparation
 
 
 WORLD_SAMPLE_VERSION = "1.0.0"
+WORLD_REFERENCE_SAMPLE_VERSION = "1.1.0"
 WORLD_SAMPLE_WORKFLOW = "world_provider_sampling@1.0.0"
 WORLD_SAMPLE_SCOPE = "book:world-provider-sample"
 WORLD_SAMPLE_STAGES = {"world_candidates.generate", "world_candidates.evaluate"}
@@ -30,6 +31,7 @@ class WorldProviderSampleCommand:
     idempotency_key: str
     predecessor_operation_id: str = ""
     reference_evaluation: dict[str, Any] | None = None
+    generation_sample: dict[str, str] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,12 +42,29 @@ class FrozenWorldSample:
     context: AuthorityAssetDocument
     source: AuthorityAssetDocument
     stage: PlanningProviderStage
+    generation_sample: dict[str, Any] | None = None
+    derived_context: dict[str, Any] | None = None
+
+    @property
+    def definition_version(self) -> str:
+        return WORLD_REFERENCE_SAMPLE_VERSION if self.generation_sample else WORLD_SAMPLE_VERSION
+
+    @property
+    def workflow_ref(self) -> str:
+        return "world_provider_sampling@" + self.definition_version
+
+    @property
+    def pack_suffix(self) -> str:
+        return ".world_reference_sampling" if self.generation_sample else ".world_sampling"
 
 
 def require_world_sample_source(database_url: str, *, project_id: str, book_id: str,
-                                source_operation_id: str, stage: str) -> FrozenWorldSample:
+                                source_operation_id: str, stage: str,
+                                generation_sample: dict[str, str] | None = None) -> FrozenWorldSample:
     if stage not in WORLD_SAMPLE_STAGES:
         raise KernelError("WORLD_SAMPLE_TASK_UNSUPPORTED", "World sampling requires one native World Provider stage")
+    if generation_sample is not None and stage != "world_candidates.evaluate":
+        raise KernelError("WORLD_SAMPLE_TASK_UNSUPPORTED", "only reference evaluation may consume a generator sample")
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute("""SELECT operation.definition_name,operation.definition_version,
             operation.command_payload->'payload',generation.input_snapshot,generation.input_snapshot_hash,
@@ -66,7 +85,8 @@ def require_world_sample_source(database_url: str, *, project_id: str, book_id: 
         if any((item["asset_version_id"], item["content_hash"]) not in admitted_versions for item in typed_inputs):
             raise KernelError("WORLD_SAMPLE_INPUT_DRIFT", "Planning typed inputs differ from the admitted native snapshot")
     query = AuthorityAssetQuery(database_url)
-    context = query.require(project_id=project_id, logical_ref=f"world_preparation/context/{source_operation_id}/{stage}")
+    context_stage = "world_candidates.generate" if generation_sample is not None else stage
+    context = query.require(project_id=project_id, logical_ref=f"world_preparation/context/{source_operation_id}/{context_stage}")
     source = query.require(project_id=project_id, logical_ref=f"world_preparation/{source_operation_id}/source")
     documents = tuple(query.require(project_id=project_id, asset_version_id=item["asset_version_id"]) for item in typed_inputs)
     for binding, document in zip(typed_inputs, documents, strict=True):
@@ -79,14 +99,33 @@ def require_world_sample_source(database_url: str, *, project_id: str, book_id: 
     if source_contract.get("request") != source_payload["world_preparation_request"]:
         raise KernelError("WORLD_SAMPLE_SOURCE_DRIFT", "World Context must retain its original Book frontier")
     native_documents = [context, source]
+    subject = None
+    derived_context = None
     if stage == "world_candidates.generate":
         provider_stage = PlanningWorldPreparation.generation_stage(source_contract, source_ref, selection)
+    elif generation_sample is not None:
+        from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
+        from .application import _command_from_payload
+        from .execution import PostgresPlanningExecutionPreparer
+
+        with AuthorityUnitOfWork(database_url) as uow:
+            subject = require_reference_subject(uow.cursor, project_id=project_id, binding=generation_sample,
+                allowed_types=frozenset({"world_provider_sample"}))
+        if (subject["content"].get("source_operation_id") != source_operation_id
+            or subject["content"].get("context") != _binding(context)
+            or subject["content"].get("source") != source_ref):
+            raise KernelError("WORLD_SAMPLE_SOURCE_DRIFT", "reference sample must retain the original generator Context and source")
+        provider_stage = PlanningWorldPreparation.evaluation_stage(source_contract, source_ref,
+            {"source": source_ref, "output": subject["content"]["sampled_output"]}, generation_sample, selection)
+        derived_context = PostgresPlanningExecutionPreparer._world_context_content(
+            command=_command_from_payload(source_payload), base=context, stage=provider_stage, source=source)
     else:
         generation = query.require(project_id=project_id, logical_ref=f"world_preparation/{source_operation_id}/generation")
         native_documents.append(generation)
         provider_stage = PlanningWorldPreparation.evaluation_stage(source_contract, source_ref,
             generation.content["contract"], _binding(generation), selection)
-    if context.content.get("world_preparation") != provider_stage.task:
+    context_task = PlanningWorldPreparation.generation_stage(source_contract, source_ref, selection).task if subject else provider_stage.task
+    if context.content.get("world_preparation") != context_task:
         raise KernelError("WORLD_SAMPLE_CONTEXT_DRIFT", "World task differs from the frozen production role Context")
     with AuthorityUnitOfWork(database_url) as uow:
         for document in native_documents:
@@ -99,7 +138,7 @@ def require_world_sample_source(database_url: str, *, project_id: str, book_id: 
             if uow.cursor.fetchone() is None:
                 raise KernelError("WORLD_SAMPLE_PROVENANCE_INVALID", "World source and Context must belong to the original native Operation")
     return FrozenWorldSample(source_payload, tuple(FrozenPlanningInput(**item) for item in typed_inputs),
-                             documents, context, source, provider_stage)
+                             documents, context, source, provider_stage, subject, derived_context)
 
 
 def prepare_world_sample(app: Any, command: WorldProviderSampleCommand, *, principal: Principal) -> dict[str, Any]:
@@ -111,7 +150,8 @@ def prepare_world_sample(app: Any, command: WorldProviderSampleCommand, *, princ
     )) or not isinstance(command.predecessor_operation_id, str):
         raise ValueError("World sampling requires exact task, grant and request identities")
     frozen = require_world_sample_source(app.database_url, project_id=command.project_id, book_id=command.book_id,
-                                        source_operation_id=command.source_operation_id, stage=command.stage)
+                                        source_operation_id=command.source_operation_id, stage=command.stage,
+                                        generation_sample=command.generation_sample)
     inputs = [dict(asset_version_id=item.asset_version_id, content_hash=item.content_hash) for item in frozen.inputs]
     for document in (frozen.context, frozen.source):
         if _binding(document) not in inputs:
@@ -129,6 +169,10 @@ def prepare_world_sample(app: Any, command: WorldProviderSampleCommand, *, princ
         "world_predecessor_operation_id": command.predecessor_operation_id,
         "routing_bootstrap_authorization_id": command.authorization_id,
     }
+    if frozen.generation_sample:
+        payload["world_sampling"].update(generation_sample=dict(command.generation_sample),
+            base_stage_hash=authorization_hash(frozen.context.content["world_preparation"]),
+            derived_context_hash=authorization_hash(frozen.derived_context))
     if command.stage == "world_candidates.evaluate":
         reference = require_world_reference(app.database_url, frozen=frozen, binding=command.reference_evaluation, evaluator_actor_id=command.actor_id)
         payload["reference_evaluation"] = reference["binding"]
@@ -137,11 +181,11 @@ def prepare_world_sample(app: Any, command: WorldProviderSampleCommand, *, princ
     producer = world_sample_producer_identity(app.database_url, frozen=frozen, source_operation_id=command.source_operation_id)
     return {"status": "PREPARED_NO_PROVIDER_CALL", "provider_calls": 0,
         "definition_name": "world.provider.sample." + command.stage.rsplit(".", 1)[1],
-        "definition_version": WORLD_SAMPLE_VERSION, "workspace_id": frozen.command_payload["workspace_id"],
+        "definition_version": frozen.definition_version, "workspace_id": frozen.command_payload["workspace_id"],
         "book_id": command.book_id, "command_payload": payload, "input_assets": inputs,
         "command_hash": bootstrap_command_hash(payload), "input_versions_hash": authorization_hash(inputs),
         "producer_contract": producer, "producer_contract_hash": authorization_hash(producer),
-        "required_workflow_ref": WORLD_SAMPLE_WORKFLOW, "production_eligible": False}
+        "required_workflow_ref": frozen.workflow_ref, "production_eligible": False}
 
 
 def world_sample_producer_identity(database_url: str, *, frozen: FrozenWorldSample, source_operation_id: str) -> dict[str, Any]:
@@ -157,17 +201,28 @@ def world_sample_producer_identity(database_url: str, *, frozen: FrozenWorldSamp
             JOIN authority_asset_version version USING(asset_version_id) JOIN authority_asset asset ON asset.asset_id=version.asset_id
             WHERE output.operation_id=%s AND asset.project_id=%s AND asset.asset_type='capability_materialization_manifest'
               AND output.content_hash=version.content_hash AND version.content#>>'{contract,stage}'=%s""",
-            [source_operation_id, command["project_id"], frozen.stage.name])
+            [source_operation_id, command["project_id"], "world_candidates.generate" if frozen.generation_sample else frozen.stage.name])
         rows = uow.cursor.fetchall()
     producers = {}
+    source_schema = PlanningWorldPreparation.generation_stage(frozen.source.content["contract"], _binding(frozen.source),
+        frozen.context.content.get("narrative_intelligence") or {}).output_schema if frozen.generation_sample else frozen.stage.output_schema
     for content, digest in rows:
         materialization = content.get("contract") or {}
         selected = materialization.get("context_selection") or []
         if (digest != authorization_hash(content) or len(selected) != 1
             or selected[0].get("asset_version_id") != frozen.context.asset_version_id
             or selected[0].get("content_hash") != frozen.context.content_hash
-            or materialization.get("output_schema", {}).get("content_hash") != authorization_hash(dict(frozen.stage.output_schema))):
+            or materialization.get("output_schema", {}).get("content_hash") != authorization_hash(dict(source_schema))):
             raise KernelError("WORLD_SAMPLE_PRODUCER_DRIFT", "World sample must retain the exact native Prompt, Context and Schema")
+        if frozen.generation_sample:
+            from copy import deepcopy
+
+            materialization = deepcopy(materialization)
+            materialization["stage"] = frozen.stage.name
+            materialization["context_selection"][0].update(content=frozen.derived_context,
+                content_hash=authorization_hash(frozen.derived_context))
+            materialization["output_schema"] = {"ref": f"schema:{frozen.stage.name}:v1",
+                "content_hash": authorization_hash(dict(frozen.stage.output_schema)), "content": dict(frozen.stage.output_schema)}
         _, prompt_evidence = _materialize_production_codex_prompt(target_scope=TargetScope(
             scope_kind=scope_kind, scope_id=command["logical_key"], project_id=command["project_id"], book_id=command["book_id"]).to_dict(),
             stage=frozen.stage.name, inputs={"world_preparation": dict(frozen.stage.task)}, materialization=materialization)
@@ -191,7 +246,8 @@ def require_world_reference(database_url: str, *, frozen: FrozenWorldSample, bin
     with AuthorityUnitOfWork(database_url) as uow:
         return require_adjudicated_reference(uow.cursor, project_id=frozen.command_payload["project_id"], binding=binding,
             target_id=generation["asset_version_id"], target_hash=generation["content_hash"],
-            generators=[frozen.command_payload["actor_id"]], evaluator_actor_id=evaluator_actor_id,
+            generators=[frozen.generation_sample["generation_actor_id"] if frozen.generation_sample else frozen.command_payload["actor_id"]],
+            evaluator_actor_id=evaluator_actor_id,
             chapter=int(frozen.command_payload["world_preparation_request"]["accepted_through_chapter"]) + 1,
             expected_dimensions=tuple(f"{item['transition']['transition_id']}:{dimension}"
                 for item in frozen.stage.task["generated_portfolio"]["candidates"] for dimension in DIRECTOR_DIMENSIONS),
@@ -250,18 +306,22 @@ def require_frozen_world_execution(database_url: str, *, operation_id: str, comm
         or metadata.get("context") != _binding(frozen.context) or metadata.get("source") != _binding(frozen.source)
         or metadata.get("stage_hash") != authorization_hash(dict(frozen.stage.task))
         or metadata.get("schema_hash") != authorization_hash(dict(frozen.stage.output_schema))
+        or (frozen.generation_sample is not None and (
+            metadata.get("generation_sample") != {key: frozen.generation_sample[key] for key in ("asset_version_id", "content_hash")}
+            or metadata.get("derived_context_hash") != authorization_hash(frozen.derived_context)))
         or snapshot["authorization"]["task_type"] != frozen.stage.name):
         raise KernelError("WORLD_SAMPLE_EXECUTION_SCOPE_INVALID", "frozen World execution requires its exact native sample grant and origin")
 
 
-def world_sample_definitions(*, application_build_id: str, commit_sha: str) -> tuple[dict[str, Any], ...]:
+def world_sample_definitions(*, application_build_id: str, commit_sha: str,
+                             reference_samples: bool = False) -> tuple[dict[str, Any], ...]:
     from .application import story_planning_generation_definition
 
     result = []
-    for stage in sorted(WORLD_SAMPLE_STAGES):
+    for stage in (["world_candidates.evaluate"] if reference_samples else sorted(WORLD_SAMPLE_STAGES)):
         definition = story_planning_generation_definition(application_build_id=application_build_id, commit_sha=commit_sha)
         name = "world.provider.sample." + stage.rsplit(".", 1)[1]
-        definition.update({"name": name, "definition_version": WORLD_SAMPLE_VERSION,
+        definition.update({"name": name, "definition_version": WORLD_REFERENCE_SAMPLE_VERSION if reference_samples else WORLD_SAMPLE_VERSION,
             "handler_key": "novel_forge." + name, "handler_contract_version": "world-provider-sample.v1",
             "idempotency_scope": WORLD_SAMPLE_SCOPE, "concurrency_key_template": "book:{book_id}:world-sample:{logical_key}",
             "retry_policy": {"max_attempts": 1, "dead_letter_on_exhausted": True},
@@ -275,6 +335,8 @@ def world_sample_definitions(*, application_build_id: str, commit_sha: str) -> t
                 "required_evidence": ["trace", "audit", "cost_when_provider_used"],
                 "required_outbox_events": ["world.sample.materialized"]}})
         result.append(definition)
+        if reference_samples:
+            definition["policy"]["world_reference_sample_input_allowed"] = True
     return tuple(result)
 
 
@@ -293,7 +355,8 @@ def admit_world_sample(app: Any, command: WorldProviderSampleCommand, *, princip
     expected_purpose = "REFERENCE_EVALUATION" if command.stage == "world_candidates.evaluate" else "BENCHMARK_CHALLENGER"
     if grant["purpose"] != expected_purpose or not grant.get("campaign"):
         raise KernelError("WORLD_SAMPLE_CAMPAIGN_REQUIRED", "World sampling requires its separate generator or reference campaign grant")
-    definition = next(item for item in world_sample_definitions(application_build_id=app.application_build_id, commit_sha=app.commit_sha)
+    definition = next(item for item in world_sample_definitions(application_build_id=app.application_build_id, commit_sha=app.commit_sha,
+                      reference_samples=command.generation_sample is not None)
                       if item["name"] == prepared["definition_name"])
     payload = {**prepared["command_payload"], "routing_bootstrap_authorization": snapshot}
     trace = "world-sample:" + command.idempotency_key
@@ -304,7 +367,7 @@ def admit_world_sample(app: Any, command: WorldProviderSampleCommand, *, princip
         uow.cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", [identity])
         require_world_sample_predecessor(uow.cursor, command=command, payload=payload)
         admitted = admit_command_in_uow(uow, {
-            "definition_name": definition["name"], "definition_version": WORLD_SAMPLE_VERSION,
+            "definition_name": definition["name"], "definition_version": prepared["definition_version"],
             "project_id": command.project_id, "workspace_id": prepared["workspace_id"], "book_id": command.book_id,
             "logical_key": command.source_operation_id, "actor_id": principal.principal_id,
             "idempotency_scope": WORLD_SAMPLE_SCOPE, "idempotency_key": command.idempotency_key,
@@ -366,9 +429,9 @@ def require_world_sample_predecessor(cursor: Any, *, command: WorldProviderSampl
 def query_world_sample(database_url: str, *, project_id: str, book_id: str, operation_id: str) -> dict[str, Any]:
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute("""SELECT status,command_payload->'payload',causation_operation_id,trace_id FROM authority_operation
-            WHERE project_id=%s AND operation_id=%s AND definition_version=%s
+            WHERE project_id=%s AND operation_id=%s AND definition_version=ANY(%s)
               AND definition_name=ANY(%s) AND command_payload#>>'{payload,book_id}'=%s""",
-            [project_id, operation_id, WORLD_SAMPLE_VERSION, ["world.provider.sample.generate", "world.provider.sample.evaluate"], book_id])
+            [project_id, operation_id, [WORLD_SAMPLE_VERSION, WORLD_REFERENCE_SAMPLE_VERSION], ["world.provider.sample.generate", "world.provider.sample.evaluate"], book_id])
         row = uow.cursor.fetchone()
         if row is None:
             raise KernelError("WORLD_SAMPLE_NOT_FOUND", "World sample is absent from the authorized Project and Book")
@@ -451,7 +514,8 @@ class WorldSampleHandler:
         if snapshot is None:
             raise KernelError("WORLD_SAMPLE_AUTHORIZATION_REQUIRED", "World sample requires its frozen grant")
         frozen = require_world_sample_source(self.database_url, project_id=request.project_id, book_id=payload["book_id"],
-            source_operation_id=metadata["source_operation_id"], stage=payload["generator_operation_name"])
+            source_operation_id=metadata["source_operation_id"], stage=payload["generator_operation_name"],
+            generation_sample=metadata.get("generation_sample"))
         reference = require_world_reference(self.database_url, frozen=frozen, binding=payload.get("reference_evaluation"),
             evaluator_actor_id=request.actor_id) if frozen.stage.name == "world_candidates.evaluate" else None
         command = _command_from_payload(frozen.command_payload)
@@ -470,6 +534,8 @@ class WorldSampleHandler:
             content={"schema_version": "world-provider-sample.v1", "routing_eligibility": "BENCHMARK_ONLY",
                 "production_eligible": False, "stage": frozen.stage.name, "source_operation_id": metadata["source_operation_id"],
                 "context": _binding(frozen.context), "source": _binding(frozen.source),
+                **({"generation_sample": metadata["generation_sample"],
+                    "derived_context_hash": metadata["derived_context_hash"]} if frozen.generation_sample else {}),
                 "authorization_id": grant["authorization_id"], "campaign": grant["campaign"],
                 "sampled_output": dict(executed.raw_output), "execution_evidence": asdict(executed.evidence), **reviewed},
             qualification_policy="world-provider-sample.v1", eligibility="INELIGIBLE",

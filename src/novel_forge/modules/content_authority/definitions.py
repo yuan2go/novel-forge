@@ -15,10 +15,13 @@ def content_operation_definitions(
     commit_sha: str,
     integration_proven: Collection[str] | None = None,
     reference_annotations: bool = False,
+    world_reference_annotations: bool = False,
 ) -> tuple[dict[str, Any], ...]:
     from novel_forge.modules.chapter_quality_authority.reference_subject import (
-        REFERENCE_ANNOTATION_DEFINITIONS, REFERENCE_ANNOTATION_VERSION,
+        REFERENCE_ANNOTATION_DEFINITIONS, REFERENCE_ANNOTATION_VERSION, WORLD_REFERENCE_ANNOTATION_VERSION,
     )
+    if world_reference_annotations and not reference_annotations:
+        raise ValueError("World sample annotations require the native reference annotation contract")
     proven = (
         CONTENT_INTEGRATION_PROVEN
         if integration_proven is None
@@ -56,7 +59,8 @@ def content_operation_definitions(
         definitions.append(
             {
                 "name": name,
-                "definition_version": REFERENCE_ANNOTATION_VERSION if reference_annotations else CONTENT_DEFINITION_VERSION,
+                "definition_version": WORLD_REFERENCE_ANNOTATION_VERSION if world_reference_annotations else
+                    REFERENCE_ANNOTATION_VERSION if reference_annotations else CONTENT_DEFINITION_VERSION,
                 "family": name.split(".")[0],
                 "command_schema_version": f"{name}.command.v2",
                 "result_schema_version": f"{name}.result.v2",
@@ -87,6 +91,7 @@ def content_operation_definitions(
                 },
                 "policy": {
                     **({"reference_sample_annotation_input_allowed": True} if reference_annotations else {}),
+                    **({"world_reference_sample_annotation": True} if world_reference_annotations else {}),
                     **({"evaluation_candidate_asset_input_allowed": True}
                        if name == "story_design.review.author" else {}),
                     "project_scope_required": True,

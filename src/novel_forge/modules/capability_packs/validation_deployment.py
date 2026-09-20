@@ -98,6 +98,8 @@ def register_validation_runtime_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha,
         ), *world_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha,
+        ), *world_sample_definitions(
+            application_build_id=application_build_id, commit_sha=commit_sha, reference_samples=True,
         )):
             uow.repositories.definitions.register(item)
         uow.commit()

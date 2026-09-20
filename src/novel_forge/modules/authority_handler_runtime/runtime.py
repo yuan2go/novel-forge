@@ -317,14 +317,27 @@ def _load_request(
         reference_sample_id = ""
         policy = dict(snapshot.get("policy") or {})
         payload = dict(operation["command_payload"].get("payload") or {})
+        if policy.get("world_reference_sample_input_allowed") is True:
+            from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
+
+            if operation["definition_name"] != "world.provider.sample.evaluate" or operation["definition_version"] != "1.1.0":
+                raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "World reference sampling requires its exact versioned definition")
+            grant = load_bootstrap_authorization(uow.cursor, project_id=operation["project_id"],
+                operation_id=operation["operation_id"], check_expiry=False)
+            if grant is None or grant["authorization"]["purpose"] != "REFERENCE_EVALUATION":
+                raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "World reference sampling requires its frozen evaluation grant")
+            reference_sample_id = payload["world_sampling"]["generation_sample"]["asset_version_id"]
         if policy.get("reference_sample_annotation_input_allowed") is True:
             from novel_forge.modules.chapter_quality_authority.reference_subject import (
-                REFERENCE_ANNOTATION_VERSION, require_reference_annotation,
+                REFERENCE_ANNOTATION_VERSION, WORLD_REFERENCE_ANNOTATION_VERSION, require_reference_annotation,
             )
-            if operation["definition_version"] != REFERENCE_ANNOTATION_VERSION:
+            world_sample = policy.get("world_reference_sample_annotation") is True
+            expected_version = WORLD_REFERENCE_ANNOTATION_VERSION if world_sample else REFERENCE_ANNOTATION_VERSION
+            if operation["definition_version"] != expected_version:
                 raise KernelError("QUALITY_REFERENCE_ANNOTATION_INVALID", "sample annotation requires its versioned native definition")
             reference_sample_id = require_reference_annotation(uow.cursor, project_id=operation["project_id"],
-                definition_name=operation["definition_name"], payload=payload, actor_id=operation["actor_id"])
+                definition_name=operation["definition_name"], payload=payload, actor_id=operation["actor_id"],
+                allowed_types=frozenset({"world_provider_sample"} if world_sample else {"chapter_provider_sample"}))
         if policy.get("evaluation_candidate_asset_input_allowed") is True:
             evaluation_candidate_id = str(
                 payload.get("candidate_asset_version_id") or ""

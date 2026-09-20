@@ -398,9 +398,14 @@ class StoryPlanningGenerationHandlerRegistry:
     ) -> AuthorityHandlerRegistration:
         item = self.items.get(definition_name)
         if item is not None and definition_name.startswith("world.provider.sample."):
-            if definition_version != item.definition_version:
+            from .world_sampling import WORLD_REFERENCE_SAMPLE_VERSION
+
+            supported = {item.definition_version}
+            if definition_name == "world.provider.sample.evaluate":
+                supported.add(WORLD_REFERENCE_SAMPLE_VERSION)
+            if definition_version not in supported:
                 raise KeyError((definition_name, definition_version))
-            return item
+            return replace(item, definition_version=definition_version)
         if item is None or definition_version not in {
             STORY_PLANNING_GENERATION_VERSION,
             "1.11.0",

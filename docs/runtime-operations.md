@@ -539,10 +539,26 @@ to the source producer, and register the matching native sample definitions.
 Freeze a campaign grant for the returned hashes and producer identity. World generation
 requires `BENCHMARK_CHALLENGER`; World evaluation requires `REFERENCE_EVALUATION` and
 native adjudications for every `<transition_id>:<Director dimension>`. Each adjudication
-binds the original generation asset, chapter, protocol and independent blind authors.
+binds the exact generation target, chapter, protocol and independent blind authors.
 Label scores use 0–100; observed native Director scores use 0–1 and are multiplied by 100
 only for agreement comparison. Labels stay outside Provider Context. Recorded disagreement
 is retained; neither agreement nor World rule validation activates a calibrated reviewer.
+
+To evaluate a calibration generation directly, supply `generation_sample:
+{asset_version_id, content_hash}` for its exact native `world_provider_sample` output.
+Its originating grant must be `BENCHMARK_CHALLENGER`, and its original ChapterPlan,
+World source and generator Context must match this request. Record independent native
+human evaluations and adjudications with the same `reference_sample` binding; Content
+uses version `2.3.0` for this World annotation scope. Reuse their exact references in
+`reference_evaluation`. No label enters the Provider prompt.
+Install `build_world_sampling_pack_profile(..., reference_samples=True)` through the
+same Pack authority; it binds `world_provider_sampling@1.1.0` and
+`world.provider.sample.evaluate@1.1.0` under `.world_reference_sampling`. Its approved
+producer artifacts remain those of the original Planning pack. Preflight derives and
+hashes the Director Context using the native World task factory; execution freezes it
+under the sample Operation as `INELIGIBLE`. No formal generation or earlier Director
+Context is required. Invalid or mismatched source samples fail before dispatch; their
+original sample records remain available for failure accounting.
 
 Replay the POST without `dry_run=true` to run or resume through the native Content
 scheduler and Planning execution port. Query
@@ -553,9 +569,8 @@ and reconcile; a renamed request cannot replace them. An explicitly granted term
 no-effect/proven-failed successor supplies `predecessor_operation_id` and preserves
 the actor, task, reference labels and campaign arm. Kernel causation and cumulative
 campaign accounting retain every predecessor. These samples cannot create a World action,
-active plan or production knowledge. Evaluator sampling currently needs an existing native
-Director Context and generation target; using a generator sample as that target and
-publishing qualified feedback remain required cold-start work.
+active plan or production knowledge. Trusted evaluator activation and publishing qualified
+World feedback remain required work; a successful reference sample alone supplies neither.
 
 The same Chapter endpoint supports native `review`, `rereview`, `quality_structural`,
 `quality_commercial`, `quality_source_originality`, `quality_longform`, and

@@ -44,6 +44,11 @@ def test_world_sampling_pack_preserves_native_producer_artifacts():
     assert {item["output_asset_types"][0] for item in sampled.manifest["workflow_template"]["nodes"]} == {"world_provider_sample"}
     catalog = governed_workflow_binding_catalog("world_provider_sampling", "1.0.0")
     assert catalog.resolve("world_candidates.generate").capability_id == "planning.story_chapter.generate"
+    reference = build_world_sampling_pack_profile(source, application_build_id="test", commit_sha="a" * 40, reference_samples=True)
+    assert reference.artifact_catalog == source.artifact_catalog
+    assert reference.workflow_ref == "world_provider_sampling@1.1.0"
+    assert [node["operation_definition_ref"] for node in reference.manifest["workflow_template"]["nodes"]] == ["world.provider.sample.evaluate@1.1.0"]
+    assert governed_workflow_binding_catalog("world_provider_sampling", "1.1.0").resolve("world_candidates.evaluate").capability_id == "planning.story_chapter.generate"
 
 
 def test_narrative_evaluation_profile_is_independent_provider_pack() -> None:
