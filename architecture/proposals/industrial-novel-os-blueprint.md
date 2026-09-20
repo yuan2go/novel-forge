@@ -8,18 +8,18 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `76446099dee54b0248c9625a02e3d22b391c9086`
-Baseline implementation identity: `sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed`
+Current-reality baseline: `5580b4d7de74cae2478e52248b94a60c11165bb2`
+Baseline implementation identity: `sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-20",
+  "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "76446099dee54b0248c9625a02e3d22b391c9086",
-    "implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed"
+    "sha": "5580b4d7de74cae2478e52248b94a60c11165bb2",
+    "implementation_tree_sha": "sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -199,12 +199,14 @@ Baseline implementation identity: `sha256:adf61a4234405b63f0edcfbd2ab942156bd98e
 }
 -->
 
-Current scope review (2026-09-20): Current ontology, Authority, production descent and
+Current scope review (2026-09-21): Current ontology, Authority, production descent and
 Craft behavior are documented only in [current-system](../../docs/current-system.md)
 and the checked reality inventory. Implemented architecture and obsolete gap matrices
 have been removed from this proposal. The seven decisions below remain unresolved;
 Craft engineering does not establish human completion quorum, reader-data policy or
-accepted-history correction authority.
+accepted-history correction authority. Native human adjudications used for bounded
+semantic evaluator calibration do not define whole-book completion quorum, grant
+strategic approval or authorize accepted-history mutation.
 
 ## Unresolved design decisions
 
