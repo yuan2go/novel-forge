@@ -233,3 +233,56 @@ def test_world_preparation_uses_same_planning_effect_identity(stage):
 def test_unknown_or_inconsistent_effect_identity_never_defaults_to_a_phase(operation, capability, payload, attempt):
     with pytest.raises(ValueError):
         classify_phase(operation, capability, payload, attempt)
+
+
+def provider_campaign_policy():
+    from novel_forge.modules.command_kernel.creative_budget_contract import PROVIDER_CAMPAIGN_PHASES, PROVIDER_CAMPAIGN_VERSION
+
+    phases = {phase: {"calls": 2, "tokens": 2000, "priced_usd": "1"} for phase in PROVIDER_CAMPAIGN_PHASES}
+    total = {"calls": 16, "tokens": 16000, "priced_usd": "8"}
+    return {
+        "policy_version": "campaign-fixture-v1",
+        "comparison_budget": {
+            "contract_version": PROVIDER_CAMPAIGN_VERSION, "experiment_id": "fixture-campaign",
+            "manifest_hash": "sha256:" + "c" * 64, "expires_at": "2099-01-01T00:00:00+00:00",
+            "accounting_basis": "MIXED", "shared_total": total,
+            "arms": [{"arm": "SINGLE", "project_id": "project-A", "book_id": "book-A",
+                      "project_total": deepcopy(total), "chapter_ranges": {"PRODUCTION": [1, 12]},
+                      **{phase.lower() + "_allocation": deepcopy(allocation) for phase, allocation in phases.items()}}],
+            "entitlements": [{"provider": "codex-cli", "authorization_ref": "fixture-codex-entitlement", "calls": 1, "tokens": 1000}],
+        },
+        "authorization": {"authorization_ref": "fixture-campaign-approval", "evidence_hash": "sha256:" + "a" * 64,
+                          "project_id": "project-A", "book_id": "book-A", "authorized_cumulative_caps": phases,
+                          "business_scope": {"source_allowed": True, "design_allowed": True, "max_chapter_number": 12}},
+    }
+
+
+def test_mixed_campaign_keeps_phase_money_and_entitlement_limits_distinct():
+    from novel_forge.modules.command_kernel.creative_budget_contract import V4_POLICY_SCHEMA
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+
+    policy = provider_campaign_policy()
+    _validate(V4_POLICY_SCHEMA, policy, path="$")
+    assert validate_policy(policy) == policy
+    assert policy["comparison_budget"]["entitlements"][0]["calls"] == 1
+    assert "priced_usd" not in policy["comparison_budget"]["entitlements"][0]
+    definition = owned_policy_definition(owner="CREATIVE_EXPERIMENT_BUDGET", content=policy,
+                                         application_build_id="fixture", commit_sha="a" * 40)
+    assert definition["definition_version"] == "1.4.0"
+
+
+@pytest.mark.parametrize("mutate", [
+    lambda p: p["comparison_budget"]["shared_total"].update(priced_usd="NaN"),
+    lambda p: p["comparison_budget"]["shared_total"].update(calls=True),
+    lambda p: p["comparison_budget"]["arms"][0]["production_allocation"].update(priced_usd="2"),
+    lambda p: p["comparison_budget"]["entitlements"][0].update(priced_usd="0"),
+    lambda p: p["comparison_budget"]["entitlements"][0].update(calls=17),
+    lambda p: p["comparison_budget"].update(expires_at="2099-01-01"),
+    lambda p: p["authorization"]["authorized_cumulative_caps"]["REPAIR"].update(priced_usd="9"),
+    lambda p: p["authorization"]["business_scope"].update(max_chapter_number=13),
+])
+def test_mixed_campaign_rejects_inflated_unknown_or_unbound_allowances(mutate):
+    policy = provider_campaign_policy()
+    mutate(policy)
+    with pytest.raises(ValueError):
+        validate_policy(policy)

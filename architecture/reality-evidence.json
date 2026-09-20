@@ -5144,6 +5144,18 @@
         {
           "path": "scripts/source_qualification.py",
           "symbol": "run_source_qualification"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+          "symbol": "validate_bootstrap_producer"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
+          "symbol": "assert_creative_budget_dispatch"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
+          "symbol": "check_creative_settlement_in_uow"
         }
       ],
       "domain_symbols": [
@@ -5422,6 +5434,18 @@
         {
           "path": "tests/integration/test_chapter_provider_sampling_postgres.py",
           "symbol": "test_native_chapter_sample_replays_without_formal_chapter_mutation"
+        },
+        {
+          "path": "tests/integration/test_single_book_budget_postgres.py",
+          "symbol": "test_mixed_campaign_counts_production_and_subscription_without_reset_or_free_usd"
+        },
+        {
+          "path": "tests/integration/test_single_book_budget_postgres.py",
+          "symbol": "test_mixed_campaign_serializes_price_reservations_and_rechecks_expiry_before_send"
+        },
+        {
+          "path": "tests/integration/test_single_book_budget_postgres.py",
+          "symbol": "test_mixed_campaign_reconciles_expired_calls_and_retains_monetary_breach"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8684,7 +8708,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:6d5a2bf25faac0892c1c0b6738ca0064f98a6b7e37838e657296c8f7357879e0"
+    "implementation_tree_sha": "sha256:2c54e03aa518077adb1da6649425e15ba9a840a999a5cbb14a8ca9ee38b48e95"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

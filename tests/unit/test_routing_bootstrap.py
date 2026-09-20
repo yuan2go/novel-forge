@@ -44,6 +44,7 @@ def contract():
         "generation_idempotency_key": "sample-one",
         "input_versions_hash": authorization_hash(payload["input_versions"]),
         "command_hash": bootstrap_command_hash(payload),
+        "producer_contract_hash": authorization_hash({"fixture_prompt": "v1"}),
         "candidate_id": "flash",
         "model_revision": "revision-one",
         "expires_at": "2099-01-01T00:00:00+00:00",
@@ -121,6 +122,8 @@ def ordinary_decision(**candidate_overrides):
         100,
         2000,
         ".01",
+        producer_contract={"fixture_prompt": "v1"},
+        producer_contract_hash=authorization_hash({"fixture_prompt": "v1"}),
     )
     return CostAwareRouter().explain(
         task,
@@ -403,3 +406,44 @@ def test_reference_agreement_counts_disagreement_without_production_or_human_cla
     assert report["production_qualification_eligible"] is False
     assert report["ground_truth_claimed"] is False
     assert report["human_preference_evidence"] is False
+
+
+@pytest.mark.parametrize("change", [
+    {}, {"prompt_template": {"version": 2}}, {"context_policy": {"version": 2}},
+    {"output_schema": {"content_hash": "sha256:" + "f" * 64}},
+    {"judge_protocol": "changed"},
+])
+def test_sampling_rejects_unbound_or_changed_producer_before_selection(change):
+    from novel_forge.modules.production_execution.cost_routing import RoutingDecision
+    import json
+
+    _, grant, snapshot = contract()
+    ordinary = ordinary_decision().to_dict()
+    if change:
+        ordinary["task"]["producer_contract"] = {**ordinary["task"]["producer_contract"], **change}
+        ordinary["task"]["producer_contract_hash"] = authorization_hash(ordinary["task"]["producer_contract"])
+    else:
+        grant.pop("producer_contract_hash")
+        snapshot["authorization_hash"] = authorization_hash(grant)
+    with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_PRODUCER_DRIFT"):
+        benchmark_decision(RoutingDecision(json.dumps(ordinary)), snapshot, environment="validation")
+
+
+def test_legacy_grant_can_be_reconciled_but_cannot_authorize_new_dispatch():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_producer
+
+    _, grant, _ = contract()
+    grant.pop("producer_contract_hash")
+    validate_bootstrap_producer(grant, {}, require_bound=False)
+    with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_PRODUCER_DRIFT"):
+        validate_bootstrap_producer(grant, {})
+
+
+def test_campaign_arms_cannot_compare_different_producer_versions():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history
+
+    original = campaign_grant()
+    changed = {**original, "authorization_id": "new-model-arm", "candidate_id": "pro",
+               "producer_contract_hash": authorization_hash({"fixture_prompt": "v2"})}
+    with pytest.raises(KernelError, match="ROUTING_CAMPAIGN_SAMPLE_REDEFINED"):
+        validate_bootstrap_history([changed], [original])

@@ -7,6 +7,7 @@ from typing import Any, Mapping
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.routing_bootstrap import (
     validate_bootstrap_authorization,
+    validate_bootstrap_producer,
 )
 
 from .cost_routing import RoutingDecision, snapshot_hash
@@ -23,6 +24,7 @@ def benchmark_decision(
     grant = authorization["authorization"]
     validate_bootstrap_authorization(grant)
     snapshot = decision.to_dict()
+    validate_bootstrap_producer(grant, snapshot["task"])
     if (
         snapshot["task"]["project_id"] != authorization["project_id"]
         or snapshot["task"]["work_id"] != grant["book_id"]

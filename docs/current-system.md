@@ -183,8 +183,16 @@ the grant on that Effect. The existing PostgreSQL budget ledger enforces cumulat
 project and shared totals, including unresolved usage; new run keys and evidence directories
 do not create allowances. Source uses its curated consumption lineage to identify the
 authorized Book, rather than its internal synthetic Source Book. Allocation plans are not
-authorization. This phase contract currently supports account entitlement; priced runs
-without this experiment contract retain their existing monetary controls.
+authorization. Existing single-Book contracts retain their account-entitlement semantics.
+The `creative-provider-campaign-budget.v4` contract binds one Book, a frozen campaign
+manifest and expiry across reference evaluation, screening, calibration, holdout, Source,
+design, production and repair. It adds cumulative priced USD ceilings and exact
+Provider/account entitlement lanes to the same Kernel ledger. Subscription USD remains
+unknown; all lanes also consume the common call/token ceilings. Native Operation and
+chapter boundaries determine business scope, while sampling phases come from the frozen
+grant. Expiry prevents new sends but permits reconciliation of existing calls. This
+budget contract does not supply evaluator calibration, paid authorization or campaign
+qualification.
 
 ## Governed corpus works and Book knowledge isolation
 

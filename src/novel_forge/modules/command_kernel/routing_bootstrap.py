@@ -81,7 +81,7 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         "currency",
         "purpose",
     }
-    if set(grant) - {"campaign", "reference_evaluation"} != strings | {
+    if set(grant) - {"campaign", "reference_evaluation", "producer_contract_hash"} != strings | {
         "maximum_calls",
         "maximum_tokens",
         "production_eligible",
@@ -121,9 +121,11 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         or datetime.fromisoformat(grant["expires_at"]).tzinfo is None
     ):
         raise ValueError("ROUTING_BOOTSTRAP_LIMIT_INVALID")
-    for digest in (grant["input_versions_hash"], grant["command_hash"]):
+    for digest in (grant["input_versions_hash"], grant["command_hash"], *(
+        (grant["producer_contract_hash"],) if "producer_contract_hash" in grant else ()
+    )):
         if (
-            len(digest) != 71
+            not isinstance(digest, str) or len(digest) != 71
             or not digest.startswith("sha256:")
             or any(c not in "0123456789abcdef" for c in digest[7:])
         ):
@@ -139,6 +141,22 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
             > datetime.fromisoformat(campaign["expires_at"])
         ):
             raise ValueError("ROUTING_CAMPAIGN_GRANT_EXCEEDS_TOTAL")
+
+
+def validate_bootstrap_producer(
+    grant: Mapping[str, Any], task: Mapping[str, Any], *, require_bound: bool = True,
+) -> None:
+    expected = grant.get("producer_contract_hash")
+    if not expected and not require_bound:
+        return
+    contract = task.get("producer_contract")
+    if (not expected or not isinstance(contract, Mapping) or not contract
+        or task.get("producer_contract_hash") != expected
+        or authorization_hash(contract) != expected):
+        raise KernelError(
+            "ROUTING_BOOTSTRAP_PRODUCER_DRIFT",
+            "sampling requires the producer contract frozen before authorization",
+        )
 
 
 def validate_reference_evaluation_binding(reference: Any) -> None:
@@ -190,7 +208,7 @@ def validate_bootstrap_history(
     identities: dict[str, Mapping[str, Any]] = {}
     campaigns: dict[str, Mapping[str, Any]] = {}
     groups: dict[tuple[str, str], str] = {}
-    samples: dict[tuple[str, str], tuple[str, str, str]] = {}
+    samples: dict[tuple[str, str], tuple[Any, ...]] = {}
     inputs: dict[tuple[str, str], tuple[str, str]] = {}
     for grant in [*previous, *grants]:
         key = grant["authorization_id"]
@@ -214,10 +232,11 @@ def validate_bootstrap_history(
                               "a data group cannot cross experiment partitions")
         groups[group] = partition
         sample = (identity, campaign["sample_id"])
-        binding = (campaign["group_id"], grant["task_type"], grant["input_versions_hash"])
+        binding = (campaign["group_id"], grant["task_type"], grant["input_versions_hash"],
+                   grant.get("producer_contract_hash"))
         if sample in samples and samples[sample] != binding:
             raise KernelError("ROUTING_CAMPAIGN_SAMPLE_REDEFINED",
-                              "a sample retains its data group, task and input versions")
+                              "a sample retains its data group, task, producer and input versions")
         samples[sample] = binding
         source = (identity, grant["input_versions_hash"])
         if source in inputs and inputs[source][1] != partition:
@@ -459,6 +478,7 @@ def _verified_effect(
     grant = snapshot["authorization"]
     candidate = (decision.get("selected") or {}).get("candidate") or {}
     task = decision.get("task") or {}
+    validate_bootstrap_producer(grant, task, require_bound=check_expiry)
     if (
         decision.get("status") != "BENCHMARK_SELECTED"
         or decision.get("mode") != "BENCHMARK_CHALLENGER"

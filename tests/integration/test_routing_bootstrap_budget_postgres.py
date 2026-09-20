@@ -70,6 +70,7 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
         "logical_key": command.logical_key, "generation_idempotency_key": command.idempotency_key,
         "input_versions_hash": snapshot_hash(dict(command.input_versions)),
         "command_hash": bootstrap_command_hash(_command_payload(command)),
+        "producer_contract_hash": snapshot_hash({"fixture_prompt": "v1"}),
         "candidate_id": candidate.candidate_id, "model_revision": candidate.model_revision,
         "expires_at": expiry.isoformat(), "maximum_calls": 1, "maximum_tokens": 4096,
         "maximum_amount": "0.1", "currency": "USD", "purpose": "BENCHMARK_CHALLENGER",
@@ -112,7 +113,8 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
                 task_type=command.generator_operation_name, project_id=project, work_id=book,
                 operation_id=operation, attempt_id=attempt, stable_key=stable_key,
                 input_tokens=100, output_tokens=100, trace_id=command.trace_id,
-                correlation_id=command.correlation_id, request_input={"fixture": True})
+                correlation_id=command.correlation_id, request_input={"fixture": True},
+                producer_contract={"fixture_prompt": "v1"})
             assert decision["status"] == "BENCHMARK_SELECTED"
             assert decision["production_eligible"] is False
             assert decision["selected"]["benchmark"]["sample_count"] == 0
@@ -180,6 +182,7 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
     second = {**grant, "authorization_id": "grant-two", "logical_key": command.logical_key,
               "generation_idempotency_key": command.idempotency_key,
               "command_hash": bootstrap_command_hash(_command_payload(command)),
+        "producer_contract_hash": snapshot_hash({"fixture_prompt": "v1"}),
               "campaign": {**grant["campaign"], "sample_id": "sample-two"}}
     configure_owned_policy(
         database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
@@ -251,6 +254,7 @@ def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path,
         "logical_key": command.logical_key, "generation_idempotency_key": command.idempotency_key,
         "input_versions_hash": snapshot_hash(dict(command.input_versions)),
         "command_hash": bootstrap_command_hash(_command_payload(command)),
+        "producer_contract_hash": snapshot_hash({"fixture_prompt": "v1"}),
         "candidate_id": candidate.candidate_id, "model_revision": candidate.model_revision,
         "expires_at": expiry, "maximum_calls": 2, "maximum_tokens": 4096, "maximum_amount": "0.1",
         "currency": "USD", "purpose": "BENCHMARK_CHALLENGER", "production_eligible": False,
@@ -353,7 +357,8 @@ def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path,
                 task_type="narrative_semantic_evaluation", project_id=project, work_id=book,
                 operation_id=request.operation_id, attempt_id=request.attempt_id, stable_key=key,
                 input_tokens=100, output_tokens=100, trace_id=request.trace_id,
-                correlation_id=request.correlation_id, request_input={"fixture": True})
+                correlation_id=request.correlation_id, request_input={"fixture": True},
+                producer_contract={"fixture_prompt": "v1"})
             assert decision["status"] == "BENCHMARK_SELECTED"
             context = EffectCommandContext(request.operation_id, project, request.actor_id,
                                            request.trace_id, request.correlation_id)

@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.routing_bootstrap import authorization_hash
 from novel_forge.modules.chapter_authority.execution_gateway import (
     _RecoveryAuthorizedGatewayAdapter,
     chapter_producer_contract_identity,
@@ -42,7 +43,7 @@ from tests.integration.capability_pack_postgres_support import (
 
 
 @pytest.mark.parametrize(
-    "scenario", ["success", "unknown_then_reconciled", "terminal_failure"]
+    "scenario", ["success", "unknown_then_reconciled", "terminal_failure", "producer_drift"]
 )
 def test_native_chapter_sample_replays_without_formal_chapter_mutation(
     tmp_path, scenario
@@ -134,6 +135,32 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
         )
     )
     expiry = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    from tests.unit.test_creative_budget_contract import provider_campaign_policy
+    from novel_forge.modules.command_kernel.creative_budget_runtime import get_creative_budget
+    from novel_forge.modules.command_kernel.budget_runtime import provider_usage_accounted_sql
+
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(f"SELECT count(*) FROM authority_budget_reservation WHERE project_id=%s AND {provider_usage_accounted_sql()}", [h.project_id])
+        original_calls = uow.cursor.fetchone()[0]
+    assert original_calls > 0
+
+    campaign_policy = provider_campaign_policy()
+    arm = campaign_policy["comparison_budget"]["arms"][0]
+    arm.update(project_id=h.project_id, book_id=h.book_ids[0])
+    for phase, allocation in campaign_policy["authorization"]["authorized_cumulative_caps"].items():
+        allocation.update(calls=2 if phase == "CALIBRATION" else original_calls if phase == "PRODUCTION" else 0,
+                          tokens=400000 if phase == "CALIBRATION" else 1000000 if phase == "PRODUCTION" else 0,
+                          priced_usd="2" if phase == "CALIBRATION" else "1" if phase == "PRODUCTION" else "0")
+        arm[phase.lower() + "_allocation"] = dict(allocation)
+    totals = {"calls": 2 + original_calls, "tokens": 1400000, "priced_usd": "3"}
+    arm["project_total"] = totals
+    campaign_policy["comparison_budget"].update(experiment_id=h.project_id, expires_at=expiry,
+                                              shared_total=totals, entitlements=[])
+    campaign_policy["authorization"].update(project_id=h.project_id, book_id=h.book_ids[0])
+    configure_owned_policy(database_url=DATABASE_URL, owner="CREATIVE_EXPERIMENT_BUDGET",
+        project_id=h.project_id, workspace_id=h.workspace_id, content=campaign_policy,
+        idempotency_key=h.project_id + ":campaign-budget", trace_id="fixture", correlation_id="fixture",
+        application_build_id=h.application_build_id, commit_sha=h.release_sha, principal=principal)
     calls = []
     grants = []
     for candidate in deepseek_candidates(available=True)[:2]:
@@ -157,6 +184,7 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
                 "generation_idempotency_key": command.idempotency_key,
                 "input_versions_hash": prepared["input_versions_hash"],
                 "command_hash": prepared["command_hash"],
+                "producer_contract_hash": authorization_hash(formal_contract),
                 "candidate_id": candidate.candidate_id,
                 "model_revision": candidate.model_revision,
                 "expires_at": expiry,
@@ -284,6 +312,18 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
             )
 
         with patch.object(execution.gateway, "execute", side_effect=fixture_provider):
+            if scenario == "producer_drift":
+                with patch(
+                    "novel_forge.modules.chapter_authority.execution_gateway.chapter_producer_contract_identity",
+                    return_value={**formal_contract, "context_policy": {"version": "changed-after-authorization"}},
+                ), pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_PRODUCER_DRIFT"):
+                    scheduler.tick(project_id=h.project_id, root_operation_id=admitted["operation_id"])
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s", [admitted["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                    uow.cursor.execute("SELECT count(*) FROM authority_budget_reservation WHERE operation_id=%s", [admitted["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                continue
             if scenario == "success":
                 tick = scheduler.tick(
                     project_id=h.project_id, root_operation_id=admitted["operation_id"]
@@ -388,9 +428,13 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
                 [original["operation_id"]],
             )
             assert uow.cursor.fetchone() == ("SUCCEEDED",)
-    assert len(calls) == 2
+    expected_calls = 0 if scenario == "producer_drift" else 2
+    assert len(calls) == expected_calls
     campaign = PostgresRoutingRegistry(DATABASE_URL).campaign(
         project_id=h.project_id, campaign_id=h.project_id
     )
-    assert campaign["usage"]["calls_used_or_reserved"] == 2
+    assert campaign["usage"]["calls_used_or_reserved"] == expected_calls
     assert len(campaign["operations"]) == 2
+    cumulative = get_creative_budget(DATABASE_URL, h.project_id)["budget_usage"]
+    assert cumulative["project_total"]["calls_used_or_reserved"] == expected_calls + original_calls
+    assert cumulative["phases"]["CALIBRATION"]["calls_used_or_reserved"] == expected_calls

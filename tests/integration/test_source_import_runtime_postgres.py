@@ -982,6 +982,14 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                 cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s AND effect_type='model.invoke' AND status='SUCCEEDED'", [source_id])
                 receipt = self.application._effect_evidence(str(cursor.fetchone()[0]))
                 receipts_by_task[task] = deepcopy(receipt)
+                cursor.execute("SELECT request_payload FROM authority_external_effect WHERE operation_id=%s AND effect_type='model.invoke' AND status='SUCCEEDED'", [source_id])
+                runtime = cursor.fetchone()[0]["_production_execution"]["capability_runtime"]
+                cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [runtime["provider_admission_asset_version_id"]])
+                admission = cursor.fetchone()[0]["contract"]
+                cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [runtime["materialization_asset_version_id"]])
+                materialization = cursor.fetchone()[0]["contract"]
+                from novel_forge.modules.production_execution.cost_routing import producer_contract_identity, snapshot_hash
+                producer_contracts[task] = snapshot_hash(producer_contract_identity(admission["prompt_materialization"], materialization))
             for candidate in candidates:
                 request = dict(project_id=self.project_id, source_operation_id=source_id,
                     authorization_id=f"sample:{task}:{candidate.candidate_id}",
@@ -994,6 +1002,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                     "generation_idempotency_key": request["idempotency_key"],
                     "input_versions_hash": prepared["input_versions_hash"], "command_hash": prepared["command_hash"],
                     "candidate_id": candidate.candidate_id, "model_revision": candidate.model_revision,
+                    "producer_contract_hash": producer_contracts[task],
                     "expires_at": expiry, "maximum_calls": 1, "maximum_tokens": 200000,
                     "maximum_amount": "1", "currency": "USD", "purpose": "BENCHMARK_CHALLENGER",
                     "production_eligible": False,
@@ -1069,6 +1078,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                        "generation_idempotency_key": command["idempotency_key"],
                        "candidate_id": maximum.candidate_id, "model_revision": maximum.model_revision,
                        "task_type": prepared["command_payload"]["generator_operation_name"],
+                       "producer_contract_hash": producer_contracts[prepared["command_payload"]["generator_operation_name"]],
                        "logical_key": command["source_operation_id"],
                        "input_versions_hash": prepared["input_versions_hash"],
                        "campaign": {**grant["campaign"], "sample_id": prepared["command_payload"]["generator_operation_name"],

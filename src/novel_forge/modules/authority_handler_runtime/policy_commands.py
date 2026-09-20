@@ -55,14 +55,16 @@ def owned_policy_definition(
     }
     single_book_budget = False
     production_book_budget = False
+    provider_campaign_budget = False
     if owner == "PROVIDER_ROUTING":
         from novel_forge.modules.production_execution.routing_policy import POLICY_SCHEMA
         policy_schema = POLICY_SCHEMA
     if owner == "CREATIVE_EXPERIMENT_BUDGET":
-        from novel_forge.modules.command_kernel.creative_budget_contract import PRODUCTION_BOOK_VERSION, SINGLE_BOOK_VERSION, V1_POLICY_SCHEMA, V2_POLICY_SCHEMA, V3_POLICY_SCHEMA
+        from novel_forge.modules.command_kernel.creative_budget_contract import PRODUCTION_BOOK_VERSION, SINGLE_BOOK_VERSION, PROVIDER_CAMPAIGN_VERSION, V1_POLICY_SCHEMA, V2_POLICY_SCHEMA, V3_POLICY_SCHEMA, V4_POLICY_SCHEMA
         single_book_budget = not content or content.get("comparison_budget", {}).get("contract_version") == SINGLE_BOOK_VERSION
         production_book_budget = content.get("comparison_budget", {}).get("contract_version") == PRODUCTION_BOOK_VERSION
-        policy_schema = V3_POLICY_SCHEMA if production_book_budget else V2_POLICY_SCHEMA if single_book_budget else V1_POLICY_SCHEMA
+        provider_campaign_budget = content.get("comparison_budget", {}).get("contract_version") == PROVIDER_CAMPAIGN_VERSION
+        policy_schema = V4_POLICY_SCHEMA if provider_campaign_budget else V3_POLICY_SCHEMA if production_book_budget else V2_POLICY_SCHEMA if single_book_budget else V1_POLICY_SCHEMA
     result_schema = {
         "type": "object",
         "additionalProperties": False,
@@ -85,7 +87,7 @@ def owned_policy_definition(
     }
     return {
         "name": name,
-        "definition_version": "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
+        "definition_version": "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
         "family": owner.lower(),
         "enabled": True,
         "definition_status": "implemented_validation_pending",

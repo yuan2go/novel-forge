@@ -383,7 +383,7 @@ For initial Planning evidence collection, the same policy may contain
 `bootstrap_authorizations`. Each grant requires `authorization_id`, audit `reason`,
 `environment: validation`, `purpose: BENCHMARK_CHALLENGER`, `production_eligible: false`,
 exact `book_id`, generation `task_type`, `logical_key`, `generation_idempotency_key`,
-the canonical `input_versions_hash`, `command_hash`, `candidate_id`, `model_revision`, timezone-aware
+the canonical `input_versions_hash`, `command_hash`, `producer_contract_hash`, `candidate_id`, `model_revision`, timezone-aware
 `expires_at`, positive `maximum_calls`, `maximum_tokens`, `maximum_amount`, and `currency:
 USD`. The current challenger lane supports priced DeepSeek execution. A local operator
 passes only `routing_bootstrap_authorization_id` to the existing Planning generation
@@ -395,6 +395,11 @@ The router emits `BENCHMARK_SELECTED` with the original quality exclusions prese
 Kernel checks immutable decision identity, expiry and locked aggregate quota before send.
 Reusing an authorization ID in a later policy version does not reset its quota.
 Historical replay uses the frozen grant, while a new send must still precede expiry.
+New sampling admission requires the producer contract hash. Router selection and Kernel
+dispatch compare it with the actual Prompt/Context/Schema contract; changing that contract
+requires a new sample version. Historical unbound grants remain readable for reconciliation
+but cannot authorize another inference. Arms sharing one sample bind the same producer
+contract as well as equivalent input identities.
 Candidates remain ineligible for production even after an explicit independent evaluation.
 No automatic judge or repair is authorized by the generator grant. Independent calibrated
 evaluation remains necessary; a model cannot establish its own qualification.
@@ -412,9 +417,28 @@ semantic paraphrases or replace an independently frozen dataset.
 `novel-forge authority-provider-routing campaign --project-id <id> --campaign-id <id>`
 reads all historical grants, Operation states, output/hash references and native
 reservation/effect references, including failures and unresolved outcomes. `RECONCILIATION_REQUIRED` requires native ExternalEffect recovery,
-never a new grant to resend. This command reports bootstrap sampling usage only. Configure
-existing project/Book budgets separately for reviews, production and entitlement; do not
-treat the sampling ceiling as authorization for those activities. Development and holdout
+never a new grant to resend. This command reports bootstrap sampling usage only. For a
+whole campaign, select `creative-provider-campaign-budget.v4` through the existing
+`authority-creative-budget configure` command. Its immutable `comparison_budget` binds
+`experiment_id`, `manifest_hash`, `expires_at`, `accounting_basis: MIXED`, one `SINGLE`
+project/Book arm and `chapter_ranges.PRODUCTION`. `shared_total`, `project_total`, each
+phase allocation and each `authorized_cumulative_caps` entry contain `calls`, `tokens`
+and decimal-string `priced_usd`. Phases are `REFERENCE`, `SCREENING`, `CALIBRATION`,
+`HOLDOUT`, `SOURCE`, `DESIGN`, `PRODUCTION`, and `REPAIR`; phase allocations sum to the
+project and shared totals. `entitlements` contains separately capped `provider`,
+`authorization_ref`, `calls` and `tokens` lanes. The Codex lane must match the configured
+account authorization. Existing project/Book controls continue to apply as additional
+constraints. This plan does not itself authorize payment or confer A/B independence.
+
+The configure command verifies the existing authorization-evidence file; phase grants
+retain explicit Source/design/chapter business scope. `authority-creative-budget query`
+returns cumulative native-ledger usage by phase, priced USD, unknown-cost entitlement
+calls and account lanes, including prior usage and unresolved calls. Changing a run key,
+policy version or evidence directory cannot reset consumption or rename its frozen plan.
+Expiry is rechecked before send. Settlement after expiry remains possible; actual usage
+above the authorized ceiling is recorded and held for reconciliation. Model-side token
+consumption remains observable only to the extent supported by its actual receipt.
+Development and holdout
 observations are excluded from automatic qualification feedback. Release of held-out
 evidence and full-family reference-evaluator bootstrap remain implementation gaps.
 

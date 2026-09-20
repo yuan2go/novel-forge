@@ -112,4 +112,9 @@ def freeze_bootstrap_authorization(
             "authorization_hash": authorization_hash(grants[0]),
         }
         validate_bootstrap_scope(snapshot, command_payload)
+        if not grants[0].get("producer_contract_hash"):
+            raise KernelError(
+                "ROUTING_BOOTSTRAP_PRODUCER_REQUIRED",
+                "new sampling admission requires a frozen producer contract",
+            )
         return snapshot
