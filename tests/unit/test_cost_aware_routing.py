@@ -671,6 +671,9 @@ def test_reference_agreement_requires_both_label_strata_and_preserves_failed_fir
         [replace(row, retried=True) for row in observations],
     ):
         assert route(reference_task, [candidate()], {"flash": bad})["status"] == "BLOCKED"
+    other_context = [replace(row, evidence_ref=f"long:{repeat}:" + row.evidence_ref, sample_identity=f"long:{repeat}:" + row.sample_identity,
+        input_tokens=100_000) for repeat in range(3) for row in observations]
+    assert route(reference_task, [candidate()], {"flash": observations + other_context})["status"] == "SELECTED"
     failures = [replace(row, evidence_ref="failure:" + row.evidence_ref, reference_agreed=None,
         reference_label_classes=(), sample_identity="failed:" + row.sample_identity, schema_success=False,
         accepted=False) for row in observations]

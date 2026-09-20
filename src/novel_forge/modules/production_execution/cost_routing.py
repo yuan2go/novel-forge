@@ -403,6 +403,9 @@ def benchmark_snapshot(
          if row.experiment_partition not in {"DEVELOPMENT", "HOLDOUT"}),
         key=lambda row: (row.occurred_at, row.evidence_ref),
     )
+    if policy.quality_metric == "REFERENCE_AGREEMENT" and input_tokens is not None:
+        ordered = [row for row in ordered if row.evidence_class != "REFERENCE_EVALUATION" or (
+            row.reference_risk == policy.risk and reference_context_bucket(row.input_tokens) == reference_context_bucket(input_tokens))]
     rows = ordered[-maximum_samples:]
     independent: dict[str, BenchmarkObservation] = {}
     for row in ordered:
