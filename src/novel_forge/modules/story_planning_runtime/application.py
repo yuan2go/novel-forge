@@ -788,6 +788,7 @@ class StoryPlanningGenerationApplication:
                 evidence_asset_version_ids=command.evidence_asset_version_ids,
                 routing_bootstrap_authorization_id=command.routing_bootstrap_authorization_id,
                 reference_evaluation=command.reference_evaluation,
+                reference_predecessor_operation_id=command.reference_predecessor_operation_id,
                 idempotency_key=command.idempotency_key,
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,

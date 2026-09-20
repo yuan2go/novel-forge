@@ -425,17 +425,25 @@ campaign membership, candidate/model revision, cumulative quota and expiry. Its
 evaluation request key. Then replay the same POST without `dry_run=true` in the validation
 runtime. Existing Generator grants never authorize the evaluator's call.
 
-The evaluator uses `story_design.semantic_evaluate@1.0.0`, its existing execution head,
-Attempt, Router, Provider admission, ExternalEffect and settlement. Only the candidate
+The evaluator uses `story_design.semantic_evaluate@1.0.0`, a native Kernel Operation,
+Attempt, Router, Provider admission, ExternalEffect and settlement. Each authorized
+evaluator model arm has its own Operation without a production qualification head.
+Migration 0139 enforces the reference grant/candidate/label gate and rejects reference
+Operations from the domain qualification table. Only the candidate
 and canonical dependencies reach Provider context; the service reads labels separately.
 The materialized evaluation contains `narrative-reference-agreement.v1`, all criterion
 agreements/disagreements and reference provenance. It remains `BENCHMARK_ONLY`, cannot
 write domain qualification or advance/repair the candidate, and is returned by the
 campaign query. Successful request replay performs no new Provider call. Unknown effects
-still require reconciliation. The native candidate evaluation head currently admits one
-immutable evaluation input contract per candidate; arbitrary new run keys cannot create
-another evaluation or reset its budget. Terminal standalone reference replacement and
-paired multi-judge sampling of the same candidate remain unresolved runtime gaps.
+still require reconciliation. For an immutable terminal no-effect/failure, submit a new
+explicit grant and request with `reference_predecessor_operation_id` naming the latest
+Operation for that candidate/model revision. Preserve the evaluator actor, candidate,
+labels, campaign and sample. The grant binds the new exact command hash; Kernel causation
+retains the predecessor and campaign usage stays cumulative. A renamed request without
+this lineage is rejected. A succeeded Operation, known successful Effect awaiting result
+projection, live retry or ambiguous remote outcome cannot be replaced by a fresh call;
+recover/reconcile the original Operation first. Ordinary production evaluations retain
+the existing candidate qualification head and Book Opening recovery gates.
 Operator-proxy label agreement is not a trusted human label, literary quality, reader
 preference or general evaluator admission score; it is not automatically promoted into
 Router quality qualification. Trusted reference validation and scoped feedback admission

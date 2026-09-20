@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260920_0138_narrative_craft_origin",
+  "migration_head": "20260920_0139_narrative_reference_sampling",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -5028,6 +5028,14 @@
         {
           "path": "src/novel_forge/modules/story_design_authority/evaluation_reference.py",
           "symbol": "reference_agreement"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/evaluation_reference.py",
+          "symbol": "reference_execution_gate"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/evaluation_runtime.py",
+          "symbol": "NarrativeSemanticEvaluationApplication._validate_reference_predecessor"
         }
       ],
       "commands_operations": [
@@ -5101,6 +5109,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260916_0136_provider_routing_policy.py",
           "locator": "MIGRATION_ID = \"20260916_0136_provider_routing_policy\"",
           "id": "20260916_0136_provider_routing_policy"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260920_0139_narrative_reference_sampling.py",
+          "id": "20260920_0139_narrative_reference_sampling",
+          "locator": "MIGRATION_ID = \"20260920_0139_narrative_reference_sampling\""
         }
       ],
       "external_effects": {
@@ -8433,7 +8446,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:6a177f02e4d51f0cdb9782568c808fcc1ee2f323d945f08f9df0bd4b3cb4e8c0"
+    "implementation_tree_sha": "sha256:5289579355c2f0a0691f6798aefd4d5c93ccb7450b05200fe8d9f9729b3caf6a"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

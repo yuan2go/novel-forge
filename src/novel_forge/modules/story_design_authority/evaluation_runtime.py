@@ -275,6 +275,7 @@ class NarrativeSemanticEvaluationCommand:
     evidence_asset_version_ids: tuple[str, ...] = ()
     routing_bootstrap_authorization_id: str = ""
     reference_evaluation: Mapping[str, Any] | None = None
+    reference_predecessor_operation_id: str = ""
 
     def __post_init__(self) -> None:
         required = (
@@ -1041,15 +1042,19 @@ class NarrativeSemanticEvaluationApplication:
             "project_id": command.project_id,
             "workspace_id": command.workspace_id,
             "book_id": command.book_id,
-            "logical_key": command.candidate_asset_version_id,
+            "logical_key": (
+                _stable_id("narrative-reference", command.candidate_asset_version_id,
+                           command.routing_bootstrap_authorization_id)
+                if command.routing_bootstrap_authorization_id else command.candidate_asset_version_id
+            ),
             "actor_id": command.actor_id,
             "idempotency_scope": "book:narrative-semantic-evaluation",
             "idempotency_key": command.idempotency_key,
             "trace_id": command.trace_id,
             "span_id": str(uuid4()),
             "correlation_id": command.correlation_id,
-            "causation_id": command.generation_operation_id,
-            "causation_operation_id": command.generation_operation_id,
+            "causation_id": command.reference_predecessor_operation_id or command.generation_operation_id,
+            "causation_operation_id": command.reference_predecessor_operation_id or command.generation_operation_id,
             "input": {
                 "project_id": command.project_id,
                 "input_asset_version_ids": [
@@ -1085,7 +1090,19 @@ class NarrativeSemanticEvaluationApplication:
             )
             require_reference_review(self.database_url, project_id=command.project_id,
                                      payload=payload, evaluator_actor_id=command.actor_id)
-        admitted = self._admit_candidate_once(command, admission_command)
+        reference_sampling = bool(command.routing_bootstrap_authorization_id)
+        if reference_sampling:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                self._lock_candidate(uow, project_id=command.project_id,
+                                     candidate_asset_version_id=command.candidate_asset_version_id)
+                self._require_candidate_in_uow(uow, command)
+                self._validate_reference_predecessor(uow, command, admission_command["input"]["payload"])
+                admitted = admit_command_in_uow(uow, admission_command,
+                                                context=self._admission_context(command.actor_id))
+                uow.commit()
+            admitted = {**admitted, "generation": 1}
+        else:
+            admitted = self._admit_candidate_once(command, admission_command)
         operation_id = str(admitted["operation_id"])
         execution_generation = int(admitted["generation"])
         operation_actor_id = str(admitted.get("operation_actor_id") or command.actor_id)
@@ -1145,9 +1162,10 @@ class NarrativeSemanticEvaluationApplication:
                 ),
                 root_operation_id=operation_id,
             )
-        self._mark_execution_running(
-            operation_id=operation_id, project_id=command.project_id
-        )
+        if not reference_sampling:
+            self._mark_execution_running(
+                operation_id=operation_id, project_id=command.project_id
+            )
         try:
             scheduled = ContentAuthorityScheduler(
                 self.database_url,
@@ -1155,13 +1173,15 @@ class NarrativeSemanticEvaluationApplication:
                 worker_id=self.worker_id,
             ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
         except Exception:
+            if not reference_sampling:
+                self._synchronize_execution_for_operation(
+                    operation_id=operation_id, project_id=command.project_id
+                )
+            raise
+        if not reference_sampling:
             self._synchronize_execution_for_operation(
                 operation_id=operation_id, project_id=command.project_id
             )
-            raise
-        self._synchronize_execution_for_operation(
-            operation_id=operation_id, project_id=command.project_id
-        )
         evaluation_asset = self._require_asset(
             command.project_id, scheduled.output.asset_version_id
         )
@@ -1241,6 +1261,47 @@ class NarrativeSemanticEvaluationApplication:
             evaluation_content=content,
             replayed=bool(admitted["replayed"]),
         )
+
+    def _validate_reference_predecessor(
+        self, uow: AuthorityUnitOfWork, command: NarrativeSemanticEvaluationCommand,
+        payload: Mapping[str, Any],
+    ) -> None:
+        grant = payload["routing_bootstrap_authorization"]["authorization"]
+        uow.cursor.execute(
+            """SELECT operation_id,status,actor_id,idempotency_key,command_payload->'payload'
+               FROM authority_operation
+               WHERE project_id=%s AND definition_name='story_design.semantic_evaluate'
+                 AND command_payload #>> '{payload,candidate_asset_version_id}'=%s
+                 AND command_payload #>> '{payload,routing_bootstrap_authorization,authorization,candidate_id}'=%s
+                 AND command_payload #>> '{payload,routing_bootstrap_authorization,authorization,model_revision}'=%s
+               ORDER BY created_at,operation_id FOR UPDATE""",
+            [command.project_id, command.candidate_asset_version_id,
+             grant["candidate_id"], grant["model_revision"]],
+        )
+        rows = uow.cursor.fetchall()
+        if any(row[3] == command.idempotency_key for row in rows):
+            return
+        if not rows:
+            if command.reference_predecessor_operation_id:
+                raise KernelError("NARRATIVE_REFERENCE_PREDECESSOR_INVALID",
+                                  "reference predecessor must belong to this candidate and evaluator model")
+            return
+        prior = rows[-1]
+        if command.reference_predecessor_operation_id != prior[0]:
+            raise KernelError("NARRATIVE_REFERENCE_PREDECESSOR_REQUIRED",
+                              "repeating an evaluator arm requires its latest native Operation lineage")
+        prior_payload = dict(prior[4])
+        prior_grant = prior_payload["routing_bootstrap_authorization"]["authorization"]
+        if (prior[2] != command.actor_id or prior_payload["input_versions"] != payload["input_versions"]
+            or prior_payload["reference_evaluation"] != payload["reference_evaluation"]
+            or prior_grant["campaign"] != grant["campaign"]):
+            raise KernelError("NARRATIVE_REFERENCE_PREDECESSOR_INVALID",
+                              "reference replacement must preserve evaluator, inputs, labels and campaign sample")
+        external = self._external_effect_evidence_in_uow(uow, operation_id=str(prior[0]))
+        if (prior[1] not in {"FAILED_FINAL", "CANCELLED", "DEAD_LETTER"}
+            or external["classification"] not in {"PROVEN_NO_EFFECT", "PROVEN_TERMINAL_FAILURE"}):
+            raise KernelError("NARRATIVE_REFERENCE_PREDECESSOR_NOT_REPLACEABLE",
+                              "recover the existing Operation; unknown or successful external results cannot be resent")
 
     def _admit_candidate_once(
         self,

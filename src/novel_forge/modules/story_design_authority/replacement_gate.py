@@ -453,6 +453,11 @@ def assert_narrative_replacement_execution_gate_in_uow(
             "NARRATIVE_EVALUATION_REPLACEMENT_GATE_IDENTITY_INVALID",
             "semantic replacement gate requires Operation and Project identity",
         )
+    from .evaluation_reference import reference_execution_gate
+
+    reference_gate = reference_execution_gate(uow, project_id=project_id, operation_id=operation_id)
+    if reference_gate is not None:
+        return reference_gate
     uow.cursor.execute(
         """
         SELECT evaluation.generation,evaluation.recovery_intent_id,

@@ -175,6 +175,7 @@ _OPERATIONAL_KEYS = {
     "provider_receipt_refs",
     "qualification",
     "routing_bootstrap_authorization",
+    "reference_predecessor_operation_id",
     "reference_evaluation",
     "routing_eligibility",
     "routing_decision",

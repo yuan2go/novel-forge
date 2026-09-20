@@ -760,6 +760,7 @@ class StoryPlanningEvaluationCommand:
     evidence_asset_version_ids: tuple[str, ...] = ()
     routing_bootstrap_authorization_id: str = ""
     reference_evaluation: Mapping[str, Any] | None = None
+    reference_predecessor_operation_id: str = ""
 
     def __post_init__(self) -> None:
         from novel_forge.modules.story_design_authority.evaluation_reference import reference_command_fields

@@ -74,6 +74,12 @@ accepts a separately authorized reference-sampling grant for an isolated benchma
 candidate. It compares the returned criterion verdicts with an exact native operator
 review whose author differs from generator and evaluator. Reference labels stay outside
 Provider inputs; agreement is operator-proxy evidence and creates no domain qualification.
+Each explicitly authorized evaluator arm uses the same semantic handler and a native
+Kernel Operation; it does not claim the candidate's production qualification head.
+Migration 0139 binds this sampling gate to the immutable grant and benchmark/reference
+lineage, and rejects reference Operations in the domain qualification table. A terminal
+no-effect/failure replacement preserves its predecessor; successful and unknown effects
+cannot be resent under a renamed arm.
 This does not prove judge calibration or bootstrap every task family. Ordinary production
 routing blocks when sufficient quality evidence is absent.
 
