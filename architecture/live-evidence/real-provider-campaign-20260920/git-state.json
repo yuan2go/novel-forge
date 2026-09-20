@@ -1,0 +1,235 @@
+{
+  "schema_version": "campaign-delivery-git-state.v1",
+  "baseline_sha": "feba06582b6cadf2e80f5c573cf427114cf2a926",
+  "implementation_sha": "f5ba1faf058af2613f7116904a6230eac1f0e02c",
+  "tested_sha": "bbca0e7a4a0ed61381d0175272e9fe1763d7137a",
+  "tested_git_tree": "f292d3b29f690fe5fc53bec4ca285031fb7828fd",
+  "implementation_tree_sha": "sha256:2a0f369f4e29d34f5d56bbf9dcd9d0401c568c0188050d3a389640d95bbfb408",
+  "tested_branch": "codex/real-provider-source-bootstrap-20260920",
+  "delivery_branch": "codex/real-provider-campaign-delivery-20260920",
+  "last_observed_origin_main": "19da636dae5d0b615bc22124f83908ff8af710ac",
+  "baseline_to_tested_commit_count": 16,
+  "commits": [
+    {
+      "sha": "2cd04a649aa9042f17470ae92d09263bd77de668",
+      "subject": "docs: correct live provider entry and retain campaign gaps",
+      "files": [
+        "architecture/live-evidence/real-provider-campaign-20260920/preimplementation.json",
+        "docs/current-system.md",
+        "docs/runtime-operations.md"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "47094e01c23f53aa4a5ff9c89f395b126bf8d9b5",
+      "subject": "fix: bind routing bootstrap to immutable campaign samples",
+      "files": [
+        "src/novel_forge/modules/authority_handler_runtime/policy_commands.py",
+        "src/novel_forge/modules/chapter_authority/provider_views.py",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+        "src/novel_forge/modules/production_execution/cost_routing.py",
+        "src/novel_forge/modules/production_execution/routing_policy.py",
+        "src/novel_forge/modules/production_execution/routing_runtime.py",
+        "tests/unit/test_cost_aware_routing.py",
+        "tests/unit/test_provider_task_views.py",
+        "tests/unit/test_routing_bootstrap.py"
+      ],
+      "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "9fc18957d1f6f2e8d0b0a1eebbb83aabcb87189e",
+      "subject": "fix: preserve campaign quota and independent routing sample counts",
+      "files": [
+        "architecture/reality-evidence.json",
+        "docs/current-system.md",
+        "docs/runtime-operations.md",
+        "src/novel_forge/cli/provider_routing.py",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+        "src/novel_forge/modules/production_execution/cost_routing.py",
+        "src/novel_forge/modules/production_execution/routing_runtime.py",
+        "tests/integration/test_provider_routing_postgres.py",
+        "tests/integration/test_routing_bootstrap_budget_postgres.py",
+        "tests/unit/test_cost_aware_routing.py",
+        "tests/unit/test_routing_bootstrap.py"
+      ],
+      "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "a0cdb884189b60c6d0ff0340ea2501ff9a33b17d",
+      "subject": "docs: revalidate remaining proposal gaps against campaign changes",
+      "files": [
+        "architecture/proposals/classical-corpus-codex-validation.md",
+        "architecture/proposals/narrative-memory-context-lifecycle-closure.md"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "0e6e635c1dc447a04e0c0edf4cf7bcaf8403a182",
+      "subject": "fix: prevent sample and data group renaming from inflating calibration",
+      "files": [
+        "architecture/reality-evidence.json",
+        "docs/current-system.md",
+        "docs/runtime-operations.md",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+        "src/novel_forge/modules/production_execution/routing_runtime.py",
+        "tests/integration/test_provider_routing_postgres.py",
+        "tests/unit/test_routing_bootstrap.py"
+      ],
+      "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "22cf0354c897fa383fa7def58cd8969e5cf02e88",
+      "subject": "docs: bind retained proposal gaps to grouped calibration identity",
+      "files": [
+        "architecture/proposals/classical-corpus-codex-validation.md",
+        "architecture/proposals/narrative-memory-context-lifecycle-closure.md"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "1f8dd467ec3e5e2212079e5b76ed3cdfdd2f4fc4",
+      "subject": "feat: sample native narrative evaluators against isolated reference labels",
+      "files": [
+        "architecture/reality-evidence.json",
+        "docs/current-system.md",
+        "docs/runtime-operations.md",
+        "src/novel_forge/api/routers/book_authority.py",
+        "src/novel_forge/api/routers/content_authority.py",
+        "src/novel_forge/modules/authority_handler_runtime/routing_bootstrap.py",
+        "src/novel_forge/modules/chapter_authority/provider_views.py",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+        "src/novel_forge/modules/content_authority/definitions.py",
+        "src/novel_forge/modules/production_execution/routing_policy.py",
+        "src/novel_forge/modules/production_execution/routing_runtime.py",
+        "src/novel_forge/modules/story_design_authority/evaluation_reference.py",
+        "src/novel_forge/modules/story_design_authority/evaluation_runtime.py",
+        "src/novel_forge/modules/story_planning_runtime/application.py",
+        "src/novel_forge/modules/story_planning_runtime/domain.py",
+        "tests/integration/test_routing_bootstrap_budget_postgres.py",
+        "tests/unit/test_routing_bootstrap.py"
+      ],
+      "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "fc25159d1b0d4ef59e5c0d63f295800afd96844e",
+      "subject": "docs: retain unresolved decisions at native reference sampling baseline",
+      "files": [
+        "architecture/proposals/classical-corpus-codex-validation.md",
+        "architecture/proposals/industrial-novel-os-blueprint.md",
+        "architecture/proposals/narrative-memory-context-lifecycle-closure.md"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "926f839948bee73ab73415d4584733bf918107a2",
+      "subject": "Bind reference sampling and recovery to native Kernel Operations",
+      "files": [
+        "architecture/manifests/migration-manifest.yaml",
+        "architecture/reality-evidence.json",
+        "docs/current-system.md",
+        "docs/runtime-operations.md",
+        "src/novel_forge/modules/chapter_authority/provider_views.py",
+        "src/novel_forge/modules/story_design_authority/evaluation_reference.py",
+        "src/novel_forge/modules/story_design_authority/evaluation_runtime.py",
+        "src/novel_forge/modules/story_design_authority/replacement_gate.py",
+        "src/novel_forge/modules/story_planning_runtime/application.py",
+        "src/novel_forge/modules/story_planning_runtime/domain.py",
+        "src/novel_forge/storage/migrations/versions/__init__.py",
+        "src/novel_forge/storage/migrations/versions/v20260920_0139_narrative_reference_sampling.py",
+        "tests/integration/test_routing_bootstrap_budget_postgres.py",
+        "tests/unit/test_provider_task_views.py"
+      ],
+      "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "5235672ce0f84f2fe4597d9234d8678b2959c1bc",
+      "subject": "Rebind retained proposal gaps to reference Kernel implementation",
+      "files": [
+        "architecture/proposals/classical-corpus-codex-validation.md",
+        "architecture/proposals/industrial-novel-os-blueprint.md",
+        "architecture/proposals/narrative-memory-context-lifecycle-closure.md"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "58f4300b7d4eb3aee3c5d03993b52b7c0984df23",
+      "subject": "Preserve production gate regression fixtures after reference lookup",
+      "files": [
+        "architecture/reality-evidence.json",
+        "tests/unit/test_narrative_evaluation_replacement_gate.py"
+      ],
+      "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "e9a9a75d25aacae1fa1f263410527b2f790537b6",
+      "subject": "Bind proposal review to repaired gate verification identity",
+      "files": [
+        "architecture/proposals/classical-corpus-codex-validation.md",
+        "architecture/proposals/industrial-novel-os-blueprint.md",
+        "architecture/proposals/narrative-memory-context-lifecycle-closure.md"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "7f70df427a9733a9e61e2f428ee0da692de2558c",
+      "subject": "Verify Craft migration invariants across later schema upgrades",
+      "files": [
+        "architecture/reality-evidence.json",
+        "tests/integration/test_narrative_craft_migration_upgrade_postgres.py"
+      ],
+      "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "bf77e0892c0bbc4cb06f13d00beae1805b7a4a05",
+      "subject": "Keep retained proposal baseline aligned with migration regression",
+      "files": [
+        "architecture/proposals/classical-corpus-codex-validation.md",
+        "architecture/proposals/industrial-novel-os-blueprint.md",
+        "architecture/proposals/narrative-memory-context-lifecycle-closure.md"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "f5ba1faf058af2613f7116904a6230eac1f0e02c",
+      "subject": "Sample Source tasks through native governed operations without production commits",
+      "files": [
+        "architecture/manifests/production-entry-manifest.yaml",
+        "architecture/reality-evidence.json",
+        "docs/current-system.md",
+        "docs/runtime-operations.md",
+        "src/novel_forge/api/routers/source_import.py",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+        "src/novel_forge/modules/mkaos_authority/application.py",
+        "src/novel_forge/modules/production_execution/routing_policy.py",
+        "src/novel_forge/modules/source_authority/deconstruction_application.py",
+        "src/novel_forge/modules/source_authority/profiling_application.py",
+        "src/novel_forge/modules/source_import/application.py",
+        "src/novel_forge/modules/source_import/corpus_ingestion/narrative_execution.py",
+        "src/novel_forge/modules/source_import/execution.py",
+        "src/novel_forge/modules/source_import/query.py",
+        "src/novel_forge/modules/source_import/sampling.py",
+        "src/novel_forge/storage/source_import_operations_records.py",
+        "src/novel_forge/storage/source_import_repositories.py",
+        "tests/integration/test_source_import_runtime_postgres.py",
+        "tests/unit/test_source_intelligence_execution_contracts.py"
+      ],
+      "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "bbca0e7a4a0ed61381d0175272e9fe1763d7137a",
+      "subject": "Align retained proposal review with native Source sampling implementation",
+      "files": [
+        "architecture/proposals/classical-corpus-codex-validation.md",
+        "architecture/proposals/industrial-novel-os-blueprint.md",
+        "architecture/proposals/narrative-memory-context-lifecycle-closure.md"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    }
+  ],
+  "remote_status": "FIRST_TWO_COMMITS_MERGED_EXTERNALLY_IN_PR_93; REMAINING_LOCAL",
+  "this_session_push": false,
+  "this_session_pr_create": false,
+  "this_session_github_merge": false,
+  "original_user_checkout_modified": false,
+  "final_evidence_commit": "RESOLVE_FROM_GIT_DESCENDANT_OF_TESTED_SHA"
+}

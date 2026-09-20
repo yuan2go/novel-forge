@@ -1,0 +1,47 @@
+{
+  "status": "CONFIGURATION_VALIDATED_NO_PROVIDER_CALL",
+  "source_sha": "bf77e0892c0bbc4cb06f13d00beae1805b7a4a05",
+  "implementation_identity": "sha256:d95f0e396bc8c988e9ec32a27ef23de9c3f8e1257ad5851a8c28a07c26d057a5",
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "guofeng-xuanhuan-01",
+  "run_key": "campaign-configuration-inspection-v2-20260920",
+  "stage": "CONFIGURATION",
+  "real_provider": "NOT_RUN",
+  "human_editorial": "NOT_RUN",
+  "longitudinal": "NOT_PROVEN",
+  "book_target_chapter_count": 120,
+  "pilot_stop_after_chapter": 40,
+  "reading_checkpoints": [
+    3,
+    9,
+    21,
+    40
+  ],
+  "production_scope": "CREATIVE_BRIEF_PRODUCTION",
+  "full_book_completion": "NOT_PROVEN",
+  "brief_input_hash": "sha256:f5547ceaa5641e0c38be1c66049223bdff1b0f9e8cb91ab6f1deeb5fea017317",
+  "schema_version": "real-provider-campaign-native-config-preflight.v1",
+  "native_entry": "scripts.run_creation_synthesis",
+  "execute_flag": false,
+  "provider_calls": 0,
+  "business_database_writes": 0,
+  "source_report_sha256": "sha256:19f3dfe6495cb467b66c0333665fe63c0f73c82f41a1b211af1d46497d5025bf",
+  "restricted_runtime_relative_path": "guofeng-xuanhuan-01/frozen-production-v1",
+  "wp_scope_compatible": false,
+  "scope_gaps": [
+    "existing DENY_ALL knowledge policy",
+    "existing pilot cursor 40 rather than campaign cursor 12",
+    "reading checkpoints 3/9/21/40 differ from 3/6/9/12",
+    "existing authorization does not cover DeepSeek or calibration"
+  ],
+  "input_files": {
+    "brief.json": "sha256:e82734ecc8c891f3a344828d7e915def82f2a98f460e173c08ea61f2d3d17ed2",
+    "deny-all.json": "sha256:43876dfb33ca56b0238177e34f7430f0428b0962d026b3eafbc8d4e16183c3f8",
+    "review-form.json": "sha256:a4759491a50361ddf92cf8186334345f562c512be6f2eefd6ee64c4685d71e20",
+    "experiment.json": "sha256:9e8165ba0b84cae4e738665c7d2c863545997bcdbaf23353571afc91b0cb2c91",
+    "creation.json": "sha256:a2a8ed4caaecdbe1e86362005559b622085060ffe33437ae720f562e3d0b3623",
+    "freeze.json": "sha256:6df11f8c5b977fb213056f26b906fea6fb412583ca79fb611395608138b1239f",
+    "formation.json": "sha256:b33ee6104e9e17af71d095a87e9343b5513f37b17b79645f5f54292952dfa92a"
+  },
+  "prior_preflight": "native-config-preflight-e9a9a75d25aa.json"
+}

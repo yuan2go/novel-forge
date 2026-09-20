@@ -1,0 +1,101 @@
+[
+  {
+    "evidence_root_name": "nf-real-provider-campaign-pr-20260920",
+    "tested_sha": "a0cdb884189b60c6d0ff0340ea2501ff9a33b17d",
+    "status": "FAIL",
+    "report": "engineering/a0cdb884189b60c6d0ff0340ea2501ff9a33b17d.json",
+    "sha256": "sha256:8c713e2271ad5f56594fcf6c057531f2f46087afc4fc95e28a0d291f80a442e4",
+    "cleanup": {
+      "phases": [
+        {
+          "compose_project": "nf-p0-e23078dae3774574bd86f5271c24c262",
+          "phase": "postgresql",
+          "receipt": "compose-resource-ownership-nf-p0-e23078dae3774574bd86f5271c24c262.json",
+          "remaining_resource_count": 0,
+          "resource_count": 2,
+          "run_id": "p0-e23078dae3774574bd86f5271c24c262",
+          "status": "PASS"
+        }
+      ],
+      "remaining_resource_count": 0,
+      "status": "PASS"
+    }
+  },
+  {
+    "evidence_root_name": "nf-real-provider-campaign-pr-v2-20260920",
+    "tested_sha": "22cf0354c897fa383fa7def58cd8969e5cf02e88",
+    "status": "PASS",
+    "report": "engineering/22cf0354c897fa383fa7def58cd8969e5cf02e88.json",
+    "sha256": "sha256:0fc3e66589053f4524dc7b71cf4e1c3384be39f935c33a9fe24c525fb6ed840f",
+    "cleanup": {
+      "phases": [
+        {
+          "compose_project": "nf-p0-7bdde3d26e4144a2b2fe280d3686531d",
+          "phase": "postgresql",
+          "receipt": "compose-resource-ownership-nf-p0-7bdde3d26e4144a2b2fe280d3686531d.json",
+          "remaining_resource_count": 0,
+          "resource_count": 2,
+          "run_id": "p0-7bdde3d26e4144a2b2fe280d3686531d",
+          "status": "PASS"
+        },
+        {
+          "compose_project": "nf-p0-7bdde3d26e4144a2b2fe280d3686531d-runtime",
+          "phase": "compose-runtime",
+          "receipt": "compose-resource-ownership-nf-p0-7bdde3d26e4144a2b2fe280d3686531d-runtime.json",
+          "remaining_resource_count": 0,
+          "resource_count": 18,
+          "run_id": "p0-7bdde3d26e4144a2b2fe280d3686531d",
+          "status": "PASS"
+        }
+      ],
+      "remaining_resource_count": 0,
+      "status": "PASS"
+    }
+  },
+  {
+    "evidence_root_name": "nf-real-provider-reference-pr-20260920",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "evidence_root_name": "nf-real-provider-reference-kernel-pr-20260920",
+    "tested_sha": "5235672ce0f84f2fe4597d9234d8678b2959c1bc",
+    "status": "FAIL",
+    "report": "engineering/5235672ce0f84f2fe4597d9234d8678b2959c1bc.json",
+    "sha256": "sha256:2f2e8d12ba48a5ef30a7e1fcd2ca141e41e8bc32b4555b273bce8495da26f12e",
+    "cleanup": {
+      "phases": [],
+      "remaining_resource_count": 0,
+      "status": "PASS"
+    }
+  },
+  {
+    "evidence_root_name": "nf-real-provider-reference-kernel-pr-v2-20260920",
+    "tested_sha": "e9a9a75d25aacae1fa1f263410527b2f790537b6",
+    "status": "FAIL",
+    "report": "engineering/e9a9a75d25aacae1fa1f263410527b2f790537b6.json",
+    "sha256": "sha256:77f6ddfcb721d14d78470c09b4a32b5b764e6559008408ef92af305cc2e54506",
+    "cleanup": {
+      "phases": [
+        {
+          "compose_project": "nf-p0-e8cfdd86c01b47bb9051d1383f22ac45",
+          "phase": "postgresql",
+          "receipt": "compose-resource-ownership-nf-p0-e8cfdd86c01b47bb9051d1383f22ac45.json",
+          "remaining_resource_count": 0,
+          "resource_count": 2,
+          "run_id": "p0-e8cfdd86c01b47bb9051d1383f22ac45",
+          "status": "PASS"
+        }
+      ],
+      "remaining_resource_count": 0,
+      "status": "PASS"
+    }
+  },
+  {
+    "evidence_root_name": "nf-real-provider-reference-kernel-pr-v3-20260920",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "evidence_root_name": "nf-real-provider-source-pr-20260920",
+    "status": "IN_PROGRESS"
+  }
+]
