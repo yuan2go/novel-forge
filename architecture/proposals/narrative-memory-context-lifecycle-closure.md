@@ -9,19 +9,19 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `76446099dee54b0248c9625a02e3d22b391c9086`
+Reality baseline: `113adea16d0da33eab319fc808e515c45d9bf013`
 Baseline implementation identity:
-`sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed`
+`sha256:6d5a2bf25faac0892c1c0b6738ca0064f98a6b7e37838e657296c8f7357879e0`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-20",
+  "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "76446099dee54b0248c9625a02e3d22b391c9086",
-    "implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed"
+    "sha": "113adea16d0da33eab319fc808e515c45d9bf013",
+    "implementation_tree_sha": "sha256:6d5a2bf25faac0892c1c0b6738ca0064f98a6b7e37838e657296c8f7357879e0"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -138,12 +138,14 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-09-20): Gate A and current role Context/Provider behavior
+Current scope review (2026-09-21): Gate A and current role Context/Provider behavior
 are projected in [current-system](../../docs/current-system.md). Implemented Gate A
 design, former reality matrices and duplicate final-architecture tables have been
 removed. Craft uses the existing Context owner and adds no Digest, retention, GC,
 retrieval representation or cutover owner. Routing campaign accounting and sample
-isolation do not implement these memory lifecycle gates. Gates B–E below remain proposed design,
+isolation do not implement these memory lifecycle gates. Chapter sampling retains the
+effective stage Context, schema and tool constraints in its producer identity; this
+does not add Digest generation, retention, retrieval generations or lifecycle cutover. Gates B–E below remain proposed design,
 not executable contracts or proven invariants; their stated bounds require qualification.
 
 ## 7. Gate B — Structured Narrative Digest

@@ -9,20 +9,20 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `76446099dee54b0248c9625a02e3d22b391c9086`
+Reality baseline: `113adea16d0da33eab319fc808e515c45d9bf013`
 Baseline implementation identity:
-`sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed`
+`sha256:6d5a2bf25faac0892c1c0b6738ca0064f98a6b7e37838e657296c8f7357879e0`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-20",
+  "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "76446099dee54b0248c9625a02e3d22b391c9086",
-    "implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed"
+    "sha": "113adea16d0da33eab319fc808e515c45d9bf013",
+    "implementation_tree_sha": "sha256:6d5a2bf25faac0892c1c0b6738ca0064f98a6b7e37838e657296c8f7357879e0"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -110,12 +110,14 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-09-20): Implemented identity, entitlement, corpus-ingestion
+Current scope review (2026-09-21): Implemented identity, entitlement, corpus-ingestion
 and Source/MKAOS mechanics are documented only in [current-system](../../docs/current-system.md).
 The completed G1/G2 implementation plans and historical review paragraphs have been
 removed. G3/G4 below specify a proposed bounded real-Provider campaign, not observed
 results. Campaign sampling quotas and independent-input counts do not execute G3/G4
-or establish calibrated judges. The original Craft fixture corpus does not perform this campaign, establish
+or establish calibrated judges. Native Chapter generator sampling now preserves the
+original frozen task and approved producer contract in an isolated Kernel Saga; its
+ineligible samples and scripted recovery tests do not execute the four-arm campaign. The original Craft fixture corpus does not perform this campaign, establish
 classical-text consumption, authorize model spend or supply independent editorial proof.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption
