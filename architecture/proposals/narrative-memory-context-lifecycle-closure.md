@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `362f8ed278f0a618cab9e3e5d7cb9b14fb5cd833`
+Reality baseline: `93bdbed2136177e797250666b0c63ee0e0addba6`
 Baseline implementation identity:
-`sha256:e0847d8df51de3aec7c72cd92ca0fbd1db26e36372f2560af0982f0ca38e0df9`
+`sha256:d6e4a91f778a82676f1b147ec0c32a1ea0359b75d83b1003e2c17f5f4aa6cec4`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "362f8ed278f0a618cab9e3e5d7cb9b14fb5cd833",
-    "implementation_tree_sha": "sha256:e0847d8df51de3aec7c72cd92ca0fbd1db26e36372f2560af0982f0ca38e0df9"
+    "sha": "93bdbed2136177e797250666b0c63ee0e0addba6",
+    "implementation_tree_sha": "sha256:d6e4a91f778a82676f1b147ec0c32a1ea0359b75d83b1003e2c17f5f4aa6cec4"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -145,7 +145,11 @@ removed. Craft uses the existing Context owner and adds no Digest, retention, GC
 retrieval representation or cutover owner. Routing campaign accounting and sample
 isolation do not implement these memory lifecycle gates. Chapter sampling retains the
 effective stage Context, schema and tool constraints in its producer identity; this
-does not add Digest generation, retention, retrieval generations or lifecycle cutover. Gates B–E below remain proposed design,
+does not add Digest generation, retention, retrieval generations or lifecycle cutover.
+Reference Review and ReReview retain the original Context and accepted frontier,
+read only the exact authorized sample, and bind their approved reviewer Pack artifacts.
+These input exceptions do not change memory ownership or implement Gates B–E.
+Gates B–E below remain proposed design,
 not executable contracts or proven invariants; their stated bounds require qualification.
 
 ## 7. Gate B — Structured Narrative Digest
