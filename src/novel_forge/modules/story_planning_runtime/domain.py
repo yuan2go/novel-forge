@@ -758,8 +758,13 @@ class StoryPlanningEvaluationCommand:
     correlation_id: str
     evaluation: Mapping[str, Any] | None = None
     evidence_asset_version_ids: tuple[str, ...] = ()
+    routing_bootstrap_authorization_id: str = ""
+    reference_evaluation: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
+        from novel_forge.modules.story_design_authority.evaluation_reference import reference_command_fields
+
+        reference_command_fields(self)
         required = (
             self.project_id,
             self.workspace_id,

@@ -210,3 +210,190 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
             trace_id=command.trace_id, correlation_id=command.correlation_id,
             application_build_id="bootstrap-kernel-test", commit_sha=RELEASE_SHA, principal=principal,
         )
+
+
+@pytest.mark.parametrize("reference_author", ["independent", "generator"])
+def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path, reference_author):
+    from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentOperationRequest
+    from novel_forge.modules.content_authority.definitions import CONTENT_INTEGRATION_PROVEN
+    from novel_forge.modules.story_design_authority import scripted_qualification
+    from dataclasses import asdict
+    from novel_forge.modules.story_design_authority.evaluation_runtime import (
+        NarrativeProviderEvaluation, NarrativeSemanticEvaluationCommand, evaluation_command_payload,
+    )
+    from novel_forge.modules.story_planning_runtime import StoryPlanningEvaluationCommand
+    from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+    from novel_forge.storage.authority_asset_store import AuthorityAssetWriter
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    ensure_migrated()
+    project = identifier("reference-bootstrap-fixture")
+    workspace, book = "workspace:" + project, "book:" + project
+    seed_authority_project_book(project_id=project, workspace_id=workspace, book_id=book)
+    principal = _principal(project)
+    evaluator = replace(principal, principal_id="independent-evaluator:" + project)
+    inputs = _seed_inputs(project, book, target_chapter_count=6)
+    command = StoryPlanningGenerationCommand(
+        project_id=project, workspace_id=workspace, book_id=book, actor_id=principal.principal_id,
+        generator_operation_name="book_plan.generate", logical_key="reference-target",
+        input_versions={role: inputs[role] for role in GENERATOR_INPUT_ROLES["book_plan.generate"]},
+        idempotency_key=project + ":generate", trace_id="trace:reference", correlation_id="correlation:reference",
+        routing_bootstrap_authorization_id="generation-grant",
+    )
+    candidate = deepseek_candidates(available=True)[0]
+    expiry = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    campaign = {"campaign_id": "campaign:" + project, "manifest_hash": "sha256:" + "c" * 64,
+                "sample_id": "generation", "group_id": "target-one", "partition": "CALIBRATION",
+                "maximum_calls": 4, "maximum_tokens": 16384, "maximum_amount": "0.4", "expires_at": expiry}
+    grant = {
+        "authorization_id": "generation-grant", "reason": "fixture-only reference sampling",
+        "environment": "validation", "book_id": book, "task_type": "book_plan.generate",
+        "logical_key": command.logical_key, "generation_idempotency_key": command.idempotency_key,
+        "input_versions_hash": snapshot_hash(dict(command.input_versions)),
+        "command_hash": bootstrap_command_hash(_command_payload(command)),
+        "candidate_id": candidate.candidate_id, "model_revision": candidate.model_revision,
+        "expires_at": expiry, "maximum_calls": 2, "maximum_tokens": 4096, "maximum_amount": "0.1",
+        "currency": "USD", "purpose": "BENCHMARK_CHALLENGER", "production_eligible": False,
+        "campaign": campaign,
+    }
+
+    def configure(version, grants):
+        configure_owned_policy(
+            database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+            content={"policy_version": version, "reason": "fixture reference authorization",
+                     "task_overrides": [], "bootstrap_authorizations": grants},
+            project_id=project, workspace_id=workspace, idempotency_key=project + ":" + version,
+            trace_id=command.trace_id, correlation_id=command.correlation_id,
+            application_build_id="reference-fixture", commit_sha=RELEASE_SHA, principal=principal,
+        )
+
+    configure("reference-fixture:v1", [grant])
+    binder = _ExternalEffectPepFixturePlanningBinder(target_chapter_count=6)
+    binder.resolver = SimpleNamespace(environment="validation")
+    application = StoryPlanningGenerationApplication(
+        DATABASE_URL, execution_binder=binder, application_build_id="reference-fixture",
+        commit_sha=RELEASE_SHA, allow_scripted_evaluation_fixture=True,
+    )
+    generated = application.generate(command, principal=principal)
+    assert generated.candidate_asset_version_id
+    candidate_hash = application.require_candidate(generated.candidate_asset_version_id)["content_hash"]
+    labeled = scripted_qualification("book_plan.generate")
+    labeler = replace(principal,
+        principal_id=(principal.principal_id if reference_author == "generator" else "label-operator:" + project),
+        permissions=principal.permissions | {"content.authority.execute", "content.operation:story_design.review.author"})
+    authored = ContentAuthorityApplication(DATABASE_URL, application_build_id="reference-fixture",
+        commit_sha=RELEASE_SHA, integration_proven=CONTENT_INTEGRATION_PROVEN, trusted_only=True).execute(
+        ContentOperationRequest(definition_name="story_design.review.author", project_id=project,
+            workspace_id=workspace, actor_id=labeler.principal_id, trace_id=command.trace_id,
+            correlation_id=command.correlation_id, idempotency_key=project + ":reference-labels",
+            payload={"candidate_asset_version_id": generated.candidate_asset_version_id,
+                     "candidate_content_hash": candidate_hash,
+                     "evaluation": labeled, "review_rationale": "Explicit synthetic labels for isolation regression"},
+            input_assets=({"asset_version_id": generated.candidate_asset_version_id,
+                           "content_hash": candidate_hash},)), principal=labeler)
+    review = StoryPlanningEvaluationCommand(
+        project_id=project, workspace_id=workspace, book_id=book, actor_id=evaluator.principal_id,
+        candidate_asset_version_id=generated.candidate_asset_version_id,
+        candidate_content_hash=candidate_hash,
+        generation_operation_id=generated.generation_operation_id, generator_operation_name="book_plan.generate",
+        evaluator_execution_class="MODEL_PROVIDER", idempotency_key=project + ":reference-evaluate",
+        trace_id=command.trace_id, correlation_id=command.correlation_id,
+        routing_bootstrap_authorization_id="reference-grant",
+        reference_evaluation={"asset_version_id": authored.asset_version_id,
+                              "content_hash": authored.content_hash, "protocol_version": "fixture-labels-v1"},
+    )
+    semantic_command = NarrativeSemanticEvaluationCommand(**asdict(review))
+    payload = evaluation_command_payload(semantic_command, generation_actor_id=principal.principal_id,
+                                         opening_execution_binding={})
+    if reference_author == "independent":
+        prepared = application.semantic_evaluation.prepare_reference_evaluation(semantic_command, principal=evaluator)
+        assert prepared["payload"] == payload
+        assert prepared["command_hash"] == bootstrap_command_hash(payload)
+        assert prepared["provider_calls"] == 0 and prepared["authorized"] is False
+    else:
+        with pytest.raises(KernelError, match="NARRATIVE_REFERENCE_NOT_INDEPENDENT"):
+            application.semantic_evaluation.prepare_reference_evaluation(semantic_command, principal=evaluator)
+    reference_grant = {**grant, "authorization_id": "reference-grant", "purpose": "REFERENCE_EVALUATION",
+                       "task_type": "narrative_semantic_evaluation", "logical_key": review.candidate_asset_version_id,
+                       "generation_idempotency_key": review.idempotency_key,
+                       "input_versions_hash": snapshot_hash(payload["input_versions"]),
+                       "command_hash": bootstrap_command_hash(payload),
+                       "reference_evaluation": review.reference_evaluation,
+                       "campaign": {**campaign, "sample_id": "reference"}}
+    configure("reference-fixture:v2", [grant, reference_grant])
+    composition = build_production_execution_composition(
+        IndustrialSettings(root=tmp_path, database_url=DATABASE_URL), env={
+            "NOVEL_FORGE_ENVIRONMENT": "test", "NOVEL_FORGE_MODEL_PROVIDER": "mock",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(tmp_path / "objects"),
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA})
+    router = ProductionProviderRouter(DATABASE_URL, candidates=(candidate,), task_money_limit="0.1",
+                                     task_token_limit=4096, execution_environment="validation")
+
+    class ReferenceFixturePort:
+        production_execution_gateway_backed = True
+        external_effect_backed = True
+        database_url = DATABASE_URL
+        model_port = SimpleNamespace(capability_binder=SimpleNamespace(pack_environment="validation"))
+        invocations = 0
+
+        def evaluate(self, request, *, candidate: object, generator_operation_name, profiles):
+            self.invocations += 1
+            assert len(request.inputs) == 1
+            assert request.inputs[0].asset_version_id != authored.asset_version_id
+            key = request.operation_id + ":reference-fixture"
+            _, decision = router.select(composition.gateway.routes["draft"],
+                task_type="narrative_semantic_evaluation", project_id=project, work_id=book,
+                operation_id=request.operation_id, attempt_id=request.attempt_id, stable_key=key,
+                input_tokens=100, output_tokens=100, trace_id=request.trace_id,
+                correlation_id=request.correlation_id, request_input={"fixture": True})
+            assert decision["status"] == "BENCHMARK_SELECTED"
+            context = EffectCommandContext(request.operation_id, project, request.actor_id,
+                                           request.trace_id, request.correlation_id)
+            effect = plan_external_effect(DATABASE_URL, context, effect_type="model.invoke",
+                provider="production_execution_gateway", capability="model.narrative_semantic_evaluation",
+                stable_idempotency_key=key, request_payload={"max_output_tokens": 100,
+                    "_production_execution": {"book_id": book, "capability_runtime": {"routing_decision": decision}}},
+                max_attempts=1, reversible=False, model_id=decision["selected"]["candidate"]["model"])
+            reserved = reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(
+                request.operation_id, effect["external_effect_id"], project, key + ":budget",
+                "deepseek", "USD", ".001", 200, work_id=book,
+                model_id=decision["selected"]["candidate"]["model"]))
+            dispatched = dispatch_external_effect(DATABASE_URL, context,
+                effect_id=effect["external_effect_id"], worker_id="reference-fixture", lease_seconds=60,
+                adapter=_ExplicitFixtureTransport("success"), budget_reservation_id=reserved["reservation_id"])
+            assert dispatched["outcome"] == "success"
+            settle_provider_budget(DATABASE_URL, reservation_id=reserved["reservation_id"], project_id=project,
+                                   actual_amount=".0001", actual_tokens=30, evidence={"fixture": True})
+            log = AuthorityAssetWriter(DATABASE_URL).materialize_output(AuthorityAssetWriteCommand(
+                operation_id=request.operation_id, project_id=project, asset_id=key + ":model-log",
+                asset_type="model_call_log", schema_version="model-call-log.v1",
+                logical_ref="reference-fixture/" + request.operation_id + ".json", category="fixture",
+                output_key="model_call_log", role="provider_evidence",
+                content={"fixture": True, "fixture_protocol_only": True}, qualification_policy="fixture-only-v1",
+                trace_id=request.trace_id, correlation_id=request.correlation_id))
+            return NarrativeProviderEvaluation(labeled, log.asset_version_id, log.content_hash,
+                snapshot_hash({"fixture": True}), snapshot_hash(labeled), "synthetic-reference",
+                "synthetic-reference-v1", decision["decision_id"], "synthetic-prompt-v1",
+                "synthetic-skill-v1", True)
+
+    port = ReferenceFixturePort()
+    application.semantic_evaluation.execution_port = port
+    application.semantic_evaluation.registry.item.handler.execution_port = port
+    if reference_author == "generator":
+        with pytest.raises(KernelError, match="NARRATIVE_REFERENCE_NOT_INDEPENDENT"):
+            application.evaluate_candidate(review, principal=evaluator, transition_principal=principal)
+        assert port.invocations == 0
+        return
+    result = application.evaluate_candidate(review, principal=evaluator, transition_principal=principal)
+    assert result.evaluation_content["reference_evaluation"]["agreement_rate"] == 1
+    assert result.evaluation_content["production_qualification_eligible"] is False
+    assert application.evaluate_candidate(review, principal=evaluator, transition_principal=principal).replayed
+    assert port.invocations == 1
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT count(*) FROM authority_narrative_design_qualification WHERE project_id=%s AND asset_version_id=%s", [project, generated.candidate_asset_version_id])
+        assert uow.cursor.fetchone()[0] == 0
+        uow.cursor.execute("SELECT status FROM authority_story_planning_generation WHERE operation_id=%s", [generated.generation_operation_id])
+        assert uow.cursor.fetchone()[0] == "EVALUATION_PENDING"
+    usage = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=project, campaign_id="campaign:" + project)
+    assert usage["usage"]["calls_used_or_reserved"] == 1
+    assert {operation["purpose"] for operation in usage["operations"]} == {"BENCHMARK_CHALLENGER", "REFERENCE_EVALUATION"}

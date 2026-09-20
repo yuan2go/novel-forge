@@ -69,14 +69,19 @@ Planning has an explicitly authorized, bounded validation challenger path. Its i
 decisions retain unknown quality and the original production rejection reasons; generated
 candidates remain `BENCHMARK_ONLY` and cannot be qualified, approved or activated for
 production. Independent evaluation can contribute benchmark observations, with challenger
-and production acceptance reported separately. This path does not provide independent
-judge calibration or bootstrap every task family. Ordinary production routing blocks
-when sufficient quality evidence is absent.
+and production acceptance reported separately. The native semantic Evaluation also
+accepts a separately authorized reference-sampling grant for an isolated benchmark
+candidate. It compares the returned criterion verdicts with an exact native operator
+review whose author differs from generator and evaluator. Reference labels stay outside
+Provider inputs; agreement is operator-proxy evidence and creates no domain qualification.
+This does not prove judge calibration or bootstrap every task family. Ordinary production
+routing blocks when sufficient quality evidence is absent.
 
 Planning sampling grants may bind a frozen campaign identity, manifest hash, sample/data
 group and experiment partition. Kernel aggregates their reservations across authorization
 and policy versions. A campaign project cannot replace that identity or admit new unbound
-sampling grants. This quota covers bootstrap sampling; production, review and entitlement
+sampling grants. This quota covers authorized generation and reference sampling;
+production, ordinary review and entitlement
 still require their existing project and Book budget policies. It is not a campaign-wide
 mixed-billing authorization. Router v4 counts first attempts per campaign data group
 (input hashes outside campaigns) for quality

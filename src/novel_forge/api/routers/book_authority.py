@@ -232,7 +232,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             raise _http_error(exc) from exc
 
     @router.post("/books/{book_id}/planning-evaluations")
-    def evaluate_plan(book_id: str, request: StoryPlanningEvaluationCommand) -> dict[str, Any]:
+    def evaluate_plan(book_id: str, request: StoryPlanningEvaluationCommand, dry_run: bool = False) -> dict[str, Any]:
         try:
             resolver = build_trusted_principal_resolver()
             operator = resolver.resolve_api_principal(claimed_actor_id=request.actor_id)
@@ -241,6 +241,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             if request.evaluator_execution_class != "MODEL_PROVIDER":
                 raise KernelError("PLANNING_PROVIDER_EVALUATION_REQUIRED", "this native endpoint requires independent governed Provider evaluation")
             evaluator = resolver.resolve_narrative_evaluator_principal()
+            if dry_run:
+                from novel_forge.modules.story_design_authority.evaluation_runtime import NarrativeSemanticEvaluationCommand
+
+                return _composition(ctx).planning.semantic_evaluation.prepare_reference_evaluation(
+                    NarrativeSemanticEvaluationCommand(**asdict(replace(request, actor_id=evaluator.principal_id))),
+                    principal=evaluator,
+                )
             result = _composition(ctx).planning.evaluate_candidate(replace(request, actor_id=evaluator.principal_id), principal=evaluator, transition_principal=operator)
             return asdict(result)
         except PermissionError as exc:

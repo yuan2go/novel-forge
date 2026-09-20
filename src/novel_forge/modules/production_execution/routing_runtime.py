@@ -360,13 +360,40 @@ class PostgresRoutingRegistry:
                        "estimated_tokens", "actual_tokens", "reserved_amount", "settled_amount",
                        "authorization_id", "campaign")
             reservations = [dict(zip(columns, row, strict=True)) for row in uow.cursor.fetchall()]
+            uow.cursor.execute(
+                """SELECT operation.operation_id,operation.status,operation.definition_name,
+                          operation.command_payload #>> '{payload,routing_bootstrap_authorization,authorization,authorization_id}',
+                          operation.command_payload #>> '{payload,routing_bootstrap_authorization,authorization,task_type}',
+                          operation.command_payload #>> '{payload,routing_bootstrap_authorization,authorization,purpose}',
+                          operation.command_payload #> '{payload,routing_bootstrap_authorization,authorization,campaign}',
+                          operation.causation_operation_id,
+                          COALESCE(outputs.assets,'[]'::jsonb)
+                   FROM authority_operation operation
+                   LEFT JOIN LATERAL (
+                       SELECT jsonb_agg(jsonb_build_object(
+                           'asset_version_id',output.asset_version_id,'content_hash',output.content_hash,
+                           'output_key',output.output_key,'role',output.role,
+                           'reference_agreement',version.content->'reference_evaluation')
+                           ORDER BY output.created_at,output.asset_version_id) assets
+                       FROM authority_operation_output_asset output
+                       JOIN authority_asset_version version USING(asset_version_id)
+                       WHERE output.operation_id=operation.operation_id
+                   ) outputs ON TRUE
+                   WHERE operation.project_id=%s AND operation.command_payload
+                     #>> '{payload,routing_bootstrap_authorization,authorization,campaign,campaign_id}'=%s
+                   ORDER BY operation.created_at,operation.operation_id""",
+                [project_id, campaign_id],
+            )
+            operation_columns = ("operation_id", "status", "definition_name", "authorization_id",
+                                 "task_type", "purpose", "campaign_sample", "causation_operation_id", "outputs")
+            operations = [dict(zip(operation_columns, row, strict=True)) for row in uow.cursor.fetchall()]
         used = [row for row in reservations if row["usage_accounted"]]
         pending = [row for row in reservations if row["reservation_status"] in {"RESERVED", "HELD_UNKNOWN"}
                    or row["effect_status"] in {"UNKNOWN", "SENT_UNKNOWN", "UNKNOWN_AMBIGUOUS", "RECONCILIATION_REQUIRED"}]
         return {
             "source": "POSTGRESQL_AUTHORITY_PROJECTION", "project_id": project_id,
             "scope": "BOOTSTRAP_SAMPLING_ONLY", "campaign": campaign_contract(matched[0]["campaign"]),
-            "grants": matched, "reservations": reservations,
+            "grants": matched, "reservations": reservations, "operations": operations,
             "usage": {"calls_used_or_reserved": len(used),
                       "conservative_tokens": sum(int(row["actual_tokens"] or 0) if row["reservation_status"] == "SETTLED"
                           else max(int(row["actual_tokens"] or 0), int(row["estimated_tokens"] or 0)) for row in used),

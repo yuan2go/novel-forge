@@ -397,13 +397,49 @@ acquire another data group. Changing sample IDs inside one group does not increa
 independent qualification counts. These checks do not detect
 semantic paraphrases or replace an independently frozen dataset.
 `novel-forge authority-provider-routing campaign --project-id <id> --campaign-id <id>`
-reads all historical grants and native reservation/effect references, including failures
-and unresolved outcomes. `RECONCILIATION_REQUIRED` requires native ExternalEffect recovery,
+reads all historical grants, Operation states, output/hash references and native
+reservation/effect references, including failures and unresolved outcomes. `RECONCILIATION_REQUIRED` requires native ExternalEffect recovery,
 never a new grant to resend. This command reports bootstrap sampling usage only. Configure
 existing project/Book budgets separately for reviews, production and entitlement; do not
 treat the sampling ceiling as authorization for those activities. Development and holdout
 observations are excluded from automatic qualification feedback. Release of held-out
 evidence and full-family reference-evaluator bootstrap remain implementation gaps.
+
+For semantic evaluator reference sampling, first register independent operator labels
+through `story_design.review.author` with the exact benchmark candidate as its only
+candidate input. This authoring command may read the ineligible candidate solely for
+review; it cannot activate the candidate. Its successful immutable output must have
+`ground_truth_claimed: false`, `human_preference_evidence: false` and
+`provider_evidence_claimed: false`. Its native author must differ from the generation
+and evaluator actors. Changing a caller-supplied actor string is not authentication.
+
+Use the existing `POST /product/production/book-authority/books/{book_id}/planning-evaluations?dry_run=true`
+with the ordinary evaluation command plus `routing_bootstrap_authorization_id` and
+`reference_evaluation: {asset_version_id, content_hash, protocol_version}`. The read-only
+preflight validates candidate/reference lineage and returns the exact admitted payload,
+`command_hash` and `input_versions_hash`; it grants no spending authority. Register a
+versioned routing grant with `purpose: REFERENCE_EVALUATION`,
+`task_type: narrative_semantic_evaluation`, the same reference binding and mandatory
+campaign membership, candidate/model revision, cumulative quota and expiry. Its
+`logical_key` is the candidate AssetVersion ID and `generation_idempotency_key` is the
+evaluation request key. Then replay the same POST without `dry_run=true` in the validation
+runtime. Existing Generator grants never authorize the evaluator's call.
+
+The evaluator uses `story_design.semantic_evaluate@1.0.0`, its existing execution head,
+Attempt, Router, Provider admission, ExternalEffect and settlement. Only the candidate
+and canonical dependencies reach Provider context; the service reads labels separately.
+The materialized evaluation contains `narrative-reference-agreement.v1`, all criterion
+agreements/disagreements and reference provenance. It remains `BENCHMARK_ONLY`, cannot
+write domain qualification or advance/repair the candidate, and is returned by the
+campaign query. Successful request replay performs no new Provider call. Unknown effects
+still require reconciliation. The native candidate evaluation head currently admits one
+immutable evaluation input contract per candidate; arbitrary new run keys cannot create
+another evaluation or reset its budget. Terminal standalone reference replacement and
+paired multi-judge sampling of the same candidate remain unresolved runtime gaps.
+Operator-proxy label agreement is not a trusted human label, literary quality, reader
+preference or general evaluator admission score; it is not automatically promoted into
+Router quality qualification. Trusted reference validation and scoped feedback admission
+remain required before evaluator calibration can be claimed.
 
 Optional Codex escalation requires `NOVEL_FORGE_ROUTER_CODEX_ESCALATION=true`, an explicit
 `NOVEL_FORGE_CODEX_ESCALATION_MODEL`, positive `NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT`,

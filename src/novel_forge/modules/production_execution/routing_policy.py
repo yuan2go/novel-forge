@@ -58,7 +58,8 @@ def validate_routing_policy(content: Mapping[str, Any]) -> None:
             validate_bootstrap_authorization(grant)
             task_policy(grant["task_type"])
             if (
-                not grant["task_type"].endswith(".generate")
+                not (grant["task_type"].endswith(".generate")
+                     or grant["task_type"] == "narrative_semantic_evaluation")
                 or grant["authorization_id"] in authorization_ids
             ):
                 raise ValueError(

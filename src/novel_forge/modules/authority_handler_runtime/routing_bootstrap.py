@@ -23,8 +23,20 @@ def freeze_planning_bootstrap_authorization(
     principal: Principal,
     environment: str,
 ) -> Mapping[str, Any]:
+    return freeze_bootstrap_authorization(
+        database_url=database_url, command_payload=command_payload,
+        principal=principal, environment=environment,
+        permission="story_planning.authority.execute",
+        idempotency_scope="book:story-planning-generation",
+    )
+
+
+def freeze_bootstrap_authorization(
+    *, database_url: str, command_payload: Mapping[str, Any], principal: Principal,
+    environment: str, permission: str, idempotency_scope: str,
+) -> Mapping[str, Any]:
     project_id = str(command_payload["project_id"])
-    principal.require("story_planning.authority.execute", project_id)
+    principal.require(permission, project_id)
     if environment != "validation":
         raise KernelError(
             "ROUTING_BOOTSTRAP_ENVIRONMENT_FORBIDDEN",
@@ -37,8 +49,8 @@ def freeze_planning_bootstrap_authorization(
         )
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
-            "SELECT operation_id,command_payload->'payload' FROM authority_operation WHERE project_id=%s AND idempotency_scope='book:story-planning-generation' AND idempotency_key=%s",
-            [project_id, command_payload["idempotency_key"]],
+            "SELECT operation_id,command_payload->'payload' FROM authority_operation WHERE project_id=%s AND idempotency_scope=%s AND idempotency_key=%s",
+            [project_id, idempotency_scope, command_payload["idempotency_key"]],
         )
         existing = uow.cursor.fetchone()
         if existing:

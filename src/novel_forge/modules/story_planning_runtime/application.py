@@ -65,6 +65,7 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
     NarrativeSemanticEvaluationApplication,
     NarrativeSemanticEvaluationCommand,
     NarrativeSemanticEvaluationExecutionPort,
+    NarrativeSemanticEvaluationResult,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.narrative_realization_repositories import (
@@ -736,7 +737,7 @@ class StoryPlanningGenerationApplication:
         principal: Principal,
         transition_principal: Principal | None = None,
         execution_probe: Callable[[], object] | None = None,
-    ) -> PlanningGenerationResult:
+    ) -> PlanningGenerationResult | NarrativeSemanticEvaluationResult:
         principal.require("narrative_design.evaluate", command.project_id)
         if principal.principal_id != command.actor_id:
             raise PermissionError(
@@ -785,6 +786,8 @@ class StoryPlanningGenerationApplication:
                     None if command.evaluation is None else dict(command.evaluation)
                 ),
                 evidence_asset_version_ids=command.evidence_asset_version_ids,
+                routing_bootstrap_authorization_id=command.routing_bootstrap_authorization_id,
+                reference_evaluation=command.reference_evaluation,
                 idempotency_key=command.idempotency_key,
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
@@ -793,6 +796,8 @@ class StoryPlanningGenerationApplication:
             caller_permission="story_planning.authority.execute",
         )
         self._probe(execution_probe)
+        if command.routing_bootstrap_authorization_id:
+            return evaluated
         generation_command = self._generation_command(command.generation_operation_id)
         if evaluated.qualification.status != "PASS":
             return self._repair_or_reject(

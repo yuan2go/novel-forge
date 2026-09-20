@@ -58,7 +58,7 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         "currency",
         "purpose",
     }
-    if set(grant) - {"campaign"} != strings | {
+    if set(grant) - {"campaign", "reference_evaluation"} != strings | {
         "maximum_calls",
         "maximum_tokens",
         "production_eligible",
@@ -70,11 +70,18 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         raise ValueError("ROUTING_BOOTSTRAP_IDENTITY_REQUIRED")
     if (
         grant["environment"] != "validation"
-        or grant["purpose"] != "BENCHMARK_CHALLENGER"
+        or grant["purpose"] not in {"BENCHMARK_CHALLENGER", "REFERENCE_EVALUATION"}
         or grant["production_eligible"] is not False
         or grant["currency"] != "USD"
     ):
         raise ValueError("ROUTING_BOOTSTRAP_BOUNDARY_INVALID")
+    reference = grant.get("reference_evaluation")
+    if grant["purpose"] == "REFERENCE_EVALUATION":
+        if grant["task_type"] != "narrative_semantic_evaluation" or "campaign" not in grant:
+            raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
+        validate_reference_evaluation_binding(reference)
+    elif reference is not None or grant["task_type"] == "narrative_semantic_evaluation":
+        raise ValueError("ROUTING_REFERENCE_AUTHORIZATION_REQUIRED")
     if any(
         type(grant[key]) is not int or grant[key] <= 0
         for key in ("maximum_calls", "maximum_tokens")
@@ -105,6 +112,18 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
             > datetime.fromisoformat(campaign["expires_at"])
         ):
             raise ValueError("ROUTING_CAMPAIGN_GRANT_EXCEEDS_TOTAL")
+
+
+def validate_reference_evaluation_binding(reference: Any) -> None:
+    if not isinstance(reference, Mapping) or set(reference) != {
+        "asset_version_id", "content_hash", "protocol_version",
+    } or any(not isinstance(value, str) or not value.strip() for value in reference.values()):
+        raise ValueError("ROUTING_REFERENCE_BINDING_INVALID")
+    digest = reference["content_hash"]
+    if len(digest) != 71 or not digest.startswith("sha256:") or any(
+        char not in "0123456789abcdef" for char in digest[7:]
+    ):
+        raise ValueError("ROUTING_REFERENCE_HASH_INVALID")
 
 
 def validate_bootstrap_campaign(campaign: Mapping[str, Any]) -> None:
@@ -228,7 +247,7 @@ def validate_bootstrap_scope(
         expected = {
             "authorization_id": payload.get("routing_bootstrap_authorization_id"),
             "book_id": payload.get("book_id"),
-            "task_type": payload.get("generator_operation_name"),
+            "task_type": "narrative_semantic_evaluation" if payload.get("reference_evaluation") else payload.get("generator_operation_name"),
             "logical_key": payload.get("logical_key"),
             "generation_idempotency_key": payload.get("idempotency_key"),
             "input_versions_hash": authorization_hash(payload.get("input_versions")),
@@ -236,6 +255,8 @@ def validate_bootstrap_scope(
         }
         if any(grant[key] != value for key, value in expected.items()):
             raise ValueError("command identity differs")
+        if grant.get("reference_evaluation") != payload.get("reference_evaluation"):
+            raise ValueError("reference identity differs")
     except (KeyError, ValueError, TypeError, ArithmeticError) as exc:
         raise KernelError(
             "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
@@ -267,14 +288,17 @@ def load_bootstrap_authorization(
                 "admitted benchmark task lacks its immutable grant",
             )
         return None
-    if tuple(row[1:4]) != (
+    contract = (
+        "story_design.semantic_evaluate", "1.0.0", "book:narrative-semantic-evaluation",
+    ) if payload.get("reference_evaluation") else (
         "story_planning.generate",
         "1.16.0",
         "book:story-planning-generation",
-    ) or row[4] != payload.get("idempotency_key"):
+    )
+    if tuple(row[1:4]) != contract or row[4] != payload.get("idempotency_key"):
         raise KernelError(
             "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
-            "benchmark authorization requires its admitted Planning operation contract",
+            "benchmark authorization requires its exact admitted native operation contract",
         )
     grant = validate_bootstrap_scope(snapshot, payload, check_expiry=check_expiry)
     cursor.execute(
