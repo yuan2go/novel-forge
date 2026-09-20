@@ -249,3 +249,62 @@ def test_multistage_challenger_is_rejected_before_database_or_execution():
             principal=SimpleNamespace(require=lambda *_: None),
             environment="validation",
         )
+
+
+def campaign_grant():
+    _, grant, _ = contract()
+    return {**grant, "campaign": {
+        "campaign_id": "campaign-one", "manifest_hash": "sha256:" + "c" * 64,
+        "sample_id": "sample-one", "group_id": "work-one", "partition": "CALIBRATION",
+        "maximum_calls": 4, "maximum_tokens": 8000, "maximum_amount": "0.04",
+        "expires_at": grant["expires_at"],
+    }}
+
+
+def test_campaign_grants_share_frozen_identity_across_policy_versions():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history
+    grant = campaign_grant()
+    validate_bootstrap_history([grant], [grant])
+    other = {**grant, "authorization_id": "grant-two", "candidate_id": "pro"}
+    validate_bootstrap_history([other], [grant])
+    for change in ({"manifest_hash": "sha256:" + "d" * 64}, {"maximum_calls": 8}):
+        with pytest.raises(KernelError, match="ROUTING_CAMPAIGN_REDEFINED"):
+            validate_bootstrap_history(
+                [{**other, "campaign": {**other["campaign"], **change}}], [grant])
+    with pytest.raises(KernelError, match="AUTHORIZATION_REDEFINED"):
+        validate_bootstrap_history([{**grant, "maximum_calls": 2}], [grant])
+    with pytest.raises(KernelError, match="PROJECT_REBIND_FORBIDDEN"):
+        validate_bootstrap_history([{**other, "campaign": {
+            **other["campaign"], "campaign_id": "reset-attempt"}}], [grant])
+
+
+@pytest.mark.parametrize("rename", [False, True])
+def test_campaign_rejects_holdout_leakage_even_with_renamed_sample(rename):
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history
+    grant = campaign_grant()
+    changed = {**grant, "authorization_id": "holdout-grant", "campaign": {
+        **grant["campaign"], "partition": "HOLDOUT",
+        "sample_id": "renamed" if rename else "sample-one",
+        "group_id": "renamed-work" if rename else "work-one",
+    }}
+    with pytest.raises(KernelError, match="HOLDOUT_LEAKAGE"):
+        validate_bootstrap_history([changed], [grant])
+
+
+def test_campaign_rejects_relabelled_sample_input_and_nonfinite_budget():
+    from novel_forge.modules.command_kernel.routing_bootstrap import (
+        validate_bootstrap_authorization, validate_bootstrap_history,
+    )
+    grant = campaign_grant()
+    validate_bootstrap_authorization(grant)
+    with pytest.raises(KernelError, match="SAMPLE_REDEFINED"):
+        validate_bootstrap_history([
+            {**grant, "authorization_id": "new", "input_versions_hash": "sha256:" + "f" * 64}
+        ], [grant])
+    for change in ({"maximum_amount": "NaN"}, {"maximum_calls": True},
+                   {"maximum_tokens": 0}, {"partition": "unknown"},
+                   {"expires_at": "2099-01-01"}):
+        with pytest.raises((ValueError, ArithmeticError)):
+            validate_bootstrap_authorization({**grant, "campaign": {**grant["campaign"], **change}})
+    with pytest.raises(ValueError, match="GRANT_EXCEEDS_TOTAL"):
+        validate_bootstrap_authorization({**grant, "maximum_calls": 5})

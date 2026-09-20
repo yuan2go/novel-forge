@@ -7,6 +7,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.service import _validate_json_schema
 from novel_forge.modules.command_kernel.routing_bootstrap import (
     validate_bootstrap_authorization,
+    validate_bootstrap_history,
 )
 
 from .cost_routing import task_policy
@@ -64,6 +65,7 @@ def validate_routing_policy(content: Mapping[str, Any]) -> None:
                     "bootstrap authorization must identify one Planning generation"
                 )
             authorization_ids.add(grant["authorization_id"])
+        validate_bootstrap_history(list(content.get("bootstrap_authorizations", [])), [])
         for item in content["task_overrides"]:
             _validate_json_schema(
                 POLICY_SCHEMA["properties"]["task_overrides"]["items"], item

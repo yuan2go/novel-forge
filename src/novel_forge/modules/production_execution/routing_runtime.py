@@ -265,11 +265,20 @@ class PostgresRoutingRegistry:
             else:
                 evidence_class = "UNCLASSIFIED_REAL_PROVIDER"
                 production_eligible = False
+            campaign = (
+                (decision or {}).get("bootstrap_authorization", {})
+                .get("authorization", {}).get("campaign") or {}
+            )
+            sample_identity = (
+                snapshot_hash({key: campaign[key] for key in (
+                    "campaign_id", "manifest_hash", "sample_id",
+                )}) if campaign else str((decision or {}).get("task", {}).get("input_hash") or "")
+            )
             observations.append(
                 BenchmarkObservation(
                     evidence_ref="asset-version:" + reference,
                     occurred_at=occurred_at.isoformat(),
-                    quality_score=score,
+                    quality_score=score if sample_identity else None,
                     judge_score=score,
                     accepted=True
                     if accepted
@@ -292,7 +301,7 @@ class PostgresRoutingRegistry:
                     actual_cost=cost.get("amount")
                     if cost.get("provider_billed") is True
                     else None,
-                    domain_gate_accepted=gate.get("accepted"),
+                    domain_gate_accepted=gate.get("accepted") if sample_identity else None,
                     outcome_refs=tuple(gate.get("evidence_refs", ()))
                     + (("asset-version:" + quality_ref,) if quality_ref else ()),
                     cache_prefix_hash=(decision or {})
@@ -305,6 +314,8 @@ class PostgresRoutingRegistry:
                     served_model_identity_hash=served_identity,
                     evidence_class=evidence_class,
                     production_eligible=production_eligible,
+                    sample_identity=sample_identity,
+                    experiment_partition=campaign.get("partition", ""),
                 )
             )
         return observations
