@@ -1326,16 +1326,12 @@ class _ReviewHandler:
     provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
-        draft = request.require_input("draft_chapter")
-        context = request.require_input("context_bundle")
-        from novel_forge.modules.review.knowledge import knowledge_review_targets
-        targets = knowledge_review_targets(context.content)
-        from .review_window import prepare_review_window, require_review_frontier
-        window = prepare_review_window(request, draft, context)
+        from .review_window import prepare_native_review, require_review_frontier
+        draft, context, targets, window, payload = prepare_native_review(request, stage="review")
         reviewed = self.provider.invoke(
             request,
             stage="review",
-            payload={**({"cross_chapter_window": window, "target_candidate_asset_version_id": draft.asset_version_id} if window is not None else {}), "draft": draft.content, "knowledge_review_targets": targets, "author_design_review_targets": draft.content.get("author_design_guidance") or {}},
+            payload=payload,
         )
         require_review_frontier(request)
         return _model_output(
@@ -1430,24 +1426,12 @@ class _ReReviewHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
-        revision = request.require_input("draft_version")
-        context = request.require_input("context_bundle")
-        from novel_forge.modules.review.knowledge import knowledge_review_targets
-        targets = knowledge_review_targets(context.content)
-        from .review_window import prepare_review_window, require_review_frontier
-        window = prepare_review_window(request, revision, context, review.content)
+        from .review_window import prepare_native_review, require_review_frontier
+        revision, context, targets, _, payload = prepare_native_review(request, stage="rereview")
         reviewed = self.provider.invoke(
             request,
             stage="rereview",
-            payload={
-                **({"cross_chapter_window": window, "target_candidate_asset_version_id": revision.asset_version_id} if window is not None else {}),
-                "draft": revision.content,
-                "original_draft": draft.content,
-                "review": review.content,
-                "revision": revision.content,
-                "knowledge_review_targets": targets,
-                "author_design_review_targets": draft.content.get("author_design_guidance") or {},
-            },
+            payload=payload,
         )
         require_review_frontier(request)
         return _model_output(

@@ -96,6 +96,8 @@ def register_validation_runtime_definitions(
     with AuthorityUnitOfWork(database_url) as uow:
         for item in (planning, reader, narrative_evaluation, *chapter, *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha,
+        ), *chapter_provider_sample_definitions(
+            application_build_id=application_build_id, commit_sha=commit_sha, reference_samples=True,
         ), *world_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha,
         ), *world_sample_definitions(
@@ -127,6 +129,7 @@ def install_chapter_validation_pack(
     pack_version_override: str = "",
     provider_sampling: bool = False,
     reference_sampling: bool = False,
+    reference_samples: bool = False,
     runtime_environment: str = "validation",
 ) -> dict[str, Any]:
     root = Path(repository_root).resolve()
@@ -142,12 +145,14 @@ def install_chapter_validation_pack(
         manifest["identity"]["version"] = pack_version_override
     if reference_sampling and not provider_sampling:
         raise ValueError("Chapter reference evaluation requires provider sampling")
+    if reference_samples and not reference_sampling:
+        raise ValueError("Chapter sample targets require reference sampling")
     if provider_sampling:
         if runtime_environment != "validation":
             raise ValueError("Chapter sampling packs are restricted to validation")
         manifest = chapter_provider_sampling_manifest(
             manifest, application_build_id=application_build_id, commit_sha=commit_sha,
-            reference=reference_sampling,
+            reference=reference_sampling, reference_samples=reference_samples,
         )
     resolver = default_chapter_artifact_resolver(root)
     catalog = {
@@ -189,26 +194,31 @@ def install_chapter_validation_pack(
 
 def chapter_provider_sampling_manifest(
     source: Mapping[str, Any], *, application_build_id: str, commit_sha: str, reference: bool = False,
+    reference_samples: bool = False,
 ) -> dict[str, Any]:
     from novel_forge.modules.command_kernel.routing_bootstrap import (
         CHAPTER_SAMPLE_DEFINITION_VERSION, CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE,
         CHAPTER_GENERATOR_TASKS, CHAPTER_REFERENCE_TASKS,
+        CHAPTER_REFERENCE_SAMPLE_VERSION,
     )
     from novel_forge.modules.chapter_authority.definitions import CHAPTER_REFERENCE_WORKFLOW_ID
 
+    if reference_samples and not reference:
+        raise ValueError("Chapter sample targets require reference sampling")
+    version = CHAPTER_REFERENCE_SAMPLE_VERSION if reference_samples else CHAPTER_SAMPLE_DEFINITION_VERSION
     manifest = deepcopy(dict(source))
     manifest["identity"].update({
-        "pack_id": str(manifest["identity"]["pack_id"]) + (".reference_sampling" if reference else ".provider_sampling"),
+        "pack_id": str(manifest["identity"]["pack_id"]) + (".reference_samples" if reference_samples else ".reference_sampling" if reference else ".provider_sampling"),
         "name": "Chapter Provider Sampling Pack",
         "description": "Governed isolated samples using the frozen Chapter generation contracts.",
     })
     tasks = CHAPTER_REFERENCE_TASKS if reference else CHAPTER_GENERATOR_TASKS
     definitions = {item["policy"]["source_definition_name"]: item for item in
-                   chapter_provider_sample_definitions(application_build_id=application_build_id, commit_sha=commit_sha)
+                   chapter_provider_sample_definitions(application_build_id=application_build_id, commit_sha=commit_sha, reference_samples=reference_samples)
                    if item["policy"]["source_definition_name"] in tasks}
     workflow = manifest["workflow_template"]
     workflow.update({"workflow_id": CHAPTER_REFERENCE_WORKFLOW_ID if reference else CHAPTER_SAMPLE_WORKFLOW_ID,
-                     "workflow_version": CHAPTER_SAMPLE_DEFINITION_VERSION,
+                     "workflow_version": version,
                      "idempotency_scope": CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE})
     nodes = []
     for node in workflow["nodes"]:
@@ -217,12 +227,15 @@ def chapter_provider_sampling_manifest(
             continue
         node.update({
             "operation_name": definition["name"],
-            "operation_definition_ref": definition["name"] + "@" + CHAPTER_SAMPLE_DEFINITION_VERSION,
+            "operation_definition_ref": definition["name"] + "@" + version,
             "operation_definition_hash": definition_hash(definition),
             "handler_key": definition["handler_key"], "depends_on": [],
             "output_asset_types": ["chapter_provider_sample"],
             "retry_policy": {**definition["retry_policy"], "retryable_errors": []},
         })
+        if reference_samples:
+            target_type = "draft_chapter" if node["node_id"] == "review" else "draft_version"
+            node["input_asset_types"] = ["chapter_provider_sample" if value == target_type else value for value in node["input_asset_types"]]
         nodes.append(node)
     workflow["nodes"] = nodes
     workflow["completion"] = {

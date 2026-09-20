@@ -110,8 +110,13 @@ Native human evaluation and adjudication commands have a separate `2.2.0` defini
 annotating an exact completed Chapter generator sample. Admission requires an authenticated
 local operator, the sample hash and its native benchmark grant. Only that ineligible input
 is readable; annotation neither promotes the sample nor certifies the author's expertise.
-Reviewer sampling still requires a frozen native reviewer task; annotation alone does not
-remove that cold-start dependency.
+Review and ReReview sampling at definition version `1.1.0` can instead bind an exact
+draft or revision generator sample and its original generator Operation. They reuse the
+native review task constructor, original Context, Narrative Craft and cross-chapter
+frontier checks. The approved reviewer Pack supplies its own Skill and Schema; the
+preflight producer hash is checked again by Router before any Effect. The target keeps
+its physical sample type and ineligible state. Replay uses the existing Attempt Pack
+snapshot. Quality-group sampling still requires a frozen native Quality task and target.
 The sampling result cannot activate a Quality profile or qualify itself. Calibrated
 reviewer admission and generator feedback admission remain unimplemented.
 This does not prove judge calibration or bootstrap every task family. Ordinary production

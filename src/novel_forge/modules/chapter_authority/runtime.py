@@ -74,12 +74,15 @@ class _ChapterHandlerAdapter:
         reference = None
         if snapshot is not None and snapshot["authorization"]["purpose"] == "REFERENCE_EVALUATION":
             from novel_forge.modules.chapter_quality_authority.reference_sampling import require_chapter_reference
+            from novel_forge.modules.chapter_quality_authority.reference_subject import require_chapter_sample_target
 
             with AuthorityUnitOfWork(self.database_url) as uow:
+                subject = require_chapter_sample_target(uow.cursor, project_id=request.project_id, payload=chapter_request.command) if (
+                    chapter_request.command["chapter_sampling"].get("generation_sample") is not None) else None
                 reference = require_chapter_reference(uow.cursor, project_id=request.project_id, stage=self.node.value,
                     input_versions=chapter_request.command["input_versions"],
                     binding=chapter_request.command["reference_evaluation"], evaluator_actor_id=request.actor_id,
-                    chapter=chapter_request.command["chapter"])
+                    chapter=chapter_request.command["chapter"], generation_sample=subject)
         output = self.registry.require(self.node).execute(chapter_request)
         agreement = None
         if reference is not None:
@@ -151,13 +154,20 @@ def execute_chapter_handler(
     execution_probe: Callable[[], object] | None = None,
     sampling: bool = False,
 ) -> ChapterExecutionResult:
+    sample_version = CHAPTER_SAMPLE_DEFINITION_VERSION
+    if sampling:
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute("""SELECT operation.definition_version FROM authority_operation operation
+                JOIN authority_attempt attempt USING(operation_id) WHERE attempt.attempt_id=%s AND operation.project_id=%s""",
+                [command.attempt_id, command.project_id])
+            sample_version = uow.cursor.fetchone()[0]
     return execute_authority_handler(
         database_url,
         command=command,
         execution_probe=execution_probe,
         registration=AuthorityHandlerRegistration(
             definition_name=chapter_sample_definition_name(node.value) if sampling else node.definition_name,
-            definition_version=CHAPTER_SAMPLE_DEFINITION_VERSION if sampling else chapter_definition_version(registry.model_effects_required),
+            definition_version=sample_version if sampling else chapter_definition_version(registry.model_effects_required),
             handler_key="novel_forge.chapter_authority.sample." + node.value if sampling else node.handler_key,
             handler_contract_version="chapter-provider-sample.v1" if sampling else "chapter-authority-handler-v2",
             output_asset_type="chapter_provider_sample" if sampling else node.asset_type,

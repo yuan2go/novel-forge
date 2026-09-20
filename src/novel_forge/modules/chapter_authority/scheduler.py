@@ -462,14 +462,15 @@ class ChapterAuthorityScheduler:
     ) -> ChapterSchedulerTick:
         from novel_forge.modules.command_kernel.routing_bootstrap import (
             CHAPTER_BOOTSTRAP_TASKS, CHAPTER_SAMPLE_DEFINITION_VERSION,
-            chapter_sample_definition_name,
+            CHAPTER_REFERENCE_SAMPLE_VERSION, CHAPTER_REFERENCE_SAMPLE_SOURCES, chapter_sample_definition_name,
         )
 
         definition = root["definition_snapshot"]
         source_name = definition["policy"].get("source_definition_name")
         stage = CHAPTER_BOOTSTRAP_TASKS.get(source_name)
         if (stage is None or definition["name"] != chapter_sample_definition_name(stage)
-            or definition["definition_version"] != CHAPTER_SAMPLE_DEFINITION_VERSION):
+            or definition["definition_version"] not in {CHAPTER_SAMPLE_DEFINITION_VERSION, CHAPTER_REFERENCE_SAMPLE_VERSION}
+            or (definition["definition_version"] == CHAPTER_REFERENCE_SAMPLE_VERSION and stage not in CHAPTER_REFERENCE_SAMPLE_SOURCES)):
             raise KernelError("CHAPTER_SAMPLE_DEFINITION_INVALID", "sample definition identity is invalid")
         operation_id = str(root["operation_id"])
         operation = self._child(operation_id, project_id)

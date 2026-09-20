@@ -210,6 +210,8 @@ def _campaign_scope(cursor: Any, identity: dict[str, Any], *, plan: dict[str, An
     command = identity["command_payload"].get("payload", identity["command_payload"])
     source_operation_id = identity["operation_id"]
     if command.get("chapter_sampling") or command.get("world_sampling"):
+        if snapshot is None:
+            raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "sample budget classification requires its native bootstrap authorization")
         source_operation_id = (command.get("chapter_sampling") or command["world_sampling"])["source_operation_id"]
         cursor.execute("SELECT definition_name,command_payload FROM authority_operation WHERE project_id=%s AND operation_id=%s",
                        [project_id, source_operation_id])
@@ -217,6 +219,11 @@ def _campaign_scope(cursor: Any, identity: dict[str, Any], *, plan: dict[str, An
         if not origin:
             raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "sample has no original native task")
         identity = {**identity, "operation_name": origin[0], "command_payload": origin[1]}
+        if (command.get("chapter_sampling") or {}).get("generation_sample") is not None:
+            from .routing_bootstrap import CHAPTER_REFERENCE_TASKS
+
+            stage = command["generator_operation_name"]
+            identity["operation_name"] = next(name for name, task in CHAPTER_REFERENCE_TASKS.items() if task == stage)
     elif command.get("source_sampling"):
         source_operation_id = command["source_sampling"]["source_operation_id"]
     scope = _business_scope(cursor, identity, project_id=project_id, generation=generation, plan=plan)

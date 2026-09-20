@@ -46,10 +46,22 @@ def _native_label(cursor: Any, *, project_id: str, asset_version_id: str, asset_
 def require_chapter_reference(
     cursor: Any, *, project_id: str, stage: str, input_versions: list[dict[str, Any]],
     binding: Mapping[str, Any], evaluator_actor_id: str, chapter: int,
+    generation_sample: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     validate_reference_evaluation_binding(binding)
     if "adjudications" not in binding:
         raise KernelError("QUALITY_REFERENCE_REQUIRED", "reviewer samples require adjudicated independent labels")
+    if generation_sample is not None:
+        from .reference_subject import require_reference_subject
+
+        target = {key: generation_sample.get(key) for key in ("asset_version_id", "content_hash")}
+        subject = require_reference_subject(cursor, project_id=project_id, binding=target)
+        if (target not in input_versions or subject["content"]["stage"] != {"review": "draft", "rereview": "revision"}.get(stage)):
+            raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "reference labels require the exact compatible generator sample")
+        return require_adjudicated_reference(cursor, project_id=project_id, binding=binding,
+            target_id=subject["asset_version_id"], target_hash=subject["content_hash"],
+            generators=[subject["generation_actor_id"]], evaluator_actor_id=evaluator_actor_id, chapter=chapter,
+            expected_dimensions=reference_dimensions(stage), allowed_statuses={"PASSED", "NEEDS_REVISION", "BLOCKED"})
     target_type = {"review": "draft_chapter", "rereview": "draft_version"}.get(stage, "best_draft_candidate")
     cursor.execute("""SELECT version.asset_version_id,version.content_hash,
         ARRAY(SELECT operation.actor_id FROM authority_operation_output_asset output

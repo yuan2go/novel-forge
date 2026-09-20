@@ -65,3 +65,18 @@ def require_reference_annotation(
     if annotation.get("subject_asset_version_id") != subject["asset_version_id"] or annotation.get(author_field) != actor_id:
         raise KernelError("QUALITY_REFERENCE_ANNOTATION_INVALID", "reference annotation must retain the exact target and authenticated author")
     return subject["asset_version_id"]
+
+
+def require_chapter_sample_target(cursor: Any, *, project_id: str, payload: Mapping[str, Any]) -> dict[str, Any]:
+    expected = {"review": ("draft", "draft_chapter"), "rereview": ("revision", "draft_version")}
+    stage = payload.get("generator_operation_name")
+    metadata = payload.get("chapter_sampling") or {}
+    if stage not in expected:
+        raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "reference task has no compatible native generator sample")
+    subject = require_reference_subject(cursor, project_id=project_id, binding=metadata.get("generation_sample"))
+    content = subject["content"]
+    if (content.get("source_operation_id") != metadata.get("source_operation_id")
+        or (content.get("stage"), content.get("sampled_asset_type")) != expected[stage]
+        or metadata["generation_sample"] not in payload.get("input_versions", [])):
+        raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "reference sample must retain its generator task and typed target")
+    return subject

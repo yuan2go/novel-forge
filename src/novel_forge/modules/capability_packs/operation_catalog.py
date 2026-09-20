@@ -314,22 +314,24 @@ def chapter_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
 
 
-def chapter_sampling_workflow_binding_catalog(*, reference: bool = False) -> WorkflowBindingCatalog:
+def chapter_sampling_workflow_binding_catalog(*, reference: bool = False, reference_samples: bool = False) -> WorkflowBindingCatalog:
     from novel_forge.modules.command_kernel.routing_bootstrap import (
         CHAPTER_GENERATOR_TASKS, CHAPTER_REFERENCE_TASKS, CHAPTER_SAMPLE_DEFINITION_VERSION,
+        CHAPTER_REFERENCE_SAMPLE_VERSION, CHAPTER_REFERENCE_SAMPLE_SOURCES,
         chapter_sample_definition_name,
     )
     from novel_forge.modules.chapter_authority.definitions import CHAPTER_REFERENCE_WORKFLOW_ID
 
     formal = chapter_workflow_binding_catalog()
     return WorkflowBindingCatalog(
-        CHAPTER_REFERENCE_WORKFLOW_ID if reference else CHAPTER_SAMPLE_WORKFLOW_ID, CHAPTER_SAMPLE_DEFINITION_VERSION,
+        CHAPTER_REFERENCE_WORKFLOW_ID if reference else CHAPTER_SAMPLE_WORKFLOW_ID,
+        CHAPTER_REFERENCE_SAMPLE_VERSION if reference_samples else CHAPTER_SAMPLE_DEFINITION_VERSION,
         (WorkflowBinding(
             node_id=stage, operation_name=chapter_sample_definition_name(stage), stage=stage,
             handler_key="novel_forge.chapter_authority.sample." + stage,
             capability_id=formal.resolve(stage).capability_id, depends_on=(),
             primary_output_asset_type="chapter_provider_sample",
-        ) for stage in (CHAPTER_REFERENCE_TASKS if reference else CHAPTER_GENERATOR_TASKS).values()),
+        ) for stage in (CHAPTER_REFERENCE_SAMPLE_SOURCES if reference_samples else (CHAPTER_REFERENCE_TASKS if reference else CHAPTER_GENERATOR_TASKS).values())),
     )
 
 
@@ -433,6 +435,7 @@ def governed_workflow_binding_catalog(
         chapter_workflow_binding_catalog(),
         chapter_sampling_workflow_binding_catalog(),
         chapter_sampling_workflow_binding_catalog(reference=True),
+        chapter_sampling_workflow_binding_catalog(reference=True, reference_samples=True),
         story_planning_workflow_binding_catalog(),
         world_sampling_workflow_binding_catalog(),
         world_sampling_workflow_binding_catalog(reference_samples=True),
@@ -461,6 +464,8 @@ def chapter_operation_definition_catalog(
             model_effects_required=True,
         ), *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=release_sha,
+        ), *chapter_provider_sample_definitions(
+            application_build_id=application_build_id, commit_sha=release_sha, reference_samples=True,
         ))
     )
 

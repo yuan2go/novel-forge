@@ -6,6 +6,8 @@ from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.modules.command_kernel.routing_bootstrap import (
     CHAPTER_BOOTSTRAP_TASKS,
     CHAPTER_SAMPLE_DEFINITION_VERSION,
+    CHAPTER_REFERENCE_SAMPLE_VERSION,
+    CHAPTER_REFERENCE_SAMPLE_SOURCES,
     CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE,
     chapter_sample_definition_name,
 )
@@ -68,7 +70,7 @@ CHAPTER_REFERENCE_WORKFLOW_REF = f"{CHAPTER_REFERENCE_WORKFLOW_ID}@{CHAPTER_SAMP
 
 
 def chapter_provider_sample_definitions(
-    *, application_build_id: str, commit_sha: str,
+    *, application_build_id: str, commit_sha: str, reference_samples: bool = False,
 ) -> tuple[dict[str, Any], ...]:
     if not application_build_id or len(commit_sha) != 40:
         raise ValueError("Chapter sampling requires an exact implementation identity")
@@ -90,10 +92,12 @@ def chapter_provider_sample_definitions(
         stage = CHAPTER_BOOTSTRAP_TASKS.get(node.definition_name)
         if stage is None:
             continue
+        if reference_samples and stage not in CHAPTER_REFERENCE_SAMPLE_SOURCES:
+            continue
         name = chapter_sample_definition_name(stage)
         definitions.append({
             "name": name,
-            "definition_version": CHAPTER_SAMPLE_DEFINITION_VERSION,
+            "definition_version": CHAPTER_REFERENCE_SAMPLE_VERSION if reference_samples else CHAPTER_SAMPLE_DEFINITION_VERSION,
             "family": "chapter_authority",
             "enabled": True,
             "command_schema": command_schema,
@@ -123,6 +127,7 @@ def chapter_provider_sample_definitions(
                 "source_definition_version": CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
                 "routing_bootstrap_sample": True,
                 "production_eligible": False,
+                **({"chapter_reference_sample_input_allowed": True} if reference_samples else {}),
             },
             "completion_contract": {
                 "version": name + ".completion.v1",

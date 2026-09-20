@@ -792,6 +792,7 @@ class PostgresChapterExecutionContractBinder:
         selected_inputs = self._materialize_selected_inputs(
             project_id=project_id,
             artifacts=artifacts,
+            reference_operation_id=operation_id, reference_stage=stage,
         )
         retrieval_projection = (
             str(metadata.get("execution_binding_domain") or "")
@@ -1100,8 +1101,8 @@ class PostgresChapterExecutionContractBinder:
             effect_binding=effect_binding,
         )
 
+    @staticmethod
     def _provider_output_contract(
-        self,
         *,
         stage: str,
         request_payload: Mapping[str, Any],
@@ -1909,8 +1910,11 @@ class PostgresChapterExecutionContractBinder:
         from novel_forge.modules.command_kernel.routing_bootstrap import CHAPTER_REFERENCE_TASKS
 
         reference = sampling and stage in CHAPTER_REFERENCE_TASKS.values()
+        reference_samples = reference and graph["definition_version"] == "1.1.0"
         workflow_ref = CHAPTER_REFERENCE_WORKFLOW_REF if reference else CHAPTER_SAMPLE_WORKFLOW_REF if sampling else self.workflow_definition_ref
-        pack_id = self.capability_pack_id + (".reference_sampling" if reference else ".provider_sampling") if sampling else self.capability_pack_id
+        if reference_samples:
+            workflow_ref = "chapter_reference_sampling@1.1.0"
+        pack_id = self.capability_pack_id + (".reference_samples" if reference_samples else ".reference_sampling" if reference else ".provider_sampling") if sampling else self.capability_pack_id
         try:
             return self.pack_resolver.freeze_attempt_snapshot(
                 CapabilityPackResolutionRequest(
@@ -1955,18 +1959,34 @@ class PostgresChapterExecutionContractBinder:
         *,
         project_id: str,
         artifacts: tuple[ArtifactPointer, ...],
+        reference_operation_id: str = "", reference_stage: str = "",
     ) -> list[dict[str, Any]]:
+        reference_target = None
+        if any(item.artifact_type == "chapter_provider_sample" for item in artifacts):
+            from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
+            from novel_forge.modules.chapter_quality_authority.reference_subject import require_chapter_sample_target
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                snapshot = load_bootstrap_authorization(uow.cursor, project_id=project_id, operation_id=reference_operation_id, check_expiry=False)
+                uow.cursor.execute("SELECT command_payload->'payload' FROM authority_operation WHERE project_id=%s AND operation_id=%s",
+                                   [project_id, reference_operation_id])
+                row = uow.cursor.fetchone()
+                if snapshot is None or snapshot["authorization"]["purpose"] != "REFERENCE_EVALUATION" or not row or row[0].get("generator_operation_name") != reference_stage:
+                    raise KernelError("CHAPTER_CAPABILITY_CONTEXT_INVALID", "sample inputs require the exact native reference evaluation grant")
+                reference_target = require_chapter_sample_target(uow.cursor, project_id=project_id, payload=row[0])
         selected: list[dict[str, Any]] = []
         for pointer in artifacts:
             document = self.query.require(
                 project_id=project_id,
                 asset_version_id=pointer.asset_version_id,
             )
+            reference_sample = (reference_target is not None and pointer.asset_version_id == reference_target["asset_version_id"]
+                and pointer.content_hash == reference_target["content_hash"] and document.lifecycle == "ACTIVE" and document.eligibility == "INELIGIBLE")
             if (
                 document.asset_type != pointer.artifact_type
                 or document.content_hash != pointer.content_hash
-                or document.eligibility
-                not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE", "NOT_SOURCE_DERIVED"}
+                or (document.eligibility not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE", "NOT_SOURCE_DERIVED"} and not reference_sample)
                 or document.governance != "CLEAR"
             ):
                 raise KernelError(

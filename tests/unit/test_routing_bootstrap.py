@@ -88,6 +88,15 @@ def test_chapter_sample_rejects_changed_source_inputs_or_book_scope():
             validate_chapter_sample_origin(changed, origin, project_id="project")
     with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_SCOPE_MISMATCH"):
         validate_chapter_sample_origin(payload, (origin[0], "3.3.0", source, inputs), project_id="project")
+    target = {"asset_version_id": "sample:v1", "content_hash": "sha256:" + "b" * 64}
+    reference = {**payload, "generator_operation_name": "review", "input_versions": [*inputs, target],
+        "chapter_sampling": {**payload["chapter_sampling"], "generation_sample": target},
+        "reference_evaluation": {"protocol_version": "frozen-labels", "adjudications": []}}
+    validate_chapter_sample_origin(reference, origin, project_id="project")
+    for key, value in (("generator_operation_name", "rereview"), ("input_versions", [target]),
+                       ("preparation_report", {})):
+        with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_SCOPE_MISMATCH"):
+            validate_chapter_sample_origin({**reference, key: value}, origin, project_id="project")
 
 
 def ordinary_decision(*, task_overrides=None, **candidate_overrides):

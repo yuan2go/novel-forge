@@ -17,6 +17,7 @@ class ChapterAuthorityQuery:
     def require_provider_sample(self, *, project_id: str, operation_id: str) -> dict[str, Any]:
         from novel_forge.modules.command_kernel.routing_bootstrap import (
             CHAPTER_BOOTSTRAP_TASKS, CHAPTER_SAMPLE_DEFINITION_VERSION, chapter_sample_definition_name,
+            CHAPTER_REFERENCE_SAMPLE_VERSION,
         )
 
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -24,9 +25,9 @@ class ChapterAuthorityQuery:
                 """SELECT operation_id,status,definition_name,definition_version,command_payload->'payload',
                           trace_id,correlation_id,causation_operation_id
                    FROM authority_operation WHERE project_id=%s AND operation_id=%s
-                     AND definition_name=ANY(%s) AND definition_version=%s""",
+                     AND definition_name=ANY(%s) AND definition_version=ANY(%s)""",
                 [project_id, operation_id, [chapter_sample_definition_name(stage) for stage in CHAPTER_BOOTSTRAP_TASKS.values()],
-                 CHAPTER_SAMPLE_DEFINITION_VERSION],
+                 [CHAPTER_SAMPLE_DEFINITION_VERSION, CHAPTER_REFERENCE_SAMPLE_VERSION]],
             )
             row = uow.cursor.fetchone()
             if row is None:

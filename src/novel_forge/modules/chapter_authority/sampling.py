@@ -20,6 +20,8 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
     CHAPTER_SAMPLE_DEFINITION_VERSION,
     CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE,
     CHAPTER_SAMPLE_SOURCE_VERSION,
+    CHAPTER_REFERENCE_SAMPLE_VERSION,
+    CHAPTER_REFERENCE_SAMPLE_SOURCES,
     authorization_hash,
     bootstrap_command_hash,
     chapter_sample_definition_name,
@@ -51,6 +53,8 @@ class ChapterProviderSampleCommand:
     idempotency_key: str
     predecessor_operation_id: str = ""
     reference_evaluation: dict[str, Any] | None = None
+    generation_sample: dict[str, str] | None = None
+    reference_stage: str = ""
 
 
 def prepare_provider_sample(
@@ -91,16 +95,15 @@ def prepare_provider_sample(
             "CHAPTER_SAMPLE_TASK_UNSUPPORTED",
             "sampling requires a frozen native Chapter Provider task",
         )
-    stage = CHAPTER_BOOTSTRAP_TASKS[source[0]]
+    stage = command.reference_stage if command.generation_sample is not None else CHAPTER_BOOTSTRAP_TASKS[source[0]]
+    if command.generation_sample is not None:
+        if CHAPTER_REFERENCE_SAMPLE_SOURCES.get(stage) != source[0]:
+            raise KernelError("CHAPTER_SAMPLE_TASK_UNSUPPORTED", "reference stage must match its original native generator")
+    elif command.reference_stage:
+        raise KernelError("CHAPTER_SAMPLE_TASK_UNSUPPORTED", "reference stage selection requires an exact generator sample")
+    inputs = [*source[3], command.generation_sample] if command.generation_sample is not None else source[3]
     reference = stage in CHAPTER_REFERENCE_TASKS.values()
-    if reference:
-        from novel_forge.modules.chapter_quality_authority.reference_sampling import require_chapter_reference
-
-        with AuthorityUnitOfWork(app.database_url) as uow:
-            require_chapter_reference(uow.cursor, project_id=command.project_id, stage=stage,
-                input_versions=source[3], binding=command.reference_evaluation,
-                evaluator_actor_id=command.actor_id, chapter=source[2]["chapter"])
-    elif command.reference_evaluation is not None:
+    if not reference and command.reference_evaluation is not None:
         raise KernelError("QUALITY_REFERENCE_TASK_UNSUPPORTED", "generator samples cannot consume reviewer labels")
     payload = {
         **source[2],
@@ -108,30 +111,121 @@ def prepare_provider_sample(
         "generator_operation_name": stage,
         "logical_key": command.source_operation_id,
         "idempotency_key": command.idempotency_key,
-        "input_versions": source[3],
+        "input_versions": inputs,
         "chapter_predecessor_operation_id": command.predecessor_operation_id,
         "chapter_sampling": {
             "source_operation_id": command.source_operation_id,
             "source_command_hash": authorization_hash(source[2]),
+            **({"generation_sample": command.generation_sample} if command.generation_sample is not None else {}),
         },
         "routing_bootstrap_authorization_id": command.authorization_id,
         **({"reference_evaluation": command.reference_evaluation} if reference else {}),
     }
     validate_chapter_sample_origin(payload, source[:4], project_id=command.project_id)
+    if reference:
+        from novel_forge.modules.chapter_quality_authority.reference_sampling import require_chapter_reference
+        from novel_forge.modules.chapter_quality_authority.reference_subject import require_chapter_sample_target
+
+        with AuthorityUnitOfWork(app.database_url) as uow:
+            subject = require_chapter_sample_target(uow.cursor, project_id=command.project_id, payload=payload) if command.generation_sample else None
+            require_chapter_reference(uow.cursor, project_id=command.project_id, stage=stage,
+                input_versions=inputs, binding=command.reference_evaluation,
+                evaluator_actor_id=command.actor_id, chapter=source[2]["chapter"], generation_sample=subject)
+    producer = reference_sample_producer_identity(app, payload=payload, workspace_id=source[4]) if command.generation_sample else None
     return {
         "status": "PREPARED_NO_PROVIDER_CALL",
         "provider_calls": 0,
         "definition_name": chapter_sample_definition_name(stage),
-        "definition_version": CHAPTER_SAMPLE_DEFINITION_VERSION,
+        "definition_version": CHAPTER_REFERENCE_SAMPLE_VERSION if command.generation_sample else CHAPTER_SAMPLE_DEFINITION_VERSION,
         "workspace_id": source[4],
         "book_id": payload["book_id"],
         "command_payload": payload,
-        "input_assets": source[3],
+        "input_assets": inputs,
         "command_hash": bootstrap_command_hash(payload),
-        "input_versions_hash": authorization_hash(source[3]),
-        "required_workflow_ref": CHAPTER_REFERENCE_WORKFLOW_REF if reference else CHAPTER_SAMPLE_WORKFLOW_REF,
+        "input_versions_hash": authorization_hash(inputs),
+        **({"producer_contract": producer, "producer_contract_hash": authorization_hash(producer)} if producer else {}),
+        "required_workflow_ref": "chapter_reference_sampling@" + CHAPTER_REFERENCE_SAMPLE_VERSION if command.generation_sample else
+            CHAPTER_REFERENCE_WORKFLOW_REF if reference else CHAPTER_SAMPLE_WORKFLOW_REF,
         "production_eligible": False,
     }
+
+
+def reference_sample_producer_identity(app: Any, *, payload: dict[str, Any], workspace_id: str) -> dict[str, Any]:
+    from copy import deepcopy
+    import json
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    from novel_forge.modules.capability_pack_authority.runtime import CapabilityPackResolutionRequest, materialize_registered_pack_version
+    from .contracts import ChapterHandlerRequest, ChapterInputAsset
+    from .execution_gateway import (
+        PostgresChapterExecutionContractBinder, _materialize_production_codex_prompt, chapter_producer_contract_identity,
+        _stage_tool_permissions,
+    )
+    from .review_window import prepare_native_review
+
+    database_url = app.database_url
+    binder = app._model_port.capability_binder
+    query = AuthorityAssetQuery(database_url)
+    documents = [query.require(project_id=payload["project_id"], asset_version_id=item["asset_version_id"])
+                 for item in payload["input_versions"]]
+    for document, binding in zip(documents, payload["input_versions"], strict=True):
+        if document.content_hash != binding["content_hash"] or document.content_hash != authorization_hash(document.content):
+            raise KernelError("CHAPTER_SAMPLE_INPUT_DRIFT", "reference preflight requires its unchanged native inputs")
+    request = ChapterHandlerRequest(operation_id=payload["logical_key"], project_id=payload["project_id"], workspace_id=workspace_id,
+        trace_id="reference-preflight", correlation_id="reference-preflight", command=payload, database_url=database_url,
+        inputs=tuple(ChapterInputAsset(asset_version_id=item.asset_version_id, asset_type=item.asset_type,
+            content_hash=item.content_hash, content=item.content) for item in documents))
+    stage = payload["generator_operation_name"]
+    _, context, _, _, provider_input = prepare_native_review(request, stage=stage)
+    schema, schema_ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage=stage, request_payload={"input": provider_input})
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT operation.command_payload->'payload',attempt.attempt_id
+            FROM authority_operation operation JOIN authority_attempt attempt USING(operation_id)
+            WHERE operation.project_id=%s AND operation.idempotency_scope=%s AND operation.idempotency_key=%s
+            ORDER BY attempt.attempt_number DESC LIMIT 1""",
+            [payload["project_id"], CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE, payload["idempotency_key"]])
+        existing = uow.cursor.fetchone()
+        stored = None
+        if existing:
+            if {key: value for key, value in existing[0].items() if key != "routing_bootstrap_authorization"} != payload:
+                raise KernelError("CHAPTER_SAMPLE_INPUT_DRIFT", "reference replay requires its original admitted command")
+            stored = uow.repositories.capability_packs.find_attempt_snapshot(existing[1])
+        snapshot = stored["snapshot"] if stored else binder.pack_resolver.resolve_in_uow(uow, CapabilityPackResolutionRequest(
+            project_id=payload["project_id"], workspace_id=workspace_id, book_id=payload["book_id"],
+            workflow_definition_ref="chapter_reference_sampling@" + CHAPTER_REFERENCE_SAMPLE_VERSION,
+            workflow_node_id=stage, environment=binder.pack_environment, runtime_profile=binder.pack_runtime_profile,
+            release_channel=binder.pack_release_channel, release_sha=binder.routes[stage].release_sha,
+            operation_definition_ref=chapter_sample_definition_name(stage) + "@" + CHAPTER_REFERENCE_SAMPLE_VERSION,
+            pack_id=binder.capability_pack_id + ".reference_samples"))
+        version = uow.repositories.capability_packs.require_version(snapshot.pack_id, snapshot.pack_version)
+        artifacts = materialize_registered_pack_version(snapshot, version)
+        uow.cursor.execute("""SELECT version.content,version.content_hash FROM authority_operation_output_asset output
+            JOIN authority_asset_version version USING(asset_version_id) JOIN authority_asset asset ON asset.asset_id=version.asset_id
+            WHERE output.operation_id=%s AND asset.project_id=%s AND asset.asset_type='capability_materialization_manifest'
+              AND output.content_hash=version.content_hash""", [payload["logical_key"], payload["project_id"]])
+        rows = uow.cursor.fetchall()
+    producers = {}
+    for content, digest in rows:
+        materialization = deepcopy(content.get("contract") or {})
+        selection = materialization.get("context_selection") or []
+        if (authorization_hash(content) != digest or len(selection) != 1
+            or selection[0].get("asset_version_id") != context.asset_version_id
+            or selection[0].get("content_hash") != context.content_hash
+            or materialization.get("stage") != {"review": "draft", "rereview": "revision"}[stage]):
+            raise KernelError("CHAPTER_SAMPLE_PRODUCER_DRIFT", "reference sampling must retain its original approved producer artifacts and Context")
+        materialization.update(stage=stage, output_schema={"ref": schema_ref, "content_hash": authorization_hash(schema), "content": schema})
+        materialization["pack_artifacts"] = artifacts.to_dict(include_content=True)
+        tool_payload = json.loads(snapshot.tool_policy_payload_json)
+        allowed, denied = _stage_tool_permissions(tool_payload, stage)
+        materialization["tool_permissions"] = {"default": str(tool_payload.get("default") or ""),
+            "allowed": list(allowed), "denied": list(denied), "invoked": ["model.provider.invoke"],
+            "governing_policy_ref": snapshot.tool_policy_ref, "governing_policy_hash": snapshot.tool_policy_hash}
+        _, evidence = _materialize_production_codex_prompt(target_scope={"scope_kind": "chapter", "scope_id": str(payload["chapter"]),
+            "project_id": payload["project_id"], "book_id": payload["book_id"]}, stage=stage, inputs=provider_input, materialization=materialization)
+        producer = chapter_producer_contract_identity(evidence, materialization)
+        producers[authorization_hash(producer)] = producer
+    if len(producers) != 1:
+        raise KernelError("CHAPTER_SAMPLE_PRODUCER_REQUIRED", "reference sampling requires one compatible native generation materialization")
+    return next(iter(producers.values()))
 
 
 def admit_provider_sample(
@@ -155,7 +249,8 @@ def admit_provider_sample(
             "Chapter sampling requires a frozen campaign grant",
         )
     definitions = chapter_provider_sample_definitions(
-        application_build_id=app.application_build_id, commit_sha=app.commit_sha
+        application_build_id=app.application_build_id, commit_sha=app.commit_sha,
+        reference_samples=command.generation_sample is not None,
     )
     definition = next(
         item for item in definitions if item["name"] == prepared["definition_name"]
@@ -184,7 +279,7 @@ def admit_provider_sample(
             uow,
             {
                 "definition_name": definition["name"],
-                "definition_version": CHAPTER_SAMPLE_DEFINITION_VERSION,
+                "definition_version": prepared["definition_version"],
                 "project_id": command.project_id,
                 "workspace_id": prepared["workspace_id"],
                 "book_id": prepared["book_id"],

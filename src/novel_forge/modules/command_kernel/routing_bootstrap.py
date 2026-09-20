@@ -36,6 +36,8 @@ CHAPTER_SAMPLE_SOURCE_VERSION = "3.4.1"
 WORLD_SAMPLE_TASKS = {"world_candidates.generate", "world_candidates.evaluate"}
 WORLD_SAMPLE_IDEMPOTENCY_SCOPE = "book:world-provider-sample"
 WORLD_SAMPLE_DEFINITION_VERSION = "1.0.0"
+CHAPTER_REFERENCE_SAMPLE_VERSION = "1.1.0"
+CHAPTER_REFERENCE_SAMPLE_SOURCES = {"review": "chapter.draft.generate", "rereview": "chapter.revision.apply"}
 
 
 def chapter_sample_definition_name(task_type: str) -> str:
@@ -373,6 +375,11 @@ def validate_chapter_sample_origin(
         if not origin or len(origin) != 4:
             raise ValueError("source operation is absent")
         definition, version, command, inputs = origin
+        sample_binding = (payload.get("chapter_sampling") or {}).get("generation_sample")
+        expected_stage = payload.get("generator_operation_name") if sample_binding is not None else CHAPTER_BOOTSTRAP_TASKS.get(definition)
+        if sample_binding is not None and CHAPTER_REFERENCE_SAMPLE_SOURCES.get(expected_stage) != definition:
+            raise ValueError("reference sample uses the wrong generator task")
+        expected_inputs = [*inputs, sample_binding] if sample_binding is not None else inputs
         metadata = {
             "project_id", "generator_operation_name", "logical_key", "idempotency_key",
             "input_versions", "chapter_sampling", "chapter_predecessor_operation_id",
@@ -387,11 +394,12 @@ def validate_chapter_sample_origin(
             or not isinstance(command, Mapping) or not command.get("book_id")
             or any(key in command for key in ("chapter_sampling", "routing_bootstrap_authorization_id"))
             or payload.get("project_id") != project_id
-            or payload.get("generator_operation_name") != CHAPTER_BOOTSTRAP_TASKS[definition]
-            or payload.get("input_versions") != inputs
+            or payload.get("generator_operation_name") != expected_stage
+            or payload.get("input_versions") != expected_inputs
             or payload.get("chapter_sampling") != {
                 "source_operation_id": payload.get("logical_key"),
                 "source_command_hash": authorization_hash(command),
+                **({"generation_sample": sample_binding} if sample_binding is not None else {}),
             }
             or payload != {**command, **{key: payload[key] for key in metadata}}
         ):
@@ -497,7 +505,8 @@ def load_bootstrap_authorization(
     if payload.get("chapter_sampling"):
         try:
             contract = (chapter_sample_definition_name(payload.get("generator_operation_name")),
-                        CHAPTER_SAMPLE_DEFINITION_VERSION, CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE)
+                        CHAPTER_REFERENCE_SAMPLE_VERSION if payload["chapter_sampling"].get("generation_sample") is not None else CHAPTER_SAMPLE_DEFINITION_VERSION,
+                        CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE)
         except ValueError as exc:
             raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Chapter sampling requires its native task contract") from exc
     if payload.get("world_sampling"):
@@ -529,6 +538,10 @@ def load_bootstrap_authorization(
             [project_id, payload["chapter_sampling"].get("source_operation_id")],
         )
         validate_chapter_sample_origin(payload, cursor.fetchone(), project_id=project_id)
+        if payload["chapter_sampling"].get("generation_sample") is not None:
+            from novel_forge.modules.chapter_quality_authority.reference_subject import require_chapter_sample_target
+
+            require_chapter_sample_target(cursor, project_id=project_id, payload=payload)
         cursor.execute(
             "SELECT input_asset_snapshot FROM authority_operation WHERE project_id=%s AND operation_id=%s",
             [project_id, operation_id],

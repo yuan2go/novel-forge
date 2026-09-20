@@ -99,7 +99,7 @@ def fixture_adjudicated_reference(h, original, stage, *, sample_target=None):
 
     adjudications = []
     for dimension in reference_dimensions(stage):
-        entry = {"gate_status": result["decision"], "score": 80} if stage == "review" else next(item for item in result["dimensions"] if item["dimension"] == dimension)
+        entry = {"gate_status": result["decision"], "score": 80} if stage in {"review", "rereview"} else next(item for item in result["dimensions"] if item["dimension"] == dimension)
         shared = {"subject_asset_version_id": target["asset_version_id"], "dimension": dimension,
             "status": entry["gate_status"], "protocol_version": "fixture-blind-reference-v1",
             "evaluation_version": "fixture-review-labels-v1", "scope_type": "CHAPTER", "chapter_start": 1, "chapter_end": 1}
@@ -125,6 +125,7 @@ def fixture_adjudicated_reference(h, original, stage, *, sample_target=None):
 @pytest.mark.parametrize("stage,scenario", [
     *(("draft", scenario) for scenario in ("success", "unknown_then_reconciled", "terminal_failure", "producer_drift")),
     ("review", "success"), ("review", "unknown_then_reconciled"), ("quality_structural", "success"),
+    ("revision", "success"),
 ])
 def test_native_chapter_sample_replays_without_formal_chapter_mutation(
     tmp_path, scenario, stage
@@ -141,7 +142,8 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
     reference = None
     if stage != "draft":
         original = native_reviewer_source(h, tmp_path, original, stage)
-        reference = fixture_adjudicated_reference(h, original, stage)
+        if stage != "revision":
+            reference = fixture_adjudicated_reference(h, original, stage)
     original_runtime = original["effect_request_payload"]["_production_execution"][
         "capability_runtime"
     ]
@@ -242,11 +244,15 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         historical = _usage(uow.cursor, campaign_policy["comparison_budget"], h.project_id)
     sampling_phase = "REFERENCE" if reference else "CALIBRATION"
+    cold_start = stage in {"draft", "revision"} and scenario == "success"
+    cold_stage = "rereview" if stage == "revision" else "review"
     for phase, allocation in campaign_policy["authorization"]["authorized_cumulative_caps"].items():
         prior_calls = historical["phases"][phase]["calls_used_or_reserved"]
         allocation.update(calls=2 if phase == sampling_phase else prior_calls,
                           tokens=400000 if phase == sampling_phase else 1000000 if prior_calls else 0,
                           priced_usd="2" if phase == sampling_phase else "1" if prior_calls else "0")
+        if cold_start and phase == "REFERENCE":
+            allocation.update(calls=prior_calls + 1, tokens=200000, priced_usd="1")
         arm[phase.lower() + "_allocation"] = dict(allocation)
     allocations = campaign_policy["authorization"]["authorized_cumulative_caps"].values()
     totals = {**{key: sum(row[key] for row in allocations) for key in ("calls", "tokens")},
@@ -315,9 +321,9 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
                     "sample_id": stage,
                     "group_id": command.source_operation_id,
                     "partition": "CALIBRATION",
-                    "maximum_calls": 2,
-                    "maximum_tokens": 400000,
-                    "maximum_amount": "2",
+                    "maximum_calls": 3 if cold_start else 2,
+                    "maximum_tokens": 600000 if cold_start else 400000,
+                    "maximum_amount": "3" if cold_start else "2",
                     "expires_at": expiry,
                 },
             }
@@ -519,10 +525,10 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
         )
         assert result["status"] == "SUCCEEDED"
         assert not result["production_eligible"]
-        if stage == "draft" and scenario == "success":
+        if cold_start:
             target = next({key: item[key] for key in ("asset_version_id", "content_hash")}
                           for item in result["outputs"] if item["asset_type"] == "chapter_provider_sample")
-            labels = fixture_adjudicated_reference(h, original, "review", sample_target=target)
+            labels = fixture_adjudicated_reference(h, original, cold_stage, sample_target=target)
             from novel_forge.modules.chapter_quality_authority.reference_sampling import require_adjudicated_reference
             from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_annotation
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -532,7 +538,7 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
                 verified = require_adjudicated_reference(uow.cursor, project_id=h.project_id, binding=labels,
                     target_id=target["asset_version_id"], target_hash=target["content_hash"],
                     generators=[principal.principal_id], evaluator_actor_id="another-fixture-evaluator", chapter=1,
-                    expected_dimensions=("review_decision",), allowed_statuses={"PASSED", "NEEDS_REVISION", "BLOCKED"})
+                    expected_dimensions=(cold_stage + "_decision",), allowed_statuses={"PASSED", "NEEDS_REVISION", "BLOCKED"})
                 assert verified["production_qualification_eligible"] is False
                 for invalid in (
                     {"reference_sample": {**target, "content_hash": "sha256:" + "f" * 64},
@@ -582,19 +588,68 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
                 assert agreement["calibration_claim_allowed"] is False
                 assert agreement["production_qualification_eligible"] is False
             else:
-                assert outputs[0][2]["sampled_output"]["text"] == original["draft_content"]["text"]
+                assert outputs[0][2]["sampled_output"]["text"] == original["dispatch_evidence"]["result"]["text"]
             uow.cursor.execute(
                 "SELECT status FROM authority_operation WHERE operation_id=%s",
                 [original["operation_id"]],
             )
             assert uow.cursor.fetchone() == ("SUCCEEDED",)
-    expected_calls = 0 if scenario == "producer_drift" else 2
+    if cold_start:
+        install_chapter_validation_pack(DATABASE_URL, repository_root=ROOT, project_id=h.project_id,
+            workspace_id=h.workspace_id, book_id=h.book_ids[0], application_build_id=h.application_build_id,
+            commit_sha=h.release_sha, compiler=h.compiler, approver=h.approver, agent_admin=h.agent_admin,
+            pack_id_override=h.pack_id, provider_sampling=True, reference_sampling=True, reference_samples=True)
+        cold_command = replace(command, generation_sample=target, reference_stage=cold_stage, reference_evaluation=labels,
+            authorization_id="fixture-review-coldstart", idempotency_key=h.project_id + ":review-coldstart")
+        prepared = app.prepare_provider_sample(cold_command, principal=principal)
+        assert prepared["definition_version"] == "1.1.0"
+        grants.append({**grants[0], "authorization_id": cold_command.authorization_id, "task_type": cold_stage,
+            "generation_idempotency_key": cold_command.idempotency_key, "command_hash": prepared["command_hash"],
+            "input_versions_hash": prepared["input_versions_hash"], "producer_contract_hash": prepared["producer_contract_hash"],
+            "purpose": "REFERENCE_EVALUATION", "reference_evaluation": labels,
+            "campaign": {**grants[0]["campaign"], "sample_id": "review-coldstart"}})
+        configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", project_id=h.project_id,
+            workspace_id=h.workspace_id, content={"policy_version": "coldstart", "reason": "fixture-only",
+                "task_overrides": [], "bootstrap_authorizations": grants}, idempotency_key=h.project_id + ":coldstart-policy",
+            trace_id="fixture", correlation_id="fixture", application_build_id=h.application_build_id,
+            commit_sha=h.release_sha, principal=principal)
+        cold = app.admit_provider_sample(cold_command, principal=principal)
+
+        def review_sample_provider(**kwargs):
+            from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+            from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+            from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+            calls.append(kwargs)
+            runtime = kwargs["request_payload"]["_production_execution"]["capability_runtime"]
+            assert runtime["routing_decision"]["task"]["producer_contract"] == prepared["producer_contract"]
+            provider_view = build_provider_task_view(cold_stage, kwargs["request_payload"]["input"])
+            assert "fixture-blind-reference-v1" not in str(provider_view)
+            assert "provider_evidence" not in str(provider_view)
+            evidence = fixture_evidence(kwargs)
+            evidence["result"] = normalize_model_output(cold_stage, default_chapter_fixture_response(cold_stage, kwargs["request_payload"]["input"]))
+            return ProviderResult("success", "fixture-review-coldstart:" + kwargs["stable_idempotency_key"], evidence)
+
+        with patch.object(execution.gateway, "execute", side_effect=review_sample_provider):
+            assert scheduler.tick(project_id=h.project_id, root_operation_id=cold["operation_id"]).operation_status == "SUCCEEDED"
+            assert scheduler.tick(project_id=h.project_id, root_operation_id=cold["operation_id"]).recovery_mode == "terminal_replay"
+        with patch.object(binder.pack_resolver, "resolve_in_uow", side_effect=AssertionError("replay must use its frozen Pack")):
+            assert app.prepare_provider_sample(cold_command, principal=principal)["producer_contract"] == prepared["producer_contract"]
+            assert app.admit_provider_sample(cold_command, principal=principal)["operation_id"] == cold["operation_id"]
+        reviewed = app.query.require_provider_sample(project_id=h.project_id, operation_id=cold["operation_id"])
+        cold_output = next(item["sample"] for item in reviewed["outputs"] if item["asset_type"] == "chapter_provider_sample")
+        assert cold_output["reference_evaluation"]["target_asset_version_id"] == target["asset_version_id"]
+        assert cold_output["reference_evaluation"]["calibration_claim_allowed"] is False
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name=%s",
+                [h.project_id, "chapter.revision.review" if cold_stage == "rereview" else "chapter.review.evaluate"])
+            assert uow.cursor.fetchone() == (0,)
+    expected_calls = 0 if scenario == "producer_drift" else 3 if cold_start else 2
     assert len(calls) == expected_calls
     campaign = PostgresRoutingRegistry(DATABASE_URL).campaign(
         project_id=h.project_id, campaign_id=h.project_id
     )
     assert campaign["usage"]["calls_used_or_reserved"] == expected_calls
-    assert len(campaign["operations"]) == 2
+    assert len(campaign["operations"]) == (3 if cold_start else 2)
     cumulative = get_creative_budget(DATABASE_URL, h.project_id)["budget_usage"]
     assert cumulative["project_total"]["calls_used_or_reserved"] == expected_calls + original_calls
-    assert cumulative["phases"][sampling_phase]["calls_used_or_reserved"] == expected_calls
+    assert cumulative["phases"][sampling_phase]["calls_used_or_reserved"] == expected_calls - int(cold_start)

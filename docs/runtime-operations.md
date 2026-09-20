@@ -611,7 +611,24 @@ its original campaign grant and exact hash again during execution. Other inputs 
 ordinary eligibility checks. The sample remains ineligible and cannot become accepted
 prose, Canon or production knowledge. Record actual independent labels only: this
 input exception supplies no human expertise, reader preference or reviewer admission.
-Reviewer sampling still requires its existing native reviewer task.
+To review that sample, use the Chapter provider-sample endpoint with the original
+generator `source_operation_id`, `generation_sample: {asset_version_id, content_hash}`,
+`reference_stage: "review"` for a draft sample or `"rereview"` for a revision sample,
+and independent `reference_evaluation` adjudications targeting that sample. The original
+native generator must be respectively `chapter.draft.generate` or `chapter.revision.apply`.
+Install the approved Pack with `install_chapter_validation_pack(...,
+provider_sampling=True, reference_sampling=True, reference_samples=True)`; this uses
+`.reference_samples`, `chapter_reference_sampling@1.1.0` and version `1.1.0` of the
+native review sample definitions. Preflight returns the actual reviewer producer identity,
+including its Skill and Schema, for the grant. It performs no persistent admission or
+Provider call; any provisional Pack canary assignment is rolled back with its read unit
+of work. Existing attempts reuse their frozen Pack instead of resolving a new deployment.
+The original generator inputs and sample stay bound through input hashes, Kernel lineage,
+Provider admission and shared campaign accounting. Each review consumes the `REFERENCE`
+allocation; its business Chapter still comes from the original generator. No formal
+review Operation or accepted draft is required for this sampling call, and the ordinary
+Chapter Authority still refuses the ineligible sample as a production input. Quality-group
+sample targets and trusted evaluator admission remain separate gaps.
 
 For semantic evaluator reference sampling, first register independent operator labels
 through `story_design.review.author` with the exact benchmark candidate as its only
