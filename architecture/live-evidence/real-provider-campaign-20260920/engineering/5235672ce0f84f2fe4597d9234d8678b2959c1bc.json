@@ -175,6 +175,40 @@
   "source_report_sha256": "sha256:fd1abd116e560fea0aa2f15d951e306a4bc423790f1dd75f2444e44572eab695",
   "evidence_root_name": "nf-real-provider-reference-kernel-pr-20260920",
   "failure_reason": "pytest-backend failed",
+  "pr_governance": {
+    "schema_version": "novel-forge.pr-governance.v1",
+    "status": "FAIL",
+    "head_sha": "5235672ce0f84f2fe4597d9234d8678b2959c1bc",
+    "base_sha": "feba06582b6cadf2e80f5c573cf427114cf2a926",
+    "base_implementation_tree_sha": "sha256:e1dd43acca11bcecbb7e736e65332fa8824e305e85e6fa1ab503ed103a560537",
+    "implementation_tree_sha": "sha256:5289579355c2f0a0691f6798aefd4d5c93ccb7450b05200fe8d9f9729b3caf6a",
+    "implementation_changed": true,
+    "focused_test_paths": [
+      "tests/integration/test_provider_routing_postgres.py",
+      "tests/integration/test_routing_bootstrap_budget_postgres.py",
+      "tests/unit/test_cost_aware_routing.py",
+      "tests/unit/test_provider_task_views.py",
+      "tests/unit/test_routing_bootstrap.py"
+    ],
+    "checks": [
+      {
+        "exit_code": 0,
+        "gate": "repository-governance"
+      },
+      {
+        "exit_code": 0,
+        "gate": "focused-tests"
+      },
+      {
+        "exit_code": 2,
+        "gate": "canonical-exact-sha-p0"
+      }
+    ],
+    "qualification": "REQUIRED_EXACT_SHA_P0",
+    "qualification_reason": "IMPLEMENTATION_CHANGED",
+    "provider_qualification": "NOT_ASSESSED_BY_PR_GATE",
+    "source_report_sha256": "sha256:151fc712f5d04cd9ece1c441aad43c4906b79b096b21d2b0c7cc0acc0754d2ab"
+  },
   "gates": [
     {
       "gate_id": "source-preflight",
@@ -272,6 +306,12 @@
         "tests.unit.test_narrative_evaluation_replacement_gate::test_story_design_release_transitions_the_current_replacement_to_ready",
         "tests.unit.test_narrative_evaluation_replacement_gate::test_story_design_release_treats_legacy_ready_replacement_as_replay"
       ]
+    }
+  ],
+  "pytest_summaries": [
+    {
+      "artifact": "backend-pytest-process.json",
+      "summary": "19 failed, 2810 passed, 15 warnings, 1452 subtests passed in 154.33s (0:02:34)"
     }
   ],
   "artifacts": [

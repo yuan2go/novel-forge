@@ -1,0 +1,13 @@
+{
+  "schema_version": "campaign-development-fixture-cleanup.v1",
+  "container_name": "nf-reference-kernel-dev-20260920",
+  "verified_owner_label": {
+    "novel-forge.owner": "reference-kernel-dev-20260920"
+  },
+  "action": "docker rm -fv on exact verified owned container",
+  "status": "PASS",
+  "removed_anonymous_volumes": true,
+  "checked_at": "2026-09-20T13:57:41Z",
+  "business_database_affected": false,
+  "p0_containers_affected": false
+}

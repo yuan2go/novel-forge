@@ -1,0 +1,28 @@
+{
+  "schema_version": "campaign-delivery-verification.v1",
+  "documentation_checks": [
+    {
+      "artifact": "delivery-documentation-initial.json",
+      "status": "FAIL",
+      "sha256": "sha256:e3ababeff18f37ce6c532cc5cdc3bf6d68e31fc5dbaafb0a3bc62dd0408403ce"
+    },
+    {
+      "artifact": "delivery-documentation-corrected.json",
+      "status": "PASS",
+      "sha256": "sha256:e7cb6638a7162511f580ce56cd14dc2e2fe437878070f3dcdb1c259018435ccf"
+    }
+  ],
+  "initial_metadata_failure": "New Reality qualification_evidence locator omitted test class name; corrected metadata only",
+  "raw_archive": {
+    "status": "PASS",
+    "verification": "EVERY_ARCHIVED_FILE_BYTE_HASH_EQUALS_ORIGINAL",
+    "files": 155,
+    "uncompressed_bytes": 957148525,
+    "archive_filename": "real-provider-campaign-engineering-raw-20260920.tar.gz"
+  },
+  "owned_final_p0_containers_and_volumes_remaining": 0,
+  "original_user_checkout_sha": "c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4",
+  "original_user_checkout_dirty": false,
+  "last_remote_main_sha": "e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332",
+  "implementation_changed_after_tested_sha": false
+}
