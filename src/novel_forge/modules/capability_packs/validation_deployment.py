@@ -120,6 +120,7 @@ def install_chapter_validation_pack(
     pack_id_override: str = "",
     pack_version_override: str = "",
     provider_sampling: bool = False,
+    reference_sampling: bool = False,
     runtime_environment: str = "validation",
 ) -> dict[str, Any]:
     root = Path(repository_root).resolve()
@@ -133,11 +134,14 @@ def install_chapter_validation_pack(
         manifest["identity"]["pack_id"] = pack_id_override
     if pack_version_override:
         manifest["identity"]["version"] = pack_version_override
+    if reference_sampling and not provider_sampling:
+        raise ValueError("Chapter reference evaluation requires provider sampling")
     if provider_sampling:
         if runtime_environment != "validation":
             raise ValueError("Chapter sampling packs are restricted to validation")
         manifest = chapter_provider_sampling_manifest(
             manifest, application_build_id=application_build_id, commit_sha=commit_sha,
+            reference=reference_sampling,
         )
     resolver = default_chapter_artifact_resolver(root)
     catalog = {
@@ -178,22 +182,26 @@ def install_chapter_validation_pack(
 
 
 def chapter_provider_sampling_manifest(
-    source: Mapping[str, Any], *, application_build_id: str, commit_sha: str,
+    source: Mapping[str, Any], *, application_build_id: str, commit_sha: str, reference: bool = False,
 ) -> dict[str, Any]:
     from novel_forge.modules.command_kernel.routing_bootstrap import (
         CHAPTER_SAMPLE_DEFINITION_VERSION, CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE,
+        CHAPTER_GENERATOR_TASKS, CHAPTER_REFERENCE_TASKS,
     )
+    from novel_forge.modules.chapter_authority.definitions import CHAPTER_REFERENCE_WORKFLOW_ID
 
     manifest = deepcopy(dict(source))
     manifest["identity"].update({
-        "pack_id": str(manifest["identity"]["pack_id"]) + ".provider_sampling",
+        "pack_id": str(manifest["identity"]["pack_id"]) + (".reference_sampling" if reference else ".provider_sampling"),
         "name": "Chapter Provider Sampling Pack",
         "description": "Governed isolated samples using the frozen Chapter generation contracts.",
     })
+    tasks = CHAPTER_REFERENCE_TASKS if reference else CHAPTER_GENERATOR_TASKS
     definitions = {item["policy"]["source_definition_name"]: item for item in
-                   chapter_provider_sample_definitions(application_build_id=application_build_id, commit_sha=commit_sha)}
+                   chapter_provider_sample_definitions(application_build_id=application_build_id, commit_sha=commit_sha)
+                   if item["policy"]["source_definition_name"] in tasks}
     workflow = manifest["workflow_template"]
-    workflow.update({"workflow_id": CHAPTER_SAMPLE_WORKFLOW_ID,
+    workflow.update({"workflow_id": CHAPTER_REFERENCE_WORKFLOW_ID if reference else CHAPTER_SAMPLE_WORKFLOW_ID,
                      "workflow_version": CHAPTER_SAMPLE_DEFINITION_VERSION,
                      "idempotency_scope": CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE})
     nodes = []

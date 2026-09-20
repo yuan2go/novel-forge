@@ -102,7 +102,12 @@ Their single-step Saga, Router, Provider admission, Agent Runtime, ExternalEffec
 remain native; the source production Saga and Book acceptance cannot consume the sample.
 Both synchronous and reconciled model receipts use one Kernel settlement policy. Failures
 without measurements retain model-call evidence, and later success appends separate evidence.
-Chapter reviewer reference calibration and generator feedback admission remain unimplemented.
+Chapter review, rereview and five Quality groups additionally support reference sampling
+against native adjudications backed by independent blind human-evaluation records. The
+labels are excluded from Provider input and compared afterward with the exact ModelCallLog.
+This checks recorded identity, scope and agreement; it does not certify human judgment.
+The sampling result cannot activate a Quality profile or qualify itself. Calibrated
+reviewer admission and generator feedback admission remain unimplemented.
 This does not prove judge calibration or bootstrap every task family. Ordinary production
 routing blocks when sufficient quality evidence is absent.
 
@@ -110,9 +115,9 @@ Planning sampling grants may bind a frozen campaign identity, manifest hash, sam
 group and experiment partition. Kernel aggregates their reservations across authorization
 and policy versions. A campaign project cannot replace that identity or admit new unbound
 sampling grants. This quota covers authorized Planning, Source, Chapter generator and reference sampling;
-production, ordinary review and entitlement
-still require their existing project and Book budget policies. It is not a campaign-wide
-mixed-billing authorization. Router v5 counts first attempts per campaign data group
+production, ordinary review and entitlement still require their native project and Book
+policies, including the separate whole-campaign contract described below. A bootstrap
+quota alone is not mixed-billing authorization. Router v5 counts first attempts per campaign data group
 (input hashes outside campaigns) for quality
 qualification, keeps retries in operational cost/yield, and excludes development and
 holdout partitions from qualification feedback. The provider view removes routing/grant

@@ -42,16 +42,100 @@ from tests.integration.capability_pack_postgres_support import (
 )
 
 
-@pytest.mark.parametrize(
-    "scenario", ["success", "unknown_then_reconciled", "terminal_failure", "producer_drift"]
-)
+def native_reviewer_source(h, tmp_path, original, stage):
+    settings = IndustrialSettings(root=ROOT, environment="development", storage_authority="postgresql", database_url=DATABASE_URL)
+    env = {"NOVEL_FORGE_ENVIRONMENT": "development", "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+           "NOVEL_FORGE_COMMIT_SHA": h.release_sha, "NOVEL_FORGE_APPLICATION_BUILD_ID": h.application_build_id,
+           "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": h.pack_id, "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(tmp_path)}
+    app = build_chapter_authority_application(settings, execution=build_production_execution_composition(settings, env=env), env=env)
+    scheduler = app.scheduler(principal=Principal(principal_id="reference-source-fixture-worker", principal_type=PrincipalType.WORKER,
+        permissions=frozenset({"chapter.authority.execute"}), project_scope=frozenset({h.project_id}), authentication_source="integration-fixture"))
+    for _ in range(20):
+        tick = scheduler.tick(project_id=h.project_id, root_operation_id=original["root_operation_id"])
+        assert tick.operation_status == "SUCCEEDED", tick
+        if tick.node == stage:
+            break
+    else:
+        raise AssertionError("native reviewer source was not reached")
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("""SELECT effect.operation_id,effect.request_payload,dispatch.evidence
+            FROM authority_external_effect effect JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
+            WHERE effect.project_id=%s AND effect.operation_id=%s AND dispatch.status='SUCCEEDED'""", [h.project_id, tick.operation_id])
+        row = uow.cursor.fetchone()
+        assert row is not None
+    return {**original, "operation_id": row[0], "effect_request_payload": row[1], "dispatch_evidence": row[2]}
+
+
+def fixture_adjudicated_reference(h, original, stage):
+    from novel_forge.modules.content_authority import CONTENT_CODECS
+    from novel_forge.modules.content_authority.application import ContentAuthorityApplication, ContentOperationRequest
+    from novel_forge.modules.chapter_quality_authority.reference_sampling import reference_dimensions
+
+    app = ContentAuthorityApplication(DATABASE_URL, application_build_id=h.application_build_id,
+        commit_sha=h.release_sha, integration_proven=CONTENT_CODECS, trusted_only=True)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("""SELECT version.asset_version_id,version.content_hash FROM authority_asset_version version
+            JOIN authority_asset asset USING(asset_id) JOIN authority_operation operation ON operation.project_id=asset.project_id
+            WHERE operation.operation_id=%s AND asset.asset_type=%s
+              AND EXISTS (SELECT 1 FROM jsonb_array_elements(operation.input_asset_snapshot) input
+                          WHERE input->>'asset_version_id'=version.asset_version_id)""",
+            [original["operation_id"], "draft_chapter" if stage == "review" else "best_draft_candidate"])
+        target = dict(zip(("asset_version_id", "content_hash"), uow.cursor.fetchone(), strict=True))
+    result = original["dispatch_evidence"]["result"]
+
+    def author(name, actor, payload, inputs):
+        written = app.execute(ContentOperationRequest(name, h.project_id, h.workspace_id, actor,
+            "fixture", "fixture", h.project_id + ":" + actor + ":" + payload[next(iter(payload))]["dimension"],
+            payload, tuple(inputs)), principal=Principal(principal_id=actor, principal_type=PrincipalType.LOCAL_OPERATOR,
+                permissions=frozenset({"content.authority.execute", "content.operation:" + name}),
+                project_scope=frozenset({h.project_id}), authentication_source="integration-fixture"))
+        return {"asset_version_id": written.asset_version_id, "content_hash": written.content_hash}
+
+    adjudications = []
+    for dimension in reference_dimensions(stage):
+        entry = {"gate_status": result["decision"], "score": 80} if stage == "review" else next(item for item in result["dimensions"] if item["dimension"] == dimension)
+        shared = {"subject_asset_version_id": target["asset_version_id"], "dimension": dimension,
+            "status": entry["gate_status"], "protocol_version": "fixture-blind-reference-v1",
+            "evaluation_version": "fixture-review-labels-v1", "scope_type": "CHAPTER", "chapter_start": 1, "chapter_end": 1}
+        humans = []
+        for ordinal in (1, 2):
+            actor = h.principal("fixture-human-" + str(ordinal)).principal_id
+            humans.append(author("quality.human_evaluation.record", actor, {"evaluation": {
+                **shared, "evaluation_id": h.project_id + ":" + dimension + ":human:" + str(ordinal),
+                "evaluator_id": actor, "evaluator_group": "SCRIPTED_INTEGRATION_FIXTURE",
+                "evaluator_identity_class": "PROFESSIONAL_EDITOR", "score": entry.get("score"),
+                "confidence": 0.8, "evidence": [{"fixture_protocol_only": True, "span": [0, 5]}], "blind": True,
+            }}, [target]))
+        actor = h.principal("fixture-adjudicator").principal_id
+        adjudications.append(author("quality.adjudication.record", actor, {"adjudication": {
+            **shared, "adjudication_id": h.project_id + ":" + dimension + ":adjudication", "adjudicator_id": actor,
+            "adjudicator_identity_class": "PROFESSIONAL_EDITOR", "score_range": [0, 100],
+            "source_human_evaluation_asset_version_ids": [row["asset_version_id"] for row in humans],
+            "rationale": "Scripted labels exercise provenance only; no human quality claim.",
+        }}, [target, *humans]))
+    return {"protocol_version": "fixture-blind-reference-v1", "adjudications": adjudications}
+
+
+@pytest.mark.parametrize("stage,scenario", [
+    *(("draft", scenario) for scenario in ("success", "unknown_then_reconciled", "terminal_failure", "producer_drift")),
+    ("review", "success"), ("review", "unknown_then_reconciled"), ("quality_structural", "success"),
+])
 def test_native_chapter_sample_replays_without_formal_chapter_mutation(
-    tmp_path, scenario
+    tmp_path, scenario, stage
 ):
     h = CapabilityPackPostgresHarness("native-chapter-sampling")
     formal = h.register_compile_approve("1.0.0", generation=1)
     h.activate(h.deploy(formal))
-    original = h.run_draft_attempt()
+    profiles = ()
+    if stage.startswith("quality_"):
+        from tests.integration.test_chapter_model_effects_postgres import ChapterModelEffectsPostgresTests
+        profiles = tuple(item for item in ChapterModelEffectsPostgresTests()._release_evidence(h.project_id)
+                         if item["asset_type"] in {"quality_rubric", "platform_profile"})
+    original = h.run_draft_attempt(extra_context_candidates=profiles)
+    reference = None
+    if stage != "draft":
+        original = native_reviewer_source(h, tmp_path, original, stage)
+        reference = fixture_adjudicated_reference(h, original, stage)
     original_runtime = original["effect_request_payload"]["_production_execution"][
         "capability_runtime"
     ]
@@ -88,6 +172,7 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
         agent_admin=h.agent_admin,
         pack_id_override=h.pack_id,
         provider_sampling=True,
+        reference_sampling=reference is not None,
     )
     env = {
         "NOVEL_FORGE_ENVIRONMENT": "development",
@@ -147,12 +232,19 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
     campaign_policy = provider_campaign_policy()
     arm = campaign_policy["comparison_budget"]["arms"][0]
     arm.update(project_id=h.project_id, book_id=h.book_ids[0])
+    from novel_forge.modules.command_kernel.creative_budget_runtime import _usage
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        historical = _usage(uow.cursor, campaign_policy["comparison_budget"], h.project_id)
+    sampling_phase = "REFERENCE" if reference else "CALIBRATION"
     for phase, allocation in campaign_policy["authorization"]["authorized_cumulative_caps"].items():
-        allocation.update(calls=2 if phase == "CALIBRATION" else original_calls if phase == "PRODUCTION" else 0,
-                          tokens=400000 if phase == "CALIBRATION" else 1000000 if phase == "PRODUCTION" else 0,
-                          priced_usd="2" if phase == "CALIBRATION" else "1" if phase == "PRODUCTION" else "0")
+        prior_calls = historical["phases"][phase]["calls_used_or_reserved"]
+        allocation.update(calls=2 if phase == sampling_phase else prior_calls,
+                          tokens=400000 if phase == sampling_phase else 1000000 if prior_calls else 0,
+                          priced_usd="2" if phase == sampling_phase else "1" if prior_calls else "0")
         arm[phase.lower() + "_allocation"] = dict(allocation)
-    totals = {"calls": 2 + original_calls, "tokens": 1400000, "priced_usd": "3"}
+    allocations = campaign_policy["authorization"]["authorized_cumulative_caps"].values()
+    totals = {**{key: sum(row[key] for row in allocations) for key in ("calls", "tokens")},
+              "priced_usd": str(sum(int(row["priced_usd"]) for row in allocations))}
     arm["project_total"] = totals
     campaign_policy["comparison_budget"].update(experiment_id=h.project_id, expires_at=expiry,
                                               shared_total=totals, entitlements=[])
@@ -170,16 +262,32 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
             original["operation_id"],
             "sample:" + candidate.candidate_id,
             h.project_id + ":sample:" + candidate.candidate_id,
+            reference_evaluation=reference,
         )
         prepared = app.prepare_provider_sample(command, principal=principal)
         assert prepared["provider_calls"] == 0
+        if reference:
+            changed = deepcopy(reference)
+            changed["adjudications"][0]["content_hash"] = "sha256:" + "0" * 64
+            with pytest.raises(KernelError, match="QUALITY_REFERENCE_PROVENANCE_INVALID"):
+                app.prepare_provider_sample(replace(command, reference_evaluation=changed), principal=principal)
+            changed = {**reference, "protocol_version": "another-label-protocol"}
+            with pytest.raises(KernelError, match="QUALITY_REFERENCE_NOT_INDEPENDENT"):
+                app.prepare_provider_sample(replace(command, reference_evaluation=changed), principal=principal)
+            human = h.principal("fixture-human-1", "chapter.authority.execute")
+            with pytest.raises(KernelError, match="QUALITY_REFERENCE_NOT_INDEPENDENT"):
+                app.prepare_provider_sample(replace(command, actor_id=human.principal_id), principal=human)
+            if len(reference["adjudications"]) > 1:
+                changed = {**reference, "adjudications": reference["adjudications"][:-1]}
+                with pytest.raises(KernelError, match="QUALITY_REFERENCE_COVERAGE_INCOMPLETE"):
+                    app.prepare_provider_sample(replace(command, reference_evaluation=changed), principal=principal)
         grants.append(
             {
                 "authorization_id": command.authorization_id,
                 "reason": "scripted Chapter boundary regression",
                 "environment": "validation",
                 "book_id": h.book_ids[0],
-                "task_type": "draft",
+                "task_type": stage,
                 "logical_key": command.source_operation_id,
                 "generation_idempotency_key": command.idempotency_key,
                 "input_versions_hash": prepared["input_versions_hash"],
@@ -192,12 +300,13 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
                 "maximum_tokens": 200000,
                 "maximum_amount": "1",
                 "currency": "USD",
-                "purpose": "BENCHMARK_CHALLENGER",
+                "purpose": "REFERENCE_EVALUATION" if reference else "BENCHMARK_CHALLENGER",
+                **({"reference_evaluation": reference} if reference else {}),
                 "production_eligible": False,
                 "campaign": {
                     "campaign_id": h.project_id,
                     "manifest_hash": "sha256:" + "c" * 64,
-                    "sample_id": "draft",
+                    "sample_id": stage,
                     "group_id": command.source_operation_id,
                     "partition": "CALIBRATION",
                     "maximum_calls": 2,
@@ -272,8 +381,23 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
         )
         assert admitted["operation_id"] != original["operation_id"]
 
+        def fixture_evidence(kwargs):
+            evidence = deepcopy(original["dispatch_evidence"])
+            evidence.update(real_model_call=False, production_verified=False)
+            metadata = kwargs["request_payload"]["_production_execution"]
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s AND stable_idempotency_key=%s",
+                    [metadata["operation_id"], kwargs["stable_idempotency_key"]])
+                effect_id = uow.cursor.fetchone()[0]
+            evidence["production_execution"]["execution_request"].update(
+                {key: metadata[key] for key in ("operation_id", "attempt_id", "project_id")}, external_effect_id=effect_id)
+            return evidence
+
         def fixture_provider(**kwargs):
             calls.append(kwargs)
+            if reference:
+                import json
+                assert "fixture-blind-reference-v1" not in json.dumps(kwargs["request_payload"].get("input", {}))
             runtime = kwargs["request_payload"]["_production_execution"][
                 "capability_runtime"
             ]
@@ -302,7 +426,7 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
                         },
                     },
                 )
-            evidence = deepcopy(original["dispatch_evidence"])
+            evidence = fixture_evidence(kwargs)
             assert evidence["fixture_protocol_only"]
             evidence.update(real_model_call=False, production_verified=False)
             return ProviderResult(
@@ -361,7 +485,7 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
                 reject_replacement()
 
                 def recovered_provider(_adapter, **kwargs):
-                    evidence = deepcopy(original["dispatch_evidence"])
+                    evidence = fixture_evidence(kwargs)
                     evidence.update(real_model_call=False, production_verified=False)
                     return ProviderResult(
                         "success",
@@ -419,10 +543,14 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
             assert len(outputs) == 1
             assert outputs[0][:2] == ("chapter_provider_sample", "INELIGIBLE")
             assert outputs[0][2]["production_eligible"] is False
-            assert (
-                outputs[0][2]["sampled_output"]["text"]
-                == original["draft_content"]["text"]
-            )
+            if reference:
+                agreement = outputs[0][2]["reference_evaluation"]
+                assert agreement["status_accuracy"] == 1
+                assert agreement["real_model_call"] is False
+                assert agreement["calibration_claim_allowed"] is False
+                assert agreement["production_qualification_eligible"] is False
+            else:
+                assert outputs[0][2]["sampled_output"]["text"] == original["draft_content"]["text"]
             uow.cursor.execute(
                 "SELECT status FROM authority_operation WHERE operation_id=%s",
                 [original["operation_id"]],
@@ -437,4 +565,4 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
     assert len(campaign["operations"]) == 2
     cumulative = get_creative_budget(DATABASE_URL, h.project_id)["budget_usage"]
     assert cumulative["project_total"]["calls_used_or_reserved"] == expected_calls + original_calls
-    assert cumulative["phases"]["CALIBRATION"]["calls_used_or_reserved"] == expected_calls
+    assert cumulative["phases"][sampling_phase]["calls_used_or_reserved"] == expected_calls

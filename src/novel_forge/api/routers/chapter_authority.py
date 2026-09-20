@@ -32,6 +32,7 @@ class ChapterProviderSampleRequest(BaseModel):
     authorization_id: str = Field(min_length=1, max_length=200)
     idempotency_key: str = Field(min_length=1, max_length=512)
     predecessor_operation_id: str = Field(default="", max_length=200)
+    reference_evaluation: dict[str, Any] | None = None
 
 
 def create_router(ctx: ProductRouterContext) -> APIRouter:

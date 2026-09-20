@@ -504,8 +504,36 @@ its predecessor, actor, input and campaign identity. Failure model-call evidence
 separately from later successful recovery evidence. Kernel receipt recovery and Chapter
 synchronous completion use the same settlement policy: missing real receipts retain
 conservative usage, explicit fixture receipts remain fixtures, and subscription charges
-remain unknown rather than zero. The sampler does not yet admit independently calibrated
-Chapter reviewers or publish generator quality observations; those remain explicit gaps.
+remain unknown rather than zero. Samples do not grant calibrated reviewer admission or
+publish generator quality observations; those remain separate required steps.
+
+The same Chapter endpoint supports native `review`, `rereview`, `quality_structural`,
+`quality_commercial`, `quality_source_originality`, `quality_longform`, and
+`quality_platform` reference tasks. Supply an existing frozen native reviewer Operation
+and `reference_evaluation: {protocol_version, adjudications: [{asset_version_id,
+content_hash}]}`. Each reference must be the successful immutable output of
+`quality.adjudication.record`, supported by at least two blind
+`quality.human_evaluation.record` outputs for the exact target draft, chapter, dimension,
+protocol and evaluation version. Native author identities must match the recorded human
+and adjudicator identities and differ from the candidate generator and sampling operator;
+the adjudicator is separate from the blind evaluators. These records require actual
+independent human input. A coding agent's labels cannot be submitted as human evaluations.
+The software checks provenance and declared independence; it cannot certify a person's
+judgment or turn subjective labels into universal truth.
+
+Reference coverage must include every dimension of the selected Quality group; review
+and rereview use respectively `review_decision` and `rereview_decision`. Freeze an explicit
+`REFERENCE_EVALUATION` grant with the exact binding and producer contract. Install the
+approved `<configured_chapter_pack_id>.reference_sampling` pack with
+`install_chapter_validation_pack(..., provider_sampling=True, reference_sampling=True)`;
+its native binding is `chapter_reference_sampling@1.0.0`. Reference labels are checked
+before inference and compared with the exact successful ModelCallLog afterward. They
+never enter Provider task inputs. The sample retains status agreement, score-range
+agreement and all reference hashes separately, with `calibration_claim_allowed: false`
+and `production_qualification_eligible: false`. Replay and unknown-result reconciliation
+retain the same Kernel budget and reference scope. This entry reuses existing native
+review tasks and labeled drafts; authoring a new reference corpus, admitting a calibrated
+evaluator and closing generator feedback are not implied by this sampling path.
 
 For semantic evaluator reference sampling, first register independent operator labels
 through `story_design.review.author` with the exact benchmark candidate as its only

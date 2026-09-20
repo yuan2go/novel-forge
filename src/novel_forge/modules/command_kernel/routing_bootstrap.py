@@ -17,12 +17,19 @@ SOURCE_BOOTSTRAP_TASKS = {
     "source.import.mkaos.extract": "source.mkaos.extract",
 }
 
-CHAPTER_BOOTSTRAP_TASKS = {
+CHAPTER_GENERATOR_TASKS = {
     "chapter.memo.generate": "memo",
     "chapter.draft.generate": "draft",
     "chapter.revision.apply": "revision",
     "chapter.canon.extract": "canon_extraction",
 }
+CHAPTER_REFERENCE_TASKS = {
+    "chapter.review.evaluate": "review",
+    "chapter.revision.review": "rereview",
+    **{"chapter.quality." + group + ".evaluate": "quality_" + group
+       for group in ("structural", "commercial", "source_originality", "longform", "platform")},
+}
+CHAPTER_BOOTSTRAP_TASKS = {**CHAPTER_GENERATOR_TASKS, **CHAPTER_REFERENCE_TASKS}
 CHAPTER_SAMPLE_DEFINITION_VERSION = "1.0.0"
 CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE = "book:chapter-provider-sample"
 CHAPTER_SAMPLE_SOURCE_VERSION = "3.4.1"
@@ -100,10 +107,12 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         raise ValueError("ROUTING_BOOTSTRAP_BOUNDARY_INVALID")
     reference = grant.get("reference_evaluation")
     if grant["purpose"] == "REFERENCE_EVALUATION":
-        if grant["task_type"] != "narrative_semantic_evaluation" or "campaign" not in grant:
+        if grant["task_type"] not in {"narrative_semantic_evaluation", *CHAPTER_REFERENCE_TASKS.values()} or "campaign" not in grant:
             raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
         validate_reference_evaluation_binding(reference)
-    elif reference is not None or grant["task_type"] == "narrative_semantic_evaluation":
+        if (grant["task_type"] in CHAPTER_REFERENCE_TASKS.values()) != ("adjudications" in reference):
+            raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
+    elif reference is not None or grant["task_type"] in {"narrative_semantic_evaluation", *CHAPTER_REFERENCE_TASKS.values()}:
         raise ValueError("ROUTING_REFERENCE_AUTHORIZATION_REQUIRED")
     if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and "campaign" not in grant:
         raise ValueError("ROUTING_SOURCE_CAMPAIGN_REQUIRED")
@@ -160,6 +169,19 @@ def validate_bootstrap_producer(
 
 
 def validate_reference_evaluation_binding(reference: Any) -> None:
+    if isinstance(reference, Mapping) and "adjudications" in reference:
+        if set(reference) != {"protocol_version", "adjudications"} or not isinstance(reference["protocol_version"], str) or not reference["protocol_version"].strip():
+            raise ValueError("ROUTING_REFERENCE_BINDING_INVALID")
+        entries = reference["adjudications"]
+        if not isinstance(entries, list) or not entries:
+            raise ValueError("ROUTING_REFERENCE_BINDING_INVALID")
+        for entry in entries:
+            if not isinstance(entry, Mapping) or set(entry) != {"asset_version_id", "content_hash"}:
+                raise ValueError("ROUTING_REFERENCE_BINDING_INVALID")
+            validate_reference_evaluation_binding({**entry, "protocol_version": reference["protocol_version"]})
+        if len({item["asset_version_id"] for item in entries}) != len(entries):
+            raise ValueError("ROUTING_REFERENCE_BINDING_INVALID")
+        return
     if not isinstance(reference, Mapping) or set(reference) != {
         "asset_version_id", "content_hash", "protocol_version",
     } or any(not isinstance(value, str) or not value.strip() for value in reference.values()):
@@ -293,7 +315,7 @@ def validate_bootstrap_scope(
         expected = {
             "authorization_id": payload.get("routing_bootstrap_authorization_id"),
             "book_id": payload.get("book_id"),
-            "task_type": "narrative_semantic_evaluation" if payload.get("reference_evaluation") else payload.get("generator_operation_name"),
+            "task_type": "narrative_semantic_evaluation" if payload.get("reference_evaluation") and not payload.get("chapter_sampling") else payload.get("generator_operation_name"),
             "logical_key": payload.get("logical_key"),
             "generation_idempotency_key": payload.get("idempotency_key"),
             "input_versions_hash": authorization_hash(payload.get("input_versions")),
@@ -331,6 +353,8 @@ def validate_chapter_sample_origin(
         }
         if "routing_bootstrap_authorization" in payload:
             metadata.add("routing_bootstrap_authorization")
+        if "reference_evaluation" in payload:
+            metadata.add("reference_evaluation")
         if (
             definition not in CHAPTER_BOOTSTRAP_TASKS or version != CHAPTER_SAMPLE_SOURCE_VERSION
             or not isinstance(command, Mapping) or not command.get("book_id")

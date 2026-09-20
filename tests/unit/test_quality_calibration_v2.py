@@ -25,6 +25,36 @@ PROTOCOL_VERSION = "human-blind-comparison-v1"
 EVALUATION_VERSION = "editorial-pairwise-v1"
 
 
+def test_reference_agreement_retains_false_pass_and_never_mints_calibration():
+    from novel_forge.modules.chapter_quality_authority.reference_sampling import chapter_reference_agreement
+
+    reference = {"labels": [{"dimension": "review_decision", "status": "NEEDS_REVISION", "score_range": [0, 100]}],
+                 "production_qualification_eligible": False, "reference_basis": "ADJUDICATED_SUBJECTIVE_EVIDENCE"}
+    result = chapter_reference_agreement(reference, stage="review", result={"decision": "PASSED"})
+    assert result["status_accuracy"] == 0
+    assert result["comparisons"][0]["observed_status"] == "PASSED"
+    assert result["comparisons"][0]["score_in_range"] is None
+    assert result["calibration_claim_allowed"] is False
+    assert result["reader_preference_proven"] is False
+    assert result["production_qualification_eligible"] is False
+
+
+def test_reference_quality_compares_every_dimension_and_separates_status_from_score():
+    from novel_forge.modules.chapter_quality_authority.reference_sampling import chapter_reference_agreement, reference_dimensions
+
+    dimensions = reference_dimensions("quality_structural")
+    reference = {"labels": [{"dimension": dimension, "status": "PASSED", "score_range": [75, 85]} for dimension in dimensions]}
+    output = {"dimensions": [{"dimension": dimension, "gate_status": "PASSED", "score": 90} for dimension in dimensions]}
+    result = chapter_reference_agreement(reference, stage="quality_structural", result=output)
+    assert result["status_accuracy"] == 1
+    assert not any(row["score_in_range"] for row in result["comparisons"])
+    with pytest.raises(KernelError, match="QUALITY_REFERENCE_RESULT_INVALID"):
+        chapter_reference_agreement(reference, stage="quality_structural", result={"dimensions": output["dimensions"][:-1]})
+    output["dimensions"][-1] = output["dimensions"][0]
+    with pytest.raises(KernelError, match="QUALITY_REFERENCE_RESULT_INVALID"):
+        chapter_reference_agreement(reference, stage="quality_structural", result=output)
+
+
 def _scores(a: int | None = 4, b: int | None = 3):
     return {dimension: {"a": a, "b": b} for dimension in BLIND_EVALUATION_DIMENSIONS}
 

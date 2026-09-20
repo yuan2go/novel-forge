@@ -1905,10 +1905,12 @@ class PostgresChapterExecutionContractBinder:
             raise KernelError("CHAPTER_SAMPLE_PACK_REQUIRED", "Chapter sampling requires its approved validation pack")
         if not self.capability_pack_id:
             return None
-        from .definitions import CHAPTER_SAMPLE_WORKFLOW_REF
+        from .definitions import CHAPTER_SAMPLE_WORKFLOW_REF, CHAPTER_REFERENCE_WORKFLOW_REF
+        from novel_forge.modules.command_kernel.routing_bootstrap import CHAPTER_REFERENCE_TASKS
 
-        workflow_ref = CHAPTER_SAMPLE_WORKFLOW_REF if sampling else self.workflow_definition_ref
-        pack_id = self.capability_pack_id + ".provider_sampling" if sampling else self.capability_pack_id
+        reference = sampling and stage in CHAPTER_REFERENCE_TASKS.values()
+        workflow_ref = CHAPTER_REFERENCE_WORKFLOW_REF if reference else CHAPTER_SAMPLE_WORKFLOW_REF if sampling else self.workflow_definition_ref
+        pack_id = self.capability_pack_id + (".reference_sampling" if reference else ".provider_sampling") if sampling else self.capability_pack_id
         try:
             return self.pack_resolver.freeze_attempt_snapshot(
                 CapabilityPackResolutionRequest(

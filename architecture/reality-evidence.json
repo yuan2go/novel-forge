@@ -5156,6 +5156,18 @@
         {
           "path": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
           "symbol": "check_creative_settlement_in_uow"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/reference_sampling.py",
+          "symbol": "require_chapter_reference"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/reference_sampling.py",
+          "symbol": "chapter_reference_agreement"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/reference_sampling.py",
+          "symbol": "reference_provider_result"
         }
       ],
       "domain_symbols": [
@@ -5446,6 +5458,14 @@
         {
           "path": "tests/integration/test_single_book_budget_postgres.py",
           "symbol": "test_mixed_campaign_reconciles_expired_calls_and_retains_monetary_breach"
+        },
+        {
+          "path": "tests/unit/test_quality_calibration_v2.py",
+          "symbol": "test_reference_agreement_retains_false_pass_and_never_mints_calibration"
+        },
+        {
+          "path": "tests/unit/test_quality_calibration_v2.py",
+          "symbol": "test_reference_quality_compares_every_dimension_and_separates_status_from_score"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8708,7 +8728,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:2c54e03aa518077adb1da6649425e15ba9a840a999a5cbb14a8ca9ee38b48e95"
+    "implementation_tree_sha": "sha256:db0df8c0b5c58ab1d923601243f09a2ea108bbb2eba4db0065a1520d023b866e"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

@@ -16,6 +16,7 @@ from novel_forge.modules.command_kernel.operation_graph import (
 )
 from novel_forge.modules.command_kernel.routing_bootstrap import (
     CHAPTER_BOOTSTRAP_TASKS,
+    CHAPTER_REFERENCE_TASKS,
     CHAPTER_SAMPLE_DEFINITION_VERSION,
     CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE,
     CHAPTER_SAMPLE_SOURCE_VERSION,
@@ -36,6 +37,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .definitions import (
     CHAPTER_SAMPLE_WORKFLOW_REF,
+    CHAPTER_REFERENCE_WORKFLOW_REF,
     chapter_provider_sample_definitions,
 )
 
@@ -48,6 +50,7 @@ class ChapterProviderSampleCommand:
     authorization_id: str
     idempotency_key: str
     predecessor_operation_id: str = ""
+    reference_evaluation: dict[str, Any] | None = None
 
 
 def prepare_provider_sample(
@@ -89,6 +92,16 @@ def prepare_provider_sample(
             "sampling requires a frozen native Chapter Provider task",
         )
     stage = CHAPTER_BOOTSTRAP_TASKS[source[0]]
+    reference = stage in CHAPTER_REFERENCE_TASKS.values()
+    if reference:
+        from novel_forge.modules.chapter_quality_authority.reference_sampling import require_chapter_reference
+
+        with AuthorityUnitOfWork(app.database_url) as uow:
+            require_chapter_reference(uow.cursor, project_id=command.project_id, stage=stage,
+                input_versions=source[3], binding=command.reference_evaluation,
+                evaluator_actor_id=command.actor_id, chapter=source[2]["chapter"])
+    elif command.reference_evaluation is not None:
+        raise KernelError("QUALITY_REFERENCE_TASK_UNSUPPORTED", "generator samples cannot consume reviewer labels")
     payload = {
         **source[2],
         "project_id": command.project_id,
@@ -102,6 +115,7 @@ def prepare_provider_sample(
             "source_command_hash": authorization_hash(source[2]),
         },
         "routing_bootstrap_authorization_id": command.authorization_id,
+        **({"reference_evaluation": command.reference_evaluation} if reference else {}),
     }
     validate_chapter_sample_origin(payload, source[:4], project_id=command.project_id)
     return {
@@ -115,7 +129,7 @@ def prepare_provider_sample(
         "input_assets": source[3],
         "command_hash": bootstrap_command_hash(payload),
         "input_versions_hash": authorization_hash(source[3]),
-        "required_workflow_ref": CHAPTER_SAMPLE_WORKFLOW_REF,
+        "required_workflow_ref": CHAPTER_REFERENCE_WORKFLOW_REF if reference else CHAPTER_SAMPLE_WORKFLOW_REF,
         "production_eligible": False,
     }
 
@@ -134,7 +148,8 @@ def admit_provider_sample(
         idempotency_scope=CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE,
     )
     grant = snapshot["authorization"]
-    if grant["purpose"] != "BENCHMARK_CHALLENGER" or not grant.get("campaign"):
+    purpose = "REFERENCE_EVALUATION" if command.reference_evaluation is not None else "BENCHMARK_CHALLENGER"
+    if grant["purpose"] != purpose or not grant.get("campaign"):
         raise KernelError(
             "CHAPTER_SAMPLE_CAMPAIGN_REQUIRED",
             "Chapter sampling requires a frozen campaign grant",

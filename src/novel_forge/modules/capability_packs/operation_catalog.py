@@ -314,21 +314,22 @@ def chapter_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
 
 
-def chapter_sampling_workflow_binding_catalog() -> WorkflowBindingCatalog:
+def chapter_sampling_workflow_binding_catalog(*, reference: bool = False) -> WorkflowBindingCatalog:
     from novel_forge.modules.command_kernel.routing_bootstrap import (
-        CHAPTER_BOOTSTRAP_TASKS, CHAPTER_SAMPLE_DEFINITION_VERSION,
+        CHAPTER_GENERATOR_TASKS, CHAPTER_REFERENCE_TASKS, CHAPTER_SAMPLE_DEFINITION_VERSION,
         chapter_sample_definition_name,
     )
+    from novel_forge.modules.chapter_authority.definitions import CHAPTER_REFERENCE_WORKFLOW_ID
 
     formal = chapter_workflow_binding_catalog()
     return WorkflowBindingCatalog(
-        CHAPTER_SAMPLE_WORKFLOW_ID, CHAPTER_SAMPLE_DEFINITION_VERSION,
+        CHAPTER_REFERENCE_WORKFLOW_ID if reference else CHAPTER_SAMPLE_WORKFLOW_ID, CHAPTER_SAMPLE_DEFINITION_VERSION,
         (WorkflowBinding(
             node_id=stage, operation_name=chapter_sample_definition_name(stage), stage=stage,
             handler_key="novel_forge.chapter_authority.sample." + stage,
             capability_id=formal.resolve(stage).capability_id, depends_on=(),
             primary_output_asset_type="chapter_provider_sample",
-        ) for stage in CHAPTER_BOOTSTRAP_TASKS.values()),
+        ) for stage in (CHAPTER_REFERENCE_TASKS if reference else CHAPTER_GENERATOR_TASKS).values()),
     )
 
 
@@ -423,6 +424,7 @@ def governed_workflow_binding_catalog(
     catalogs = (
         chapter_workflow_binding_catalog(),
         chapter_sampling_workflow_binding_catalog(),
+        chapter_sampling_workflow_binding_catalog(reference=True),
         story_planning_workflow_binding_catalog(),
         reader_outcome_workflow_binding_catalog(),
         narrative_evaluation_workflow_binding_catalog(),

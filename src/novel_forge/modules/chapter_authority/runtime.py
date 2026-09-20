@@ -71,7 +71,27 @@ class _ChapterHandlerAdapter:
             worker_id=self.worker_id,
             database_url=self.database_url,
         )
+        reference = None
+        if snapshot is not None and snapshot["authorization"]["purpose"] == "REFERENCE_EVALUATION":
+            from novel_forge.modules.chapter_quality_authority.reference_sampling import require_chapter_reference
+
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                reference = require_chapter_reference(uow.cursor, project_id=request.project_id, stage=self.node.value,
+                    input_versions=chapter_request.command["input_versions"],
+                    binding=chapter_request.command["reference_evaluation"], evaluator_actor_id=request.actor_id,
+                    chapter=chapter_request.command["chapter"])
         output = self.registry.require(self.node).execute(chapter_request)
+        agreement = None
+        if reference is not None:
+            from novel_forge.modules.chapter_quality_authority.reference_sampling import (
+                chapter_reference_agreement, reference_provider_result,
+            )
+
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                provider = reference_provider_result(uow.cursor, project_id=request.project_id,
+                    operation_id=request.operation_id, attempt_id=self.attempt_id, stage=self.node.value)
+            agreement = {**chapter_reference_agreement(reference, stage=self.node.value, result=provider["result"]),
+                         **{key: value for key, value in provider.items() if key != "result"}}
         if snapshot is not None:
             grant = snapshot["authorization"]
             return AuthorityHandlerOutput(
@@ -82,13 +102,16 @@ class _ChapterHandlerAdapter:
                     "source_operation_id": chapter_request.command["chapter_sampling"]["source_operation_id"],
                     "authorization_id": grant["authorization_id"], "campaign": grant["campaign"],
                     "sampled_asset_type": output.asset_type, "sampled_output": output.content,
+                    **({"reference_evaluation": agreement} if agreement is not None else {}),
                     "uncommitted_auxiliary_candidates": [
                         {"asset_type": item.asset_type, "output_key": item.output_key, "content": item.content}
                         for item in output.auxiliary_outputs if item.role != "execution_commit_evidence"
                     ],
                 },
                 qualification_policy="chapter-provider-sample.v1", eligibility="INELIGIBLE",
-                reference_asset_version_ids=tuple(item.asset_version_id for item in request.inputs),
+                reference_asset_version_ids=tuple(item.asset_version_id for item in request.inputs) + (
+                    tuple(item["asset_version_id"] for item in reference["binding"]["adjudications"]) if reference is not None else ()
+                ),
                 evidence={"authority_family": "chapter", "production_eligible": False},
             )
         return AuthorityHandlerOutput(
