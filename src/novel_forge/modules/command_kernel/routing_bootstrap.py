@@ -113,7 +113,7 @@ def validate_bootstrap_campaign(campaign: Mapping[str, Any]) -> None:
         "maximum_calls", "maximum_tokens", "maximum_amount", "expires_at",
     }:
         raise ValueError("ROUTING_CAMPAIGN_CONTRACT_INVALID")
-    for key in ("campaign_id", "sample_id", "group_id", "manifest_hash", "expires_at"):
+    for key in ("campaign_id", "sample_id", "group_id", "manifest_hash", "expires_at", "maximum_amount"):
         if not isinstance(campaign[key], str) or not campaign[key].strip():
             raise ValueError("ROUTING_CAMPAIGN_IDENTITY_REQUIRED")
     digest = campaign["manifest_hash"]
@@ -181,6 +181,11 @@ def validate_bootstrap_history(
     if len(campaigns) > 1:
         raise KernelError("ROUTING_CAMPAIGN_PROJECT_REBIND_FORBIDDEN",
                           "a campaign project cannot reset usage by changing campaign identity")
+    historical_ids = {grant["authorization_id"] for grant in previous}
+    if campaigns and any(not grant.get("campaign") and grant["authorization_id"] not in historical_ids
+                         for grant in grants):
+        raise KernelError("ROUTING_CAMPAIGN_MEMBERSHIP_REQUIRED",
+                          "new sampling grants must retain the project's campaign budget")
 
 
 def validate_bootstrap_policy_in_uow(

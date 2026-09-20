@@ -301,10 +301,22 @@ def test_campaign_rejects_relabelled_sample_input_and_nonfinite_budget():
         validate_bootstrap_history([
             {**grant, "authorization_id": "new", "input_versions_hash": "sha256:" + "f" * 64}
         ], [grant])
-    for change in ({"maximum_amount": "NaN"}, {"maximum_calls": True},
+    for change in ({"maximum_amount": "NaN"}, {"maximum_amount": True}, {"maximum_amount": 1.0}, {"maximum_calls": True},
                    {"maximum_tokens": 0}, {"partition": "unknown"},
                    {"expires_at": "2099-01-01"}):
         with pytest.raises((ValueError, ArithmeticError)):
             validate_bootstrap_authorization({**grant, "campaign": {**grant["campaign"], **change}})
     with pytest.raises(ValueError, match="GRANT_EXCEEDS_TOTAL"):
         validate_bootstrap_authorization({**grant, "maximum_calls": 5})
+
+
+def test_campaign_cannot_be_evaded_by_a_new_unbound_authorization():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history
+    grant = campaign_grant()
+    legacy = {key: value for key, value in grant.items() if key != "campaign"}
+    legacy["authorization_id"] = "legacy"
+    validate_bootstrap_history([grant, legacy], [legacy])
+    with pytest.raises(KernelError, match="CAMPAIGN_MEMBERSHIP_REQUIRED"):
+        validate_bootstrap_history([legacy], [grant])
+    with pytest.raises(KernelError, match="CAMPAIGN_MEMBERSHIP_REQUIRED"):
+        validate_bootstrap_history([grant, legacy], [])

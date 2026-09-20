@@ -128,7 +128,7 @@ TASK_TAXONOMY = {
         "HIGH",
     ),
 }
-POLICY_VERSION = "quality-constrained-routing.v3"
+POLICY_VERSION = "quality-constrained-routing.v4"
 
 
 def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> TaskPolicy:
@@ -327,20 +327,21 @@ def benchmark_snapshot(
     excluded_partition_count = sum(
         row.experiment_partition in {"DEVELOPMENT", "HOLDOUT"} for row in unique.values()
     )
-    rows = sorted(
+    ordered = sorted(
         (row for row in unique.values()
          if row.experiment_partition not in {"DEVELOPMENT", "HOLDOUT"}),
         key=lambda row: (row.occurred_at, row.evidence_ref),
-    )[
-        -maximum_samples:
-    ]
+    )
+    rows = ordered[-maximum_samples:]
     independent: dict[str, BenchmarkObservation] = {}
-    for row in rows:
+    for row in ordered:
         independent.setdefault(row.sample_identity or row.evidence_ref, row)
-    samples = list(independent.values())
-    scores = [row.quality_score for row in samples if row.quality_score is not None]
+    represented = {row.sample_identity or row.evidence_ref for row in rows}
+    samples = [row for identity, row in independent.items() if identity in represented]
+    scored_samples = [row for row in samples if row.retried is not True]
+    scores = [row.quality_score for row in scored_samples if row.quality_score is not None]
     domain_outcomes = [
-        row.domain_gate_accepted for row in samples if row.domain_gate_accepted is not None
+        row.domain_gate_accepted for row in scored_samples if row.domain_gate_accepted is not None
     ]
     n = (
         len(domain_outcomes)

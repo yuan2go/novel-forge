@@ -525,3 +525,19 @@ def test_repair_cannot_replace_failed_first_attempt_for_calibration():
     assert result["schema_success"] == .5
     assert result["sample_count"] == 6
     assert result["independent_sample_count"] == 3
+
+
+def test_window_censoring_does_not_promote_repaired_samples():
+    from datetime import timedelta
+    from novel_forge.modules.production_execution.cost_routing import benchmark_snapshot, task_policy
+    first = replace(samples(n=1)[0], sample_identity="same-input", quality_score=None,
+                    schema_success=False, accepted=False)
+    repairs = [replace(row, sample_identity="same-input", retried=True,
+                       evidence_ref="repair:" + row.evidence_ref,
+                       occurred_at=(NOW + timedelta(seconds=1)).isoformat())
+               for row in samples(n=5)]
+    for observations in ([first, *repairs], repairs):
+        result = benchmark_snapshot(observations, now=NOW + timedelta(seconds=2),
+                                    policy=task_policy("classification"), maximum_samples=3)
+        assert result["metric_sample_count"] == 0
+        assert result["independent_sample_count"] == 1

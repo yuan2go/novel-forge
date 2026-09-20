@@ -73,6 +73,16 @@ and production acceptance reported separately. This path does not provide indepe
 judge calibration or bootstrap every task family. Ordinary production routing blocks
 when sufficient quality evidence is absent.
 
+Planning sampling grants may bind a frozen campaign identity, manifest hash, sample/data
+group and experiment partition. Kernel aggregates their reservations across authorization
+and policy versions. A campaign project cannot replace that identity or admit new unbound
+sampling grants. This quota covers bootstrap sampling; production, review and entitlement
+still require their existing project and Book budget policies. It is not a campaign-wide
+mixed-billing authorization. Router v4 counts independent first-attempt inputs for quality
+qualification, keeps retries in operational cost/yield, and excludes development and
+holdout partitions from qualification feedback. The provider view removes routing/grant
+metadata from narrative evaluation context; this does not establish evaluator calibration.
+
 Quality predictions are bounded by observed schema and acceptance yield, so failed
 outputs cannot disappear behind scores from successful outputs. Cache estimates use
 measured hit tokens from the same stable instruction prefix. Recent dispatch failures

@@ -26,7 +26,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
 )
 from novel_forge.modules.production_execution.cost_routing import snapshot_hash
 from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
-from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter, PostgresRoutingRegistry
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES, StoryPlanningGenerationApplication, StoryPlanningGenerationCommand,
 )
@@ -74,6 +74,10 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
         "expires_at": expiry.isoformat(), "maximum_calls": 1, "maximum_tokens": 4096,
         "maximum_amount": "0.1", "currency": "USD", "purpose": "BENCHMARK_CHALLENGER",
         "production_eligible": False,
+        "campaign": {"campaign_id": "campaign:" + project, "manifest_hash": "sha256:" + "c" * 64,
+                     "sample_id": "sample-one", "group_id": "group-one", "partition": "CALIBRATION",
+                     "maximum_calls": 1, "maximum_tokens": 4096, "maximum_amount": "0.1",
+                     "expires_at": expiry.isoformat()},
     }
     configure_owned_policy(
         database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
@@ -97,6 +101,8 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
         @classmethod
         def now(cls, tz=None):
             return (expiry + timedelta(seconds=1)).astimezone(tz)
+
+    campaign_error = ""
 
     class BudgetCheckingBinder(_ExternalEffectPepFixturePlanningBinder):
         def execute(self, **kwargs):
@@ -131,6 +137,10 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
             with pytest.raises(KernelError, match="ROUTING_DECISION_INTEGRITY_FAILURE"):
                 reserve_provider_budget(DATABASE_URL, replace(request,
                     external_effect_id=forged["external_effect_id"], stable_idempotency_key=request.stable_idempotency_key + ":forged"))
+            if campaign_error:
+                with pytest.raises(KernelError, match=campaign_error):
+                    reserve_provider_budget(DATABASE_URL, request)
+                return super().execute(**kwargs)
             first = reserve_provider_budget(DATABASE_URL, request)
             assert reserve_provider_budget(DATABASE_URL, request)["replayed"]
             resolve_provider_budget_failure(DATABASE_URL, reservation_id=first["reservation_id"],
@@ -165,3 +175,38 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
         allow_scripted_evaluation_fixture=True)
     result = application.generate(command, principal=principal)
     assert result.candidate_asset_version_id
+    command = replace(command, idempotency_key=f"{project}:new-run-key",
+                      logical_key="book:new-sample", routing_bootstrap_authorization_id="grant-two")
+    second = {**grant, "authorization_id": "grant-two", "logical_key": command.logical_key,
+              "generation_idempotency_key": command.idempotency_key,
+              "command_hash": bootstrap_command_hash(_command_payload(command)),
+              "campaign": {**grant["campaign"], "sample_id": "sample-two"}}
+    configure_owned_policy(
+        database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+        content={"policy_version": "bootstrap-kernel:v2", "reason": "fixture second sample",
+                 "task_overrides": [], "bootstrap_authorizations": [second]},
+        project_id=project, workspace_id=workspace, idempotency_key=f"{project}:policy-two",
+        trace_id=command.trace_id, correlation_id=command.correlation_id,
+        application_build_id="bootstrap-kernel-test", commit_sha=RELEASE_SHA, principal=principal,
+    )
+    campaign_error = ("ROUTING_CAMPAIGN_QUOTA_EXCEEDED" if scenario == "success"
+                      else "ROUTING_CAMPAIGN_RECONCILIATION_REQUIRED")
+    assert application.generate(command, principal=principal).candidate_asset_version_id
+    report = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=project, campaign_id="campaign:" + project)
+    assert report["usage"]["calls_used_or_reserved"] == 1
+    assert report["usage"]["conservative_tokens"] == 30
+    assert float(report["usage"]["settled_or_reserved_usd"]) == .0001
+    assert len(report["grants"]) == 2
+    assert report["scope"] == "BOOTSTRAP_SAMPLING_ONLY"
+    assert report["state"] == ("ACCOUNTED" if scenario == "success" else "RECONCILIATION_REQUIRED")
+    with pytest.raises(KernelError, match="ROUTING_CAMPAIGN_PROJECT_REBIND_FORBIDDEN"):
+        configure_owned_policy(
+            database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+            content={"policy_version": "bootstrap-kernel:v3", "reason": "fixture reset attempt",
+                     "task_overrides": [], "bootstrap_authorizations": [{**second,
+                         "authorization_id": "grant-three", "campaign": {
+                             **second["campaign"], "campaign_id": "renamed-campaign"}}]},
+            project_id=project, workspace_id=workspace, idempotency_key=f"{project}:policy-three",
+            trace_id=command.trace_id, correlation_id=command.correlation_id,
+            application_build_id="bootstrap-kernel-test", commit_sha=RELEASE_SHA, principal=principal,
+        )

@@ -4337,7 +4337,7 @@
     },
     {
       "id": "p0-backend-engineering-qualification-c561f0a0cdf5",
-      "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
       "evidence_class": "p0_backend_engineering_qualification",
       "gate": "P0_PROFILE=local make p0-backend-qualification",
       "observed_at_sha": "c561f0a0cdf55d0c84d79ecdf26e464c4ef13216",
@@ -5012,6 +5012,10 @@
         {
           "path": "src/novel_forge/modules/authority_handler_runtime/routing_bootstrap.py",
           "symbol": "freeze_planning_bootstrap_authorization"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+          "symbol": "validate_bootstrap_policy_in_uow"
         }
       ],
       "commands_operations": [
@@ -5143,6 +5147,14 @@
         {
           "path": "tests/integration/test_planning_routing_bootstrap_postgres.py",
           "symbol": "test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible"
+        },
+        {
+          "path": "tests/integration/test_routing_bootstrap_budget_postgres.py",
+          "symbol": "test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations"
+        },
+        {
+          "path": "tests/unit/test_cost_aware_routing.py",
+          "symbol": "test_repeated_inputs_cannot_supply_independent_qualification_samples"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8264,10 +8276,8 @@
           "symbol": "test_craft_origin_upgrade_preserves_legacy_source_candidates_and_enforces_new_origin"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-c561f0a0cdf5"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     }
   ],
@@ -8407,7 +8417,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:e1dd43acca11bcecbb7e736e65332fa8824e305e85e6fa1ab503ed103a560537"
+    "implementation_tree_sha": "sha256:551dd0a4ce45240f36dc291c7cc3c3d1e391bcdfd1472e7cf7e5b344b29744c5"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

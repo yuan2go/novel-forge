@@ -81,13 +81,14 @@ def add_provider_routing_parser(subparsers: Any) -> None:
         "authority-provider-routing",
         help="explain or replay Provider selection without inference",
     )
-    parser.add_argument("action", choices=("explain", "replay", "metrics", "configure"))
+    parser.add_argument("action", choices=("explain", "replay", "metrics", "configure", "campaign"))
     parser.add_argument("--project-id", required=True)
     parser.add_argument("--decision-id", default="")
     parser.add_argument("--task-context-file", default="")
     parser.add_argument("--policy-file", type=Path)
     parser.add_argument("--workspace-id", default="")
     parser.add_argument("--idempotency-key", default="")
+    parser.add_argument("--campaign-id", default="")
 
 
 def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
@@ -127,6 +128,10 @@ def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
     registry = PostgresRoutingRegistry(
         settings.database_url, outcome_projection=domain_gate_outcomes
     )
+    if args.action == "campaign":
+        if not args.campaign_id:
+            raise ValueError("routing campaign requires campaign-id")
+        return registry.campaign(project_id=args.project_id, campaign_id=args.campaign_id)
     if args.action == "replay":
         document = registry.query.require(
             project_id=args.project_id, asset_id=args.decision_id

@@ -320,6 +320,64 @@ class PostgresRoutingRegistry:
             )
         return observations
 
+    def campaign(self, *, project_id: str, campaign_id: str) -> dict[str, Any]:
+        from novel_forge.modules.command_kernel.budget_runtime import provider_usage_accounted_sql
+        from novel_forge.modules.command_kernel.routing_bootstrap import (
+            campaign_contract, validate_bootstrap_history,
+        )
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                "SELECT content,content_hash FROM authority_runtime_policy_version WHERE owner='PROVIDER_ROUTING' AND project_id=%s ORDER BY created_at,policy_version",
+                [project_id],
+            )
+            grants = {}
+            for content, digest in uow.cursor.fetchall():
+                if policy_hash(content) != digest:
+                    raise KernelError("RUNTIME_POLICY_HASH_MISMATCH", "policy integrity failed")
+                current = content.get("bootstrap_authorizations", [])
+                validate_bootstrap_history(current, list(grants.values()))
+                grants.update({grant["authorization_id"]: grant for grant in current})
+            matched = [grant for grant in grants.values()
+                       if (grant.get("campaign") or {}).get("campaign_id") == campaign_id]
+            if not matched:
+                raise KernelError("ROUTING_CAMPAIGN_NOT_FOUND", "no governed campaign exists in this project")
+            uow.cursor.execute(
+                f"""SELECT b.reservation_id,e.operation_id,e.external_effect_id,e.status,
+                          b.status,b.accounted,b.currency,b.evidence->>'accounting_basis',
+                          b.estimated_tokens,b.actual_tokens,b.reserved_amount,b.settled_amount,
+                          e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,bootstrap_authorization,authorization,authorization_id}}',
+                          e.request_payload #> '{{_production_execution,capability_runtime,routing_decision,bootstrap_authorization,authorization,campaign}}'
+                   FROM (SELECT *,{provider_usage_accounted_sql()} AS accounted
+                         FROM authority_budget_reservation) b
+                   JOIN authority_external_effect e USING(external_effect_id)
+                   WHERE b.project_id=%s AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,bootstrap_authorization,authorization,campaign,campaign_id}}'=%s
+                   ORDER BY b.created_at,b.reservation_id""",
+                [project_id, campaign_id],
+            )
+            columns = ("reservation_id", "operation_id", "external_effect_id", "effect_status",
+                       "reservation_status", "usage_accounted", "currency", "accounting_basis",
+                       "estimated_tokens", "actual_tokens", "reserved_amount", "settled_amount",
+                       "authorization_id", "campaign")
+            reservations = [dict(zip(columns, row, strict=True)) for row in uow.cursor.fetchall()]
+        used = [row for row in reservations if row["usage_accounted"]]
+        pending = [row for row in reservations if row["reservation_status"] in {"RESERVED", "HELD_UNKNOWN"}
+                   or row["effect_status"] in {"UNKNOWN", "SENT_UNKNOWN", "UNKNOWN_AMBIGUOUS", "RECONCILIATION_REQUIRED"}]
+        return {
+            "source": "POSTGRESQL_AUTHORITY_PROJECTION", "project_id": project_id,
+            "scope": "BOOTSTRAP_SAMPLING_ONLY", "campaign": campaign_contract(matched[0]["campaign"]),
+            "grants": matched, "reservations": reservations,
+            "usage": {"calls_used_or_reserved": len(used),
+                      "conservative_tokens": sum(int(row["actual_tokens"] or 0) if row["reservation_status"] == "SETTLED"
+                          else max(int(row["actual_tokens"] or 0), int(row["estimated_tokens"] or 0)) for row in used),
+                      "settled_or_reserved_usd": str(sum((Decimal(row["settled_amount"] or 0)
+                          if row["reservation_status"] == "SETTLED" else Decimal(row["reserved_amount"] or 0)
+                          for row in used), Decimal(0)))},
+            "unresolved_effect_ids": sorted({row["external_effect_id"] for row in pending}),
+            "state": "RECONCILIATION_REQUIRED" if pending else "ACCOUNTED",
+            "invoice_status": "NOT_VERIFIED", "production_qualification": "NOT_PROVEN",
+        }
+
     def available_candidates(
         self, *, project_id: str, candidates: Sequence[ModelCandidate], now: datetime
     ) -> tuple[ModelCandidate, ...]:

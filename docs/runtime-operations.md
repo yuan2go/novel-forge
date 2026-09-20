@@ -386,6 +386,23 @@ Candidates remain ineligible for production even after an explicit independent e
 No automatic judge or repair is authorized by the generator grant. Independent calibrated
 evaluation remains necessary; a model cannot establish its own qualification.
 
+For cumulative sampling, every new grant in a campaign project includes `campaign` with
+exact `campaign_id`, `manifest_hash` (SHA-256), `sample_id`, `group_id`, `partition`
+(`DEVELOPMENT`, `CALIBRATION`, or `HOLDOUT`), positive `maximum_calls`, `maximum_tokens`,
+decimal-string `maximum_amount` and timezone-aware `expires_at`. Grant limits cannot
+exceed campaign limits. Policy versions retain authorization and campaign identity;
+renaming a run, sample or authorization does not reset the cumulative budget. A data group
+or identical input-version set cannot cross partitions. These checks do not detect
+semantic paraphrases or replace an independently frozen dataset.
+`novel-forge authority-provider-routing campaign --project-id <id> --campaign-id <id>`
+reads all historical grants and native reservation/effect references, including failures
+and unresolved outcomes. `RECONCILIATION_REQUIRED` requires native ExternalEffect recovery,
+never a new grant to resend. This command reports bootstrap sampling usage only. Configure
+existing project/Book budgets separately for reviews, production and entitlement; do not
+treat the sampling ceiling as authorization for those activities. Development and holdout
+observations are excluded from automatic qualification feedback. Release of held-out
+evidence and full-family reference-evaluator bootstrap remain implementation gaps.
+
 Optional Codex escalation requires `NOVEL_FORGE_ROUTER_CODEX_ESCALATION=true`, an explicit
 `NOVEL_FORGE_CODEX_ESCALATION_MODEL`, positive `NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT`,
 `NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT`, `NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT`,
