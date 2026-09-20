@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
+
 from dataclasses import dataclass, replace
 import hashlib
 import json
@@ -939,6 +941,7 @@ class PostgresChapterExecutionContractBinder:
                 input_tokens=len(prompt.encode()) + route.token_safety_margin + route.token_framing_overhead,
                 output_tokens=output_reserve, trace_id=str(request_payload["trace_id"]),
                 correlation_id=str(request_payload["correlation_id"]), cache_prefix=prompt.encode()[:prompt_evidence["reusable_prefix_bytes"]],
+                producer_contract=producer_contract_identity(prompt_evidence, contract),
                 request_input=provider_inputs, input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(), chapter=int(metadata.get("chapter") or 0))
             route_identity = routing_decision["decision_id"]
         envelope = ProviderRequestEnvelope(

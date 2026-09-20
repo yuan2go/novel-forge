@@ -1229,6 +1229,8 @@ def _classification_execution_binding(
     allow_fixture: bool,
 ) -> dict[str, Any]:
     content = dict(execution["content"])
+    if content.get("qualification_status") == "BENCHMARK_ONLY":
+        raise KernelError("SOURCE_BENCHMARK_CANNOT_COMMIT", "calibration evidence cannot commit a Source Profile")
     binding = dict(content.get("source_classification_binding") or {})
     expected = {
         "schema_version": "source-classification-execution-binding.v1",

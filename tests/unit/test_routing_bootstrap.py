@@ -301,10 +301,79 @@ def test_campaign_rejects_relabelled_sample_input_and_nonfinite_budget():
         validate_bootstrap_history([
             {**grant, "authorization_id": "new", "input_versions_hash": "sha256:" + "f" * 64}
         ], [grant])
-    for change in ({"maximum_amount": "NaN"}, {"maximum_calls": True},
+    for change in ({"maximum_amount": "NaN"}, {"maximum_amount": True}, {"maximum_amount": 1.0}, {"maximum_calls": True},
                    {"maximum_tokens": 0}, {"partition": "unknown"},
                    {"expires_at": "2099-01-01"}):
         with pytest.raises((ValueError, ArithmeticError)):
             validate_bootstrap_authorization({**grant, "campaign": {**grant["campaign"], **change}})
     with pytest.raises(ValueError, match="GRANT_EXCEEDS_TOTAL"):
         validate_bootstrap_authorization({**grant, "maximum_calls": 5})
+
+
+def test_campaign_cannot_be_evaded_by_a_new_unbound_authorization():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history
+    grant = campaign_grant()
+    legacy = {key: value for key, value in grant.items() if key != "campaign"}
+    legacy["authorization_id"] = "legacy"
+    validate_bootstrap_history([grant, legacy], [legacy])
+    with pytest.raises(KernelError, match="CAMPAIGN_MEMBERSHIP_REQUIRED"):
+        validate_bootstrap_history([legacy], [grant])
+    with pytest.raises(KernelError, match="CAMPAIGN_MEMBERSHIP_REQUIRED"):
+        validate_bootstrap_history([grant, legacy], [])
+
+
+def test_identical_inputs_cannot_be_relabelled_as_an_independent_data_group():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history
+    grant = campaign_grant()
+    renamed = {**grant, "authorization_id": "renamed-grant", "campaign": {
+        **grant["campaign"], "sample_id": "renamed-sample", "group_id": "renamed-work"}}
+    with pytest.raises(KernelError, match="INPUT_GROUP_REDEFINED"):
+        validate_bootstrap_history([renamed], [grant])
+
+
+def test_reference_grant_requires_exact_labels_and_campaign_isolation():
+    payload, grant, snapshot = contract()
+    reference = {"asset_version_id": "labels-v1", "content_hash": "sha256:" + "f" * 64,
+                 "protocol_version": "independent-proxy-v1"}
+    payload["reference_evaluation"] = reference
+    grant.update(task_type="narrative_semantic_evaluation", purpose="REFERENCE_EVALUATION",
+                 reference_evaluation=reference, command_hash=bootstrap_command_hash(payload),
+                 campaign={"campaign_id": "campaign", "manifest_hash": "sha256:" + "a" * 64,
+                           "sample_id": "sample", "group_id": "group", "partition": "CALIBRATION",
+                           "maximum_calls": 1, "maximum_tokens": 2000, "maximum_amount": "0.01",
+                           "expires_at": grant["expires_at"]})
+    snapshot["authorization_hash"] = authorization_hash(grant)
+    validate_bootstrap_scope(snapshot, payload)
+    validate_routing_policy({"policy_version": "reference-v1", "reason": "reference sampling",
+                             "task_overrides": [], "bootstrap_authorizations": [grant]})
+    for change in ({"reference_evaluation": {**reference, "asset_version_id": "other"}},
+                   {"reference_evaluation": None}):
+        with pytest.raises(KernelError, match="admitted task"):
+            validate_bootstrap_scope(snapshot, {**payload, **change})
+    with pytest.raises(KernelError):
+        validate_routing_policy({"policy_version": "reference-v2", "reason": "invalid reference",
+                                "task_overrides": [], "bootstrap_authorizations": [
+                                    {**grant, "purpose": "BENCHMARK_CHALLENGER"}]})
+
+
+def test_reference_agreement_counts_disagreement_without_production_or_human_claims():
+    from copy import deepcopy
+    from novel_forge.modules.story_design_authority import scripted_qualification
+    from novel_forge.modules.story_design_authority.evaluation_reference import reference_agreement
+
+    expected = scripted_qualification("book_plan.generate")
+    observed = deepcopy(expected)
+    criterion = observed["evaluations"][0]["criteria"][0]
+    criterion.update(verdict="FAIL", repair_directive="fixture negative contrast")
+    report = reference_agreement(
+        payload={"generator_operation_name": "book_plan.generate", "reference_evaluation": {
+            "asset_version_id": "labels", "content_hash": "sha256:" + "a" * 64,
+            "protocol_version": "proxy-v1"}},
+        reference={"content": {"evaluation": expected}, "operation_id": "label-op",
+                   "author_actor_id": "reference-operator"}, evaluation=observed,
+    )
+    assert sum(not item["agrees"] for item in report["criterion_agreement"]) == 1
+    assert 0 < report["agreement_rate"] < 1
+    assert report["production_qualification_eligible"] is False
+    assert report["ground_truth_claimed"] is False
+    assert report["human_preference_evidence"] is False

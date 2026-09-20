@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `8dc00db97e75f91286bd8b46f720a6718a886fd8`
+Reality baseline: `a1b87a745619704c696abc0d578911e9c064cd78`
 Baseline implementation identity:
-`sha256:c27722153c47d17fe1a5f3b7d0b3a254563c792b046699b9d90ba894f4c3afc5`
+`sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-09-20",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "8dc00db97e75f91286bd8b46f720a6718a886fd8",
-    "implementation_tree_sha": "sha256:c27722153c47d17fe1a5f3b7d0b3a254563c792b046699b9d90ba894f4c3afc5"
+    "sha": "a1b87a745619704c696abc0d578911e9c064cd78",
+    "implementation_tree_sha": "sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -142,7 +142,8 @@ Current scope review (2026-09-20): Gate A and current role Context/Provider beha
 are projected in [current-system](../../docs/current-system.md). Implemented Gate A
 design, former reality matrices and duplicate final-architecture tables have been
 removed. Craft uses the existing Context owner and adds no Digest, retention, GC,
-retrieval representation or cutover owner. Gates B–E below remain proposed design,
+retrieval representation or cutover owner. Routing campaign accounting and sample
+isolation do not implement these memory lifecycle gates. Gates B–E below remain proposed design,
 not executable contracts or proven invariants; their stated bounds require qualification.
 
 ## 7. Gate B — Structured Narrative Digest

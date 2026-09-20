@@ -26,7 +26,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
 )
 from novel_forge.modules.production_execution.cost_routing import snapshot_hash
 from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
-from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter, PostgresRoutingRegistry
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES, StoryPlanningGenerationApplication, StoryPlanningGenerationCommand,
 )
@@ -74,6 +74,10 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
         "expires_at": expiry.isoformat(), "maximum_calls": 1, "maximum_tokens": 4096,
         "maximum_amount": "0.1", "currency": "USD", "purpose": "BENCHMARK_CHALLENGER",
         "production_eligible": False,
+        "campaign": {"campaign_id": "campaign:" + project, "manifest_hash": "sha256:" + "c" * 64,
+                     "sample_id": "sample-one", "group_id": "group-one", "partition": "CALIBRATION",
+                     "maximum_calls": 1, "maximum_tokens": 4096, "maximum_amount": "0.1",
+                     "expires_at": expiry.isoformat()},
     }
     configure_owned_policy(
         database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
@@ -97,6 +101,8 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
         @classmethod
         def now(cls, tz=None):
             return (expiry + timedelta(seconds=1)).astimezone(tz)
+
+    campaign_error = ""
 
     class BudgetCheckingBinder(_ExternalEffectPepFixturePlanningBinder):
         def execute(self, **kwargs):
@@ -131,6 +137,10 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
             with pytest.raises(KernelError, match="ROUTING_DECISION_INTEGRITY_FAILURE"):
                 reserve_provider_budget(DATABASE_URL, replace(request,
                     external_effect_id=forged["external_effect_id"], stable_idempotency_key=request.stable_idempotency_key + ":forged"))
+            if campaign_error:
+                with pytest.raises(KernelError, match=campaign_error):
+                    reserve_provider_budget(DATABASE_URL, request)
+                return super().execute(**kwargs)
             first = reserve_provider_budget(DATABASE_URL, request)
             assert reserve_provider_budget(DATABASE_URL, request)["replayed"]
             resolve_provider_budget_failure(DATABASE_URL, reservation_id=first["reservation_id"],
@@ -165,3 +175,326 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
         allow_scripted_evaluation_fixture=True)
     result = application.generate(command, principal=principal)
     assert result.candidate_asset_version_id
+    command = replace(command, idempotency_key=f"{project}:new-run-key",
+                      logical_key="book:new-sample", routing_bootstrap_authorization_id="grant-two")
+    second = {**grant, "authorization_id": "grant-two", "logical_key": command.logical_key,
+              "generation_idempotency_key": command.idempotency_key,
+              "command_hash": bootstrap_command_hash(_command_payload(command)),
+              "campaign": {**grant["campaign"], "sample_id": "sample-two"}}
+    configure_owned_policy(
+        database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+        content={"policy_version": "bootstrap-kernel:v2", "reason": "fixture second sample",
+                 "task_overrides": [], "bootstrap_authorizations": [second]},
+        project_id=project, workspace_id=workspace, idempotency_key=f"{project}:policy-two",
+        trace_id=command.trace_id, correlation_id=command.correlation_id,
+        application_build_id="bootstrap-kernel-test", commit_sha=RELEASE_SHA, principal=principal,
+    )
+    campaign_error = ("ROUTING_CAMPAIGN_QUOTA_EXCEEDED" if scenario == "success"
+                      else "ROUTING_CAMPAIGN_RECONCILIATION_REQUIRED")
+    assert application.generate(command, principal=principal).candidate_asset_version_id
+    report = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=project, campaign_id="campaign:" + project)
+    assert report["usage"]["calls_used_or_reserved"] == 1
+    assert report["usage"]["conservative_tokens"] == 30
+    assert float(report["usage"]["settled_or_reserved_usd"]) == .0001
+    assert len(report["grants"]) == 2
+    assert report["scope"] == "BOOTSTRAP_SAMPLING_ONLY"
+    assert report["state"] == ("ACCOUNTED" if scenario == "success" else "RECONCILIATION_REQUIRED")
+    with pytest.raises(KernelError, match="ROUTING_CAMPAIGN_PROJECT_REBIND_FORBIDDEN"):
+        configure_owned_policy(
+            database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+            content={"policy_version": "bootstrap-kernel:v3", "reason": "fixture reset attempt",
+                     "task_overrides": [], "bootstrap_authorizations": [{**second,
+                         "authorization_id": "grant-three", "campaign": {
+                             **second["campaign"], "campaign_id": "renamed-campaign"}}]},
+            project_id=project, workspace_id=workspace, idempotency_key=f"{project}:policy-three",
+            trace_id=command.trace_id, correlation_id=command.correlation_id,
+            application_build_id="bootstrap-kernel-test", commit_sha=RELEASE_SHA, principal=principal,
+        )
+
+
+@pytest.mark.parametrize("reference_author", ["independent", "generator", "unknown"])
+def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path, reference_author):
+    from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentOperationRequest
+    from novel_forge.modules.content_authority.definitions import CONTENT_INTEGRATION_PROVEN
+    from novel_forge.modules.story_design_authority import scripted_qualification
+    from dataclasses import asdict
+    from novel_forge.modules.story_design_authority.evaluation_runtime import (
+        NarrativeProviderEvaluation, NarrativeSemanticEvaluationCommand, evaluation_command_payload,
+    )
+    from novel_forge.modules.story_planning_runtime import StoryPlanningEvaluationCommand
+    from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+    from novel_forge.storage.authority_asset_store import AuthorityAssetWriter
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    ensure_migrated()
+    project = identifier("reference-bootstrap-fixture")
+    workspace, book = "workspace:" + project, "book:" + project
+    seed_authority_project_book(project_id=project, workspace_id=workspace, book_id=book)
+    principal = _principal(project)
+    evaluator = replace(principal, principal_id="independent-evaluator:" + project)
+    inputs = _seed_inputs(project, book, target_chapter_count=6)
+    command = StoryPlanningGenerationCommand(
+        project_id=project, workspace_id=workspace, book_id=book, actor_id=principal.principal_id,
+        generator_operation_name="book_plan.generate", logical_key="reference-target",
+        input_versions={role: inputs[role] for role in GENERATOR_INPUT_ROLES["book_plan.generate"]},
+        idempotency_key=project + ":generate", trace_id="trace:reference", correlation_id="correlation:reference",
+        routing_bootstrap_authorization_id="generation-grant",
+    )
+    candidate = deepseek_candidates(available=True)[0]
+    expiry = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    campaign = {"campaign_id": "campaign:" + project, "manifest_hash": "sha256:" + "c" * 64,
+                "sample_id": "generation", "group_id": "target-one", "partition": "CALIBRATION",
+                "maximum_calls": 4, "maximum_tokens": 16384, "maximum_amount": "0.4", "expires_at": expiry}
+    grant = {
+        "authorization_id": "generation-grant", "reason": "fixture-only reference sampling",
+        "environment": "validation", "book_id": book, "task_type": "book_plan.generate",
+        "logical_key": command.logical_key, "generation_idempotency_key": command.idempotency_key,
+        "input_versions_hash": snapshot_hash(dict(command.input_versions)),
+        "command_hash": bootstrap_command_hash(_command_payload(command)),
+        "candidate_id": candidate.candidate_id, "model_revision": candidate.model_revision,
+        "expires_at": expiry, "maximum_calls": 2, "maximum_tokens": 4096, "maximum_amount": "0.1",
+        "currency": "USD", "purpose": "BENCHMARK_CHALLENGER", "production_eligible": False,
+        "campaign": campaign,
+    }
+
+    def configure(version, grants):
+        configure_owned_policy(
+            database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+            content={"policy_version": version, "reason": "fixture reference authorization",
+                     "task_overrides": [], "bootstrap_authorizations": grants},
+            project_id=project, workspace_id=workspace, idempotency_key=project + ":" + version,
+            trace_id=command.trace_id, correlation_id=command.correlation_id,
+            application_build_id="reference-fixture", commit_sha=RELEASE_SHA, principal=principal,
+        )
+
+    configure("reference-fixture:v1", [grant])
+    binder = _ExternalEffectPepFixturePlanningBinder(target_chapter_count=6)
+    binder.resolver = SimpleNamespace(environment="validation")
+    application = StoryPlanningGenerationApplication(
+        DATABASE_URL, execution_binder=binder, application_build_id="reference-fixture",
+        commit_sha=RELEASE_SHA, allow_scripted_evaluation_fixture=True,
+    )
+    generated = application.generate(command, principal=principal)
+    assert generated.candidate_asset_version_id
+    candidate_hash = application.require_candidate(generated.candidate_asset_version_id)["content_hash"]
+    labeled = scripted_qualification("book_plan.generate")
+    labeler = replace(principal,
+        principal_id=(principal.principal_id if reference_author == "generator" else "label-operator:" + project),
+        permissions=principal.permissions | {"content.authority.execute", "content.operation:story_design.review.author"})
+    authored = ContentAuthorityApplication(DATABASE_URL, application_build_id="reference-fixture",
+        commit_sha=RELEASE_SHA, integration_proven=CONTENT_INTEGRATION_PROVEN, trusted_only=True).execute(
+        ContentOperationRequest(definition_name="story_design.review.author", project_id=project,
+            workspace_id=workspace, actor_id=labeler.principal_id, trace_id=command.trace_id,
+            correlation_id=command.correlation_id, idempotency_key=project + ":reference-labels",
+            payload={"candidate_asset_version_id": generated.candidate_asset_version_id,
+                     "candidate_content_hash": candidate_hash,
+                     "evaluation": labeled, "review_rationale": "Explicit synthetic labels for isolation regression"},
+            input_assets=({"asset_version_id": generated.candidate_asset_version_id,
+                           "content_hash": candidate_hash},)), principal=labeler)
+    review = StoryPlanningEvaluationCommand(
+        project_id=project, workspace_id=workspace, book_id=book, actor_id=evaluator.principal_id,
+        candidate_asset_version_id=generated.candidate_asset_version_id,
+        candidate_content_hash=candidate_hash,
+        generation_operation_id=generated.generation_operation_id, generator_operation_name="book_plan.generate",
+        evaluator_execution_class="MODEL_PROVIDER", idempotency_key=project + ":reference-evaluate",
+        trace_id=command.trace_id, correlation_id=command.correlation_id,
+        routing_bootstrap_authorization_id="reference-grant",
+        reference_evaluation={"asset_version_id": authored.asset_version_id,
+                              "content_hash": authored.content_hash, "protocol_version": "fixture-labels-v1"},
+    )
+    semantic_command = NarrativeSemanticEvaluationCommand(**asdict(review))
+    payload = evaluation_command_payload(semantic_command, generation_actor_id=principal.principal_id,
+                                         opening_execution_binding={})
+    if reference_author != "generator":
+        prepared = application.semantic_evaluation.prepare_reference_evaluation(semantic_command, principal=evaluator)
+        assert prepared["payload"] == payload
+        assert prepared["command_hash"] == bootstrap_command_hash(payload)
+        assert prepared["provider_calls"] == 0 and prepared["authorized"] is False
+    else:
+        with pytest.raises(KernelError, match="NARRATIVE_REFERENCE_NOT_INDEPENDENT"):
+            application.semantic_evaluation.prepare_reference_evaluation(semantic_command, principal=evaluator)
+    reference_grant = {**grant, "authorization_id": "reference-grant", "purpose": "REFERENCE_EVALUATION",
+                       "task_type": "narrative_semantic_evaluation", "logical_key": review.candidate_asset_version_id,
+                       "generation_idempotency_key": review.idempotency_key,
+                       "input_versions_hash": snapshot_hash(payload["input_versions"]),
+                       "command_hash": bootstrap_command_hash(payload),
+                       "reference_evaluation": review.reference_evaluation,
+                       "campaign": {**campaign, "sample_id": "reference"}}
+    configure("reference-fixture:v2", [grant, reference_grant])
+    composition = build_production_execution_composition(
+        IndustrialSettings(root=tmp_path, database_url=DATABASE_URL), env={
+            "NOVEL_FORGE_ENVIRONMENT": "test", "NOVEL_FORGE_MODEL_PROVIDER": "mock",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(tmp_path / "objects"),
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA})
+    router = ProductionProviderRouter(DATABASE_URL, candidates=(candidate,), task_money_limit="0.1",
+                                     task_token_limit=4096, execution_environment="validation")
+
+    class ReferenceFixturePort:
+        production_execution_gateway_backed = True
+        external_effect_backed = True
+        database_url = DATABASE_URL
+        model_port = SimpleNamespace(capability_binder=SimpleNamespace(pack_environment="validation"))
+        invocations = 0
+        failure_code = ""
+        unknown_effect = False
+
+        def evaluate(self, request, *, candidate: object, generator_operation_name, profiles):
+            self.invocations += 1
+            if self.failure_code:
+                raise KernelError(self.failure_code, "Explicit reference recovery fixture")
+            from novel_forge.modules.story_design_authority.replacement_gate import assert_narrative_replacement_execution_gate
+
+            gate = assert_narrative_replacement_execution_gate(DATABASE_URL, project_id=project, operation_id=request.operation_id)
+            assert gate["execution_authority"] == "COMMAND_KERNEL"
+            assert len(request.inputs) == 1
+            assert request.inputs[0].asset_version_id != authored.asset_version_id
+            key = request.operation_id + ":reference-fixture"
+            _, decision = router.select(composition.gateway.routes["draft"],
+                task_type="narrative_semantic_evaluation", project_id=project, work_id=book,
+                operation_id=request.operation_id, attempt_id=request.attempt_id, stable_key=key,
+                input_tokens=100, output_tokens=100, trace_id=request.trace_id,
+                correlation_id=request.correlation_id, request_input={"fixture": True})
+            assert decision["status"] == "BENCHMARK_SELECTED"
+            context = EffectCommandContext(request.operation_id, project, request.actor_id,
+                                           request.trace_id, request.correlation_id)
+            effect = plan_external_effect(DATABASE_URL, context, effect_type="model.invoke",
+                provider="production_execution_gateway", capability="model.narrative_semantic_evaluation",
+                stable_idempotency_key=key, request_payload={"max_output_tokens": 100,
+                    "_production_execution": {"book_id": book, "capability_runtime": {"routing_decision": decision}}},
+                max_attempts=1, reversible=False, model_id=decision["selected"]["candidate"]["model"])
+            reserved = reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(
+                request.operation_id, effect["external_effect_id"], project, key + ":budget",
+                "deepseek", "USD", ".001", 200, work_id=book,
+                model_id=decision["selected"]["candidate"]["model"]))
+            dispatched = dispatch_external_effect(DATABASE_URL, context,
+                effect_id=effect["external_effect_id"], worker_id="reference-fixture", lease_seconds=60,
+                adapter=_ExplicitFixtureTransport("timeout_after" if self.unknown_effect else "success"),
+                budget_reservation_id=reserved["reservation_id"])
+            if self.unknown_effect:
+                assert dispatched["outcome"] == "unknown"
+                raise KernelError("EXTERNAL_EFFECT_RESULT_UNKNOWN", "Explicit reference ambiguity fixture")
+            assert dispatched["outcome"] == "success"
+            settle_provider_budget(DATABASE_URL, reservation_id=reserved["reservation_id"], project_id=project,
+                                   actual_amount=".0001", actual_tokens=30, evidence={"fixture": True})
+            log = AuthorityAssetWriter(DATABASE_URL).materialize_output(AuthorityAssetWriteCommand(
+                operation_id=request.operation_id, project_id=project, asset_id=key + ":model-log",
+                asset_type="model_call_log", schema_version="model-call-log.v1",
+                logical_ref="reference-fixture/" + request.operation_id + ".json", category="fixture",
+                output_key="model_call_log", role="provider_evidence",
+                content={"fixture": True, "fixture_protocol_only": True}, qualification_policy="fixture-only-v1",
+                trace_id=request.trace_id, correlation_id=request.correlation_id))
+            return NarrativeProviderEvaluation(labeled, log.asset_version_id, log.content_hash,
+                snapshot_hash({"fixture": True}), snapshot_hash(labeled), "synthetic-reference",
+                "synthetic-reference-v1", decision["decision_id"], "synthetic-prompt-v1",
+                "synthetic-skill-v1", True)
+
+    port = ReferenceFixturePort()
+    application.semantic_evaluation.execution_port = port
+    application.semantic_evaluation.registry.item.handler.execution_port = port
+    if reference_author == "generator":
+        with pytest.raises(KernelError, match="NARRATIVE_REFERENCE_NOT_INDEPENDENT"):
+            application.evaluate_candidate(review, principal=evaluator, transition_principal=principal)
+        assert port.invocations == 0
+        return
+    result = application.evaluate_candidate(review, principal=evaluator, transition_principal=principal)
+    assert result.evaluation_content["reference_evaluation"]["agreement_rate"] == 1
+    assert result.evaluation_content["production_qualification_eligible"] is False
+    assert application.evaluate_candidate(review, principal=evaluator, transition_principal=principal).replayed
+    assert port.invocations == 1
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT count(*) FROM authority_narrative_design_qualification WHERE project_id=%s AND asset_version_id=%s", [project, generated.candidate_asset_version_id])
+        assert uow.cursor.fetchone()[0] == 0
+        uow.cursor.execute("SELECT status FROM authority_story_planning_generation WHERE operation_id=%s", [generated.generation_operation_id])
+        assert uow.cursor.fetchone()[0] == "EVALUATION_PENDING"
+    comparison = replace(review, idempotency_key=project + ":reference-pro", routing_bootstrap_authorization_id="reference-pro-grant")
+    pro = deepseek_candidates(available=True)[1]
+    comparison_payload = evaluation_command_payload(NarrativeSemanticEvaluationCommand(**asdict(comparison)),
+        generation_actor_id=principal.principal_id, opening_execution_binding={})
+    comparison_grant = {**reference_grant, "authorization_id": comparison.routing_bootstrap_authorization_id,
+                        "candidate_id": pro.candidate_id, "model_revision": pro.model_revision,
+                        "generation_idempotency_key": comparison.idempotency_key,
+                        "command_hash": bootstrap_command_hash(comparison_payload)}
+    configure("reference-fixture:v3", [grant, reference_grant, comparison_grant])
+    router = ProductionProviderRouter(DATABASE_URL, candidates=(pro,), task_money_limit="0.1",
+                                     task_token_limit=4096, execution_environment="validation")
+    compared = application.evaluate_candidate(comparison, principal=evaluator, transition_principal=principal)
+    assert compared.lineage.evaluation_operation_id != result.lineage.evaluation_operation_id
+    assert compared.lineage.candidate_content_hash == result.lineage.candidate_content_hash
+    assert compared.evaluation_content["reference_evaluation"] == result.evaluation_content["reference_evaluation"]
+    assert port.invocations == 2
+    from psycopg.errors import CheckViolation
+
+    with pytest.raises(CheckViolation, match="NARRATIVE_REFERENCE_CANNOT_QUALIFY_PRODUCTION"):
+        application.semantic_evaluation._record_qualifications(
+            semantic_command, replace(result.lineage, evaluator_execution_class="SCRIPTED_FIXTURE",
+                provider_model_call_asset_version_id="", provider_model_call_content_hash="",
+                provider_evidence_hash="", provider_result_hash="", provider_route_snapshot_id=""),
+            result.qualification,
+        )
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT count(*) FROM authority_narrative_evaluation_execution_head WHERE project_id=%s AND candidate_asset_version_id=%s", [project, generated.candidate_asset_version_id])
+        assert uow.cursor.fetchone()[0] == 0
+    usage = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=project, campaign_id="campaign:" + project)
+    assert usage["usage"]["calls_used_or_reserved"] == 2
+    assert {operation["purpose"] for operation in usage["operations"]} == {"BENCHMARK_CHALLENGER", "REFERENCE_EVALUATION"}
+    grants = [grant, reference_grant, comparison_grant]
+
+    def grant_review(command, model, version):
+        command_payload = evaluation_command_payload(NarrativeSemanticEvaluationCommand(**asdict(command)),
+            generation_actor_id=principal.principal_id, opening_execution_binding={})
+        grants.append({**reference_grant, "authorization_id": command.routing_bootstrap_authorization_id,
+                       "candidate_id": model.candidate_id, "model_revision": model.model_revision,
+                       "generation_idempotency_key": command.idempotency_key,
+                       "command_hash": bootstrap_command_hash(command_payload)})
+        configure(version, grants)
+
+    duplicate = replace(review, idempotency_key=project + ":duplicate",
+                        routing_bootstrap_authorization_id="duplicate-grant")
+    grant_review(duplicate, candidate, "reference-fixture:v4")
+    with pytest.raises(KernelError, match="NARRATIVE_REFERENCE_PREDECESSOR_REQUIRED"):
+        application.evaluate_candidate(duplicate, principal=evaluator, transition_principal=principal)
+    duplicate = replace(duplicate, idempotency_key=project + ":duplicate-linked",
+                        routing_bootstrap_authorization_id="duplicate-linked-grant",
+                        reference_predecessor_operation_id=result.lineage.evaluation_operation_id)
+    grant_review(duplicate, candidate, "reference-fixture:v5")
+    with pytest.raises(KernelError, match="NARRATIVE_REFERENCE_PREDECESSOR_NOT_REPLACEABLE"):
+        application.evaluate_candidate(duplicate, principal=evaluator, transition_principal=principal)
+    assert port.invocations == 2
+
+    maximum = deepseek_candidates(available=True)[2]
+    failed = replace(review, idempotency_key=project + ":failure",
+                     routing_bootstrap_authorization_id="failure-grant")
+    grant_review(failed, maximum, "reference-fixture:v6")
+    router = ProductionProviderRouter(DATABASE_URL, candidates=(maximum,), task_money_limit="0.1",
+                                     task_token_limit=4096, execution_environment="validation")
+    port.unknown_effect = reference_author == "unknown"
+    port.failure_code = "" if port.unknown_effect else "MODEL_EFFECT_FINAL_REFERENCE_FIXTURE"
+    with pytest.raises(KernelError, match="EXTERNAL_EFFECT_RESULT_UNKNOWN" if port.unknown_effect else port.failure_code):
+        application.evaluate_candidate(failed, principal=evaluator, transition_principal=principal)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT operation_id,status FROM authority_operation WHERE project_id=%s AND idempotency_key=%s",
+                           [project, failed.idempotency_key])
+        failed_id, status = uow.cursor.fetchone()
+        assert status in ({"RECONCILIATION_REQUIRED", "WAITING_EXTERNAL_RESULT"} if port.unknown_effect else {"FAILED_FINAL"})
+    recovered = replace(failed, idempotency_key=project + ":recovered",
+                        routing_bootstrap_authorization_id="recovery-grant",
+                        reference_predecessor_operation_id=failed_id)
+    grant_review(recovered, maximum, "reference-fixture:v7")
+    if port.unknown_effect:
+        with pytest.raises(KernelError, match="NARRATIVE_REFERENCE_PREDECESSOR_NOT_REPLACEABLE"):
+            application.evaluate_candidate(recovered, principal=evaluator, transition_principal=principal)
+        assert port.invocations == 3
+        usage = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=project, campaign_id="campaign:" + project)
+        assert usage["usage"]["calls_used_or_reserved"] == 3
+        assert usage["state"] == "RECONCILIATION_REQUIRED"
+        return
+    port.failure_code = ""
+    repaired = application.evaluate_candidate(recovered, principal=evaluator, transition_principal=principal)
+    assert repaired.lineage.evaluation_operation_id != failed_id
+    assert application.evaluate_candidate(recovered, principal=evaluator, transition_principal=principal).replayed
+    assert port.invocations == 4
+    usage = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=project, campaign_id="campaign:" + project)
+    assert usage["usage"]["calls_used_or_reserved"] == 3
+    operations = {item["operation_id"]: item for item in usage["operations"]}
+    assert operations[failed_id]["status"] == "FAILED_FINAL"
+    assert operations[repaired.lineage.evaluation_operation_id]["causation_operation_id"] == failed_id

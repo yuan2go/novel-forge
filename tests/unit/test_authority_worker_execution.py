@@ -22,6 +22,7 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
                 WorkerFailureClass.RETRYABLE,
             ),
             (KernelError("INPUT_INVALID", "bad"), WorkerFailureClass.FINAL_FAILURE),
+            (KernelError("SOURCE_PROVIDER_SCHEMA_REJECTED", "frozen schema rejected"), WorkerFailureClass.FINAL_FAILURE),
             (
                 KernelError("CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD", "replan"),
                 WorkerFailureClass.FINAL_FAILURE,

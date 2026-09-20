@@ -24,6 +24,7 @@ from novel_forge.modules.command_kernel.manual_effect_resolution import (
 from novel_forge.modules.content_authority import ContentOperationRequest
 from novel_forge.modules.production_preparation import PostgresProductionAssetResolver
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
 
 def create_router(ctx: ProductRouterContext) -> APIRouter:
@@ -41,13 +42,16 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             )
             principal.require("content.authority.execute", request.project_id)
             resolver = PostgresProductionAssetResolver(_application(ctx).database_url)
+            review_query = AuthorityAssetQuery(_application(ctx).database_url)
             inputs = tuple(
                 {
                     "asset_version_id": resolved.asset_version_id,
                     "content_hash": resolved.content_hash,
                 }
                 for resolved in (
-                    resolver.resolve_override(
+                    (review_query.require if request.definition_name == "story_design.review.author"
+                     and asset_version_id == request.payload.get("candidate_asset_version_id")
+                     else resolver.resolve_override)(
                         project_id=request.project_id,
                         asset_version_id=asset_version_id,
                     )

@@ -49,6 +49,9 @@ from .qualification import (
     required_qualification_profiles,
     validate_narrative_qualification,
 )
+from .evaluation_reference import (
+    reference_command_fields, require_reference_review, reference_agreement,
+)
 from .replacement_gate import (
     assert_narrative_replacement_execution_gate,
     assert_narrative_replacement_execution_gate_in_uow,
@@ -193,6 +196,8 @@ def _evaluation_command_payload_matches(
         # INVARIANT: pre-fence commands represent only the unbound empty snapshot;
         # a non-empty server-derived Opening fence must still match exactly.
         payload.setdefault("opening_execution_binding", {})
+        if payload.get("reference_evaluation"):
+            payload.pop("routing_bootstrap_authorization", None)
         result["payload"] = payload
         return result
 
@@ -268,6 +273,9 @@ class NarrativeSemanticEvaluationCommand:
     correlation_id: str
     evaluation: dict[str, Any] | None = None
     evidence_asset_version_ids: tuple[str, ...] = ()
+    routing_bootstrap_authorization_id: str = ""
+    reference_evaluation: Mapping[str, Any] | None = None
+    reference_predecessor_operation_id: str = ""
 
     def __post_init__(self) -> None:
         required = (
@@ -284,6 +292,7 @@ class NarrativeSemanticEvaluationCommand:
         )
         if any(not item.strip() for item in required):
             raise ValueError("Narrative Semantic Evaluation command is incomplete")
+        reference_command_fields(self)
         digest = self.candidate_content_hash.removeprefix("sha256:")
         if (
             not self.candidate_content_hash.startswith("sha256:")
@@ -311,6 +320,24 @@ class NarrativeSemanticEvaluationCommand:
             raise ValueError(
                 "fixture or operator Narrative Evaluation requires an explicit result"
             )
+
+
+def evaluation_command_payload(
+    command: NarrativeSemanticEvaluationCommand, *, generation_actor_id: str,
+    opening_execution_binding: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        **reference_command_fields(command),
+        "candidate_asset_version_id": command.candidate_asset_version_id,
+        "candidate_content_hash": command.candidate_content_hash,
+        "generation_operation_id": command.generation_operation_id,
+        "generation_actor_id": generation_actor_id,
+        "generator_operation_name": command.generator_operation_name,
+        "book_id": command.book_id,
+        "evaluator_execution_class": command.evaluator_execution_class,
+        "evaluation": None if command.evaluation is None else dict(command.evaluation),
+        "opening_execution_binding": dict(opening_execution_binding),
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -459,6 +486,15 @@ class NarrativeSemanticEvaluationHandler:
         evidence_inputs = tuple(
             item for item in request.inputs if item is not candidate
         )
+        reference = None
+        if payload.get("reference_evaluation"):
+            if execution_class != "MODEL_PROVIDER" or candidate.content.get("routing_eligibility") != "BENCHMARK_ONLY":
+                raise KernelError("NARRATIVE_REFERENCE_TARGET_FORBIDDEN",
+                                  "reference sampling requires an isolated benchmark candidate")
+            reference = require_reference_review(
+                getattr(self.execution_port, "database_url", ""),
+                project_id=request.project_id, payload=payload, evaluator_actor_id=request.actor_id,
+            )
         provider_result: NarrativeProviderEvaluation | None = None
         evaluation = payload.get("evaluation")
         if execution_class == "MODEL_PROVIDER":
@@ -521,6 +557,8 @@ class NarrativeSemanticEvaluationHandler:
             value=evaluation,
             require_pass=False,
         )
+        reference_result = (reference_agreement(payload=payload, reference=reference, evaluation=evaluation)
+                            if reference is not None else None)
         provider_evidence = (
             [
                 {
@@ -546,6 +584,7 @@ class NarrativeSemanticEvaluationHandler:
                 "evaluation_operation_id": request.operation_id,
                 "evaluation_attempt_id": request.attempt_id,
                 "provider_evidence": provider_evidence,
+                **({"reference_evaluation": reference_result} if reference_result else {}),
                 "provider_evidence_hash": (
                     provider_result.provider_evidence_hash
                     if provider_result is not None
@@ -555,6 +594,7 @@ class NarrativeSemanticEvaluationHandler:
         )
         reference_asset_version_ids = (
             candidate.asset_version_id,
+            *((payload["reference_evaluation"]["asset_version_id"],) if reference_result else ()),
             *(
                 (provider_result.model_call_log_asset_version_id,)
                 if provider_result is not None
@@ -567,6 +607,9 @@ class NarrativeSemanticEvaluationHandler:
             role="qualification_evidence",
             content={
                 "schema_version": "narrative-design-evaluation.v1",
+                **({"reference_evaluation": reference_result,
+                    "routing_eligibility": "BENCHMARK_ONLY",
+                    "production_qualification_eligible": False} if reference_result else {}),
                 "project_id": request.project_id,
                 "candidate_asset_version_id": candidate_id,
                 "candidate_content_hash": candidate_hash,
@@ -914,6 +957,41 @@ class NarrativeSemanticEvaluationApplication:
             allow_scripted_fixture=allow_scripted_fixture,
         )
 
+    def prepare_reference_evaluation(
+        self, command: NarrativeSemanticEvaluationCommand, *, principal: Principal,
+    ) -> dict[str, Any]:
+        principal.require("narrative_design.evaluate", command.project_id)
+        if principal.principal_id != command.actor_id:
+            raise PermissionError("reference evaluator must be the trusted Principal")
+        if not command.routing_bootstrap_authorization_id:
+            raise ValueError("reference preparation requires an explicit grant identity")
+        candidate = self._require_candidate(command)
+        if candidate["content"].get("routing_eligibility") != "BENCHMARK_ONLY":
+            raise KernelError("NARRATIVE_REFERENCE_TARGET_FORBIDDEN",
+                              "reference sampling requires an isolated benchmark candidate")
+        payload = evaluation_command_payload(
+            command, generation_actor_id=candidate["generation_actor_id"],
+            opening_execution_binding=candidate["opening_execution_binding"],
+        )
+        require_reference_review(self.database_url, project_id=command.project_id,
+                                 payload=payload, evaluator_actor_id=command.actor_id)
+        from novel_forge.modules.command_kernel.routing_bootstrap import (
+            authorization_hash, bootstrap_command_hash,
+        )
+
+        return {
+            "schema_version": "narrative-reference-preflight.v1",
+            "provider_calls": 0, "authorized": False,
+            "definition_name": NARRATIVE_EVALUATION_DEFINITION,
+            "definition_version": NARRATIVE_EVALUATION_VERSION,
+            "idempotency_scope": "book:narrative-semantic-evaluation",
+            "payload": payload, "command_hash": bootstrap_command_hash(payload),
+            "input_versions_hash": authorization_hash(payload["input_versions"]),
+            "required_task_type": "narrative_semantic_evaluation",
+            "required_purpose": "REFERENCE_EVALUATION", "required_environment": "validation",
+            "production_qualification_eligible": False,
+        }
+
     def execute(
         self,
         command: NarrativeSemanticEvaluationCommand,
@@ -964,35 +1042,28 @@ class NarrativeSemanticEvaluationApplication:
             "project_id": command.project_id,
             "workspace_id": command.workspace_id,
             "book_id": command.book_id,
-            "logical_key": command.candidate_asset_version_id,
+            "logical_key": (
+                _stable_id("narrative-reference", command.candidate_asset_version_id,
+                           command.routing_bootstrap_authorization_id)
+                if command.routing_bootstrap_authorization_id else command.candidate_asset_version_id
+            ),
             "actor_id": command.actor_id,
             "idempotency_scope": "book:narrative-semantic-evaluation",
             "idempotency_key": command.idempotency_key,
             "trace_id": command.trace_id,
             "span_id": str(uuid4()),
             "correlation_id": command.correlation_id,
-            "causation_id": command.generation_operation_id,
-            "causation_operation_id": command.generation_operation_id,
+            "causation_id": command.reference_predecessor_operation_id or command.generation_operation_id,
+            "causation_operation_id": command.reference_predecessor_operation_id or command.generation_operation_id,
             "input": {
                 "project_id": command.project_id,
                 "input_asset_version_ids": [
                     item["asset_version_id"] for item in inputs
                 ],
-                "payload": {
-                    "candidate_asset_version_id": command.candidate_asset_version_id,
-                    "candidate_content_hash": command.candidate_content_hash,
-                    "generation_operation_id": command.generation_operation_id,
-                    "generation_actor_id": candidate["generation_actor_id"],
-                    "generator_operation_name": command.generator_operation_name,
-                    "book_id": command.book_id,
-                    "evaluator_execution_class": command.evaluator_execution_class,
-                    "evaluation": (
-                        None if command.evaluation is None else dict(command.evaluation)
-                    ),
-                    "opening_execution_binding": dict(
-                        candidate["opening_execution_binding"]
-                    ),
-                },
+                "payload": evaluation_command_payload(
+                    command, generation_actor_id=candidate["generation_actor_id"],
+                    opening_execution_binding=candidate["opening_execution_binding"],
+                ),
             },
             "input_assets": [
                 {
@@ -1002,7 +1073,36 @@ class NarrativeSemanticEvaluationApplication:
                 for item in inputs
             ],
         }
-        admitted = self._admit_candidate_once(command, admission_command)
+        if command.routing_bootstrap_authorization_id:
+            if candidate["content"].get("routing_eligibility") != "BENCHMARK_ONLY":
+                raise KernelError("NARRATIVE_REFERENCE_TARGET_FORBIDDEN",
+                                  "reference evaluation cannot replace production qualification")
+            from novel_forge.modules.authority_handler_runtime.routing_bootstrap import freeze_bootstrap_authorization
+
+            payload = admission_command["input"]["payload"]
+            model_port = getattr(self.execution_port, "model_port", None)
+            binder = getattr(model_port, "capability_binder", None)
+            payload["routing_bootstrap_authorization"] = freeze_bootstrap_authorization(
+                database_url=self.database_url, command_payload=payload, principal=principal,
+                environment=str(getattr(binder, "pack_environment", "")),
+                permission="narrative_design.evaluate",
+                idempotency_scope="book:narrative-semantic-evaluation",
+            )
+            require_reference_review(self.database_url, project_id=command.project_id,
+                                     payload=payload, evaluator_actor_id=command.actor_id)
+        reference_sampling = bool(command.routing_bootstrap_authorization_id)
+        if reference_sampling:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                self._lock_candidate(uow, project_id=command.project_id,
+                                     candidate_asset_version_id=command.candidate_asset_version_id)
+                self._require_candidate_in_uow(uow, command)
+                self._validate_reference_predecessor(uow, command, admission_command["input"]["payload"])
+                admitted = admit_command_in_uow(uow, admission_command,
+                                                context=self._admission_context(command.actor_id))
+                uow.commit()
+            admitted = {**admitted, "generation": 1}
+        else:
+            admitted = self._admit_candidate_once(command, admission_command)
         operation_id = str(admitted["operation_id"])
         execution_generation = int(admitted["generation"])
         operation_actor_id = str(admitted.get("operation_actor_id") or command.actor_id)
@@ -1062,9 +1162,10 @@ class NarrativeSemanticEvaluationApplication:
                 ),
                 root_operation_id=operation_id,
             )
-        self._mark_execution_running(
-            operation_id=operation_id, project_id=command.project_id
-        )
+        if not reference_sampling:
+            self._mark_execution_running(
+                operation_id=operation_id, project_id=command.project_id
+            )
         try:
             scheduled = ContentAuthorityScheduler(
                 self.database_url,
@@ -1072,13 +1173,15 @@ class NarrativeSemanticEvaluationApplication:
                 worker_id=self.worker_id,
             ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
         except Exception:
+            if not reference_sampling:
+                self._synchronize_execution_for_operation(
+                    operation_id=operation_id, project_id=command.project_id
+                )
+            raise
+        if not reference_sampling:
             self._synchronize_execution_for_operation(
                 operation_id=operation_id, project_id=command.project_id
             )
-            raise
-        self._synchronize_execution_for_operation(
-            operation_id=operation_id, project_id=command.project_id
-        )
         evaluation_asset = self._require_asset(
             command.project_id, scheduled.output.asset_version_id
         )
@@ -1146,13 +1249,59 @@ class NarrativeSemanticEvaluationApplication:
                 (content.get("provider_execution") or {}).get("route_snapshot_id") or ""
             ),
         )
-        self._record_qualifications(command, lineage, qualification)
+        if command.routing_bootstrap_authorization_id:
+            if content.get("production_qualification_eligible") is not False or not content.get("reference_evaluation"):
+                raise KernelError("NARRATIVE_REFERENCE_RESULT_INVALID",
+                                  "reference evaluation must retain its non-production evidence boundary")
+        else:
+            self._record_qualifications(command, lineage, qualification)
         return NarrativeSemanticEvaluationResult(
             lineage=lineage,
             qualification=qualification,
             evaluation_content=content,
             replayed=bool(admitted["replayed"]),
         )
+
+    def _validate_reference_predecessor(
+        self, uow: AuthorityUnitOfWork, command: NarrativeSemanticEvaluationCommand,
+        payload: Mapping[str, Any],
+    ) -> None:
+        grant = payload["routing_bootstrap_authorization"]["authorization"]
+        uow.cursor.execute(
+            """SELECT operation_id,status,actor_id,idempotency_key,command_payload->'payload'
+               FROM authority_operation
+               WHERE project_id=%s AND definition_name='story_design.semantic_evaluate'
+                 AND command_payload #>> '{payload,candidate_asset_version_id}'=%s
+                 AND command_payload #>> '{payload,routing_bootstrap_authorization,authorization,candidate_id}'=%s
+                 AND command_payload #>> '{payload,routing_bootstrap_authorization,authorization,model_revision}'=%s
+               ORDER BY created_at,operation_id FOR UPDATE""",
+            [command.project_id, command.candidate_asset_version_id,
+             grant["candidate_id"], grant["model_revision"]],
+        )
+        rows = uow.cursor.fetchall()
+        if any(row[3] == command.idempotency_key for row in rows):
+            return
+        if not rows:
+            if command.reference_predecessor_operation_id:
+                raise KernelError("NARRATIVE_REFERENCE_PREDECESSOR_INVALID",
+                                  "reference predecessor must belong to this candidate and evaluator model")
+            return
+        prior = rows[-1]
+        if command.reference_predecessor_operation_id != prior[0]:
+            raise KernelError("NARRATIVE_REFERENCE_PREDECESSOR_REQUIRED",
+                              "repeating an evaluator arm requires its latest native Operation lineage")
+        prior_payload = dict(prior[4])
+        prior_grant = prior_payload["routing_bootstrap_authorization"]["authorization"]
+        if (prior[2] != command.actor_id or prior_payload["input_versions"] != payload["input_versions"]
+            or prior_payload["reference_evaluation"] != payload["reference_evaluation"]
+            or prior_grant["campaign"] != grant["campaign"]):
+            raise KernelError("NARRATIVE_REFERENCE_PREDECESSOR_INVALID",
+                              "reference replacement must preserve evaluator, inputs, labels and campaign sample")
+        external = self._external_effect_evidence_in_uow(uow, operation_id=str(prior[0]))
+        if (prior[1] not in {"FAILED_FINAL", "CANCELLED", "DEAD_LETTER"}
+            or external["classification"] not in {"PROVEN_NO_EFFECT", "PROVEN_TERMINAL_FAILURE"}):
+            raise KernelError("NARRATIVE_REFERENCE_PREDECESSOR_NOT_REPLACEABLE",
+                              "recover the existing Operation; unknown or successful external results cannot be resent")
 
     def _admit_candidate_once(
         self,
@@ -3272,19 +3421,10 @@ class NarrativeSemanticEvaluationApplication:
                 command.candidate_asset_version_id,
                 *command.evidence_asset_version_ids,
             ],
-            "payload": {
-                "candidate_asset_version_id": command.candidate_asset_version_id,
-                "candidate_content_hash": command.candidate_content_hash,
-                "generation_operation_id": command.generation_operation_id,
-                "generation_actor_id": str(row[4]),
-                "generator_operation_name": command.generator_operation_name,
-                "book_id": command.book_id,
-                "evaluator_execution_class": command.evaluator_execution_class,
-                "evaluation": (
-                    None if command.evaluation is None else dict(command.evaluation)
-                ),
-                "opening_execution_binding": opening_execution_binding,
-            },
+            "payload": evaluation_command_payload(
+                command, generation_actor_id=str(row[4]),
+                opening_execution_binding=opening_execution_binding,
+            ),
         }
         lineage_exists = (
             row[15] is not None

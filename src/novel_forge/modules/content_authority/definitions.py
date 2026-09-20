@@ -80,6 +80,8 @@ def content_operation_definitions(
                     ),
                 },
                 "policy": {
+                    **({"evaluation_candidate_asset_input_allowed": True}
+                       if name == "story_design.review.author" else {}),
                     "project_scope_required": True,
                     "frozen_inputs_required": True,
                     "non_eligible_inputs": "fail_closed",

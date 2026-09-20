@@ -83,8 +83,9 @@ def write_asset(scope, kind, content):
     )
 
 
+@pytest.mark.parametrize("input_identity", ["unique", "repeated", "missing", "renamed_sample"])
 def test_registry_projects_existing_model_and_quality_evidence_without_forging_acceptance(
-    scope,
+    scope, input_identity,
 ):
     registry = PostgresRoutingRegistry(DATABASE_URL)
     candidate = deepseek_candidates(available=True)[0]
@@ -102,7 +103,14 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
                 "status": "BENCHMARK_SELECTED",
                 "mode": "BENCHMARK_CHALLENGER",
                 "production_eligible": False,
+                "task": {**({"producer_contract_hash": "sha256:" + "a" * 64} if i < 9 else {}),
+                         "input_hash": ("sha256:" + format(i if input_identity == "unique" else 0, "064x"))
+                         if input_identity != "missing" else ""},
                 "selected": {"candidate": asdict(candidate)},
+                **({"bootstrap_authorization": {"authorization": {"campaign": {
+                    "campaign_id": "fixture", "manifest_hash": "sha256:" + "d" * 64,
+                    "group_id": "same-work", "sample_id": f"sample-{i}", "partition": "CALIBRATION"}}}}
+                   if input_identity == "renamed_sample" else {}),
             },
         )
         evidence = {
@@ -180,6 +188,17 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
         project_id=scope[0], task_type="draft", candidate=candidate
     )
     assert len(observations) == 10
+    scoped = registry.observations(
+        project_id=scope[0], task_type="draft", candidate=candidate,
+        producer_contract_hash="sha256:" + "a" * 64,
+    )
+    assert len(scoped) == 9
+    assert all(row.producer_contract_hash == "sha256:" + "a" * 64 for row in scoped)
+    for incompatible in ("", "sha256:" + "b" * 64):
+        assert registry.observations(
+            project_id=scope[0], task_type="draft", candidate=candidate,
+            producer_contract_hash=incompatible,
+        ) == []
     assert all(row.accepted is None for row in observations)
     assert all(
         row.evidence_class == "BENCHMARK_CHALLENGER"
@@ -189,7 +208,7 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
     decision = CostAwareRouter().explain(
         task, [candidate], {candidate.candidate_id: observations}
     )
-    assert decision.to_dict()["status"] == "SELECTED"
+    assert decision.to_dict()["status"] == ("SELECTED" if input_identity == "unique" else "BLOCKED")
     saved = registry.save(
         decision,
         logical_ref="routing-test/frozen",
@@ -199,10 +218,12 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
     replay = registry.query.require(project_id=scope[0], asset_id=decision.decision_id)
     assert replay.content == decision.to_dict()
     assert saved["asset_version_id"] == replay.asset_version_id
-    assert replay.content["selected"]["benchmark"]["cache_hit_ratio"] == 0.8
-    assert replay.content["selected"]["benchmark"]["benchmark_challenger_sample_count"] == 10
-    assert replay.content["selected"]["benchmark"]["production_eligible_sample_count"] == 0
-    assert replay.content["selected"]["benchmark"]["production_acceptance_rate"] is None
+    benchmark = replay.content["candidates"][0]["benchmark"]
+    assert benchmark["cache_hit_ratio"] == 0.8
+    assert benchmark["benchmark_challenger_sample_count"] == 10
+    assert benchmark["production_eligible_sample_count"] == 0
+    assert benchmark["production_acceptance_rate"] is None
+    assert benchmark["metric_sample_count"] == {"unique": 10, "repeated": 1, "missing": 0, "renamed_sample": 1}[input_identity]
 
 
 def test_cold_start_persists_block_and_never_dispatches(scope):

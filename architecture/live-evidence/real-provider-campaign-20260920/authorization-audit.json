@@ -1,0 +1,97 @@
+{
+  "schema_version": "campaign-authorization-scope-audit.v1",
+  "campaign_native_real_calls": 0,
+  "existing_authorizations": [
+    {
+      "resource_ref": "operator-authorization:yu-xian-zhi-wai",
+      "content_hash": "sha256:dfe5c91b4c1ec2a1c5f3ab2b6e18066dbb41abbf87bc73a687c3fcc408361d8e",
+      "authorization_ref": "user:WP-CODEX-NOVEL-PRODUCTION-AND-EXPORT-01:20260913",
+      "project_id": "first-novel-pilot-20260912",
+      "book_id": "first-novel-pilot-a",
+      "business_scope": {
+        "source_allowed": false,
+        "design_allowed": true,
+        "max_chapter_number": 12
+      },
+      "accounting_basis": "ACCOUNT_ENTITLEMENT",
+      "authorized_cumulative_caps": {
+        "SOURCE": {
+          "calls": 0,
+          "tokens": 0
+        },
+        "DESIGN": {
+          "calls": 60,
+          "tokens": 1500000
+        },
+        "CREATION_EARLY": {
+          "calls": 150,
+          "tokens": 3750000
+        },
+        "CREATION_LATE": {
+          "calls": 150,
+          "tokens": 3750000
+        },
+        "REPAIR": {
+          "calls": 100,
+          "tokens": 2500000
+        }
+      },
+      "restrictions": [
+        "No paid API switch",
+        "No account/model switch",
+        "No credits purchase",
+        "No budget reset",
+        "Unknown outcomes retain reservations",
+        "No push/PR/merge",
+        "Independent human review NOT_REVIEWED"
+      ],
+      "campaign_scope_compatible": false,
+      "remaining_usage": "NOT_LIVE_VERIFIED"
+    },
+    {
+      "resource_ref": "operator-authorization:guofeng-xuanhuan-01",
+      "content_hash": "sha256:69b3aee7dcd7c90a30df2e81d4703cdeea563b6de676a413f0563d84bed05fa5",
+      "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913",
+      "project_id": "first-novel-pilot-20260912",
+      "book_id": "guofeng-xuanhuan-01",
+      "business_scope": {
+        "source_allowed": false,
+        "design_allowed": true,
+        "max_chapter_number": 40
+      },
+      "accounting_basis": "ACCOUNT_ENTITLEMENT",
+      "authorized_cumulative_caps": {
+        "SOURCE": {
+          "calls": 0,
+          "tokens": 0
+        },
+        "DESIGN": {
+          "calls": 70,
+          "tokens": 2000000
+        },
+        "CREATION_EARLY": {
+          "calls": 90,
+          "tokens": 2250000
+        },
+        "CREATION_LATE": {
+          "calls": 240,
+          "tokens": 5750000
+        },
+        "REPAIR": {
+          "calls": 60,
+          "tokens": 1500000
+        }
+      },
+      "restrictions": [
+        "No paid API, account change, credits purchase or Source deconstruction",
+        "No budget or unknown reservation reset",
+        "No push, PR, merge or business-database tests",
+        "Exact new pack compilation approvals registered separately with duties separation"
+      ],
+      "campaign_scope_compatible": false,
+      "remaining_usage": "NOT_LIVE_VERIFIED"
+    }
+  ],
+  "new_scope_grant": null,
+  "development_assistant_accounting": "UNKNOWN"
+}

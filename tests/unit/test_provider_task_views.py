@@ -1522,6 +1522,7 @@ def test_benchmark_authorization_and_model_cost_do_not_leak_to_semantic_judge():
         "schema_version": "story_design.authority.v1",
         "objective": "救人必须付出代价；人物声音与因果仍供审稿。",
         "routing_eligibility": "BENCHMARK_ONLY",
+        "reference_predecessor_operation_id": "private-reference-predecessor",
         "routing_bootstrap_authorization": {
             "candidate_id": "deepseek:flash", "maximum_amount": "1.00",
             "campaign": {"partition": "HOLDOUT", "sample_id": "private-order-1"},
@@ -1537,7 +1538,7 @@ def test_benchmark_authorization_and_model_cost_do_not_leak_to_semantic_judge():
                              "candidate": frozen}],
     }, {})
     encoded = json.dumps(view, ensure_ascii=False)
-    for private in ("deepseek", "HOLDOUT", "BENCHMARK_ONLY", "1.00", "private-order-1", "expected_quality"):
+    for private in ("deepseek", "HOLDOUT", "BENCHMARK_ONLY", "1.00", "private-order-1", "expected_quality", "private-reference-predecessor"):
         assert private not in encoded
     assert view["selected_inputs"][0]["candidate"]["objective"] == frozen["objective"]
     assert frozen["routing_eligibility"] == "BENCHMARK_ONLY"

@@ -27,6 +27,8 @@ class _Cursor:
     def execute(self, sql: str, parameters: list[Any]) -> None:
         assert sql.count("%s") == len(parameters)
         self.statements.append(sql)
+        if "SELECT command_payload->'payload',status,actor_id" in sql:
+            self.rows.insert(0, ({}, "EXECUTING", "evaluator:test"))
 
     def fetchone(self) -> tuple[Any, ...] | None:
         return self.rows.pop(0) if self.rows else None
@@ -108,7 +110,9 @@ class _ReleaseCursor:
         self.current: tuple[Any, ...] | None = None
 
     def execute(self, sql: str, _parameters: list[Any]) -> None:
-        if "pg_advisory_xact_lock" in sql:
+        if "SELECT command_payload->'payload',status,actor_id" in sql:
+            self.current = ({}, self.operation_status, "evaluator:test")
+        elif "pg_advisory_xact_lock" in sql:
             self.current = None
         elif "SELECT evaluation.generation,evaluation.recovery_intent_id" in sql:
             self.current = _lineage_row(2, recovery_intent_id="recovery-intent:1")
@@ -217,12 +221,12 @@ def test_generation_one_execution_does_not_depend_on_book_opening_gate() -> None
         "replacement": False,
         "gate_open": True,
     }
-    assert len(cursor.statements) == 2
-    assert "authority_book_opening_run" not in cursor.statements[0]
-    assert "design_state.source_kind='OPERATOR_AUTHORED'" in cursor.statements[0]
-    assert "story_design.creative_foundation.author" in cursor.statements[0]
-    assert "FROM authority_runtime_job AS job" in cursor.statements[1]
-    assert "JOIN authority_book_opening" not in cursor.statements[1]
+    assert len(cursor.statements) == 3
+    assert "authority_book_opening_run" not in cursor.statements[1]
+    assert "design_state.source_kind='OPERATOR_AUTHORED'" in cursor.statements[1]
+    assert "story_design.creative_foundation.author" in cursor.statements[1]
+    assert "FROM authority_runtime_job AS job" in cursor.statements[2]
+    assert "JOIN authority_book_opening" not in cursor.statements[2]
 
 
 def test_missing_semantic_execution_lineage_fails_closed() -> None:
@@ -367,14 +371,14 @@ def test_book_opening_bound_generation_one_uses_exact_live_fence() -> None:
     )
 
     assert result["gate_open"] is True
-    assert len(cursor.statements) == 2
-    assert "authority_book_opening_run" in cursor.statements[1]
+    assert len(cursor.statements) == 3
+    assert "authority_book_opening_run" in cursor.statements[2]
     assert (
         "job.lease_loss_policy='AUTHORITY_CONVERGENCE_REQUIRED'"
-        in (cursor.statements[1])
+        in (cursor.statements[2])
     )
-    assert "job.max_attempts=1" in cursor.statements[1]
-    assert "lease.lease_expires_at>clock_timestamp()" in cursor.statements[1]
+    assert "job.max_attempts=1" in cursor.statements[2]
+    assert "lease.lease_expires_at>clock_timestamp()" in cursor.statements[2]
 
 
 def test_book_opening_bound_generation_one_rejects_lost_lease() -> None:
@@ -408,8 +412,8 @@ def test_generation_one_can_resume_only_from_exact_recovery_assessment() -> None
     )
 
     assert result["gate_open"] is True
-    assert len(cursor.statements) == 3
-    assert "RESUME_CURRENT" in cursor.statements[2]
+    assert len(cursor.statements) == 4
+    assert "RESUME_CURRENT" in cursor.statements[3]
 
 
 def test_legacy_unbound_generation_one_uses_its_durable_recovery_binding() -> None:
@@ -423,10 +427,10 @@ def test_legacy_unbound_generation_one_uses_its_durable_recovery_binding() -> No
     )
 
     assert result["gate_open"] is True
-    assert len(cursor.statements) == 3
-    assert "FROM authority_runtime_job AS job" in cursor.statements[1]
-    assert "JOIN authority_book_opening" not in cursor.statements[1]
-    assert "RESUME_CURRENT" in cursor.statements[2]
+    assert len(cursor.statements) == 4
+    assert "FROM authority_runtime_job AS job" in cursor.statements[2]
+    assert "JOIN authority_book_opening" not in cursor.statements[2]
+    assert "RESUME_CURRENT" in cursor.statements[3]
 
 
 def test_legacy_unbound_generation_one_rejects_stale_recovery_fence() -> None:
@@ -461,19 +465,19 @@ def test_replacement_execution_uses_the_database_derived_gate() -> None:
         "replacement": True,
         "gate_open": True,
     }
-    assert len(cursor.statements) == 2
-    assert "authority_book_opening_recovery_assessment" in cursor.statements[1]
-    assert "assessment.assessment_kind='RECOVERY'" in cursor.statements[1]
-    assert "receipt.recovery_assessment_id" in cursor.statements[1]
-    assert "assessment.disposition NOT IN" in cursor.statements[1]
-    assert "assessment.opening_execution_id" in cursor.statements[1]
-    assert "opening_execution.predecessor_execution_id" in cursor.statements[1]
-    assert "recovery_intent.predecessor_execution_id=%s" not in cursor.statements[1]
-    assert "NEW_REPLACEMENT" in cursor.statements[1]
-    assert "RESUME_CURRENT" in cursor.statements[1]
-    assert "replacement_evaluation_operation_id" in cursor.statements[1]
-    assert "candidate_asset_version_id" in cursor.statements[1]
-    assert "lease.lease_expires_at>clock_timestamp()" in cursor.statements[1]
+    assert len(cursor.statements) == 3
+    assert "authority_book_opening_recovery_assessment" in cursor.statements[2]
+    assert "assessment.assessment_kind='RECOVERY'" in cursor.statements[2]
+    assert "receipt.recovery_assessment_id" in cursor.statements[2]
+    assert "assessment.disposition NOT IN" in cursor.statements[2]
+    assert "assessment.opening_execution_id" in cursor.statements[2]
+    assert "opening_execution.predecessor_execution_id" in cursor.statements[2]
+    assert "recovery_intent.predecessor_execution_id=%s" not in cursor.statements[2]
+    assert "NEW_REPLACEMENT" in cursor.statements[2]
+    assert "RESUME_CURRENT" in cursor.statements[2]
+    assert "replacement_evaluation_operation_id" in cursor.statements[2]
+    assert "candidate_asset_version_id" in cursor.statements[2]
+    assert "lease.lease_expires_at>clock_timestamp()" in cursor.statements[2]
 
 
 def test_replacement_execution_fails_closed_when_owner_chain_is_not_live() -> None:

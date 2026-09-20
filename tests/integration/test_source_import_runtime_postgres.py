@@ -950,6 +950,245 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         self.assertEqual(self.execution_port.lease_seconds, 30)
         self.assertEqual(self.execution_port.provider_timeout_seconds, 900)
 
+    def test_native_source_sampling_isolates_model_arms_and_domain_commits(self) -> None:
+        from copy import deepcopy
+        from datetime import datetime, timedelta, timezone
+        from novel_forge.modules.authority_handler_runtime.policy_commands import configure_owned_policy
+        from novel_forge.modules.command_kernel.routing_bootstrap import SOURCE_BOOTSTRAP_TASKS
+        from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
+        from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter, PostgresRoutingRegistry
+        from novel_forge.modules.source_import.sampling import prepare_sample, admit_sample
+
+        original = self._create_import("sampling-inputs", self.commit_a)
+        self._run_ready_source_operations()
+        before = self._source_intelligence_counts()
+        job_status = self.query.import_job(project_id=self.project_id, import_job_id=original["import_job_id"])["status"]
+        principal = replace(self.principal, permissions=frozenset({
+            "source.authority.execute", "provider.routing_policy.configure", "book.authority.execute",
+        }))
+        candidates = deepseek_candidates(available=True)[:2]
+        router = ProductionProviderRouter(DATABASE_URL, candidates=deepseek_candidates(available=True),
+            task_money_limit="1", task_token_limit=200000, execution_environment="validation")
+        self.production_execution.gateway.provider_router = router
+        self.execution_port.max_cost_per_call = "1"
+        expiry = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+        grants = []
+        count = 0
+        producer_contracts = {}
+        receipts_by_task = {}
+        for definition, task in SOURCE_BOOTSTRAP_TASKS.items():
+            source_id = self._operations(definition)[0]
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s AND effect_type='model.invoke' AND status='SUCCEEDED'", [source_id])
+                receipt = self.application._effect_evidence(str(cursor.fetchone()[0]))
+                receipts_by_task[task] = deepcopy(receipt)
+            for candidate in candidates:
+                request = dict(project_id=self.project_id, source_operation_id=source_id,
+                    authorization_id=f"sample:{task}:{candidate.candidate_id}",
+                    idempotency_key=f"{self.project_id}:{task}:{candidate.candidate_id}", principal=principal)
+                prepared = prepare_sample(self.application, **request)
+                grant = {
+                    "authorization_id": request["authorization_id"], "reason": "scripted Source boundary regression",
+                    "environment": "validation", "book_id": f"source-corpus:{self.project_id}",
+                    "task_type": task, "logical_key": source_id,
+                    "generation_idempotency_key": request["idempotency_key"],
+                    "input_versions_hash": prepared["input_versions_hash"], "command_hash": prepared["command_hash"],
+                    "candidate_id": candidate.candidate_id, "model_revision": candidate.model_revision,
+                    "expires_at": expiry, "maximum_calls": 1, "maximum_tokens": 200000,
+                    "maximum_amount": "1", "currency": "USD", "purpose": "BENCHMARK_CHALLENGER",
+                    "production_eligible": False,
+                    "campaign": {"campaign_id": self.project_id, "manifest_hash": "sha256:" + "c" * 64,
+                        "sample_id": task, "group_id": source_id, "partition": "CALIBRATION",
+                        "maximum_calls": 10, "maximum_tokens": 2000000, "maximum_amount": "10", "expires_at": expiry},
+                }
+                grants.append(grant)
+                configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+                    content={"policy_version": f"sample:{len(grants)}", "reason": "fixture-only",
+                             "task_overrides": [], "bootstrap_authorizations": grants},
+                    project_id=self.project_id, workspace_id=self.workspace_id,
+                    idempotency_key=f"{self.project_id}:policy:{len(grants)}", trace_id="fixture", correlation_id="fixture",
+                    application_build_id="source-import-integration", commit_sha="e" * 40, principal=principal)
+                admitted = admit_sample(self.application, **request)
+                self.assertEqual(admit_sample(self.application, **request), admitted)
+
+                def fixture_provider(_adapter, **kwargs):
+                    nonlocal count
+                    count += 1
+                    payload = kwargs["request_payload"]
+                    self.assertNotIn("routing_bootstrap_authorization", payload["input"])
+                    frozen = payload["_production_execution"]["capability_runtime"]["routing_decision"]["task"]
+                    self.assertEqual(frozen["producer_contract"]["stage"], task)
+                    self.assertTrue(frozen["producer_contract_hash"].startswith("sha256:"))
+                    self.assertEqual(producer_contracts.setdefault(task, frozen["producer_contract_hash"]),
+                                     frozen["producer_contract_hash"])
+                    evidence = deepcopy(receipt)
+                    self.assertTrue(evidence["fixture_protocol_only"])
+                    evidence.update(real_model_call=False, production_verified=False,
+                        capability_runtime=payload["_production_execution"]["capability_runtime"])
+                    return ProviderResult("success", "fixture-source:" + str(count), evidence)
+
+                with patch.object(source_execution._SourceGatewayEffectAdapter, "execute", fixture_provider):
+                    self.scheduler.run_or_recover(operation_id=admitted["operation_id"], project_id=self.project_id)
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute("SELECT result FROM authority_source_import_work WHERE operation_id=%s", [admitted["operation_id"]])
+                    result = cursor.fetchone()[0]
+                    self.assertEqual(result["qualification_status"], "BENCHMARK_ONLY")
+                    self.assertFalse(result["production_eligible"])
+                    self.assertFalse(result.get("provider_execution_reused"))
+                    cursor.execute("SELECT eligibility,content FROM authority_asset_version WHERE asset_version_id=%s", [result["execution_asset_version_id"]])
+                    eligibility, content = cursor.fetchone()
+                    self.assertEqual(eligibility, "INELIGIBLE")
+                    self.assertEqual(content["qualification_status"], "BENCHMARK_ONLY")
+                self.scheduler.run_or_recover(operation_id=admitted["operation_id"], project_id=self.project_id)
+        after = self._source_intelligence_counts()
+        self.assertEqual(count, 6)
+        self.assertEqual(len(set(producer_contracts.values())), 3)
+        self.assertEqual(after.pop("model_effects"), before.pop("model_effects") + 6)
+        self.assertEqual(after, before)
+        campaign = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=self.project_id, campaign_id=self.project_id)
+        self.assertEqual(len(campaign["operations"]), 6)
+        self.assertEqual(self.query.import_job(project_id=self.project_id, import_job_id=original["import_job_id"])["status"], job_status)
+        replacement = {**request, "authorization_id": "renamed-arm", "idempotency_key": str(request["idempotency_key"]) + ":renamed"}
+        prepared = prepare_sample(self.application, **replacement)
+        replacement_grant = {**grant, "authorization_id": "renamed-arm", "generation_idempotency_key": replacement["idempotency_key"], "command_hash": prepared["command_hash"]}
+        configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+            content={"policy_version": "renamed-arm", "reason": "fixture-only repeat protection",
+                     "task_overrides": [], "bootstrap_authorizations": [*grants, replacement_grant]},
+            project_id=self.project_id, workspace_id=self.workspace_id,
+            idempotency_key=f"{self.project_id}:policy:renamed", trace_id="fixture", correlation_id="fixture",
+            application_build_id="source-import-integration", commit_sha="e" * 40, principal=principal)
+        with self.assertRaisesRegex(KernelError, "SOURCE_SAMPLE_RECOVERY_REQUIRED"):
+            admit_sample(self.application, **replacement)
+        grants.append(replacement_grant)
+        maximum = deepseek_candidates(available=True)[2]
+        no_effect = {**request, "authorization_id": "no-effect", "idempotency_key": f"{self.project_id}:no-effect"}
+
+        def grant_request(command):
+            prepared = prepare_sample(self.application, **command)
+            granted = {**grant, "authorization_id": command["authorization_id"],
+                       "generation_idempotency_key": command["idempotency_key"],
+                       "candidate_id": maximum.candidate_id, "model_revision": maximum.model_revision,
+                       "task_type": prepared["command_payload"]["generator_operation_name"],
+                       "logical_key": command["source_operation_id"],
+                       "input_versions_hash": prepared["input_versions_hash"],
+                       "campaign": {**grant["campaign"], "sample_id": prepared["command_payload"]["generator_operation_name"],
+                                    "group_id": command["source_operation_id"]},
+                       "command_hash": prepared["command_hash"]}
+            grants.append(granted)
+            configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+                content={"policy_version": command["authorization_id"], "reason": "fixture-only repair lineage",
+                         "task_overrides": [], "bootstrap_authorizations": grants},
+                project_id=self.project_id, workspace_id=self.workspace_id,
+                idempotency_key=f"{self.project_id}:policy:{command['authorization_id']}", trace_id="fixture", correlation_id="fixture",
+                application_build_id="source-import-integration", commit_sha="e" * 40, principal=principal)
+
+        grant_request(no_effect)
+        failed = admit_sample(self.application, **no_effect)
+        with patch.object(self.application, "_execute_mkaos", side_effect=KernelError("SOURCE_SAMPLE_INPUT_INVALID", "fixture before Provider invocation")):
+            with self.assertRaisesRegex(KernelError, "SOURCE_SAMPLE_INPUT_INVALID"):
+                self.scheduler.run_or_recover(operation_id=failed["operation_id"], project_id=self.project_id)
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        from novel_forge.storage.source_import_repositories import SourceImportRepository
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            self.application._refresh_job(SourceImportRepository(uow.cursor), original["import_job_id"], self.project_id)
+            uow.commit()
+        self.assertEqual(self.query.import_job(project_id=self.project_id, import_job_id=original["import_job_id"])["status"], job_status)
+        resumed = {**no_effect, "authorization_id": "after-no-effect", "idempotency_key": f"{self.project_id}:after-no-effect", "predecessor_operation_id": failed["operation_id"]}
+        grant_request(resumed)
+        repaired = admit_sample(self.application, **resumed)
+
+        def failed_provider(_adapter, **_kwargs):
+            nonlocal count
+            count += 1
+            return ProviderResult("final_failure", "fixture-source:terminal-failure", {
+                "fixture_protocol_only": True, "real_model_call": False, "request_sent": True,
+                "production_execution": {"process_evidence": {"submission_phase": "PROVIDER_RESULT_RECORDED"}},
+            })
+
+        with patch.object(source_execution._SourceGatewayEffectAdapter, "execute", failed_provider):
+            with self.assertRaisesRegex(KernelError, "SOURCE_PEP_EXECUTION_FAILED"):
+                self.scheduler.run_or_recover(operation_id=repaired["operation_id"], project_id=self.project_id)
+        after_failure = {**resumed, "authorization_id": "after-provider-failure",
+                         "idempotency_key": f"{self.project_id}:after-provider-failure",
+                         "predecessor_operation_id": repaired["operation_id"]}
+        grant_request(after_failure)
+        succeeded = admit_sample(self.application, **after_failure)
+        with patch.object(source_execution._SourceGatewayEffectAdapter, "execute", fixture_provider):
+            self.scheduler.run_or_recover(operation_id=succeeded["operation_id"], project_id=self.project_id)
+        self.assertEqual(admit_sample(self.application, **after_failure), succeeded)
+        campaign = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=self.project_id, campaign_id=self.project_id)
+        operations = {item["operation_id"]: item for item in campaign["operations"]}
+        self.assertEqual(operations[failed["operation_id"]]["status"], "FAILED_FINAL")
+        self.assertEqual(operations[repaired["operation_id"]]["status"], "FAILED_FINAL")
+        self.assertEqual(operations[repaired["operation_id"]]["causation_operation_id"], failed["operation_id"])
+        self.assertEqual(operations[succeeded["operation_id"]]["causation_operation_id"], repaired["operation_id"])
+        self.assertEqual(count, 8)
+        self.assertEqual(campaign["usage"]["calls_used_or_reserved"], 8)
+        failure_reservation = next(item for item in campaign["reservations"] if item["operation_id"] == repaired["operation_id"])
+        self.assertEqual(failure_reservation["reservation_status"], "SETTLED")
+        self.assertEqual(failure_reservation["actual_tokens"], failure_reservation["estimated_tokens"])
+
+        unknown = {**no_effect, "source_operation_id": self._operations("source.import.document.profile")[0],
+                   "authorization_id": "unknown-result", "idempotency_key": f"{self.project_id}:unknown-result"}
+        grant_request(unknown)
+        pending = admit_sample(self.application, **unknown)
+
+        def unknown_provider(_adapter, **_kwargs):
+            nonlocal count
+            count += 1
+            return ProviderResult("unknown", "fixture-source:unknown-result", {"fixture_protocol_only": True})
+
+        with patch.object(source_execution._SourceGatewayEffectAdapter, "execute", unknown_provider):
+            with self.assertRaises(KernelError):
+                self.scheduler.run_or_recover(operation_id=pending["operation_id"], project_id=self.project_id)
+        forbidden = {**unknown, "authorization_id": "unknown-replacement", "idempotency_key": f"{self.project_id}:unknown-replacement",
+                     "predecessor_operation_id": pending["operation_id"]}
+        grant_request(forbidden)
+        with self.assertRaisesRegex(KernelError, "SOURCE_SAMPLE_PREDECESSOR_NOT_REPLACEABLE"):
+            admit_sample(self.application, **forbidden)
+        campaign = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=self.project_id, campaign_id=self.project_id)
+        self.assertEqual(count, 9)
+        self.assertEqual(campaign["usage"]["calls_used_or_reserved"], 9)
+        pending_operation = next(item for item in campaign["operations"] if item["operation_id"] == pending["operation_id"])
+        self.assertIn(pending_operation["status"], {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"})
+        self.assertEqual(campaign["state"], "RECONCILIATION_REQUIRED")
+        unknown_reservation = next(item for item in campaign["reservations"] if item["operation_id"] == pending["operation_id"])
+        self.assertEqual(unknown_reservation["reservation_status"], "HELD_UNKNOWN")
+        self.assertTrue(campaign["unresolved_effect_ids"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("""SELECT version.content FROM authority_operation_output_asset output
+                JOIN authority_asset_version version USING(asset_version_id)
+                JOIN authority_asset asset USING(asset_id)
+                WHERE output.operation_id=ANY(%s) AND asset.asset_type='model_call_log'""",
+                [[repaired["operation_id"], pending["operation_id"]]])
+            failures = [row[0] for row in cursor.fetchall()]
+        self.assertEqual(len(failures), 2)
+        self.assertTrue(all(item["fixture_protocol_only"] and not item["accepted_candidate"]
+                            and item["execution_status"] == "FAILED" for item in failures))
+        queries = 0
+
+        def recovered_provider(_adapter, **kwargs):
+            nonlocal queries
+            queries += 1
+            evidence = deepcopy(receipts_by_task["source.content.classify"])
+            evidence.update(real_model_call=False, production_verified=False,
+                capability_runtime=kwargs["request_payload"]["_production_execution"]["capability_runtime"])
+            return ProviderResult("success", "fixture-source:recovered-result", evidence)
+
+        with patch.object(source_execution._SourceGatewayRecoveryEffectAdapter, "query", recovered_provider):
+            self.scheduler.run_or_recover(operation_id=pending["operation_id"], project_id=self.project_id)
+        self.assertEqual(queries, 1)
+        self.assertEqual(count, 9)
+        campaign = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=self.project_id, campaign_id=self.project_id)
+        self.assertEqual(campaign["state"], "ACCOUNTED")
+        self.assertEqual(campaign["usage"]["calls_used_or_reserved"], 9)
+        pending_operation = next(item for item in campaign["operations"] if item["operation_id"] == pending["operation_id"])
+        self.assertEqual(pending_operation["status"], "SUCCEEDED")
+        self.assertEqual(sum(item["role"] == "model_evidence" for item in pending_operation["outputs"]), 2)
+        with self.assertRaisesRegex(KernelError, "SOURCE_SAMPLE_PREDECESSOR_NOT_REPLACEABLE"):
+            admit_sample(self.application, **forbidden)
+        self.assertEqual(self.query.import_job(project_id=self.project_id, import_job_id=original["import_job_id"])["status"], job_status)
+
     def test_exact_commit_import_deduplicates_content_and_reuses_transform(
         self,
     ) -> None:

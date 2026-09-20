@@ -1,0 +1,285 @@
+{
+  "schema_version": "real-provider-campaign-proposal.v1",
+  "campaign_id": "real-provider-campaign-20260920",
+  "status": "NOT_FROZEN_IMPLEMENTATION_AND_AUTHORIZATION_GAPS",
+  "executable_campaign": false,
+  "implementation_sha": "f5ba1faf058af2613f7116904a6230eac1f0e02c",
+  "implementation_tree_sha": "sha256:2a0f369f4e29d34f5d56bbf9dcd9d0401c568c0188050d3a389640d95bbfb408",
+  "authorization": {
+    "matching_grant": null,
+    "authorized_new_campaign_calls": 0,
+    "authorized_new_campaign_usd": "0",
+    "authorization_required_for": [
+      "DeepSeek priced inference",
+      "Source import/analysis and governed knowledge use",
+      "reference evaluation",
+      "Codex calibration/escalation scope",
+      "new validation project or explicit existing-project scope extension"
+    ],
+    "existing_codex_grants": "NOT_SCOPE_COMPATIBLE; Source and paid API forbidden; historical use shares finite project limits"
+  },
+  "models": [
+    {
+      "candidate_id": "deepseek:deepseek-flash:low",
+      "model": "deepseek-flash",
+      "model_revision": "DeepSeek-V4.1-Flash",
+      "reasoning": "low",
+      "pricing": {
+        "version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+        "effective_from": "2026-09-10T04:00:00+00:00",
+        "effective_until": "9999-12-31T23:59:59+00:00",
+        "input_miss_per_million": ".3",
+        "input_hit_per_million": ".006",
+        "output_per_million": "1.2",
+        "currency": "USD",
+        "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "accounting_basis": "PRICED"
+      },
+      "availability": "NOT_LIVE_VERIFIED"
+    },
+    {
+      "candidate_id": "deepseek:deepseek-v4-pro:high",
+      "model": "deepseek-v4-pro",
+      "model_revision": "DeepSeek-V4-Pro-0813",
+      "reasoning": "high",
+      "pricing": {
+        "version": "deepseek-scheduled-peak-ceiling:2026-08-16T16:00:00+00:00:deepseek-v4-pro",
+        "effective_from": "2026-08-16T16:00:00+00:00",
+        "effective_until": "9999-12-31T23:59:59+00:00",
+        "input_miss_per_million": "1.32",
+        "input_hit_per_million": ".044",
+        "output_per_million": "3.96",
+        "currency": "USD",
+        "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "accounting_basis": "PRICED"
+      },
+      "availability": "NOT_LIVE_VERIFIED"
+    },
+    {
+      "candidate_id": "deepseek:deepseek-v4-pro:max",
+      "model": "deepseek-v4-pro",
+      "model_revision": "DeepSeek-V4-Pro-0813",
+      "reasoning": "max",
+      "pricing": {
+        "version": "deepseek-scheduled-peak-ceiling:2026-08-16T16:00:00+00:00:deepseek-v4-pro",
+        "effective_from": "2026-08-16T16:00:00+00:00",
+        "effective_until": "9999-12-31T23:59:59+00:00",
+        "input_miss_per_million": "1.32",
+        "input_hit_per_million": ".044",
+        "output_per_million": "3.96",
+        "currency": "USD",
+        "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "accounting_basis": "PRICED"
+      },
+      "availability": "NOT_LIVE_VERIFIED"
+    }
+  ],
+  "codex": {
+    "model": "gpt-6-astra",
+    "account_identity_ref": "EXISTING_GUOFENG_DESIGNATED_ACCOUNT",
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "cli_version": "0.154.0",
+    "executable_sha256": "sha256:4f85982624b3898c8991cb80c0981b2aa71070e3537046c9a95950318a95afcc",
+    "verified": "LOCAL_BINARY_ONLY",
+    "remaining_entitlement": "UNKNOWN",
+    "reasoning_effort": "MUST_FREEZE_FROM_AUTHORIZED_RUNTIME",
+    "monetary_cost": "UNKNOWN",
+    "switch_account_or_billing": false
+  },
+  "proposed_budget": {
+    "deepseek_calls": 2800,
+    "deepseek_tokens": 86000000,
+    "deepseek_usd": "344",
+    "codex_calls": 32,
+    "codex_tokens": 6976000,
+    "combined_calls": 2832,
+    "combined_tokens": 92976000,
+    "codex_usd": null,
+    "allocations": [
+      {
+        "stage": "reference_evaluator",
+        "deepseek_calls": 240,
+        "deepseek_tokens": 6000000,
+        "deepseek_usd": "24",
+        "codex_calls": 4,
+        "codex_tokens": 872000
+      },
+      {
+        "stage": "screening",
+        "deepseek_calls": 480,
+        "deepseek_tokens": 12000000,
+        "deepseek_usd": "48",
+        "codex_calls": 4,
+        "codex_tokens": 872000
+      },
+      {
+        "stage": "calibration",
+        "deepseek_calls": 960,
+        "deepseek_tokens": 24000000,
+        "deepseek_usd": "96",
+        "codex_calls": 8,
+        "codex_tokens": 1744000
+      },
+      {
+        "stage": "independent_holdout",
+        "deepseek_calls": 720,
+        "deepseek_tokens": 24000000,
+        "deepseek_usd": "96",
+        "codex_calls": 8,
+        "codex_tokens": 1744000
+      },
+      {
+        "stage": "twelve_chapter_production",
+        "deepseek_calls": 240,
+        "deepseek_tokens": 12000000,
+        "deepseek_usd": "48",
+        "codex_calls": 4,
+        "codex_tokens": 872000
+      },
+      {
+        "stage": "failure_repair_reserve",
+        "deepseek_calls": 160,
+        "deepseek_tokens": 8000000,
+        "deepseek_usd": "32",
+        "codex_calls": 4,
+        "codex_tokens": 872000
+      }
+    ],
+    "basis": "planning ceiling, not authorization or guaranteed sufficient statistical power",
+    "priced_estimate": "86M tokens at largest observed peak token unit price 3.96 USD/M = 340.56 USD; rounded per-stage ceiling 344 USD",
+    "cache_reservation_assumption": "zero hits; measured provider cache usage separately",
+    "bill_status": "NOT_QUERIED",
+    "includes": [
+      "generation",
+      "independent review",
+      "revision",
+      "failure",
+      "retry",
+      "escalation",
+      "production qualification"
+    ],
+    "concurrency": 1,
+    "maximum_router_attempts_per_lineage": 4,
+    "maximum_codex_escalations_per_lineage": 1,
+    "provider_token_hard_guarantee": false
+  },
+  "validity": {
+    "proposed_valid_until": "2026-10-04T10:36:51+00:00",
+    "runtime_must_recheck_price_model_account_and_expiry": true,
+    "no_reset_on_run_key_repair_or_evidence_directory": true
+  },
+  "design": {
+    "language": "zh-CN",
+    "genre": "原创国风玄幻/武侠",
+    "target": "有趣有梗、自然易读、愿意继续读",
+    "accepted_chapters": 12,
+    "chapter_han_character_range": [
+      2000,
+      3500
+    ],
+    "read_checkpoints": [
+      3,
+      6,
+      9,
+      12
+    ],
+    "existing_author_work": "retained unchanged; its DENY_ALL source policy and entitlement-only grant are not repurposed",
+    "raw_sources_may_enter_draft": false,
+    "calibration_candidates_production_eligible": false
+  },
+  "experiment": {
+    "partitions": [
+      "DEVELOPMENT",
+      "CALIBRATION",
+      "HOLDOUT"
+    ],
+    "group_rule": "entire source/work/scene family remains in one partition; all chapters of a work are clustered",
+    "units": "original independent tasks; repeats, repairs, prompt retunes and adjacent chapters are not new independent units",
+    "screening": "task-specific Flash versus Pro high first; Pro max only predeclared high-risk or borderline cases; stop clearly unsuitable candidates",
+    "holdout_policy_and_benchmark": "freeze before independent outcomes; publish feedback only after evaluation",
+    "literary_evidence": "MODEL_PROXY_ONLY without actual independent human labels; no reader preference claim",
+    "baseline_floor_before_noninferiority": true,
+    "planned_looks": [
+      30,
+      60,
+      120
+    ],
+    "familywise_alpha": 0.05,
+    "quality_margin_points_on_100": 3,
+    "acceptance_margin_absolute": 0.05,
+    "interval_method": "paired work-level cluster resampling for continuous scores, paired binary risk-difference interval; Bonferroni over declared strata and three looks; exact protocol still requires frozen independent groups",
+    "stop_rule": "stop for predeclared futility or budget exhaustion; superiority/noninferiority only at declared looks; incomplete or underpowered intervals INCONCLUSIVE",
+    "must_retain_all_attempts": true,
+    "blindness": [
+      "provider",
+      "model",
+      "cost",
+      "generation self-score",
+      "candidate order"
+    ],
+    "important_pairs": "randomized AB/BA, order-swap recheck and explicit disagreement adjudication",
+    "routing_qualification_unit": "first attempt per immutable campaign data group; renaming samples does not increase count"
+  },
+  "unresolved_freeze_fields": [
+    "exact independent dataset and group assignments",
+    "trusted reference labels/rules and evaluator validity",
+    "all-family native bootstrap entry",
+    "per-task Prompt/Context/Schema/Judge assets and hashes",
+    "accepted budget policy scope covering all stages and mixed accounting",
+    "frozen baseline and economic routing snapshots",
+    "original-work native asset IDs and source-rights/knowledge-use grants"
+  ],
+  "recovery": {
+    "sampling_status_command": "novel-forge authority-provider-routing campaign --project-id <authorized-project> --campaign-id real-provider-campaign-20260920",
+    "all_budget_status_command": "novel-forge authority-provider-routing metrics --project-id <authorized-project>",
+    "frozen_decision_command": "novel-forge authority-provider-routing replay --project-id <authorized-project> --decision-id <routing-decision-id>",
+    "full_campaign_resume_command": null,
+    "reason": "No complete native full-family campaign runner/reference-evaluator path exists yet. Inventing an executable resume command would misstate readiness."
+  },
+  "official_sources": [
+    "https://api-docs.deepseek.com/quick_start/pricing/",
+    "https://api-docs.deepseek.com/guides/thinking_mode",
+    "https://learn.chatgpt.com/docs/auth",
+    "https://learn.chatgpt.com/docs/models"
+  ],
+  "real_calls": 0,
+  "real_samples": 0,
+  "accepted_chapters": 0,
+  "proof_ceiling": "NOT_PROVEN",
+  "development_assistant_accounting": {
+    "usage": "UNKNOWN",
+    "cost": "UNKNOWN",
+    "included_in_novel_forge_kernel_ledger": false
+  },
+  "real_calls_scope": "NOVEL_FORGE_PROVIDER_RUNTIME_ONLY",
+  "tested_sha": "bbca0e7a4a0ed61381d0175272e9fe1763d7137a",
+  "reference_evaluation_runtime": {
+    "entry": "POST /product/production/book-authority/books/{book_id}/planning-evaluations",
+    "read_only_preflight_query": "dry_run=true",
+    "purpose": "REFERENCE_EVALUATION",
+    "task_type": "narrative_semantic_evaluation",
+    "native_operation": "story_design.semantic_evaluate@1.0.0",
+    "reference_authoring_operation": "story_design.review.author",
+    "reference_scope": "INDEPENDENT_OPERATOR_PROXY_LABELS",
+    "trusted_judge_calibration": "NOT_PROVEN",
+    "paired_multi_judge_sampling": "WIRED_AND_SCRIPTED_POSTGRES_VERIFIED",
+    "terminal_standalone_reference_replacement": "PROVEN_NO_EFFECT_OR_TERMINAL_FAILURE_ONLY",
+    "unknown_or_successful_effect_resend": "FORBIDDEN",
+    "production_qualification_head": "NOT_CLAIMED_BY_REFERENCE_SAMPLING",
+    "migration": "20260920_0139_narrative_reference_sampling"
+  },
+  "source_sampling_runtime": {
+    "native_entry": "POST /product/source-imports/provider-samples",
+    "prepare_query": "dry_run=true",
+    "task_types": [
+      "source.content.classify",
+      "source.deconstruction.observe",
+      "source.mkaos.extract"
+    ],
+    "state": "WIRED_SCRIPTED_FOCUSED_VERIFIED",
+    "production_output_eligible": false,
+    "terminal_no_effect_replacement": "NATIVE_CAUSATION_PRESERVED",
+    "terminal_provider_failure_replacement": "NOT_IMPLEMENTED",
+    "independent_evaluation_and_qualification": "NOT_PROVEN"
+  }
+}

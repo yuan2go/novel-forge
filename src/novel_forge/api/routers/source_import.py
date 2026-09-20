@@ -62,10 +62,31 @@ class ChapterReadingPreviewRequest(BaseModel):
     target_book_id: str = Field(default="", max_length=512)
 
 
+class SourceProviderSampleRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1, max_length=200)
+    source_operation_id: str = Field(min_length=1, max_length=200)
+    authorization_id: str = Field(min_length=1, max_length=200)
+    idempotency_key: str = Field(min_length=1, max_length=512)
+    predecessor_operation_id: str = Field(default="", max_length=200)
+
+
 def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(prefix="/product/source-imports", tags=["source-import"])
     application = ctx.services.source_import_application
     query = ctx.services.source_import_query
+
+    @router.post("/provider-samples", status_code=202)
+    def provider_sample(request: SourceProviderSampleRequest, dry_run: bool = False) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            if dry_run:
+                return application.prepare_provider_sample(**request.model_dump(), principal=principal)
+            return application.admit_provider_sample(**request.model_dump(), principal=principal)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
 
     @router.get("/corpus/jobs/{job_id}/reading-targets")
     def reading_targets(

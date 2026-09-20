@@ -352,6 +352,19 @@ the existing `content.authority.query` permission. Estimated upper bounds must n
 reported as actual billed cost. Missing calibrated benchmark evidence blocks routing;
 operators must not seed fixture scores as production quality evidence.
 
+For a current scoped explanation, copy `producer_contract` from a native frozen
+RoutingDecision into the task context. Native dispatch builds it from its
+actual Prompt/Skill, Context policy, provider view and Schema identities; a workflow does
+not choose its model through this field. Omitting this contract keeps prospective
+selection cold-start blocked. `metrics` reports separate `producer_contract_hash` cohorts;
+`LEGACY_PRODUCER_SCOPE_UNKNOWN` is historical diagnostics, not reusable qualification.
+Ordinary Planning generator schemas contain sample-specific const/enum bindings. Their
+routing identity preserves types/cardinalities, the schema family and owning factory
+source hashes, while Provider admission retains the complete bound schema. Changing
+factory code invalidates that cohort; changing only input IDs does not. Provider-stage
+review/evaluation schemas keep their exact schema hash. Judge calibration and risk/length
+compatibility still need their own governed evidence; producer identity does not supply it.
+
 `EFFECT_RETRY_DEFERRED` means the latest durable dispatch has an active rate-limit or
 availability backoff. Do not create a parallel task to evade it. Inspect the referenced
 dispatch and retry after its deadline. Availability snapshots cover the same project and
@@ -385,6 +398,94 @@ Historical replay uses the frozen grant, while a new send must still precede exp
 Candidates remain ineligible for production even after an explicit independent evaluation.
 No automatic judge or repair is authorized by the generator grant. Independent calibrated
 evaluation remains necessary; a model cannot establish its own qualification.
+
+For cumulative sampling, every new grant in a campaign project includes `campaign` with
+exact `campaign_id`, `manifest_hash` (SHA-256), `sample_id`, `group_id`, `partition`
+(`DEVELOPMENT`, `CALIBRATION`, or `HOLDOUT`), positive `maximum_calls`, `maximum_tokens`,
+decimal-string `maximum_amount` and timezone-aware `expires_at`. Grant limits cannot
+exceed campaign limits. Policy versions retain authorization and campaign identity;
+renaming a run, sample or authorization does not reset the cumulative budget. A data group
+or identical input-version set cannot cross partitions, and identical inputs cannot
+acquire another data group. Changing sample IDs inside one group does not increase
+independent qualification counts. These checks do not detect
+semantic paraphrases or replace an independently frozen dataset.
+`novel-forge authority-provider-routing campaign --project-id <id> --campaign-id <id>`
+reads all historical grants, Operation states, output/hash references and native
+reservation/effect references, including failures and unresolved outcomes. `RECONCILIATION_REQUIRED` requires native ExternalEffect recovery,
+never a new grant to resend. This command reports bootstrap sampling usage only. Configure
+existing project/Book budgets separately for reviews, production and entitlement; do not
+treat the sampling ceiling as authorization for those activities. Development and holdout
+observations are excluded from automatic qualification feedback. Release of held-out
+evidence and full-family reference-evaluator bootstrap remain implementation gaps.
+
+For Source sampling, POST `/product/source-imports/provider-samples?dry_run=true` with
+`project_id`, `source_operation_id`, `authorization_id` and `idempotency_key`. The local
+operator preflight reads an existing frozen Source Provider task and returns its exact
+command/input hashes without admission or a Provider call. Register the matching grant
+through the same routing policy command, with `book_id: source-corpus:<project_id>` and
+the returned native task (`source.content.classify`, `source.deconstruction.observe`, or
+`source.mkaos.extract`). Source grants require a campaign. POST the identical request
+without `dry_run` to admit the sample; the existing Source Import worker executes it.
+The current chapter-reading observation and review handlers retain their original
+Context, Schema and source-consumption gates. Reprocessing commands are not sample inputs.
+Read sample outputs through the existing import work and campaign queries. Replaying the
+same request preserves its Operation and settlement; `SOURCE_SAMPLE_RECOVERY_REQUIRED`
+blocks a new request for the same campaign/sample/model arm, including unknown outcomes.
+For a terminal arm with no ExternalEffects or proven terminal Effect/Dispatch failure,
+pass its exact `predecessor_operation_id`
+in a new explicitly granted request. The replacement preserves operator, input versions,
+original Source task and full campaign sample, and appends native causation lineage.
+Successful, in-flight or unknown Effects cannot be replaced; use existing receipt
+reconciliation. Failure usage remains settled or held under the original reservation,
+and a successor consumes remaining campaign allowance. Successful sample receipts may
+be projected after grant expiry, but new sends still require unexpired authorization.
+Sample outputs never advance the original Source import or become production knowledge.
+The current sampler does not automatically release Source observations into Router quality
+qualification; independent task-specific evaluation and feedback admission remain required.
+
+For semantic evaluator reference sampling, first register independent operator labels
+through `story_design.review.author` with the exact benchmark candidate as its only
+candidate input. This authoring command may read the ineligible candidate solely for
+review; it cannot activate the candidate. Its successful immutable output must have
+`ground_truth_claimed: false`, `human_preference_evidence: false` and
+`provider_evidence_claimed: false`. Its native author must differ from the generation
+and evaluator actors. Changing a caller-supplied actor string is not authentication.
+
+Use the existing `POST /product/production/book-authority/books/{book_id}/planning-evaluations?dry_run=true`
+with the ordinary evaluation command plus `routing_bootstrap_authorization_id` and
+`reference_evaluation: {asset_version_id, content_hash, protocol_version}`. The read-only
+preflight validates candidate/reference lineage and returns the exact admitted payload,
+`command_hash` and `input_versions_hash`; it grants no spending authority. Register a
+versioned routing grant with `purpose: REFERENCE_EVALUATION`,
+`task_type: narrative_semantic_evaluation`, the same reference binding and mandatory
+campaign membership, candidate/model revision, cumulative quota and expiry. Its
+`logical_key` is the candidate AssetVersion ID and `generation_idempotency_key` is the
+evaluation request key. Then replay the same POST without `dry_run=true` in the validation
+runtime. Existing Generator grants never authorize the evaluator's call.
+
+The evaluator uses `story_design.semantic_evaluate@1.0.0`, a native Kernel Operation,
+Attempt, Router, Provider admission, ExternalEffect and settlement. Each authorized
+evaluator model arm has its own Operation without a production qualification head.
+Migration 0139 enforces the reference grant/candidate/label gate and rejects reference
+Operations from the domain qualification table. Only the candidate
+and canonical dependencies reach Provider context; the service reads labels separately.
+The materialized evaluation contains `narrative-reference-agreement.v1`, all criterion
+agreements/disagreements and reference provenance. It remains `BENCHMARK_ONLY`, cannot
+write domain qualification or advance/repair the candidate, and is returned by the
+campaign query. Successful request replay performs no new Provider call. Unknown effects
+still require reconciliation. For an immutable terminal no-effect/failure, submit a new
+explicit grant and request with `reference_predecessor_operation_id` naming the latest
+Operation for that candidate/model revision. Preserve the evaluator actor, candidate,
+labels, campaign and sample. The grant binds the new exact command hash; Kernel causation
+retains the predecessor and campaign usage stays cumulative. A renamed request without
+this lineage is rejected. A succeeded Operation, known successful Effect awaiting result
+projection, live retry or ambiguous remote outcome cannot be replaced by a fresh call;
+recover/reconcile the original Operation first. Ordinary production evaluations retain
+the existing candidate qualification head and Book Opening recovery gates.
+Operator-proxy label agreement is not a trusted human label, literary quality, reader
+preference or general evaluator admission score; it is not automatically promoted into
+Router quality qualification. Trusted reference validation and scoped feedback admission
+remain required before evaluator calibration can be claimed.
 
 Optional Codex escalation requires `NOVEL_FORGE_ROUTER_CODEX_ESCALATION=true`, an explicit
 `NOVEL_FORGE_CODEX_ESCALATION_MODEL`, positive `NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT`,

@@ -69,9 +69,56 @@ Planning has an explicitly authorized, bounded validation challenger path. Its i
 decisions retain unknown quality and the original production rejection reasons; generated
 candidates remain `BENCHMARK_ONLY` and cannot be qualified, approved or activated for
 production. Independent evaluation can contribute benchmark observations, with challenger
-and production acceptance reported separately. This path does not provide independent
-judge calibration or bootstrap every task family. Ordinary production routing blocks
-when sufficient quality evidence is absent.
+and production acceptance reported separately. The native semantic Evaluation also
+accepts a separately authorized reference-sampling grant for an isolated benchmark
+candidate. It compares the returned criterion verdicts with an exact native operator
+review whose author differs from generator and evaluator. Reference labels stay outside
+Provider inputs; agreement is operator-proxy evidence and creates no domain qualification.
+Each explicitly authorized evaluator arm uses the same semantic handler and a native
+Kernel Operation; it does not claim the candidate's production qualification head.
+Migration 0139 binds this sampling gate to the immutable grant and benchmark/reference
+lineage, and rejects reference Operations in the domain qualification table. A terminal
+no-effect/failure replacement preserves its predecessor; successful and unknown effects
+cannot be resent under a renamed arm.
+Source Import also samples frozen native classification, deconstruction (including the
+current chapter-reading observation/review phases) and MKAOS extraction Operations under
+explicit campaign grants. Sampling uses the existing worker, Source work records, Router
+and Kernel budget. Its receipt cache is grant-specific; benchmark outputs and model logs
+are ineligible and cannot commit Source Profiles, Observations or Knowledge Candidates.
+Sampling does not advance the original import or schedule production descendants. Reusing
+the request resumes the same arm; a renamed arm requires recovery of the existing one.
+An explicitly granted successor may replace a terminal arm with no Effect or proven
+terminal Effect/Dispatch failure, retaining its predecessor and shared budget. Source
+failure settlement uses the same Kernel submission classifier as Chapter: proven unsent
+calls may release reservations, known sent calls settle measured or conservatively
+reserved usage, and ambiguous usage remains held. Failure model logs remain evidence.
+Unknown outcomes checkpoint for reconciliation; known terminal Provider failure is not
+turned into an automatic retry of the same task.
+This does not calibrate Source reviewers or authorize reference material for production.
+This does not prove judge calibration or bootstrap every task family. Ordinary production
+routing blocks when sufficient quality evidence is absent.
+
+Planning sampling grants may bind a frozen campaign identity, manifest hash, sample/data
+group and experiment partition. Kernel aggregates their reservations across authorization
+and policy versions. A campaign project cannot replace that identity or admit new unbound
+sampling grants. This quota covers authorized Planning, Source and reference sampling;
+production, ordinary review and entitlement
+still require their existing project and Book budget policies. It is not a campaign-wide
+mixed-billing authorization. Router v5 counts first attempts per campaign data group
+(input hashes outside campaigns) for quality
+qualification, keeps retries in operational cost/yield, and excludes development and
+holdout partitions from qualification feedback. The provider view removes routing/grant
+metadata from narrative evaluation context; this does not establish evaluator calibration.
+
+New Chapter, Planning and Source decisions bind the materialized Prompt/Skill, provider
+view versions, Context policy and output schema to a producer-contract hash. Native
+benchmark reads require the same nonempty hash; missing or incompatible historical
+contracts cannot qualify a new call. Metrics keep separate contract cohorts and mark
+legacy unknown scope. Parameterized Planning generator schemas retain exact request
+bindings separately from a factory-and-shape identity, so changing asset IDs does not
+manufacture a different template. This conservative identity fingerprints the owning
+schema code; it does not prove compatibility across Judge versions, risk or length strata.
+Frozen old decisions remain immutable replay evidence, not new qualification evidence.
 
 Quality predictions are bounded by observed schema and acceptance yield, so failed
 outputs cannot disappear behind scores from successful outputs. Cache estimates use

@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260920_0138_narrative_craft_origin",
+  "migration_head": "20260920_0139_narrative_reference_sampling",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4337,7 +4337,7 @@
     },
     {
       "id": "p0-backend-engineering-qualification-c561f0a0cdf5",
-      "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+      "fact_type": "HISTORICAL_COMPATIBILITY_FACT",
       "evidence_class": "p0_backend_engineering_qualification",
       "gate": "P0_PROFILE=local make p0-backend-qualification",
       "observed_at_sha": "c561f0a0cdf55d0c84d79ecdf26e464c4ef13216",
@@ -5012,6 +5012,50 @@
         {
           "path": "src/novel_forge/modules/authority_handler_runtime/routing_bootstrap.py",
           "symbol": "freeze_planning_bootstrap_authorization"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+          "symbol": "validate_bootstrap_policy_in_uow"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/evaluation_runtime.py",
+          "symbol": "NarrativeSemanticEvaluationApplication.prepare_reference_evaluation"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/evaluation_reference.py",
+          "symbol": "require_reference_review"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/evaluation_reference.py",
+          "symbol": "reference_agreement"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/evaluation_reference.py",
+          "symbol": "reference_execution_gate"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/evaluation_runtime.py",
+          "symbol": "NarrativeSemanticEvaluationApplication._validate_reference_predecessor"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/sampling.py",
+          "symbol": "prepare_sample"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/sampling.py",
+          "symbol": "admit_sample"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/sampling.py",
+          "symbol": "finish_sample"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/cost_routing.py",
+          "symbol": "producer_contract_identity"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+          "symbol": "planning_schema_evidence_identity"
         }
       ],
       "commands_operations": [
@@ -5085,6 +5129,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260916_0136_provider_routing_policy.py",
           "locator": "MIGRATION_ID = \"20260916_0136_provider_routing_policy\"",
           "id": "20260916_0136_provider_routing_policy"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260920_0139_narrative_reference_sampling.py",
+          "id": "20260920_0139_narrative_reference_sampling",
+          "locator": "MIGRATION_ID = \"20260920_0139_narrative_reference_sampling\""
         }
       ],
       "external_effects": {
@@ -5143,6 +5192,30 @@
         {
           "path": "tests/integration/test_planning_routing_bootstrap_postgres.py",
           "symbol": "test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible"
+        },
+        {
+          "path": "tests/integration/test_routing_bootstrap_budget_postgres.py",
+          "symbol": "test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations"
+        },
+        {
+          "path": "tests/unit/test_cost_aware_routing.py",
+          "symbol": "test_repeated_inputs_cannot_supply_independent_qualification_samples"
+        },
+        {
+          "path": "tests/integration/test_routing_bootstrap_budget_postgres.py",
+          "symbol": "test_native_reference_evaluation_stays_out_of_domain_qualification"
+        },
+        {
+          "path": "tests/integration/test_source_import_runtime_postgres.py",
+          "symbol": "SourceImportRuntimePostgresTests.test_native_source_sampling_isolates_model_arms_and_domain_commits"
+        },
+        {
+          "path": "tests/unit/test_cost_aware_routing.py",
+          "symbol": "test_producer_identity_separates_contract_changes_from_new_independent_data"
+        },
+        {
+          "path": "tests/unit/test_cost_aware_routing.py",
+          "symbol": "test_planning_schema_identity_preserves_independent_bindings_and_contract_shape"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8264,10 +8337,8 @@
           "symbol": "test_craft_origin_upgrade_preserves_legacy_source_candidates_and_enforces_new_origin"
         }
       ],
-      "qualification_state": "QUALIFIED",
-      "qualification_run_ids": [
-        "p0-backend-engineering-qualification-c561f0a0cdf5"
-      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     }
   ],
@@ -8407,7 +8478,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:e1dd43acca11bcecbb7e736e65332fa8824e305e85e6fa1ab503ed103a560537"
+    "implementation_tree_sha": "sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

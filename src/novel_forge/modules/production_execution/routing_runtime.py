@@ -83,7 +83,8 @@ class PostgresRoutingRegistry:
         }
 
     def observations(
-        self, *, project_id: str, task_type: str, candidate: ModelCandidate
+        self, *, project_id: str, task_type: str, candidate: ModelCandidate,
+        producer_contract_hash: str | None = None,
     ) -> list[BenchmarkObservation]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -133,6 +134,8 @@ class PostgresRoutingRegistry:
                      AND model.evidence->>'model_id'=%s
                      AND model.evidence #>> '{production_execution,route_snapshot,reasoning_effort}'=%s
                      AND COALESCE(model.evidence->>'real_model_call',model.evidence->>'real_provider_proven')='true'
+                     AND (%s::text IS NULL OR (%s::text<>'' AND effect.request_payload
+                       #>> '{_production_execution,capability_runtime,routing_decision,task,producer_contract_hash}'=%s))
                      AND version.created_at >= NOW() - INTERVAL '30 days'
                    ORDER BY version.created_at DESC LIMIT 200""",
                 [
@@ -141,6 +144,7 @@ class PostgresRoutingRegistry:
                     candidate.provider,
                     candidate.model,
                     candidate.reasoning,
+                    producer_contract_hash, producer_contract_hash, producer_contract_hash,
                 ],
             )
             rows = uow.cursor.fetchall()
@@ -271,7 +275,7 @@ class PostgresRoutingRegistry:
             )
             sample_identity = (
                 snapshot_hash({key: campaign[key] for key in (
-                    "campaign_id", "manifest_hash", "sample_id",
+                    "campaign_id", "manifest_hash", "group_id",
                 )}) if campaign else str((decision or {}).get("task", {}).get("input_hash") or "")
             )
             observations.append(
@@ -316,9 +320,95 @@ class PostgresRoutingRegistry:
                     production_eligible=production_eligible,
                     sample_identity=sample_identity,
                     experiment_partition=campaign.get("partition", ""),
+                    producer_contract_hash=str((decision or {}).get("task", {}).get("producer_contract_hash") or ""),
                 )
             )
         return observations
+
+    def campaign(self, *, project_id: str, campaign_id: str) -> dict[str, Any]:
+        from novel_forge.modules.command_kernel.budget_runtime import provider_usage_accounted_sql
+        from novel_forge.modules.command_kernel.routing_bootstrap import (
+            campaign_contract, validate_bootstrap_history,
+        )
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                "SELECT content,content_hash FROM authority_runtime_policy_version WHERE owner='PROVIDER_ROUTING' AND project_id=%s ORDER BY created_at,policy_version",
+                [project_id],
+            )
+            grants = {}
+            for content, digest in uow.cursor.fetchall():
+                if policy_hash(content) != digest:
+                    raise KernelError("RUNTIME_POLICY_HASH_MISMATCH", "policy integrity failed")
+                current = content.get("bootstrap_authorizations", [])
+                validate_bootstrap_history(current, list(grants.values()))
+                grants.update({grant["authorization_id"]: grant for grant in current})
+            matched = [grant for grant in grants.values()
+                       if (grant.get("campaign") or {}).get("campaign_id") == campaign_id]
+            if not matched:
+                raise KernelError("ROUTING_CAMPAIGN_NOT_FOUND", "no governed campaign exists in this project")
+            uow.cursor.execute(
+                f"""SELECT b.reservation_id,e.operation_id,e.external_effect_id,e.status,
+                          b.status,b.accounted,b.currency,b.evidence->>'accounting_basis',
+                          b.estimated_tokens,b.actual_tokens,b.reserved_amount,b.settled_amount,
+                          e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,bootstrap_authorization,authorization,authorization_id}}',
+                          e.request_payload #> '{{_production_execution,capability_runtime,routing_decision,bootstrap_authorization,authorization,campaign}}'
+                   FROM (SELECT *,{provider_usage_accounted_sql()} AS accounted
+                         FROM authority_budget_reservation) b
+                   JOIN authority_external_effect e USING(external_effect_id)
+                   WHERE b.project_id=%s AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,bootstrap_authorization,authorization,campaign,campaign_id}}'=%s
+                   ORDER BY b.created_at,b.reservation_id""",
+                [project_id, campaign_id],
+            )
+            columns = ("reservation_id", "operation_id", "external_effect_id", "effect_status",
+                       "reservation_status", "usage_accounted", "currency", "accounting_basis",
+                       "estimated_tokens", "actual_tokens", "reserved_amount", "settled_amount",
+                       "authorization_id", "campaign")
+            reservations = [dict(zip(columns, row, strict=True)) for row in uow.cursor.fetchall()]
+            uow.cursor.execute(
+                """SELECT operation.operation_id,operation.status,operation.definition_name,
+                          operation.command_payload #>> '{payload,routing_bootstrap_authorization,authorization,authorization_id}',
+                          operation.command_payload #>> '{payload,routing_bootstrap_authorization,authorization,task_type}',
+                          operation.command_payload #>> '{payload,routing_bootstrap_authorization,authorization,purpose}',
+                          operation.command_payload #> '{payload,routing_bootstrap_authorization,authorization,campaign}',
+                          operation.causation_operation_id,
+                          COALESCE(outputs.assets,'[]'::jsonb)
+                   FROM authority_operation operation
+                   LEFT JOIN LATERAL (
+                       SELECT jsonb_agg(jsonb_build_object(
+                           'asset_version_id',output.asset_version_id,'content_hash',output.content_hash,
+                           'output_key',output.output_key,'role',output.role,
+                           'reference_agreement',version.content->'reference_evaluation')
+                           ORDER BY output.created_at,output.asset_version_id) assets
+                       FROM authority_operation_output_asset output
+                       JOIN authority_asset_version version USING(asset_version_id)
+                       WHERE output.operation_id=operation.operation_id
+                   ) outputs ON TRUE
+                   WHERE operation.project_id=%s AND operation.command_payload
+                     #>> '{payload,routing_bootstrap_authorization,authorization,campaign,campaign_id}'=%s
+                   ORDER BY operation.created_at,operation.operation_id""",
+                [project_id, campaign_id],
+            )
+            operation_columns = ("operation_id", "status", "definition_name", "authorization_id",
+                                 "task_type", "purpose", "campaign_sample", "causation_operation_id", "outputs")
+            operations = [dict(zip(operation_columns, row, strict=True)) for row in uow.cursor.fetchall()]
+        used = [row for row in reservations if row["usage_accounted"]]
+        pending = [row for row in reservations if row["reservation_status"] in {"RESERVED", "HELD_UNKNOWN"}
+                   or row["effect_status"] in {"UNKNOWN", "SENT_UNKNOWN", "UNKNOWN_AMBIGUOUS", "RECONCILIATION_REQUIRED"}]
+        return {
+            "source": "POSTGRESQL_AUTHORITY_PROJECTION", "project_id": project_id,
+            "scope": "BOOTSTRAP_SAMPLING_ONLY", "campaign": campaign_contract(matched[0]["campaign"]),
+            "grants": matched, "reservations": reservations, "operations": operations,
+            "usage": {"calls_used_or_reserved": len(used),
+                      "conservative_tokens": sum(int(row["actual_tokens"] or 0) if row["reservation_status"] == "SETTLED"
+                          else max(int(row["actual_tokens"] or 0), int(row["estimated_tokens"] or 0)) for row in used),
+                      "settled_or_reserved_usd": str(sum((Decimal(row["settled_amount"] or 0)
+                          if row["reservation_status"] == "SETTLED" else Decimal(row["reserved_amount"] or 0)
+                          for row in used), Decimal(0)))},
+            "unresolved_effect_ids": sorted({row["external_effect_id"] for row in pending}),
+            "state": "RECONCILIATION_REQUIRED" if pending else "ACCOUNTED",
+            "invoice_status": "NOT_VERIFIED", "production_qualification": "NOT_PROVEN",
+        }
 
     def available_candidates(
         self, *, project_id: str, candidates: Sequence[ModelCandidate], now: datetime
@@ -576,8 +666,11 @@ class ProductionProviderRouter:
         request_input: Mapping[str, Any] | None = None,
         chapter: int = 0,
         lineage_operation_ids: Sequence[str] = (),
+        producer_contract: Mapping[str, Any] | None = None,
     ) -> tuple[Any, dict[str, Any]]:
         lineage = _routing_operation_lineage(operation_id, lineage_operation_ids)
+        contract = dict(producer_contract or {})
+        contract_hash = snapshot_hash(contract) if contract else ""
         logical_ref = (
             "production_execution/routing/"
             + snapshot_hash(
@@ -608,6 +701,8 @@ class ProductionProviderRouter:
                         "input_tokens": input_tokens,
                         "output_tokens": output_tokens,
                         "work_id": work_id,
+                        "producer_contract": contract,
+                        "producer_contract_hash": contract_hash,
                         "input_hash": input_hash,
                         "request_hash": snapshot_hash(request_input)
                         if request_input is not None
@@ -694,6 +789,7 @@ class ProductionProviderRouter:
                 "candidates": budgets,
             },
             lineage_operation_ids=lineage,
+            producer_contract=contract, producer_contract_hash=contract_hash,
         )
         now = datetime.now(timezone.utc)
         from .routing_catalog import deepseek_pricing_period
@@ -715,7 +811,8 @@ class ProductionProviderRouter:
         )
         observations = {
             candidate.candidate_id: self.registry.observations(
-                project_id=project_id, task_type=task_type, candidate=candidate
+                project_id=project_id, task_type=task_type, candidate=candidate,
+                producer_contract_hash=contract_hash,
             )
             for candidate in candidates
         }

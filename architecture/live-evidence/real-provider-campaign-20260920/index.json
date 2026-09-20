@@ -1,0 +1,92 @@
+{
+  "schema_version": "real-provider-campaign-delivery-index.v1",
+  "campaign_id": "real-provider-campaign-20260920",
+  "status": "INCOMPLETE_IMPLEMENTATION_AUTHORIZATION_AND_EVIDENCE_GAPS",
+  "baseline_sha": "feba06582b6cadf2e80f5c573cf427114cf2a926",
+  "implementation_sha": "f5ba1faf058af2613f7116904a6230eac1f0e02c",
+  "tested_sha": "bbca0e7a4a0ed61381d0175272e9fe1763d7137a",
+  "implementation_tree_sha": "sha256:2a0f369f4e29d34f5d56bbf9dcd9d0401c568c0188050d3a389640d95bbfb408",
+  "public_report": "report.md",
+  "native_real_provider_calls": 0,
+  "accepted_chapters": 0,
+  "acceptance_target_chapters": 12,
+  "final_engineering_gate": "IN_PROGRESS",
+  "full_campaign_resume_command": null,
+  "artifacts": [
+    {
+      "path": "authorization-audit.json",
+      "sha256": "sha256:948cc9a35aad820e1052645f8f40d4d78530f1b8f576f77a874cda9979862d77",
+      "bytes": 2970
+    },
+    {
+      "path": "campaign-proposal.json",
+      "sha256": "sha256:4e325450a3a719aedd66189271ec5e3421d3f0a59988ef07f80ae4fdc72cfa63",
+      "bytes": 11433
+    },
+    {
+      "path": "engineering/22cf0354c897fa383fa7def58cd8969e5cf02e88.json",
+      "sha256": "sha256:0fc3e66589053f4524dc7b71cf4e1c3384be39f935c33a9fe24c525fb6ed840f",
+      "bytes": 13492
+    },
+    {
+      "path": "engineering/5235672ce0f84f2fe4597d9234d8678b2959c1bc.json",
+      "sha256": "sha256:2f2e8d12ba48a5ef30a7e1fcd2ca141e41e8bc32b4555b273bce8495da26f12e",
+      "bytes": 12134
+    },
+    {
+      "path": "engineering/a0cdb884189b60c6d0ff0340ea2501ff9a33b17d.json",
+      "sha256": "sha256:8c713e2271ad5f56594fcf6c057531f2f46087afc4fc95e28a0d291f80a442e4",
+      "bytes": 11294
+    },
+    {
+      "path": "engineering/e9a9a75d25aacae1fa1f263410527b2f790537b6.json",
+      "sha256": "sha256:77f6ddfcb721d14d78470c09b4a32b5b764e6559008408ef92af305cc2e54506",
+      "bytes": 11645
+    },
+    {
+      "path": "engineering-index.json",
+      "sha256": "sha256:ff87a9b906fe13b8260689b74158c6b5019689b0e409d7997b7bf53e5a999654",
+      "bytes": 3607
+    },
+    {
+      "path": "git-state.json",
+      "sha256": "sha256:125477ba5c825d6d417e9766f7c9ab4953fdf32e79066b50b99a34c26fdb9fc9",
+      "bytes": 11331
+    },
+    {
+      "path": "native-config-preflight-bf77e0892c0b.json",
+      "sha256": "sha256:08756ac76a32347946f71bec9b28d1cbffa4d2debe0e2517b4e6fb2a144087ad",
+      "bytes": 2245
+    },
+    {
+      "path": "native-config-preflight-e9a9a75d25aa.json",
+      "sha256": "sha256:58e10562771dd12e8b33214ed7936ef8d134244086c300f22bc88906ec5a1445",
+      "bytes": 2176
+    },
+    {
+      "path": "native-config-preflight.json",
+      "sha256": "sha256:fb576e487ace9b5c17586e123e3b5f193c6334c7d129657690c14dcc059d8711",
+      "bytes": 2245
+    },
+    {
+      "path": "official-source-identities.json",
+      "sha256": "sha256:12eff55c45e6167e7c86ce45a52528a99ec9b81bfaf8d66b75325f154dc0319a",
+      "bytes": 1453
+    },
+    {
+      "path": "preimplementation.json",
+      "sha256": "sha256:0468b4d2e59f97d4ff8a186e825f5b0fe9d2b298d8e9d936bf2f75cced335bcf",
+      "bytes": 4166
+    },
+    {
+      "path": "report.md",
+      "sha256": "sha256:e1e05d4d48165a317b206099233ea03b6dccaf25ea3f2d18919c4a8b8e862011",
+      "bytes": 16311
+    },
+    {
+      "path": "task-coverage.json",
+      "sha256": "sha256:d452c9edd1ea0369090228ee90c6e4f978b97d8648018503b6871149f6155ff8",
+      "bytes": 17987
+    }
+  ]
+}

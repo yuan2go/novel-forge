@@ -611,17 +611,22 @@ class SourceImportRepository(SourceImportOperationsRecords):
             )
         return _work_row(row)
 
-    def list_work(self, *, project_id: str, import_job_id: str) -> list[dict[str, Any]]:
+    def list_work(self, *, project_id: str, import_job_id: str, include_samples: bool = False) -> list[dict[str, Any]]:
         self.cursor.execute(
             """
             SELECT work_id, import_job_id, project_id, work_kind, stable_key,
                    source_path, target_asset_version_id, operation_id, status,
                    result, failure, created_at, updated_at
-            FROM authority_source_import_work
+            FROM authority_source_import_work AS work
             WHERE project_id=%s AND import_job_id=%s
+              AND (%s OR NOT EXISTS (
+                SELECT 1 FROM authority_operation operation
+                WHERE operation.operation_id=work.operation_id
+                  AND operation.command_payload->'payload' ? 'source_sampling'
+              ))
             ORDER BY created_at, work_kind, stable_key
             """,
-            [project_id, import_job_id],
+            [project_id, import_job_id, include_samples],
         )
         return [_work_row(row) for row in self.cursor.fetchall()]
 

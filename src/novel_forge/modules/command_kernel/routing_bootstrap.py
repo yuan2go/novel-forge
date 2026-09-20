@@ -11,6 +11,13 @@ from novel_forge.storage.versioned_policy_repository import policy_hash
 from .errors import KernelError
 
 
+SOURCE_BOOTSTRAP_TASKS = {
+    "source.import.document.profile": "source.content.classify",
+    "source.import.deconstruction.execute": "source.deconstruction.observe",
+    "source.import.mkaos.extract": "source.mkaos.extract",
+}
+
+
 def authorization_hash(value: Any) -> str:
     return (
         "sha256:"
@@ -58,7 +65,7 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         "currency",
         "purpose",
     }
-    if set(grant) - {"campaign"} != strings | {
+    if set(grant) - {"campaign", "reference_evaluation"} != strings | {
         "maximum_calls",
         "maximum_tokens",
         "production_eligible",
@@ -70,11 +77,20 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         raise ValueError("ROUTING_BOOTSTRAP_IDENTITY_REQUIRED")
     if (
         grant["environment"] != "validation"
-        or grant["purpose"] != "BENCHMARK_CHALLENGER"
+        or grant["purpose"] not in {"BENCHMARK_CHALLENGER", "REFERENCE_EVALUATION"}
         or grant["production_eligible"] is not False
         or grant["currency"] != "USD"
     ):
         raise ValueError("ROUTING_BOOTSTRAP_BOUNDARY_INVALID")
+    reference = grant.get("reference_evaluation")
+    if grant["purpose"] == "REFERENCE_EVALUATION":
+        if grant["task_type"] != "narrative_semantic_evaluation" or "campaign" not in grant:
+            raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
+        validate_reference_evaluation_binding(reference)
+    elif reference is not None or grant["task_type"] == "narrative_semantic_evaluation":
+        raise ValueError("ROUTING_REFERENCE_AUTHORIZATION_REQUIRED")
+    if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and "campaign" not in grant:
+        raise ValueError("ROUTING_SOURCE_CAMPAIGN_REQUIRED")
     if any(
         type(grant[key]) is not int or grant[key] <= 0
         for key in ("maximum_calls", "maximum_tokens")
@@ -107,13 +123,25 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
             raise ValueError("ROUTING_CAMPAIGN_GRANT_EXCEEDS_TOTAL")
 
 
+def validate_reference_evaluation_binding(reference: Any) -> None:
+    if not isinstance(reference, Mapping) or set(reference) != {
+        "asset_version_id", "content_hash", "protocol_version",
+    } or any(not isinstance(value, str) or not value.strip() for value in reference.values()):
+        raise ValueError("ROUTING_REFERENCE_BINDING_INVALID")
+    digest = reference["content_hash"]
+    if len(digest) != 71 or not digest.startswith("sha256:") or any(
+        char not in "0123456789abcdef" for char in digest[7:]
+    ):
+        raise ValueError("ROUTING_REFERENCE_HASH_INVALID")
+
+
 def validate_bootstrap_campaign(campaign: Mapping[str, Any]) -> None:
     if not isinstance(campaign, Mapping) or set(campaign) != {
         "campaign_id", "manifest_hash", "sample_id", "group_id", "partition",
         "maximum_calls", "maximum_tokens", "maximum_amount", "expires_at",
     }:
         raise ValueError("ROUTING_CAMPAIGN_CONTRACT_INVALID")
-    for key in ("campaign_id", "sample_id", "group_id", "manifest_hash", "expires_at"):
+    for key in ("campaign_id", "sample_id", "group_id", "manifest_hash", "expires_at", "maximum_amount"):
         if not isinstance(campaign[key], str) or not campaign[key].strip():
             raise ValueError("ROUTING_CAMPAIGN_IDENTITY_REQUIRED")
     digest = campaign["manifest_hash"]
@@ -145,7 +173,7 @@ def validate_bootstrap_history(
     campaigns: dict[str, Mapping[str, Any]] = {}
     groups: dict[tuple[str, str], str] = {}
     samples: dict[tuple[str, str], tuple[str, str, str]] = {}
-    inputs: dict[tuple[str, str], str] = {}
+    inputs: dict[tuple[str, str], tuple[str, str]] = {}
     for grant in [*previous, *grants]:
         key = grant["authorization_id"]
         if key in identities and identities[key] != grant:
@@ -174,13 +202,21 @@ def validate_bootstrap_history(
                               "a sample retains its data group, task and input versions")
         samples[sample] = binding
         source = (identity, grant["input_versions_hash"])
-        if source in inputs and inputs[source] != partition:
+        if source in inputs and inputs[source][1] != partition:
             raise KernelError("ROUTING_CAMPAIGN_HOLDOUT_LEAKAGE",
                               "identical inputs cannot acquire a new partition by renaming")
-        inputs[source] = partition
+        if source in inputs and inputs[source][0] != campaign["group_id"]:
+            raise KernelError("ROUTING_CAMPAIGN_INPUT_GROUP_REDEFINED",
+                              "identical inputs cannot become independent by renaming their data group")
+        inputs[source] = (campaign["group_id"], partition)
     if len(campaigns) > 1:
         raise KernelError("ROUTING_CAMPAIGN_PROJECT_REBIND_FORBIDDEN",
                           "a campaign project cannot reset usage by changing campaign identity")
+    historical_ids = {grant["authorization_id"] for grant in previous}
+    if campaigns and any(not grant.get("campaign") and grant["authorization_id"] not in historical_ids
+                         for grant in grants):
+        raise KernelError("ROUTING_CAMPAIGN_MEMBERSHIP_REQUIRED",
+                          "new sampling grants must retain the project's campaign budget")
 
 
 def validate_bootstrap_policy_in_uow(
@@ -220,7 +256,7 @@ def validate_bootstrap_scope(
         expected = {
             "authorization_id": payload.get("routing_bootstrap_authorization_id"),
             "book_id": payload.get("book_id"),
-            "task_type": payload.get("generator_operation_name"),
+            "task_type": "narrative_semantic_evaluation" if payload.get("reference_evaluation") else payload.get("generator_operation_name"),
             "logical_key": payload.get("logical_key"),
             "generation_idempotency_key": payload.get("idempotency_key"),
             "input_versions_hash": authorization_hash(payload.get("input_versions")),
@@ -228,6 +264,8 @@ def validate_bootstrap_scope(
         }
         if any(grant[key] != value for key, value in expected.items()):
             raise ValueError("command identity differs")
+        if grant.get("reference_evaluation") != payload.get("reference_evaluation"):
+            raise ValueError("reference identity differs")
     except (KeyError, ValueError, TypeError, ArithmeticError) as exc:
         raise KernelError(
             "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
@@ -259,16 +297,47 @@ def load_bootstrap_authorization(
                 "admitted benchmark task lacks its immutable grant",
             )
         return None
-    if tuple(row[1:4]) != (
+    contract = (
+        "story_design.semantic_evaluate", "1.0.0", "book:narrative-semantic-evaluation",
+    ) if payload.get("reference_evaluation") else (
         "story_planning.generate",
         "1.16.0",
         "book:story-planning-generation",
-    ) or row[4] != payload.get("idempotency_key"):
+    )
+    if payload.get("source_sampling"):
+        contract = (row[1], "1.4.0", "project:source-import")
+        if SOURCE_BOOTSTRAP_TASKS.get(row[1]) != payload.get("generator_operation_name"):
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Source sampling requires its native task contract")
+    if tuple(row[1:4]) != contract or row[4] != payload.get("idempotency_key"):
         raise KernelError(
             "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
-            "benchmark authorization requires its admitted Planning operation contract",
+            "benchmark authorization requires its exact admitted native operation contract",
         )
     grant = validate_bootstrap_scope(snapshot, payload, check_expiry=check_expiry)
+    if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and not payload.get("source_sampling"):
+        raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Source grant requires a Source sampling operation")
+    if payload.get("source_sampling"):
+        source = payload["source_sampling"]
+        cursor.execute(
+            "SELECT definition_name,definition_version,command_payload->'payload',input_asset_snapshot FROM authority_operation WHERE project_id=%s AND operation_id=%s",
+            [project_id, source.get("source_operation_id")],
+        )
+        origin = cursor.fetchone()
+        if (
+            not origin or tuple(origin[:2]) != tuple(row[1:3])
+            or origin[2].get("routing_bootstrap_authorization_id")
+            or source != {"source_operation_id": payload.get("logical_key"),
+                          "source_command_hash": authorization_hash(origin[2])}
+            or payload.get("book_id") != f"source-corpus:{project_id}"
+            or grant["purpose"] != "BENCHMARK_CHALLENGER" or not grant.get("campaign")
+            or payload.get("input_versions") != origin[3]
+            or payload != {**origin[2], **{key: payload[key] for key in (
+                "project_id", "book_id", "generator_operation_name", "logical_key", "idempotency_key",
+                "input_versions", "source_sampling", "routing_bootstrap_authorization_id", "routing_bootstrap_authorization",
+                "source_predecessor_operation_id",
+            )}}
+        ):
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Source sample differs from its frozen original task")
     cursor.execute(
         "SELECT content,content_hash,actor_id,created_by_operation_id FROM authority_runtime_policy_version WHERE owner='PROVIDER_ROUTING' AND project_id=%s AND policy_version=%s",
         [project_id, snapshot.get("policy_version")],

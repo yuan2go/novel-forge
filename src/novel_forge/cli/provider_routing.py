@@ -81,13 +81,14 @@ def add_provider_routing_parser(subparsers: Any) -> None:
         "authority-provider-routing",
         help="explain or replay Provider selection without inference",
     )
-    parser.add_argument("action", choices=("explain", "replay", "metrics", "configure"))
+    parser.add_argument("action", choices=("explain", "replay", "metrics", "configure", "campaign"))
     parser.add_argument("--project-id", required=True)
     parser.add_argument("--decision-id", default="")
     parser.add_argument("--task-context-file", default="")
     parser.add_argument("--policy-file", type=Path)
     parser.add_argument("--workspace-id", default="")
     parser.add_argument("--idempotency-key", default="")
+    parser.add_argument("--campaign-id", default="")
 
 
 def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
@@ -127,6 +128,10 @@ def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
     registry = PostgresRoutingRegistry(
         settings.database_url, outcome_projection=domain_gate_outcomes
     )
+    if args.action == "campaign":
+        if not args.campaign_id:
+            raise ValueError("routing campaign requires campaign-id")
+        return registry.campaign(project_id=args.project_id, campaign_id=args.campaign_id)
     if args.action == "replay":
         document = registry.query.require(
             project_id=args.project_id, asset_id=args.decision_id
@@ -175,6 +180,7 @@ def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
             chapter=int(task.declared_requirements.get("chapter") or 0),
             input_hash=task.input_hash,
             request_input=request_input,
+            producer_contract=task.producer_contract,
             cache_prefix=cache_prefix,
             lineage_operation_ids=task.lineage_operation_ids,
             dry_run=True,
@@ -263,21 +269,19 @@ def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
             observations = registry.observations(
                 project_id=args.project_id, task_type=task_type, candidate=candidate
             )
-            snapshot = benchmark_snapshot(
-                observations,
-                now=datetime.now(timezone.utc),
-                policy=task_policy(task_type),
-            )
-            priced_metrics = _priced_observation_metrics(observations)
-            benchmarks.append(
-                {
-                    "task_type": task_type,
-                    "candidate_id": candidate.candidate_id,
+            for contract_hash in sorted({row.producer_contract_hash for row in observations}) or [""]:
+                cohort = [row for row in observations if row.producer_contract_hash == contract_hash]
+                snapshot = benchmark_snapshot(
+                    cohort, now=datetime.now(timezone.utc), policy=task_policy(task_type),
+                )
+                benchmarks.append({
+                    "task_type": task_type, "candidate_id": candidate.candidate_id,
                     "model_revision": candidate.model_revision,
-                    **snapshot,
-                    **priced_metrics,
-                }
-            )
+                    "producer_contract_hash": contract_hash,
+                    "scope": "PRODUCER_CONTRACT_COHORT" if contract_hash else "LEGACY_PRODUCER_SCOPE_UNKNOWN",
+                    "production_qualification": "REQUIRES_CURRENT_CONTRACT_AND_QUALITY_GATE",
+                    **snapshot, **_priced_observation_metrics(cohort),
+                })
     return {
         "source": "POSTGRESQL_AUTHORITY_PROJECTION",
         "project_id": args.project_id,
