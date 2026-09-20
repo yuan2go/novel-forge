@@ -2,10 +2,42 @@
   "schema_version": "novel-forge.backend-qualification-manifest.v2",
   "migration_manifest": "architecture/manifests/migration-manifest.yaml",
   "pytest_collections": [
-    {"name": "architecture", "paths": ["tests/architecture"], "classification": "BACKEND_NON_POSTGRESQL", "complete_collection": true, "allow_skips": false},
-    {"name": "unit", "paths": ["tests/unit"], "classification": "BACKEND_NON_POSTGRESQL", "complete_collection": true, "allow_skips": false},
-    {"name": "acceptance", "paths": ["tests/acceptance"], "classification": "BACKEND_NON_POSTGRESQL", "complete_collection": true, "allow_skips": false},
-    {"name": "integration", "paths": ["tests/integration"], "classification": "POSTGRESQL_REQUIRED", "complete_collection": true, "allow_skips": false}
+    {
+      "name": "architecture",
+      "paths": [
+        "tests/architecture"
+      ],
+      "classification": "BACKEND_NON_POSTGRESQL",
+      "complete_collection": true,
+      "allow_skips": false
+    },
+    {
+      "name": "unit",
+      "paths": [
+        "tests/unit"
+      ],
+      "classification": "BACKEND_NON_POSTGRESQL",
+      "complete_collection": true,
+      "allow_skips": false
+    },
+    {
+      "name": "acceptance",
+      "paths": [
+        "tests/acceptance"
+      ],
+      "classification": "BACKEND_NON_POSTGRESQL",
+      "complete_collection": true,
+      "allow_skips": false
+    },
+    {
+      "name": "integration",
+      "paths": [
+        "tests/integration"
+      ],
+      "classification": "POSTGRESQL_REQUIRED",
+      "complete_collection": true,
+      "allow_skips": false
+    }
   ],
   "required_gates": [
     "source-preflight",
@@ -161,7 +193,8 @@
       "reader-and-followup-evidence",
       "agent-runtime",
       "postgresql-persistence-and-migrations",
-      "retry-recovery-and-replay"
+      "retry-recovery-and-replay",
+      "narrative-craft-intelligence"
     ],
     "ceiling": "LOCAL_BACKEND_ENGINEERING",
     "does_not_establish": [
