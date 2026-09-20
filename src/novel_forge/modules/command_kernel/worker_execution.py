@@ -43,6 +43,7 @@ _MANUAL_INTERVENTION_CODES = frozenset({"CHAPTER_QUALITY_GATE_BLOCKED"})
 _FINAL_FAILURE_CODES = frozenset(
     {
         "CHAPTER_QUALITY_GATE_FAILED",
+        "SOURCE_PROVIDER_SCHEMA_REJECTED",
         "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
         # WHY: Once a semantic Provider attempt has reached the final send gate,
         # loss/abort of its exact outer Opening fence is permanent for that

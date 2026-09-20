@@ -87,6 +87,13 @@ and Kernel budget. Its receipt cache is grant-specific; benchmark outputs and mo
 are ineligible and cannot commit Source Profiles, Observations or Knowledge Candidates.
 Sampling does not advance the original import or schedule production descendants. Reusing
 the request resumes the same arm; a renamed arm requires recovery of the existing one.
+An explicitly granted successor may replace a terminal arm with no Effect or proven
+terminal Effect/Dispatch failure, retaining its predecessor and shared budget. Source
+failure settlement uses the same Kernel submission classifier as Chapter: proven unsent
+calls may release reservations, known sent calls settle measured or conservatively
+reserved usage, and ambiguous usage remains held. Failure model logs remain evidence.
+Unknown outcomes checkpoint for reconciliation; known terminal Provider failure is not
+turned into an automatic retry of the same task.
 This does not calibrate Source reviewers or authorize reference material for production.
 This does not prove judge calibration or bootstrap every task family. Ordinary production
 routing blocks when sufficient quality evidence is absent.

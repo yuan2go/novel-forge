@@ -431,11 +431,13 @@ Context, Schema and source-consumption gates. Reprocessing commands are not samp
 Read sample outputs through the existing import work and campaign queries. Replaying the
 same request preserves its Operation and settlement; `SOURCE_SAMPLE_RECOVERY_REQUIRED`
 blocks a new request for the same campaign/sample/model arm, including unknown outcomes.
-For a terminal arm with no ExternalEffects, pass its exact `predecessor_operation_id`
+For a terminal arm with no ExternalEffects or proven terminal Effect/Dispatch failure,
+pass its exact `predecessor_operation_id`
 in a new explicitly granted request. The replacement preserves operator, input versions,
 original Source task and full campaign sample, and appends native causation lineage.
-Arms with ExternalEffects must use existing receipt reconciliation; a terminal Provider
-failure replacement is not yet supported by the Source sampler. Successful sample receipts may
+Successful, in-flight or unknown Effects cannot be replaced; use existing receipt
+reconciliation. Failure usage remains settled or held under the original reservation,
+and a successor consumes remaining campaign allowance. Successful sample receipts may
 be projected after grant expiry, but new sends still require unexpired authorization.
 Sample outputs never advance the original Source import or become production knowledge.
 The current sampler does not automatically release Source observations into Router quality

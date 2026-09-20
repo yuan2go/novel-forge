@@ -28,6 +28,9 @@ from novel_forge.modules.command_kernel.budget_runtime import (
     settle_provider_budget,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.provider_failure_accounting import (
+    failed_provider_budget_decision,
+)
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapterError,
     ProviderResult,
@@ -1618,12 +1621,35 @@ class PostgresContentIntelligenceExecutionPort:
         if dispatched["outcome"] != "success" or not isinstance(
             dispatched.get("provider_evidence"), Mapping
         ):
-            resolve_provider_budget_failure(
-                self.database_url,
-                reservation_id=str(reservation["reservation_id"]),
-                project_id=worker.project_id,
+            decision = failed_provider_budget_decision(
+                dispatched=dispatched,
+                reserved_amount=None if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else str(routed_amount),
+                reserved_tokens=int(provider_admission.total_reserved),
+                frozen_capability_profile=dict(effect.get("provider_capability_profile") or {}),
             )
-            provider_evidence = dispatched.get("provider_evidence") or {}
+            if decision["disposition"] == "SETTLE":
+                settle_provider_budget(
+                    self.database_url, reservation_id=str(reservation["reservation_id"]),
+                    project_id=worker.project_id, actual_amount=decision["actual_amount"],
+                    actual_tokens=decision["actual_tokens"],
+                    evidence={**decision, "accepted_candidate": False,
+                              "execution_outcome": dispatched["outcome"],
+                              "token_accounting_precision": token_contract.precision},
+                )
+            else:
+                resolve_provider_budget_failure(
+                    self.database_url, reservation_id=str(reservation["reservation_id"]),
+                    project_id=worker.project_id,
+                    external_state_unknown=decision["disposition"] == "HOLD_UNKNOWN",
+                )
+            raw_evidence = dispatched.get("provider_evidence")
+            provider_evidence = dict(raw_evidence) if isinstance(raw_evidence, Mapping) else {}
+            self._execution_log(
+                worker=worker, spec=spec, execution=dict(provider_evidence),
+                domain_binding={"execution_status": "FAILED", "execution_outcome": dispatched["outcome"],
+                                "accepted_candidate": False, "external_effect_id": effect_id,
+                                "budget_failure_decision": decision},
+            )
             process_evidence = provider_evidence.get("production_execution", {}).get("process_evidence", {})
             if process_evidence.get("failure_code") == "PROVIDER_SCHEMA_REJECTED":
                 raise KernelError(
@@ -1631,7 +1657,9 @@ class PostgresContentIntelligenceExecutionPort:
                     "Provider rejected the structured Schema; freeze a corrected request using the remaining shared allowance",
                 )
             raise KernelError(
-                "SOURCE_PEP_EXECUTION_FAILED",
+                ("SOURCE_PEP_EXECUTION_FAILED_FINAL" if dispatched.get("outcome") in {"final_failure", "cancelled"}
+                 else "SOURCE_PEP_EXECUTION_FAILED" if dispatched.get("outcome") in {"retryable_failure", "not_found"}
+                 else "SOURCE_PEP_EXECUTION_UNKNOWN"),
                 f"Source Provider outcome was {dispatched.get('outcome')}",
             )
         evidence = dict(dispatched["provider_evidence"])
@@ -1646,7 +1674,7 @@ class PostgresContentIntelligenceExecutionPort:
                 external_state_unknown=True,
             )
             raise KernelError(
-                "SOURCE_PEP_EVIDENCE_INCOMPLETE",
+                "SOURCE_PEP_EVIDENCE_UNKNOWN",
                 "Source PEP result lacks output, usage, or cost evidence",
             )
         assert isinstance(usage, Mapping)
@@ -2076,6 +2104,10 @@ class PostgresContentIntelligenceExecutionPort:
         execution: dict[str, Any],
         domain_binding: dict[str, Any],
     ) -> AuthorityAssetDocument:
+        failure_suffix = (
+            "-failed-" + _token(str(domain_binding["external_effect_id"]) + ":" + str(domain_binding["execution_outcome"]))
+            if domain_binding.get("execution_status") == "FAILED" else ""
+        )
         content = {
             "schema_version": "source-model-call-log.v1",
             "production_execution_gateway_backed": True,
@@ -2105,7 +2137,7 @@ class PostgresContentIntelligenceExecutionPort:
         if benchmark:
             content.update(qualification_status="BENCHMARK_ONLY", production_verified=False,
                            production_qualification_eligible=False)
-        if spec.kind == "mkaos" and content["real_provider_proven"] and not content["fixture_protocol_only"]:
+        if spec.kind == "mkaos" and domain_binding.get("execution_status") != "FAILED" and content["real_provider_proven"] and not content["fixture_protocol_only"]:
             from novel_forge.modules.provider_qualification.source_binding import source_runtime_identity
             content["provider_runtime_qualification_scope"] = source_runtime_identity(execution)
         return self.writer.materialize_output(
@@ -2114,16 +2146,16 @@ class PostgresContentIntelligenceExecutionPort:
                 project_id=worker.project_id,
                 asset_id=(
                     f"model-call-log:{worker.causation_id}:{worker.attempt_id}:"
-                    f"{_token(spec.capability)}"
+                    f"{_token(spec.capability)}{failure_suffix}"
                 ),
                 asset_type="model_call_log",
                 schema_version="source-model-call-log.v1",
                 logical_ref=(
                     f"runs/model_call_logs/{worker.causation_id}-"
-                    f"{worker.attempt_id}-{_token(spec.capability)}.json"
+                    f"{worker.attempt_id}-{_token(spec.capability)}{failure_suffix}.json"
                 ),
                 category="runs",
-                output_key=f"model_call_log.source.{_token(spec.capability)}",
+                output_key=f"model_call_log.source.{_token(spec.capability)}{failure_suffix}",
                 role="model_evidence",
                 content=content,
                 qualification_policy="source-content-intelligence-execution-v1",

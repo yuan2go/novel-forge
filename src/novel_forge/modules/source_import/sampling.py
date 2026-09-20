@@ -107,9 +107,8 @@ def admit_sample(app, *, project_id: str, source_operation_id: str,
                 or prior_payload["source_sampling"] != prepared["command_payload"]["source_sampling"]
                 or prior_payload["routing_bootstrap_authorization"]["authorization"]["campaign"] != grant["campaign"]):
                 raise KernelError("SOURCE_SAMPLE_PREDECESSOR_INVALID", "replacement must preserve operator, source task, inputs and campaign sample")
-            uow.cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE project_id=%s AND operation_id=%s FOR UPDATE", [project_id, prior[0]])
-            if prior[1] not in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"} or uow.cursor.fetchall():
-                raise KernelError("SOURCE_SAMPLE_PREDECESSOR_NOT_REPLACEABLE", "only a terminal arm without external effects can be replaced; reconcile other outcomes")
+            if prior[1] not in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"} or not _replaceable_effects(uow, project_id, prior[0]):
+                raise KernelError("SOURCE_SAMPLE_PREDECESSOR_NOT_REPLACEABLE", "replacement requires terminal failure evidence; reconcile unknown outcomes and consume existing success")
         elif not replay and predecessor_operation_id:
             raise KernelError("SOURCE_SAMPLE_PREDECESSOR_INVALID", "predecessor must belong to this model arm")
         operation_id = app._admit_child(
@@ -132,6 +131,24 @@ def admit_sample(app, *, project_id: str, source_operation_id: str,
         uow.commit()
     return {"operation_id": operation_id, "production_eligible": False,
             "campaign_id": grant["campaign"]["campaign_id"], "authorization_id": authorization_id}
+
+
+def _replaceable_effects(uow: AuthorityUnitOfWork, project_id: str, operation_id: str) -> bool:
+    uow.cursor.execute(
+        "SELECT external_effect_id,status FROM authority_external_effect WHERE project_id=%s AND operation_id=%s ORDER BY external_effect_id FOR UPDATE",
+        [project_id, operation_id],
+    )
+    effects = uow.cursor.fetchall()
+    if not effects:
+        return True
+    if len(effects) != 1 or effects[0][1] not in {"FAILED_FINAL", "DEAD_LETTER"}:
+        return False
+    uow.cursor.execute(
+        "SELECT dispatch_id,status FROM authority_external_effect_dispatch WHERE external_effect_id=%s ORDER BY generation FOR UPDATE",
+        [effects[0][0]],
+    )
+    dispatches = uow.cursor.fetchall()
+    return bool(dispatches) and all(row[1] in {"FAILED_FINAL", "DEAD_LETTER"} for row in dispatches)
 
 
 def sampling_authorization(app, worker):

@@ -975,11 +975,13 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         grants = []
         count = 0
         producer_contracts = {}
+        receipts_by_task = {}
         for definition, task in SOURCE_BOOTSTRAP_TASKS.items():
             source_id = self._operations(definition)[0]
             with transaction() as connection, connection.cursor() as cursor:
                 cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s AND effect_type='model.invoke' AND status='SUCCEEDED'", [source_id])
                 receipt = self.application._effect_evidence(str(cursor.fetchone()[0]))
+                receipts_by_task[task] = deepcopy(receipt)
             for candidate in candidates:
                 request = dict(project_id=self.project_id, source_operation_id=source_id,
                     authorization_id=f"sample:{task}:{candidate.candidate_id}",
@@ -997,7 +999,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                     "production_eligible": False,
                     "campaign": {"campaign_id": self.project_id, "manifest_hash": "sha256:" + "c" * 64,
                         "sample_id": task, "group_id": source_id, "partition": "CALIBRATION",
-                        "maximum_calls": 7, "maximum_tokens": 1400000, "maximum_amount": "7", "expires_at": expiry},
+                        "maximum_calls": 10, "maximum_tokens": 2000000, "maximum_amount": "10", "expires_at": expiry},
                 }
                 grants.append(grant)
                 configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
@@ -1066,6 +1068,11 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             granted = {**grant, "authorization_id": command["authorization_id"],
                        "generation_idempotency_key": command["idempotency_key"],
                        "candidate_id": maximum.candidate_id, "model_revision": maximum.model_revision,
+                       "task_type": prepared["command_payload"]["generator_operation_name"],
+                       "logical_key": command["source_operation_id"],
+                       "input_versions_hash": prepared["input_versions_hash"],
+                       "campaign": {**grant["campaign"], "sample_id": prepared["command_payload"]["generator_operation_name"],
+                                    "group_id": command["source_operation_id"]},
                        "command_hash": prepared["command_hash"]}
             grants.append(granted)
             configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
@@ -1089,15 +1096,98 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         resumed = {**no_effect, "authorization_id": "after-no-effect", "idempotency_key": f"{self.project_id}:after-no-effect", "predecessor_operation_id": failed["operation_id"]}
         grant_request(resumed)
         repaired = admit_sample(self.application, **resumed)
+
+        def failed_provider(_adapter, **_kwargs):
+            nonlocal count
+            count += 1
+            return ProviderResult("final_failure", "fixture-source:terminal-failure", {
+                "fixture_protocol_only": True, "real_model_call": False, "request_sent": True,
+                "production_execution": {"process_evidence": {"submission_phase": "PROVIDER_RESULT_RECORDED"}},
+            })
+
+        with patch.object(source_execution._SourceGatewayEffectAdapter, "execute", failed_provider):
+            with self.assertRaisesRegex(KernelError, "SOURCE_PEP_EXECUTION_FAILED"):
+                self.scheduler.run_or_recover(operation_id=repaired["operation_id"], project_id=self.project_id)
+        after_failure = {**resumed, "authorization_id": "after-provider-failure",
+                         "idempotency_key": f"{self.project_id}:after-provider-failure",
+                         "predecessor_operation_id": repaired["operation_id"]}
+        grant_request(after_failure)
+        succeeded = admit_sample(self.application, **after_failure)
         with patch.object(source_execution._SourceGatewayEffectAdapter, "execute", fixture_provider):
-            self.scheduler.run_or_recover(operation_id=repaired["operation_id"], project_id=self.project_id)
-        self.assertEqual(admit_sample(self.application, **resumed), repaired)
+            self.scheduler.run_or_recover(operation_id=succeeded["operation_id"], project_id=self.project_id)
+        self.assertEqual(admit_sample(self.application, **after_failure), succeeded)
         campaign = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=self.project_id, campaign_id=self.project_id)
         operations = {item["operation_id"]: item for item in campaign["operations"]}
         self.assertEqual(operations[failed["operation_id"]]["status"], "FAILED_FINAL")
+        self.assertEqual(operations[repaired["operation_id"]]["status"], "FAILED_FINAL")
         self.assertEqual(operations[repaired["operation_id"]]["causation_operation_id"], failed["operation_id"])
-        self.assertEqual(count, 7)
-        self.assertEqual(campaign["usage"]["calls_used_or_reserved"], 7)
+        self.assertEqual(operations[succeeded["operation_id"]]["causation_operation_id"], repaired["operation_id"])
+        self.assertEqual(count, 8)
+        self.assertEqual(campaign["usage"]["calls_used_or_reserved"], 8)
+        failure_reservation = next(item for item in campaign["reservations"] if item["operation_id"] == repaired["operation_id"])
+        self.assertEqual(failure_reservation["reservation_status"], "SETTLED")
+        self.assertEqual(failure_reservation["actual_tokens"], failure_reservation["estimated_tokens"])
+
+        unknown = {**no_effect, "source_operation_id": self._operations("source.import.document.profile")[0],
+                   "authorization_id": "unknown-result", "idempotency_key": f"{self.project_id}:unknown-result"}
+        grant_request(unknown)
+        pending = admit_sample(self.application, **unknown)
+
+        def unknown_provider(_adapter, **_kwargs):
+            nonlocal count
+            count += 1
+            return ProviderResult("unknown", "fixture-source:unknown-result", {"fixture_protocol_only": True})
+
+        with patch.object(source_execution._SourceGatewayEffectAdapter, "execute", unknown_provider):
+            with self.assertRaises(KernelError):
+                self.scheduler.run_or_recover(operation_id=pending["operation_id"], project_id=self.project_id)
+        forbidden = {**unknown, "authorization_id": "unknown-replacement", "idempotency_key": f"{self.project_id}:unknown-replacement",
+                     "predecessor_operation_id": pending["operation_id"]}
+        grant_request(forbidden)
+        with self.assertRaisesRegex(KernelError, "SOURCE_SAMPLE_PREDECESSOR_NOT_REPLACEABLE"):
+            admit_sample(self.application, **forbidden)
+        campaign = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=self.project_id, campaign_id=self.project_id)
+        self.assertEqual(count, 9)
+        self.assertEqual(campaign["usage"]["calls_used_or_reserved"], 9)
+        pending_operation = next(item for item in campaign["operations"] if item["operation_id"] == pending["operation_id"])
+        self.assertIn(pending_operation["status"], {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"})
+        self.assertEqual(campaign["state"], "RECONCILIATION_REQUIRED")
+        unknown_reservation = next(item for item in campaign["reservations"] if item["operation_id"] == pending["operation_id"])
+        self.assertEqual(unknown_reservation["reservation_status"], "HELD_UNKNOWN")
+        self.assertTrue(campaign["unresolved_effect_ids"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("""SELECT version.content FROM authority_operation_output_asset output
+                JOIN authority_asset_version version USING(asset_version_id)
+                JOIN authority_asset asset USING(asset_id)
+                WHERE output.operation_id=ANY(%s) AND asset.asset_type='model_call_log'""",
+                [[repaired["operation_id"], pending["operation_id"]]])
+            failures = [row[0] for row in cursor.fetchall()]
+        self.assertEqual(len(failures), 2)
+        self.assertTrue(all(item["fixture_protocol_only"] and not item["accepted_candidate"]
+                            and item["execution_status"] == "FAILED" for item in failures))
+        queries = 0
+
+        def recovered_provider(_adapter, **kwargs):
+            nonlocal queries
+            queries += 1
+            evidence = deepcopy(receipts_by_task["source.content.classify"])
+            evidence.update(real_model_call=False, production_verified=False,
+                capability_runtime=kwargs["request_payload"]["_production_execution"]["capability_runtime"])
+            return ProviderResult("success", "fixture-source:recovered-result", evidence)
+
+        with patch.object(source_execution._SourceGatewayRecoveryEffectAdapter, "query", recovered_provider):
+            self.scheduler.run_or_recover(operation_id=pending["operation_id"], project_id=self.project_id)
+        self.assertEqual(queries, 1)
+        self.assertEqual(count, 9)
+        campaign = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=self.project_id, campaign_id=self.project_id)
+        self.assertEqual(campaign["state"], "ACCOUNTED")
+        self.assertEqual(campaign["usage"]["calls_used_or_reserved"], 9)
+        pending_operation = next(item for item in campaign["operations"] if item["operation_id"] == pending["operation_id"])
+        self.assertEqual(pending_operation["status"], "SUCCEEDED")
+        self.assertEqual(sum(item["role"] == "model_evidence" for item in pending_operation["outputs"]), 2)
+        with self.assertRaisesRegex(KernelError, "SOURCE_SAMPLE_PREDECESSOR_NOT_REPLACEABLE"):
+            admit_sample(self.application, **forbidden)
+        self.assertEqual(self.query.import_job(project_id=self.project_id, import_job_id=original["import_job_id"])["status"], job_status)
 
     def test_exact_commit_import_deduplicates_content_and_reuses_transform(
         self,
