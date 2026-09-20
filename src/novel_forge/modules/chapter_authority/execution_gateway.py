@@ -1080,7 +1080,13 @@ class PostgresChapterExecutionContractBinder:
         schema_ref = chapter_provider_output_schema_ref(stage, causal_batch=causal_batch)
         if inputs.get("cross_chapter_window") or (stage == "revision" and (inputs.get("review") or {}).get("cross_chapter_window")):
             from novel_forge.modules.review.cross_chapter import extend_provider_schema
-            return extend_provider_schema(schema, stage), f"schema:chapter-provider-output:{stage}:cross-chapter-v1"
+            schema, schema_ref = extend_provider_schema(schema, stage), f"schema:chapter-provider-output:{stage}:cross-chapter-v1"
+        if stage in {"review", "revision", "rereview"}:
+            from novel_forge.modules.review.craft import craft_review_targets, extend_craft_provider_schema
+            candidate = inputs.get("revision") or inputs.get("draft") or {}
+            if craft_review_targets(candidate) and not (stage == "revision" and inputs.get("required_actions") is not None):
+                schema = extend_craft_provider_schema(schema, stage)
+                schema_ref += ":narrative-craft-v1"
         return schema, schema_ref
 
     def bind(
@@ -2567,6 +2573,7 @@ def default_chapter_fixture_response(
             "scene_artifacts": artifacts,
         }
     if stage == "review":
+        from novel_forge.modules.review.craft import fixture_craft_checks
         text = str(
             (inputs.get("draft") or {}).get("text") or "The choice has no visible cost."
         )
@@ -2574,6 +2581,7 @@ def default_chapter_fixture_response(
             "score": 72,
             "resolution_checks": [],
             "knowledge_checks": _fixture_knowledge_checks(inputs),
+            **({"craft_checks": fixture_craft_checks(inputs)} if fixture_craft_checks(inputs) else {}),
             "issues": [
                 {
                     "code": "COST_NOT_CONCRETE",
@@ -2606,8 +2614,10 @@ def default_chapter_fixture_response(
             "text": text,
             "scene_artifacts": artifacts,
             "resolved_issue_codes": ["COST_NOT_CONCRETE"],
+            **({"edits": [{"start": 0, "end": len(str(draft.get("text") or "")), "quote": str(draft.get("text") or ""), "replacement": text, "issue_codes": ["COST_NOT_CONCRETE"]}]} if (inputs.get("review") or {}).get("craft_targets") else {}),
         }
     if stage == "rereview":
+        from novel_forge.modules.review.craft import fixture_craft_checks, craft_review_targets, PRESERVATION_DIMENSIONS
         text = str(
             (inputs.get("revision") or {}).get("text")
             or "The choice costs a safe route home."
@@ -2615,7 +2625,9 @@ def default_chapter_fixture_response(
         return {
             "score": 90,
             "issues": [],
+            **({"craft_preservation_checks": [{"dimension": dimension, "status": "UNCERTAIN", "evidence": {"start": 0, "end": len(text), "quote": text}, "reason": "Fixture cannot establish semantic preservation."} for dimension in PRESERVATION_DIMENSIONS]} if craft_review_targets(inputs.get("revision") or {}) else {}),
             "knowledge_checks": _fixture_knowledge_checks(inputs),
+            **({"craft_checks": fixture_craft_checks(inputs)} if fixture_craft_checks(inputs) else {}),
             "resolution_checks": [
                 {
                     "code": issue["code"],

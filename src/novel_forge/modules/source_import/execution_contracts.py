@@ -566,9 +566,10 @@ def validate_content_intelligence_output(
     output_schema: Mapping[str, Any],
     value: Mapping[str, Any],
 ) -> Mapping[str, Any]:
+    from .craft_discovery import validate_discovery_schema
     if (
         stage == MKAOS_STAGE
-        and dict(output_schema) == grounded_knowledge_output_schema()
+        and (dict(output_schema) == grounded_knowledge_output_schema() or validate_discovery_schema(dict(output_schema)))
     ):
         from novel_forge.modules.chapter_authority.provider_output_contracts import (
             validate_chapter_provider_output_against_schema,

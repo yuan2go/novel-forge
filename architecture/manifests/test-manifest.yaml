@@ -8,6 +8,73 @@
   ],
   "classification_rules": [
     {
+      "id": "narrative-craft-migration",
+      "patterns": [
+        "tests/integration/test_narrative_craft_migration_upgrade_postgres.py"
+      ],
+      "classification": "MIGRATION_COMPATIBILITY",
+      "owner": "mkaos-authority",
+      "capability": "narrative-craft-migration",
+      "production_target": "src/novel_forge/storage/migrations/versions/v20260920_0138_narrative_craft_origin.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "narrative-craft-contract",
+      "patterns": [
+        "tests/unit/test_craft_selection.py",
+        "tests/unit/test_craft_execution.py",
+        "tests/unit/test_narrative_craft_catalog.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "native-narrative-craft",
+      "capability": "narrative-craft-contract",
+      "production_target": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "narrative-craft-fixture",
+      "patterns": [
+        "tests/unit/test_narrative_craft_review.py",
+        "tests/unit/test_craft_discovery.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "native-narrative-craft",
+      "capability": "narrative-craft-fixture",
+      "production_target": "src/novel_forge/modules/review/craft.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_PROTOCOL_ONLY"
+    },
+    {
+      "id": "narrative-craft-operator",
+      "patterns": [
+        "tests/unit/test_narrative_craft_operator.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "native-narrative-craft",
+      "capability": "narrative-craft-operator",
+      "production_target": "src/novel_forge/modules/mkaos_authority/craft_authoring.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "narrative-craft-postgres",
+      "patterns": [
+        "tests/integration/test_narrative_craft_authoring_postgres.py",
+        "tests/integration/test_craft_planning_postgres.py",
+        "tests/integration/test_narrative_craft_chapter_postgres.py",
+        "tests/integration/test_craft_discovery_postgres.py",
+        "tests/integration/test_narrative_craft_catalog_replay_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "native-narrative-craft",
+      "capability": "narrative-craft-postgres",
+      "production_target": "src/novel_forge/modules/mkaos_authority/application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
       "id": "cross-chapter-prose-contract",
       "patterns": [
         "tests/unit/test_cross_chapter_prose_review.py"
@@ -661,6 +728,14 @@
       "production_targets": [
         "src/novel_forge/modules/context_builder/production_retrieval.py",
         "src/novel_forge/modules/context_builder/retrieval_campaign.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "narrative_craft_engineering": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/mkaos_authority/craft.py",
+        "src/novel_forge/modules/mkaos_authority/craft_authoring.py"
       ],
       "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
     }

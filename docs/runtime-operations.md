@@ -284,6 +284,51 @@ an example file. MKAOS approval is a later explicit command, never an import sid
 A scripted engineering run may prove Candidate/Decision/Pack connectivity; its Cards cannot
 be promoted past the existing fixture ceiling into production Planning.
 
+## Narrative Craft operations
+
+The existing trusted principal must have project-scoped `mkaos.authority.query`,
+`mkaos.authority.execute` or `mkaos.authority.approve` as appropriate. Inspect the catalog
+and its hash before explicitly authoring or approving exact versions:
+
+```sh
+PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-craft catalog --project-id "$PROJECT_ID"
+PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-craft author --project-id "$PROJECT_ID" --workspace-id "$WORKSPACE_ID" --mechanism-id attention-relay --catalog-hash "$CATALOG_HASH" --idempotency-key "$AUTHOR_KEY"
+PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-craft approve-core --project-id "$PROJECT_ID" --workspace-id "$WORKSPACE_ID" --candidate-asset-version-id "$CANDIDATE_VERSION" --catalog-hash "$CATALOG_HASH" --rationale "$EDITORIAL_RATIONALE" --idempotency-key "$APPROVAL_KEY"
+PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-craft cards --project-id "$PROJECT_ID" --mechanism-id attention-relay
+PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-craft trace --project-id "$PROJECT_ID" --knowledge-card-asset-version-id "$CARD_VERSION" --book-id "$BOOK_ID"
+```
+
+HTTP exposes `GET /product/mkaos/craft-catalog?project_id=...` and
+`POST /product/mkaos/craft-candidates`; approval uses the existing candidate approval
+endpoint. These are existing MKAOS permissions and Kernel jobs, not direct table writes.
+Catalog inspection neither imports nor activates Cards. For a later mechanism version,
+pass `--supersedes-card-asset-version-id` (HTTP `supersedes_card_asset_version_id`) with
+the exact immediate active predecessor in that project. Review the candidate's frozen
+catalog hash for approval, including after a newer application catalog is deployed.
+Existing Book knowledge-access
+policy must permit an approved Card before Planning can retrieve it.
+
+To request Source discovery, pass `intelligence_policy.routing_policy_version` as
+`source-analysis-routing.craft.v1` in the existing Source import request. Keep Source rights,
+Provider authorization, budget and review gates unchanged. New candidates remain
+`NEEDS_REVIEW`; review the Observation, abstraction/isolation, applicability and duplicate
+mechanisms before approving. Do not treat a source hypothesis as reader-effect evidence.
+
+The Planning Context records selected/rejected candidates, match and applicability reasons,
+receipt-backed recent usage and frozen Craft policy. Chapter run queries with
+`include_workspace=true` expose `craft_trace` and the existing `knowledge_trace`:
+use exact Card/use/selection/strategy hashes to compare Plan, Intent, Memo, realized prose,
+Review, targeted edits, ReReview, candidate comparison and accepted manuscript. Missing
+receipt or reader evidence remains missing. Draft task and Context delivery are separately
+observable; a planning claim alone is not proof of received input.
+
+Focused Craft tests are classified in the `narrative_craft_engineering` backend semantic
+slice. Run the complete applicable validation matrix above after production changes,
+including fresh and previous-head migration compatibility, all PostgreSQL integration,
+query-plan and Compose runtime gates. The eight-domain controlled prose corpus is original
+fixture data; its scripted expectations are not calibrated semantic evaluation. Only a
+separately authorized real-Provider/editorial campaign can establish creative quality.
+
 ## Credentialed Provider qualification
 
 The cost-aware router replacement is not release-qualified. In `production`, model

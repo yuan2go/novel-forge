@@ -173,6 +173,9 @@ def compile_realization_contract(
         body["contract_version"] = "scene-realization-composition.v2"
         body["craft_tasks"] = _scene_craft_tasks(scenes, slots, voices)
         body["composition_method"] = "Write and edit the chapter as one narrative; slots serialize the final prose and are not a proof of integration."
+    if "craft_strategy" in plan:
+        from .craft_execution import bind_craft_realization
+        body = bind_craft_realization(body, plan["craft_strategy"], scenes=scenes)
     return {**body, "contract_digest": narrative_hash(body)}
 
 

@@ -26,6 +26,7 @@ from novel_forge.modules.command_kernel.runtime import (
 )
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.mkaos_authority.definitions import (
+    MKAOS_CRAFT_AUTHOR_OPERATION,
     MKAOS_APPROVE_DEFINITION_VERSION,
     MKAOS_APPROVE_HANDLER_KEY,
     MKAOS_APPROVE_OPERATION,
@@ -183,6 +184,16 @@ class MkaosAuthorityApplication:
         self.allow_fixture_activation = bool(allow_fixture_activation)
         self.experimental_approval_policy = experimental_approval_policy
 
+    def admit_core_craft(self, command: Any, *, principal: Principal | None = None) -> dict[str, Any]:
+        from .craft_authoring import admit_core_craft
+        return admit_core_craft(self, command, principal=principal)
+
+    def execute_core_craft(self, command: Any, *, principal: Principal | None = None) -> dict[str, Any]:
+        admitted = self.admit_core_craft(command, principal=principal)
+        if admitted["status"] == "SUCCEEDED":
+            return admitted
+        return self._run(str(admitted["operation_id"]), command.project_id)
+
     def execute_candidate(
         self,
         command: CommitKnowledgeCandidateCommand,
@@ -216,9 +227,12 @@ class MkaosAuthorityApplication:
             candidate_hash,
         ) = self._preflight_candidate(command)
         with AuthorityUnitOfWork(self.database_url) as uow:
-            existing = MkaosAuthorityRepository(uow.cursor).existing_candidate(
-                project_id=command.project_id, candidate_hash=candidate_hash
-            )
+            repository = MkaosAuthorityRepository(uow.cursor)
+            existing = repository.existing_candidate(project_id=command.project_id, candidate_hash=candidate_hash)
+            if not existing and candidate.get("craft_mechanism"):
+                mechanism = candidate["craft_mechanism"]
+                existing = repository.existing_craft_candidate(project_id=command.project_id,
+                    mechanism_id=mechanism["mechanism_id"], version=mechanism["version"])
         if existing is not None:
             if existing["operation_status"] != "SUCCEEDED":
                 raise KernelError(
@@ -531,6 +545,8 @@ class MkaosAuthorityApplication:
             repository.require_scope(
                 project_id=command.project_id, workspace_id=command.workspace_id
             )
+            from .craft_authoring import validate_craft_lineage
+            validate_craft_lineage(uow.cursor, command.project_id, candidate, command.observation_asset_version_ids)
             execution = repository.execution_evidence(
                 project_id=command.project_id,
                 asset_version_id=command.execution_asset_version_id,
@@ -847,6 +863,9 @@ class MkaosAuthorityApplication:
             row = uow.cursor.fetchone()
         if row is None:
             raise KernelError("OPERATION_NOT_FOUND", "MKAOS Operation does not exist")
+        if row[0] == MKAOS_CRAFT_AUTHOR_OPERATION:
+            from .craft_authoring import execute_core_craft_fenced
+            return execute_core_craft_fenced(self, worker)
         if row[0] == MKAOS_CANDIDATE_OPERATION:
             return self._execute_candidate_fenced(worker)
         if row[0] == MKAOS_APPROVE_OPERATION:
@@ -890,6 +909,9 @@ class MkaosAuthorityApplication:
             )
             execution_proof = _execution_proof(execution["content"])
             candidate = validate_knowledge_candidate(dict(payload["candidate"]))
+            from .craft_authoring import validate_craft_lineage
+            craft_identity = validate_craft_lineage(uow.cursor, worker.project_id, candidate,
+                tuple(payload.get("observation_asset_version_ids") or ()))
             spans = tuple(
                 KnowledgeEvidenceSpan(**item) for item in payload["evidence_spans"]
             )
@@ -1046,6 +1068,7 @@ class MkaosAuthorityApplication:
             if created:
                 repository.register_candidate(
                     {
+                        **craft_identity,
                         "knowledge_candidate_id": candidate_id,
                         "project_id": worker.project_id,
                         "workspace_id": str(command["workspace_id"]),
@@ -1155,6 +1178,10 @@ class MkaosAuthorityApplication:
                     "MKAOS Candidate Hash changed after approval admission",
                 )
             assert_abstract_content_safe(candidate["content"])
+            from .craft_authoring import validate_craft_lineage
+            validate_craft_lineage(uow.cursor, worker.project_id, candidate["content"]["candidate"],
+                tuple(candidate["content"].get("observation_asset_version_ids") or ()),
+                original=candidate["content"].get("lineage_mode") == "REPOSITORY_ORIGINAL")
             digest = hashlib.sha256(
                 str(candidate["asset_version_id"]).encode("utf-8")
             ).hexdigest()
@@ -1315,7 +1342,14 @@ class MkaosAuthorityApplication:
                         "content_hash": card_hash,
                     }
                 )
+                craft = candidate_payload.get("craft_mechanism") or {}
+                predecessor = dict(craft.get("provenance") or {}).get("supersedes_card_asset_version_id")
+                if predecessor:
+                    repository.supersede_craft_card(project_id=worker.project_id, asset_version_id=predecessor)
                 dependencies = SourceIntelligenceRepository(uow.cursor)
+                if predecessor:
+                    self._content_dependency(dependencies, worker, upstream=predecessor,
+                        downstream=card_asset_version_id, relationship="ABSTRACTS", selector_key="craft-version-supersession-v1")
                 self._content_dependency(
                     dependencies,
                     worker,
@@ -1638,7 +1672,7 @@ class MkaosAuthorityApplication:
             operation = uow.cursor.fetchone()
             if operation is None:
                 raise KernelError("OPERATION_NOT_FOUND", "MKAOS Operation does not exist")
-            if operation[0] == MKAOS_CANDIDATE_OPERATION:
+            if operation[0] in {MKAOS_CANDIDATE_OPERATION, MKAOS_CRAFT_AUTHOR_OPERATION}:
                 sql = """
                     SELECT knowledge_candidate_id, asset_version_id,
                            candidate_hash, status
@@ -1735,6 +1769,14 @@ class MkaosAuthorityApplication:
                 "MKAOS_CANDIDATE_STATUS_CONFLICT",
                 "only a clear Candidate awaiting review can be approved",
             )
+        from .craft_authoring import original_craft_approval
+        original_approval = original_craft_approval(candidate, project_id=project_id,
+            workspace_id=workspace_id, policy_version=policy_version,
+            reviewer_id=reviewer_id, approval_class=approval_class)
+        if original_approval is not None:
+            return original_approval
+        if policy_version.startswith("repository-original-craft-v1:"):
+            raise KernelError("MKAOS_CRAFT_PROVENANCE_CONFLICT", "The original catalog policy cannot approve source-derived knowledge")
         proof = dict(
             candidate["content"].get("execution_evidence", {}).get("proof", {})
         )

@@ -218,10 +218,13 @@ class _PlanningGenerationHandler:
             inputs=tuple(inputs),
             definition=definition,
         )
+        if "craft_strategy" in candidate.candidate_payload:
+            raise KernelError("CRAFT_PROVIDER_STRATEGY_FORBIDDEN", "Craft strategy is derived from exact governed selection after Provider translation validation")
         evidence = candidate.evidence.to_dict()
         knowledge_policy = ""
         knowledge_refs: tuple[str, ...] = ()
         author_projection: dict[str, Any] = {}
+        craft_strategy = None
         if self.database_url and candidate.evidence.context_bundle_asset_version_id:
             from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
             from .knowledge_translation import validate_knowledge_translations
@@ -231,12 +234,20 @@ class _PlanningGenerationHandler:
                 asset_version_id=candidate.evidence.context_bundle_asset_version_id,
             )
             selection = context.content.get("narrative_intelligence") or {}
+            if any(item.get("selected_content", {}).get("craft_mechanism") for item in selection.get("selected") or ()) and (
+                context.content_hash != candidate.evidence.context_bundle_hash
+                or selection.get("selection_digest") != candidate.evidence.narrative_intelligence_selection_digest
+            ):
+                raise KernelError("CRAFT_PLANNING_SELECTION_DRIFT", "Craft planning evidence must bind the exact persisted Context and frozen selection")
             from novel_forge.modules.story_design_authority.author_input import validate_author_decisions
             author_projection = dict(context.content.get("author_design_projection") or {})
             validate_author_decisions(candidate.candidate_payload, author_projection)
             if selection.get("policy_version") == "knowledge-grounded-selection-v2":
                 validate_knowledge_translations(candidate.candidate_payload, selection)
                 knowledge_policy = selection["policy_version"]
+                if command.generator_operation_name == "chapter_plan.generate":
+                    from novel_forge.modules.mkaos_authority.craft_selection import build_craft_strategy
+                    craft_strategy = build_craft_strategy(candidate.candidate_payload, selection)
             knowledge_refs = tuple(
                 item["knowledge_card_asset_version_id"] for item in selection.get("selected") or ()
             )
@@ -317,6 +328,9 @@ class _PlanningGenerationHandler:
         )
         if knowledge_policy:
             content["knowledge_translation_policy_version"] = knowledge_policy
+        if craft_strategy is not None:
+            content["craft_strategy"] = craft_strategy
+            content["candidate_payload"]["craft_strategy"] = craft_strategy
         if bootstrap:
             content["routing_eligibility"] = "BENCHMARK_ONLY"
             content["routing_bootstrap_authorization"] = dict(bootstrap)

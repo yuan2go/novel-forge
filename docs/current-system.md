@@ -174,10 +174,9 @@ selection, exact Provider delivery, planning adoption, candidate checks and the 
 manuscript binding separately. The trace is a read-only projection of existing assets,
 effects and Book Acceptance. No use-success state or additional knowledge store is added.
 
-Current scene craft tasks are capability-specific generation guidance. They do not
-constitute a versioned mechanism catalog, composition policy, or evidence of reader
-effect. Knowledge applicability and located planning translation provide extension
-points, but a declared Card, Prompt or Skill alone does not establish a runtime consumer.
+Narrative Craft is a versioned specialization of governed MKAOS KnowledgeCards. The
+catalog and selection rules below are consumed by native Planning and Chapter execution;
+a declared Card, Prompt or Skill alone remains insufficient evidence of application.
 
 Formation, World Preparation, Chapter Memo, scene realization, candidate retention and
 accepted-state reconciliation use their native Authorities. External writing workflows
@@ -187,6 +186,123 @@ quality remain unproven. Accepted-history correction and whole-book human accept
 retain the unresolved boundaries in the industrial proposal. Actor-isolated decisions,
 market observations and broad author-workbench changes have no authorization or production
 proof through these existing interfaces.
+
+## Narrative Craft intelligence
+
+`narrative-craft-mechanism.v1` carries stable identity/version/family, narrative problem,
+intended reader effect, abstract mechanism, prerequisites/applicability/contraindications,
+genre/scene/POV/pacing affinities, planning/scene/prose guidance, composition relations,
+success/failure/review/repair/preservation rules and typed provenance/evidence references.
+The repository ships 43 original abstract hypotheses across 16 families. Their absence
+of Source or reader evidence is explicit. Catalog presence grants no production eligibility.
+
+MKAOS owns candidate authorship, independent approval, version uniqueness, predecessor
+supersession and KnowledgeCard lifecycle in its existing PostgreSQL tables/UoW.
+`mkaos.craft.original.author` requires the exact catalog hash; approval separately binds
+`repository-original-craft-v1:<catalog_hash>` and operator rationale. A later global catalog
+template binds an explicit project-specific immediate predecessor Card during authoring;
+only that predecessor varies, and template/instance hashes remain distinct. Recovery and
+approval use the frozen admitted catalog, so an unrelated catalog release cannot invalidate
+a pending candidate. Migration 0138 permits
+an absent Provider execution only for an explicitly original Craft candidate with a complete
+mechanism identity. Source candidates retain their execution FK requirement. Exact duplicate
+abstractions and identity/version conflicts fail closed; conceptual synonyms require editorial
+comparison and governed revision, not an inferred equivalence score.
+
+Source Import's explicit `source-analysis-routing.craft.v1` policy selects
+`narrative-craft-abstraction.v1` for fiction or writing-theory profiles. The existing
+Deconstruction Observation → controlled MKAOS ExternalEffect → Candidate path freezes a
+strict schema, exact Observation identity and abstraction policy. Discovery output is a
+version-one `SOURCE_ABSTRACTION`/`HYPOTHESIS` with no invented validation or reader evidence.
+Source prose remains restricted to analysis; only abstract approved Card projections may
+reach generation. Discovery does not approve a candidate. Legacy routing/frozen strategies
+retain their prior contracts.
+
+Existing narrative-intelligence retrieval filters eligible Book-scoped Cards and applicable
+conditions, then ranks bounded candidates using current task, scene goal, reader effect,
+conflict, POV/character, emotion, information/relationship state, genre, pacing, obligations
+and style evidence. Private author prose, examples and voice anchors are excluded from
+Craft retrieval projections. Unknown textual conditions remain unknown and require explicit
+`ADAPT` prerequisite resolution. Every selected Card receives an `ADOPT`, `ADAPT` or `REJECT`
+translation. Adoption binds exact Card/hash and concrete text at a ChapterPlan scene pointer.
+The Provider cannot supply a replacement mechanism or server-derived strategy.
+
+`narrative-craft-strategy.v1` freezes adopted use IDs, Card versions, scene bindings,
+primary/secondary roles, sequence, intended combined effects, adaptation rationale and
+preservation constraints. Deterministic checks reject conflicts, missing dependencies,
+invalid sequence, excess density and drift. Compatibility rules and Provider planning
+judgment compose strategies without a fixed battle/romance/mystery recipe. Story Design,
+Hierarchical Planning and Plan Change retain active-plan ownership; Craft cannot authorize
+Canon, world-rule, character-knowledge or story-event changes.
+
+`narrative-craft-budget.v1` is `CONFIGURABLE_POLICY`, not a literary invariant. Its frozen
+defaults bound six Craft candidates, three uses per scene, eight per chapter, a five-chapter
+history window, one-chapter cooldown and three recent uses, with repetition/salience and
+abstract-pattern Jaccard penalties plus a variation bonus. Successful Draft delivery
+receipts supply recent usage; duplicate receipts, Review/Revision calls and future chapters
+do not inflate frequency. Abstract term similarity is only a retrieval heuristic, not a
+creative-effect score. Retry validates the complete frozen policy rather than filling it
+from current defaults.
+
+The canonical consumer chain is:
+
+```text
+Source Observation or original catalog → MKAOS Candidate → explicit Approval → KnowledgeCard
+→ frozen Planning Context selection → concrete translation → active ChapterPlan Craft strategy
+→ ExecutionIntent → Chapter Memo → Scene Architecture / scene-realization-composition.v2
+→ scene-craft-tasks + selected Card Context → Draft ExternalEffect → located Craft Review
+→ diagnosed-span Revision → ReReview preservation → candidate comparison → existing gates
+→ Book Acceptance → read-only effect/receipt/accepted-manuscript trace
+```
+
+Plan, Intent and Memo must retain the same strategy. Draft admission checks exact selected
+Card versions in the frozen Context. Only adopted mechanisms reach its realization task;
+the whole catalog is never injected. Capability Pack, Context, Provider entitlement/token/
+cost admission, Kernel intent/receipt/reconciliation and Book acceptance boundaries remain
+in force. Previously frozen plans without Craft retain their earlier realization contract.
+
+Review checks each intended effect as `ACHIEVED`, `UNCERTAIN` or `FAILED` with literal Unicode
+spans inside the selected scene. It also checks misuse, overuse, artificiality, pacing damage,
+voice/POV violations, nearby repetition, unintended exposition and preservation damage.
+Model judgments are labeled as such; aesthetic preferences cannot become deterministic
+blockers. Existing actionable diagnoses supply repair goals, preservation and acceptance
+criteria. Craft repair uses ordered edits confined to diagnosed spans and reconstructs
+all other prose unchanged. ReReview checks Canon, voice, knowledge, POV, causality, active
+plan and previously satisfied Craft; unresolved or regressed preservation cannot be erased
+by a higher score. Quality, Canon and Book acceptance still make their own decisions.
+
+The Chapter workspace's `craft_trace` projects frozen strategies, prose candidates,
+review spans, repair edits, resolution/preservation checks, comparison and accepted lineage.
+Each effect observation identifies exact mechanism/use/scene, candidate/text hash,
+Provider evidence and review evidence class. Declared affinity is separate from observed
+scene/genre metadata. No effectiveness score or synthetic reader result is produced.
+Knowledge trace retains source/approval/planning/delivery lineage through existing queries.
+
+The original controlled corpus covers wuxia combat, xuanhuan power display, attraction,
+mystery, emotion, humor, setting description and chapter hooks. Baseline, guided, misuse
+and repaired fixtures verify input delivery, localization, edit boundaries, preservation
+contracts and retry identity. These are scripted engineering controls. Independent semantic
+accuracy, real reader effect, long-form variation and production reliability require a
+separate credentialed and budgeted qualification campaign.
+
+| Family | Original mechanisms |
+| --- | --- |
+| ATTENTION | 注意力因由接力 (`attention-relay`)；物件意义递进 (`object-escalation`) |
+| ACTION | 动作因果接力 (`action-causal-relay`)；空间锚点约束 (`spatial-anchor`)；攻防回应代价 (`exchange-response-cost`)；招式目的与破局 (`tactical-purpose-break`) |
+| WUXIA_XUANHUAN | 实力差距的间接尺度 (`indirect-mastery`)；武学意图的可见后果 (`martial-intent-consequence`)；力量代价的余影 (`power-cost-shadow`) |
+| DIALOGUE | 潜台词压力 (`subtext-pressure`)；答非所问的受压选择 (`answer-adjacent`)；对话权力换手 (`dialogue-power-transfer`) |
+| CHARACTERIZATION | 行为替代性格说明 (`behavior-inference`)；受限选择显价值 (`choice-exposes-value`)；他人反应折射人物 (`social-refraction`) |
+| EMOTION | 情绪残留 (`emotional-residue`)；压抑与释放 (`restraint-release`) |
+| SUSPENSE | 有进展的延迟满足 (`delayed-satisfaction`)；信息差驱动预期 (`information-asymmetry`)；可追踪的延迟答案 (`answer-delay`) |
+| REVEAL | 可回溯的错误解释 (`plausible-misreading`)；分层揭示 (`progressive-reveal`)；结果先行解释后至 (`result-before-cause`) |
+| PAYOFF | 承诺推进兑现 (`setup-progress-payoff`)；伏笔回收 (`seed-recovery`)；爽点结算 (`satisfaction-settlement`)；认知重组 (`cognitive-reframe`) |
+| HUMOR | 有依据的预期违背 (`earned-expectation-turn`)；意义改变的回调 (`meaningful-callback`)；郑重处理微小反差 (`deadpan-contrast`) |
+| SCENE | 场景价值位移 (`scene-value-turn`)；入场升级转折离场 (`entry-escalation-exit`) |
+| PACING | 压缩与扩写分配 (`duration-allocation`)；加速后的功能停顿 (`acceleration-pause`) |
+| DESCRIPTION | 功能性细节 (`functional-detail`)；POV选择性描写 (`pov-filtered-description`) |
+| RELATIONSHIP | 试探越界回撤 (`boundary-test-retreat`)；共同风险与有限信任 (`shared-risk-bond`) |
+| SERIALIZATION | 未完成动作悬接 (`unfinished-action-hook`)；解决之后的新问题 (`new-question-hook`) |
+| PROSE | 长短句节拍 (`sentence-pulse`)；受控留白 (`intentional-gap`)；句段自然承接 (`paragraph-handoff`) |
 
 ## Creative execution and prose evidence
 

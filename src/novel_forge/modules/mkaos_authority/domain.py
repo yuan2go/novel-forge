@@ -122,6 +122,9 @@ class NarrativeIntelligenceNeed:
     semantic_families: tuple[str, ...] = ()
     required_card_asset_version_ids: tuple[str, ...] = ()
     condition_sources: Mapping[str, Any] = dataclass_field(default_factory=dict)
+    craft_context: Mapping[str, Any] = dataclass_field(default_factory=dict)
+    craft_policy: Mapping[str, Any] = dataclass_field(default_factory=dict)
+    recent_craft_usage: tuple[Mapping[str, Any], ...] = ()
 
     def __post_init__(self) -> None:
         scope = self.scope.strip().upper()
@@ -362,6 +365,9 @@ def validate_knowledge_candidate(payload: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, Mapping):
         raise KernelError("MKAOS_CANDIDATE_INVALID", "candidate must be an object")
     candidate = dict(payload)
+    if "craft_mechanism" in candidate:
+        from .craft import validate_craft_mechanism
+        candidate["craft_mechanism"] = validate_craft_mechanism(candidate["craft_mechanism"])
     if "applicability_contract" in candidate:
         validate_applicability_contract(candidate["applicability_contract"])
     if "usage_role" in candidate and candidate["usage_role"] not in USAGE_ROLES:
@@ -424,6 +430,9 @@ def select_narrative_intelligence(
 
     if limit < 1 or limit > 12:
         raise ValueError("Narrative Intelligence selection limit must be within 1..12")
+    from .craft_selection import craft_candidate_assessment, compose_craft_candidates, validate_craft_policy
+
+    craft_policy = validate_craft_policy(need.craft_policy)
     recent = {item.casefold() for item in need.recently_used_repetition_keys}
     required_ids = set(need.required_card_asset_version_ids)
     if len(required_ids) > limit:
@@ -477,8 +486,18 @@ def select_narrative_intelligence(
                 "applicability_assessment": assessment,
             })
             continue
+        craft_assessment = None
+        if normalized.get("craft_mechanism"):
+            craft_assessment = craft_candidate_assessment(
+                normalized["craft_mechanism"], context=need.craft_context,
+                recent_usage=need.recent_craft_usage, policy=craft_policy,
+            )
+            if craft_assessment["rejection_reason"] and (asset_version_id not in required_ids or craft_assessment["rejection_reason"] != "CRAFT_NO_CONTEXT_MATCH"):
+                rejected.append({"knowledge_card_asset_version_id": asset_version_id, "content_hash": content_hash, "reason": craft_assessment["rejection_reason"], "applicability_assessment": assessment, "craft_assessment": craft_assessment})
+                continue
+            assessment = {**assessment, "status": "UNKNOWN" if assessment["status"] == "UNKNOWN" else "CONDITIONAL", "craft_applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"}
         repetition_key = normalized["repetition_key"]
-        if repetition_key.casefold() in recent and assessment["usage_role"] == "INSPIRATION" and asset_version_id not in required_ids:
+        if not craft_assessment and repetition_key.casefold() in recent and assessment["usage_role"] == "INSPIRATION" and asset_version_id not in required_ids:
             rejected.append(
                 {
                     "knowledge_card_asset_version_id": asset_version_id,
@@ -517,6 +536,9 @@ def select_narrative_intelligence(
         if overlap:
             score += min(5, len(overlap))
             reasons.append(f"TERM_OVERLAP:{','.join(sorted(overlap)[:5])}")
+        if craft_assessment is not None:
+            score = craft_assessment["score"] + (1 if asset_version_id in required_ids else 0)
+            reasons = craft_assessment["match_reasons"]
         if score == 0 and not explicit_family:
             score = 1
             reasons.append("LEGACY_ABSTRACT_CARD_FALLBACK")
@@ -549,6 +571,7 @@ def select_narrative_intelligence(
                 "usage_role": assessment["usage_role"],
                 "applicability_assessment": assessment,
                 "selected_content": normalized,
+                **({"craft_assessment": craft_assessment} if craft_assessment is not None else {}),
             }
         )
     unavailable = required_ids - {item["knowledge_card_asset_version_id"] for item in ranked}
@@ -562,21 +585,15 @@ def select_narrative_intelligence(
             str(item["knowledge_card_asset_version_id"]),
         )
     )
-    selected = ranked[:limit]
-    for item in ranked[limit:]:
-        rejected.append(
-            {
-                "knowledge_card_asset_version_id": str(
-                    item["knowledge_card_asset_version_id"]
-                ),
-                "reason": "NARRATIVE_BANDWIDTH_LIMIT",
-                "applicability_assessment": item["applicability_assessment"],
-            }
-        )
+    selected, composition_rejected = compose_craft_candidates(
+        ranked, limit=limit, required_ids=required_ids, policy=craft_policy,
+    )
+    rejected.extend(composition_rejected)
     result: dict[str, Any] = {
         "schema_version": "mkaos-narrative-intelligence-selection.v1",
         "policy_version": NARRATIVE_INTELLIGENCE_POLICY_VERSION,
         "need": need.to_dict(),
+        **({"craft_policy": craft_policy} if any(item.get("content", {}).get("abstract_content", {}).get("craft_mechanism") for item in cards) else {}),
         "selected": selected,
         "rejected": sorted(
             rejected,
@@ -792,7 +809,7 @@ def _normalized_intelligence_content(abstract: Mapping[str, Any]) -> dict[str, A
             for key in (
                 "applicability_contract", "preconditions", "exceptions", "misuse_risks",
                 "epistemic_status", "evidence_class", "verification_basis", "usage_role",
-                "source_finding_codes",
+                "source_finding_codes", "craft_mechanism",
             )
             if key in abstract
         },

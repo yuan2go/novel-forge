@@ -110,6 +110,19 @@ def _rows(cursor) -> list[dict[str, Any]]:
             if translation.get("knowledge_card_asset_version_id") == row["knowledge_card_asset_version_id"]:
                 row["usage_role"] = translation["usage_role"]
                 row["knowledge_translation"] = translation
+                if row.get("external_effect_id") and row.get("external_receipt_ids"):
+                    from .craft_selection import craft_pattern_signature
+                    chapter = int((row.get("narrative_position") or {}).get("chapter") or 0)
+                    row["craft_usage"] = [{
+                        "mechanism_id": use["mechanism_id"], "mechanism_version": use["mechanism_version"],
+                        "pattern_signature": craft_pattern_signature(use["mechanism"]),
+                        "family": use["mechanism"]["family"], "use_id": use["use_id"], "scene_id": use["scene_id"], "role": use["role"],
+                        "chapter": chapter, "knowledge_card_asset_version_id": row["knowledge_card_asset_version_id"],
+                        "content_hash": row["knowledge_card_content_hash"], "external_effect_id": row["external_effect_id"],
+                        "external_receipt_ids": row["external_receipt_ids"], "result_asset_version_id": row.get("result_asset_version_id"),
+                        "delivery_evidence_class": row.get("delivery_evidence_class"), "craft_strategy_digest": summary.get("craft_strategy_digest"),
+                        "evidence_ceiling": "DELIVERY_OBSERVATION_NOT_READER_EFFECT",
+                    } for use in summary.get("craft_uses") or []]
     return rows
 
 

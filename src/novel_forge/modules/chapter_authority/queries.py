@@ -407,6 +407,14 @@ class ChapterAuthorityQuery:
                 "status": "EVIDENCE_INCOMPLETE_OR_CONFLICTING", "code": error.code,
                 "message": str(error),
             }
+        from novel_forge.modules.review.craft import craft_trace_projection
+        try:
+            workspace["craft_trace"] = craft_trace_projection(workspace)
+        except KernelError as error:
+            workspace["craft_trace"] = {
+                "status": "EVIDENCE_INCOMPLETE_OR_CONFLICTING", "code": error.code,
+                "message": str(error),
+            }
         return workspace
 
     def require_operation_control_state(

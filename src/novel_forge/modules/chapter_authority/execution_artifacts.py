@@ -126,6 +126,9 @@ def validate_chapter_execution_intent(
             ),
             normalized.get("scene_plans") or (),
         )
+    if "craft_strategy" in normalized:
+        from novel_forge.modules.mkaos_authority.craft_selection import validate_craft_strategy
+        validate_craft_strategy(normalized["craft_strategy"], scenes=normalized.get("scene_plans", []))
     return dict(intent)
 
 
@@ -163,6 +166,8 @@ def validate_chapter_memo(
             "CHAPTER_MEMO_FINGERPRINT_INVALID",
             "ChapterMemo content differs from its immutable fingerprint",
         )
+    if normalized.get("craft_strategy") != validated_intent.get("craft_strategy"):
+        raise KernelError("CHAPTER_MEMO_CRAFT_DRIFT", "Memo must retain the frozen planning Craft strategy")
     expected_scene_ids = {
         str(item.get("scene_id") or "")
         for item in validated_intent.get("scene_plans") or ()
@@ -525,6 +530,9 @@ def build_chapter_execution_intent(
         "chapter_mission": mission,
         "created_by_operation_id": operation_id,
     }
+    if "craft_strategy" in chapter_plan:
+        from novel_forge.modules.mkaos_authority.craft_selection import validate_craft_strategy
+        intent["craft_strategy"] = validate_craft_strategy(chapter_plan["craft_strategy"], scenes=scenes)
     intent["intent_fingerprint"] = _hash(intent)
     return intent
 
@@ -690,6 +698,9 @@ def qualify_chapter_memo(
     if "creative_guidance" in result:
         memo["creative_guidance"] = dict(result["creative_guidance"])
         memo["creative_contract_version"] = "creative-memo.v1"
+    if "craft_strategy" in validated_intent:
+        from copy import deepcopy
+        memo["craft_strategy"] = deepcopy(validated_intent["craft_strategy"])
     memo["memo_fingerprint"] = _hash(memo)
     return validate_chapter_memo(
         memo,

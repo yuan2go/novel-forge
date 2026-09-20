@@ -28,10 +28,13 @@ def apply_revision_result(
             or review.get("target_text_hash") != prose_hash(str(draft.get("text") or ""))):
             raise KernelError("REVISION_DIAGNOSIS_STALE", "revision must consume diagnostics for its exact source candidate and Context")
     targeted = {}
-    if review.get("cross_chapter_window"):
+    if review.get("cross_chapter_window") or review.get("craft_targets"):
         from novel_forge.modules.review.cross_chapter import apply_targeted_edits
         targeted = apply_targeted_edits(draft=draft, review=review, result=result)
-    text = str(result.get("text") or "").strip()
+    if review.get("craft_targets"):
+        from novel_forge.modules.review.craft import craft_revision_contract
+        targeted["craft_revision_contract"] = craft_revision_contract(draft, review)
+    text = str(result.get("text") or "") if targeted else str(result.get("text") or "").strip()
     resolved = sorted({str(item) for item in result.get("resolved_issue_codes", []) if str(item).strip()})
     open_blocking = {
         str(item.get("code") or "")

@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
 from novel_forge.api.models import (
+    AuthorityCoreCraftAuthorRequest,
     AuthorityMkaosKnowledgeApprovalRequest,
     AuthorityMkaosKnowledgeCandidateRequest,
     AuthorityMkaosKnowledgePackRequest,
@@ -26,6 +27,29 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(tags=["mkaos-authority"])
     application = ctx.services.mkaos_authority_application
     query = ctx.services.mkaos_authority_query
+
+    @router.get("/product/mkaos/craft-catalog")
+    def craft_catalog(project_id: str) -> dict[str, Any]:
+        _authorize("mkaos.authority.query", project_id)
+        from novel_forge.modules.mkaos_authority.craft import core_catalog, core_catalog_hash
+        return {"schema_version": "narrative-craft-catalog.v1", "catalog_hash": core_catalog_hash(),
+                "mechanisms": core_catalog(), "activation": "EXPLICIT_CANDIDATE_AND_APPROVAL_REQUIRED",
+                "evidence_ceiling": "ORIGINAL_HYPOTHESES_NOT_CREATIVE_QUALITY"}
+
+    @router.post("/product/mkaos/craft-candidates", status_code=202)
+    def author_core_craft(request: AuthorityCoreCraftAuthorRequest) -> dict[str, Any]:
+        principal = _authorize("mkaos.authority.execute", request.project_id)
+        from novel_forge.modules.mkaos_authority.craft_authoring import AuthorCoreCraftCommand
+        try:
+            return application.admit_core_craft(AuthorCoreCraftCommand(
+                project_id=request.project_id, workspace_id=request.workspace_id,
+                mechanism_id=request.mechanism_id, catalog_hash=request.catalog_hash,
+                supersedes_card_asset_version_id=request.supersedes_card_asset_version_id,
+                actor_id=principal.principal_id, idempotency_key=request.idempotency_key,
+                trace_id=request.trace_id or f"trace:craft:{request.idempotency_key}",
+                correlation_id=request.correlation_id or f"correlation:craft:{request.idempotency_key}"), principal=principal)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
 
     @router.post("/product/mkaos/knowledge-candidates", status_code=202)
     def commit_candidate(

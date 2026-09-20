@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260920_0137_opening_delete_fence",
+  "migration_head": "20260920_0138_narrative_craft_origin",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -7891,6 +7891,176 @@
       "qualification_state": "EXECUTABLE",
       "qualification_run_ids": [],
       "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING"
+    },
+    {
+      "concept": "narrative-craft-intelligence",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "MKAOS Knowledge governance, native Planning, Chapter Review and Revision; Book owns acceptance",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/api/routers/mkaos_authority.py",
+          "symbol": "create_router"
+        },
+        {
+          "path": "src/novel_forge/cli/craft.py",
+          "symbol": "run_craft_command"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/execution.py",
+          "symbol": "PostgresContentIntelligenceExecutionPort"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/application.py",
+          "symbol": "MkaosAuthorityApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "symbol": "StoryPlanningGenerationApplication"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft.py",
+          "symbol": "validate_craft_mechanism"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+          "symbol": "build_craft_strategy"
+        },
+        {
+          "path": "src/novel_forge/modules/review/craft.py",
+          "symbol": "validate_craft_checks"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_authoring.py",
+          "symbol": "AuthorCoreCraftCommand"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/definitions.py",
+          "symbol": "mkaos_authority_definitions"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "governed Craft candidate/Card identity and versions",
+          "frozen planning use-site strategy",
+          "located review and revision observations"
+        ],
+        "write_rule": "MKAOS commits knowledge; native Planning commits active plans; Chapter appends candidates and diagnoses; existing Book acceptance commits accepted Canon/state. Craft owns no separate state machine or accepted truth.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/mkaos_authority/craft_authoring.py",
+            "symbol": "execute_core_craft_fenced"
+          },
+          {
+            "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+            "symbol": "_planning_narrative_intelligence_need"
+          },
+          {
+            "path": "src/novel_forge/modules/chapter_authority/craft_execution.py",
+            "symbol": "require_craft_delivery"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/application.py",
+          "symbol": "MkaosAuthorityApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/production_preparation/service.py",
+          "symbol": "ProductionPreparationService"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+          "symbol": "_DraftHandler"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/mkaos_authority_repositories.py",
+          "symbol": "MkaosAuthorityRepository"
+        },
+        {
+          "path": "src/novel_forge/storage/authority_uow.py",
+          "symbol": "AuthorityUnitOfWork"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260920_0138_narrative_craft_origin.py",
+          "id": "20260920_0138_narrative_craft_origin",
+          "locator": "MIGRATION_ID = \"20260920_0138_narrative_craft_origin\""
+        }
+      ],
+      "external_effects": {
+        "mode": "INDIRECT",
+        "rule": "Native Source/Planning/Chapter Provider effects retain Kernel intent/receipt, admission and unknown-outcome reconciliation. Original catalog authoring itself performs no external I/O.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/source_import/execution.py",
+            "symbol": "PostgresContentIntelligenceExecutionPort"
+          },
+          {
+            "path": "src/novel_forge/modules/chapter_authority/model_effects.py",
+            "symbol": "ExternalEffectChapterModelPort"
+          },
+          {
+            "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+            "symbol": "_planning_narrative_intelligence_need"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "source-import-and-knowledge",
+        "context-and-retrieval",
+        "external-effect-provider-control"
+      ],
+      "downstream_consumers": [
+        "chapter-production-saga",
+        "reader-and-followup-evidence"
+      ],
+      "tests": [
+        {
+          "path": "tests/unit/test_craft_selection.py",
+          "symbol": "test_governed_catalog_retrieval_is_bounded_replay_stable_and_retains_exact_content"
+        },
+        {
+          "path": "tests/unit/test_craft_execution.py",
+          "symbol": "test_adopted_strategy_reaches_memo_and_draft_task_without_catalog_injection"
+        },
+        {
+          "path": "tests/unit/test_narrative_craft_review.py",
+          "symbol": "test_original_controls_preserve_evidence_through_review_targeted_revision_and_rereview"
+        },
+        {
+          "path": "tests/integration/test_narrative_craft_authoring_postgres.py",
+          "symbol": "test_original_candidate_separate_exact_approval_query_and_replay"
+        },
+        {
+          "path": "tests/integration/test_craft_planning_postgres.py",
+          "symbol": "test_pg_frozen_selection_production_planning_handler_derives_exact_scene_strategy"
+        },
+        {
+          "path": "tests/integration/test_narrative_craft_chapter_postgres.py",
+          "symbol": "test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_receipt_replay"
+        },
+        {
+          "path": "tests/integration/test_craft_discovery_postgres.py",
+          "symbol": "test_source_craft_discovery_uses_native_effect_observation_governance_and_exact_replay"
+        },
+        {
+          "path": "tests/integration/test_narrative_craft_migration_upgrade_postgres.py",
+          "symbol": "test_craft_origin_upgrade_preserves_legacy_source_candidates_and_enforces_new_origin"
+        }
+      ],
+      "qualification_state": "EXECUTABLE",
+      "qualification_run_ids": [],
+      "proof_ceiling": "SCRIPTED_POSTGRESQL_ENGINEERING_ONLY; NO_REAL_PROVIDER_CREATIVE_OR_PRODUCTION_PROOF"
     }
   ],
   "negative_boundaries": [
@@ -8029,7 +8199,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:6e2a6693fc0f5274bc3eb54ae836475c687576c5fff36c379fe55e605793ff84"
+    "implementation_tree_sha": "sha256:c27722153c47d17fe1a5f3b7d0b3a254563c792b046699b9d90ba894f4c3afc5"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

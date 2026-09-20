@@ -1149,7 +1149,9 @@ class PostgresContentIntelligenceExecutionPort:
         if not observation or not observation.get("findings"):
             raise ValueError("MKAOS execution requires a supported nonempty Observation")
         from .execution_contracts import grounded_knowledge_output_schema
+        from .craft_discovery import CRAFT_DISCOVERY_POLICY, craft_discovery_schema
         grounded = any("certainty" in f for f in observation["findings"])
+        craft_discovery = abstraction_policy_version == CRAFT_DISCOVERY_POLICY
         methodology = self.methodology_registry.require("anti-copy-abstraction")
         spec = _ExecutionSpec(
             kind="mkaos",
@@ -1172,6 +1174,10 @@ class PostgresContentIntelligenceExecutionPort:
                 "observation_hash": _hash(observation),
                 "abstraction_policy_version": abstraction_policy_version,
                 "evidence_manifest_hash": _evidence_manifest_hash(evidence_spans),
+                **({"craft_discovery_contract": {
+                    "schema_version": "narrative-craft-discovery.v1",
+                    "instruction": "Abstract one conditional, transferable Craft hypothesis supported by this Observation. Preserve prerequisites, contraindications, failure modes and uncertainty. Do not reproduce names, settings, distinctive scenes, event sequences or expression. Bind only this Observation, claim no editorial, model-validation or reader-effect evidence, and propose no Canon or active plan changes. Governance approval is separate from discovery; similar candidates require operator comparison before approval.",
+                }} if craft_discovery else {}),
                 **({"abstraction_contract": {
                     "version": "knowledge-grounded-abstraction.v2",
                     "instruction": "Retain source-supported prerequisites, applicability, exceptions, failure conditions, misuse risks and uncertainty. Cite exact supplied finding codes. Do not strengthen epistemic claims, invent absent mechanisms or omit conditions to universalize a rule.",
@@ -1185,7 +1191,7 @@ class PostgresContentIntelligenceExecutionPort:
                 "source_expression_available": False,
                 "generation_context_allowed": False,
             },
-            output_schema=grounded_knowledge_output_schema() if grounded else content_intelligence_output_schema(MKAOS_STAGE),
+            output_schema=craft_discovery_schema(grounded=grounded, observation_id=observation_asset_version_id) if craft_discovery else grounded_knowledge_output_schema() if grounded else content_intelligence_output_schema(MKAOS_STAGE),
         )
         execution = self._execute(worker=worker, spec=spec)
         candidate = validate_content_intelligence_output(

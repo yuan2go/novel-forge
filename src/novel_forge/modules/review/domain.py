@@ -20,6 +20,7 @@ def evaluate_review_result(
     knowledge_targets: list[dict[str, Any]] | None = None,
     cross_chapter_window: dict[str, Any] | None = None,
     prior_review: dict[str, Any] | None = None,
+    craft_targets: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     if not project_id or not target_asset_version_id or not context_bundle_version_id:
         raise KernelError("REVIEW_INPUT_INVALID", "project, target and context versions are required")
@@ -39,6 +40,8 @@ def evaluate_review_result(
         validate_window(cross_chapter_window)
         if not actionable:
             raise KernelError("REVIEW_DIAGNOSIS_INCOMPLETE", "cross-chapter review requires actionable diagnostics")
+    if craft_targets and not actionable:
+        raise KernelError("CRAFT_REVIEW_DIAGNOSIS_REQUIRED", "Craft review requires actionable diagnostics")
     if actionable and prose_text is None:
         raise KernelError("REVIEW_SOURCE_REQUIRED", "actionable review requires exact candidate prose")
     normalized: list[dict[str, Any]] = []
@@ -95,7 +98,14 @@ def evaluate_review_result(
     )
     if any(item["status"] == "MISAPPLIED" for item in knowledge_checks) and decision == "PASSED":
         decision = "NEEDS_REVISION"
+    from .craft import CRAFT_REVIEW_CONTRACT, validate_craft_checks
+    craft_checks = validate_craft_checks(
+        checks=result.get("craft_checks", []), targets=list(craft_targets or []), issues=normalized,
+        text=str(prose_text or ""), target_asset_version_id=target_asset_version_id,
+        real_model_call=provider_evidence.get("real_model_call") is True,
+    )
     return {
+        **({"craft_review_contract": CRAFT_REVIEW_CONTRACT, "craft_targets": craft_targets, "craft_checks": craft_checks} if craft_targets else {}),
         **({"cross_chapter_window": cross_chapter_window,
             "cross_chapter_coverage": coverage_report(cross_chapter_window)} if cross_chapter_window is not None else {}),
         "report_type": "ReviewReport",
@@ -129,6 +139,10 @@ def evaluate_rereview_result(
     provider_evidence: dict[str, Any],
     knowledge_targets: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    from .craft import craft_review_targets, same_frozen_targets
+    current_craft_targets = craft_review_targets(revision)
+    if not same_frozen_targets(current_craft_targets, initial_review.get("craft_targets") or []):
+        raise KernelError("CRAFT_REVISION_SELECTION_CHANGED", "rereview cannot replace frozen Craft targets")
     reviewed = evaluate_review_result(
         project_id=project_id,
         target_asset_version_id=revision_version_id,
@@ -140,7 +154,12 @@ def evaluate_rereview_result(
         knowledge_targets=(knowledge_targets if knowledge_targets is not None else initial_review.get("knowledge_targets", [])),
         cross_chapter_window=initial_review.get("cross_chapter_window"),
         prior_review=initial_review,
+        craft_targets=current_craft_targets,
     )
+    from .craft import craft_rereview_preservation
+    craft_preservation = craft_rereview_preservation(result, initial_review, reviewed, str(revision.get("text") or ""))
+    if craft_preservation.get("craft_preservation_status", "PRESERVED") != "PRESERVED":
+        result = {**result, "resolution_checks": [{**check, "preservation": craft_preservation["craft_preservation_status"]} for check in result["resolution_checks"]]}
     if initial_review.get("cross_chapter_window"):
         from .cross_chapter import resolution_checks
         result = {**result, "resolution_checks": resolution_checks(result, initial_review, str(revision.get("text") or ""))}
@@ -194,6 +213,7 @@ def evaluate_rereview_result(
     after_score = float(reviewed["score"])
     return {
         **reviewed,
+        **craft_preservation,
         "report_type": "ReReviewReport",
         "decision": decision,
         "original_draft_version_id": original_draft_version_id,

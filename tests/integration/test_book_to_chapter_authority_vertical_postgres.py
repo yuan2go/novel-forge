@@ -1502,6 +1502,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         candidates: list[dict[str, object]],
         *,
         canonical_execution: bool = False,
+        plan_transform=None,
     ) -> dict[int, dict[str, object]]:
         first = next(
             dict(item) for item in candidates if item["asset_type"] == "chapter_plan"
@@ -1591,6 +1592,8 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     "summary": "The protagonist is publicly committed."
                 },
             }
+            if plan_transform is not None:
+                first_content = plan_transform(first_content)
             first_hash = (
                 "sha256:"
                 + hashlib.sha256(
@@ -1662,6 +1665,8 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     },
                 }
             )
+        if plan_transform is not None:
+            second_content = plan_transform(second_content)
         second_hash = (
             "sha256:"
             + hashlib.sha256(

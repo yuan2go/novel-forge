@@ -472,7 +472,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         intent = {key: source[key] for key in (
             "project_id", "chapter", "contract_version", "intent_fingerprint", "source_chapter_plan",
             "accepted_boundary", "chapter_objective", "required_arc_contributions",
-            "previous_ending", "scene_plans", "chapter_mission", "required_beats",
+            "previous_ending", "scene_plans", "chapter_mission", "required_beats", "craft_strategy",
         ) if key in source}
         return _task(stage, frozen_intent=without_private_world(intent), authority="CREATIVE_SUGGESTION_ONLY",
                      source_layers={"accepted_facts": "REFERENCED_BY_ACCEPTED_BOUNDARY",
@@ -490,12 +490,14 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
                 "guidance": deepcopy((inputs.get("chapter_memo") or {}).get("creative_guidance") or {}),
                 "scene_directives": deepcopy((inputs.get("chapter_memo") or {}).get("scene_directives") or []),
                 "source_memo_fingerprint": str((inputs.get("chapter_memo") or {}).get("memo_fingerprint") or ""),
+                **({"craft_strategy_digest": inputs["chapter_memo"]["craft_strategy"]["strategy_digest"]} if (inputs.get("chapter_memo") or {}).get("craft_strategy") else {}),
                 "authority": "CREATIVE_SUGGESTION_ONLY",
             },
             realization_contract=deepcopy(inputs.get("realization_contract")),
         )
     if stage == "review":
-        return _task(stage, **_cross_chapter_task(inputs), chapter=_prose(inputs.get("draft")), creative_execution=deepcopy((inputs.get("draft") or {}).get("creative_execution") or {}), knowledge_review_targets=deepcopy(inputs.get("knowledge_review_targets") or []), author_design_review_targets=deepcopy(inputs.get("author_design_review_targets") or {}))
+        from novel_forge.modules.review.craft import craft_provider_task
+        return _task(stage, **craft_provider_task(inputs.get("draft") or {}), **_cross_chapter_task(inputs), chapter=_prose(inputs.get("draft")), creative_execution=deepcopy((inputs.get("draft") or {}).get("creative_execution") or {}), knowledge_review_targets=deepcopy(inputs.get("knowledge_review_targets") or []), author_design_review_targets=deepcopy(inputs.get("author_design_review_targets") or {}))
     if stage == "revision":
         source = dict(inputs.get("draft") or {})
         payload: dict[str, Any] = {"chapter": _prose(source), "creative_execution": deepcopy(source.get("creative_execution") or {}), "knowledge_checks": deepcopy((inputs.get("review") or {}).get("knowledge_checks") or [])}
@@ -527,8 +529,14 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
                 "instructions": "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. Return text equal to applying those edits only. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition.",
             }
             payload["chapter"]["text"] = str(source.get("text") or "")
+        if review.get("craft_targets"):
+            from novel_forge.modules.review.craft import craft_revision_contract
+            payload["craft_targeted_repair"] = craft_revision_contract(source, review)
+            payload["craft_checks"] = deepcopy(review["craft_checks"])
+            payload["chapter"]["text"] = str(source.get("text") or "")
         return _task(stage, **payload)
     if stage == "rereview":
+        from novel_forge.modules.review.craft import craft_provider_task
         from novel_forge.modules.review.diagnostics import open_diagnoses
         revision = inputs.get("revision") or inputs.get("draft")
         issues = [
@@ -537,6 +545,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         ]
         return _task(
             stage,
+            **craft_provider_task(revision or {}, inputs.get("review") or {}),
             **_cross_chapter_task(inputs),
             revised_chapter=_prose(revision),
             creative_execution=deepcopy((revision or {}).get("creative_execution") or {}),

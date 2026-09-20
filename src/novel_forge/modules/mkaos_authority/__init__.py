@@ -5,6 +5,7 @@ from .application import (
     ExperimentalKnowledgeApprovalPolicy,
     MkaosAuthorityApplication,
 )
+from .craft_authoring import AuthorCoreCraftCommand
 from .domain import (
     KnowledgeEvidenceSpan,
     KnowledgePackSelection,
@@ -16,6 +17,7 @@ from .scheduler import MkaosAuthorityScheduler
 
 __all__ = [
     "ApproveKnowledgeCandidateCommand",
+    "AuthorCoreCraftCommand",
     "BuildKnowledgePackCommand",
     "CommitKnowledgeCandidateCommand",
     "ExperimentalKnowledgeApprovalPolicy",
