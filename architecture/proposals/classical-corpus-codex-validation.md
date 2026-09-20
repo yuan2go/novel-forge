@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `48e16cb250a5aa248657028ffc845806730556d3`
+Reality baseline: `15a9d53bf64e05641df85a4382990c87b5d88828`
 Baseline implementation identity:
-`sha256:d259bb8ee13071e2c656754d887dfd6e03e654121d55a0404dce9904f7e4c67f`
+`sha256:b51299a8868d8f3e7fdbf434f751daf104010484d11eefd10b44c6d583cfcc12`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "48e16cb250a5aa248657028ffc845806730556d3",
-    "implementation_tree_sha": "sha256:d259bb8ee13071e2c656754d887dfd6e03e654121d55a0404dce9904f7e4c67f"
+    "sha": "15a9d53bf64e05641df85a4382990c87b5d88828",
+    "implementation_tree_sha": "sha256:b51299a8868d8f3e7fdbf434f751daf104010484d11eefd10b44c6d583cfcc12"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -117,7 +117,9 @@ removed. G3/G4 below specify a proposed bounded real-Provider campaign, not obse
 results. Campaign sampling quotas and independent-input counts do not execute G3/G4
 or establish calibrated judges. Native Chapter generator sampling now preserves the
 original frozen task and approved producer contract in an isolated Kernel Saga; its
-ineligible samples and scripted recovery tests do not execute the four-arm campaign. World reference sampling can now evaluate a generator sample without formal World generation; this does not supply calibrated judges or real corpus consumption. The original Craft fixture corpus does not perform this campaign, establish
+ineligible samples and scripted recovery tests do not execute the four-arm campaign. World reference sampling can now evaluate a generator sample without formal World generation; this does not supply calibrated judges or real corpus consumption. Scoped Chapter reference outcomes now feed the native routing benchmark with separate
+label strata and protocol identities; no real reference observations exist from this WP.
+The original Craft fixture corpus does not perform this campaign, establish
 classical-text consumption, authorize model spend or supply independent editorial proof.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption

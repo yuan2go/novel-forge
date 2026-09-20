@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `93bdbed2136177e797250666b0c63ee0e0addba6`
+Reality baseline: `15a9d53bf64e05641df85a4382990c87b5d88828`
 Baseline implementation identity:
-`sha256:d6e4a91f778a82676f1b147ec0c32a1ea0359b75d83b1003e2c17f5f4aa6cec4`
+`sha256:b51299a8868d8f3e7fdbf434f751daf104010484d11eefd10b44c6d583cfcc12`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "93bdbed2136177e797250666b0c63ee0e0addba6",
-    "implementation_tree_sha": "sha256:d6e4a91f778a82676f1b147ec0c32a1ea0359b75d83b1003e2c17f5f4aa6cec4"
+    "sha": "15a9d53bf64e05641df85a4382990c87b5d88828",
+    "implementation_tree_sha": "sha256:b51299a8868d8f3e7fdbf434f751daf104010484d11eefd10b44c6d583cfcc12"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -149,7 +149,8 @@ does not add Digest generation, retention, retrieval generations or lifecycle cu
 Reference Review and ReReview retain the original Context and accepted frontier,
 read only the exact authorized sample, and bind their approved reviewer Pack artifacts.
 These input exceptions do not change memory ownership or implement Gates B–E.
-Gates B–E below remain proposed design,
+Reference-agreement routing reads immutable Quality evidence and changes no memory
+mutation, retention or retrieval owner. Gates B–E below remain proposed design,
 not executable contracts or proven invariants; their stated bounds require qualification.
 
 ## 7. Gate B — Structured Narrative Digest
