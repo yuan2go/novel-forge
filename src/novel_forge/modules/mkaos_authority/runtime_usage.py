@@ -134,9 +134,9 @@ def list_runtime_usage(
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             f"""
-            -- WHY: Resolve scoped knowledge selection before expanding provider
-            -- inputs. Inlining lets the planner multiply context and receipt
-            -- work even for books that selected no external knowledge.
+            -- WHY: Fence selection and exact version lookups before JSON proof
+            -- checks. Flattened project-only joins can multiply unrelated manifest
+            -- assets under stale statistics and exhaust the query deadline.
             WITH selection AS MATERIALIZED ({_SELECTION})
             SELECT selection.project_id, selection.book_id,
                    selection.context_bundle_asset_version_id,
@@ -177,20 +177,27 @@ def list_runtime_usage(
                  WHERE input.value->>'artifact_type'='context_bundle'
                    AND input.value->>'asset_version_id'=selection.context_bundle_asset_version_id
                    AND input.value->>'content_hash'=selection.context_bundle_content_hash)
-            JOIN authority_asset_version materialization
-              ON materialization.asset_version_id=effect.request_payload #>> '{{_production_execution,capability_runtime,materialization_asset_version_id}}'
-             AND materialization.content_hash=effect.request_payload #>> '{{_production_execution,capability_runtime,materialization_content_hash}}'
-            JOIN authority_asset materialization_asset
-              ON materialization_asset.asset_id=materialization.asset_id
-             AND materialization_asset.project_id=selection.project_id
-             AND materialization_asset.asset_type='capability_materialization_manifest'
+            JOIN LATERAL (
+                SELECT version.asset_version_id, version.content_hash, version.content
+                FROM authority_asset_version version
+                JOIN authority_asset owner ON owner.asset_id=version.asset_id
+                WHERE version.asset_version_id=effect.request_payload #>> '{{_production_execution,capability_runtime,materialization_asset_version_id}}'
+                  AND version.content_hash=effect.request_payload #>> '{{_production_execution,capability_runtime,materialization_content_hash}}'
+                  AND owner.project_id=selection.project_id
+                  AND owner.asset_type='capability_materialization_manifest'
+                OFFSET 0
+            ) materialization ON TRUE
             CROSS JOIN LATERAL (SELECT COALESCE(materialization.content->'contract', materialization.content) AS content) materialized
-            JOIN authority_asset_version provider_admission
-              ON provider_admission.asset_version_id=effect.request_payload #>> '{{_production_execution,capability_runtime,provider_admission_asset_version_id}}'
-             AND provider_admission.content_hash=effect.request_payload #>> '{{_production_execution,capability_runtime,provider_admission_content_hash}}'
-            JOIN authority_asset admission_asset ON admission_asset.asset_id=provider_admission.asset_id
-             AND admission_asset.project_id=selection.project_id
-             AND admission_asset.asset_type='provider_request_admission_manifest'
+            JOIN LATERAL (
+                SELECT version.asset_version_id, version.content_hash, version.content
+                FROM authority_asset_version version
+                JOIN authority_asset owner ON owner.asset_id=version.asset_id
+                WHERE version.asset_version_id=effect.request_payload #>> '{{_production_execution,capability_runtime,provider_admission_asset_version_id}}'
+                  AND version.content_hash=effect.request_payload #>> '{{_production_execution,capability_runtime,provider_admission_content_hash}}'
+                  AND owner.project_id=selection.project_id
+                  AND owner.asset_type='provider_request_admission_manifest'
+                OFFSET 0
+            ) provider_admission ON TRUE
             JOIN LATERAL (SELECT COALESCE(provider_admission.content->'contract', provider_admission.content) AS content) admission
               ON admission.content->>'capability_materialization_asset_version_id'=materialization.asset_version_id
              AND admission.content->>'capability_materialization_content_hash'=materialization.content_hash
