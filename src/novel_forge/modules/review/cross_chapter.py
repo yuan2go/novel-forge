@@ -243,7 +243,7 @@ def apply_targeted_edits(
     if not isinstance(edits, list):
         raise KernelError(
             "REVISION_TARGETED_EDITS_REQUIRED",
-            "cross-chapter repair requires located edits",
+            "targeted repair requires located edits",
         )
     previous_end, pieces = 0, []
     for edit in edits:
@@ -283,10 +283,9 @@ def apply_targeted_edits(
         )
     return {
         "targeted_edits": deepcopy(edits),
-        "source_window_hash": review["cross_chapter_window"]["source_window_hash"],
-        "preservation_requirements": deepcopy(
-            review["cross_chapter_window"]["preservation_requirements"]
-        ),
+        **({"source_window_hash": review["cross_chapter_window"]["source_window_hash"],
+            "preservation_requirements": deepcopy(review["cross_chapter_window"]["preservation_requirements"])}
+           if review.get("cross_chapter_window") else {}),
     }
 
 

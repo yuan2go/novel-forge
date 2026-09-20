@@ -2,10 +2,42 @@
   "schema_version": "novel-forge.backend-qualification-manifest.v2",
   "migration_manifest": "architecture/manifests/migration-manifest.yaml",
   "pytest_collections": [
-    {"name": "architecture", "paths": ["tests/architecture"], "classification": "BACKEND_NON_POSTGRESQL", "complete_collection": true, "allow_skips": false},
-    {"name": "unit", "paths": ["tests/unit"], "classification": "BACKEND_NON_POSTGRESQL", "complete_collection": true, "allow_skips": false},
-    {"name": "acceptance", "paths": ["tests/acceptance"], "classification": "BACKEND_NON_POSTGRESQL", "complete_collection": true, "allow_skips": false},
-    {"name": "integration", "paths": ["tests/integration"], "classification": "POSTGRESQL_REQUIRED", "complete_collection": true, "allow_skips": false}
+    {
+      "name": "architecture",
+      "paths": [
+        "tests/architecture"
+      ],
+      "classification": "BACKEND_NON_POSTGRESQL",
+      "complete_collection": true,
+      "allow_skips": false
+    },
+    {
+      "name": "unit",
+      "paths": [
+        "tests/unit"
+      ],
+      "classification": "BACKEND_NON_POSTGRESQL",
+      "complete_collection": true,
+      "allow_skips": false
+    },
+    {
+      "name": "acceptance",
+      "paths": [
+        "tests/acceptance"
+      ],
+      "classification": "BACKEND_NON_POSTGRESQL",
+      "complete_collection": true,
+      "allow_skips": false
+    },
+    {
+      "name": "integration",
+      "paths": [
+        "tests/integration"
+      ],
+      "classification": "POSTGRESQL_REQUIRED",
+      "complete_collection": true,
+      "allow_skips": false
+    }
   ],
   "required_gates": [
     "source-preflight",
@@ -69,7 +101,8 @@
       "tests/integration/test_book_opening_workflow_upgrade_postgres.py",
       "tests/integration/test_book_projection_repair_upgrade_postgres.py",
       "tests/integration/test_source_analysis_dimension_upgrade_postgres.py",
-      "tests/integration/test_world_causal_migrations_postgres.py"
+      "tests/integration/test_world_causal_migrations_postgres.py",
+      "tests/integration/test_narrative_craft_migration_upgrade_postgres.py"
     ],
     "provider_hard_stop_and_callback": [
       "tests/unit/test_provider_token_admission.py",
@@ -119,6 +152,18 @@
       "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
       "tests/unit/test_provider_task_views.py",
       "tests/integration/test_capability_pack_runtime_snapshot_postgres.py"
+    ],
+    "narrative_craft_engineering": [
+      "tests/unit/test_narrative_craft_catalog.py",
+      "tests/unit/test_craft_selection.py",
+      "tests/unit/test_craft_execution.py",
+      "tests/unit/test_craft_discovery.py",
+      "tests/unit/test_narrative_craft_review.py",
+      "tests/integration/test_narrative_craft_authoring_postgres.py",
+      "tests/integration/test_narrative_craft_catalog_replay_postgres.py",
+      "tests/integration/test_craft_planning_postgres.py",
+      "tests/integration/test_narrative_craft_chapter_postgres.py",
+      "tests/integration/test_craft_discovery_postgres.py"
     ]
   },
   "proof_scope": {
@@ -148,7 +193,8 @@
       "reader-and-followup-evidence",
       "agent-runtime",
       "postgresql-persistence-and-migrations",
-      "retry-recovery-and-replay"
+      "retry-recovery-and-replay",
+      "narrative-craft-intelligence"
     ],
     "ceiling": "LOCAL_BACKEND_ENGINEERING",
     "does_not_establish": [

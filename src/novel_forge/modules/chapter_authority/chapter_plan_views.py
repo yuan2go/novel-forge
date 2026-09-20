@@ -41,7 +41,7 @@ LIST_FIELDS = frozenset({
     "obligation_actions", "required_arc_contributions",
 })
 KNOWLEDGE_PLAN_FIELDS = (
-    "knowledge_translations", "knowledge_translation_policy_version",
+    "knowledge_translations", "knowledge_translation_policy_version", "craft_strategy",
 )
 
 

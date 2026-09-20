@@ -306,6 +306,7 @@ def _planning_narrative_intelligence_need(
     selected_inputs: list[dict[str, Any]],
     production_profile: Mapping[str, Any],
     recent_repetition_keys: tuple[str, ...] = (),
+    recent_craft_usage: tuple[Mapping[str, Any], ...] = (),
 ) -> NarrativeIntelligenceNeed:
 
     sources: list[Any] = [
@@ -314,6 +315,7 @@ def _planning_narrative_intelligence_need(
         if isinstance(item.get("content"), Mapping)
     ]
     sources.extend((production_profile, dict(command.arc_working_set or {})))
+    craft_sources = _craft_context_sources([*sources, dict(command.narrative_realization or {})], chapter=int((command.narrative_realization or {}).get("chapter_number") or 0))
     stage = command.generator_operation_name
     scope = {
         **{name: "STORY" for name in FOUNDATION_GENERATORS},
@@ -445,12 +447,54 @@ def _planning_narrative_intelligence_need(
         required_card_asset_version_ids=_inherited_knowledge_versions(
             selected_inputs, chapter=int((command.narrative_realization or {}).get("chapter_number") or 0)
         ),
+        craft_context={
+            "task": [stage],
+            "chapter_function": list(_selection_terms(craft_sources, {"chapter_function", "primary_function", "objective", "purpose"})),
+            "scene_goal": list(_selection_terms(craft_sources, {"scene_goal", "scene_goals", "goal", "required_outcomes", "action", "decision", "consequence"})),
+            "reader_effect": list(_selection_terms(craft_sources, {"reader_effect", "reader_effect_tags", "intended_reader_effect", "reader_promise"})),
+            "conflict": list(_selection_terms(craft_sources, {"conflict", "conflict_tags", "conflict_type", "conflict_chain"})),
+            "pov": list(_selection_terms(craft_sources, {"point_of_view", "pov", "pov_character"})),
+            "characters": list(_selection_terms(craft_sources, {"character_id", "character_role", "character_goals", "core_desire", "core_fear", "motivation", "actor_ref"})),
+            "emotion": list(_selection_terms(craft_sources, {"emotional_curve", "emotion_curve", "emotion", "reader_emotional_curve", "target_emotion"})),
+            "information": list(_selection_terms(craft_sources, {"knowledge_boundaries", "knowledge_boundary", "information_reveals", "disclosures", "information_state"})),
+            "genre": list(_selection_terms(craft_sources, {"genre", "genre_tags"})),
+            "pacing": list(_selection_terms(craft_sources, {"pacing", "platform_rhythm", "pacing_profile"})),
+            "relationship": list(_selection_terms(craft_sources, {"relationships", "relationship_pairs", "relationship_state"})),
+            "obligations": list(_selection_terms(craft_sources, {"active_obligations", "obligation_actions", "required_arc_contributions", "setups", "payoffs"})),
+            "style": list(_selection_terms(craft_sources, {"style_constraints", "style_policy", "style_profile", "voice"})),
+            "chapter_number": int((command.narrative_realization or {}).get("chapter_number") or 0),
+        },
+        craft_policy=dict(production_profile.get("craft_budget_policy") or {}),
+        recent_craft_usage=recent_craft_usage,
         condition_sources={
             str(item["role"]): item
             for item in selected_inputs
             if item.get("role") and isinstance(item.get("content"), Mapping)
         },
     )
+
+
+def _craft_context_sources(sources: list[Any], *, chapter: int) -> list[Any]:
+    from novel_forge.modules.story_design_authority.author_input import without_author_private
+
+    excluded = {"original_examples", "voice_anchors", "raw_text", "raw_source_text", "source_text", "source_excerpt", "reference_text", "source_chunks", "chunk_text", "evidence_spans", "author_only", "private_planning"}
+    scoped = {"chapter_function_matrix", "chapter_schedule", "chapter_slices"}
+
+    def project(value: Any) -> Any:
+        if isinstance(value, Mapping):
+            result = {}
+            for key, item in value.items():
+                if key in excluded:
+                    continue
+                if key in scoped and chapter and isinstance(item, (list, tuple)):
+                    item = [row for row in item if not isinstance(row, Mapping) or int(row.get("chapter_number") or chapter) == chapter]
+                result[key] = project(item)
+            return result
+        if isinstance(value, (list, tuple)):
+            return [project(item) for item in value]
+        return value
+
+    return [project(without_author_private(source)) for source in sources]
 
 
 def _inherited_knowledge_versions(selected_inputs: list[dict[str, Any]], *, chapter: int) -> tuple[str, ...]:
@@ -4870,10 +4914,15 @@ class PostgresPlanningExecutionPreparer:
                 knowledge_access_policy=knowledge_access_policy,
             )
             return frozen_context, tuple(documents)
+        recent_craft_usage = []
+        if hasattr(self.mkaos, "list_runtime_usage"):
+            for usage in self.mkaos.list_runtime_usage(project_id=command.project_id, book_id=command.book_id, target_capability_id="prose.chapter.draft", limit=100):
+                recent_craft_usage.extend(usage.get("craft_usage") or [])
         need = _planning_narrative_intelligence_need(
             command=command,
             selected_inputs=selected,
             production_profile=production_profile,
+            recent_craft_usage=tuple(recent_craft_usage),
             recent_repetition_keys=_recent_activated_repetition_keys(
                 self.mkaos.list_planning_usage(
                     project_id=command.project_id,
@@ -5460,6 +5509,9 @@ class PostgresPlanningExecutionPreparer:
                     "PLANNING_NARRATIVE_INTELLIGENCE_DRIFT",
                     "Selected KnowledgeCard differs from its governed frozen version",
                 )
+            mechanism = (item.get("selected_content") or {}).get("craft_mechanism")
+            if mechanism is not None and mechanism != (document.content.get("abstract_content") or {}).get("craft_mechanism"):
+                raise KernelError("CRAFT_FROZEN_SELECTION_DRIFT", "Frozen Craft selection must retain the exact governed Card mechanism")
             documents.append(document)
             if selected_inputs is not None:
                 selected_inputs.append(

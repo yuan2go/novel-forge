@@ -178,7 +178,7 @@ class ProseTransport:
         return result
 
 
-def make_book(tmp_path, transport):
+def make_book(tmp_path, transport, *, prepare_plans=None):
     from tests.integration.capability_pack_postgres_support import (
         CapabilityPackPostgresHarness,
     )
@@ -250,8 +250,9 @@ def make_book(tmp_path, transport):
     candidates = list(
         chapter_support.PostgreSQLOnlyChapterSliceTests.release_evidence(project)
     )
+    plan_transform = prepare_plans(project, harness.workspace_id, candidates) if prepare_plans else None
     plans = helper._seed_two_chapter_plans(
-        project, candidates, canonical_execution=True
+        project, candidates, canonical_execution=True, plan_transform=plan_transform
     )
     versions = helper._seed_book_inputs(project, scope_already_seeded=True)
     profile_id = f"{project}:production-profile:v1"

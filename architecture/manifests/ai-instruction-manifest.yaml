@@ -56,7 +56,8 @@
         "src/novel_forge/modules/source_import/execution.py",
         "src/novel_forge/modules/story_planning_runtime/execution.py",
         "src/novel_forge/modules/chapter_authority/provider_views.py",
-        "src/novel_forge/modules/source_import/corpus_ingestion/narrative_contracts.py"
+        "src/novel_forge/modules/source_import/corpus_ingestion/narrative_contracts.py",
+        "src/novel_forge/modules/review/craft.py"
       ],
       "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
       "owner": "runtime-authorities",

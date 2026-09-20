@@ -12,8 +12,11 @@ MKAOS_APPROVE_HANDLER_KEY = "novel_forge.mkaos_authority.knowledge_approve"
 MKAOS_PACK_OPERATION = "mkaos.knowledge_pack.build"
 MKAOS_PACK_DEFINITION_VERSION = "1.0.1"
 MKAOS_PACK_HANDLER_KEY = "novel_forge.mkaos_authority.pack_build"
+MKAOS_CRAFT_AUTHOR_OPERATION = "mkaos.craft.original.author"
+MKAOS_CRAFT_AUTHOR_DEFINITION_VERSION = "1.0.0"
+MKAOS_CRAFT_AUTHOR_HANDLER_KEY = "novel_forge.mkaos_authority.craft_original_author"
 MKAOS_AUTHORITY_OPERATIONS = frozenset(
-    {MKAOS_CANDIDATE_OPERATION, MKAOS_APPROVE_OPERATION, MKAOS_PACK_OPERATION}
+    {MKAOS_CANDIDATE_OPERATION, MKAOS_APPROVE_OPERATION, MKAOS_PACK_OPERATION, MKAOS_CRAFT_AUTHOR_OPERATION}
 )
 
 
@@ -36,6 +39,31 @@ def mkaos_authority_definitions(
         "external_capabilities": [],
     }
     return (
+        {
+            **common,
+            "name": MKAOS_CRAFT_AUTHOR_OPERATION,
+            "definition_version": MKAOS_CRAFT_AUTHOR_DEFINITION_VERSION,
+            "command_schema": _schema("project_id", "workspace_id", "payload"),
+            "result_schema": _result_schema("knowledge_candidate_id", "asset_version_id"),
+            "handler_key": MKAOS_CRAFT_AUTHOR_HANDLER_KEY,
+            "handler_contract_version": "mkaos-craft-original-handler-v1",
+            "permissions": ["mkaos.authority.execute"],
+            "approval_policy": {"required": False, "policy_key": "repository-original-craft-candidate-v1"},
+            "idempotency_scope": "project:mkaos-craft-original",
+            "concurrency_key_template": "project:{project_id}:mkaos-candidate",
+            "timeout_policy": {"operation_timeout_seconds": 120},
+            "policy": {"execution_classification": "durable_job", "project_scope_required": True,
+                       "candidate_only": True, "exact_repository_catalog_required": True,
+                       "raw_source_expression_forbidden": True, "provider_evidence_claimed": False},
+            "completion_contract": {
+                "version": "mkaos.craft.original.author.completion.v1",
+                "required_asset_selectors": [{"selector": "knowledge_card_candidate",
+                    "output_key": "mkaos.knowledge.candidate", "role": "candidate",
+                    "lifecycle": "CANDIDATE", "eligibility": "PENDING_EVALUATION", "governance": "CLEAR"}],
+                "required_evidence": ["trace", "audit"],
+                "required_outbox_events": ["authority.mkaos.knowledge_candidate.committed"],
+            },
+        },
         {
             **common,
             "name": MKAOS_CANDIDATE_OPERATION,
@@ -209,6 +237,9 @@ def _result_schema(*required: str) -> dict[str, Any]:
 
 
 __all__ = [
+    "MKAOS_CRAFT_AUTHOR_OPERATION",
+    "MKAOS_CRAFT_AUTHOR_DEFINITION_VERSION",
+    "MKAOS_CRAFT_AUTHOR_HANDLER_KEY",
     "MKAOS_APPROVE_DEFINITION_VERSION",
     "MKAOS_APPROVE_HANDLER_KEY",
     "MKAOS_APPROVE_OPERATION",

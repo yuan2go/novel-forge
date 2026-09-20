@@ -140,6 +140,12 @@ def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):
                 for row in after["authority_source_document"]:
                     if "corpus_edition_id" not in historical_facts["authority_source_document"][0]:
                         assert row.pop("corpus_edition_id") is None
+                for row in after["authority_mkaos_knowledge_candidate"]:
+                    if "origin_kind" not in historical_facts["authority_mkaos_knowledge_candidate"][0]:
+                        assert row.pop("origin_kind") == "SOURCE_ABSTRACTION"
+                        assert row.pop("craft_mechanism_id") is None
+                        assert row.pop("craft_mechanism_version") is None
+                        assert row.pop("craft_mechanism_hash") is None
                 assert {key: after[key] for key in historical_facts} == historical_facts
                 assert all(
                     not value

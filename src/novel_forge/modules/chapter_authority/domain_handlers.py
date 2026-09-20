@@ -591,6 +591,7 @@ def normalize_review_result(
     knowledge_targets: list[dict[str, Any]] | None = None,
     cross_chapter_window: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    from novel_forge.modules.review.craft import craft_review_targets
     return evaluate_review_result(
         project_id=project_id,
         target_asset_version_id=draft_asset_version_id,
@@ -601,6 +602,7 @@ def normalize_review_result(
         prose_text=str(draft.get("text") or ""),
         knowledge_targets=knowledge_targets,
         cross_chapter_window=cross_chapter_window,
+        craft_targets=craft_review_targets(draft),
     )
 
 

@@ -43,7 +43,7 @@ def knowledge_review_targets(context: dict[str, Any]) -> list[dict[str, Any]]:
             if projected:
                 target.update({key: projected[key] for key in (
                     "concept_name", "mechanism", "preconditions", "applicability", "exceptions",
-                    "failure_conditions", "misuse_risks", "review_checks", "translation",
+                    "failure_conditions", "misuse_risks", "review_checks", "translation", "craft_mechanism",
                 ) if key in projected})
                 translation = projected.get("translation") or {}
                 if translation and translation.get("knowledge_card_asset_version_id") != identity:
@@ -94,10 +94,13 @@ def validate_knowledge_checks(
         if status == "VERIFIED_IN_PROSE" and not check["conditions_checked"]:
             raise KernelError("REVIEW_KNOWLEDGE_CHECK_INVALID", "verified knowledge requires explicit mechanism conditions")
         hard = expected[identity].get("usage_role") == "CONSTRAINT"
-        promised = expected[identity].get("usage_role") == "MECHANISM" and bool(expected[identity].get("translation", {}).get("use_sites"))
+        promised = (expected[identity].get("usage_role") == "MECHANISM"
+                    and not expected[identity].get("craft_mechanism")
+                    and bool(expected[identity].get("translation", {}).get("use_sites")))
         if status == "MISAPPLIED" or ((hard or promised) and status in {"NOT_OBSERVED", "NOT_USED", "UNKNOWN"}):
             severities = {by_code[code]["severity"] for code in linked}
-            if not (severities & ({"blocking"} if hard else {"blocking", "major"})):
+            permitted = {"blocking"} if hard else {"blocking", "major", "minor"} if expected[identity].get("craft_mechanism") else {"blocking", "major"}
+            if not severities & permitted:
                 raise KernelError("REVIEW_KNOWLEDGE_DIAGNOSIS_REQUIRED", "misapplied knowledge or unresolved promised mechanism/constraint requires a located diagnosis")
         result.append({
             **check, "evidence": location,

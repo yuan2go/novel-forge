@@ -174,35 +174,135 @@ selection, exact Provider delivery, planning adoption, candidate checks and the 
 manuscript binding separately. The trace is a read-only projection of existing assets,
 effects and Book Acceptance. No use-success state or additional knowledge store is added.
 
-The comparison reads executable workflows, enabled prompt sections and postprocessors
-at [InkOS 0910483](https://github.com/Narcooo/inkos/tree/091048383f411eb99948a8764f42b6fd13006f9b)
-and [bishu-novel 5f074b5](https://github.com/alikon-art/DeterminFlow-Plugins/tree/5f074b5a887a7e74a61d00206abb99c107b786c2/plugins/bishu-novel).
-[DeterminFlow 49a5c92](https://github.com/alikon-art/DeterminFlow/tree/49a5c9273cc152446a32474c9ac577316074f8e8)
-is used only to resolve extension provisioning, workflow loading and enabled/scoped
-prompt assembly in `web_server.py` and [scoped prompt builder](https://github.com/alikon-art/DeterminFlow/blob/49a5c9273cc152446a32474c9ac577316074f8e8/src/prompts/sub_agent_prompts.py).
-These are design inputs, not runtime dependencies or Authority. No external source,
-prompt, resource or fiction expression is incorporated.
+Narrative Craft is a versioned specialization of governed MKAOS KnowledgeCards. The
+catalog and selection rules below are consumed by native Planning and Chapter execution;
+a declared Card, Prompt or Skill alone remains insufficient evidence of application.
 
-| External executable mechanism | Problem it addresses | Decision and native production consumer |
-|---|---|---|
-| Bishu [build workflow](https://github.com/alikon-art/DeterminFlow-Plugins/blob/5f074b5a887a7e74a61d00206abb99c107b786c2/plugins/bishu-novel/resources/workflows/build/definition.json), world prompt sections and world rendering | An idea needs rules, resources, power and information constraints | ADAPT: Formation RuntimeJobs call `foundation_generation.py`; progressive World candidates declare needed/deferred dimensions and compiled rules. Story Design qualifies/activates them; Book Opening and World Preparation consume exact bindings. Fixed six-stage world expansion is REJECTED. |
-| Bishu character skeleton/deep/voice nodes and enabled character prompts | Decorative cast and arbitrary voice labels | ADAPT: generated cast includes narrative function, desire, belief, fear, contradiction, relationships, behavior and voice anchors. Book Design projects its bound cast into the existing trajectory artifact; `chapter.style_policy.compile` passes source-bound voices to scene craft tasks. |
-| Bishu story-plan and style-profiler | Conflict cannot sustain escalation or an ending; style is only adjectives | ADAPT: Creative Foundation, Theme, Ending and Reader Promise receive independent semantic diagnosis/repair before activation. Operational narrator/POV/genre constraints and original examples become the frozen style policy. Reference materials remain abstract approved inputs; raw reference prose cannot enter Draft. |
-| Bishu MVP world → director → settler; `we_post.py` | Separate possible world consequences from narrative selection | KEEP native `src/novel_forge/modules/story_planning_runtime/world_preparation.py`, World Dynamics, Director evaluation and working projection. Provider produces bounded candidates, deterministic rules reject invalid paths, Planning activates only selected future work. Temporary external world cache is not adopted as Canon. |
-| Bishu outline volume/near-term workflows | Distant planning is too detailed; actual events diverge from outline | KEEP typed Book/Arc/Volume/ChapterGroup/Chapter/Scene planning, accepted checkpoints and `book_replan`. Supervisor regenerates affected future dependencies; completion cases inspect ending, promise, theme and trajectories separately from execution's chapter bound. |
-| InkOS writer Chapter Memo and author controls | Plans list events without explaining how or why to write them | KEEP the governed Memo node: motivated choice, cost, reader expectation, emotion, information and ending change feed Draft. Author changes remain versioned Intent/Planning commands, with no tool write access to Canon. |
-| InkOS [memory retrieval](https://github.com/Narcooo/inkos/blob/091048383f411eb99948a8764f42b6fd13006f9b/packages/core/src/utils/memory-retrieval.ts); Bishu world trimmer and `trimmer_post.py` | Too much allowed but irrelevant material, or missing necessary facts | KEEP native protected/task-relevant Context ordering, bounded PostgreSQL lexical/structured discovery and optional governed semantic reranking. Accepted sources, entity/relationship/obligation links and incremental projections supply continuity. REJECT per-query whole-index replacement, silent retrieval failure and blanket character deletion. |
-| Bishu MVP skeleton/dialogue/action/interior/description/transition/integration prompts | Different scenes need different craft, while stitched fragments lose continuity | ADAPT as `scene-craft-tasks.v1` in `scene-realization-composition.v2`: distinct objectives and scoped inputs within one whole-chapter call; integration addresses junctions, causal carryover and repetition. Simple scenes omit irrelevant tasks. Separate fixed writer Agents/calls are REJECTED. |
-| Bishu polish workflow and professional-polisher dimensions | Generic polishing changes facts or rewrites everything | ADAPT into diagnosis-driven editing targets for dialogue, pacing, spatial clarity, explanation, voice and junctions. Existing bounded Revision consumes locations, preservation constraints and verification criteria; no fixed three-pass rewrite or genre-independent punctuation bans. |
-| InkOS [chapter review cycle](https://github.com/Narcooo/inkos/blob/091048383f411eb99948a8764f42b6fd13006f9b/packages/core/src/pipeline/chapter-review-cycle.ts) review/revise/snapshot loop | A revision regresses; earlier candidates and blockers disappear | ADAPT bounded retention with immutable prose and review lineage. Selection separates workspace wrapper from actual prose, carries unresolved diagnoses, and requires checked improvement/preservation. REJECT absent-score-to-zero fallback and score-only acceptance. |
-| Bishu Observer/Arbiter and `local_archive.py`; InkOS post-write settlement | Intended events or character assertions are mistaken for facts | KEEP final-prose extraction, independent support review, deterministic reconciliation and atomic Book acceptance. Background events use approved rule/decision provenance. REJECT model-authorized direct file/state merges; disclosure, belief and objective history remain separate. |
-| Hooks/debt tracking and post-write feedback in both systems | Promises stagnate and the next chapter ignores actual outcomes | KEEP accepted Obligation/trajectory events, Reader proxy's explicit evidence ceiling, accepted Arc/ending checkpoints and scheduled longform recap → future PlanChange. Operator semantic helpers alone are not evidence of autonomous feedback. |
-| InkOS production Skill bindings; Bishu workflow-scoped prompts | A declared skill is not actually loaded, or every node receives everything | KEEP versioned Capability Packs, governed Provider admission, role-specific projections and existing read queries. Formation assets, frozen creation sources, Memo, candidates, diagnostics and acceptance are exported by the native creation runner; missing bindings fail instead of silently disappearing. |
+Formation, World Preparation, Chapter Memo, scene realization, candidate retention and
+accepted-state reconciliation use their native Authorities. External writing workflows
+are not runtime dependencies or competing architecture truth. Independent editorial
+comparison, calibrated semantic review, real reader preference and longitudinal creative
+quality remain unproven. Accepted-history correction and whole-book human acceptance
+retain the unresolved boundaries in the industrial proposal. Actor-isolated decisions,
+market observations and broad author-workbench changes have no authorization or production
+proof through these existing interfaces.
 
-The runnable sample is an engineering control-flow experiment. Transport scripts do
-not establish autonomous creative judgment, natural voices, calibrated semantic support,
-real reader preference or long-term quality. Whole-book acceptance, human editorial
-review and production qualification retain their separate evidence requirements.
+## Narrative Craft intelligence
+
+`narrative-craft-mechanism.v1` carries stable identity/version/family, narrative problem,
+intended reader effect, abstract mechanism, prerequisites/applicability/contraindications,
+genre/scene/POV/pacing affinities, planning/scene/prose guidance, composition relations,
+success/failure/review/repair/preservation rules and typed provenance/evidence references.
+The repository ships 43 original abstract hypotheses across 16 families. Their absence
+of Source or reader evidence is explicit. Catalog presence grants no production eligibility.
+
+MKAOS owns candidate authorship, independent approval, version uniqueness, predecessor
+supersession and KnowledgeCard lifecycle in its existing PostgreSQL tables/UoW.
+`mkaos.craft.original.author` requires the exact catalog hash; approval separately binds
+`repository-original-craft-v1:<catalog_hash>` and operator rationale. A later global catalog
+template binds an explicit project-specific immediate predecessor Card during authoring;
+only that predecessor varies, and template/instance hashes remain distinct. Recovery and
+approval use the frozen admitted catalog, so an unrelated catalog release cannot invalidate
+a pending candidate. Migration 0138 permits
+an absent Provider execution only for an explicitly original Craft candidate with a complete
+mechanism identity. Source candidates retain their execution FK requirement. Exact duplicate
+abstractions and identity/version conflicts fail closed; conceptual synonyms require editorial
+comparison and governed revision, not an inferred equivalence score.
+
+Source Import's explicit `source-analysis-routing.craft.v1` policy selects
+`narrative-craft-abstraction.v1` for fiction or writing-theory profiles. The existing
+Deconstruction Observation → controlled MKAOS ExternalEffect → Candidate path freezes a
+strict schema, exact Observation identity and abstraction policy. Discovery output is a
+version-one `SOURCE_ABSTRACTION`/`HYPOTHESIS` with no invented validation or reader evidence.
+Source prose remains restricted to analysis; only abstract approved Card projections may
+reach generation. Discovery does not approve a candidate. Legacy routing/frozen strategies
+retain their prior contracts.
+
+Existing narrative-intelligence retrieval filters eligible Book-scoped Cards and applicable
+conditions, then ranks bounded candidates using current task, scene goal, reader effect,
+conflict, POV/character, emotion, information/relationship state, genre, pacing, obligations
+and style evidence. Private author prose, examples and voice anchors are excluded from
+Craft retrieval projections. Unknown textual conditions remain unknown and require explicit
+`ADAPT` prerequisite resolution. Every selected Card receives an `ADOPT`, `ADAPT` or `REJECT`
+translation. Adoption binds exact Card/hash and concrete text at a ChapterPlan scene pointer.
+The Provider cannot supply a replacement mechanism or server-derived strategy.
+
+`narrative-craft-strategy.v1` freezes adopted use IDs, Card versions, scene bindings,
+primary/secondary roles, sequence, intended combined effects, adaptation rationale and
+preservation constraints. Deterministic checks reject conflicts, missing dependencies,
+invalid sequence, excess density and drift. Compatibility rules and Provider planning
+judgment compose strategies without a fixed battle/romance/mystery recipe. Story Design,
+Hierarchical Planning and Plan Change retain active-plan ownership; Craft cannot authorize
+Canon, world-rule, character-knowledge or story-event changes.
+
+`narrative-craft-budget.v1` is `CONFIGURABLE_POLICY`, not a literary invariant. Its frozen
+defaults bound six Craft candidates, three uses per scene, eight per chapter, a five-chapter
+history window, one-chapter cooldown and three recent uses, with repetition/salience and
+abstract-pattern Jaccard penalties plus a variation bonus. Successful Draft delivery
+receipts supply recent usage; duplicate receipts, Review/Revision calls and future chapters
+do not inflate frequency. Abstract term similarity is only a retrieval heuristic, not a
+creative-effect score. Retry validates the complete frozen policy rather than filling it
+from current defaults.
+
+The canonical consumer chain is:
+
+```text
+Source Observation or original catalog → MKAOS Candidate → explicit Approval → KnowledgeCard
+→ frozen Planning Context selection → concrete translation → active ChapterPlan Craft strategy
+→ ExecutionIntent → Chapter Memo → Scene Architecture / scene-realization-composition.v2
+→ scene-craft-tasks + selected Card Context → Draft ExternalEffect → located Craft Review
+→ diagnosed-span Revision → ReReview preservation → candidate comparison → existing gates
+→ Book Acceptance → read-only effect/receipt/accepted-manuscript trace
+```
+
+Plan, Intent and Memo must retain the same strategy. Draft admission checks exact selected
+Card versions in the frozen Context. Only adopted mechanisms reach its realization task;
+the whole catalog is never injected. Capability Pack, Context, Provider entitlement/token/
+cost admission, Kernel intent/receipt/reconciliation and Book acceptance boundaries remain
+in force. Previously frozen plans without Craft retain their earlier realization contract.
+
+Review checks each intended effect as `ACHIEVED`, `UNCERTAIN` or `FAILED` with literal Unicode
+spans inside the selected scene. It also checks misuse, overuse, artificiality, pacing damage,
+voice/POV violations, nearby repetition, unintended exposition and preservation damage.
+Model judgments are labeled as such; aesthetic preferences cannot become deterministic
+blockers. Existing actionable diagnoses supply repair goals, preservation and acceptance
+criteria. Craft repair uses ordered edits confined to diagnosed spans and reconstructs
+all other prose unchanged. ReReview checks Canon, voice, knowledge, POV, causality, active
+plan and previously satisfied Craft; unresolved or regressed preservation cannot be erased
+by a higher score. Quality, Canon and Book acceptance still make their own decisions.
+
+The Chapter workspace's `craft_trace` projects frozen strategies, prose candidates,
+review spans, repair edits, resolution/preservation checks, comparison and accepted lineage.
+Each effect observation identifies exact mechanism/use/scene, candidate/text hash,
+Provider evidence and review evidence class. Declared affinity is separate from observed
+scene/genre metadata. No effectiveness score or synthetic reader result is produced.
+Knowledge trace retains source/approval/planning/delivery lineage through existing queries.
+
+The original controlled corpus covers wuxia combat, xuanhuan power display, attraction,
+mystery, emotion, humor, setting description and chapter hooks. Baseline, guided, misuse
+and repaired fixtures verify input delivery, localization, edit boundaries, preservation
+contracts and retry identity. These are scripted engineering controls. Independent semantic
+accuracy, real reader effect, long-form variation and production reliability require a
+separate credentialed and budgeted qualification campaign.
+
+| Family | Original mechanisms |
+| --- | --- |
+| ATTENTION | 注意力因由接力 (`attention-relay`)；物件意义递进 (`object-escalation`) |
+| ACTION | 动作因果接力 (`action-causal-relay`)；空间锚点约束 (`spatial-anchor`)；攻防回应代价 (`exchange-response-cost`)；招式目的与破局 (`tactical-purpose-break`) |
+| WUXIA_XUANHUAN | 实力差距的间接尺度 (`indirect-mastery`)；武学意图的可见后果 (`martial-intent-consequence`)；力量代价的余影 (`power-cost-shadow`) |
+| DIALOGUE | 潜台词压力 (`subtext-pressure`)；答非所问的受压选择 (`answer-adjacent`)；对话权力换手 (`dialogue-power-transfer`) |
+| CHARACTERIZATION | 行为替代性格说明 (`behavior-inference`)；受限选择显价值 (`choice-exposes-value`)；他人反应折射人物 (`social-refraction`) |
+| EMOTION | 情绪残留 (`emotional-residue`)；压抑与释放 (`restraint-release`) |
+| SUSPENSE | 有进展的延迟满足 (`delayed-satisfaction`)；信息差驱动预期 (`information-asymmetry`)；可追踪的延迟答案 (`answer-delay`) |
+| REVEAL | 可回溯的错误解释 (`plausible-misreading`)；分层揭示 (`progressive-reveal`)；结果先行解释后至 (`result-before-cause`) |
+| PAYOFF | 承诺推进兑现 (`setup-progress-payoff`)；伏笔回收 (`seed-recovery`)；爽点结算 (`satisfaction-settlement`)；认知重组 (`cognitive-reframe`) |
+| HUMOR | 有依据的预期违背 (`earned-expectation-turn`)；意义改变的回调 (`meaningful-callback`)；郑重处理微小反差 (`deadpan-contrast`) |
+| SCENE | 场景价值位移 (`scene-value-turn`)；入场升级转折离场 (`entry-escalation-exit`) |
+| PACING | 压缩与扩写分配 (`duration-allocation`)；加速后的功能停顿 (`acceleration-pause`) |
+| DESCRIPTION | 功能性细节 (`functional-detail`)；POV选择性描写 (`pov-filtered-description`) |
+| RELATIONSHIP | 试探越界回撤 (`boundary-test-retreat`)；共同风险与有限信任 (`shared-risk-bond`) |
+| SERIALIZATION | 未完成动作悬接 (`unfinished-action-hook`)；解决之后的新问题 (`new-question-hook`) |
+| PROSE | 长短句节拍 (`sentence-pulse`)；受控留白 (`intentional-gap`)；句段自然承接 (`paragraph-handoff`) |
 
 ## Creative execution and prose evidence
 

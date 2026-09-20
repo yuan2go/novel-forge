@@ -1285,6 +1285,8 @@ class _DraftHandler:
         memo = request.require_input("chapter_memo")
         context = request.require_input("context_bundle")
         from .realization_composition import compile_realization_contract
+        from .craft_execution import require_craft_delivery
+        require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=context.content)
         generated = self.provider.invoke(
             request,
             stage="draft",

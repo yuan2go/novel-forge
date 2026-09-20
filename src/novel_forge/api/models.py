@@ -437,6 +437,17 @@ class AuthorityMkaosKnowledgeCandidateRequest(BaseModel):
     correlation_id: str = ""
 
 
+class AuthorityCoreCraftAuthorRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    mechanism_id: str = Field(min_length=1)
+    catalog_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    supersedes_card_asset_version_id: str = Field(default="", max_length=1000)
+    idempotency_key: str = Field(min_length=1)
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
 class AuthorityMkaosKnowledgeApprovalRequest(BaseModel):
     project_id: str = Field(min_length=1)
     workspace_id: str = Field(min_length=1)
@@ -2419,6 +2430,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AuthoritySourceTransformCommitRequest": AuthoritySourceTransformCommitRequest,
         "ProductSourceImportRequest": ProductSourceImportRequest,
         "ProductSourceReprocessingApplyRequest": ProductSourceReprocessingApplyRequest,
+        "AuthorityCoreCraftAuthorRequest": AuthorityCoreCraftAuthorRequest,
         "AuthorityMkaosKnowledgeCandidateRequest": AuthorityMkaosKnowledgeCandidateRequest,
         "AuthorityMkaosKnowledgeApprovalRequest": AuthorityMkaosKnowledgeApprovalRequest,
         "AuthorityMkaosKnowledgePackRequest": AuthorityMkaosKnowledgePackRequest,

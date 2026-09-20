@@ -184,6 +184,7 @@ class ProductionPreparationService:
         plans = selected_by_type.get("chapter_plan") or []
         if plans and (
             "knowledge_translations" in plans[0].content
+            or "craft_strategy" in plans[0].content
             or plans[0].content.get("knowledge_translation_policy_version") == "knowledge-grounded-selection-v2"
         ):
             knowledge_projection = self._bind_translated_knowledge(
@@ -359,13 +360,21 @@ class ProductionPreparationService:
         self, *, request, plan, selected_by_type, selections, rejections, blocked,
         knowledge_access,
     ) -> dict[str, dict[str, Any]]:
-        from novel_forge.modules.mkaos_authority.applicability import assess_applicability, prose_applicability_view
+        from novel_forge.modules.mkaos_authority.applicability import assess_applicability, prose_applicability_view, resolve_pointer
         from novel_forge.modules.story_planning_runtime.execution import _required_selection_terms
 
+        from novel_forge.modules.mkaos_authority.craft_selection import validate_craft_strategy
+
+        strategy = plan.content.get("craft_strategy")
+        if strategy is not None:
+            strategy = validate_craft_strategy(strategy, scenes=plan.content.get("scene_plan") or [])
+        craft_uses = (strategy or {}).get("uses") or []
         adopted: dict[str, dict[str, Any]] = {}
         for translation in plan.content.get("knowledge_translations") or ():
             if translation.get("decision") in {"ADOPT", "ADAPT"}:
                 adopted[translation["knowledge_card_asset_version_id"]] = dict(translation)
+        if {use["knowledge_card_asset_version_id"] for use in craft_uses} - set(adopted):
+            raise KernelError("CRAFT_TRANSLATION_DRIFT", "Craft strategy may only contain adopted exact Chapter translations")
         existing = {
             item.asset_version_id: item
             for item in selected_by_type.get("knowledge_card") or ()
@@ -390,6 +399,17 @@ class ProductionPreparationService:
                 item = existing.get(identity) or self.resolver.resolve_override(
                     project_id=request.project_id, asset_version_id=identity,
                 )
+                bound_uses = [use for use in craft_uses if use["knowledge_card_asset_version_id"] == identity]
+                mechanism = (item.content.get("abstract_content") or {}).get("craft_mechanism")
+                if (mechanism is not None and not bound_uses) or any(use["content_hash"] != item.content_hash or use["mechanism"] != mechanism or use["planning_use_site"] not in translation["use_sites"] for use in bound_uses):
+                    raise KernelError("CRAFT_MECHANISM_DRIFT", "Chapter Craft must preserve the exact governed Card mechanism and adopted use sites")
+                for use in bound_uses:
+                    site = use["planning_use_site"]
+                    index = int(site["target_pointer"].split("/")[2])
+                    found, target = resolve_pointer(plan.content, site["target_pointer"])
+                    scenes = plan.content.get("scene_plan") or []
+                    if not found or not isinstance(target, str) or site["realization_excerpt"] not in target or index >= len(scenes) or scenes[index]["scene_id"] != use["scene_id"] or use["decision"] != translation["decision"] or use["adaptation_rationale"] != translation.get("rationale") or use["prerequisite_resolution"] != translation.get("prerequisite_resolution"):
+                        raise KernelError("CRAFT_USE_SITE_DRIFT", "Craft strategy must preserve the exact adopted decision, scene location and prerequisite handling")
                 issue = self._knowledge_access_issue(item, knowledge_access=knowledge_access)
                 issue = issue or self._asset_fit_issue(
                     asset_type="knowledge_card", asset=item,
@@ -438,6 +458,7 @@ class ProductionPreparationService:
                 "translation": translation,
                 "chapter_plan_asset_version_id": plan.asset_version_id,
                 "chapter_plan_content_hash": plan.content_hash,
+                **({"craft_uses": bound_uses, "craft_strategy_digest": strategy["strategy_digest"]} if bound_uses else {}),
             }
         return result
 
@@ -690,6 +711,7 @@ class ProductionPreparationService:
                     "misuse_risks",
                     "epistemic_status",
                     "source_finding_codes",
+                    "craft_mechanism",
                 )
                 if abstract_content.get(key) not in (None, "", [])
             }

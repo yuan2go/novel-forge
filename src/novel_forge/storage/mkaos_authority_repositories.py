@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
@@ -385,18 +387,22 @@ class MkaosAuthorityRepository:
         }
 
     def register_candidate(self, row: dict[str, Any]) -> None:
+        row = {"origin_kind": "SOURCE_ABSTRACTION", "craft_mechanism_id": None,
+               "craft_mechanism_version": None, "craft_mechanism_hash": None, **row}
         self.cursor.execute(
             """
             INSERT INTO authority_mkaos_knowledge_candidate (
                 knowledge_candidate_id, project_id, workspace_id,
                 asset_version_id, execution_asset_version_id,
                 created_by_operation_id, candidate_hash,
-                abstraction_policy_version, status
+                abstraction_policy_version, status, origin_kind,
+                craft_mechanism_id, craft_mechanism_version, craft_mechanism_hash
             ) VALUES (
                 %(knowledge_candidate_id)s, %(project_id)s, %(workspace_id)s,
                 %(asset_version_id)s, %(execution_asset_version_id)s,
                 %(created_by_operation_id)s, %(candidate_hash)s,
-                %(abstraction_policy_version)s, 'NEEDS_REVIEW'
+                %(abstraction_policy_version)s, 'NEEDS_REVIEW', %(origin_kind)s,
+                %(craft_mechanism_id)s, %(craft_mechanism_version)s, %(craft_mechanism_hash)s
             )
             """,
             row,
@@ -506,6 +512,55 @@ class MkaosAuthorityRepository:
             """,
             row,
         )
+
+    def existing_original_craft_admission(self, *, project_id: str, mechanism_id: str, catalog_hash: str) -> dict[str, Any] | None:
+        return self._existing(
+            """SELECT operation_id, command_payload
+               FROM authority_operation
+               WHERE project_id=%s AND definition_name='mkaos.craft.original.author'
+                 AND command_payload->'payload'->>'mechanism_id'=%s
+                 AND command_payload->'payload'->>'catalog_hash'=%s
+               ORDER BY created_at LIMIT 1""",
+            [project_id, mechanism_id, catalog_hash],
+            ("operation_id", "command_payload"),
+        )
+
+    def existing_original_craft_mechanism_admission(self, *, project_id: str, mechanism: dict[str, Any]) -> dict[str, Any] | None:
+        return self._existing(
+            """SELECT operation_id, command_payload
+               FROM authority_operation
+               WHERE project_id=%s AND definition_name='mkaos.craft.original.author'
+                 AND command_payload->'payload'->'candidate'->'craft_mechanism'=%s
+               ORDER BY created_at LIMIT 1""",
+            [project_id, Jsonb(mechanism)],
+            ("operation_id", "command_payload"),
+        )
+
+    def existing_craft_candidate(self, *, project_id: str, mechanism_id: str, version: int) -> dict[str, Any] | None:
+        return self._existing(
+            """SELECT candidate.knowledge_candidate_id, candidate.asset_version_id,
+                      candidate.created_by_operation_id, operation.status
+               FROM authority_mkaos_knowledge_candidate candidate
+               JOIN authority_operation operation ON operation.operation_id=candidate.created_by_operation_id
+               WHERE candidate.project_id=%s AND candidate.craft_mechanism_id=%s
+                 AND candidate.craft_mechanism_version=%s""",
+            [project_id, mechanism_id, version],
+            ("knowledge_candidate_id", "asset_version_id", "operation_id", "operation_status"),
+        )
+
+    def supersede_craft_card(self, *, project_id: str, asset_version_id: str) -> None:
+        self.cursor.execute(
+            "UPDATE authority_mkaos_knowledge_card SET status='SUPERSEDED' WHERE project_id=%s AND asset_version_id=%s AND status='ACTIVE'",
+            [project_id, asset_version_id],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError("MKAOS_CRAFT_PREDECESSOR_INVALID", "Preceding Craft Card is no longer active")
+        self.cursor.execute(
+            "UPDATE authority_asset_version SET lifecycle='SUPERSEDED' WHERE asset_version_id=%s AND lifecycle='ACTIVE'",
+            [asset_version_id],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError("MKAOS_CRAFT_PREDECESSOR_INVALID", "Preceding Craft asset is no longer active")
 
     def existing_candidate(
         self, *, project_id: str, candidate_hash: str

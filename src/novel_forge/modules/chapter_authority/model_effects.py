@@ -2170,6 +2170,8 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                 else {}
             ),
             **({"knowledge_checks": raw["knowledge_checks"]} if "knowledge_checks" in raw else {}),
+            **({"craft_checks": raw["craft_checks"]} if "craft_checks" in raw else {}),
+            **({"craft_preservation_checks": raw["craft_preservation_checks"]} if "craft_preservation_checks" in raw else {}),
             **({"preservation_checks": raw["preservation_checks"]} if "preservation_checks" in raw else {}),
         }
     if stage in {"memo", "canon_support"}:
@@ -2325,7 +2327,9 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             "reader_state": normalized_state,
             "evidence": [dict(item) for item in evidence],
         }
-    text = str(raw.get("text") or raw.get("revised_text") or "").strip()
+    text = str(raw.get("text") or raw.get("revised_text") or "")
+    if "edits" not in raw:
+        text = text.strip()
     resolved = [
         str(item).strip()
         for item in raw.get("resolved_issue_codes", [])

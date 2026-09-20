@@ -20,7 +20,7 @@ class PostgresMigrationTests(unittest.TestCase):
         ]
         with patch("novel_forge.storage.migrations.runner._connect", return_value=connection):
             with self.assertRaisesRegex(
-                ValueError, "missing downgrade statements for: 20260920_0137_opening_delete_fence"
+                ValueError, "missing downgrade statements for: .*20260920_0137_opening_delete_fence"
             ):
                 downgrade_migrations(
                     "unused-test-connection",

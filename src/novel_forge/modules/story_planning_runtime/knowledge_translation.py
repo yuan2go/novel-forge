@@ -101,6 +101,15 @@ def add_translation_contract(
             }
         ),
     }
+    if any(item.get("selected_content", {}).get("craft_mechanism") for item in selected) and selection.get("need", {}).get("target_stage") == "chapter_plan.generate":
+        site = contract["items"]["properties"]["use_sites"]["items"]
+        site["properties"].update({
+            "craft_role": {"type": "string", "enum": ["PRIMARY", "SECONDARY"]},
+            "craft_sequence": {"type": "integer", "minimum": 1},
+            "intended_reader_effect": text,
+        })
+        site["required"].extend(["craft_role", "craft_sequence", "intended_reader_effect"])
+        contract["description"] += " Craft mechanisms require concrete /scene_plan/<index>/<field> locations, one primary per scene, distinct sequence positions, contextual prerequisite/contraindication judgment, and the frozen Craft density/composition policy. Reject any Craft that cannot be realized within current Canon, POV, voice, knowledge, scene causality and active planning constraints. Never supply replacement mechanisms."
     result = dict(schema)
     result["properties"] = {
         **dict(schema["properties"]),
@@ -171,7 +180,7 @@ def validate_knowledge_translations(
             )
         if (
             decision == "ADOPT"
-            and role in {"MECHANISM", "CONSTRAINT"}
+            and (role in {"MECHANISM", "CONSTRAINT"} or card.get("selected_content", {}).get("craft_mechanism"))
             and assessment.get("status") != "APPLICABLE"
         ):
             raise KernelError(

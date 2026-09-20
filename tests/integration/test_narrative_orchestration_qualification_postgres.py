@@ -1874,6 +1874,22 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             DATABASE_URL, project_id=project_id, book_id=book_id,
             knowledge_card_asset_version_id=narrative_card_version,
         )
+        with AuthorityUnitOfWork(DATABASE_URL, coordinate_nested=True) as uow:
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset(asset_id,project_id,asset_type)
+                SELECT %s || ':unbound-manifest:' || kind || ':' || ordinal,
+                       %s, kind
+                FROM generate_series(1,2000) ordinal
+                CROSS JOIN (VALUES ('capability_materialization_manifest'),
+                                   ('provider_request_admission_manifest')) types(kind)
+                """,
+                [project_id, project_id],
+            )
+            assert require_knowledge_trace(
+                DATABASE_URL, project_id=project_id, book_id=book_id,
+                knowledge_card_asset_version_id=narrative_card_version,
+            ) == creative_trace
         assert creative_trace["source_lineage"]["qualification_fixture_boundary"] == "UPSTREAM_SNAPSHOT_ONLY"
         assert creative_trace["independent_editorial"] == "NOT_PROVEN"
         assert len(creative_trace["prose"]) == 3

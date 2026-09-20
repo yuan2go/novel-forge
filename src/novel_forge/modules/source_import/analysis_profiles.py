@@ -8,6 +8,7 @@ from novel_forge.modules.source_authority.deconstruction import AnalyzerContract
 
 from .methodologies import SourceMethodologyRegistry
 from .profiling import LogicalDocumentScope, SourceContentType, canonical_hash
+from .craft_discovery import craft_discovery_strategy
 
 
 SOURCE_PROMPT_OVERHEAD_RESERVE_BYTES = 32_000
@@ -413,7 +414,7 @@ def resolve_analysis_strategy(
                 methodology_content_hash=methodology.content_digest,
             )
         )
-    return ResolvedAnalysisStrategy(
+    return craft_discovery_strategy(ResolvedAnalysisStrategy(
         profile_id=profile.profile_id,
         profile_version=profile.profile_version,
         content_type=profile.content_type,
@@ -423,7 +424,7 @@ def resolve_analysis_strategy(
         max_analyzer_calls=profile.max_analyzer_calls,
         mkaos_capability=profile.mkaos_capability,
         abstraction_policy_version=profile.abstraction_policy_version,
-    )
+    ))
 
 
 _CORPUS_ANALYSIS_CONTRACTS: dict[
@@ -547,7 +548,7 @@ def resolve_corpus_analysis_strategy(
         )
         for dimension, _focus in dimensions
     )
-    return ResolvedAnalysisStrategy(
+    return craft_discovery_strategy(ResolvedAnalysisStrategy(
         profile_id=profile_id,
         profile_version="1.1",
         content_type=SourceContentType(content_type),
@@ -560,7 +561,7 @@ def resolve_corpus_analysis_strategy(
         execution_mode="CORPUS_COMPOUND_SAMPLE",
         sampling_policy_version="classical-corpus-stratified-sampling.v2",
         sample_byte_limit=sample_byte_limit,
-    )
+    ))
 
 
 def plan_analysis_tasks(

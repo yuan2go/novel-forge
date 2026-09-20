@@ -139,6 +139,7 @@ from . import (
     v20260914_0135_cost_routing_indexes,
     v20260916_0136_provider_routing_policy,
     v20260920_0137_opening_delete_fence,
+    v20260920_0138_narrative_craft_origin,
 )
 
 VERSION_MODULES = [
@@ -280,6 +281,7 @@ VERSION_MODULES = [
     v20260914_0135_cost_routing_indexes,
     v20260916_0136_provider_routing_policy,
     v20260920_0137_opening_delete_fence,
+    v20260920_0138_narrative_craft_origin,
 ]
 
 __all__ = ["VERSION_MODULES"]
