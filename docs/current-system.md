@@ -117,13 +117,19 @@ reviewer admission and generator feedback admission remain unimplemented.
 This does not prove judge calibration or bootstrap every task family. Ordinary production
 routing blocks when sufficient quality evidence is absent.
 
-World preparation is still a calibration-entry gap in the Planning owner. The normal
-Book supervisor supplies `world_preparation_request` for ChapterPlan generation, and
-`PlanningWorldPreparation.prepare` then executes `world_candidates.generate` followed by
-`world_candidates.evaluate`. The current single-stage Planning bootstrap rejects this
-request. These two tasks are required by that production chain; removing them from a
-campaign's coverage matrix would not qualify continuous Book production. The missing
-entry belongs with Planning preparation and its existing Pack/Router/Kernel boundaries.
+The normal Book supervisor supplies `world_preparation_request` for ChapterPlan generation,
+and `PlanningWorldPreparation.prepare` executes `world_candidates.generate` followed by
+`world_candidates.evaluate`. Planning now has separate single-stage World sample Operations
+that reuse these factories, the original Context and approved producer artifacts. The
+validation Pack binds a distinct sample Operation; ordinary multistage bootstrap remains
+forbidden. Native Router, admission, ExternalEffect, settlement and recovery retain their
+owners. Results are ineligible World samples; they cannot materialize a World action or
+activate a ChapterPlan. Reference sampling uses independent native adjudications outside
+Provider input and records score disagreement separately from World rule validation.
+World evaluator sampling still requires an existing native evaluation Context and generation
+target. Sampling a generator output as a new Director target, trusted evaluator admission
+and production feedback admission remain gaps. Both World tasks are required by the
+continuous Book chain and must remain in its calibration coverage matrix.
 
 Planning sampling grants may bind a frozen campaign identity, manifest hash, sample/data
 group and experiment partition. Kernel aggregates their reservations across authorization

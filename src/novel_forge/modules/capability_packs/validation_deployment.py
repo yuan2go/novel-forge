@@ -91,8 +91,12 @@ def register_validation_runtime_definitions(
             model_effects_required=True,
         )
     )
+    from novel_forge.modules.story_planning_runtime.world_sampling import world_sample_definitions
+
     with AuthorityUnitOfWork(database_url) as uow:
         for item in (planning, reader, narrative_evaluation, *chapter, *chapter_provider_sample_definitions(
+            application_build_id=application_build_id, commit_sha=commit_sha,
+        ), *world_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha,
         )):
             uow.repositories.definitions.register(item)

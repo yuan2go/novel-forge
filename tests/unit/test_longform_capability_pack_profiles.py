@@ -26,6 +26,26 @@ from novel_forge.modules.story_planning_runtime import (
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_world_sampling_pack_preserves_native_producer_artifacts():
+    from novel_forge.modules.capability_packs.longform_profiles import build_world_sampling_pack_profile
+    from novel_forge.modules.capability_packs.operation_catalog import governed_workflow_binding_catalog
+
+    source = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64)
+    sampled = build_world_sampling_pack_profile(source, application_build_id="test", commit_sha="a" * 40)
+    assert sampled.artifact_catalog == source.artifact_catalog
+    for key in ("prompt_binding", "context_sources", "output_contract"):
+        if key in source.manifest:
+            assert sampled.manifest[key] == source.manifest[key]
+    source_tool = source.manifest["tool_permissions"]["tools"][0]
+    sample_tool = sampled.manifest["tool_permissions"]["tools"][0]
+    assert {key: value for key, value in source_tool.items() if key != "allowed_operations"} == {
+        key: value for key, value in sample_tool.items() if key != "allowed_operations"}
+    assert source.workflow_ref != sampled.workflow_ref
+    assert {item["output_asset_types"][0] for item in sampled.manifest["workflow_template"]["nodes"]} == {"world_provider_sample"}
+    catalog = governed_workflow_binding_catalog("world_provider_sampling", "1.0.0")
+    assert catalog.resolve("world_candidates.generate").capability_id == "planning.story_chapter.generate"
+
+
 def test_narrative_evaluation_profile_is_independent_provider_pack() -> None:
     profile = build_narrative_evaluation_pack_profile(
         ROOT,

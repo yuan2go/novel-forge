@@ -63,7 +63,8 @@ def validate_routing_policy(content: Mapping[str, Any]) -> None:
                 not (grant["task_type"].endswith(".generate")
                      or grant["task_type"] == "narrative_semantic_evaluation"
                      or grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values()
-                     or grant["task_type"] in CHAPTER_BOOTSTRAP_TASKS.values())
+                     or grant["task_type"] in CHAPTER_BOOTSTRAP_TASKS.values()
+                     or grant["task_type"] == "world_candidates.evaluate")
                 or grant["authorization_id"] in authorization_ids
             ):
                 raise ValueError(

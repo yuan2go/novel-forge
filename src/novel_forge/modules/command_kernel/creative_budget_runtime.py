@@ -209,13 +209,13 @@ def _campaign_scope(cursor: Any, identity: dict[str, Any], *, plan: dict[str, An
         operation_id=identity["operation_id"], check_expiry=False)
     command = identity["command_payload"].get("payload", identity["command_payload"])
     source_operation_id = identity["operation_id"]
-    if command.get("chapter_sampling"):
-        source_operation_id = command["chapter_sampling"]["source_operation_id"]
+    if command.get("chapter_sampling") or command.get("world_sampling"):
+        source_operation_id = (command.get("chapter_sampling") or command["world_sampling"])["source_operation_id"]
         cursor.execute("SELECT definition_name,command_payload FROM authority_operation WHERE project_id=%s AND operation_id=%s",
                        [project_id, source_operation_id])
         origin = cursor.fetchone()
         if not origin:
-            raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "Chapter sample has no original native task")
+            raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "sample has no original native task")
         identity = {**identity, "operation_name": origin[0], "command_payload": origin[1]}
     elif command.get("source_sampling"):
         source_operation_id = command["source_sampling"]["source_operation_id"]

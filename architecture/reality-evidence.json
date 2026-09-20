@@ -5174,6 +5174,14 @@
           "symbol": "require_reference_annotation"
         },
         {
+          "path": "src/novel_forge/modules/story_planning_runtime/world_sampling.py",
+          "symbol": "run_world_sample"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/world_sampling.py",
+          "symbol": "require_world_sample_source"
+        },
+        {
           "path": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
           "symbol": "require_provider_campaign_entitlement"
         }
@@ -8752,7 +8760,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:933c546c5289c88107f4fedaa01e72135b5f0e67177e73c6611b146f89f4dd01"
+    "implementation_tree_sha": "sha256:e0847d8df51de3aec7c72cd92ca0fbd1db26e36372f2560af0982f0ca38e0df9"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

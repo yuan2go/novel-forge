@@ -33,6 +33,9 @@ CHAPTER_BOOTSTRAP_TASKS = {**CHAPTER_GENERATOR_TASKS, **CHAPTER_REFERENCE_TASKS}
 CHAPTER_SAMPLE_DEFINITION_VERSION = "1.0.0"
 CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE = "book:chapter-provider-sample"
 CHAPTER_SAMPLE_SOURCE_VERSION = "3.4.1"
+WORLD_SAMPLE_TASKS = {"world_candidates.generate", "world_candidates.evaluate"}
+WORLD_SAMPLE_IDEMPOTENCY_SCOPE = "book:world-provider-sample"
+WORLD_SAMPLE_DEFINITION_VERSION = "1.0.0"
 
 
 def chapter_sample_definition_name(task_type: str) -> str:
@@ -122,17 +125,19 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         raise ValueError("ROUTING_BOOTSTRAP_ACCOUNTING_INVALID")
     reference = grant.get("reference_evaluation")
     if grant["purpose"] == "REFERENCE_EVALUATION":
-        if grant["task_type"] not in {"narrative_semantic_evaluation", *CHAPTER_REFERENCE_TASKS.values()} or "campaign" not in grant:
+        if grant["task_type"] not in {"narrative_semantic_evaluation", "world_candidates.evaluate", *CHAPTER_REFERENCE_TASKS.values()} or "campaign" not in grant:
             raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
         validate_reference_evaluation_binding(reference)
-        if (grant["task_type"] in CHAPTER_REFERENCE_TASKS.values()) != ("adjudications" in reference):
+        if (grant["task_type"] in {*CHAPTER_REFERENCE_TASKS.values(), "world_candidates.evaluate"}) != ("adjudications" in reference):
             raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
-    elif reference is not None or grant["task_type"] in {"narrative_semantic_evaluation", *CHAPTER_REFERENCE_TASKS.values()}:
+    elif reference is not None or grant["task_type"] in {"narrative_semantic_evaluation", "world_candidates.evaluate", *CHAPTER_REFERENCE_TASKS.values()}:
         raise ValueError("ROUTING_REFERENCE_AUTHORIZATION_REQUIRED")
     if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and "campaign" not in grant:
         raise ValueError("ROUTING_SOURCE_CAMPAIGN_REQUIRED")
     if grant["task_type"] in CHAPTER_BOOTSTRAP_TASKS.values() and "campaign" not in grant:
         raise ValueError("ROUTING_CHAPTER_CAMPAIGN_REQUIRED")
+    if grant["task_type"] in WORLD_SAMPLE_TASKS and "campaign" not in grant:
+        raise ValueError("ROUTING_WORLD_CAMPAIGN_REQUIRED")
     if any(
         type(grant[key]) is not int or grant[key] <= 0
         for key in ("maximum_calls", "maximum_tokens")
@@ -337,7 +342,7 @@ def validate_bootstrap_scope(
         expected = {
             "authorization_id": payload.get("routing_bootstrap_authorization_id"),
             "book_id": payload.get("book_id"),
-            "task_type": "narrative_semantic_evaluation" if payload.get("reference_evaluation") and not payload.get("chapter_sampling") else payload.get("generator_operation_name"),
+            "task_type": "narrative_semantic_evaluation" if payload.get("reference_evaluation") and not (payload.get("chapter_sampling") or payload.get("world_sampling")) else payload.get("generator_operation_name"),
             "logical_key": payload.get("logical_key"),
             "generation_idempotency_key": payload.get("idempotency_key"),
             "input_versions_hash": authorization_hash(payload.get("input_versions")),
@@ -396,6 +401,58 @@ def validate_chapter_sample_origin(
                           "Chapter sample differs from its frozen native task") from exc
 
 
+def validate_world_sample_origin(cursor: Any, *, project_id: str, operation_id: str,
+                                 payload: Mapping[str, Any]) -> None:
+    metadata = payload["world_sampling"]
+    cursor.execute("""SELECT definition_name,definition_version,command_payload->'payload',input_asset_snapshot
+        FROM authority_operation WHERE project_id=%s AND operation_id=%s""", [project_id, metadata.get("source_operation_id")])
+    origin = cursor.fetchone()
+    if (not origin or origin[:2] != ("story_planning.generate", "1.16.0")
+        or origin[2].get("generator_operation_name") != "chapter_plan.generate"
+        or not origin[2].get("world_preparation_request") or origin[2].get("routing_bootstrap_authorization_id")
+        or origin[2].get("book_id") != payload.get("book_id")
+        or metadata.get("source_operation_id") != payload.get("logical_key")
+        or metadata.get("source_command_hash") != authorization_hash(origin[2])):
+        raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World sample must bind its original native ChapterPlan")
+    frozen_context = {}
+    for kind, asset_type in (("context", "context_bundle"), ("source", "world_preparation_source")):
+        binding = metadata.get(kind) or {}
+        cursor.execute("""SELECT version.content FROM authority_operation_output_asset output
+            JOIN authority_asset_version version USING(asset_version_id)
+            JOIN authority_asset asset ON asset.asset_id=version.asset_id
+            WHERE output.operation_id=%s AND asset.project_id=%s AND asset.asset_type=%s
+              AND output.asset_version_id=%s AND output.content_hash=%s AND version.content_hash=output.content_hash
+              AND version.lifecycle='ACTIVE' AND version.eligibility='ELIGIBLE' AND version.governance='CLEAR'""",
+            [metadata["source_operation_id"], project_id, asset_type, binding.get("asset_version_id"), binding.get("content_hash")])
+        rows = cursor.fetchall()
+        if len(rows) != 1 or authorization_hash(rows[0][0]) != binding.get("content_hash"):
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World sample evidence differs from its native origin")
+        if kind == "context" and authorization_hash(rows[0][0].get("world_preparation")) != metadata.get("stage_hash"):
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World sample role task differs from frozen Context")
+        if kind == "context":
+            frozen_context = rows[0][0]["world_preparation"]
+    cursor.execute("SELECT input_snapshot,input_snapshot_hash FROM authority_story_planning_generation WHERE project_id=%s AND operation_id=%s",
+                   [project_id, metadata["source_operation_id"]])
+    typed = cursor.fetchone()
+    if not typed or typed[1] != authorization_hash(typed[0]):
+        raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World source lacks its immutable typed Planning inputs")
+    expected_inputs = [{key: item[key] for key in ("asset_version_id", "content_hash")} for item in typed[0]]
+    for binding in (metadata["context"], metadata["source"]):
+        if binding not in expected_inputs:
+            expected_inputs.append(binding)
+    if payload["generator_operation_name"] == "world_candidates.evaluate":
+        expected_inputs.append(frozen_context.get("generation_ref"))
+    if payload.get("input_versions") != expected_inputs:
+        raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World sample cannot replace or omit original Planning dependencies")
+    cursor.execute("SELECT input_asset_snapshot FROM authority_operation WHERE project_id=%s AND operation_id=%s",
+                   [project_id, operation_id])
+    admitted = cursor.fetchone()
+    fields = ("asset_version_id", "content_hash")
+    if not admitted or [tuple(item.get(key) for key in fields) for item in admitted[0]] != [
+        tuple(item.get(key) for key in fields) for item in payload.get("input_versions", [])]:
+        raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World sample input bindings differ from its grant")
+
+
 def load_bootstrap_authorization(
     cursor: Any, *, project_id: str, operation_id: str, check_expiry: bool = True
 ) -> Mapping[str, Any] | None:
@@ -430,6 +487,12 @@ def load_bootstrap_authorization(
                         CHAPTER_SAMPLE_DEFINITION_VERSION, CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE)
         except ValueError as exc:
             raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Chapter sampling requires its native task contract") from exc
+    if payload.get("world_sampling"):
+        stage = payload.get("generator_operation_name")
+        if stage not in WORLD_SAMPLE_TASKS:
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World sampling requires its native task contract")
+        contract = ("world.provider.sample." + stage.rsplit(".", 1)[1], WORLD_SAMPLE_DEFINITION_VERSION,
+                    WORLD_SAMPLE_IDEMPOTENCY_SCOPE)
     if tuple(row[1:4]) != contract or row[4] != payload.get("idempotency_key"):
         raise KernelError(
             "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
@@ -440,6 +503,10 @@ def load_bootstrap_authorization(
         raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Source grant requires a Source sampling operation")
     if grant["task_type"] in CHAPTER_BOOTSTRAP_TASKS.values() and not payload.get("chapter_sampling"):
         raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Chapter grant requires a Chapter sampling operation")
+    if grant["task_type"] in WORLD_SAMPLE_TASKS:
+        if not payload.get("world_sampling"):
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "World grant requires a World sampling operation")
+        validate_world_sample_origin(cursor, project_id=project_id, operation_id=operation_id, payload=payload)
     if payload.get("chapter_sampling"):
         cursor.execute(
             "SELECT definition_name,definition_version,command_payload,input_asset_snapshot FROM authority_operation WHERE project_id=%s AND operation_id=%s",
@@ -556,7 +623,7 @@ def _verified_effect(
         )
     cursor.execute(
         """SELECT asset.asset_type,version.content,version.content_hash
-           FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
+           FROM authority_asset_version version JOIN authority_asset asset ON asset.asset_id=version.asset_id
            WHERE asset.project_id=%s AND version.asset_version_id=%s""",
         [project_id, decision.get("asset_version_id")],
     )

@@ -362,6 +362,14 @@ def story_planning_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
 
 
+def world_sampling_workflow_binding_catalog() -> WorkflowBindingCatalog:
+    return WorkflowBindingCatalog("world_provider_sampling", "1.0.0", (
+        WorkflowBinding(node_id="world_candidates." + action, operation_name="world.provider.sample." + action,
+            stage="world_candidates." + action, handler_key="novel_forge.world.provider.sample." + action,
+            capability_id="planning.story_chapter.generate", depends_on=(), primary_output_asset_type="world_provider_sample")
+        for action in ("generate", "evaluate")))
+
+
 def reader_outcome_workflow_binding_catalog() -> WorkflowBindingCatalog:
     return WorkflowBindingCatalog(
         "book_followup_reader_outcome",
@@ -426,6 +434,7 @@ def governed_workflow_binding_catalog(
         chapter_sampling_workflow_binding_catalog(),
         chapter_sampling_workflow_binding_catalog(reference=True),
         story_planning_workflow_binding_catalog(),
+        world_sampling_workflow_binding_catalog(),
         reader_outcome_workflow_binding_catalog(),
         narrative_evaluation_workflow_binding_catalog(),
         agent_session_workflow_binding_catalog(),

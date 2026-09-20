@@ -524,6 +524,39 @@ conservative usage, explicit fixture receipts remain fixtures, and subscription 
 remain unknown rather than zero. Samples do not grant calibrated reviewer admission or
 publish generator quality observations; those remain separate required steps.
 
+World sampling uses `POST /product/production/book-authority/books/{book_id}/world-provider-samples?dry_run=true`.
+Supply `project_id`, `book_id`, the authenticated `actor_id`, `source_operation_id`,
+`stage` (`world_candidates.generate` or `world_candidates.evaluate`), `authorization_id`
+and a stable `idempotency_key`. The source is the original native ChapterPlan Operation
+with its persisted World source, Context and producer materialization. The read-only
+response supplies exact input/command hashes and `producer_contract_hash`; it performs
+no Provider call and does not grant spending authority. An unprepared source fails closed.
+Install a separately approved validation Pack with `build_world_sampling_pack_profile`
+and the existing `install_longform_validation_pack`; its ID is the configured Planning
+Pack ID plus `.world_sampling`. Keep its Prompt, Skill, Schema and policy artifacts equal
+to the source producer, and register the matching native sample definitions.
+
+Freeze a campaign grant for the returned hashes and producer identity. World generation
+requires `BENCHMARK_CHALLENGER`; World evaluation requires `REFERENCE_EVALUATION` and
+native adjudications for every `<transition_id>:<Director dimension>`. Each adjudication
+binds the original generation asset, chapter, protocol and independent blind authors.
+Label scores use 0–100; observed native Director scores use 0–1 and are multiplied by 100
+only for agreement comparison. Labels stay outside Provider Context. Recorded disagreement
+is retained; neither agreement nor World rule validation activates a calibrated reviewer.
+
+Replay the POST without `dry_run=true` to run or resume through the native Content
+scheduler and Planning execution port. Query
+`GET /product/production/book-authority/books/{book_id}/world-provider-samples/{operation_id}?project_id=<id>`
+for frozen inputs, Attempts, Effects, raw sample and validation/reference results.
+Successful replay consumes its existing result. Unknown outcomes retain their budget
+and reconcile; a renamed request cannot replace them. An explicitly granted terminal
+no-effect/proven-failed successor supplies `predecessor_operation_id` and preserves
+the actor, task, reference labels and campaign arm. Kernel causation and cumulative
+campaign accounting retain every predecessor. These samples cannot create a World action,
+active plan or production knowledge. Evaluator sampling currently needs an existing native
+Director Context and generation target; using a generator sample as that target and
+publishing qualified feedback remain required cold-start work.
+
 The same Chapter endpoint supports native `review`, `rereview`, `quality_structural`,
 `quality_commercial`, `quality_source_originality`, `quality_longform`, and
 `quality_platform` reference tasks. Supply an existing frozen native reviewer Operation

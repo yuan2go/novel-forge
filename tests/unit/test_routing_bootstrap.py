@@ -28,7 +28,7 @@ def contract():
     payload = {
         "project_id": "project",
         "book_id": "book",
-        "generator_operation_name": "world_candidates.generate",
+        "generator_operation_name": "book_plan.generate",
         "logical_key": "world",
         "idempotency_key": "sample-one",
         "input_versions": {"brief": "version-one"},
@@ -39,7 +39,7 @@ def contract():
         "reason": "independent benchmark collection",
         "environment": "validation",
         "book_id": "book",
-        "task_type": "world_candidates.generate",
+        "task_type": "book_plan.generate",
         "logical_key": "world",
         "generation_idempotency_key": "sample-one",
         "input_versions_hash": authorization_hash(payload["input_versions"]),
@@ -113,7 +113,7 @@ def ordinary_decision(*, task_overrides=None, **candidate_overrides):
         model_revision="revision-one",
     )
     task = RoutingTask(
-        "world_candidates.generate",
+        "book_plan.generate",
         "project",
         "book",
         "operation",
@@ -206,7 +206,7 @@ def test_benchmark_grant_preserves_unknown_quality_and_production_rejections():
         "BENCHMARK_INSUFFICIENT",
         "QUALITY_FLOOR_NOT_MET",
     }
-    assert sampled["policy"]["quality_floor"] == 0.75
+    assert sampled["policy"]["quality_floor"] == ordinary.to_dict()["policy"]["quality_floor"]
     assert sampled["decision_id"] != ordinary.decision_id
     with pytest.raises(KernelError, match="validation runtime"):
         benchmark_decision(ordinary, snapshot, environment="production")
@@ -346,6 +346,24 @@ def campaign_grant():
         "maximum_calls": 4, "maximum_tokens": 8000, "maximum_amount": "0.04",
         "expires_at": grant["expires_at"],
     }}
+
+
+def test_world_sampling_requires_campaign_and_separate_reference_authority():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_authorization
+
+    grant = {**contract()[1], "task_type": "world_candidates.generate"}
+    with pytest.raises(ValueError, match="ROUTING_WORLD_CAMPAIGN_REQUIRED"):
+        validate_bootstrap_authorization(grant)
+    validate_bootstrap_authorization({**campaign_grant(), "task_type": "world_candidates.generate"})
+    with pytest.raises(ValueError, match="ROUTING_REFERENCE_AUTHORIZATION_REQUIRED"):
+        validate_bootstrap_authorization({**campaign_grant(), "task_type": "world_candidates.evaluate"})
+    reference = {**campaign_grant(), "task_type": "world_candidates.evaluate", "purpose": "REFERENCE_EVALUATION",
+        "reference_evaluation": {"protocol_version": "fixture-reference-v1",
+            "adjudications": [{"asset_version_id": "fixture-label", "content_hash": "sha256:" + "a" * 64}]}}
+    validate_bootstrap_authorization(reference)
+    from novel_forge.modules.production_execution.routing_policy import validate_routing_policy
+    validate_routing_policy({"policy_version": "fixture-world-v1", "reason": "fixture", "task_overrides": [],
+                             "bootstrap_authorizations": [reference]})
 
 
 def test_campaign_grants_share_frozen_identity_across_policy_versions():
