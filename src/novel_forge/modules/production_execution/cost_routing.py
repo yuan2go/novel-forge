@@ -173,7 +173,7 @@ TASK_TAXONOMY = {
 }
 REFERENCE_TASKS = frozenset({"review", "rereview", "quality_structural", "quality_commercial",
     "quality_source_originality", "quality_longform", "quality_platform"})
-POLICY_VERSION = "quality-constrained-routing.v6"
+POLICY_VERSION = "quality-constrained-routing.v7"
 
 
 def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> TaskPolicy:
@@ -321,13 +321,15 @@ class BenchmarkObservation:
     reference_label_classes: tuple[str, ...] = ()
     reference_protocol_hash: str = ""
     reference_risk: str = ""
+    reference_context_tokens: int | None = None
 
     def __post_init__(self) -> None:
         if (self.reference_agreed is not None and type(self.reference_agreed) is not bool
             or not set(self.reference_label_classes) <= {"PASS", "FAIL"}
             or bool(self.reference_label_classes) != (self.reference_agreed is not None)
             or (self.reference_agreed is not None and (self.evidence_class != "REFERENCE_EVALUATION"
-                or not self.reference_protocol_hash.startswith("sha256:") or self.reference_risk not in {"LOW", "MEDIUM", "HIGH"}))):
+                or not self.reference_protocol_hash.startswith("sha256:") or self.reference_risk not in {"LOW", "MEDIUM", "HIGH"}
+                or type(self.reference_context_tokens) is not int or self.reference_context_tokens <= 0))):
             raise ValueError("BENCHMARK_REFERENCE_INVALID")
         for value in (self.quality_score, self.judge_score):
             if value is not None and (not math.isfinite(value) or not 0 <= value <= 1):
@@ -405,7 +407,8 @@ def benchmark_snapshot(
     )
     if policy.quality_metric == "REFERENCE_AGREEMENT" and input_tokens is not None:
         ordered = [row for row in ordered if row.evidence_class != "REFERENCE_EVALUATION" or (
-            row.reference_risk == policy.risk and reference_context_bucket(row.input_tokens) == reference_context_bucket(input_tokens))]
+            row.reference_risk == policy.risk and (row.reference_context_tokens is None
+                or reference_context_bucket(row.reference_context_tokens) == reference_context_bucket(input_tokens)))]
     rows = ordered[-maximum_samples:]
     independent: dict[str, BenchmarkObservation] = {}
     for row in ordered:
@@ -419,9 +422,9 @@ def benchmark_snapshot(
     ]
     reference_rows = [row for row in scored_samples if row.reference_agreed is not None
         and row.reference_risk == policy.risk
-        and (input_tokens is None or reference_context_bucket(row.input_tokens) == reference_context_bucket(input_tokens))]
+        and (input_tokens is None or reference_context_bucket(row.reference_context_tokens) == reference_context_bucket(input_tokens))]
     reference_protocols = sorted({row.reference_protocol_hash for row in reference_rows})
-    reference_contexts = sorted({reference_context_bucket(row.input_tokens) for row in reference_rows})
+    reference_contexts = sorted({reference_context_bucket(row.reference_context_tokens) for row in reference_rows})
     reference_strata = {label: [row.reference_agreed for row in reference_rows if label in row.reference_label_classes]
         for label in ("PASS", "FAIL")}
     n = (

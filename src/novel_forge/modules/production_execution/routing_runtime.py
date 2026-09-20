@@ -308,6 +308,7 @@ class PostgresRoutingRegistry:
                     reference_agreed=gate.get("reference_agreed") if sample_identity else None,
                     reference_label_classes=tuple(gate.get("reference_label_classes", ())) if sample_identity else (),
                     reference_protocol_hash=gate.get("reference_protocol_hash", ""),
+                    reference_context_tokens=(decision or {}).get("task", {}).get("input_tokens") if evidence_class == "REFERENCE_EVALUATION" else None,
                     reference_risk=(decision or {}).get("policy", {}).get("risk", "") if evidence_class == "REFERENCE_EVALUATION" else "",
                     outcome_refs=tuple(gate.get("evidence_refs", ()))
                     + (("asset-version:" + quality_ref,) if quality_ref else ()),

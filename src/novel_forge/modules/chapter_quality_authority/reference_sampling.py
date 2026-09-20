@@ -270,3 +270,116 @@ def chapter_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list
             "evidence_refs": ["asset-version:" + asset_id, "asset-version:" + provider["model_call_asset_version_id"],
                 *("asset-version:" + item["adjudication_asset_version_id"] for item in agreement["comparisons"])]}
     return outcomes
+
+
+def admitted_reference_calibration(request: Any, result: Any, *, stage: str, target_asset_version_id: str) -> dict[str, Any] | None:
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    evidence = result.to_evidence()
+    execution = evidence.get("production_execution") or {}
+    native = execution.get("execution_request") or {}
+    if (not result.real_model_call or request.command.get("chapter_sampling") or not request.database_url
+        or native.get("project_id") != request.project_id or native.get("operation_id") != request.operation_id
+        or native.get("attempt_id") != request.attempt_id or native.get("stage") != stage
+        or not native.get("external_effect_id")):
+        return None
+    with AuthorityUnitOfWork(request.database_url) as uow:
+        uow.cursor.execute("""SELECT model.asset_version_id,model.content_hash,model.content,
+            decision.asset_version_id,decision.content_hash,decision.content,effect.request_payload
+            FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id)
+            JOIN authority_operation_output_asset output ON output.operation_id=operation.operation_id AND output.role='model_evidence'
+            JOIN authority_asset_version model ON model.asset_version_id=output.asset_version_id AND model.content_hash=output.content_hash
+            JOIN authority_asset model_asset ON model_asset.asset_id=model.asset_id AND model_asset.project_id=effect.project_id
+              AND model_asset.asset_type='model_call_log'
+            JOIN authority_attempt attempt ON attempt.operation_id=effect.operation_id
+              AND attempt.attempt_id=model.content->>'attempt_id' AND attempt.status IN ('RUNNING','RESULT_SUBMITTED','SUCCEEDED')
+            JOIN authority_asset_version decision ON decision.asset_version_id=effect.request_payload
+              #>> '{_production_execution,capability_runtime,routing_decision,asset_version_id}'
+            JOIN authority_asset decision_asset ON decision_asset.asset_id=decision.asset_id AND decision_asset.project_id=effect.project_id
+              AND decision_asset.asset_type='routing_decision'
+            JOIN authority_operation_output_asset routing ON routing.operation_id=effect.operation_id
+              AND routing.asset_version_id=decision.asset_version_id AND routing.content_hash=decision.content_hash AND routing.role='routing_evidence'
+            WHERE effect.project_id=%s AND effect.operation_id=%s AND effect.external_effect_id=%s AND effect.status='SUCCEEDED'
+              AND operation.definition_name=%s AND operation.definition_version='3.4.1'
+              AND effect.provider_capability_profile->>'real_provider_validation_eligible'='true'
+              AND effect.model_id=model.content #>> '{provider_evidence,model_id}'
+              AND effect.capability='model.' || (model.content->>'stage')
+              AND model.content->>'stage'=%s AND model.content->>'attempt_id'=%s
+              AND model.content #>> '{provider_evidence,production_execution,execution_request,external_effect_id}'=effect.external_effect_id
+              AND effect.request_payload #>> '{input,quality_context,target_revision_asset_version_id}'=%s
+              AND model.governance='CLEAR' AND decision.governance='CLEAR'""",
+            [request.project_id, request.operation_id, native["external_effect_id"],
+             "chapter.quality." + stage.removeprefix("quality_") + ".evaluate", stage, request.attempt_id, target_asset_version_id])
+        rows = uow.cursor.fetchall()
+        uow.cursor.execute("SELECT request_payload #> '{_production_execution,capability_runtime,routing_decision}' FROM authority_external_effect WHERE project_id=%s AND external_effect_id=%s",
+            [request.project_id, native["external_effect_id"]])
+        effect_row = uow.cursor.fetchone()
+        frozen = effect_row[0] if effect_row and isinstance(effect_row[0], dict) else {}
+    required = frozen.get("status") == "SELECTED" and frozen.get("policy", {}).get("quality_metric") == "REFERENCE_AGREEMENT"
+    if len(rows) != 1:
+        if required:
+            raise KernelError("QUALITY_REFERENCE_ADMISSION_INVALID", "qualified reviewer call lost its native receipt or target binding")
+        return None
+    model_id, model_hash, model, decision_id, decision_hash, decision, payload = rows[0]
+    if (model_hash != authorization_hash(model) or decision_hash != authorization_hash(decision)
+        or model.get("provider_evidence") != evidence
+        or payload["_production_execution"]["capability_runtime"]["routing_decision"] != {**decision, "asset_version_id": decision_id}
+        or not reference_decision_qualifies(decision, evidence=evidence, stage=stage)):
+        if required:
+            raise KernelError("QUALITY_REFERENCE_ADMISSION_INVALID", "qualified reviewer result differs from its frozen model, scope or evidence")
+        return None
+    benchmark = decision["selected"]["benchmark"]
+    return {"schema_version": "chapter-reference-calibration.v1", "stage": stage, "operation_id": request.operation_id,
+        "target_asset_version_id": target_asset_version_id, "external_effect_id": native["external_effect_id"],
+        "routing_decision": {"asset_version_id": decision_id, "content_hash": decision_hash},
+        "model_call": {"asset_version_id": model_id, "content_hash": model_hash},
+        "benchmark_hash": authorization_hash(benchmark), "reference_protocol_hash": benchmark["reference_protocol_hashes"][0],
+        "reference_outcome_refs": benchmark["outcome_refs"], "reference_lower_bound": benchmark["predicted_quality"],
+        "human_verified": False, "reader_preference_proven": False, "production_verified": False}
+
+
+def reference_decision_qualifies(decision: Mapping[str, Any], *, evidence: Mapping[str, Any], stage: str) -> bool:
+    from dataclasses import asdict
+    from novel_forge.modules.production_execution.cost_routing import REFERENCE_TASKS, reference_context_bucket, task_policy
+
+    selected = decision.get("selected") or {}
+    candidate = selected.get("candidate") or {}
+    benchmark = selected.get("benchmark") or {}
+    task = decision.get("task") or {}
+    policy = decision.get("policy") or {}
+    execution = evidence.get("production_execution") or {}
+    native = execution.get("execution_request") or {}
+    route = execution.get("route_snapshot") or {}
+    process = execution.get("process_evidence") or {}
+    strata = benchmark.get("reference_label_strata") or {}
+    if (stage not in REFERENCE_TASKS or decision.get("schema_version") != "quality-constrained-routing.v7"
+        or decision.get("status") != "SELECTED" or decision.get("bootstrap_authorization")
+        or decision.get("production_eligible") is False or selected.get("rejected_reasons")
+        or candidate.get("provider") not in {"deepseek", "codex-cli"}
+        or evidence.get("real_model_call") is not True or evidence.get("fixture_protocol_only") or process.get("fixture_protocol_only")
+        or (execution.get("execution_result") or {}).get("outcome") != "SUCCEEDED"
+        or task.get("task_type") != stage or any(task.get(key) != native.get(key) for key in ("project_id", "operation_id", "attempt_id"))
+        or not task.get("producer_contract_hash") or task["producer_contract_hash"] != authorization_hash(task.get("producer_contract"))
+        or policy.get("quality_metric") != "REFERENCE_AGREEMENT" or benchmark.get("quality_metric") != "REFERENCE_AGREEMENT"
+        or benchmark.get("uncertain") is not False or benchmark.get("reference_risk") != policy.get("risk")
+        or len(benchmark.get("reference_protocol_hashes", [])) != 1 or not benchmark.get("outcome_refs")
+        or benchmark.get("reference_context_buckets") != [reference_context_bucket(task.get("input_tokens", 0))]
+        or (candidate.get("provider"), candidate.get("model"), candidate.get("reasoning")) !=
+           (evidence.get("provider_id"), evidence.get("model_id"), route.get("reasoning_effort"))
+        or set(strata) != {"PASS", "FAIL"}):
+        return False
+    try:
+        if policy != asdict(task_policy(stage, policy["risk"], policy["quality_floor"])):
+            return False
+    except (ValueError, KeyError, TypeError):
+        return False
+    if candidate.get("provider") == "deepseek" and (
+        not process.get("served_model_identity_hash") or benchmark.get("served_model_identity_hashes") != [process["served_model_identity_hash"]]
+        or process.get("model_revision") != candidate.get("model_revision")):
+        return False
+    if candidate.get("provider") == "codex-cli" and (
+        (evidence.get("cost") or {}).get("entitlement_snapshot", {}).get("configuration_ref") != candidate.get("model_revision")):
+        return False
+    return (benchmark.get("predicted_quality", 0) >= policy.get("quality_floor", 1)
+        and all(row.get("sample_count", 0) >= policy.get("minimum_samples", 1)
+            and row.get("lower_bound", 0) >= policy.get("quality_floor", 1) for row in strata.values()))

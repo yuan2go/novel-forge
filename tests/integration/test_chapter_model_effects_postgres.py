@@ -1138,7 +1138,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     return observations
                 return [replace(row, evidence_ref=row.evidence_ref + ":" + str(tokens), quality_score=None, accepted=None,
                     evidence_class="REFERENCE_EVALUATION", production_eligible=False, input_tokens=tokens,
-                    reference_agreed=True, reference_label_classes=("PASS" if i % 2 else "FAIL",),
+                    reference_agreed=True, reference_context_tokens=tokens, reference_label_classes=("PASS" if i % 2 else "FAIL",),
                     reference_protocol_hash="sha256:" + "1" * 64, reference_risk=task_policy(scope["task_type"]).risk,
                     sample_identity=row.evidence_ref + ":" + str(tokens))
                     for tokens in (1000, 10000, 40000, 150000, 600000) for i, row in enumerate(observations[:80])]

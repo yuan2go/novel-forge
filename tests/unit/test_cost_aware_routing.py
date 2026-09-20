@@ -648,7 +648,7 @@ def test_reference_agreement_requires_both_label_strata_and_preserves_failed_fir
     reference_task = task(task_type="review")
     observations = [replace(row, quality_score=None, accepted=None, evidence_class="REFERENCE_EVALUATION",
         production_eligible=False, reference_agreed=True, reference_label_classes=("PASS" if i % 2 else "FAIL",),
-        sample_identity=str(i), experiment_partition="CALIBRATION", reference_risk="MEDIUM",
+        sample_identity=str(i), experiment_partition="CALIBRATION", reference_risk="MEDIUM", reference_context_tokens=1000,
         reference_protocol_hash="sha256:" + "1" * 64) for i, row in enumerate(samples(n=80))]
     for name in ("review", "rereview", "quality_structural", "quality_longform"):
         result = route(replace(reference_task, task_type=name), [candidate()], {"flash":
@@ -663,7 +663,7 @@ def test_reference_agreement_requires_both_label_strata_and_preserves_failed_fir
     for bad in (
         [replace(row, reference_label_classes=("PASS",)) for row in observations],
         [replace(row, reference_risk="LOW") for row in observations],
-        [replace(row, input_tokens=100_000) for row in observations],
+        [replace(row, reference_context_tokens=100_000) for row in observations],
         [replace(row, reference_protocol_hash="sha256:" + str(i % 2) * 64) for i, row in enumerate(observations)],
         [replace(row, experiment_partition="HOLDOUT") for row in observations],
         [replace(row, reference_agreed=i % 2 == 1) for i, row in enumerate(observations)],
@@ -672,7 +672,7 @@ def test_reference_agreement_requires_both_label_strata_and_preserves_failed_fir
     ):
         assert route(reference_task, [candidate()], {"flash": bad})["status"] == "BLOCKED"
     other_context = [replace(row, evidence_ref=f"long:{repeat}:" + row.evidence_ref, sample_identity=f"long:{repeat}:" + row.sample_identity,
-        input_tokens=100_000) for repeat in range(3) for row in observations]
+        reference_context_tokens=100_000) for repeat in range(3) for row in observations]
     assert route(reference_task, [candidate()], {"flash": observations + other_context})["status"] == "SELECTED"
     failures = [replace(row, evidence_ref="failure:" + row.evidence_ref, reference_agreed=None,
         reference_label_classes=(), sample_identity="failed:" + row.sample_identity, schema_success=False,

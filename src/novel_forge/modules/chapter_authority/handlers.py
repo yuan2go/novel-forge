@@ -1789,6 +1789,7 @@ class _QualityGroupHandler:
         )
         context_content = dict(context.content)
         generated: ModelProviderResult | None = None
+        reference_calibration = None
         quality_context = build_quality_context_view(
             group=self.group,
             revision=revision.content,
@@ -1816,14 +1817,17 @@ class _QualityGroupHandler:
                     "dimensions": list(QUALITY_GROUPS[self.group]),
                 },
             )
+            from novel_forge.modules.chapter_quality_authority.reference_sampling import admitted_reference_calibration
+            reference_calibration = admitted_reference_calibration(request, generated,
+                stage=f"quality_{self.group}", target_asset_version_id=revision.asset_version_id)
             provider_entries = []
             for item in generated.output.get("dimensions", []):
                 provider_entries.append(
                     {
                         **dict(item),
                         "target_asset_version_id": revision.asset_version_id,
-                        "calibration_status": "PROVIDER_UNCALIBRATED",
-                        "provider_verified": True,
+                        "calibration_status": "REFERENCE_CALIBRATED" if reference_calibration else "PROVIDER_UNCALIBRATED",
+                        "provider_verified": True, "human_verified": False,
                         # WHY: Scripted Provider output is useful only for exercising
                         # the internal protocol.  Quality Authority will turn a
                         # passing result into an explicit fixture waiver only
@@ -1850,7 +1854,7 @@ class _QualityGroupHandler:
             revision_asset_version_id=revision.asset_version_id,
             context_bundle=context_content,
             canon=canon.content,
-            fixture=fixture,
+            fixture=fixture, reference_calibration=reference_calibration,
         )
         content["quality_context_type"] = quality_context["type"]
         content["quality_context_digest"] = quality_context["context_digest"]

@@ -5506,6 +5506,10 @@
         {
           "path": "tests/unit/test_cost_aware_routing.py",
           "symbol": "test_reference_agreement_requires_both_label_strata_and_preserves_failed_first_attempts"
+        },
+        {
+          "path": "tests/integration/test_provider_routing_postgres.py",
+          "symbol": "test_formal_quality_reference_calibration_binds_native_receipt_decision_and_target"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8768,7 +8772,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:e782d504d27b837b707b607d34a555d62c9e6bb536b2c539fe27fdb7a3a8cba9"
+    "implementation_tree_sha": "sha256:f65debf2295c8bbf330964b521be17d0cb152c10195d3d776f587d4f275f7186"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -9083,7 +9087,7 @@
     {
       "id": "reviewer-reference-admission-bounds",
       "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
-      "statement": "Chapter reviewer admission uses native independent reference agreement, separate positive and negative strata, exact producer and protocol versions, matching risk and context-length bands. The 20-point maximum score-label range and binary lower-bound policy require campaign protocol review; they do not prove literary quality, non-inferiority or reader preference. Formal Quality profile use remains a separate gap.",
+      "statement": "Chapter reviewer admission uses native independent reference agreement, separate positive and negative strata, exact producer and protocol versions, matching risk and context-length bands. The 20-point maximum score-label range and binary lower-bound policy require campaign protocol review; they do not prove literary quality, non-inferiority or reader preference. New formal Quality calls may consume their frozen reference-qualified decision only through exact native Effect, Attempt, ModelCallLog, target and served-model bindings. Reports retain this provenance without activating a global profile or claiming human preference. Context bands use frozen input estimates rather than aggregated billed usage.",
       "design_review_required": true,
       "evidence": [
         {
@@ -9093,6 +9097,10 @@
         {
           "path": "src/novel_forge/modules/production_execution/cost_routing.py",
           "symbol": "benchmark_snapshot"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/reference_sampling.py",
+          "symbol": "admitted_reference_calibration"
         }
       ]
     }
