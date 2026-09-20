@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `307bee3e28df07898e81dca0eb2147e9e171e237`
+Reality baseline: `9fc18957d1f6f2e8d0b0a1eebbb83aabcb87189e`
 Baseline implementation identity:
-`sha256:e1dd43acca11bcecbb7e736e65332fa8824e305e85e6fa1ab503ed103a560537`
+`sha256:551dd0a4ce45240f36dc291c7cc3c3d1e391bcdfd1472e7cf7e5b344b29744c5`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "307bee3e28df07898e81dca0eb2147e9e171e237",
-    "implementation_tree_sha": "sha256:e1dd43acca11bcecbb7e736e65332fa8824e305e85e6fa1ab503ed103a560537"
+    "sha": "9fc18957d1f6f2e8d0b0a1eebbb83aabcb87189e",
+    "implementation_tree_sha": "sha256:551dd0a4ce45240f36dc291c7cc3c3d1e391bcdfd1472e7cf7e5b344b29744c5"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -114,7 +114,8 @@ Current scope review (2026-09-20): Implemented identity, entitlement, corpus-ing
 and Source/MKAOS mechanics are documented only in [current-system](../../docs/current-system.md).
 The completed G1/G2 implementation plans and historical review paragraphs have been
 removed. G3/G4 below specify a proposed bounded real-Provider campaign, not observed
-results. The original Craft fixture corpus does not perform this campaign, establish
+results. Campaign sampling quotas and independent-input counts do not execute G3/G4
+or establish calibrated judges. The original Craft fixture corpus does not perform this campaign, establish
 classical-text consumption, authorize model spend or supply independent editorial proof.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption
