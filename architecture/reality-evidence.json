@@ -4334,6 +4334,212 @@
           "locator": "\"tested_sha\": \"23346cda84e9d2d8df62d75b55e2ba0f0f102799\""
         }
       ]
+    },
+    {
+      "id": "p0-backend-engineering-qualification-c561f0a0cdf5",
+      "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+      "evidence_class": "p0_backend_engineering_qualification",
+      "gate": "P0_PROFILE=local make p0-backend-qualification",
+      "observed_at_sha": "c561f0a0cdf55d0c84d79ecdf26e464c4ef13216",
+      "source_tree": "b097a1636f1d23486b6e485ab6c610244f191ce1",
+      "implementation_tree_sha": "sha256:e1dd43acca11bcecbb7e736e65332fa8824e305e85e6fa1ab503ed103a560537",
+      "dependency_snapshot_digest": "sha256:9daaaecf20fde01b6064960c601b4565bbbb4b18b7dc9af0a0adb6babbe3d21b",
+      "collected": 5137,
+      "passed": 5137,
+      "failed": 0,
+      "collections": [
+        {
+          "classification": "BACKEND_NON_POSTGRESQL",
+          "collected_nodes": 2815,
+          "junit_cases": 4267,
+          "passed": 4267,
+          "skipped": 0,
+          "complete": true
+        },
+        {
+          "classification": "MIGRATION_COMPATIBILITY",
+          "collected_nodes": 92,
+          "junit_cases": 105,
+          "passed": 105,
+          "skipped": 0,
+          "complete": true,
+          "repeated_in_postgresql_collection": true
+        },
+        {
+          "classification": "POSTGRESQL_REQUIRED",
+          "collected_nodes": 774,
+          "junit_cases": 870,
+          "passed": 870,
+          "skipped": 0,
+          "complete": true
+        }
+      ],
+      "gates": [
+        {
+          "id": "source-preflight",
+          "status": "PASS"
+        },
+        {
+          "id": "documentation-reality",
+          "status": "PASS"
+        },
+        {
+          "id": "static-and-manifests",
+          "status": "PASS"
+        },
+        {
+          "id": "pytest-backend",
+          "status": "PASS"
+        },
+        {
+          "id": "postgresql-start",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-fresh",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-compatibility",
+          "status": "PASS"
+        },
+        {
+          "id": "pytest-postgresql-integration",
+          "status": "PASS"
+        },
+        {
+          "id": "migration-head",
+          "status": "PASS"
+        },
+        {
+          "id": "query-plan-release",
+          "status": "PASS"
+        },
+        {
+          "id": "compose-runtime",
+          "status": "PASS"
+        },
+        {
+          "id": "resource-cleanup",
+          "status": "PASS"
+        },
+        {
+          "id": "evidence-finalization",
+          "status": "PASS"
+        }
+      ],
+      "migration": {
+        "applied_count": 139,
+        "expected_head": "20260920_0138_narrative_craft_origin",
+        "observed_head": "20260920_0138_narrative_craft_origin"
+      },
+      "cleanup": {
+        "status": "PASS",
+        "owned_resource_count": 20,
+        "remaining_resource_count": 0,
+        "phases": [
+          {
+            "compose_project": "nf-p0-65dcc9770fce44349d5a1d192502020c",
+            "phase": "postgresql",
+            "receipt": "compose-resource-ownership-nf-p0-65dcc9770fce44349d5a1d192502020c.json",
+            "remaining_resource_count": 0,
+            "resource_count": 2,
+            "run_id": "p0-65dcc9770fce44349d5a1d192502020c",
+            "status": "PASS"
+          },
+          {
+            "compose_project": "nf-p0-65dcc9770fce44349d5a1d192502020c-runtime",
+            "phase": "compose-runtime",
+            "receipt": "compose-resource-ownership-nf-p0-65dcc9770fce44349d5a1d192502020c-runtime.json",
+            "remaining_resource_count": 0,
+            "resource_count": 18,
+            "run_id": "p0-65dcc9770fce44349d5a1d192502020c",
+            "status": "PASS"
+          }
+        ]
+      },
+      "proof_scope": {
+        "ceiling": "LOCAL_BACKEND_ENGINEERING",
+        "does_not_establish": [
+          "ADMIN_UI_EXECUTION",
+          "CREDENTIALED_PROVIDER_EXECUTION",
+          "HUMAN_EDITORIAL_EVIDENCE",
+          "LONGITUDINAL_NARRATIVE_STABILITY",
+          "PRODUCTION_OPERATION"
+        ],
+        "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+        "proves": [
+          "runtime-composition",
+          "project-workspace-authority",
+          "command-attempt-lease-fence",
+          "capability-pack-instruction-runtime",
+          "external-effect-provider-control",
+          "source-import-and-knowledge",
+          "book-design-and-story-formation",
+          "story-design-authority",
+          "hierarchical-planning",
+          "narrative-realization",
+          "plan-change-authority",
+          "book-opening-workflow",
+          "book-production-coordination",
+          "chapter-group-coordination",
+          "context-and-retrieval",
+          "chapter-production-saga",
+          "review-revision-quality",
+          "book-chapter-acceptance",
+          "whole-book-completion-cases",
+          "canon-and-narrative-state",
+          "reader-and-followup-evidence",
+          "agent-runtime",
+          "postgresql-persistence-and-migrations",
+          "retry-recovery-and-replay",
+          "narrative-craft-intelligence"
+        ],
+        "schema_version": "novel-forge.qualification-proof-scope.v1"
+      },
+      "qualification_report": {
+        "run_id": "p0-65dcc9770fce44349d5a1d192502020c",
+        "artifact_root": "novel-forge-p0-c561f0a0cdf5-65dcc9770fce44349d5a1d192502020c",
+        "artifact": "p0-backend-qualification-c561f0a0cdf55d0c84d79ecdf26e464c4ef13216.json",
+        "repository_path": "architecture/evidence/p0-backend-qualification-c561f0a0cdf55d0c84d79ecdf26e464c4ef13216.json",
+        "sha256": "sha256:2b965c8e6e52def87d539a742bcc4c3302b444db4a5e99ee71c64e0ed1a1a0b0",
+        "retention": "REPOSITORY_CURRENT_QUALIFICATION_ARTIFACT"
+      },
+      "result_count_scope": "UNIQUE_COMPLETE_COLLECTION_JUNIT_CASES",
+      "qualification_evidence": [
+        {
+          "path": "tests/unit/test_craft_selection.py",
+          "symbol": "test_governed_catalog_retrieval_is_bounded_replay_stable_and_retains_exact_content"
+        },
+        {
+          "path": "tests/unit/test_craft_execution.py",
+          "symbol": "test_adopted_strategy_reaches_memo_and_draft_task_without_catalog_injection"
+        },
+        {
+          "path": "tests/unit/test_narrative_craft_review.py",
+          "symbol": "test_original_controls_preserve_evidence_through_review_targeted_revision_and_rereview"
+        },
+        {
+          "path": "tests/integration/test_narrative_craft_authoring_postgres.py",
+          "symbol": "test_original_candidate_separate_exact_approval_query_and_replay"
+        },
+        {
+          "path": "tests/integration/test_craft_planning_postgres.py",
+          "symbol": "test_pg_frozen_selection_production_planning_handler_derives_exact_scene_strategy"
+        },
+        {
+          "path": "tests/integration/test_narrative_craft_chapter_postgres.py",
+          "symbol": "test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_receipt_replay"
+        },
+        {
+          "path": "tests/integration/test_craft_discovery_postgres.py",
+          "symbol": "test_source_craft_discovery_uses_native_effect_observation_governance_and_exact_replay"
+        },
+        {
+          "path": "tests/integration/test_narrative_craft_migration_upgrade_postgres.py",
+          "symbol": "test_craft_origin_upgrade_preserves_legacy_source_candidates_and_enforces_new_origin"
+        }
+      ]
     }
   ],
   "qualification_failures": [],
@@ -8058,8 +8264,10 @@
           "symbol": "test_craft_origin_upgrade_preserves_legacy_source_candidates_and_enforces_new_origin"
         }
       ],
-      "qualification_state": "EXECUTABLE",
-      "qualification_run_ids": [],
+      "qualification_state": "QUALIFIED",
+      "qualification_run_ids": [
+        "p0-backend-engineering-qualification-c561f0a0cdf5"
+      ],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
     }
   ],
