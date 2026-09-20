@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `362f8ed278f0a618cab9e3e5d7cb9b14fb5cd833`
+Reality baseline: `48e16cb250a5aa248657028ffc845806730556d3`
 Baseline implementation identity:
-`sha256:e0847d8df51de3aec7c72cd92ca0fbd1db26e36372f2560af0982f0ca38e0df9`
+`sha256:d259bb8ee13071e2c656754d887dfd6e03e654121d55a0404dce9904f7e4c67f`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "362f8ed278f0a618cab9e3e5d7cb9b14fb5cd833",
-    "implementation_tree_sha": "sha256:e0847d8df51de3aec7c72cd92ca0fbd1db26e36372f2560af0982f0ca38e0df9"
+    "sha": "48e16cb250a5aa248657028ffc845806730556d3",
+    "implementation_tree_sha": "sha256:d259bb8ee13071e2c656754d887dfd6e03e654121d55a0404dce9904f7e4c67f"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -117,7 +117,7 @@ removed. G3/G4 below specify a proposed bounded real-Provider campaign, not obse
 results. Campaign sampling quotas and independent-input counts do not execute G3/G4
 or establish calibrated judges. Native Chapter generator sampling now preserves the
 original frozen task and approved producer contract in an isolated Kernel Saga; its
-ineligible samples and scripted recovery tests do not execute the four-arm campaign. The original Craft fixture corpus does not perform this campaign, establish
+ineligible samples and scripted recovery tests do not execute the four-arm campaign. World reference sampling can now evaluate a generator sample without formal World generation; this does not supply calibrated judges or real corpus consumption. The original Craft fixture corpus does not perform this campaign, establish
 classical-text consumption, authorize model spend or supply independent editorial proof.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption
