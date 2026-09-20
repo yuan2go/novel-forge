@@ -974,6 +974,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         expiry = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
         grants = []
         count = 0
+        producer_contracts = {}
         for definition, task in SOURCE_BOOTSTRAP_TASKS.items():
             source_id = self._operations(definition)[0]
             with transaction() as connection, connection.cursor() as cursor:
@@ -1013,6 +1014,11 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                     count += 1
                     payload = kwargs["request_payload"]
                     self.assertNotIn("routing_bootstrap_authorization", payload["input"])
+                    frozen = payload["_production_execution"]["capability_runtime"]["routing_decision"]["task"]
+                    self.assertEqual(frozen["producer_contract"]["stage"], task)
+                    self.assertTrue(frozen["producer_contract_hash"].startswith("sha256:"))
+                    self.assertEqual(producer_contracts.setdefault(task, frozen["producer_contract_hash"]),
+                                     frozen["producer_contract_hash"])
                     evidence = deepcopy(receipt)
                     self.assertTrue(evidence["fixture_protocol_only"])
                     evidence.update(real_model_call=False, production_verified=False,
@@ -1034,6 +1040,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                 self.scheduler.run_or_recover(operation_id=admitted["operation_id"], project_id=self.project_id)
         after = self._source_intelligence_counts()
         self.assertEqual(count, 6)
+        self.assertEqual(len(set(producer_contracts.values())), 3)
         self.assertEqual(after.pop("model_effects"), before.pop("model_effects") + 6)
         self.assertEqual(after, before)
         campaign = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=self.project_id, campaign_id=self.project_id)

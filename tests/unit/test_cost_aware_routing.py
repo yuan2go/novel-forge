@@ -541,3 +541,63 @@ def test_window_censoring_does_not_promote_repaired_samples():
                                     policy=task_policy("classification"), maximum_samples=3)
         assert result["metric_sample_count"] == 0
         assert result["independent_sample_count"] == 1
+
+
+@pytest.mark.parametrize("change", ["prompt", "schema", "pack_schema", "context_policy", "provider_view", "language", "source_isolation"])
+def test_producer_identity_separates_contract_changes_from_new_independent_data(change):
+    from copy import deepcopy
+    from novel_forge.modules.production_execution.cost_routing import producer_contract_identity, snapshot_hash
+
+    artifact = {"ref": "fixture-prompt", "version": "1", "content_hash": "sha256:" + "a" * 64}
+    prompt = {"system_instruction": dict(artifact), "prompt_template": dict(artifact), "skill": dict(artifact),
+              "output_schema_ref": "fixture-schema", "output_schema_hash": "sha256:" + "b" * 64,
+              "allowed_tools": ["model.provider.invoke"], "fully_rendered_prompt_hash": "sample-one",
+              "context_asset_version_ids": ["sample-one-context"], "required_reader_facing_language": "zh",
+              "provider_view": {"task_contract_version": "task.v1", "context_contract_version": "context.v1",
+                                "component_hashes": {"data": "sample-one"}}}
+    materialization = {"schema_version": "fixture.v1", "stage": "draft",
+                       "pack_artifacts": {"context_policy": dict(artifact), "output_schema": dict(artifact)},
+                       "source_isolation": {"raw_source_allowed": False},
+                       "attempt_snapshot": {"operation_id": "sample-one"}}
+    original = snapshot_hash(producer_contract_identity(prompt, materialization))
+    next_prompt, next_materialization = deepcopy(prompt), deepcopy(materialization)
+    next_prompt.update(fully_rendered_prompt_hash="sample-two", context_asset_version_ids=["sample-two-context"])
+    next_prompt["provider_view"]["component_hashes"]["data"] = "sample-two"
+    next_materialization["attempt_snapshot"]["operation_id"] = "sample-two"
+    assert snapshot_hash(producer_contract_identity(next_prompt, next_materialization)) == original
+    if change == "prompt":
+        next_prompt["prompt_template"]["content_hash"] = "sha256:" + "c" * 64
+    elif change == "schema":
+        next_prompt["output_schema_hash"] = "sha256:" + "c" * 64
+    elif change == "pack_schema":
+        next_materialization["pack_artifacts"]["output_schema"]["version"] = "2"
+    elif change == "context_policy":
+        next_materialization["pack_artifacts"]["context_policy"]["version"] = "2"
+    elif change == "provider_view":
+        next_prompt["provider_view"]["context_contract_version"] = "context.v2"
+    elif change == "language":
+        next_prompt["required_reader_facing_language"] = "en"
+    else:
+        next_materialization["source_isolation"]["raw_source_allowed"] = True
+    assert snapshot_hash(producer_contract_identity(next_prompt, next_materialization)) != original
+
+
+def test_planning_schema_identity_preserves_independent_bindings_and_contract_shape():
+    from copy import deepcopy
+    from novel_forge.modules.story_planning_runtime.execution import planning_provider_output_schema, planning_schema_evidence_identity
+    from novel_forge.modules.hierarchical_planning.domain import PlanContractType
+
+    first = planning_provider_output_schema(PlanContractType.VOLUME, logical_key="volume:a",
+        parent_version_id="parent:a", dependency_version_ids=("input:a",))
+    second = planning_provider_output_schema(PlanContractType.VOLUME, logical_key="volume:b",
+        parent_version_id="parent:b", dependency_version_ids=("input:b",))
+    assert first != second
+    identity = planning_schema_evidence_identity(first, "volume:v1")
+    assert planning_schema_evidence_identity(second, "volume:v1") == identity
+    incompatible = deepcopy(second)
+    incompatible["properties"]["objective"]["maxLength"] = 12
+    assert planning_schema_evidence_identity(incompatible, "volume:v1") != identity
+    assert planning_schema_evidence_identity(second, "volume:v2") != identity
+    different_shape = planning_provider_output_schema(PlanContractType.VOLUME, logical_key="volume:c",
+        parent_version_id="parent:c", dependency_version_ids=("input:c", "input:d"))
+    assert planning_schema_evidence_identity(different_shape, "volume:v1") != identity

@@ -5,7 +5,10 @@ from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
+from pathlib import Path
 from typing import Any, Callable
+
+from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
 
 from novel_forge.modules.capability_pack_authority import (
     CapabilityPackAttemptSnapshot,
@@ -2195,6 +2198,43 @@ def _canonical_narrative_provider_properties(
     }
 
 
+def planning_schema_evidence_identity(
+    schema: Mapping[str, Any], schema_ref: str
+) -> dict[str, Any]:
+    root = Path(__file__).resolve().parents[1]
+    sources = sorted((root / "story_planning_runtime").glob("*.py")) + [
+        root / "story_design_authority" / "author_input.py",
+        root / "hierarchical_planning" / "domain.py",
+        root / "chapter_authority" / "execution_gateway.py",
+        root / "chapter_authority" / "provider_views.py",
+    ]
+
+    def shape(value: Any) -> Any:
+        if isinstance(value, dict):
+            result = {}
+            for key, item in value.items():
+                if key == "const":
+                    result[key] = {"binding_type": type(item).__name__}
+                elif key == "enum":
+                    result[key] = {"binding_types": [type(part).__name__ for part in item]}
+                else:
+                    result[key] = shape(item)
+            return result
+        if isinstance(value, list):
+            return [shape(item) for item in value]
+        return value
+
+    return {
+        "ref": schema_ref, "identity_version": "planning-schema-factory-and-shape.v1",
+        "factory_hash": canonical_hash({
+            str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sources
+        }),
+        "shape_hash": canonical_hash(shape(dict(schema))),
+        "binding_policy": "CONST_AND_ENUM_VALUES_ARE_FROZEN_PER_REQUEST;_TYPES_CARDINALITY_AND_FACTORY_ARE_SHARED",
+    }
+
+
 def planning_provider_output_schema(
     contract_type: PlanContractType,
     *,
@@ -4129,6 +4169,11 @@ class PostgresPlanningExecutionPreparer:
                     cache_prefix=prompt.encode()[
                         : prompt_evidence["reusable_prefix_bytes"]
                     ],
+                    producer_contract=producer_contract_identity(
+                        prompt_evidence, materialization,
+                        schema_identity=(planning_schema_evidence_identity(output_schema, output_schema_ref)
+                                         if provider_stage is None else None),
+                    ),
                     request_input=stable_request_payload["input"],
                     input_hash="sha256:"
                     + hashlib.sha256(prompt.encode()).hexdigest(),

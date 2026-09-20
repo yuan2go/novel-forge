@@ -180,6 +180,7 @@ def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
             chapter=int(task.declared_requirements.get("chapter") or 0),
             input_hash=task.input_hash,
             request_input=request_input,
+            producer_contract=task.producer_contract,
             cache_prefix=cache_prefix,
             lineage_operation_ids=task.lineage_operation_ids,
             dry_run=True,
@@ -268,21 +269,19 @@ def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
             observations = registry.observations(
                 project_id=args.project_id, task_type=task_type, candidate=candidate
             )
-            snapshot = benchmark_snapshot(
-                observations,
-                now=datetime.now(timezone.utc),
-                policy=task_policy(task_type),
-            )
-            priced_metrics = _priced_observation_metrics(observations)
-            benchmarks.append(
-                {
-                    "task_type": task_type,
-                    "candidate_id": candidate.candidate_id,
+            for contract_hash in sorted({row.producer_contract_hash for row in observations}) or [""]:
+                cohort = [row for row in observations if row.producer_contract_hash == contract_hash]
+                snapshot = benchmark_snapshot(
+                    cohort, now=datetime.now(timezone.utc), policy=task_policy(task_type),
+                )
+                benchmarks.append({
+                    "task_type": task_type, "candidate_id": candidate.candidate_id,
                     "model_revision": candidate.model_revision,
-                    **snapshot,
-                    **priced_metrics,
-                }
-            )
+                    "producer_contract_hash": contract_hash,
+                    "scope": "PRODUCER_CONTRACT_COHORT" if contract_hash else "LEGACY_PRODUCER_SCOPE_UNKNOWN",
+                    "production_qualification": "REQUIRES_CURRENT_CONTRACT_AND_QUALITY_GATE",
+                    **snapshot, **_priced_observation_metrics(cohort),
+                })
     return {
         "source": "POSTGRESQL_AUTHORITY_PROJECTION",
         "project_id": args.project_id,

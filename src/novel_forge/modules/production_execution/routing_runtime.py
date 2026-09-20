@@ -83,7 +83,8 @@ class PostgresRoutingRegistry:
         }
 
     def observations(
-        self, *, project_id: str, task_type: str, candidate: ModelCandidate
+        self, *, project_id: str, task_type: str, candidate: ModelCandidate,
+        producer_contract_hash: str | None = None,
     ) -> list[BenchmarkObservation]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -133,6 +134,8 @@ class PostgresRoutingRegistry:
                      AND model.evidence->>'model_id'=%s
                      AND model.evidence #>> '{production_execution,route_snapshot,reasoning_effort}'=%s
                      AND COALESCE(model.evidence->>'real_model_call',model.evidence->>'real_provider_proven')='true'
+                     AND (%s::text IS NULL OR (%s::text<>'' AND effect.request_payload
+                       #>> '{_production_execution,capability_runtime,routing_decision,task,producer_contract_hash}'=%s))
                      AND version.created_at >= NOW() - INTERVAL '30 days'
                    ORDER BY version.created_at DESC LIMIT 200""",
                 [
@@ -141,6 +144,7 @@ class PostgresRoutingRegistry:
                     candidate.provider,
                     candidate.model,
                     candidate.reasoning,
+                    producer_contract_hash, producer_contract_hash, producer_contract_hash,
                 ],
             )
             rows = uow.cursor.fetchall()
@@ -316,6 +320,7 @@ class PostgresRoutingRegistry:
                     production_eligible=production_eligible,
                     sample_identity=sample_identity,
                     experiment_partition=campaign.get("partition", ""),
+                    producer_contract_hash=str((decision or {}).get("task", {}).get("producer_contract_hash") or ""),
                 )
             )
         return observations
@@ -661,8 +666,11 @@ class ProductionProviderRouter:
         request_input: Mapping[str, Any] | None = None,
         chapter: int = 0,
         lineage_operation_ids: Sequence[str] = (),
+        producer_contract: Mapping[str, Any] | None = None,
     ) -> tuple[Any, dict[str, Any]]:
         lineage = _routing_operation_lineage(operation_id, lineage_operation_ids)
+        contract = dict(producer_contract or {})
+        contract_hash = snapshot_hash(contract) if contract else ""
         logical_ref = (
             "production_execution/routing/"
             + snapshot_hash(
@@ -693,6 +701,8 @@ class ProductionProviderRouter:
                         "input_tokens": input_tokens,
                         "output_tokens": output_tokens,
                         "work_id": work_id,
+                        "producer_contract": contract,
+                        "producer_contract_hash": contract_hash,
                         "input_hash": input_hash,
                         "request_hash": snapshot_hash(request_input)
                         if request_input is not None
@@ -779,6 +789,7 @@ class ProductionProviderRouter:
                 "candidates": budgets,
             },
             lineage_operation_ids=lineage,
+            producer_contract=contract, producer_contract_hash=contract_hash,
         )
         now = datetime.now(timezone.utc)
         from .routing_catalog import deepseek_pricing_period
@@ -800,7 +811,8 @@ class ProductionProviderRouter:
         )
         observations = {
             candidate.candidate_id: self.registry.observations(
-                project_id=project_id, task_type=task_type, candidate=candidate
+                project_id=project_id, task_type=task_type, candidate=candidate,
+                producer_contract_hash=contract_hash,
             )
             for candidate in candidates
         }

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
+
 from decimal import Decimal
 
 from collections.abc import Mapping
@@ -1355,6 +1357,7 @@ class PostgresContentIntelligenceExecutionPort:
                 input_tokens=len(prompt.encode()) + 512,
                 output_tokens=self.provider_output_token_reserve,
                 trace_id=worker.trace_id, correlation_id=worker.correlation_id, cache_prefix=prompt.encode()[:prompt_evidence["reusable_prefix_bytes"]],
+                producer_contract=producer_contract_identity(prompt_evidence, materialization),
                 request_input=spec.input_payload,
                 input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest())
         envelope = ProviderRequestEnvelope(

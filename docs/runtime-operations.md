@@ -352,6 +352,19 @@ the existing `content.authority.query` permission. Estimated upper bounds must n
 reported as actual billed cost. Missing calibrated benchmark evidence blocks routing;
 operators must not seed fixture scores as production quality evidence.
 
+For a current scoped explanation, copy `producer_contract` from a native frozen
+RoutingDecision into the task context. Native dispatch builds it from its
+actual Prompt/Skill, Context policy, provider view and Schema identities; a workflow does
+not choose its model through this field. Omitting this contract keeps prospective
+selection cold-start blocked. `metrics` reports separate `producer_contract_hash` cohorts;
+`LEGACY_PRODUCER_SCOPE_UNKNOWN` is historical diagnostics, not reusable qualification.
+Ordinary Planning generator schemas contain sample-specific const/enum bindings. Their
+routing identity preserves types/cardinalities, the schema family and owning factory
+source hashes, while Provider admission retains the complete bound schema. Changing
+factory code invalidates that cohort; changing only input IDs does not. Provider-stage
+review/evaluation schemas keep their exact schema hash. Judge calibration and risk/length
+compatibility still need their own governed evidence; producer identity does not supply it.
+
 `EFFECT_RETRY_DEFERRED` means the latest durable dispatch has an active rate-limit or
 availability backoff. Do not create a parallel task to evade it. Inspect the referenced
 dispatch and retry after its deadline. Availability snapshots cover the same project and

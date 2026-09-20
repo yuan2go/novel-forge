@@ -103,7 +103,8 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
                 "status": "BENCHMARK_SELECTED",
                 "mode": "BENCHMARK_CHALLENGER",
                 "production_eligible": False,
-                "task": {"input_hash": ("sha256:" + format(i if input_identity == "unique" else 0, "064x"))
+                "task": {**({"producer_contract_hash": "sha256:" + "a" * 64} if i < 9 else {}),
+                         "input_hash": ("sha256:" + format(i if input_identity == "unique" else 0, "064x"))
                          if input_identity != "missing" else ""},
                 "selected": {"candidate": asdict(candidate)},
                 **({"bootstrap_authorization": {"authorization": {"campaign": {
@@ -187,6 +188,17 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
         project_id=scope[0], task_type="draft", candidate=candidate
     )
     assert len(observations) == 10
+    scoped = registry.observations(
+        project_id=scope[0], task_type="draft", candidate=candidate,
+        producer_contract_hash="sha256:" + "a" * 64,
+    )
+    assert len(scoped) == 9
+    assert all(row.producer_contract_hash == "sha256:" + "a" * 64 for row in scoped)
+    for incompatible in ("", "sha256:" + "b" * 64):
+        assert registry.observations(
+            project_id=scope[0], task_type="draft", candidate=candidate,
+            producer_contract_hash=incompatible,
+        ) == []
     assert all(row.accepted is None for row in observations)
     assert all(
         row.evidence_class == "BENCHMARK_CHALLENGER"

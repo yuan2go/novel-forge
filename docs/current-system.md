@@ -97,11 +97,21 @@ and policy versions. A campaign project cannot replace that identity or admit ne
 sampling grants. This quota covers authorized Planning, Source and reference sampling;
 production, ordinary review and entitlement
 still require their existing project and Book budget policies. It is not a campaign-wide
-mixed-billing authorization. Router v4 counts first attempts per campaign data group
+mixed-billing authorization. Router v5 counts first attempts per campaign data group
 (input hashes outside campaigns) for quality
 qualification, keeps retries in operational cost/yield, and excludes development and
 holdout partitions from qualification feedback. The provider view removes routing/grant
 metadata from narrative evaluation context; this does not establish evaluator calibration.
+
+New Chapter, Planning and Source decisions bind the materialized Prompt/Skill, provider
+view versions, Context policy and output schema to a producer-contract hash. Native
+benchmark reads require the same nonempty hash; missing or incompatible historical
+contracts cannot qualify a new call. Metrics keep separate contract cohorts and mark
+legacy unknown scope. Parameterized Planning generator schemas retain exact request
+bindings separately from a factory-and-shape identity, so changing asset IDs does not
+manufacture a different template. This conservative identity fingerprints the owning
+schema code; it does not prove compatibility across Judge versions, risk or length strata.
+Frozen old decisions remain immutable replay evidence, not new qualification evidence.
 
 Quality predictions are bounded by observed schema and acceptance yield, so failed
 outputs cannot disappear behind scores from successful outputs. Cache estimates use

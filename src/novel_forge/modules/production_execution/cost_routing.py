@@ -25,6 +25,49 @@ def snapshot_hash(value: Any) -> str:
     )
 
 
+def producer_contract_identity(
+    prompt_evidence: Mapping[str, Any], materialization: Mapping[str, Any],
+    *, schema_identity: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    artifacts = materialization.get("pack_artifacts", materialization)
+    identity: dict[str, Any] = {
+        "schema_version": "routing-producer-contract.v1",
+        "materialization_schema": materialization["schema_version"],
+        "stage": materialization["stage"],
+        "output_schema": dict(schema_identity) if schema_identity is not None else {
+            "ref": prompt_evidence["output_schema_ref"],
+            "content_hash": prompt_evidence["output_schema_hash"],
+        },
+        "allowed_tools": sorted(prompt_evidence["allowed_tools"]),
+        "provider_prompt_projection_version": prompt_evidence.get(
+            "provider_prompt_projection_version", "source-intelligence-prompt.v1"
+        ),
+        "required_reader_facing_language": prompt_evidence.get(
+            "required_reader_facing_language", ""
+        ),
+        "provider_view_versions": {
+            key: value for key, value in prompt_evidence.get("provider_view", {}).items()
+            if key in {"task_contract_version", "context_contract_version"}
+        },
+        "source_isolation": materialization.get("source_isolation", {}),
+    }
+    for name in ("system_instruction", "prompt_template", "skill"):
+        identity[name] = {
+            key: prompt_evidence[name][key]
+            for key in ("ref", "version", "content_hash")
+        }
+    for name in ("context_policy", "tool_policy", "input_schema"):
+        if name in artifacts:
+            identity[name] = {
+                key: artifacts[name][key] for key in ("ref", "version", "content_hash")
+            }
+    if "pack_artifacts" in materialization and "output_schema" in artifacts:
+        identity["pack_output_schema"] = {
+            key: artifacts["output_schema"][key] for key in ("ref", "version", "content_hash")
+        }
+    return identity
+
+
 @dataclass(frozen=True)
 class TaskPolicy:
     risk: str
@@ -128,7 +171,7 @@ TASK_TAXONOMY = {
         "HIGH",
     ),
 }
-POLICY_VERSION = "quality-constrained-routing.v4"
+POLICY_VERSION = "quality-constrained-routing.v5"
 
 
 def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> TaskPolicy:
@@ -271,6 +314,7 @@ class BenchmarkObservation:
     production_eligible: bool = True
     sample_identity: str = ""
     experiment_partition: str = ""
+    producer_contract_hash: str = ""
 
     def __post_init__(self) -> None:
         for value in (self.quality_score, self.judge_score):
@@ -557,6 +601,8 @@ class RoutingTask:
     declared_requirements: Mapping[str, Any] = field(default_factory=dict)
     policy_snapshot: Mapping[str, Any] = field(default_factory=dict)
     lineage_operation_ids: tuple[str, ...] = ()
+    producer_contract: Mapping[str, Any] = field(default_factory=dict)
+    producer_contract_hash: str = ""
 
     def __post_init__(self) -> None:
         if not all(
