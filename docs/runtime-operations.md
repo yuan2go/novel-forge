@@ -645,6 +645,26 @@ review; it cannot activate the candidate. Its successful immutable output must h
 `provider_evidence_claimed: false`. Its native author must differ from the generation
 and evaluator actors. Changing a caller-supplied actor string is not authentication.
 
+To bind trusted semantic references, record actual independent HumanEvaluation and
+AdjudicatedEvaluation assets through the same Content commands, using
+`reference_sample: {asset_version_id, content_hash}` for the exact Planning benchmark
+candidate. Admission chooses `2.4.0`, validates its native generation/grant and preserves
+`CANDIDATE / INELIGIBLE`. Use dimension `<layer>:<criterion>` for every canonical
+qualification criterion, `PASSED` or `FAILED`, and one consistent protocol and Chapter/Arc
+scope. Freeze at least two independent human records per adjudication; the evaluator
+and generator cannot author those labels. These commands record real supplied labels;
+the Coding Agent must not manufacture human evidence.
+
+Extend the ordinary `reference_evaluation` binding with
+`adjudicated_reference: {adjudications: [{asset_version_id, content_hash}], scope:
+{scope_type, chapter_start, chapter_end}}`. Its original operator review must agree with
+every adjudicated criterion. Preflight rejects missing dimensions, scope drift and
+overlapping authors before a Provider call. The immutable grant binds the entire extended
+reference object. Successful outputs use `narrative-reference-agreement.v2`; subsequent
+native routing reads that outcome through the same `REFERENCE_AGREEMENT` metric with
+separate positive/negative coverage, producer/protocol/risk/context scope and fixture
+exclusion. This does not promote a sample or establish literary quality or reader preference.
+
 Use the existing `POST /product/production/book-authority/books/{book_id}/planning-evaluations?dry_run=true`
 with the ordinary evaluation command plus `routing_bootstrap_authorization_id` and
 `reference_evaluation: {asset_version_id, content_hash, protocol_version}`. The read-only

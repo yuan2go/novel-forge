@@ -118,7 +118,7 @@ preflight producer hash is checked again by Router before any Effect. The target
 its physical sample type and ineligible state. Replay uses the existing Attempt Pack
 snapshot. Quality-group sampling still requires a frozen native Quality task and target.
 The sampling result cannot activate a Quality profile or qualify itself. Router policy
-`quality-constrained-routing.v8` reads native Chapter and World reference outcomes using a separate
+`quality-constrained-routing.v9` reads native Chapter, World and trusted semantic reference outcomes using a separate
 `REFERENCE_AGREEMENT` metric. The projection revalidates the native grant, target, labels,
 real receipt and recomputed agreement. Fixture labels and calls do not contribute.
 Reference protocol/version hashes, risk and context-length bands stay separate; mixed
@@ -139,6 +139,17 @@ dimensions `REFERENCE_CALIBRATED`; Context and Provider JSON cannot assert this 
 Missing or changed receipts fail closed. Sampling cannot acquire that status or activate
 a global Quality profile. Generator feedback admission remains unimplemented; Narrative
 operator proxy labels alone cannot qualify a semantic evaluator.
+For a Planning benchmark candidate, native Content annotation version `2.4.0` binds
+HumanEvaluation and AdjudicatedEvaluation to the exact ineligible generation and its
+campaign grant. Semantic reference sampling can additionally freeze those adjudications
+and a Chapter/Arc scope alongside its original operator-review binding. Every required
+criterion must match independent native labels, authored by two humans and a separate
+adjudicator outside the generation/evaluation actors. The labels remain outside Provider
+context. `narrative-reference-agreement.v2` retains this provenance; proxy-only sampling
+keeps its original nonqualifying protocol. The feedback projection revalidates the native
+receipt, target, model log and labels, and separates generator/profile protocols before
+reviewer admission. A reference result still cannot create a domain qualification or
+activate its candidate. Scripted labels cannot supply real calibration evidence.
 This does not prove judge calibration or bootstrap every task family. Ordinary production
 routing blocks when sufficient quality evidence is absent.
 

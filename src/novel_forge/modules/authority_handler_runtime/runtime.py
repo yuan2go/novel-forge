@@ -342,15 +342,20 @@ def _load_request(
             reference_sample_id = payload["world_sampling"]["generation_sample"]["asset_version_id"]
         if policy.get("reference_sample_annotation_input_allowed") is True:
             from novel_forge.modules.chapter_quality_authority.reference_subject import (
-                REFERENCE_ANNOTATION_VERSION, WORLD_REFERENCE_ANNOTATION_VERSION, require_reference_annotation,
+                REFERENCE_ANNOTATION_VERSION, WORLD_REFERENCE_ANNOTATION_VERSION, PLANNING_REFERENCE_ANNOTATION_VERSION, require_reference_annotation,
             )
             world_sample = policy.get("world_reference_sample_annotation") is True
-            expected_version = WORLD_REFERENCE_ANNOTATION_VERSION if world_sample else REFERENCE_ANNOTATION_VERSION
-            if operation["definition_version"] != expected_version:
+            planning_sample = policy.get("planning_reference_sample_annotation") is True
+            expected_version = PLANNING_REFERENCE_ANNOTATION_VERSION if planning_sample else (
+                WORLD_REFERENCE_ANNOTATION_VERSION if world_sample else REFERENCE_ANNOTATION_VERSION)
+            if operation["definition_version"] != expected_version or (world_sample and planning_sample):
                 raise KernelError("QUALITY_REFERENCE_ANNOTATION_INVALID", "sample annotation requires its versioned native definition")
             reference_sample_id = require_reference_annotation(uow.cursor, project_id=operation["project_id"],
                 definition_name=operation["definition_name"], payload=payload, actor_id=operation["actor_id"],
-                allowed_types=frozenset({"world_provider_sample"} if world_sample else {"chapter_provider_sample"}))
+                allowed_types=frozenset({"planning_generation_candidate"} if planning_sample else
+                    {"world_provider_sample"} if world_sample else {"chapter_provider_sample"}))
+            if planning_sample:
+                evaluation_candidate_id, reference_sample_id = reference_sample_id, ""
         if policy.get("evaluation_candidate_asset_input_allowed") is True:
             evaluation_candidate_id = str(
                 payload.get("candidate_asset_version_id") or ""

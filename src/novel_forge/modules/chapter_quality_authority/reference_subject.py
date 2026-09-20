@@ -14,6 +14,7 @@ REFERENCE_ANNOTATION_DEFINITIONS = {
 }
 REFERENCE_ANNOTATION_VERSION = "2.2.0"
 WORLD_REFERENCE_ANNOTATION_VERSION = "2.3.0"
+PLANNING_REFERENCE_ANNOTATION_VERSION = "2.4.0"
 
 
 def require_reference_subject(
@@ -23,6 +24,12 @@ def require_reference_subject(
     if (not isinstance(binding, Mapping) or set(binding) != {"asset_version_id", "content_hash"}
         or any(not isinstance(value, str) or not value for value in binding.values())):
         raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "reference annotation requires one exact sample version")
+    if "planning_generation_candidate" in allowed_types:
+        cursor.execute("SELECT asset_type FROM authority_asset JOIN authority_asset_version USING(asset_id) WHERE project_id=%s AND asset_version_id=%s",
+            [project_id, binding["asset_version_id"]])
+        kind = cursor.fetchone()
+        if kind and kind[0] == "planning_generation_candidate":
+            return require_planning_reference_subject(cursor, project_id=project_id, binding=binding)
     cursor.execute("""SELECT asset.asset_type,version.content,version.content_hash,operation.operation_id,operation.actor_id
         FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
         JOIN authority_operation_output_asset output ON output.asset_version_id=version.asset_version_id
@@ -48,6 +55,34 @@ def require_reference_subject(
         or content.get("campaign") != grant.get("campaign") or content["stage"] != grant.get("task_type")):
         raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "sample annotation requires its immutable generation authorization")
     return {**dict(binding), "asset_type": kind, "content": content,
+            "generation_operation_id": operation_id, "generation_actor_id": actor_id}
+
+
+def require_planning_reference_subject(cursor: Any, *, project_id: str, binding: Mapping[str, Any]) -> dict[str, Any]:
+    cursor.execute("""SELECT version.content,version.content_hash,operation.operation_id,operation.actor_id
+        FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
+        JOIN authority_operation_output_asset output ON output.asset_version_id=version.asset_version_id
+          AND output.content_hash=version.content_hash AND output.role='primary'
+        JOIN authority_operation operation ON operation.operation_id=output.operation_id AND operation.project_id=asset.project_id
+        JOIN authority_story_planning_generation generation ON generation.operation_id=operation.operation_id
+          AND generation.project_id=asset.project_id AND generation.candidate_asset_version_id=version.asset_version_id
+        WHERE asset.project_id=%s AND version.asset_version_id=%s AND asset.asset_type='planning_generation_candidate'
+          AND version.lifecycle='CANDIDATE' AND version.eligibility='INELIGIBLE' AND version.governance='CLEAR'
+          AND operation.definition_name='story_planning.generate' AND operation.definition_version='1.16.0'
+          AND operation.status IN ('WAITING_GATE','SUCCEEDED')""", [project_id, binding["asset_version_id"]])
+    rows = cursor.fetchall()
+    if len(rows) != 1:
+        raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "Planning annotation requires its native frozen benchmark candidate")
+    content, digest, operation_id, actor_id = rows[0]
+    snapshot = load_bootstrap_authorization(cursor, project_id=project_id, operation_id=operation_id, check_expiry=False)
+    grant = snapshot["authorization"] if snapshot else {}
+    if (digest != binding["content_hash"] or digest != authorization_hash(content)
+        or content.get("routing_eligibility") != "BENCHMARK_ONLY" or content.get("project_id") != project_id
+        or grant.get("purpose") != "BENCHMARK_CHALLENGER" or not grant.get("campaign")
+        or content.get("routing_bootstrap_authorization") != snapshot
+        or content.get("generator_operation_name") != grant.get("task_type")):
+        raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "Planning annotation must retain the exact generation grant, task and content")
+    return {**dict(binding), "asset_type": "planning_generation_candidate", "content": content,
             "generation_operation_id": operation_id, "generation_actor_id": actor_id}
 
 

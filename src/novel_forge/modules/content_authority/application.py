@@ -81,20 +81,23 @@ class ContentAuthorityApplication:
         if reference_annotation and (principal is None or principal.principal_type is not PrincipalType.LOCAL_OPERATOR):
             raise PermissionError("sample annotations require an authenticated local operator")
         world_reference_annotation = False
+        planning_reference_annotation = False
         if reference_annotation:
             from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
             principal.require("content.authority.execute", request.project_id)
             principal.require("content.operation:" + request.definition_name, request.project_id)
             with AuthorityUnitOfWork(self.database_url) as uow:
                 subject = require_reference_subject(uow.cursor, project_id=request.project_id, binding=request.payload["reference_sample"],
-                    allowed_types=frozenset({"chapter_provider_sample", "world_provider_sample"}))
+                    allowed_types=frozenset({"chapter_provider_sample", "world_provider_sample", "planning_generation_candidate"}))
             world_reference_annotation = subject["asset_type"] == "world_provider_sample"
+            planning_reference_annotation = subject["asset_type"] == "planning_generation_candidate"
         definitions = content_operation_definitions(
             application_build_id=self.application_build_id,
             commit_sha=self.commit_sha,
             integration_proven=self.integration_proven,
             reference_annotations=reference_annotation,
             world_reference_annotations=world_reference_annotation,
+            planning_reference_annotations=planning_reference_annotation,
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             for definition in definitions:
@@ -112,16 +115,18 @@ class ContentAuthorityApplication:
         definition_version = CONTENT_DEFINITION_VERSION
         if reference_annotation:
             from novel_forge.modules.chapter_quality_authority.reference_subject import (
-                REFERENCE_ANNOTATION_VERSION, WORLD_REFERENCE_ANNOTATION_VERSION, require_reference_annotation,
+                REFERENCE_ANNOTATION_VERSION, WORLD_REFERENCE_ANNOTATION_VERSION, PLANNING_REFERENCE_ANNOTATION_VERSION, require_reference_annotation,
             )
             with AuthorityUnitOfWork(self.database_url) as uow:
                 subject_id = require_reference_annotation(uow.cursor, project_id=request.project_id,
                     definition_name=request.definition_name, payload=request.payload, actor_id=actor_id,
-                    allowed_types=frozenset({"world_provider_sample"} if world_reference_annotation else {"chapter_provider_sample"}))
+                    allowed_types=frozenset({"planning_generation_candidate"} if planning_reference_annotation else
+                        {"world_provider_sample"} if world_reference_annotation else {"chapter_provider_sample"}))
             if not any(item["asset_version_id"] == subject_id and item["content_hash"] == request.payload["reference_sample"]["content_hash"]
                        for item in request.input_assets):
                 raise ValueError("reference annotation must freeze its exact sample input")
-            definition_version = WORLD_REFERENCE_ANNOTATION_VERSION if world_reference_annotation else REFERENCE_ANNOTATION_VERSION
+            definition_version = PLANNING_REFERENCE_ANNOTATION_VERSION if planning_reference_annotation else (
+                WORLD_REFERENCE_ANNOTATION_VERSION if world_reference_annotation else REFERENCE_ANNOTATION_VERSION)
         admission = AdmissionContext(
             actor_id=actor_id,
             permissions=permissions,

@@ -90,6 +90,7 @@ def require_adjudicated_reference(
     cursor: Any, *, project_id: str, binding: Mapping[str, Any], target_id: str, target_hash: str,
     generators: list[str], evaluator_actor_id: str, chapter: int, expected_dimensions: tuple[str, ...],
     allowed_statuses: set[str],
+    scope_type: str = "CHAPTER", chapter_end: int | None = None,
 ) -> dict[str, Any]:
     validate_reference_evaluation_binding(binding)
     if "adjudications" not in binding or not expected_dimensions or not generators:
@@ -107,7 +108,8 @@ def require_adjudicated_reference(
         adjudication = AdjudicatedEvaluation(**{field.name: content[field.name] for field in fields(AdjudicatedEvaluation)
             if field.name != "adjudication_asset_version_id"}, adjudication_asset_version_id=reference["asset_version_id"])
         if (adjudication.subject_asset_version_id != target_id or adjudication.protocol_version != binding["protocol_version"]
-            or adjudication.scope_type != "CHAPTER" or adjudication.chapter_start != chapter or adjudication.chapter_end != chapter
+            or adjudication.scope_type != scope_type or adjudication.chapter_start != chapter
+            or adjudication.chapter_end != (chapter if chapter_end is None else chapter_end)
             or adjudication.adjudicator_id in excluded or adjudication.adjudicator_identity_class not in set(EvaluatorIdentityClass)):
             raise KernelError("QUALITY_REFERENCE_NOT_INDEPENDENT", "adjudication is outside the exact blind reference scope")
         for human_id in adjudication.source_human_evaluation_asset_version_ids:

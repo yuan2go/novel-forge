@@ -650,7 +650,7 @@ def test_reference_agreement_requires_both_label_strata_and_preserves_failed_fir
         production_eligible=False, reference_agreed=True, reference_label_classes=("PASS" if i % 2 else "FAIL",),
         sample_identity=str(i), experiment_partition="CALIBRATION", reference_risk="MEDIUM", reference_context_tokens=1000,
         reference_protocol_hash="sha256:" + "1" * 64) for i, row in enumerate(samples(n=80))]
-    for name in ("review", "rereview", "quality_structural", "quality_longform", "world_candidates.evaluate"):
+    for name in ("review", "rereview", "quality_structural", "quality_longform", "world_candidates.evaluate", "narrative_semantic_evaluation"):
         result = route(replace(reference_task, task_type=name), [candidate()], {"flash":
             [replace(row, reference_risk=task_policy(name).risk) for row in observations]})
         assert result["status"] == "SELECTED"

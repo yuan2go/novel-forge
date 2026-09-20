@@ -198,6 +198,21 @@ def validate_bootstrap_producer(
 
 
 def validate_reference_evaluation_binding(reference: Any) -> None:
+    if isinstance(reference, Mapping) and "adjudicated_reference" in reference:
+        native = reference["adjudicated_reference"]
+        if (set(reference) != {"asset_version_id", "content_hash", "protocol_version", "adjudicated_reference"}
+            or not isinstance(native, Mapping) or set(native) != {"adjudications", "scope"}
+            or not isinstance(native["scope"], Mapping) or set(native["scope"]) != {"scope_type", "chapter_start", "chapter_end"}):
+            raise ValueError("ROUTING_REFERENCE_BINDING_INVALID")
+        scope = native["scope"]
+        if (scope["scope_type"] not in {"CHAPTER", "ARC"}
+            or any(type(scope[key]) is not int or scope[key] <= 0 for key in ("chapter_start", "chapter_end"))
+            or scope["chapter_start"] > scope["chapter_end"]
+            or (scope["scope_type"] == "CHAPTER" and scope["chapter_start"] != scope["chapter_end"])):
+            raise ValueError("ROUTING_REFERENCE_BINDING_INVALID")
+        validate_reference_evaluation_binding({key: value for key, value in reference.items() if key != "adjudicated_reference"})
+        validate_reference_evaluation_binding({"protocol_version": reference["protocol_version"], "adjudications": native["adjudications"]})
+        return
     if isinstance(reference, Mapping) and "adjudications" in reference:
         if set(reference) != {"protocol_version", "adjudications"} or not isinstance(reference["protocol_version"], str) or not reference["protocol_version"].strip():
             raise ValueError("ROUTING_REFERENCE_BINDING_INVALID")

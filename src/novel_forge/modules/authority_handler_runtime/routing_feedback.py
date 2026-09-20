@@ -399,6 +399,7 @@ def domain_gate_outcomes(
 ) -> dict[str, dict[str, Any]]:
     from novel_forge.modules.chapter_quality_authority.reference_sampling import chapter_reference_outcomes
     from novel_forge.modules.story_planning_runtime.world_sampling import world_reference_outcomes
+    from novel_forge.modules.story_design_authority.evaluation_reference import narrative_reference_outcomes
 
     planning = planning_gate_outcomes(
         cursor, project_id=project_id, effect_ids=effect_ids
@@ -435,4 +436,5 @@ def domain_gate_outcomes(
         **source_gate_outcomes(cursor, project_id=project_id, effect_ids=effect_ids),
         **chapter_reference_outcomes(cursor, project_id=project_id, effect_ids=list(effect_ids)),
         **world_reference_outcomes(cursor, project_id=project_id, effect_ids=list(effect_ids)),
+        **narrative_reference_outcomes(cursor, project_id=project_id, effect_ids=list(effect_ids)),
     }

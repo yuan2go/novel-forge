@@ -484,6 +484,32 @@ def test_reference_grant_requires_exact_labels_and_campaign_isolation():
                                     {**grant, "purpose": "BENCHMARK_CHALLENGER"}]})
 
 
+def test_adjudicated_reference_binding_requires_exact_scoped_native_labels():
+    from copy import deepcopy
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_reference_evaluation_binding
+
+    binding = {"asset_version_id": "proxy:v1", "content_hash": "sha256:" + "a" * 64, "protocol_version": "labels-v2",
+        "adjudicated_reference": {"adjudications": [{"asset_version_id": "adjudication:v1", "content_hash": "sha256:" + "b" * 64}],
+            "scope": {"scope_type": "ARC", "chapter_start": 1, "chapter_end": 12}}}
+    validate_reference_evaluation_binding(binding)
+    for change in ("empty", "duplicate", "hash", "scope", "extra", "proxy-missing"):
+        bad = deepcopy(binding)
+        if change == "empty":
+            bad["adjudicated_reference"]["adjudications"] = []
+        elif change == "duplicate":
+            bad["adjudicated_reference"]["adjudications"] *= 2
+        elif change == "hash":
+            bad["adjudicated_reference"]["adjudications"][0]["content_hash"] = "unbound"
+        elif change == "scope":
+            bad["adjudicated_reference"]["scope"]["scope_type"] = "CHAPTER"
+        elif change == "extra":
+            bad["adjudicated_reference"]["human_verified"] = True
+        else:
+            del bad["asset_version_id"]
+        with pytest.raises(ValueError):
+            validate_reference_evaluation_binding(bad)
+
+
 def test_reference_agreement_counts_disagreement_without_production_or_human_claims():
     from copy import deepcopy
     from novel_forge.modules.story_design_authority import scripted_qualification

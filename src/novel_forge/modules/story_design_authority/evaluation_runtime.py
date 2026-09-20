@@ -595,6 +595,8 @@ class NarrativeSemanticEvaluationHandler:
         reference_asset_version_ids = (
             candidate.asset_version_id,
             *((payload["reference_evaluation"]["asset_version_id"],) if reference_result else ()),
+            *(tuple(item["asset_version_id"] for item in payload["reference_evaluation"].get("adjudicated_reference", {}).get("adjudications", ()))
+                if reference_result else ()),
             *(
                 (provider_result.model_call_log_asset_version_id,)
                 if provider_result is not None

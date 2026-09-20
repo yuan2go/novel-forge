@@ -263,7 +263,7 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
         )
 
 
-@pytest.mark.parametrize("reference_author", ["independent", "generator", "unknown"])
+@pytest.mark.parametrize("reference_author", ["independent", "generator", "unknown", "trusted_projection"])
 def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path, reference_author):
     from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentOperationRequest
     from novel_forge.modules.content_authority.definitions import CONTENT_INTEGRATION_PROVEN
@@ -330,6 +330,11 @@ def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path,
     assert generated.candidate_asset_version_id
     candidate_hash = application.require_candidate(generated.candidate_asset_version_id)["content_hash"]
     labeled = scripted_qualification("book_plan.generate")
+    adjudicated_reference = None
+    if reference_author in {"independent", "trusted_projection"}:
+        adjudicated_reference = _exercise_planning_reference_annotations(project=project, workspace=workspace, principal=principal,
+            target={"asset_version_id": generated.candidate_asset_version_id, "content_hash": candidate_hash}, evaluation=labeled,
+            projection_fixture=reference_author == "trusted_projection")
     labeler = replace(principal,
         principal_id=(principal.principal_id if reference_author == "generator" else "label-operator:" + project),
         permissions=principal.permissions | {"content.authority.execute", "content.operation:story_design.review.author"})
@@ -352,7 +357,8 @@ def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path,
         trace_id=command.trace_id, correlation_id=command.correlation_id,
         routing_bootstrap_authorization_id="reference-grant",
         reference_evaluation={"asset_version_id": authored.asset_version_id,
-                              "content_hash": authored.content_hash, "protocol_version": "fixture-labels-v1"},
+                              "content_hash": authored.content_hash, "protocol_version": "fixture-labels-v1",
+                              **({"adjudicated_reference": adjudicated_reference} if adjudicated_reference else {})},
     )
     semantic_command = NarrativeSemanticEvaluationCommand(**asdict(review))
     payload = evaluation_command_payload(semantic_command, generation_actor_id=principal.principal_id,
@@ -362,6 +368,19 @@ def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path,
         assert prepared["payload"] == payload
         assert prepared["command_hash"] == bootstrap_command_hash(payload)
         assert prepared["provider_calls"] == 0 and prepared["authorized"] is False
+        if adjudicated_reference:
+            short = {**adjudicated_reference, "adjudications": adjudicated_reference["adjudications"][:-1]}
+            with pytest.raises(KernelError, match="QUALITY_REFERENCE_COVERAGE_INCOMPLETE"):
+                application.semantic_evaluation.prepare_reference_evaluation(replace(semantic_command,
+                    reference_evaluation={**review.reference_evaluation, "adjudicated_reference": short}), principal=evaluator)
+            wrong_scope = {**adjudicated_reference, "scope": {**adjudicated_reference["scope"], "chapter_end": 5}}
+            with pytest.raises(KernelError, match="QUALITY_REFERENCE_NOT_INDEPENDENT"):
+                application.semantic_evaluation.prepare_reference_evaluation(replace(semantic_command,
+                    reference_evaluation={**review.reference_evaluation, "adjudicated_reference": wrong_scope}), principal=evaluator)
+            same_human = replace(evaluator, principal_id="planning-fixture-human-1")
+            with pytest.raises(KernelError, match="QUALITY_REFERENCE_NOT_INDEPENDENT"):
+                application.semantic_evaluation.prepare_reference_evaluation(replace(semantic_command,
+                    actor_id=same_human.principal_id), principal=same_human)
     else:
         with pytest.raises(KernelError, match="NARRATIVE_REFERENCE_NOT_INDEPENDENT"):
             application.semantic_evaluation.prepare_reference_evaluation(semantic_command, principal=evaluator)
@@ -429,15 +448,27 @@ def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path,
             assert dispatched["outcome"] == "success"
             settle_provider_budget(DATABASE_URL, reservation_id=reserved["reservation_id"], project_id=project,
                                    actual_amount=".0001", actual_tokens=30, evidence={"fixture": True})
+            # WHY: Synthetic native-shaped evidence exercises projection; no real Provider or human labels are produced.
+            selected = decision["selected"]["candidate"]
+            provider_evidence = {"real_model_call": True, "provider_id": selected["provider"], "model_id": selected["model"],
+                "result": labeled, "usage": {"input_tokens": 100, "output_tokens": 100}, "cost": {"amount": ".0001", "currency": "USD"},
+                "production_execution": {"execution_request": {"project_id": project, "operation_id": request.operation_id,
+                    "attempt_id": request.attempt_id, "stage": "narrative_semantic_evaluation", "external_effect_id": effect["external_effect_id"]},
+                    "execution_result": {"outcome": "SUCCEEDED"}, "route_snapshot": {"reasoning_effort": selected["reasoning"]},
+                    "process_evidence": {"served_model_identity_hash": "sha256:" + "f" * 64, "model_revision": selected["model_revision"]}}}
+            log_content = {"stage": "narrative_semantic_evaluation", "operation_id": request.operation_id, "attempt_id": request.attempt_id,
+                "target_lineage": {"target_asset_version_id": review.candidate_asset_version_id, "target_content_hash": candidate_hash,
+                    "generation_operation_id": generated.generation_operation_id, "generator_operation_name": "book_plan.generate"},
+                "provider_evidence": provider_evidence} if reference_author == "trusted_projection" else {"fixture": True, "fixture_protocol_only": True}
             log = AuthorityAssetWriter(DATABASE_URL).materialize_output(AuthorityAssetWriteCommand(
                 operation_id=request.operation_id, project_id=project, asset_id=key + ":model-log",
                 asset_type="model_call_log", schema_version="model-call-log.v1",
                 logical_ref="reference-fixture/" + request.operation_id + ".json", category="fixture",
-                output_key="model_call_log", role="provider_evidence",
-                content={"fixture": True, "fixture_protocol_only": True}, qualification_policy="fixture-only-v1",
+                output_key="model_call_log", role="model_evidence" if reference_author == "trusted_projection" else "provider_evidence",
+                content=log_content, qualification_policy="fixture-only-v1",
                 trace_id=request.trace_id, correlation_id=request.correlation_id))
             return NarrativeProviderEvaluation(labeled, log.asset_version_id, log.content_hash,
-                snapshot_hash({"fixture": True}), snapshot_hash(labeled), "synthetic-reference",
+                snapshot_hash(provider_evidence if reference_author == "trusted_projection" else {"fixture": True}), snapshot_hash(labeled), "synthetic-reference",
                 "synthetic-reference-v1", decision["decision_id"], "synthetic-prompt-v1",
                 "synthetic-skill-v1", True)
 
@@ -451,14 +482,37 @@ def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path,
         return
     result = application.evaluate_candidate(review, principal=evaluator, transition_principal=principal)
     assert result.evaluation_content["reference_evaluation"]["agreement_rate"] == 1
+    reference_result = result.evaluation_content["reference_evaluation"]
+    assert reference_result["schema_version"] == ("narrative-reference-agreement.v2" if adjudicated_reference else "narrative-reference-agreement.v1")
+    if adjudicated_reference:
+        assert reference_result["adjudicated_reference"]["scope"] == adjudicated_reference["scope"]
+        assert reference_result["reference_basis"] == "ADJUDICATED_SUBJECTIVE_EVIDENCE"
     assert result.evaluation_content["production_qualification_eligible"] is False
     assert application.evaluate_candidate(review, principal=evaluator, transition_principal=principal).replayed
     assert port.invocations == 1
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        from novel_forge.modules.authority_handler_runtime.routing_feedback import domain_gate_outcomes
+        uow.cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s", [result.lineage.evaluation_operation_id])
+        effect_ids = [row[0] for row in uow.cursor.fetchall()]
+        outcomes = domain_gate_outcomes(uow.cursor, project_id=project, effect_ids=effect_ids)
+        if reference_author == "trusted_projection":
+            assert len(outcomes) == 1
+            projected = outcomes[effect_ids[0]]
+            assert projected["reference_agreed"] is True and projected["accepted"] is None
+            assert projected["reference_label_classes"] == ("PASS",)
+        else:
+            assert outcomes == {}
         uow.cursor.execute("SELECT count(*) FROM authority_narrative_design_qualification WHERE project_id=%s AND asset_version_id=%s", [project, generated.candidate_asset_version_id])
         assert uow.cursor.fetchone()[0] == 0
         uow.cursor.execute("SELECT status FROM authority_story_planning_generation WHERE operation_id=%s", [generated.generation_operation_id])
         assert uow.cursor.fetchone()[0] == "EVALUATION_PENDING"
+    if reference_author == "trusted_projection":
+        observations = PostgresRoutingRegistry(DATABASE_URL, outcome_projection=domain_gate_outcomes).observations(
+            project_id=project, task_type="narrative_semantic_evaluation", candidate=candidate,
+            producer_contract_hash=snapshot_hash({"fixture_prompt": "v1"}))
+        assert len(observations) == 1 and observations[0].reference_agreed is True
+        assert observations[0].reference_label_classes == ("PASS",) and observations[0].production_eligible is False
+        assert observations[0].reference_protocol_hash == projected["reference_protocol_hash"]
     comparison = replace(review, idempotency_key=project + ":reference-pro", routing_bootstrap_authorization_id="reference-pro-grant")
     pro = deepseek_candidates(available=True)[1]
     comparison_payload = evaluation_command_payload(NarrativeSemanticEvaluationCommand(**asdict(comparison)),
@@ -551,3 +605,62 @@ def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path,
     operations = {item["operation_id"]: item for item in usage["operations"]}
     assert operations[failed_id]["status"] == "FAILED_FINAL"
     assert operations[repaired.lineage.evaluation_operation_id]["causation_operation_id"] == failed_id
+
+
+def _exercise_planning_reference_annotations(*, project, workspace, principal, target, evaluation, projection_fixture=False):
+    from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentOperationRequest
+    from novel_forge.modules.content_authority.definitions import CONTENT_INTEGRATION_PROVEN
+    from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    app = ContentAuthorityApplication(DATABASE_URL, application_build_id="reference-fixture", commit_sha=RELEASE_SHA,
+        integration_proven=CONTENT_INTEGRATION_PROVEN, trusted_only=True)
+    common = dict(subject_asset_version_id=target["asset_version_id"],
+        protocol_version="fixture-labels-v1", evaluation_version="fixture-planning-editor-v1",
+        scope_type="ARC", chapter_start=1, chapter_end=6)
+
+    def author(name, actor, payload, inputs):
+        labeler = replace(principal, principal_id=actor,
+            permissions=principal.permissions | {"content.authority.execute", "content.operation:" + name})
+        request = ContentOperationRequest(name, project, workspace, actor, "fixture", "fixture", project + ":" + actor + ":" + payload["dimension"],
+            {"evaluation" if "evaluation_id" in payload else "adjudication": payload, "reference_sample": target}, tuple(inputs))
+        result = app.execute(request, principal=labeler)
+        assert app.execute(request, principal=labeler).replayed
+        with pytest.raises(KernelError, match="QUALITY_REFERENCE_ANNOTATION_INVALID"):
+            app.admit(replace(request, idempotency_key=request.idempotency_key + ":wrong-actor"),
+                principal=replace(labeler, principal_id="different-author"))
+        return {"asset_version_id": result.asset_version_id, "content_hash": result.content_hash}
+
+    adjudications = []
+    for layer in evaluation["evaluations"]:
+        for criterion in layer["criteria"]:
+            dimension = layer["layer"] + ":" + criterion["criterion"]
+            score = 100 if criterion["verdict"] == "PASS" else 0
+            fields = {**common, "dimension": dimension, "status": "PASSED" if score else "FAILED"}
+            humans = [author("quality.human_evaluation.record", "planning-fixture-human-" + str(i),
+                {**fields, "evaluation_id": project + ":human:" + str(i) + ":" + dimension, "evaluator_id": "planning-fixture-human-" + str(i),
+                 "evaluator_group": "SYNTHETIC_NATIVE_SHAPE" if projection_fixture else "SCRIPTED_INTEGRATION_FIXTURE", "evaluator_identity_class": "PROFESSIONAL_EDITOR",
+                 "score": score, "confidence": 0.8, "evidence": [{"note": "Synthetic database projection regression"}] if projection_fixture else [{"fixture_protocol_only": True}], "blind": True}, [target]) for i in (1, 2)]
+            adjudications.append(author("quality.adjudication.record", "planning-fixture-adjudicator",
+                {**fields, "adjudication_id": project + ":adjudication:" + dimension, "adjudicator_id": "planning-fixture-adjudicator",
+                 "adjudicator_identity_class": "PROFESSIONAL_EDITOR", "score_range": [score, score],
+                 "source_human_evaluation_asset_version_ids": [row["asset_version_id"] for row in humans],
+                 "rationale": "Synthetic annotation isolation regression only."}, [target, *humans]))
+    document = AuthorityAssetQuery(DATABASE_URL).require(project_id=project, asset_version_id=target["asset_version_id"])
+    assert document.lifecycle == "CANDIDATE" and document.eligibility == "INELIGIBLE" and document.content_hash == target["content_hash"]
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        subject = require_reference_subject(uow.cursor, project_id=project, binding=target,
+            allowed_types=frozenset({"planning_generation_candidate"}))
+        assert subject["asset_type"] == "planning_generation_candidate"
+        with pytest.raises(KernelError, match="QUALITY_REFERENCE_TARGET_INVALID"):
+            require_reference_subject(uow.cursor, project_id=project, binding={**target, "content_hash": "sha256:" + "0" * 64},
+                allowed_types=frozenset({"planning_generation_candidate"}))
+        with pytest.raises(KernelError, match="AUTHORITY_INPUT_NOT_ELIGIBLE"):
+            uow.repositories.chapter_authority.frozen_inputs(project, [target])
+        uow.cursor.execute("""SELECT operation.definition_version,count(effect.external_effect_id)
+            FROM authority_operation operation JOIN authority_operation_output_asset output USING(operation_id)
+            LEFT JOIN authority_external_effect effect USING(operation_id)
+            WHERE output.asset_version_id=%s GROUP BY operation.definition_version""", [adjudications[-1]["asset_version_id"]])
+        assert uow.cursor.fetchone() == ("2.4.0", 0)
+    return {"adjudications": adjudications, "scope": {key: common[key] for key in ("scope_type", "chapter_start", "chapter_end")}}
