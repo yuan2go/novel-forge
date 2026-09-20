@@ -172,6 +172,9 @@ def configure_owned_policy(
     def handler(
         uow: AuthorityUnitOfWork, operation_id: str, checkpoint: TransactionCheckpoint
     ) -> dict[str, Any]:
+        if owner == "PROVIDER_ROUTING":
+            from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_policy_in_uow
+            validate_bootstrap_policy_in_uow(uow.cursor, project_id=project_id, content=content)
         if owner == "CREATIVE_EXPERIMENT_BUDGET":
             from novel_forge.modules.command_kernel.creative_budget_runtime import validate_selection_in_uow
             validate_selection_in_uow(uow, project_id=project_id, content=content)

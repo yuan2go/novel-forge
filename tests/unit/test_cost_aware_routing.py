@@ -484,3 +484,44 @@ def test_frozen_route_requires_original_scope_input_and_admission(drift):
         with pytest.raises(KernelError):
             router.select_for_payload(None, payload)
         router._selected_route.assert_not_called()
+
+
+def test_repeated_inputs_cannot_supply_independent_qualification_samples():
+    result = route(task(), [candidate()], {"flash": samples(n=30, sample_identity="same-input")})
+    benchmark = result["candidates"][0]["benchmark"]
+    assert result["status"] == "BLOCKED"
+    assert benchmark["sample_count"] == 30
+    assert benchmark["independent_sample_count"] == 1
+    assert benchmark["repeated_sample_attempt_count"] == 29
+    assert benchmark["metric_sample_count"] == 1
+    assert benchmark["actual_cost"] == "0.030"
+
+
+@pytest.mark.parametrize("partition", ["DEVELOPMENT", "HOLDOUT"])
+def test_unpublished_experiment_partitions_cannot_change_routing(partition):
+    observations = [replace(row, sample_identity=row.evidence_ref,
+                            experiment_partition=partition) for row in samples()]
+    result = route(task(), [candidate()], {"flash": observations})
+    benchmark = result["candidates"][0]["benchmark"]
+    assert result["status"] == "BLOCKED"
+    assert benchmark["sample_count"] == 0
+    assert benchmark["excluded_experiment_partition_count"] == 30
+
+
+def test_repair_cannot_replace_failed_first_attempt_for_calibration():
+    from novel_forge.modules.production_execution.cost_routing import benchmark_snapshot, task_policy
+    from datetime import timedelta
+    rows = samples(n=3)
+    observations = []
+    for row in rows:
+        observations.append(replace(row, sample_identity=row.evidence_ref,
+            quality_score=None, schema_success=False, accepted=False))
+        observations.append(replace(row, sample_identity=row.evidence_ref,
+            evidence_ref="repair:" + row.evidence_ref,
+            occurred_at=(NOW + timedelta(seconds=1)).isoformat(), repaired=True))
+    result = benchmark_snapshot(observations, now=NOW + timedelta(seconds=2),
+                                policy=task_policy("classification"))
+    assert result["metric_sample_count"] == 0
+    assert result["schema_success"] == .5
+    assert result["sample_count"] == 6
+    assert result["independent_sample_count"] == 3

@@ -94,9 +94,9 @@ The current four-attempt routing bound and eight-Operation repair traversal boun
 `CURRENT_RUNTIME_FACT`; neither establishes a permanent business invariant.
 
 DeepSeek uses the official chat-completions protocol, explicit low/high/max reasoning,
-structured JSON, bounded timeout, and observed usage/cache receipts. The current API
-catalog maps `deepseek-flash` to V4.1 Flash and `deepseek-v4-pro` to V4 Pro; the live
-September 16 official pricing footnote retains Pro service after September 14. Old V4
+structured JSON, bounded timeout, and observed usage/cache receipts. The configured API
+catalog maps `deepseek-flash` to V4.1 Flash and `deepseek-v4-pro` to V4 Pro-0813.
+Recheck official model and pricing identities before each frozen campaign. Old V4
 Flash aliases do not prove V4 Flash execution. Peak prices bound reservations; measured
 usage plus a frozen price schedule produces a price estimate, never a Provider invoice.
 A call crossing a price boundary retains the peak upper bound. Remote cancellation,

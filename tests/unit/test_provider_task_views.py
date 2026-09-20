@@ -1515,3 +1515,29 @@ def test_planning_invalid_result_repair_view_preserves_raw_shape_without_candida
     assert "source_candidate" not in view["repair_context"]
     assert view["repair_context"]["source_result"]["content"] == raw
     assert all(item["asset_version_id"] != "failure:v1" for item in view["segments"])
+
+
+def test_benchmark_authorization_and_model_cost_do_not_leak_to_semantic_judge():
+    frozen = {
+        "schema_version": "story_design.authority.v1",
+        "objective": "救人必须付出代价；人物声音与因果仍供审稿。",
+        "routing_eligibility": "BENCHMARK_ONLY",
+        "routing_bootstrap_authorization": {
+            "candidate_id": "deepseek:flash", "maximum_amount": "1.00",
+            "campaign": {"partition": "HOLDOUT", "sample_id": "private-order-1"},
+        },
+        "routing_decision": {"selected": {"provider": "deepseek", "expected_quality": .99}},
+        "execution_evidence": {"provider_id": "deepseek"},
+    }
+    view = build_provider_context_view("narrative_semantic_evaluation", {
+        "source_isolation": "EXACT_CANDIDATE_ONLY",
+        "selected_inputs": [{"asset_version_id": "candidate:test",
+                             "asset_type": "planning_generation_candidate",
+                             "content_hash": "sha256:" + "a" * 64,
+                             "candidate": frozen}],
+    }, {})
+    encoded = json.dumps(view, ensure_ascii=False)
+    for private in ("deepseek", "HOLDOUT", "BENCHMARK_ONLY", "1.00", "private-order-1", "expected_quality"):
+        assert private not in encoded
+    assert view["selected_inputs"][0]["candidate"]["objective"] == frozen["objective"]
+    assert frozen["routing_eligibility"] == "BENCHMARK_ONLY"

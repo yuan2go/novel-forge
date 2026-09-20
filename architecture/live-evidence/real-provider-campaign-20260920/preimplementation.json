@@ -1,0 +1,89 @@
+{
+  "schema_version": "real-provider-campaign-preimplementation.v1",
+  "baseline_sha": "feba06582b6cadf2e80f5c573cf427114cf2a926",
+  "baseline_git_tree": "7fe1e48f3e7fe56666a5407f17c787b20c8c91c3",
+  "baseline_implementation_tree": "sha256:e1dd43acca11bcecbb7e736e65332fa8824e305e85e6fa1ab503ed103a560537",
+  "phase": "READ_AND_DOCUMENTATION_CLEANUP",
+  "real_calls": 0,
+  "business_code_changed": false,
+  "proposal_disposition": {
+    "classical-corpus-codex-validation.md": "RETAIN_PARTIALLY_IMPLEMENTED_G3_G4",
+    "industrial-novel-os-blueprint.md": "RETAIN_UNRESOLVED_DECISIONS",
+    "narrative-memory-context-lifecycle-closure.md": "RETAIN_UNIMPLEMENTED_GATES_B_E"
+  },
+  "gaps": [
+    {
+      "id": "bootstrap-coverage",
+      "owner": "production_execution / story_planning_runtime",
+      "entry": "authority-provider-routing configure; planning-generations",
+      "repair_location_under_modules": "production_execution/routing_policy.py; authority_handler_runtime/routing_bootstrap.py",
+      "finding": "Planning single-stage generators only; no native Source/Chapter/reference-judge bootstrap"
+    },
+    {
+      "id": "campaign-budget",
+      "owner": "command_kernel",
+      "entry": "reserve_provider_budget_in_uow",
+      "repair_location_under_modules": "command_kernel/routing_bootstrap.py; authority_handler_runtime/policy_commands.py",
+      "finding": "Per-authorization quota exists; no campaign aggregation across distinct grants"
+    },
+    {
+      "id": "sample-independence",
+      "owner": "production_execution",
+      "entry": "PostgresRoutingRegistry.observations; benchmark_snapshot",
+      "repair_location_under_modules": "production_execution/routing_runtime.py; production_execution/cost_routing.py",
+      "finding": "Revision/cohort checked; independent sample and prompt/judge/holdout identities not frozen by campaign"
+    },
+    {
+      "id": "judge-cold-start",
+      "owner": "story_design_authority / chapter_quality_authority",
+      "entry": "NarrativeSemanticEvaluationApplication.execute; calibration_v2",
+      "repair_location_under_modules": "story_design_authority/evaluation_runtime.py; chapter_quality_authority/calibration_v2.py",
+      "finding": "Actor separation and human calibration contracts exist; distinct invocation is not calibration"
+    },
+    {
+      "id": "native-production",
+      "owner": "Book / Chapter / Source / MKAOS / Canon",
+      "entry": "scripts.run_creation_synthesis; corpus analyze/run",
+      "repair_location_under_modules": "book_authority; chapter_authority; source_import",
+      "finding": "Craft and cross-chapter review wired; current routed twelve-chapter campaign absent"
+    },
+    {
+      "id": "independent-comparison",
+      "owner": "chapter_quality_authority",
+      "entry": "quality calibration and exports",
+      "repair_location_under_modules": "chapter_quality_authority; scripts/compare_creation_exports.py",
+      "finding": "No frozen baseline/holdout NI result with all incurred costs"
+    }
+  ],
+  "authorization": {
+    "matching_campaign_grant": "NOT_FOUND",
+    "reviewed_existing_refs": [
+      "user:WP-CODEX-NOVEL-PRODUCTION-AND-EXPORT-01:20260913",
+      "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913"
+    ],
+    "restrictions": [
+      "Codex entitlement only",
+      "Source forbidden",
+      "No paid API switch",
+      "Project lifetime 460 calls and 11500000 tokens shared with prior use"
+    ],
+    "new_campaign_budget_authorized": false
+  },
+  "environment": {
+    "docker_server": "29.7.2",
+    "configured_codex_version": "codex-cli 0.154.0",
+    "configured_codex_digest_matches": true,
+    "default_codex_command": "BROKEN_INSTALLATION",
+    "deepseek_secret_in_current_process": false
+  },
+  "conclusions": {
+    "ENGINEERING_QUALIFIED": "NOT_PROVEN",
+    "TASK_FAMILY_CALIBRATED": "NOT_PROVEN",
+    "REAL_NOVEL_E2E_QUALIFIED": "NOT_PROVEN",
+    "CODEX_ESCALATION_REAL_EXECUTED": "NOT_PROVEN",
+    "QUALITY_NON_INFERIORITY_PROVEN": "NOT_PROVEN",
+    "COST_REDUCTION_PROVEN": "NOT_PROVEN",
+    "COST_AWARE_QUALITY_CONSTRAINED_PROVIDER_ROUTER_PRODUCTION_READY": "NOT_PROVEN",
+    "LONG_FORM_PRODUCTION_PROVEN": "NOT_PROVEN"
+  }
+}

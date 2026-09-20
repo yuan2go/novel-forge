@@ -412,9 +412,10 @@ their original identity and require reconciliation. Independent quality calibrat
 still missing for several task families, and no accepted real-Provider Chapter chain has
 qualified this router replacement; production readiness remains `NO`.
 
-Credentialed Provider qualification is intentionally separate from P0. The only live
-runner is `make real-provider-qualification`; the D0 contract probe and worker remain
-fixture-only and cannot send with a credential. The live runner requires a clean worktree,
+Credentialed Provider qualification is intentionally separate from P0. The dedicated
+runtime-qualification entry is `make real-provider-qualification`; native Source and
+creation commands below also execute authorized real Providers. The D0 contract probe
+and worker remain fixture-only and cannot send with a credential. The live runner requires a clean worktree,
 an explicit expected SHA, caller-owned PostgreSQL and object storage, and evidence/runtime
 paths outside the repository:
 
@@ -569,8 +570,8 @@ failed runs; these exports do not establish independent literary or human qualif
 `scripts.run_creation_synthesis` coordinates existing Content, Story Formation,
 Book Opening and Book Supervisor commands. `--initialize --workspace-id ...` registers
 an isolated Project and Book through their existing Commands, idempotently. Existing
-Books must carry the identical frozen pilot configuration. PostgreSQL must be migrated
-through `0120`, with the normal
+Books must carry the identical frozen pilot configuration. PostgreSQL must match the registered migration head in
+`architecture/manifests/migration-manifest.yaml`, with the normal
 configured operator/worker permissions. The approved current Planning Capability Pack
 must include the six Foundation generation capabilities and their qualification Skills;
 the Chapter pack must include Memo, Review/Revision and Canon support. It does not seed

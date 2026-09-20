@@ -58,7 +58,7 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         "currency",
         "purpose",
     }
-    if set(grant) != strings | {
+    if set(grant) - {"campaign"} != strings | {
         "maximum_calls",
         "maximum_tokens",
         "production_eligible",
@@ -94,6 +94,112 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
             or any(c not in "0123456789abcdef" for c in digest[7:])
         ):
             raise ValueError("ROUTING_BOOTSTRAP_INPUT_IDENTITY_INVALID")
+    if "campaign" in grant:
+        validate_bootstrap_campaign(grant["campaign"])
+        campaign = grant["campaign"]
+        if (
+            grant["maximum_calls"] > campaign["maximum_calls"]
+            or grant["maximum_tokens"] > campaign["maximum_tokens"]
+            or amount > Decimal(campaign["maximum_amount"])
+            or datetime.fromisoformat(grant["expires_at"])
+            > datetime.fromisoformat(campaign["expires_at"])
+        ):
+            raise ValueError("ROUTING_CAMPAIGN_GRANT_EXCEEDS_TOTAL")
+
+
+def validate_bootstrap_campaign(campaign: Mapping[str, Any]) -> None:
+    if not isinstance(campaign, Mapping) or set(campaign) != {
+        "campaign_id", "manifest_hash", "sample_id", "group_id", "partition",
+        "maximum_calls", "maximum_tokens", "maximum_amount", "expires_at",
+    }:
+        raise ValueError("ROUTING_CAMPAIGN_CONTRACT_INVALID")
+    for key in ("campaign_id", "sample_id", "group_id", "manifest_hash", "expires_at"):
+        if not isinstance(campaign[key], str) or not campaign[key].strip():
+            raise ValueError("ROUTING_CAMPAIGN_IDENTITY_REQUIRED")
+    digest = campaign["manifest_hash"]
+    if len(digest) != 71 or not digest.startswith("sha256:") or any(
+        char not in "0123456789abcdef" for char in digest[7:]
+    ):
+        raise ValueError("ROUTING_CAMPAIGN_MANIFEST_IDENTITY_INVALID")
+    if campaign["partition"] not in {"DEVELOPMENT", "CALIBRATION", "HOLDOUT"}:
+        raise ValueError("ROUTING_CAMPAIGN_PARTITION_INVALID")
+    if any(type(campaign[key]) is not int or campaign[key] <= 0
+           for key in ("maximum_calls", "maximum_tokens")):
+        raise ValueError("ROUTING_CAMPAIGN_QUOTA_INVALID")
+    amount = Decimal(campaign["maximum_amount"])
+    if not amount.is_finite() or amount <= 0 or datetime.fromisoformat(
+        campaign["expires_at"]
+    ).tzinfo is None:
+        raise ValueError("ROUTING_CAMPAIGN_LIMIT_INVALID")
+
+
+def campaign_contract(campaign: Mapping[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in campaign.items()
+            if key not in {"sample_id", "group_id", "partition"}}
+
+
+def validate_bootstrap_history(
+    grants: list[Mapping[str, Any]], previous: list[Mapping[str, Any]]
+) -> None:
+    identities: dict[str, Mapping[str, Any]] = {}
+    campaigns: dict[str, Mapping[str, Any]] = {}
+    groups: dict[tuple[str, str], str] = {}
+    samples: dict[tuple[str, str], tuple[str, str, str]] = {}
+    inputs: dict[tuple[str, str], str] = {}
+    for grant in [*previous, *grants]:
+        key = grant["authorization_id"]
+        if key in identities and identities[key] != grant:
+            raise KernelError("ROUTING_BOOTSTRAP_AUTHORIZATION_REDEFINED",
+                              "an authorization retains its original scope and quota")
+        identities[key] = grant
+        campaign = grant.get("campaign")
+        if campaign is None:
+            continue
+        identity = campaign["campaign_id"]
+        contract = campaign_contract(campaign)
+        if identity in campaigns and campaigns[identity] != contract:
+            raise KernelError("ROUTING_CAMPAIGN_REDEFINED",
+                              "a campaign retains its frozen manifest and cumulative quota")
+        campaigns[identity] = contract
+        group = (identity, campaign["group_id"])
+        partition = campaign["partition"]
+        if group in groups and groups[group] != partition:
+            raise KernelError("ROUTING_CAMPAIGN_HOLDOUT_LEAKAGE",
+                              "a data group cannot cross experiment partitions")
+        groups[group] = partition
+        sample = (identity, campaign["sample_id"])
+        binding = (campaign["group_id"], grant["task_type"], grant["input_versions_hash"])
+        if sample in samples and samples[sample] != binding:
+            raise KernelError("ROUTING_CAMPAIGN_SAMPLE_REDEFINED",
+                              "a sample retains its data group, task and input versions")
+        samples[sample] = binding
+        source = (identity, grant["input_versions_hash"])
+        if source in inputs and inputs[source] != partition:
+            raise KernelError("ROUTING_CAMPAIGN_HOLDOUT_LEAKAGE",
+                              "identical inputs cannot acquire a new partition by renaming")
+        inputs[source] = partition
+    if len(campaigns) > 1:
+        raise KernelError("ROUTING_CAMPAIGN_PROJECT_REBIND_FORBIDDEN",
+                          "a campaign project cannot reset usage by changing campaign identity")
+
+
+def validate_bootstrap_policy_in_uow(
+    cursor: Any, *, project_id: str, content: Mapping[str, Any]
+) -> None:
+    cursor.execute(
+        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+        ["routing-bootstrap-policy:" + project_id],
+    )
+    cursor.execute(
+        "SELECT content,content_hash FROM authority_runtime_policy_version WHERE owner='PROVIDER_ROUTING' AND project_id=%s",
+        [project_id],
+    )
+    previous = []
+    for policy, digest in cursor.fetchall():
+        if policy_hash(policy) != digest:
+            raise KernelError("RUNTIME_POLICY_HASH_MISMATCH", "policy integrity failed")
+        previous.extend(policy.get("bootstrap_authorizations", []))
+    validate_bootstrap_history(list(content.get("bootstrap_authorizations", [])), previous)
 
 
 def validate_bootstrap_scope(
@@ -287,39 +393,44 @@ def verify_routing_bootstrap_budget(
         return
     from .budget_runtime import provider_usage_accounted_sql
 
-    cursor.execute(
-        f"""SELECT count(*),COALESCE(sum(CASE WHEN b.status='SETTLED' THEN b.settled_amount ELSE b.reserved_amount END),0),COALESCE(sum(CASE WHEN b.status='SETTLED' THEN b.actual_tokens ELSE greatest(b.actual_tokens,b.estimated_tokens) END),0),bool_or(b.status IN ('RESERVED','HELD_UNKNOWN'))
-        FROM (SELECT * FROM authority_budget_reservation WHERE {provider_usage_accounted_sql()}) b JOIN authority_external_effect e USING(external_effect_id)
-        WHERE b.project_id=%s AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,bootstrap_authorization,authorization,authorization_id}}'=%s""",
-        [request.project_id, grant["authorization_id"]],
-    )
-    calls, spent, tokens, pending = cursor.fetchone()
-    cursor.execute(
-        """SELECT EXISTS (
-            SELECT 1 FROM authority_budget_reservation b
-            JOIN authority_external_effect e USING(external_effect_id)
-            WHERE b.project_id=%s
-              AND b.status<>'REJECTED'
-              AND e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED')
-              AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,bootstrap_authorization,authorization,authorization_id}'=%s
-        )""",
-        [request.project_id, grant["authorization_id"]],
-    )
-    unknown = bool(cursor.fetchone()[0])
-    if pending or unknown:
-        raise KernelError(
-            "ROUTING_BOOTSTRAP_RECONCILIATION_REQUIRED",
-            "earlier benchmark execution must resolve first",
+    prefix = ["_production_execution", "capability_runtime", "routing_decision",
+              "bootstrap_authorization", "authorization"]
+    scopes = [(grant, prefix + ["authorization_id"], grant["authorization_id"], "BOOTSTRAP")]
+    if campaign := grant.get("campaign"):
+        scopes.append((campaign, prefix + ["campaign", "campaign_id"], campaign["campaign_id"], "CAMPAIGN"))
+    for quota, path, identity, label in scopes:
+        cursor.execute(
+            f"""SELECT count(*),COALESCE(sum(CASE WHEN b.status='SETTLED' THEN b.settled_amount ELSE b.reserved_amount END),0),COALESCE(sum(CASE WHEN b.status='SETTLED' THEN b.actual_tokens ELSE greatest(b.actual_tokens,b.estimated_tokens) END),0),bool_or(b.status IN ('RESERVED','HELD_UNKNOWN'))
+            FROM (SELECT * FROM authority_budget_reservation WHERE {provider_usage_accounted_sql()}) b JOIN authority_external_effect e USING(external_effect_id)
+            WHERE b.project_id=%s AND e.request_payload #>> %s::text[]=%s""",
+            [request.project_id, path, identity],
         )
-    if (
-        int(calls) + 1 > grant["maximum_calls"]
-        or int(tokens) + request.estimated_tokens > grant["maximum_tokens"]
-        or Decimal(spent) + amount > Decimal(grant["maximum_amount"])
-    ):
-        raise KernelError(
-            "ROUTING_BOOTSTRAP_QUOTA_EXCEEDED",
-            "benchmark authorization quota would be exceeded",
+        calls, spent, tokens, pending = cursor.fetchone()
+        cursor.execute(
+            """SELECT EXISTS (
+                SELECT 1 FROM authority_budget_reservation b
+                JOIN authority_external_effect e USING(external_effect_id)
+                WHERE b.project_id=%s AND b.status<>'REJECTED'
+                  AND e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED')
+                  AND e.request_payload #>> %s::text[]=%s
+            )""",
+            [request.project_id, path, identity],
         )
+        unknown = bool(cursor.fetchone()[0])
+        if pending or unknown:
+            raise KernelError(
+                f"ROUTING_{label}_RECONCILIATION_REQUIRED",
+                "earlier benchmark execution must resolve first",
+            )
+        if (
+            int(calls) + 1 > quota["maximum_calls"]
+            or int(tokens) + request.estimated_tokens > quota["maximum_tokens"]
+            or Decimal(spent) + amount > Decimal(quota["maximum_amount"])
+        ):
+            raise KernelError(
+                f"ROUTING_{label}_QUOTA_EXCEEDED",
+                "cumulative benchmark authorization quota would be exceeded",
+            )
 
 
 def verify_routing_bootstrap_dispatch(

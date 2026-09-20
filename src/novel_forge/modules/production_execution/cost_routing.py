@@ -269,6 +269,8 @@ class BenchmarkObservation:
     served_model_identity_hash: str = ""
     evidence_class: str = "PRODUCTION_OUTCOME"
     production_eligible: bool = True
+    sample_identity: str = ""
+    experiment_partition: str = ""
 
     def __post_init__(self) -> None:
         for value in (self.quality_score, self.judge_score):
@@ -289,6 +291,10 @@ class BenchmarkObservation:
             self.evidence_class == "PRODUCTION_OUTCOME"
         ):
             raise ValueError("BENCHMARK_PRODUCTION_ELIGIBILITY_INVALID")
+        if self.experiment_partition not in {"", "DEVELOPMENT", "CALIBRATION", "HOLDOUT"}:
+            raise ValueError("BENCHMARK_PARTITION_INVALID")
+        if self.experiment_partition and not self.sample_identity:
+            raise ValueError("BENCHMARK_SAMPLE_IDENTITY_REQUIRED")
         if (
             min(
                 self.input_tokens,
@@ -318,12 +324,23 @@ def benchmark_snapshot(
         <= (now - datetime.fromisoformat(row.occurred_at)).total_seconds()
         <= window_days * 86400
     }
-    rows = sorted(unique.values(), key=lambda row: (row.occurred_at, row.evidence_ref))[
+    excluded_partition_count = sum(
+        row.experiment_partition in {"DEVELOPMENT", "HOLDOUT"} for row in unique.values()
+    )
+    rows = sorted(
+        (row for row in unique.values()
+         if row.experiment_partition not in {"DEVELOPMENT", "HOLDOUT"}),
+        key=lambda row: (row.occurred_at, row.evidence_ref),
+    )[
         -maximum_samples:
     ]
-    scores = [row.quality_score for row in rows if row.quality_score is not None]
+    independent: dict[str, BenchmarkObservation] = {}
+    for row in rows:
+        independent.setdefault(row.sample_identity or row.evidence_ref, row)
+    samples = list(independent.values())
+    scores = [row.quality_score for row in samples if row.quality_score is not None]
     domain_outcomes = [
-        row.domain_gate_accepted for row in rows if row.domain_gate_accepted is not None
+        row.domain_gate_accepted for row in samples if row.domain_gate_accepted is not None
     ]
     n = (
         len(domain_outcomes)
@@ -395,6 +412,9 @@ def benchmark_snapshot(
     )
     result: dict[str, Any] = {
         "sample_count": len(rows),
+        "independent_sample_count": len(samples),
+        "repeated_sample_attempt_count": len(rows) - len(samples),
+        "excluded_experiment_partition_count": excluded_partition_count,
         "evidence_class_counts": {
             evidence_class: sum(
                 row.evidence_class == evidence_class for row in rows
