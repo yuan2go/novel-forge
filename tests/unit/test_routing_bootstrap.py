@@ -365,6 +365,20 @@ def test_campaign_grants_share_frozen_identity_across_policy_versions():
             **other["campaign"], "campaign_id": "reset-attempt"}}], [grant])
 
 
+def test_reference_model_arms_cannot_relabel_the_same_frozen_sample():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history
+
+    first = {**campaign_grant(), "task_type": "narrative_semantic_evaluation", "purpose": "REFERENCE_EVALUATION",
+             "reference_evaluation": {"asset_version_id": "reference-one", "content_hash": "sha256:" + "a" * 64,
+                                      "protocol_version": "blind-reference-v1"}}
+    second = {**first, "authorization_id": "evaluator-two", "candidate_id": "pro"}
+    validate_bootstrap_history([second], [first])
+    for changed in ({"asset_version_id": "relabeled-reference"}, {"content_hash": "sha256:" + "b" * 64},
+                    {"protocol_version": "revised-reference-v2"}):
+        with pytest.raises(KernelError, match="ROUTING_CAMPAIGN_SAMPLE_REDEFINED"):
+            validate_bootstrap_history([{**second, "reference_evaluation": {**first["reference_evaluation"], **changed}}], [first])
+
+
 @pytest.mark.parametrize("rename", [False, True])
 def test_campaign_rejects_holdout_leakage_even_with_renamed_sample(rename):
     from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history

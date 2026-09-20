@@ -414,6 +414,8 @@ or identical input-version set cannot cross partitions, and identical inputs can
 acquire another data group. Changing sample IDs inside one group does not increase
 independent qualification counts. These checks do not detect
 semantic paraphrases or replace an independently frozen dataset.
+Reference-evaluation arms also retain the exact label binding and protocol within one
+sample; changing labels after a failed arm requires a new declared experiment sample.
 `novel-forge authority-provider-routing campaign --project-id <id> --campaign-id <id>`
 reads all historical grants, Operation states, output/hash references and native
 reservation/effect references, including failures and unresolved outcomes. `RECONCILIATION_REQUIRED` requires native ExternalEffect recovery,

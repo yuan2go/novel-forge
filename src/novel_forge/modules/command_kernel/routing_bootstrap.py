@@ -277,7 +277,7 @@ def validate_bootstrap_history(
         groups[group] = partition
         sample = (identity, campaign["sample_id"])
         binding = (campaign["group_id"], grant["task_type"], grant["input_versions_hash"],
-                   grant.get("producer_contract_hash"))
+                   grant.get("producer_contract_hash"), grant.get("reference_evaluation"))
         if sample in samples and samples[sample] != binding:
             raise KernelError("ROUTING_CAMPAIGN_SAMPLE_REDEFINED",
                               "a sample retains its data group, task, producer and input versions")

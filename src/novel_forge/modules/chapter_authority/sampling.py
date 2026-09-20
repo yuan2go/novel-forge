@@ -304,6 +304,7 @@ def _require_predecessor(
         prior[2] != command.actor_id
         or previous.get("chapter_sampling") != payload["chapter_sampling"]
         or previous.get("input_versions") != payload["input_versions"]
+        or previous.get("reference_evaluation") != payload.get("reference_evaluation")
         or previous["routing_bootstrap_authorization"]["authorization"]["campaign"]
         != grant["campaign"]
     ):

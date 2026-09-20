@@ -182,21 +182,11 @@ class PlanningWorldPreparation:
         ]
         generation_document = self._read(command.project_id, f"{prefix}/generation")
         knowledge_selection = dict(knowledge_selection or {})
-        from .knowledge_translation import add_translation_contract, validate_knowledge_translations
+        from .knowledge_translation import validate_knowledge_translations
 
         if generation_document is None:
-            task = self._task(source, source_ref, "WORLD_REASONER")
-            task["narrative_intelligence"] = knowledge_selection
             generated = execute_stage(
-                PlanningProviderStage(
-                    "world_candidates.generate",
-                    task,
-                    add_translation_contract(world_generation_schema(
-                        policy,
-                        audience_scoped=source["contract_version"]
-                        == "world-preparation-source.v2",
-                    ), knowledge_selection),
-                )
+                self.generation_stage(source, source_ref, knowledge_selection)
             )
             if knowledge_selection.get("policy_version") == "knowledge-grounded-selection-v2":
                 validate_knowledge_translations(generated.raw_output, knowledge_selection)
@@ -230,17 +220,8 @@ class PlanningWorldPreparation:
             "content_hash": generation_document.content_hash,
         }
         if evaluation_document is None:
-            task = {
-                **self._task(source, source_ref, "DIRECTOR"),
-                "generated_portfolio": decoded,
-                "generation_ref": generation_ref,
-                "narrative_intelligence": knowledge_selection,
-                "knowledge_translations": generation["output"].get("knowledge_translations", []),
-            }
             evaluated = execute_stage(
-                PlanningProviderStage(
-                    "world_candidates.evaluate", task, world_evaluation_schema(decoded)
-                )
+                self.evaluation_stage(source, source_ref, generation, generation_ref, knowledge_selection)
             )
             evaluation_document = self._store(
                 command,
@@ -309,6 +290,32 @@ class PlanningWorldPreparation:
                 f"No legal world path; inspect {action_document.asset_version_id}",
             )
         return action_document
+
+    @classmethod
+    def generation_stage(cls, source, source_ref, knowledge_selection):
+        from .knowledge_translation import add_translation_contract
+
+        return PlanningProviderStage(
+            "world_candidates.generate",
+            {**cls._task(source, source_ref, "WORLD_REASONER"), "narrative_intelligence": knowledge_selection},
+            add_translation_contract(world_generation_schema(
+                WorldProductionPolicy(**source["policy"]),
+                audience_scoped=source["contract_version"] == "world-preparation-source.v2",
+            ), knowledge_selection),
+        )
+
+    @classmethod
+    def evaluation_stage(cls, source, source_ref, generation, generation_ref, knowledge_selection):
+        if generation["source"] != source_ref:
+            raise KernelError("WORLD_PREPARATION_RECEIPT_DRIFT", "evaluation must retain the generation's frozen World source")
+        decoded = decode_world_generation({key: value for key, value in generation["output"].items() if key != "knowledge_translations"})
+        return PlanningProviderStage(
+            "world_candidates.evaluate",
+            {**cls._task(source, source_ref, "DIRECTOR"), "generated_portfolio": decoded,
+             "generation_ref": generation_ref, "narrative_intelligence": knowledge_selection,
+             "knowledge_translations": generation["output"].get("knowledge_translations", [])},
+            world_evaluation_schema(decoded),
+        )
 
     @staticmethod
     def _task(

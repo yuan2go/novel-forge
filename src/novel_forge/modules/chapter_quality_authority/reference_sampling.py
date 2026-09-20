@@ -65,6 +65,23 @@ def require_chapter_reference(
     target_id, target_hash, generators = targets[0]
     if not any(item["asset_version_id"] == target_id and item["content_hash"] == target_hash for item in input_versions):
         raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "reference target differs from frozen task inputs")
+    return require_adjudicated_reference(
+        cursor, project_id=project_id, binding=binding, target_id=target_id, target_hash=target_hash,
+        generators=generators, evaluator_actor_id=evaluator_actor_id, chapter=chapter,
+        expected_dimensions=reference_dimensions(stage),
+        allowed_statuses={"PASSED", "NEEDS_REVISION", "BLOCKED"} if stage in {"review", "rereview"} else {
+            "PASSED", "PASSED_WITH_WARNINGS", "FAILED", "INSUFFICIENT_EVIDENCE"},
+    )
+
+
+def require_adjudicated_reference(
+    cursor: Any, *, project_id: str, binding: Mapping[str, Any], target_id: str, target_hash: str,
+    generators: list[str], evaluator_actor_id: str, chapter: int, expected_dimensions: tuple[str, ...],
+    allowed_statuses: set[str],
+) -> dict[str, Any]:
+    validate_reference_evaluation_binding(binding)
+    if "adjudications" not in binding or not expected_dimensions or not generators:
+        raise KernelError("QUALITY_REFERENCE_REQUIRED", "reference evaluation requires its native target and adjudicated dimensions")
     excluded = {*generators, evaluator_actor_id}
     labels = []
     all_humans: dict[str, HumanEvaluation] = {}
@@ -97,10 +114,7 @@ def require_chapter_reference(
             "score_range": list(adjudication.score_range), "adjudication_asset_version_id": reference["asset_version_id"],
             "adjudication_operation_id": operation, "evaluation_version": adjudication.evaluation_version})
     _validate_adjudication_sources(tuple(all_humans.values()), tuple(adjudications))
-    expected = reference_dimensions(stage)
-    allowed_statuses = {"PASSED", "NEEDS_REVISION", "BLOCKED"} if stage in {"review", "rereview"} else {
-        "PASSED", "PASSED_WITH_WARNINGS", "FAILED", "INSUFFICIENT_EVIDENCE"}
-    if (len(labels) != len(expected) or {row["dimension"] for row in labels} != set(expected)
+    if (len(labels) != len(expected_dimensions) or {row["dimension"] for row in labels} != set(expected_dimensions)
         or any(row["status"] not in allowed_statuses for row in labels)
         or len({row["evaluation_version"] for row in labels}) != 1):
         raise KernelError("QUALITY_REFERENCE_COVERAGE_INCOMPLETE", "reference labels must cover every native reviewer dimension")
