@@ -240,3 +240,35 @@ class BookProductionAuthorityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_cancel_losing_race_to_success_preserves_terminal_child():
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from novel_forge.modules.book_authority.production import ChapterAuthorityCommandAdapter
+    query = Mock()
+    query.require_operation_control_state.side_effect = [
+        {'status': 'EXECUTING', 'version': 1}, {'status': 'SUCCEEDED', 'version': 2}]
+    adapter = ChapterAuthorityCommandAdapter(SimpleNamespace(query=query, database_url='never-opened'), external_effect_adapters={})
+    with patch('novel_forge.modules.book_authority.production.request_cancellation', side_effect=KernelError('OPERATION_VERSION_CONFLICT', 'child committed success')) as request, patch('novel_forge.modules.book_authority.production.cancel_operation_external_effects') as effects:
+        result = adapter.cancel(project_id='project', root_operation_id='child', actor_id='operator', reason='stop book',
+            idempotency_key='stop', trace_id='trace', correlation_id='correlation')
+    assert result['status'] == 'SUCCEEDED'
+    assert result['cancellation_requested'] is False
+    request.assert_called_once()
+    effects.assert_not_called()
+
+
+def test_cancel_replay_continues_effect_protocol_without_second_control_request():
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from novel_forge.modules.book_authority.production import ChapterAuthorityCommandAdapter
+    query = Mock()
+    query.require_operation_control_state.return_value = {'status': 'CANCELLATION_REQUESTED', 'version': 2}
+    adapter = ChapterAuthorityCommandAdapter(SimpleNamespace(query=query, database_url='never-opened'), external_effect_adapters={})
+    with patch('novel_forge.modules.book_authority.production.request_cancellation') as request, patch('novel_forge.modules.book_authority.production.cancel_operation_external_effects', return_value=({'status': 'UNKNOWN'},)) as effects:
+        result = adapter.cancel(project_id='project', root_operation_id='child', actor_id='operator', reason='stop book',
+            idempotency_key='stop', trace_id='trace', correlation_id='correlation')
+    assert result['external_effect_cancellations'] == [{'status': 'UNKNOWN'}]
+    request.assert_not_called()
+    effects.assert_called_once()

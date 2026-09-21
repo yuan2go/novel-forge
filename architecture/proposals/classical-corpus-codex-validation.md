@@ -122,7 +122,10 @@ four-arm twelve-chapter experiment. A matching new grant, real corpus consumptio
 independent editorial evidence remain missing for those original acceptance conditions. Native Chapter and World reference sampling
 retains frozen task/producer contracts, independent label strata and routing protocol
 identities. These isolated scripted sampling paths do not execute G3/G4 or supply real
-reference observations. The original Craft fixture corpus does not perform this campaign, establish
+reference observations. Evidence-bound editorial dispositions and exact Scene mapping
+preservation change the existing review/revision consumer contract; G4 must bind the new
+implementation identity and cannot reuse the older contract's qualification. These backend
+repairs supply no real corpus consumption or independent generator evaluation. The original Craft fixture corpus does not perform this campaign, establish
 classical-text consumption, authorize model spend or supply independent editorial proof.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption

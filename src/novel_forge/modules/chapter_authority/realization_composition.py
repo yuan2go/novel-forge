@@ -179,8 +179,24 @@ def compile_realization_contract(
     return {**body, "contract_digest": narrative_hash(body)}
 
 
+def realization_separators(artifacts: list[dict[str, Any]], separators: Any = None) -> list[str]:
+    count = max(0, len(artifacts) - 1)
+    if separators is None:
+        return ["\n\n"] * count
+    if (not isinstance(separators, list) or len(separators) != count
+        or any(not isinstance(value, str) or (value != "" and not value.isspace()) for value in separators)):
+        raise KernelError("REALIZATION_SEPARATOR_INVALID", "explicit Scene separators must be whitespace in frozen slot order")
+    return list(separators)
+
+
+def serialize_realization(artifacts: list[dict[str, Any]], separators: Any = None) -> str:
+    joins = realization_separators(artifacts, separators)
+    return "".join((joins[index - 1] if index else "") + item["text"]
+                   for index, item in enumerate(artifacts))
+
+
 def integrate_realization(
-    *, contract: Mapping[str, Any], artifacts: Any, text: str
+    *, contract: Mapping[str, Any], artifacts: Any, text: str, separators: Any = None
 ) -> dict[str, Any]:
     if not isinstance(artifacts, list):
         raise KernelError(
@@ -201,7 +217,6 @@ def integrate_realization(
             "REALIZATION_SLOT_COVERAGE_INVALID",
             "Every selected Scene slot must occur once in frozen order",
         )
-    pieces = []
     for slot, artifact in zip(expected, artifacts, strict=True):
         if (
             set(artifact) != {"slot_id", "text", "used_fact_ids"}
@@ -227,8 +242,7 @@ def integrate_realization(
                 "REALIZATION_EPISTEMIC_SCOPE_VIOLATION",
                 "Scene realization used information outside its frozen epistemic scope",
             )
-        pieces.append(artifact["text"])
-    integrated = "\n\n".join(pieces)
+    integrated = serialize_realization(artifacts, separators)
     if integrated != text:
         raise KernelError(
             "REALIZATION_INTEGRATION_DRIFT",
@@ -289,8 +303,10 @@ def integrate_realization(
     return {
         "realization_contract": dict(contract),
         "scene_artifacts": artifacts,
+        **({"scene_separators": realization_separators(artifacts, separators)} if separators is not None else {}),
         "composition_digest": narrative_hash(
-            {"contract": contract["contract_digest"], "artifacts": artifacts}
+            {"contract": contract["contract_digest"], "artifacts": artifacts,
+             **({"scene_separators": separators} if separators is not None else {})}
         ),
         "voice_evidence": voice_evidence,
     }
@@ -310,6 +326,7 @@ def reconcile_revision_composition(
         contract=contract,
         artifacts=result.get("scene_artifacts"),
         text=str(result.get("text") or ""),
+        separators=source.get("scene_separators"),
     )
     previous = {item["slot_id"]: item for item in source["scene_artifacts"]}
     integrated["changed_slot_ids"] = [

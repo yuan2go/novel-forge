@@ -8,7 +8,7 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `6b67b212abed2e0ffbe8250b752f9d4f2dadb33a`
+Current-reality baseline: `9a8eedc1c7609a36a26672148d1561e077d81701`
 Baseline implementation identity: `sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc`
 
 <!-- proposal-lifecycle
@@ -18,7 +18,7 @@ Baseline implementation identity: `sha256:24d2cc9a584ffa5c7d0081310a1819d47e446f
   "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "6b67b212abed2e0ffbe8250b752f9d4f2dadb33a",
+    "sha": "9a8eedc1c7609a36a26672148d1561e077d81701",
     "implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc"
   },
   "scope": [
@@ -141,6 +141,18 @@ Baseline implementation identity: `sha256:24d2cc9a584ffa5c7d0081310a1819d47e446f
     },
     {
       "path": "src/novel_forge/modules/plan_change_authority/semantic_impact.py"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/editorial.py",
+      "symbol": "completion_editorial_evidence"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/editorial_domain.py",
+      "symbol": "validate_finding_disposition"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/author_editor.py",
+      "symbol": "reconcile_author_scenes"
     }
   ],
   "superseding_refs": [],
@@ -249,6 +261,61 @@ Baseline implementation identity: `sha256:24d2cc9a584ffa5c7d0081310a1819d47e446f
           "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py"
         }
       ]
+    },
+    {
+      "id": "closure02-backend",
+      "description": "Complete package-wide collaboration checks after global-review and admission contracts land; exact signature groups, bounded dispositions, mapped Scene edits, successful-child cancellation and unresolved-budget replacement blocking now have focused backend regression coverage.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/book_authority/editorial.py"
+        }
+      ]
+    },
+    {
+      "id": "closure02-global-editor",
+      "description": "Extend Book Follow-up into bounded remote-evidence hypothesis discovery, joint review, incremental invalidation and distinct coverage/relationship/arc decisions; prove nonadjacent positive and negative cases through existing disposition consumers.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py"
+        }
+      ]
+    },
+    {
+      "id": "closure02-inferred-impact",
+      "description": "Discover inferred consequences from exact Plan Change diffs, independently of hard dependency closure; prove evidence, counterexamples, no preapproval mutations and precise future-only native activation.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/plan_change_authority/semantic_impact.py"
+        }
+      ]
+    },
+    {
+      "id": "closure02-continuous-actors",
+      "description": "Extend experimental World Preparation decisions across accepted Reality boundaries with private causal activation and accepted goals/resources/beliefs; reduce duplicate Director context before bounded multi-boundary comparison.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py"
+        }
+      ]
+    },
+    {
+      "id": "closure02-generator-admission",
+      "description": "Connect frozen native samples and independently qualified evaluation to task-scoped native benchmark feedback, explicit decisions and dispatch-time contract/revocation checks; retain distinct engineering, judge and generator evidence.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_runtime.py",
+          "symbol": "PostgresRoutingRegistry"
+        }
+      ]
+    },
+    {
+      "id": "closure02-native-hierarchy",
+      "description": "After matching per-task admission, execute the bounded native Formation/Opening/Book/Chapter/Review/Revision/acceptance closure and subsequent accepted boundaries; missing paid authorization or trusted human evidence remains incomplete.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py"
+        }
+      ]
     }
   ]
 }
@@ -315,3 +382,24 @@ coverage and issue dispositions. Public release is separately authorized.
 | Market observations | Topic proposal; one rights-backed source, comparable cohort, observation time and missing-value semantics | HOLD until source authorization and a testable topic-quality hypothesis exist; then one bounded input adapter |
 | General association graph | A concrete query unmet by existing accepted/inferred indexes; exact source and relation provenance | HOLD until that query and measured improvement are specified; never merge inferred relations into accepted truth |
 | Short form, scripts or multimedia | Explicit version of accepted prose and an identified downstream adapter; source/output rights | HOLD until the consumer and useful output are approved; model/resource generation and publication need separate authorization |
+
+## WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02
+
+Implementation order follows the six remaining-work entries above. Existing sampling,
+reference calibration, cross-chapter token accounting, Craft preservation and accepted
+state reducers are dependencies to reuse, not replacement Authorities. The earlier
+window-review and single-round actor claims describe their bounded runtime only; they
+do not close global editing, inferred dependency discovery or continuous agency.
+
+Acceptance requires backend commands and exact native consumers for every stage,
+independent positive/negative evidence and recoverable Effect receipts. In particular,
+coverage cannot imply a global verdict, a proposed revision cannot imply resolution,
+reference agreement cannot qualify a generator, and samples never become formal assets.
+The completion quorum and retrospective edition decisions above remain unresolved.
+
+Verification is restricted by the execution request to focused backend unit, native
+PostgreSQL vertical/recovery, applicable migration and static manifest checks. Full P0,
+backend/PostgreSQL/Compose collections and Web/UI tests are NOT_RUN; this restriction
+cannot confer QUALIFIED or replace the existing full gate. Paid model execution and
+independent human evidence require matching existing authorization and identities.
+All historical fixed-SHA failures, campaign counters and unknown Effects are retained.

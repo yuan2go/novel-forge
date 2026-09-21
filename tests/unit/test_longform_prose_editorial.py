@@ -332,3 +332,86 @@ def test_exact_frozen_prose_survives_final_pack_prompt_materialization():
         evidence["provider_view"]["context_contract_version"]
         == "provider-context-view-v2"
     )
+
+
+def test_completion_checks_each_exact_signature_group(monkeypatch):
+    from novel_forge.modules.book_authority import editorial
+    from novel_forge.modules.book_followup_authority import prose_coordinator
+    policy = {"policy_version": "v1", "enabled": True, "authorized_reviewers": ["one", "two"],
+              "minimum_signatures": 2, "allow_minor_exceptions": False}
+    events = [{"event_id": "policy", "kind": "POLICY", "content": {"policy": policy}}]
+    def sign(identity, actor, run, digest):
+        return {"event_id": identity, "kind": "SIGNATURE", "actor_id": actor, "content": {
+            "case_id": "case", "policy_event_id": "policy", "source_digest": "source",
+            "review_run_id": run, "manifest_digest": "manifest", "review_digest": digest, "release_sha": "release"}}
+    events.extend([sign("a", "one", "valid", "review"), sign("b", "two", "valid", "review"),
+                   sign("c", "one", "stale", "old")])
+    monkeypatch.setattr(editorial, "load_editorial_events", lambda *args: events)
+    monkeypatch.setattr(prose_coordinator, "load_review_run", lambda uow, **scope: {
+        **scope, "exact_release_sha": "release"})
+    monkeypatch.setattr(prose_coordinator, "review_progress", lambda uow, run: {
+        "manifest_digest": "manifest", "review_digest": "review" if run["run_id"] == "valid" else "changed",
+        "source_current": True, "coverage_complete": True, "review_complete": True, "paused": False, "findings": []})
+    case = {"case_id": "case", "source_digest": "source", "project_id": "p", "workspace_id": "w", "book_run_id": "book"}
+    blockers, status = editorial.completion_editorial_evidence(None, case=case, payload=case, release_sha="release")
+    assert blockers == []
+    assert status["signature_ids"] == ["a", "b"]
+    events.append({"event_id": "revoke-c", "kind": "REVOCATION", "content": {"signature_id": "c"}})
+    assert editorial.completion_editorial_evidence(None, case=case, payload=case, release_sha="release")[0] == []
+    events[2]["content"]["review_run_id"] = "other"
+    assert editorial.completion_editorial_evidence(None, case=case, payload=case, release_sha="release")[0]
+
+
+def test_expired_signature_cannot_supply_quorum():
+    from datetime import datetime, timezone
+    policy = {"policy_version": "v1", "enabled": True, "authorized_reviewers": ["one"],
+              "minimum_signatures": 1, "allow_minor_exceptions": False}
+    events = [{"event_id": "policy", "kind": "POLICY", "content": {"policy": policy}},
+              {"event_id": "expired", "kind": "SIGNATURE", "actor_id": "one", "content": {
+                  "policy_event_id": "policy", "source_digest": "s", "manifest_digest": "m", "review_digest": "r",
+                  "release_sha": "a", "expires_at": "2026-09-20T00:00:00+00:00"}}]
+    result = editorial_readiness(events=events, source_digest="s", manifest_digest="m", review_digest="r",
+                                 release_sha="a", now=datetime(2026, 9, 21, tzinfo=timezone.utc))
+    assert result["status"] == "WAITING_EVIDENCE"
+
+
+@pytest.mark.parametrize("decision,severity,conflict,allowed", [
+    ("MINOR_EXCEPTION", "MINOR", False, True), ("MINOR_EXCEPTION", "MAJOR", False, False),
+    ("MINOR_EXCEPTION", "BLOCKING", False, False), ("MINOR_EXCEPTION", "MINOR", True, False),
+    ("KEEP_HISTORY", "BLOCKING", False, True), ("CURRENT_CANDIDATE_REVISION", "BLOCKING", False, True),
+    ("FUTURE_PLAN_PROPOSAL", "BLOCKING", False, True)])
+def test_disposition_does_not_convert_proposals_or_major_issues_to_resolution(decision, severity, conflict, allowed):
+    from novel_forge.modules.book_authority.editorial_domain import validate_finding_disposition
+    policy = {"event_id": "policy", "content": {"policy": {"policy_version": "v1", "enabled": True,
+        "authorized_reviewers": ["reviewer"], "minimum_signatures": 1, "allow_minor_exceptions": True}}}
+    finding = {"status": "CONFLICT_REQUIRES_REVIEW" if conflict else "OPEN",
+               "members": [{"judgment": "ISSUE", "severity": severity}]}
+    command = dict(finding=finding, decision=decision, policy_event=policy, actor_id="reviewer")
+    if not allowed:
+        with pytest.raises(KernelError):
+            validate_finding_disposition(**command)
+    else:
+        result = validate_finding_disposition(**command)
+        assert result["resolution"] == ("PERMITTED_EXCEPTION" if decision == "MINOR_EXCEPTION" else "UNRESOLVED")
+
+
+def test_dismissal_needs_named_reviewer_and_complete_located_counterevidence():
+    from novel_forge.modules.book_authority.editorial_domain import validate_finding_disposition
+    frozen = manifest()
+    issue = report(frozen, frozen["windows"][0])["findings"][0]
+    policy = {"event_id": "policy", "content": {"policy": {"policy_version": "v1", "enabled": True,
+        "authorized_reviewers": ["reviewer"], "minimum_signatures": 1, "allow_minor_exceptions": False}}}
+    command = dict(finding={"status": "OPEN", "members": [issue]}, decision="DISMISSED_WITH_EVIDENCE",
+                   policy_event=policy, actor_id="reviewer")
+    with pytest.raises(KernelError, match="recheck"):
+        validate_finding_disposition(**command)
+    counter = report(frozen, frozen["windows"][0], "INTENTIONAL")
+    assert validate_finding_disposition(**command, counter_reports=[counter])["resolution"] == "DISMISSED_BY_AUTHORIZED_REVIEWER"
+    with pytest.raises(PermissionError):
+        validate_finding_disposition(**{**command, "actor_id": "other"}, counter_reports=[counter])
+    counter["findings"][0]["evidence"][0]["text_hash"] = "stale"
+    with pytest.raises(KernelError):
+        validate_finding_disposition(**command, counter_reports=[counter])
+    counter["findings"][0]["judgment"] = "INSUFFICIENT_EVIDENCE"
+    with pytest.raises(KernelError):
+        validate_finding_disposition(**command, counter_reports=[counter])

@@ -201,7 +201,9 @@ class DeterministicFixtureChapterProvider:
                 if not text.startswith(draft["text"]):
                     raise ValueError("fixture revision only supports append-only prose")
                 artifacts[-1]["text"] += text[len(draft["text"]):]
-        return {**output, "scene_artifacts": artifacts, "text": "\n\n".join(item["text"] for item in artifacts) if artifacts else text}
+        from .realization_composition import serialize_realization
+        separators = (payload.get("draft") or {}).get("scene_separators") if stage == "revision" else None
+        return {**output, "scene_artifacts": artifacts, "text": serialize_realization(artifacts, separators) if artifacts else text}
 
 
 @dataclass(frozen=True, slots=True)

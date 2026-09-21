@@ -109,15 +109,15 @@ class BookAuthorityRepository:
     def request_delegation_cancellation(self, *, book_run_id: str) -> None:
         self.cursor.execute(
             """
-            UPDATE authority_child_delegation
-            SET status=CASE
-                    WHEN status IN ('DISPATCHED', 'RUNNING', 'WAITING_RETRY',
-                                    'SUCCEEDED', 'UNKNOWN')
-                    THEN 'CANCELLATION_REQUESTED'
-                    ELSE status
-                END,
-                version=version+1, updated_at=NOW()
-            WHERE owner_id=%s AND status <> 'ACCEPTED' AND superseded_at IS NULL
+            UPDATE authority_child_delegation delegation
+            SET status='CANCELLATION_REQUESTED', version=delegation.version+1, updated_at=NOW()
+            WHERE owner_id=%s AND status IN ('DISPATCHED','RUNNING','WAITING_RETRY','UNKNOWN')
+              AND superseded_at IS NULL
+              AND NOT EXISTS (
+                  SELECT 1 FROM authority_operation child
+                  WHERE child.operation_id=delegation.child_root_operation_id
+                    AND child.status IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','DEAD_LETTER','COMPENSATED')
+              )
             """,
             [book_run_id],
         )

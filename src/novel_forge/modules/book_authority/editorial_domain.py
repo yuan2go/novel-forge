@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any, Mapping, Sequence
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
@@ -53,6 +54,16 @@ def validate_editorial_policy(policy: Mapping[str, Any]) -> None:
         )
 
 
+def signature_unexpired(content: Mapping[str, Any], now: datetime | None = None) -> bool:
+    if "expires_at" not in content:
+        return True
+    try:
+        expiry = datetime.fromisoformat(content["expires_at"])
+        return expiry.tzinfo is not None and expiry > (now or datetime.now(timezone.utc))
+    except (TypeError, ValueError):
+        return False
+
+
 def editorial_readiness(
     *,
     events: Sequence[Mapping[str, Any]],
@@ -60,6 +71,8 @@ def editorial_readiness(
     manifest_digest: str,
     review_digest: str,
     release_sha: str,
+    review_run_id: str | None = None,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     policies = [event for event in events if event["kind"] == "POLICY"]
     if not policies:
@@ -82,6 +95,8 @@ def editorial_readiness(
         for event in events
         if event["kind"] == "SIGNATURE"
         and event["event_id"] not in revoked
+        and signature_unexpired(event["content"], now)
+        and (review_run_id is None or event["content"].get("review_run_id") == review_run_id)
         and event["content"].get("policy_event_id") == policy_event["event_id"]
         and event["actor_id"] in policy["authorized_reviewers"]
         and all(
@@ -106,3 +121,32 @@ def editorial_readiness(
         "signature_ids": sorted(event["event_id"] for event in by_actor.values()),
         "policy_event_id": policy_event["event_id"],
     }
+
+
+def validate_finding_disposition(*, finding: Mapping[str, Any], decision: str,
+                                 policy_event: Mapping[str, Any] | None, actor_id: str,
+                                 counter_reports: Sequence[Mapping[str, Any]] = ()) -> dict[str, Any]:
+    if decision not in {"MINOR_EXCEPTION", "DISMISSED_WITH_EVIDENCE"}:
+        return {"resolution": "UNRESOLVED", "authority": "PROPOSAL_OR_HISTORY_ONLY"}
+    if policy_event is None:
+        raise KernelError("BOOK_EDITORIAL_POLICY_REQUIRED", "finding exceptions require a current editorial policy")
+    policy = policy_event["content"]["policy"]
+    validate_editorial_policy(policy)
+    if not policy["enabled"] or actor_id not in policy["authorized_reviewers"]:
+        raise PermissionError("only a named current editorial reviewer may waive or dismiss a finding")
+    issues = [member for member in finding["members"] if member["judgment"] == "ISSUE"]
+    if decision == "MINOR_EXCEPTION":
+        if (not policy["allow_minor_exceptions"] or finding["status"] == "CONFLICT_REQUIRES_REVIEW"
+            or not issues or any(member["severity"] != "MINOR" for member in issues)):
+            raise KernelError("BOOK_EDITORIAL_EXCEPTION_INVALID", "only nonconflicting minor issues permit a policy-authorized exception")
+    else:
+        counters = [item for report in counter_reports for item in report["findings"]
+                    if item["judgment"] == "INTENTIONAL"]
+        for member in finding["members"]:
+            if not any(counter["dimension"] == member["dimension"] and all(
+                any(e["asset_version_id"] == c["asset_version_id"] and e["text_hash"] == c["text_hash"]
+                    and c["start"] <= e["start"] < e["end"] <= c["end"] for c in counter["evidence"])
+                for e in member["evidence"]) for counter in counters):
+                raise KernelError("BOOK_EDITORIAL_COUNTEREVIDENCE_REQUIRED", "dismissal requires a current located recheck covering every challenged member; rationale or unknown evidence is insufficient")
+    return {"resolution": "PERMITTED_EXCEPTION" if decision == "MINOR_EXCEPTION" else "DISMISSED_BY_AUTHORIZED_REVIEWER",
+            "policy_event_id": policy_event["event_id"], "policy": dict(policy), "reviewer_id": actor_id}

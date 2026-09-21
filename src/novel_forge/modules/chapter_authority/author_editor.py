@@ -29,24 +29,40 @@ def edit_map(before: str, after: str) -> list[dict[str, Any]]:
             if action != "equal"]
 
 
-def reconcile_author_scenes(source: dict[str, Any], text: str, supplied: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+def reconcile_author_scenes(source: dict[str, Any], text: str, supplied: list[dict[str, Any]] | None = None,
+                            separators: list[str] | None = None) -> list[dict[str, Any]]:
+    from .realization_composition import integrate_realization, realization_separators, serialize_realization
     artifacts = source.get("scene_artifacts") or []
+    before = str(source.get("text") or "")
+    original_joins = realization_separators(artifacts, source.get("scene_separators"))
+    joins = realization_separators(artifacts, separators if separators is not None else source.get("scene_separators"))
+    if artifacts and serialize_realization(artifacts, original_joins) != before:
+        raise KernelError("AUTHOR_SCENE_BASE_CONFLICT", "Source Scene artifacts disagree with exact source text")
     if supplied is not None:
-        if "\n\n".join(str(item.get("text", "")) for item in supplied) != text:
-            raise KernelError("AUTHOR_SCENE_TEXT_CONFLICT", "Scene text must exactly serialize the submitted text")
-        if artifacts and [item.get("slot_id") for item in supplied] != [item.get("slot_id") for item in artifacts]:
-            raise KernelError("AUTHOR_SCENE_SCOPE_CONFLICT", "Author edits cannot change the frozen Scene slot identities")
+        if not artifacts or not isinstance(supplied, list) or len(supplied) != len(artifacts):
+            raise KernelError("AUTHOR_SCENE_SCOPE_CONFLICT", "Scene creation or removal requires native Plan Change")
+        for original, item in zip(artifacts, supplied, strict=True):
+            if (not isinstance(item, dict) or set(item) != set(original)
+                or any(item[key] != value for key, value in original.items() if key not in {"text", "used_fact_ids"})):
+                raise KernelError("AUTHOR_SCENE_SCOPE_CONFLICT", "Scene identities, order and structural metadata require native Plan Change")
+            if not isinstance(item.get("text"), str) or not item["text"].strip():
+                raise KernelError("AUTHOR_SCENE_TEXT_CONFLICT", "mapped Scene text must remain nonempty")
+            if not source.get("realization_contract") and item.get("used_fact_ids") != original.get("used_fact_ids"):
+                raise KernelError("AUTHOR_SCENE_SCOPE_CONFLICT", "new information use requires a frozen Scene knowledge contract")
+        if serialize_realization(supplied, joins) != text:
+            raise KernelError("AUTHOR_SCENE_TEXT_CONFLICT", "Scene mapping must exactly serialize the submitted text")
+        if source.get("realization_contract"):
+            integrate_realization(contract=source["realization_contract"], artifacts=supplied, text=text, separators=joins)
         return supplied
     if not artifacts:
         return []
-    before = str(source.get("text") or "")
-    if "\n\n".join(str(item["text"]) for item in artifacts) != before:
-        raise KernelError("AUTHOR_SCENE_BASE_CONFLICT", "Source Scene artifacts disagree with exact source text")
+    if joins != original_joins:
+        raise KernelError("AUTHOR_SCENE_MAPPING_REQUIRED", "separator changes require explicit Scene mapping")
     result = [dict(item) for item in artifacts]
     spans, offset = [], 0
-    for item in artifacts:
+    for index, item in enumerate(artifacts):
         spans.append((offset, offset + len(item["text"])))
-        offset += len(item["text"]) + 2
+        offset += len(item["text"]) + (len(original_joins[index]) if index < len(original_joins) else 0)
     for edit in reversed(edit_map(before, text)):
         matches = [(index, start) for index, (start, end) in enumerate(spans)
                    if start <= edit["start"] <= edit["end"] <= end]
@@ -55,9 +71,23 @@ def reconcile_author_scenes(source: dict[str, Any], text: str, supplied: list[di
         index, start = matches[0]
         old = result[index]["text"]
         result[index]["text"] = old[:edit["start"] - start] + edit["after"] + old[edit["end"] - start:]
-    if "\n\n".join(item["text"] for item in result) != text:
+    if serialize_realization(result, joins) != text:
         raise KernelError("AUTHOR_SCENE_TEXT_CONFLICT", "Scene edit mapping did not preserve exact text")
+    if any(not item["text"].strip() for item in result):
+        raise KernelError("AUTHOR_SCENE_SCOPE_CONFLICT", "Removing a Scene requires native Plan Change")
+    if source.get("realization_contract"):
+        integrate_realization(contract=source["realization_contract"], artifacts=result, text=text, separators=joins)
     return result
+
+
+def source_draft_content(source: AuthorityAssetDocument) -> dict[str, Any]:
+    content = source.content
+    if source.asset_type != "author_edit_candidate":
+        return content
+    draft = content.get("draft_content")
+    if not isinstance(draft, dict) or any(draft.get(key) != content.get(key) for key in ("text", "scene_artifacts", "scene_separators")):
+        raise KernelError("AUTHOR_BASE_CONTRACT_CONFLICT", "Candidate prose must agree with its retained draft contract")
+    return draft
 
 
 def _scope(payload: dict[str, Any]) -> dict[str, Any]:
@@ -158,6 +188,7 @@ class ChapterAuthorEditingApplication:
                 "base_text_hash": text_hash(str(source.content.get("text") or "")),
                 "text": str(source.content.get("text") or ""), "title": source.content.get("title", ""),
                 "scene_artifacts": source.content.get("scene_artifacts", []),
+                "scene_separators": source.content.get("scene_separators"),
                 "version": session.version_number if session else 0,
                 "session": session.content if session and session.content.get("base_asset_version_id") == base_asset_version_id else None, "candidates": candidates, "decisions": decisions,
                 "diagnostics": diagnostics, "book_runs": book_runs, "book_request": book_request,
@@ -211,7 +242,8 @@ class ChapterAuthorEditingApplication:
         if version != payload["expected_version"]:
             raise KernelError("AUTHOR_VERSION_CONFLICT", "A concurrent edit changed the chapter editor; preserve input and reload the current version")
         source = require_source(uow, scope, payload["base_asset_version_id"])
-        before = str(source.content.get("text") or "")
+        draft_source = source_draft_content(source)
+        before = str(draft_source.get("text") or "")
         if payload.get("base_text_hash") != text_hash(before) or payload.get("base_asset_hash") != source.content_hash:
             raise KernelError("AUTHOR_BASE_HASH_CONFLICT", "Exact base text and asset hashes are required")
         uow.cursor.execute("SELECT current_asset_version_id FROM authority_asset_locator WHERE project_id=%s AND asset_id=%s FOR SHARE",
@@ -238,13 +270,20 @@ class ChapterAuthorEditingApplication:
                 raise KernelError("AUTHOR_EDIT_RANGE_INVALID", "Edit ranges use exact base Unicode code-point coordinates")
             if any(not any(item["start"] <= edit["start"] <= edit["end"] <= item["end"] for item in ranges) for edit in edits):
                 raise KernelError("AUTHOR_EDIT_OUTSIDE_RANGE", "Submitted text changes outside the declared author selection")
-            scenes = reconcile_author_scenes(source.content, text, payload.get("scene_artifacts"))
+            if payload.get("edit_intent", "PROSE_ONLY") != "PROSE_ONLY":
+                raise KernelError("AUTHOR_PLAN_CHANGE_REQUIRED", "Scene mission, order, knowledge or event structure changes require native Plan Change before prose adoption")
+            separators = payload.get("scene_separators", source.content.get("scene_separators"))
+            if separators is None:
+                separators = source.content.get("scene_separators")
+            scenes = reconcile_author_scenes(draft_source, text, payload.get("scene_artifacts"), separators)
+            mapping = {"scene_separators": separators} if separators is not None else {}
             content = {**scope, "contract_version": EDITOR_CONTRACT, "base_asset_version_id": source.asset_version_id,
                        "base_asset_hash": source.content_hash, "base_text_hash": text_hash(before), "text_hash": text_hash(text),
+                       "originating_draft_asset_version_id": source.content.get("originating_draft_asset_version_id", source.asset_version_id) if source.asset_type == "author_edit_candidate" else source.asset_version_id,
                        "text": text, "title": source.content.get("title", ""), "edits": edits, "allowed_ranges": ranges,
-                       "scene_artifacts": scenes, "author_id": actor, "rights_basis": payload["rights_basis"],
+                       **mapping, "scene_artifacts": scenes, "author_id": actor, "rights_basis": payload["rights_basis"],
                        "source_provenance": {"kind": "HUMAN_AUTHOR_INPUT", "operation_id": operation_id},
-                       "draft_content": {**source.content, "text": text, "scene_artifacts": scenes},
+                       "draft_content": {**draft_source, **mapping, "text": text, "scene_artifacts": scenes},
                        "status": "SAVED_CANDIDATE", "semantic_review": "NOT_RUN"}
             if payload.get("source_review_run_id") or payload.get("source_lineage_id"):
                 from novel_forge.modules.book_followup_authority.prose_coordinator import load_review_run, review_progress
@@ -262,7 +301,10 @@ class ChapterAuthorEditingApplication:
                         continue
                     progress = review_progress(uow, run)
                     if progress.get("source_current") and any(item.get("lineage_id") == payload.get("source_lineage_id") for item in progress.get("findings", [])):
-                        linked = {"source_review_run_id": payload["source_review_run_id"], "source_lineage_id": payload["source_lineage_id"]}
+                        finding = next(item for item in progress["findings"] if item["lineage_id"] == payload["source_lineage_id"])
+                        linked = {"source_review_run_id": payload["source_review_run_id"], "source_lineage_id": payload["source_lineage_id"],
+                                  "source_finding_digest": finding["finding_digest"], "source_manifest_digest": progress["manifest_digest"],
+                                  "source_review_digest": progress["review_digest"]}
                 if linked is None:
                     raise KernelError("AUTHOR_REVIEW_LINEAGE_INVALID", "Review lineage is absent, stale or outside the editor Book scope")
                 content.update(linked)

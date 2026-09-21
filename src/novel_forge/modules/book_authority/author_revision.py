@@ -74,11 +74,16 @@ def replace_author_chapter(authority, *, chapter_request_id: str, expected_book_
             WHERE o.root_operation_id=%s AND e.status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED') LIMIT 1''', [expected_root_operation_id])
         if uow.cursor.fetchone() is not None:
             raise KernelError('BOOK_AUTHOR_EFFECT_RECONCILIATION_REQUIRED', 'Old external effects must be reconciled before replacement')
+        uow.cursor.execute('''SELECT 1 FROM authority_budget_reservation reservation
+            JOIN authority_operation op USING(operation_id) WHERE op.root_operation_id=%s
+            AND reservation.status NOT IN ('SETTLED','RELEASED','REJECTED') LIMIT 1''', [expected_root_operation_id])
+        if uow.cursor.fetchone() is not None:
+            raise KernelError('BOOK_AUTHOR_BUDGET_RECONCILIATION_REQUIRED', 'Old budget reservations must be settled or released before replacement')
         adoption = freeze_author_adoption(authority.database_url, project_id=book['project_id'], workspace_id=book['workspace_id'],
             book_id=book['book_id'], chapter=previous['chapter_number'], candidate_asset_version_id=candidate_asset_version_id,
             decision_asset_version_id=decision_asset_version_id, principal=principal)
         uow.cursor.execute('''SELECT 1 FROM authority_operation_output_asset a JOIN authority_operation o USING(operation_id)
-            WHERE a.asset_version_id=%s AND o.root_operation_id=%s''', [adoption['base_asset_version_id'], expected_root_operation_id])
+            WHERE a.asset_version_id=%s AND o.root_operation_id=%s''', [adoption['originating_draft_asset_version_id'], expected_root_operation_id])
         if uow.cursor.fetchone() is None:
             raise KernelError('BOOK_AUTHOR_SOURCE_SCOPE_CONFLICT', 'Candidate source must belong to the exact replaced Chapter run')
         binding = {'contract_version': CONTRACT, 'book_run_id': book['book_run_id'], 'chapter_request_id': new_id,

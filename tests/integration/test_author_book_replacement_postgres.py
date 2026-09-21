@@ -155,3 +155,25 @@ def test_author_replacement_rebinds_native_group_before_group_acceptance():
             assert uow.cursor.fetchone()==(replacement['chapter_request_id'],replacement['chapter_root_operation_id'],'ACCEPTED')
     finally:
         helper.doCleanups()
+
+
+def test_author_replacement_retains_candidate_while_old_budget_is_unknown():
+    helper, fixture, previous, principal, scope, text, saved, adopted = unaccepted_author_fixture()
+    try:
+        reservation_id = identifier('unsettled-old-chapter-budget')
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute('''INSERT INTO authority_budget_reservation(
+                reservation_id,operation_id,project_id,stable_idempotency_key,provider,currency,
+                estimated_amount,reserved_amount,estimated_tokens,status)
+                VALUES (%s,%s,%s,%s,'fixture','USD',1,1,100,'HELD_UNKNOWN')''',
+                [reservation_id, previous['chapter_root_operation_id'], scope['project_id'], reservation_id])
+            uow.commit()
+        with pytest.raises(KernelError, match='BOOK_AUTHOR_BUDGET_RECONCILIATION_REQUIRED'):
+            replace_author_chapter(fixture['authority'], **replacement_args(fixture, previous, principal, saved, adopted))
+        assert fixture['authority'].require(fixture['book'].book_run_id)['active_chapter_request_id'] == previous['chapter_request_id']
+        assert AuthorityAssetQuery(DATABASE_URL).require(project_id=scope['project_id'], asset_version_id=saved['candidate_asset_version_id']).content['text'] == text
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute('SELECT status FROM authority_budget_reservation WHERE reservation_id=%s', [reservation_id])
+            assert uow.cursor.fetchone()[0] == 'HELD_UNKNOWN'
+    finally:
+        helper.doCleanups()

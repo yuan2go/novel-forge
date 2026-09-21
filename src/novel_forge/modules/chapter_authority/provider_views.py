@@ -556,6 +556,8 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             payload["chapter"].pop("text", None)
             payload["realization_contract"] = deepcopy(source["realization_contract"])
             payload["scene_artifacts"] = deepcopy(source["scene_artifacts"])
+            if "scene_separators" in source:
+                payload["scene_separators"] = list(source["scene_separators"])
             payload["composition_digest"] = source["composition_digest"]
         if inputs.get("required_actions") is not None:
             payload["required_actions"] = _compact(inputs.get("required_actions"))

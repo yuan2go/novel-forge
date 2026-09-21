@@ -2685,8 +2685,9 @@ def default_chapter_fixture_response(
         artifacts = json.loads(json.dumps(draft.get("scene_artifacts", [])))
         if artifacts:
             artifacts[-1]["text"] += " " + suffix
+        from .realization_composition import serialize_realization
         text = (
-            "\n\n".join(item["text"] for item in artifacts)
+            serialize_realization(artifacts, draft.get("scene_separators"))
             if artifacts
             else f"{draft.get('text') or 'The choice is made.'} {suffix}"
         )
@@ -3593,7 +3594,8 @@ def _stage_semantic_contract(
             "Use only its accessible fact references; report used_fact_ids explicitly. "
             "Do not give a character reader-only knowledge. Keep every factual commitment "
             "inside the approved Scene scope and declared voice contracts. The text field "
-            "must equal slot texts joined with two newlines. For Revision, preserve unaffected "
+            "must equal slot texts joined with two newlines, or the exact frozen scene_separators "
+            "when supplied for an author candidate. Preserve those separators. For Revision, preserve unaffected "
             "slots and amend only slots needed by the frozen review issues; Quality and Actual "
             "reconciliation will run again. If no Scene slots exist, return scene_artifacts=[]. "
             "Candidate generation never changes Canon or accepted Narrative Reality."

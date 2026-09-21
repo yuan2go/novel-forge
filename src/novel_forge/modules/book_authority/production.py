@@ -416,19 +416,30 @@ class ChapterAuthorityCommandAdapter:
             project_id=project_id,
             root_operation_id=root_operation_id,
         )
-        result = request_cancellation(
-            self.application.database_url,
-            CancelCommand(
-                operation_id=root_operation_id,
-                project_id=project_id,
-                actor_id=actor_id,
-                reason=reason,
-                expected_version=int(state["version"]),
-                idempotency_key=idempotency_key,
-                trace_id=trace_id,
-                correlation_id=correlation_id,
-            ),
-        )
+        terminal = {"SUCCEEDED", "FAILED_FINAL", "CANCELLED", "DEAD_LETTER", "COMPENSATED"}
+        if state["status"] in terminal:
+            return {"status": state["status"], "cancellation_requested": False,
+                    "external_effect_cancellations": []}
+        result = {"status": state["status"], "replayed": True}
+        if state["status"] != "CANCELLATION_REQUESTED":
+            try:
+                result = request_cancellation(
+                    self.application.database_url,
+                    CancelCommand(
+                        operation_id=root_operation_id, project_id=project_id, actor_id=actor_id,
+                        reason=reason, expected_version=int(state["version"]),
+                        idempotency_key=idempotency_key, trace_id=trace_id, correlation_id=correlation_id,
+                    ),
+                )
+            except KernelError as error:
+                if error.code not in {"OPERATION_VERSION_CONFLICT", "OPERATION_STATUS_CONFLICT"}:
+                    raise
+                current = self.application.query.require_operation_control_state(
+                    project_id=project_id, root_operation_id=root_operation_id)
+                if current["status"] not in terminal:
+                    raise
+                return {"status": current["status"], "cancellation_requested": False,
+                        "external_effect_cancellations": []}
         cancellations = cancel_operation_external_effects(
             self.application.database_url,
             root_operation_id=root_operation_id,
@@ -1640,10 +1651,7 @@ class PostgresBookAuthority:
     ) -> dict[str, Any]:
         book = self.require(book_run_id)
         principal.require("book.authority.execute", book["project_id"])
-        if book["state"] in {
-            BookProductionState.COMPLETED.value,
-            BookProductionState.ABORTED.value,
-        }:
+        if book["state"] == BookProductionState.COMPLETED.value:
             return book
         context = self._book_graph_context(book, principal.principal_id)
         request_id = str(book["active_chapter_request_id"] or "")
@@ -1660,6 +1668,8 @@ class PostgresBookAuthority:
                     trace_id=context.trace_id,
                     correlation_id=context.correlation_id,
                 )
+        if book["state"] == BookProductionState.ABORTED.value:
+            return self.require(book_run_id)
         with AuthorityUnitOfWork(self.database_url) as uow:
             root = uow.repositories.attempt_runtime.operation_state(
                 str(book["root_operation_id"]), book["project_id"]
@@ -1685,6 +1695,8 @@ class PostgresBookAuthority:
                 ),
             )
         current = self.require(book_run_id)
+        if current["state"] in {BookProductionState.COMPLETED.value, BookProductionState.ABORTED.value}:
+            return current
         expected_version = int(current["version"])
 
         def commit_abort(

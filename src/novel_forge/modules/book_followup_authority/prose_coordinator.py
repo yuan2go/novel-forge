@@ -593,6 +593,21 @@ class BookProseReviewCoordinator:
                     "LONGFORM_PROSE_DISPOSITION_INVALID",
                     "explicit decision and rationale are required",
                 )
+            from novel_forge.modules.book_authority.editorial import load_editorial_events
+            from novel_forge.modules.book_authority.editorial_domain import validate_finding_disposition
+            policy_events = [event for event in load_editorial_events(uow, book_run_id) if event["kind"] == "POLICY"]
+            counter_reports = []
+            if decision == "DISMISSED_WITH_EVIDENCE":
+                counter_operation = next((item for item in progress["operations"]
+                    if item.get("report_asset_version_id") == consumer_asset_version_id
+                    and item["status"] == "SUCCEEDED"), None)
+                if counter_operation is None:
+                    raise KernelError("BOOK_EDITORIAL_COUNTEREVIDENCE_REQUIRED", "dismissal requires an exact successful report from the current manuscript review")
+                counter = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=consumer_asset_version_id)
+                counter_reports.append(counter.content)
+            resolution = validate_finding_disposition(finding=finding, decision=decision,
+                policy_event=policy_events[-1] if policy_events else None,
+                actor_id=principal.principal_id, counter_reports=counter_reports)
             if decision in {"FUTURE_PLAN_PROPOSAL", "CURRENT_CANDIDATE_REVISION"}:
                 consumer = uow.repositories.asset_documents.require(
                     project_id=project_id, asset_version_id=consumer_asset_version_id
@@ -626,6 +641,8 @@ class BookProseReviewCoordinator:
                 if decision == "CURRENT_CANDIDATE_REVISION" and (
                     consumer.content.get("source_review_run_id") != run_id
                     or consumer.content.get("source_lineage_id") != lineage_id
+                    or consumer.content.get("source_finding_digest") != finding_digest
+                    or consumer.content.get("source_manifest_digest") != progress["manifest_digest"]
                 ):
                     raise KernelError(
                         "LONGFORM_PROSE_CONSUMER_INVALID",
@@ -667,6 +684,8 @@ class BookProseReviewCoordinator:
                     uncovered_ranges=progress["uncovered_ranges"],
                     confirmation_rationale=rationale,
                 )
+            content.update(resolution_evidence=resolution, manifest_digest=progress["manifest_digest"],
+                           review_digest=progress["review_digest"])
             content["status"] = "DISPOSITION_RECORDED"
             return {
                 "event_id": self._event(

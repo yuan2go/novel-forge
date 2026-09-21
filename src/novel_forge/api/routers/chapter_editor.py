@@ -28,6 +28,8 @@ class AuthorEditRequest(BaseModel):
     rights_basis: Literal["ORIGINAL_AUTHOR_INPUT", "AUTHORIZED_INPUT"] = "ORIGINAL_AUTHOR_INPUT"
     allowed_ranges: list[dict[str, int]] | None = None
     scene_artifacts: list[dict[str, Any]] | None = None
+    scene_separators: list[str] | None = None
+    edit_intent: Literal["PROSE_ONLY", "PLAN_STRUCTURE_CHANGE"] = "PROSE_ONLY"
     candidate_asset_version_id: str = ""
     rationale: str = ""
     source_review_run_id: str = ""

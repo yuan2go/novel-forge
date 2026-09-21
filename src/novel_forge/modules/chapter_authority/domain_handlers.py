@@ -567,7 +567,7 @@ def normalize_draft_result(
     from .chapter_plan_views import build_draft_style_view
     composition = integrate_realization(
         contract=compile_realization_contract(plan, build_draft_style_view(context_content or {})),
-        artifacts=result.get("scene_artifacts", []), text=text,
+        artifacts=result.get("scene_artifacts", []), text=text, separators=result.get("scene_separators"),
     )
     return {
         **composition,

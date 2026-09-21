@@ -150,7 +150,10 @@ not structured Narrative Digest, retention watermarks, representation cutover or
 Native reference Review/ReReview retain exact authorized samples, effective stage
 Context, accepted frontier and approved reviewer artifacts. Reference-agreement routing
 reads immutable Quality evidence without changing memory mutation or retention owners.
-These persistence records do not supply Gate B–E acceptance evidence. Gates B–E below remain proposed design,
+Author cross-Scene mappings now preserve exact separators and realization contracts through
+repeated edits and Revision; Craft locates the same Unicode text without trimming. These
+changes constrain existing Context/prose consumers and do not introduce a Digest or
+retention owner. These persistence records do not supply Gate B–E acceptance evidence. Gates B–E below remain proposed design,
 not executable contracts or proven invariants; their stated bounds require qualification.
 
 ## 7. Gate B — Structured Narrative Digest

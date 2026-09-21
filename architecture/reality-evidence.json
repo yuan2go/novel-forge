@@ -7024,6 +7024,14 @@
         {
           "path": "tests/integration/test_author_book_replacement_postgres.py",
           "symbol": "test_native_book_author_replacement_recovers_unlinked_admission_then_accepts_exact_new_run"
+        },
+        {
+          "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+          "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_book_cancel_preserves_successful_unaccepted_child"
+        },
+        {
+          "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+          "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_book_cancel_preserves_accepted_chapter_history"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7457,6 +7465,14 @@
         {
           "path": "tests/unit/test_author_editor.py",
           "symbol": "AuthorEditorTests.test_unicode_codepoint_edit_preserves_exact_unedited_text"
+        },
+        {
+          "path": "tests/integration/test_author_editor_postgres.py",
+          "symbol": "AuthorEditorPostgresTests.test_repeated_author_candidate_retains_original_contract_and_scope"
+        },
+        {
+          "path": "tests/unit/test_author_editor.py",
+          "symbol": "AuthorEditorTests.test_explicit_cross_scene_mapping_preserves_scope_and_revises_exact_unicode"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7893,6 +7909,14 @@
         {
           "path": "tests/unit/test_longform_prose_editorial.py",
           "symbol": "test_policy_named_humans_and_exact_signature_drift_revocation"
+        },
+        {
+          "path": "tests/unit/test_longform_prose_editorial.py",
+          "symbol": "test_completion_checks_each_exact_signature_group"
+        },
+        {
+          "path": "tests/unit/test_longform_prose_editorial.py",
+          "symbol": "test_expired_signature_cannot_supply_quorum"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8249,6 +8273,10 @@
         {
           "path": "tests/unit/test_longform_prose_editorial.py",
           "symbol": "test_policy_named_humans_and_exact_signature_drift_revocation"
+        },
+        {
+          "path": "tests/unit/test_longform_prose_editorial.py",
+          "symbol": "test_dismissal_needs_named_reviewer_and_complete_located_counterevidence"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8656,6 +8684,10 @@
         {
           "path": "tests/integration/test_book_opening_recovery_protocol_postgres.py",
           "symbol": "test_commit_response_loss_and_duplicate_recovery_replay_one_receipt"
+        },
+        {
+          "path": "tests/integration/test_author_book_replacement_postgres.py",
+          "symbol": "test_author_replacement_retains_candidate_while_old_budget_is_unknown"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8977,7 +9009,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc"
+    "implementation_tree_sha": "sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

@@ -578,8 +578,13 @@ base asset/text hashes, expected session version and idempotency. A stale base c
 win by overwriting newer input. Browser recovery retains unsubmitted text and pending
 command identity; text-area newline presentation is mapped back to exact source text.
 Selection edits use Unicode code-point ranges, and scene artifacts must reconstruct the
-candidate exactly. Saving, adopting, submitting native review, chapter acceptance and
-Book completion are separate actions.
+candidate exactly. The backend permits explicit mappings across existing Scene slots,
+including whitespace separators or an empty separator for paragraph joins. Slot identity,
+order and knowledge scope remain frozen; structural edits require native Plan Change.
+Automatic edits cannot delete a slot. Repeated author candidates retain the originating
+draft and realization contract, and Revision/Craft use the same exact Unicode mapping.
+Saving, adopting, submitting native review, chapter acceptance and Book completion are
+separate actions.
 
 An adopted author candidate enters `chapter.draft.generate@3.4.1-author-input.v1` with
 an exact author adoption evidence asset. This contract performs no `model.draft` effect;
@@ -590,7 +595,11 @@ unaccepted Book child, the Book command appends a replacement request generation
 to the exact adopted candidate and settled predecessor. Reservation, native Chapter
 admission and atomic Book/ChapterGroup linkage retain recoverable evidence. Unlinked
 replacement roots cannot dispatch, and a superseded child cannot be accepted. Previous
-requests, results and decisions remain available.
+requests, results and decisions remain available. Replacement waits for both terminal
+ExternalEffects and settled/released/rejected budget reservations. Book cancellation stops
+scheduling without changing successful or accepted child history. Repeating cancellation
+can continue the existing cancellation protocol for a pending child; unknown Effects still
+require their native reconciliation.
 
 `BookProseReviewCoordinator` extends Book Follow-up with immutable accepted-manuscript
 manifests, exact prose windows, coverage and excluded ranges. `longform.prose_review`
@@ -607,6 +616,11 @@ conflicting judgments retained for review. Additional exact source ranges can be
 for follow-up verification. The Editor displays covered text and findings and links
 current candidates or native Plan Change proposals. Historical findings remain versioned
 pending editing decisions; neither reports nor inferred impacts rewrite accepted history.
+`MINOR_EXCEPTION` requires a named reviewer under the current policy and a nonconflicting
+minor finding. `DISMISSED_WITH_EVIDENCE` requires a successful current review report with
+located intentional/counter evidence covering the challenged finding. A rationale alone,
+a future proposal or a saved author candidate does not resolve the finding. Dispositions
+bind finding/manifest/review versions; policy drift invalidates exception authority.
 
 Separate WP02 and Craft campaigns use the existing Book/Chapter commands and native
 creative-experiment budget ledger under `creative-paired-samples-budget.v5`. This contract
@@ -850,8 +864,11 @@ Chapter/Arc preference evidence does not authorize whole-book acceptance.
 `BookEditorialWorkflow` records approved named-reviewer policy, signatures of the exact
 source/manifest/review/release, and revocations. Completion requires current complete
 prose coverage, explicit key-issue dispositions, existing Quality/closure gates and the
-policy signature quorum. Drift or revocation makes current editorial acceptance invalid
-while preserving historical decisions. No completion decision grants publication rights.
+policy signature quorum. Quorum is evaluated separately for each exact review group under
+the current manuscript, policy and implementation. Revoked or expired later signatures do
+not hide an older still-valid group, and signatures from different groups cannot be
+combined. Optional signature expiry requires a timezone-aware future timestamp. Drift,
+expiry or revocation invalidates the affected evidence while preserving historical decisions. No completion decision grants publication rights.
 Old immutable v1 assessment markers remain historical; queries separately report the
 current editorial policy and signature state.
 The synchronous
