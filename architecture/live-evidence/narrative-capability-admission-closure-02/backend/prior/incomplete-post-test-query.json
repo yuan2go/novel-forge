@@ -1,0 +1,10 @@
+{
+  "evidence_class": "SCRIPTED_POSTGRESQL_FIXTURE_ONLY",
+  "exported_at": "2026-09-21T04:51:51.102903+00:00",
+  "database": "nf_closure02_test",
+  "server": "PostgreSQL 16.15 (Debian 16.15-1.pgdg12+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+  "migration_head": "20260625_0001_initial_industrial_schema",
+  "cases": [],
+  "production_provider_proof": false,
+  "query_limitations": "NOT A MIGRATION HEAD CLAIM: migrations shared one transaction timestamp, so ordering applied_at is insufficient. Final integration module truncates prior business fixtures through tests/integration/conftest.py; the query cannot retain earlier Book examples."
+}

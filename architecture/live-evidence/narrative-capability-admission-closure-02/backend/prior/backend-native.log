@@ -1,0 +1,62 @@
+F..........                                                          [100%]
+=================================== FAILURES ===================================
+_ AuthorEditorPostgresTests.test_authored_draft_flows_through_native_review_revision_canon_and_export _
+
+self = <tests.integration.test_author_editor_postgres.AuthorEditorPostgresTests testMethod=test_authored_draft_flows_through_native_review_revision_canon_and_export>
+
+    def test_authored_draft_flows_through_native_review_revision_canon_and_export(self):
+        from novel_forge.modules.chapter_authority.handlers import DeterministicFixtureChapterProvider, build_chapter_handler_registry
+        from novel_forge.modules.chapter_authority.orchestrator import SingleChapterRequest, run_single_chapter_slice
+        from novel_forge.modules.chapter_authority.contracts import ChapterNode
+        from novel_forge.modules.command_kernel.external_effect_adapters import FakeDeterministicProvider
+        from tests.integration.test_postgresql_only_chapter_slice import PostgreSQLOnlyChapterSliceTests
+    
+        class ReviewOnlyFixture(DeterministicFixtureChapterProvider):
+            stages = []
+    
+            def invoke(self, request, *, stage, payload, **kwargs):
+                self.stages.append(stage)
+                if stage == 'draft':
+                    raise AssertionError('Human draft must not call a model')
+                return super().invoke(request, stage=stage, payload=payload, **kwargs)
+    
+        text = '剑已出鞘，林遥却在最后一步收住锋芒。她将归山的令牌压在桥头，任追兵踏碎。'
+>       saved = self.app.execute(action='save', payload={**self.payload, 'text': text,
+                                 'scene_artifacts': [{'slot_id': 's1:skeleton', 'text': text, 'used_fact_ids': []}]},
+                                 idempotency_key=identifier('save'), principal=self.principal)
+
+tests/integration/test_author_editor_postgres.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/author_editor.py:197: in execute
+    return execute_transaction_command(self.database_url, {
+src/novel_forge/modules/command_kernel/service.py:91: in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/author_editor.py:263: in _handle
+    scenes = reconcile_author_scenes(source.content, text, payload.get("scene_artifacts"), separators)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+source = {'text': '\u3000剑😀未出。\n\n她留步。\n', 'title': '关山旧约', 'chapter': 1}
+text = '剑已出鞘，林遥却在最后一步收住锋芒。她将归山的令牌压在桥头，任追兵踏碎。'
+supplied = [{'text': '剑已出鞘，林遥却在最后一步收住锋芒。她将归山的令牌压在桥头，任追兵踏碎。', 'slot_id': 's1:skeleton', 'used_fact_ids': []}]
+separators = None
+
+    def reconcile_author_scenes(source: dict[str, Any], text: str, supplied: list[dict[str, Any]] | None = None,
+                                separators: list[str] | None = None) -> list[dict[str, Any]]:
+        from .realization_composition import integrate_realization, realization_separators, serialize_realization
+        artifacts = source.get("scene_artifacts") or []
+        before = str(source.get("text") or "")
+        original_joins = realization_separators(artifacts, source.get("scene_separators"))
+        joins = realization_separators(artifacts, separators if separators is not None else source.get("scene_separators"))
+        if artifacts and serialize_realization(artifacts, original_joins) != before:
+            raise KernelError("AUTHOR_SCENE_BASE_CONFLICT", "Source Scene artifacts disagree with exact source text")
+        if supplied is not None:
+            if not artifacts or not isinstance(supplied, list) or len(supplied) != len(artifacts):
+>               raise KernelError("AUTHOR_SCENE_SCOPE_CONFLICT", "Scene creation or removal requires native Plan Change")
+E               novel_forge.modules.command_kernel.errors.KernelError: AUTHOR_SCENE_SCOPE_CONFLICT: Scene creation or removal requires native Plan Change
+
+src/novel_forge/modules/chapter_authority/author_editor.py:43: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_author_editor_postgres.py::AuthorEditorPostgresTests::test_authored_draft_flows_through_native_review_revision_canon_and_export
+1 failed, 10 passed, 4 subtests passed in 77.37s (0:01:17)

@@ -1,0 +1,23 @@
+{
+  "author-mapping-final.log": "sha256:db2f8b5fc89b9a87ac3c50df33f407ff84d9dbbca9152644443ab666b93e2b94",
+  "cancel-budget.log": "sha256:3bff552434e26edbf8446f325ec957a910db34c511a7101a4d13f677894bafe2",
+  "cancel-budget.xml": "sha256:fd89b70aa82b0e163be543e976534a8ba53ab8409b0ba22a70e3991091e114dc",
+  "cancel-race.log": "sha256:df8930457d8dfa68c72509535e8959be06ca831efc01d43b62b8f39bc2ad0566",
+  "database-identity.json": "sha256:e37d562952c64388f1cd476a423a6e127f536444f862d55134f99eb85dced01e",
+  "documentation.json": "sha256:bc31efa97df6f1cafbbb17b05666d6a69cd38c76f55790620bf6ef24f202ccc7",
+  "final-focused.log": "sha256:b839d418bd7aa285989e74d9c99b4f4698898e4de213740aef49c6b20676ff11",
+  "final-focused.xml": "sha256:87f7392e493a71d7d9052718ec7816f94f77631a87741d7cb23cfca134d59631",
+  "instructions.json.gz": "sha256:074960e489581cb13b0ae9cc9e2a1729683d4d3aa04eae544e45cb67b067c018",
+  "migration-manifest.json": "sha256:8387a42e988bc5490f2c17d2b66905b5a9d6680714f2479c2e0aaaa4e9c43705",
+  "prior/backend-native.log": "sha256:0a03f72576db78d18f24f66d1d2f7bd2aeeb4729ca1e3cf49463c422247ca33d",
+  "prior/backend-native.xml": "sha256:5f2431298bda0fcf4d70937ee47bdb8c300c72e1fba0ed13f8aeb0e34a096b69",
+  "prior/focused.log": "sha256:ee5697b661d091441305124d7bdeff116acd365660c4d0cfcde8b72d1b4a493b",
+  "prior/focused.xml": "sha256:255096c50270f62d3cb9a2b6c6d985161f8b1c537b082c615c87a49ba0b70f1f",
+  "prior/incomplete-post-test-query.json": "sha256:f3e967f55ba7c9066c538012c7dccf01ebb5c4a3e2358fa81c6a7038ddcde746",
+  "prior/static-2.json": "sha256:85e4010f953b2dd9040f7035b2c06bde2f226cdbc468d0b0e93697f49cc095d9",
+  "proposals.json": "sha256:c982aae9f9552f9615fab9925be15c5e0db521bd302d37cf1d5d475daf035e28",
+  "resource-cleanup.json": "sha256:b8b8d01f75c34660d94ce0b0c165aae25185f1b8d08caa450c5c937bcee96cdb",
+  "ruff.json": "sha256:5ab2faca98f30b81589bef42694ff70f391d528f3a1cbcd8eda92742304e524b",
+  "status.json": "sha256:acbf312798f3cbeb7d18eb2f2a6bf789fc6c0e8ce34c7bf93be7b47fb881a04f",
+  "test-manifest.json.gz": "sha256:9ce2f963ce699a3b7f7cde08bee8b6e42125a7cca7696c065ae9b62cea14cffb"
+}

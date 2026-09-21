@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="15" time="77.014" timestamp="2026-09-21T12:25:48.067599+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_author_editor_postgres.AuthorEditorPostgresTests" name="test_authored_draft_flows_through_native_review_revision_canon_and_export" time="1.445"><failure message="novel_forge.modules.command_kernel.errors.KernelError: AUTHOR_SCENE_SCOPE_CONFLICT: Scene creation or removal requires native Plan Change">self = &lt;tests.integration.test_author_editor_postgres.AuthorEditorPostgresTests testMethod=test_authored_draft_flows_through_native_review_revision_canon_and_export&gt;
+
+    def test_authored_draft_flows_through_native_review_revision_canon_and_export(self):
+        from novel_forge.modules.chapter_authority.handlers import DeterministicFixtureChapterProvider, build_chapter_handler_registry
+        from novel_forge.modules.chapter_authority.orchestrator import SingleChapterRequest, run_single_chapter_slice
+        from novel_forge.modules.chapter_authority.contracts import ChapterNode
+        from novel_forge.modules.command_kernel.external_effect_adapters import FakeDeterministicProvider
+        from tests.integration.test_postgresql_only_chapter_slice import PostgreSQLOnlyChapterSliceTests
+    
+        class ReviewOnlyFixture(DeterministicFixtureChapterProvider):
+            stages = []
+    
+            def invoke(self, request, *, stage, payload, **kwargs):
+                self.stages.append(stage)
+                if stage == 'draft':
+                    raise AssertionError('Human draft must not call a model')
+                return super().invoke(request, stage=stage, payload=payload, **kwargs)
+    
+        text = '剑已出鞘，林遥却在最后一步收住锋芒。她将归山的令牌压在桥头，任追兵踏碎。'
+&gt;       saved = self.app.execute(action='save', payload={**self.payload, 'text': text,
+                                 'scene_artifacts': [{'slot_id': 's1:skeleton', 'text': text, 'used_fact_ids': []}]},
+                                 idempotency_key=identifier('save'), principal=self.principal)
+
+tests/integration/test_author_editor_postgres.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/author_editor.py:197: in execute
+    return execute_transaction_command(self.database_url, {
+src/novel_forge/modules/command_kernel/service.py:91: in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/author_editor.py:263: in _handle
+    scenes = reconcile_author_scenes(source.content, text, payload.get("scene_artifacts"), separators)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+source = {'text': '\u3000剑😀未出。\n\n她留步。\n', 'title': '关山旧约', 'chapter': 1}
+text = '剑已出鞘，林遥却在最后一步收住锋芒。她将归山的令牌压在桥头，任追兵踏碎。'
+supplied = [{'text': '剑已出鞘，林遥却在最后一步收住锋芒。她将归山的令牌压在桥头，任追兵踏碎。', 'slot_id': 's1:skeleton', 'used_fact_ids': []}]
+separators = None
+
+    def reconcile_author_scenes(source: dict[str, Any], text: str, supplied: list[dict[str, Any]] | None = None,
+                                separators: list[str] | None = None) -&gt; list[dict[str, Any]]:
+        from .realization_composition import integrate_realization, realization_separators, serialize_realization
+        artifacts = source.get("scene_artifacts") or []
+        before = str(source.get("text") or "")
+        original_joins = realization_separators(artifacts, source.get("scene_separators"))
+        joins = realization_separators(artifacts, separators if separators is not None else source.get("scene_separators"))
+        if artifacts and serialize_realization(artifacts, original_joins) != before:
+            raise KernelError("AUTHOR_SCENE_BASE_CONFLICT", "Source Scene artifacts disagree with exact source text")
+        if supplied is not None:
+            if not artifacts or not isinstance(supplied, list) or len(supplied) != len(artifacts):
+&gt;               raise KernelError("AUTHOR_SCENE_SCOPE_CONFLICT", "Scene creation or removal requires native Plan Change")
+E               novel_forge.modules.command_kernel.errors.KernelError: AUTHOR_SCENE_SCOPE_CONFLICT: Scene creation or removal requires native Plan Change
+
+src/novel_forge/modules/chapter_authority/author_editor.py:43: KernelError</failure></testcase><testcase classname="tests.integration.test_author_editor_postgres.AuthorEditorPostgresTests" name="test_commit_response_loss_replays_once_and_conflict_keeps_author_input" time="0.080" /><testcase classname="tests.integration.test_author_editor_postgres.AuthorEditorPostgresTests" name="test_exact_input_accepts_candidate_and_freezes_native_review_handoff" time="0.091" /><testcase classname="tests.integration.test_author_editor_postgres.AuthorEditorPostgresTests" name="test_existing_same_project_other_book_and_superseded_base_are_rejected" time="0.053" /><testcase classname="tests.integration.test_author_editor_postgres.AuthorEditorPostgresTests" name="test_reject_is_read_only_for_original_and_cannot_authorize_adoption" time="0.086" /><testcase classname="tests.integration.test_author_editor_postgres.AuthorEditorPostgresTests" name="test_scope_hash_selection_and_principal_are_enforced" time="0.072" /><testcase classname="tests.integration.test_longform_prose_editorial_postgres" name="test_native_prose_review_durable_resume_and_editorial_policy" time="25.258" /><testcase classname="tests.integration.test_longform_prose_editorial_postgres" name="test_prose_window_uses_real_external_effect_and_materialized_provider_inputs" time="8.586" /><testcase classname="tests.integration.test_cross_chapter_prose_review_postgres" name="test_book_accepted_prose_drives_targeted_repair_and_acceptance[False]" time="20.123" /><testcase classname="tests.integration.test_cross_chapter_prose_review_postgres" name="test_book_accepted_prose_drives_targeted_repair_and_acceptance[True]" time="18.617" /><testcase classname="tests.integration.test_cross_chapter_prose_review_postgres" name="test_cross_chapter_context_overflow_keeps_candidate_and_creates_no_review_effect" time="2.051" /></testsuite></testsuites>

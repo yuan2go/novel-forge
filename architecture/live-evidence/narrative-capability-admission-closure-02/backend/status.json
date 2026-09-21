@@ -1,0 +1,185 @@
+{
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "package_status": "INCOMPLETE",
+  "delivered_scope": "BACKEND_DEFECT_CONVERGENCE",
+  "baseline_sha": "9a8eedc1c7609a36a26672148d1561e077d81701",
+  "baseline_implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc",
+  "implementation_sha": "f0dca5e313128fe281c90585b140d60f630ce840",
+  "implementation_tree_sha": "sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71",
+  "migration_head": "20260921_0142_prose_editorial_foreign_key_indexes",
+  "new_migrations": [],
+  "scope_status": [
+    {
+      "area": "backend defects",
+      "status": "EXECUTABLE",
+      "owner": "Book Authority / Book Follow-up / Chapter Authority / Review",
+      "entries": [
+        "/api/book-completion/editorial-events",
+        "/product/production/book-authority/runs/{book_run_id}/prose-reviews/{run_id}/findings/{lineage_id}/disposition",
+        "/product/editor/commands",
+        "/product/editor/book-reviews",
+        "PostgresBookAuthority.cancel"
+      ],
+      "consumers": [
+        "completion_editorial_evidence",
+        "Chapter author adoption -> Review/Revision/Quality/Canon/Book acceptance",
+        "ChapterGroup replacement linkage"
+      ],
+      "boundary": "Focused scripted/local evidence only. Package-wide collaboration with the five new capability contracts remains incomplete."
+    },
+    {
+      "area": "global editing",
+      "status": "NOT_IMPLEMENTED_IN_THIS_PACKAGE",
+      "owner": "Book Follow-up / Book Completion",
+      "entry": "BookProseReviewCoordinator.start/advance",
+      "consumer": "finding dispositions / Plan Change / completion",
+      "boundary": "Existing windows and manually supplied evidence ranges do not discover remote dependencies or prove global relations."
+    },
+    {
+      "area": "inferred dependency discovery",
+      "status": "NOT_IMPLEMENTED_IN_THIS_PACKAGE",
+      "owner": "Plan Change Authority",
+      "entry": "BookProseReviewCoordinator.impact_preview",
+      "consumer": "native Plan Change approval/activation",
+      "boundary": "Existing semantic_impact_projection wraps specified targets and findings; automatic hypothesis discovery is absent."
+    },
+    {
+      "area": "continuous actors",
+      "status": "NOT_IMPLEMENTED_IN_THIS_PACKAGE",
+      "owner": "World Preparation / Narrative State / Book acceptance",
+      "entry": "PlanningWorldPreparation.prepare",
+      "consumer": "world action -> planning -> Chapter outcome acceptance",
+      "boundary": "Existing actor experiment remains bounded single-round. Director second-window budget issue is not fixed here."
+    },
+    {
+      "area": "task-scoped model admission",
+      "status": "NOT_IMPLEMENTED_IN_THIS_PACKAGE",
+      "owner": "native sampling / evaluation / ProductionProviderRouter",
+      "entry": "native Source/Planning/World/Chapter sampling",
+      "consumer": "formal Router selection and ExternalEffect dispatch",
+      "boundary": "No delivered generator sample -> independent evaluation -> benchmark feedback -> current production admission chain."
+    },
+    {
+      "area": "qualified hierarchical production",
+      "status": "NOT_RUN",
+      "owner": "Story Design / Book Design / Hierarchical Planning / Chapter / Book",
+      "entry": "existing Formation/Opening/Book commands",
+      "consumer": "Review/Revision/Quality/Canon/Book acceptance",
+      "boundary": "No new admitted real-model hierarchy or real accepted manuscript produced."
+    }
+  ],
+  "verification": {
+    "focused_backend": {
+      "status": "PASS",
+      "passed": 75,
+      "subtests_passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "command_argv": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit/test_author_editor.py",
+        "tests/unit/test_narrative_craft_review.py",
+        "tests/unit/test_longform_prose_editorial.py",
+        "tests/unit/test_book_production_authority.py::test_cancel_losing_race_to_success_preserves_terminal_child",
+        "tests/unit/test_book_production_authority.py::test_cancel_replay_continues_effect_protocol_without_second_control_request",
+        "tests/integration/test_author_editor_postgres.py",
+        "tests/integration/test_longform_prose_editorial_postgres.py",
+        "tests/integration/test_cross_chapter_prose_review_postgres.py",
+        "tests/integration/test_author_book_replacement_postgres.py",
+        "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_cancel_propagates_to_child",
+        "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_cancel_preserves_successful_unaccepted_child",
+        "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_cancel_preserves_accepted_chapter_history",
+        "tests/integration/test_external_effect_runtime_postgres.py::ExternalEffectRuntimePostgresTests::test_cancel_before_dispatch_and_after_dispatch_have_distinct_outcomes",
+        "--junitxml=/Users/yuan/.codex/tmp/capability-admission-closure02/final-focused.xml"
+      ],
+      "environment": {
+        "PYTHONPATH": "src",
+        "NOVEL_FORGE_DATABASE_URL": "operator-supplied disposable nf_closure02_test URL; identity in database-identity.json"
+      },
+      "result": "final-focused.xml",
+      "log": "final-focused.log",
+      "implementation_ref": "f0dca5e313128fe281c90585b140d60f630ce840"
+    },
+    "static_checks": [
+      {
+        "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.documentation_reality --repo-root .",
+        "status": "PASS",
+        "result": "documentation.json"
+      },
+      {
+        "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.instruction_surface --repo-root .",
+        "status": "PASS",
+        "result": "instructions.json.gz"
+      },
+      {
+        "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.proposal_lifecycle --repo-root .",
+        "status": "PASS",
+        "result": "proposals.json"
+      },
+      {
+        "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.test_reality --repo-root .",
+        "status": "PASS",
+        "result": "test-manifest.json.gz"
+      },
+      {
+        "command": "PYTHONPATH=src .venv/bin/python scripts/check_migration_manifest.py",
+        "status": "PASS",
+        "result": "migration-manifest.json"
+      },
+      {
+        "status": "PASS",
+        "result": "ruff.json",
+        "command": "Exact changed-file argv retained in ruff.json"
+      }
+    ],
+    "full_p0": "NOT_RUN",
+    "full_backend": "NOT_RUN",
+    "full_postgresql": "NOT_RUN",
+    "full_compose": "NOT_RUN",
+    "web_ui": "NOT_RUN",
+    "full_qualification": "NOT_PROVEN",
+    "remote_ci": "INTENTIONALLY_NOT_RUN: commit skip instruction honors focused-only test authorization; required gate remains unmet"
+  },
+  "retained_failures": [
+    {
+      "result": "prior/backend-native.log",
+      "status": "FAILED_THEN_FIXED",
+      "cause": "Existing author fixture supplied a newly invented Scene on an unmapped source; fixture now has explicit original Scene mapping. Production rejection remains covered."
+    },
+    {
+      "result": "prior/static-2.json",
+      "status": "FAILED_THEN_FIXED",
+      "cause": "Proposal scope reviews were stale and one remaining-work reference named a directory. Reviewed affected consumers, preserved unresolved work and historical failures, then rebound to the implementation commit."
+    },
+    {
+      "status": "FAILED_THEN_FIXED",
+      "cause": "Development-only assertion used the wrong existing epistemic-scope error code; final test asserts REALIZATION_EPISTEMIC_SCOPE_VIOLATION."
+    },
+    {
+      "result": "prior/incomplete-post-test-query.json",
+      "status": "QUERY_CORRECTED",
+      "cause": "Timestamp ordering cannot infer migration head; final membership verification and module fixture cleanup boundaries are explicit in database-identity.json."
+    }
+  ],
+  "real_provider_usage": {
+    "calls": 0,
+    "tokens": 0,
+    "monetary_spend": 0,
+    "account_entitlement_consumed": 0,
+    "new_unknown_effects": 0,
+    "models": [],
+    "tasks": []
+  },
+  "sample_to_admission_to_formal_request": "NOT_DELIVERED",
+  "minimum_complete_trial_budget": "NOT_COMPUTED: final task contracts/admission chain are not delivered; no historical 928-call request is treated as minimum or authority.",
+  "independent_human_evidence": "NOT_RUN",
+  "longform_quality": "NOT_PROVEN",
+  "production_operation": "NOT_PROVEN",
+  "new_paid_authorization": "NOT_REQUESTED_OR_USED",
+  "public_release_authorized": false,
+  "implementation_ceiling": "FOCUSED_SCRIPTED_BACKEND_ENGINEERING",
+  "remaining_acceptance": "architecture/proposals/industrial-novel-os-blueprint.md"
+}

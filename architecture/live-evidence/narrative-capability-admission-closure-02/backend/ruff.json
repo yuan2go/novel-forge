@@ -1,0 +1,31 @@
+{
+  "command": [
+    ".venv/bin/ruff",
+    "check",
+    "src/novel_forge/api/routers/chapter_editor.py",
+    "src/novel_forge/modules/book_authority/author_revision.py",
+    "src/novel_forge/modules/book_authority/editorial.py",
+    "src/novel_forge/modules/book_authority/editorial_domain.py",
+    "src/novel_forge/modules/book_authority/production.py",
+    "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
+    "src/novel_forge/modules/chapter_authority/author_draft.py",
+    "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+    "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "src/novel_forge/modules/chapter_authority/handlers.py",
+    "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "src/novel_forge/modules/chapter_authority/realization_composition.py",
+    "src/novel_forge/modules/review/craft.py",
+    "src/novel_forge/storage/book_authority_repositories.py",
+    "tests/integration/test_author_book_replacement_postgres.py",
+    "tests/integration/test_author_editor_postgres.py",
+    "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+    "tests/unit/test_author_editor.py",
+    "tests/unit/test_book_production_authority.py",
+    "tests/unit/test_longform_prose_editorial.py"
+  ],
+  "status": "PASS",
+  "stdout": "All checks passed!\n",
+  "stderr": "",
+  "tested_sha": "f0dca5e313128fe281c90585b140d60f630ce840"
+}
