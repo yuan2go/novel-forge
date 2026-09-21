@@ -189,7 +189,7 @@ export const navGroups: NavGroup[] = [
       { key: "chapter_plan_generation", label: "细纲生成", description: "章节计划版本链", href: "/production?stage=chapter_plan", icon: <ListChecks size={17} /> },
       { key: "context_builder", label: "上下文构建器", description: "RAG 与 token 预算", href: "/context", icon: <Network size={17} /> },
       { key: "chapter_production", label: "章节生产", description: "生成记录和稿件版本", href: "/manuscript", icon: <PenLine size={17} /> },
-      { key: "ai_editor", label: "AI 编辑器", description: "patch、diff 和回滚", href: "/editor", icon: <Save size={17} /> },
+      { key: "ai_editor", label: "作者编辑器", description: "精确版本、修改对照与复核", href: "/editor", icon: <Save size={17} /> },
       { key: "review_center", label: "审稿中心", description: "审稿和修订闭环", href: "/review", icon: <CheckCircle2 size={17} /> },
       { key: "originality_center", label: "原创性保护", description: "原创风险与质量门禁", href: "/quality?tab=originality", icon: <ShieldCheck size={17} /> },
       { key: "publishing_center", label: "发布中心", description: "发布前门禁和 release package", href: "/quality?tab=publishing", icon: <Send size={17} /> },

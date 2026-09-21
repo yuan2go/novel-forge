@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
-    "test": "node --test tests/feature-architecture.test.mjs",
-    "smoke:browser": "NOVEL_FORGE_REQUIRE_PLAYWRIGHT=1 node --test tests/playwright-smoke.test.mjs"
+    "test": "node --test tests/feature-architecture.test.mjs tests/author-editor-text.test.mjs",
+    "smoke:browser": "NOVEL_FORGE_REQUIRE_PLAYWRIGHT=1 node --test tests/playwright-smoke.test.mjs",
+    "test:author-editor": "node tests/author-editor-browser.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
