@@ -268,8 +268,6 @@ def narrative_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: li
                 or content.get("candidate_content_hash") != payload["candidate_content_hash"]
                 or content.get("generation_operation_id") != payload["generation_operation_id"]):
                 continue
-            # WHY: Reuse the caller's transaction; a connection-info DSN omits
-            # credentials and cannot safely recreate its authenticated runtime.
             reference = _require_reference_review(cursor, project_id=project_id, payload=payload, evaluator_actor_id=actor)
             agreement = reference_agreement(payload=payload, reference=reference, evaluation=provider["result"])
             if agreement != content.get("reference_evaluation") or not reference.get("adjudicated_reference"):
