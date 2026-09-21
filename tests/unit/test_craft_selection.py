@@ -214,3 +214,62 @@ def test_frozen_craft_budget_does_not_fill_from_changed_runtime_defaults(monkeyp
     del selection["craft_policy"]
     with pytest.raises(KernelError, match="CRAFT_FROZEN_POLICY_MISSING"):
         build_craft_strategy(candidate, selection)
+
+
+def _previous_craft_delivery(mechanism, *, chapter=6, use_id='previous-use'):
+    return {'chapter': chapter, 'use_id': use_id, 'scene_id': 'previous-scene',
+        'mechanism_id': mechanism['mechanism_id'], 'family': mechanism['family'], 'role': 'PRIMARY',
+        'external_effect_id': 'fixture-effect:' + use_id, 'external_receipt_ids': ['fixture-receipt:' + use_id],
+        'pattern_signature': craft_pattern_signature(mechanism)}
+
+
+def test_opt_in_v2_continuous_spatial_need_survives_consecutive_chapter_cooldown():
+    mechanism = next(item for item in core_catalog() if item['mechanism_id'] == 'spatial-anchor')
+    context = {'scene_goal': ['交战位置与通路难以想象，必须再次交代出口和两人之间的距离'], 'chapter_number': 7}
+    previous = [_previous_craft_delivery(mechanism)]
+    v1 = craft_candidate_assessment(mechanism, context=context, recent_usage=previous, policy=validate_craft_policy())
+    assert v1['rejection_reason'] == 'CRAFT_COOLDOWN'
+    v2 = craft_candidate_assessment(mechanism, context=context, recent_usage=previous,
+        policy=validate_craft_policy({'schema_version': 'narrative-craft-budget.v2'}))
+    assert v2['rejection_reason'] == ''
+    assert v2['budget_assessment']['cadence_class'] == 'CONTINUOUS'
+    assert v2['budget_assessment']['policy_version'] == 'narrative-craft-budget.v2'
+    assert v2['budget_assessment']['in_cooldown'] is True
+    assert v2['budget_assessment']['temporal_budget_applied'] is False
+    assert v2['budget_assessment']['evidence_ceiling'] == 'DELIVERY_OBSERVATION_NOT_READER_EFFECT'
+    assert validate_craft_policy()['schema_version'] == 'narrative-craft-budget.v1'
+
+
+def test_v2_keeps_expressive_cooldown_frequency_context_and_strategy_guards():
+    spatial = next(item for item in core_catalog() if item['mechanism_id'] == 'spatial-anchor')
+    expressive = next(item for item in core_catalog() if item['mechanism_id'] == 'choice-exposes-value')
+    policy = validate_craft_policy({'schema_version': 'narrative-craft-budget.v2'})
+    with pytest.raises(KernelError, match='CRAFT_POLICY_INVALID'):
+        validate_craft_policy({**policy, 'mechanism_cadence': {**policy['mechanism_cadence'], 'choice-exposes-value': 'CONTINUOUS'}})
+    recent = [_previous_craft_delivery(spatial, chapter=chapter, use_id=str(chapter)) for chapter in (3, 4, 5)]
+    assessment = craft_candidate_assessment(spatial, context={'scene_goal': [spatial['narrative_problem']], 'chapter_number': 7}, recent_usage=recent, policy=policy)
+    assert assessment['rejection_reason'] == ''
+    assert assessment['budget_assessment']['frequency'] == policy['max_frequency_in_window']
+    no_match = craft_candidate_assessment(spatial, context={'scene_goal': ['cook cake'], 'chapter_number': 7}, recent_usage=recent, policy=policy)
+    assert no_match['rejection_reason'] == 'CRAFT_NO_CONTEXT_MATCH'
+    held = craft_candidate_assessment(expressive, context={'scene_goal': [expressive['narrative_problem']], 'chapter_number': 7}, recent_usage=[_previous_craft_delivery(expressive)], policy=policy)
+    assert held['rejection_reason'] == 'CRAFT_COOLDOWN'
+    assert held['budget_assessment']['cadence_class'] == 'EXPRESSIVE'
+    card = _card(spatial)
+    selection = select_narrative_intelligence(_need(craft_policy=policy, recent_craft_usage=tuple(recent)), (card,))
+    candidate = _candidate(selection)
+    strategy = build_craft_strategy(candidate, selection)
+    assert strategy['policy'] == policy
+    assert validate_craft_strategy(strategy, scenes=candidate['scene_plan']) == strategy
+    selection_without_policy = deepcopy(selection)
+    del selection_without_policy['craft_policy']['mechanism_cadence']
+    with pytest.raises(KernelError, match='CRAFT_FROZEN_POLICY_MISSING'):
+        build_craft_strategy(candidate, selection_without_policy)
+    damaged = deepcopy(strategy)
+    del damaged['policy']['mechanism_cadence']
+    with pytest.raises(KernelError, match='CRAFT_FROZEN_POLICY_MISSING'):
+        validate_craft_strategy(_rehash(damaged))
+    crowded = deepcopy(strategy)
+    crowded['uses'].append({**deepcopy(crowded['uses'][0]), 'use_id': 'second-same-mechanism', 'role': 'SECONDARY', 'sequence': 2})
+    with pytest.raises(KernelError):
+        validate_craft_strategy(_rehash(crowded))

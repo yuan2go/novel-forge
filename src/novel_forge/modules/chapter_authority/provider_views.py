@@ -189,7 +189,7 @@ _OPERATIONAL_KEYS = {
 }
 
 
-def _project_empty_world_selection(selection: Any) -> Any:
+def _project_empty_world_selection(selection: Any, *, project_query_directory: bool = True) -> Any:
     from novel_forge.modules.mkaos_authority.domain import validate_book_knowledge_access_policy
 
     if not isinstance(selection, Mapping) or not isinstance(selection.get("need"), Mapping):
@@ -219,6 +219,16 @@ def _project_empty_world_selection(selection: Any) -> Any:
             or receipt.get("selection_digest") != result["selection_digest"]
             or receipt.get("need_digest") != need["need_digest"]):
             raise KernelError("WORLD_SELECTION_RECEIPT_INVALID", "World source omission differs from its frozen empty selection")
+        query_receipt = need.get("query_directory_receipt")
+        if query_receipt is not None and (
+            not isinstance(query_receipt, Mapping)
+            or query_receipt.get("contract_version") != "world-empty-selection-query-receipt.v1"
+            or query_receipt.get("selection_digest") != result["selection_digest"]
+            or query_receipt.get("need_digest") != need["need_digest"]
+            or query_receipt.get("frozen_context_pointer") != "/narrative_intelligence/need"
+            or any(key in need for key in query_receipt.get("omitted_fields", []))
+        ):
+            raise KernelError("WORLD_SELECTION_RECEIPT_INVALID", "World retrieval query omission differs from its frozen empty selection")
         return result
     sources = need.get("condition_sources")
     if (not eligible or not isinstance(sources, Mapping) or not sources
@@ -237,7 +247,34 @@ def _project_empty_world_selection(selection: Any) -> Any:
         "reason": "EMPTY_SELECTION_SOURCE_VERSION_DIRECTORY_ONLY",
     }
     del need["condition_sources"]
+    if project_query_directory:
+        result = _project_empty_world_query_directory(result)
     return result if _serialized_character_count(result) < _serialized_character_count(selection) else deepcopy(selection)
+
+
+def _project_empty_world_query_directory(selection: dict[str, Any]) -> dict[str, Any]:
+    result = deepcopy(selection)
+    need = result["need"]
+    fields = {
+        "semantic_families", "theme_tags", "genre_tags", "reader_effect_tags", "conflict_tags",
+        "current_state_terms", "desired_transformation_terms", "craft_context", "craft_policy",
+        "recent_craft_usage", "recently_used_repetition_keys",
+    }
+    directory = {key: need[key] for key in sorted(fields) if key in need}
+    if not directory:
+        return selection
+    for key in directory:
+        del need[key]
+    need["query_directory_receipt"] = {
+        "contract_version": "world-empty-selection-query-receipt.v1",
+        "frozen_context_pointer": "/narrative_intelligence/need",
+        "selection_digest": result["selection_digest"], "need_digest": need["need_digest"],
+        "omitted_fields": list(directory), "omitted_value_hash": _projection_hash(directory),
+        "omitted_entry_count": sum(len(value) if isinstance(value, (Mapping, list, tuple)) else 1 for value in directory.values()),
+        "omitted_serialized_characters": _serialized_character_count(directory),
+        "reason": "NO_SELECTED_KNOWLEDGE_RETRIEVAL_QUERY_ONLY",
+    }
+    return result if _serialized_character_count(result) < _serialized_character_count(selection) else selection
 
 
 def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -327,6 +364,13 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             purpose=str(inputs.get("purpose") or ""),
             query_plan_fingerprint=str(inputs.get("query_plan_fingerprint") or ""),
         )
+    if stage in {"world_candidates.actor_0", "world_candidates.actor_1", "world_candidates.actor_2"}:
+        from novel_forge.modules.worldbuilding.actor_isolation import validate_actor_task
+        task = inputs.get("world_preparation")
+        if not isinstance(task, Mapping):
+            raise KernelError("WORLD_ACTOR_CONTEXT_LEAK", "exact actor projection required")
+        validate_actor_task(task)
+        return _task(stage, world_preparation=deepcopy(dict(task)))
     if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
         task = inputs.get("world_preparation")
         if not isinstance(task, Mapping) or task.get("contract_version") != "world-provider-task.v1" or task.get("fact_mutation_allowed") is not False:
@@ -516,6 +560,15 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         if inputs.get("required_actions") is not None:
             payload["required_actions"] = _compact(inputs.get("required_actions"))
             payload["quality_decision"] = _compact(inputs.get("quality"))
+            if inputs.get("quality_edit_contract") is not None:
+                observations = {item.get("observation") for item in inputs["required_actions"]}
+                decision = inputs.get("quality") or {}
+                payload["quality_decision"] = {"gate": decision.get("gate"),
+                    "blocking_dimensions": decision.get("blocking_dimensions", []),
+                    "required_actions": deepcopy(decision.get("required_actions", [])),
+                    "evidence_reports": [deepcopy(item) for item in decision.get("evidence_reports", []) if item.get("dimension") in observations]}
+                payload["quality_targeted_repair"] = deepcopy(inputs["quality_edit_contract"])
+                payload["chapter"]["text"] = str(source.get("text") or "")
         else:
             from novel_forge.modules.review.diagnostics import open_diagnoses
             payload["review_issues"] = _compact(open_diagnoses(dict(inputs.get("review") or {})))
@@ -526,15 +579,26 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
                     "instructions": "Repair each evidenced problem using its stated criterion. Keep unaffected choices, information boundaries, and voice. An aesthetic suggestion is optional; unknown or unresolved blockers remain open. Read adjacent passages for continuity after a local edit.",
                 }
         review = dict(inputs.get("review") or {})
-        if review.get("cross_chapter_window"):
+        if inputs.get("required_actions") is not None and review:
+            payload["review_preservation_context"] = {
+                "contract_version": "quality-correction-review-preservation.v1",
+                "cross_chapter_window": deepcopy(review.get("cross_chapter_window")),
+                "prior_diagnoses": deepcopy(review.get("issues", []) + review.get("unresolved_issues", [])),
+                "craft_targets": deepcopy(review.get("craft_targets", [])),
+                "craft_checks": deepcopy(review.get("craft_checks", [])),
+                "knowledge_checks": deepcopy(review.get("knowledge_checks", [])),
+                "instructions": "Correct only the frozen Quality tasks. Accepted history is read-only. Preserve adopted Craft, resolved diagnoses, voice, facts and information boundaries. Return exact scene artifacts consistent with prose; the same historical window and before/after comparison are reviewed again before any acceptance.",
+            }
+        if review.get("cross_chapter_window") and inputs.get("required_actions") is None:
             payload["targeted_repair"] = {
                 "contract_version": "cross-chapter-targeted-repair.v1",
                 "source_window_hash": review["cross_chapter_window"]["source_window_hash"],
+                "accepted_source_window": deepcopy(review["cross_chapter_window"]),
                 "preservation_requirements": deepcopy(review["cross_chapter_window"]["preservation_requirements"]),
                 "instructions": "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. Return text equal to applying those edits only. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition.",
             }
             payload["chapter"]["text"] = str(source.get("text") or "")
-        if review.get("craft_targets"):
+        if review.get("craft_targets") and inputs.get("required_actions") is None:
             from novel_forge.modules.review.craft import craft_revision_contract
             payload["craft_targeted_repair"] = craft_revision_contract(source, review)
             payload["craft_checks"] = deepcopy(review["craft_checks"])
@@ -543,6 +607,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
     if stage == "rereview":
         from novel_forge.modules.review.craft import craft_provider_task
         from novel_forge.modules.review.diagnostics import open_diagnoses
+        from novel_forge.modules.review.prose_comparison import prose_comparison
         revision = inputs.get("revision") or inputs.get("draft")
         issues = [
             _compact(item)
@@ -553,6 +618,14 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             **craft_provider_task(revision or {}, inputs.get("review") or {}),
             **_cross_chapter_task(inputs),
             revised_chapter=_prose(revision),
+            **({"quality_action_reassessment": {"source_edit_contract": deepcopy(revision["quality_edit_contract"]),
+                "observations": deepcopy(revision["quality_action_observations"]),
+                "instructions": "Return a separate quality_resolution_checks entry for every frozen Quality observation. Cite exact revised prose and explicitly assess preservation. Do not fabricate a Review issue or treat an increased score as resolving Quality. This is model evidence; native Quality gates must reevaluate before acceptance."}}
+               if (revision or {}).get("quality_edit_contract") else {}),
+            **({"prose_comparison": prose_comparison(inputs["original_draft"], revision or {},
+                original_id=str(inputs.get("original_draft_asset_version_id") or (inputs.get("review") or {}).get("target_asset_version_id") or ""),
+                revised_id=str(inputs.get("target_candidate_asset_version_id") or (revision or {}).get("asset_version_id") or ""))}
+               if "original_draft_asset_version_id" in inputs else {}),
             creative_execution=deepcopy((revision or {}).get("creative_execution") or {}),
             prior_diagnoses=issues,
             knowledge_review_targets=deepcopy(inputs.get("knowledge_review_targets") or []),
@@ -575,6 +648,8 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             quality_context=_compact(inputs.get("quality_context")),
             dimensions=_compact(inputs.get("dimensions")),
         )
+    if stage == "longform_prose_review":
+        return _task(stage, manifest_digest=inputs.get("manifest_digest"), window_id=inputs.get("window_id"))
     if stage == "reader_outcome":
         return _task(
             stage,
@@ -881,7 +956,7 @@ def build_provider_context_view(
                 task_view.get("query_plan_fingerprint") or ""
             ),
         }
-    if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
+    if stage in {"world_candidates.generate", "world_candidates.evaluate", "world_candidates.actor_0", "world_candidates.actor_1", "world_candidates.actor_2"}:
         task = task_view.get("world_preparation") or {}
         if context_bundle.get("world_preparation") != task:
             raise KernelError(
@@ -895,7 +970,8 @@ def build_provider_context_view(
             if (not isinstance(original, Mapping) or not isinstance(policy, Mapping)
                 or policy.get("project_id") != context_bundle["project_id"]
                 or policy.get("book_id") != context_bundle["book_id"]
-                or selection != _compact(_project_empty_world_selection(original))):
+                or selection != _compact(_project_empty_world_selection(original,
+                    project_query_directory=(selection.get("need") or {}).get("query_directory_receipt") is not None))):
                 raise KernelError("WORLD_SELECTION_RECEIPT_DRIFT", "World source omission must resolve to its exact complete selection in the frozen Context")
         view = {
             "contract_version": "provider-context-view-v2",
@@ -920,7 +996,7 @@ def build_provider_context_view(
                 }
             ],
         }
-        author = context_bundle.get("author_design_projection")
+        author = context_bundle.get("author_design_projection") if task.get("role") != "ACTOR" else None
         if author is not None:
             chapter = _planning_chapter(context_bundle)
             fragments = author.get("fragments") if isinstance(author, Mapping) else None
@@ -991,6 +1067,8 @@ def build_provider_context_view(
             "accepted_boundary": _compact(boundary),
             "protected": True,
         }
+    if stage == "longform_prose_review":
+        return _build_longform_prose_review_context_view(context_bundle)
     if stage == "reader_outcome":
         return _build_reader_outcome_context_view(context_bundle)
     correctness = context_bundle.get("context_correctness")
@@ -2419,3 +2497,18 @@ def _cross_chapter_task(inputs: Mapping[str, Any]) -> dict[str, Any]:
         "target_identity": {"asset_version_id": inputs["target_candidate_asset_version_id"], "text_hash": prose_hash(str(candidate.get("text") or ""))},
         "review_objective": "Diagnose cross-chapter continuity using only covered accepted prose. Sources are read-only; never repair history or turn a Review into Canon. Locate literal target and source Unicode spans with exact identities. Assess retelling, action/space, causal cost, motivation, relationship and voice. Distinguish intentional recap, motif, reinterpretation, new POV, information gain and motivated change. Aesthetic or uncertain judgment cannot block. No issue is a valid result. Return structured evidence, not chain-of-thought. ReReview must disposition every prior code and preservation dimension; reuse lineage_code only for that same problem. No claims about excluded prose.",
     }
+
+
+def project_longform_prose_review_context_input(asset_type: str, content: Mapping[str, Any]) -> dict[str, Any]:
+    if asset_type != "longform_prose_review_window" or content.get("schema_version") != "longform-prose-window.v1":
+        raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "only a frozen accepted prose window may enter longform review")
+    return {key: content[key] for key in ("schema_version", "manifest_digest", "window", "policy", "source_isolation")}
+
+
+def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any]) -> dict[str, Any]:
+    if context_bundle.get("schema_version") != "novelos.longform_prose_review_context_bundle.v2":
+        raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "typed longform prose context is required")
+    inputs = context_bundle.get("selected_inputs") or []
+    if len(inputs) != 1 or inputs[0].get("asset_type") != "longform_prose_review_window":
+        raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "exactly one bounded prose window is required")
+    return {"contract_version": "provider-context-view-v2", "stage": "longform_prose_review", "frozen_prose": inputs[0]["projection"], "instruction": "审读实际提供的中文玄幻/武侠正文。逐项检查结构与冲突模式重复、人物目标和关系停滞、铺垫推进兑现、声线表达、弧级节奏、动机与代价。合理变化、有意重复、未到兑现期和证据不足必须区分。只引用给定原文 Unicode code-point 坐标和精确 quote；不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。所有结论只是待确认审稿意见。不得修改正文、Canon 或计划。"}

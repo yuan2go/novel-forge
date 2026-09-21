@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -186,12 +187,13 @@ def _agent_session_schema() -> dict[str, Any]:
 
 
 def _review_schema() -> dict[str, Any]:
+    from novel_forge.modules.review.diagnostics import constrain_diagnosis_schema
     text = {"type": "string", "minLength": 1, "maxLength": 2000}
     location = _object_schema({"start": {"type": "integer", "minimum": 0},
                                "end": {"type": "integer", "minimum": 1}, "quote": text},
                               required=("start", "end", "quote"))
     issue_fields = {
-        "code": text, "severity": {"enum": ["critical", "blocker", "blocking", "high", "major", "medium", "minor", "low"]},
+        "code": text, "severity": {"enum": ["blocking", "major", "minor"]},
         "message": text, "category": text,
         "judgment_kind": {"enum": ["SEMANTIC_CONFLICT", "AESTHETIC_SUGGESTION", "UNCERTAIN"]},
         "evidence": location, "violated_constraint": text, "revision_goal": text,
@@ -213,7 +215,7 @@ def _review_schema() -> dict[str, Any]:
     }
     return _object_schema({
         "score": {"type": "number", "minimum": 0, "maximum": 100},
-        "issues": {"type": "array", "maxItems": 32, "items": _object_schema(issue_fields, required=tuple(issue_fields))},
+        "issues": {"type": "array", "maxItems": 32, "items": constrain_diagnosis_schema(_object_schema(issue_fields, required=tuple(issue_fields)))},
         "resolution_checks": {"type": "array", "maxItems": 32, "items": _object_schema(check_fields, required=tuple(check_fields))},
         "knowledge_checks": {"type": "array", "items": _object_schema(knowledge_fields, required=tuple(knowledge_fields))},
     }, required=("score", "issues", "resolution_checks", "knowledge_checks"))
@@ -872,6 +874,9 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False) ->
         }, required=("coverage", "no_change_supported", "claims"))
     elif stage in _QUALITY_STAGES:
         schema = _quality_schema()
+    elif stage == "longform_prose_review":
+        from novel_forge.modules.book_followup_authority.prose_review import prose_review_output_schema
+        schema = prose_review_output_schema()
     elif stage == "reader_outcome":
         schema = _reader_outcome_schema()
     elif stage == "retrieval":
@@ -891,7 +896,7 @@ def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False
     version = (
         ("v19" if causal_batch else "v18")
         if stage == "canon_extraction"
-        else "v3"
+        else "v4"
         if stage in {"review", "rereview"}
         else "v2"
         if stage in _QUALITY_STAGES | {"draft", "revision", "review", "rereview"}
@@ -1159,6 +1164,15 @@ def _validate(
 ) -> None:
     if enforce_dialect and schema.get("$schema") != _SCHEMA_DIALECT:
         raise ValueError("unsupported JSON Schema dialect")
+    if "anyOf" in schema:
+        for choice in schema["anyOf"]:
+            try:
+                _validate(choice, value, path=path)
+                break
+            except ValueError:
+                continue
+        else:
+            raise ValueError(f"{path} violates every allowed structural combination")
     expected = schema.get("type")
     if isinstance(expected, list):
         allowed = tuple(str(item) for item in expected)
@@ -1206,6 +1220,8 @@ def _validate(
         minimum = schema.get("minLength")
         if isinstance(minimum, int) and len(value) < minimum:
             raise ValueError(f"{path} must contain at least {minimum} characters")
+        if "pattern" in schema and re.search(schema["pattern"], value) is None:
+            raise ValueError(f"{path} does not match the permitted pattern")
     elif expected == "number":
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise ValueError(f"{path} must be a number")

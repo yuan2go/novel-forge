@@ -2,12 +2,42 @@ from __future__ import annotations
 
 import hashlib
 import math
+from copy import deepcopy
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
 DIAGNOSTIC_CONTRACT = "actionable-diagnostics.v1"
+
+
+def constrain_diagnosis_schema(schema: dict[str, Any], *, cross_categories: tuple[str, ...] = ()) -> dict[str, Any]:
+    base = {key: deepcopy(value) for key, value in schema.items() if key != "anyOf"}
+    variants = []
+
+    def variant(judgments: list[str], severities: list[str], *, cross: bool = False, blocking: bool = False) -> None:
+        item = deepcopy(base)
+        fields = item["properties"]
+        fields["judgment_kind"] = {"type": "string", "enum": judgments}
+        fields["severity"] = {"type": "string", "enum": severities}
+        if cross_categories:
+            fields["category"] = ({"type": "string", "enum": list(cross_categories)} if cross else
+                                  {**fields["category"], "pattern": "^(?!(?:" + "|".join(cross_categories) + ")$).+"})
+        if cross:
+            fields["supporting_evidence"]["minItems"] = 1
+            if blocking:
+                fields["confidence"] = {"type": "string", "enum": ["HIGH"]}
+                fields["interpretation"] = {"type": "string", "enum": ["CONTINUITY_PROBLEM"]}
+        variants.append(item)
+
+    variant(["SEMANTIC_CONFLICT"], ["blocking", "major", "minor"])
+    variant(["AESTHETIC_SUGGESTION"], ["minor"])
+    variant(["UNCERTAIN"], ["major", "minor"])
+    if cross_categories:
+        variant(["HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION"], ["blocking"], cross=True, blocking=True)
+        variant(["HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION", "LIKELY_CONTINUITY_PROBLEM", "UNCERTAIN"], ["major", "minor"], cross=True)
+        variant(["AESTHETIC_SUGGESTION"], ["minor"], cross=True)
+    return {**base, "anyOf": variants}
 
 
 def require_review_score(review: dict[str, Any]) -> float:
@@ -74,6 +104,8 @@ def validate_diagnosis(issue: dict[str, Any], text: str) -> dict[str, Any]:
         raise KernelError("REVIEW_JUDGMENT_INVALID", "Provider judgment cannot declare deterministic proof")
     if issue["judgment_kind"] == "AESTHETIC_SUGGESTION" and issue.get("severity") != "minor":
         raise KernelError("REVIEW_JUDGMENT_INVALID", "an aesthetic preference alone cannot block acceptance")
+    if issue["judgment_kind"] == "UNCERTAIN" and issue.get("severity") == "blocking":
+        raise KernelError("REVIEW_JUDGMENT_INVALID", "uncertain evidence cannot block acceptance")
     return {**{key: issue[key] for key in (*required, "preserve", "acceptance_criteria")},
             "evidence_locator": validate_location(dict(issue.get("evidence") or {}), text),
             "revision_strategy": issue["revision_goal"]}

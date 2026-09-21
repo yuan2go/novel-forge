@@ -34,6 +34,7 @@ class CandidateEvidence:
     workspace_asset_version_id: str = ""
     cross_chapter_review: bool = False
     preservation_checks: tuple[dict[str, Any], ...] = ()
+    quality_resolution_checks: tuple[dict[str, Any], ...] = ()
 
 
 def retained_candidate_evidence(workspace_id: str, content: dict[str, Any]) -> CandidateEvidence:
@@ -89,13 +90,28 @@ def compare_candidates(
     net_improvement = challenger.score - previous.score
     diagnostic_selection = challenger.diagnostic_contract_version == "actionable-diagnostics.v1"
     supported_improvement = any(check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED" for check in challenger.resolution_checks)
-    preservation_regressed = any(check.get("preservation") != "PRESERVED" for check in challenger.resolution_checks)
+    from novel_forge.modules.review.diagnostics import prose_hash
+    quality_supported = (bool(challenger.quality_resolution_checks)
+        and {check.get("observation") for check in challenger.quality_resolution_checks} == set(challenger.content.get("quality_action_observations") or [])
+        and all(check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED"
+            and check.get("target_asset_version_id") == challenger.asset_version_id
+            and check.get("target_text_hash") == prose_hash(str(challenger.content.get("text") or ""))
+            and check.get("source_quality_asset_version_id") == challenger.content.get("source_quality_asset_version_id")
+            and check.get("source_quality_asset_version_id")
+            for check in challenger.quality_resolution_checks))
+    supported_improvement = supported_improvement or quality_supported
+    preservation_regressed = any(check.get("preservation") != "PRESERVED"
+        for check in (*challenger.resolution_checks, *challenger.quality_resolution_checks))
     from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
     if challenger.cross_chapter_review and (
         set(previous.blocker_codes) & set(challenger.blocker_codes)
         or any(check.get("status") != "PRESERVED" for check in challenger.preservation_checks)
         or len(challenger.preservation_checks) != len(PRESERVATION_DIMENSIONS)
     ):
+        selected = previous
+        reason = CandidateStopReason.ESCALATION_REQUIRED
+        improved = False
+    elif challenger.quality_resolution_checks and not quality_supported:
         selected = previous
         reason = CandidateStopReason.ESCALATION_REQUIRED
         improved = False
@@ -231,6 +247,7 @@ def _evidence(value: CandidateEvidence) -> dict[str, Any]:
         "score": value.score,
         "blocker_codes": list(value.blocker_codes),
         "review_asset_version_id": value.review_asset_version_id,
+        **({"quality_resolution_checks": list(value.quality_resolution_checks)} if value.quality_resolution_checks else {}),
     }
 
 

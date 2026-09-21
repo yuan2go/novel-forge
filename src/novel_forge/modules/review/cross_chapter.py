@@ -379,4 +379,6 @@ def extend_provider_schema(schema: dict[str, Any], stage: str) -> dict[str, Any]
         ),
     }
     result["required"].append("preservation_checks")
+    from .diagnostics import constrain_diagnosis_schema
+    result["properties"]["issues"]["items"] = constrain_diagnosis_schema(issue, cross_categories=tuple(sorted(CROSS_CHAPTER_CATEGORIES)))
     return result

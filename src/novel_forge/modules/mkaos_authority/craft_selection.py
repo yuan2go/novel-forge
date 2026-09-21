@@ -24,17 +24,44 @@ DEFAULT_CRAFT_POLICY = {
     "variation_bonus": 1,
 }
 
+CRAFT_MECHANISM_CADENCE_V2 = {
+    "spatial-anchor": "CONTINUOUS",
+    "exchange-response-cost": "EXPRESSIVE",
+    "subtext-pressure": "EXPRESSIVE",
+    "choice-exposes-value": "EXPRESSIVE",
+}
+
+
+def _policy_defaults(version: str) -> dict[str, Any]:
+    if version == "narrative-craft-budget.v1":
+        return dict(DEFAULT_CRAFT_POLICY)
+    if version == "narrative-craft-budget.v2":
+        return {**DEFAULT_CRAFT_POLICY, "schema_version": version, "mechanism_cadence": dict(CRAFT_MECHANISM_CADENCE_V2)}
+    raise KernelError("CRAFT_POLICY_INVALID", "Craft budget requires a supported explicit policy version")
+
 
 def validate_craft_policy(value: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    result = {**DEFAULT_CRAFT_POLICY, **dict(value or {})}
-    if set(result) != set(DEFAULT_CRAFT_POLICY) or result["schema_version"] != "narrative-craft-budget.v1" or result["classification"] != "CONFIGURABLE_POLICY":
+    supplied = dict(value or {})
+    defaults = _policy_defaults(supplied.get("schema_version", DEFAULT_CRAFT_POLICY["schema_version"]))
+    result = {**defaults, **supplied}
+    if set(result) != set(defaults) or result["classification"] != "CONFIGURABLE_POLICY":
         raise KernelError("CRAFT_POLICY_INVALID", "Craft budget is a versioned configurable policy")
-    for key in set(result) - {"schema_version", "classification"}:
+    if "mechanism_cadence" in result:
+        if result["mechanism_cadence"] != CRAFT_MECHANISM_CADENCE_V2:
+            raise KernelError("CRAFT_POLICY_INVALID", "Cadence exceptions require the exact bounded classification for this policy version")
+        result["mechanism_cadence"] = dict(result["mechanism_cadence"])
+    for key in set(result) - {"schema_version", "classification", "mechanism_cadence"}:
         if type(result[key]) is not int or not 0 <= result[key] <= 100:
             raise KernelError("CRAFT_POLICY_INVALID", "Craft policy values must be bounded nonnegative integers")
     if not 1 <= result["max_craft_candidates"] <= 12 or not result["max_uses_per_scene"] or not result["max_uses_per_chapter"]:
         raise KernelError("CRAFT_POLICY_INVALID", "Craft selection and density limits must be positive")
     return result
+
+
+def _frozen_craft_policy(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping) or set(value) != set(_policy_defaults(value.get("schema_version", ""))):
+        raise KernelError("CRAFT_FROZEN_POLICY_MISSING", "Strategy planning and replay require every field of the explicit policy version")
+    return validate_craft_policy(value)
 
 
 def _hash(value: Any) -> str:
@@ -91,12 +118,17 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
         score += policy["variation_bonus"]
         reasons.append("CRAFT_VARIATION_BONUS")
     in_cooldown = any(0 < current_chapter - int(item["chapter"]) <= policy["cooldown_chapters"] for item in matching)
-    rejection = "CRAFT_COOLDOWN" if in_cooldown else "CRAFT_FREQUENCY_BUDGET" if frequency >= policy["max_frequency_in_window"] else "" if score else "CRAFT_NO_CONTEXT_MATCH"
+    cadence_class = policy.get("mechanism_cadence", {}).get(identity, "EXPRESSIVE")
+    temporal_budget_applied = cadence_class != "CONTINUOUS"
+    rejection = "CRAFT_COOLDOWN" if temporal_budget_applied and in_cooldown else "CRAFT_FREQUENCY_BUDGET" if temporal_budget_applied and frequency >= policy["max_frequency_in_window"] else "" if score else "CRAFT_NO_CONTEXT_MATCH"
+    budget_assessment = {"frequency": frequency, "repetition_penalty": repetition_penalty, "pattern_similarity_penalty": pattern_penalty, "salience_penalty": salience_penalty, "in_cooldown": in_cooldown, "pattern_signature": sorted(signature), "pattern_comparisons": similarities, "recent_usage": observations, "evidence_ceiling": "DELIVERY_OBSERVATION_NOT_READER_EFFECT"}
+    if policy["schema_version"] == "narrative-craft-budget.v2":
+        budget_assessment.update(cadence_class=cadence_class, policy_version=policy["schema_version"], temporal_budget_applied=temporal_budget_applied, classification="CONFIGURABLE_POLICY", creative_benefit="NOT_PROVEN")
     return {
         "rejection_reason": rejection,
         "score": max(1, score - repetition_penalty - pattern_penalty - salience_penalty) if score else 0,
         "match_reasons": reasons,
-        "budget_assessment": {"frequency": frequency, "repetition_penalty": repetition_penalty, "pattern_similarity_penalty": pattern_penalty, "salience_penalty": salience_penalty, "in_cooldown": in_cooldown, "pattern_signature": sorted(signature), "pattern_comparisons": similarities, "recent_usage": observations, "evidence_ceiling": "DELIVERY_OBSERVATION_NOT_READER_EFFECT"},
+        "budget_assessment": budget_assessment,
         "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED",
     }
 
@@ -136,9 +168,7 @@ def build_craft_strategy(candidate: Mapping[str, Any], selection: Mapping[str, A
     if not cards:
         return None
     scenes = candidate.get("scene_plan") or []
-    if not isinstance(selection.get("craft_policy"), Mapping) or set(selection["craft_policy"]) != set(DEFAULT_CRAFT_POLICY):
-        raise KernelError("CRAFT_FROZEN_POLICY_MISSING", "Craft selection must freeze the complete versioned budget policy before planning")
-    policy = validate_craft_policy(selection["craft_policy"])
+    policy = _frozen_craft_policy(selection.get("craft_policy"))
     uses: list[dict[str, Any]] = []
     for translation in candidate.get("knowledge_translations") or ():
         card = cards.get(translation["knowledge_card_asset_version_id"])
@@ -178,9 +208,7 @@ def validate_craft_strategy(strategy: Mapping[str, Any], *, scenes: Sequence[Map
         raise KernelError("CRAFT_STRATEGY_INVALID", "Craft strategy requires the versioned governed planning contract")
     if not str(strategy["selection_digest"]).startswith("sha256:") or strategy["strategy_digest"] != _hash({key: value for key, value in strategy.items() if key != "strategy_digest"}):
         raise KernelError("CRAFT_STRATEGY_DRIFT", "Craft strategy must retain its frozen selection and content digest")
-    if not isinstance(strategy["policy"], Mapping) or set(strategy["policy"]) != set(DEFAULT_CRAFT_POLICY):
-        raise KernelError("CRAFT_FROZEN_POLICY_MISSING", "Strategy replay cannot fill missing policy fields from current defaults")
-    policy = validate_craft_policy(strategy["policy"])
+    policy = _frozen_craft_policy(strategy["policy"])
     uses = strategy["uses"]
     if not isinstance(uses, list) or len(uses) > policy["max_uses_per_chapter"]:
         raise KernelError("CRAFT_DENSITY_BUDGET", "Craft chapter density exceeds its configurable policy")

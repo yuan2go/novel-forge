@@ -227,9 +227,9 @@ def integrate_realization(
                 "REALIZATION_EPISTEMIC_SCOPE_VIOLATION",
                 "Scene realization used information outside its frozen epistemic scope",
             )
-        pieces.append(artifact["text"].strip())
+        pieces.append(artifact["text"])
     integrated = "\n\n".join(pieces)
-    if integrated != text.strip():
+    if integrated != text:
         raise KernelError(
             "REALIZATION_INTEGRATION_DRIFT",
             "Candidate prose must exactly equal its structured slot integration",

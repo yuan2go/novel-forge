@@ -421,3 +421,80 @@ def test_provider_views_isolate_history_and_schema_keeps_legacy_contract():
     )
     with pytest.raises(KernelError):
         validate_chapter_provider_output_against_schema("review", old, response)
+
+
+def test_normal_chinese_chapter_uses_token_estimate_then_complete_admission():
+    text = "沈舟沿着石阶退到东门，左臂的旧伤仍使他不能举剑。" * 120
+    frozen = freeze_review_window(source_snapshot(), candidate_id="draft", text=text,
+                                 context_token_budget=6000, protected_context={},
+                                 required_context={"craft": "交代目标、空间和代价。" * 20})
+    assert len(text.encode()) > 6000
+    assert frozen["sources"][0]["coverage"] == "FULL"
+    meter = frozen["selection_meter"]
+    assert meter["precision"] == "ESTIMATE_ONLY"
+    assert meter["required_context_tokens"] + meter["source_tokens"] + meter["safety_margin_tokens"] <= 6000
+    with pytest.raises(KernelError, match="CONTEXT_INSUFFICIENT"):
+        freeze_review_window(source_snapshot(), candidate_id="draft", text=text * 3,
+                             context_token_budget=6000, protected_context={})
+
+
+def test_schema_normalization_and_domain_agree_on_judgment_combinations():
+    from itertools import product
+    from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+    schema = extend_provider_schema(chapter_provider_output_schema("review"), "review")
+    judgments = ["SEMANTIC_CONFLICT", "SEMANTIC_CONTRADICTION", "LIKELY_CONTINUITY_PROBLEM", "AESTHETIC_SUGGESTION", "UNCERTAIN"]
+    for category, judgment, severity, confidence, interpretation in product(
+        ["CRAFT_EFFECT", "CAUSAL_CARRYOVER"], judgments, ["blocking", "major", "minor"],
+        ["HIGH", "LOW"], ["CONTINUITY_PROBLEM", "MOTIVATED_CHANGE"],
+    ):
+        value = {**issue(category), "judgment_kind": judgment, "severity": severity,
+                 "confidence": confidence, "interpretation": interpretation}
+        raw = {"score": 70, "issues": [value], "knowledge_checks": [], "resolution_checks": [], "preservation_checks": []}
+        try:
+            validate_chapter_provider_output_against_schema("review", schema, raw)
+            structural = True
+        except KernelError:
+            structural = False
+        try:
+            normalized = normalize_model_output("review", raw)
+            evaluate_review_result(project_id="p", target_asset_version_id="draft:2", context_bundle_version_id="ctx",
+                                   chapter=2, result=normalized, provider_evidence={}, prose_text=TARGET, cross_chapter_window=window())
+            domain = True
+        except KernelError:
+            domain = False
+        assert structural == domain, (category, judgment, severity, confidence, interpretation)
+
+
+def test_rereview_materialized_task_retains_exact_before_and_changed_target():
+    original = " \n沈舟😀走到门边。\r\n他没有回头。 "
+    revised = original.replace("走到", "退到")
+    task = build_provider_task_view("rereview", {
+        "original_draft": {"text": original}, "original_draft_asset_version_id": "before:v1",
+        "revision": {"text": revised}, "target_candidate_asset_version_id": "after:v1",
+        "review": {"issues": []}, "cross_chapter_window": window(),
+    })
+    comparison = task["prose_comparison"]
+    assert comparison["original"] == {"asset_version_id": "before:v1", "text_hash": prose_hash(original), "text": original}
+    assert comparison["revised"]["asset_version_id"] == task["target_identity"]["asset_version_id"] == "after:v1"
+    assert task["cross_chapter_window"]["target_candidate_asset_version_id"] == "draft:2"
+    assert comparison["coverage"] == "COMPLETE_BEFORE_AND_AFTER"
+    for span in comparison["unchanged_ranges"]:
+        before = original[span["before_start"]:span["before_end"]]
+        after = revised[span["after_start"]:span["after_end"]]
+        assert before == after and prose_hash(before) == span["text_hash"]
+
+
+def test_unresolved_issue_moves_to_exact_new_span_without_losing_origin():
+    review = initial()
+    text = "雨落了下来。" + TARGET
+    result = rereview_result(review, text=text, status="UNRESOLVED")
+    result["resolution_checks"][0]["evidence"] = {"start": 6, "end": 13, "quote": text[6:13]}
+    after = evaluate_rereview_result(project_id="p", original_draft_version_id="draft:2",
+        initial_review_version_id="review:2", revision_version_id="revision:2", context_bundle_version_id="ctx",
+        initial_review=review, revision={"chapter": 2, "text": text}, result=result, provider_evidence={})
+    carried = after["unresolved_issues"][0]
+    assert carried["code"] == review["issues"][0]["code"]
+    assert carried["evidence_locator"]["quote"] == text[6:13]
+    assert carried["target_text_hash"] == prose_hash(text)
+    assert carried["origin_evidence_locator"] == review["issues"][0]["evidence_locator"]
+    assert after["blocking_issue_count"] == 1
