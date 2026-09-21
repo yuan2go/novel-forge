@@ -3,8 +3,8 @@
   "baseline_sha": "e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332",
   "baseline_implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed",
   "baseline_migration_head": "20260920_0139_narrative_reference_sampling",
-  "implementation_commit_sha": "da7533c6eae818e41d4811b0691160e41c77441b",
-  "implementation_tree_sha": "sha256:7e9227225e6f3270c206eb13ebe91874f931701176981dd74f977f4127d46391",
+  "implementation_commit_sha": "dc6bafaa35d0fca1a59f20c93bb493dab5e1b95f",
+  "implementation_tree_sha": "sha256:cbd5f0f6f088e4024f0d41a0adf565c5c26f4c3e7801e82e9c33591cf7952ad7",
   "implementation_path_count": 1322,
   "migration_head": "20260921_0141_author_chapter_replacement",
   "frontend_source_records": [
