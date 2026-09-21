@@ -1,0 +1,1423 @@
+{
+  "status": "PASS",
+  "proof_ceiling": "SCRIPTED_FIXTURE_API_AND_POSTGRESQL_BROWSER",
+  "steps": [
+    "reload recovers unsaved exact author input",
+    "undo restores exact base",
+    "actual database commit with simulated lost response replays same idempotency key",
+    "native production preparation and Chapter command admit exact adoption; repeat reuses same run; page queries progress separately from Book acceptance",
+    "stale concurrent save rejects and retains author input",
+    "reject persists decision and original text unchanged",
+    "native unaccepted Book draft saves exact author text, creates versioned replacement request and Chapter run, retains predecessor and awaits native gates",
+    "switch between two actual native source versions isolates candidate text and decisions while preserving chapter CAS and original adopted input",
+    "native accepted Book report shows coverage, exact cited evidence, editor linkage, and explicit KEEP_HISTORY disposition",
+    "native prose controls pause/resume unchanged allowance, freeze explicit one-window policy, advance once and disable complete run"
+  ],
+  "scope": {
+    "project_id": "author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15",
+    "workspace_id": "author-workspace-3b7b3f9d-d764-4f46-80fe-05e680716849",
+    "book_id": "author-book-2f80074e-a090-4855-84c3-75bbb0b23597",
+    "chapter": 1,
+    "base_asset_version_id": "841a41aa-c517-40dd-86c4-1a5742723e5c",
+    "base_asset_hash": "sha256:26e598347391119fe8a354d25b9a869cee8b46d4e7d9c4d02a4a1730733d9153",
+    "base_text_hash": "sha256:46a79816eb5af1498ee465120bfc5b866136c76981e01882b0748c9e74b102ce",
+    "expected_version": 0
+  },
+  "state": {
+    "project_id": "author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15",
+    "workspace_id": "author-workspace-3b7b3f9d-d764-4f46-80fe-05e680716849",
+    "book_id": "author-book-2f80074e-a090-4855-84c3-75bbb0b23597",
+    "chapter": 1,
+    "base_asset_version_id": "841a41aa-c517-40dd-86c4-1a5742723e5c",
+    "base_asset_hash": "sha256:26e598347391119fe8a354d25b9a869cee8b46d4e7d9c4d02a4a1730733d9153",
+    "base_text_hash": "sha256:46a79816eb5af1498ee465120bfc5b866136c76981e01882b0748c9e74b102ce",
+    "text": "　剑😀未出。\n\n她留步。\n",
+    "title": "关山旧约",
+    "scene_artifacts": [],
+    "version": 4,
+    "session": {
+      "status": "REJECTED",
+      "book_id": "author-book-2f80074e-a090-4855-84c3-75bbb0b23597",
+      "chapter": 1,
+      "actor_id": "local-operator",
+      "project_id": "author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15",
+      "workspace_id": "author-workspace-3b7b3f9d-d764-4f46-80fe-05e680716849",
+      "base_text_hash": "sha256:46a79816eb5af1498ee465120bfc5b866136c76981e01882b0748c9e74b102ce",
+      "contract_version": "chapter-author-edit.v1",
+      "base_asset_version_id": "841a41aa-c517-40dd-86c4-1a5742723e5c",
+      "decision_asset_version_id": "b1070e01-b052-41fb-ba01-1bb34fd173a9",
+      "candidate_asset_version_id": "0b77938c-32cb-4c3a-9c1a-e3ca1b532385"
+    },
+    "candidates": [
+      {
+        "project_id": "author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15",
+        "logical_ref": "author-editor/candidates/88a95a38-9024-41ce-894c-c6324a67d4ed",
+        "category": "author-editor",
+        "asset_id": "author_edit_candidate:4aad317f-cb56-4164-8564-294a97a788aa",
+        "asset_type": "author_edit_candidate",
+        "asset_version_id": "0b77938c-32cb-4c3a-9c1a-e3ca1b532385",
+        "version_number": 1,
+        "lifecycle": "ACTIVE",
+        "eligibility": "ELIGIBLE",
+        "governance": "CLEAR",
+        "content_hash": "sha256:f2fcbbeb0335f57a1054400439c053bd9190b583adfffe2da57466bafb7b67b0",
+        "content": {
+          "text": "　剑😀已归。\n\n她留步。\n",
+          "edits": [
+            {
+              "end": 5,
+              "after": "已归",
+              "start": 3,
+              "before": "未出",
+              "after_end": 5,
+              "after_start": 3
+            }
+          ],
+          "title": "关山旧约",
+          "status": "SAVED_CANDIDATE",
+          "book_id": "author-book-2f80074e-a090-4855-84c3-75bbb0b23597",
+          "chapter": 1,
+          "author_id": "local-operator",
+          "text_hash": "sha256:4e7e1eaf5f8ea456ef053ce7e681e8f7f9798d55e72ca86e61259337051a57e3",
+          "project_id": "author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15",
+          "rights_basis": "ORIGINAL_AUTHOR_INPUT",
+          "workspace_id": "author-workspace-3b7b3f9d-d764-4f46-80fe-05e680716849",
+          "draft_content": {
+            "text": "　剑😀已归。\n\n她留步。\n",
+            "title": "关山旧约",
+            "chapter": 1,
+            "scene_artifacts": []
+          },
+          "allowed_ranges": [
+            {
+              "end": 13,
+              "start": 0
+            }
+          ],
+          "base_text_hash": "sha256:46a79816eb5af1498ee465120bfc5b866136c76981e01882b0748c9e74b102ce",
+          "base_asset_hash": "sha256:26e598347391119fe8a354d25b9a869cee8b46d4e7d9c4d02a4a1730733d9153",
+          "scene_artifacts": [],
+          "semantic_review": "NOT_RUN",
+          "contract_version": "chapter-author-edit.v1",
+          "source_provenance": {
+            "kind": "HUMAN_AUTHOR_INPUT",
+            "operation_id": "88a95a38-9024-41ce-894c-c6324a67d4ed"
+          },
+          "base_asset_version_id": "841a41aa-c517-40dd-86c4-1a5742723e5c"
+        },
+        "updated_at": "2026-09-21 01:14:00.981420+00:00"
+      },
+      {
+        "project_id": "author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15",
+        "logical_ref": "author-editor/candidates/030e7300-50e2-4017-b974-b84abbcd557c",
+        "category": "author-editor",
+        "asset_id": "author_edit_candidate:0fc02a19-2b91-4fda-8c01-3983c6e8dea3",
+        "asset_type": "author_edit_candidate",
+        "asset_version_id": "870368c9-3aa4-4d42-96fe-29c83dcf8f64",
+        "version_number": 1,
+        "lifecycle": "ACTIVE",
+        "eligibility": "ELIGIBLE",
+        "governance": "CLEAR",
+        "content_hash": "sha256:82ef91b9af5b152b87d62e2ce635cba2baa6864ed01efc9adec91da613a32fb9",
+        "content": {
+          "text": "　剑😀已出。\n\n她留步。\n",
+          "edits": [
+            {
+              "end": 4,
+              "after": "已",
+              "start": 3,
+              "before": "未",
+              "after_end": 4,
+              "after_start": 3
+            }
+          ],
+          "title": "关山旧约",
+          "status": "SAVED_CANDIDATE",
+          "book_id": "author-book-2f80074e-a090-4855-84c3-75bbb0b23597",
+          "chapter": 1,
+          "author_id": "local-operator",
+          "text_hash": "sha256:df26b71cfe65c4dc28ee6308f86cd64f08fdacb70899ed4ac8a9127cd5eb7eca",
+          "project_id": "author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15",
+          "rights_basis": "ORIGINAL_AUTHOR_INPUT",
+          "workspace_id": "author-workspace-3b7b3f9d-d764-4f46-80fe-05e680716849",
+          "draft_content": {
+            "text": "　剑😀已出。\n\n她留步。\n",
+            "title": "关山旧约",
+            "chapter": 1,
+            "scene_artifacts": []
+          },
+          "allowed_ranges": [
+            {
+              "end": 13,
+              "start": 0
+            }
+          ],
+          "base_text_hash": "sha256:46a79816eb5af1498ee465120bfc5b866136c76981e01882b0748c9e74b102ce",
+          "base_asset_hash": "sha256:26e598347391119fe8a354d25b9a869cee8b46d4e7d9c4d02a4a1730733d9153",
+          "scene_artifacts": [],
+          "semantic_review": "NOT_RUN",
+          "contract_version": "chapter-author-edit.v1",
+          "source_provenance": {
+            "kind": "HUMAN_AUTHOR_INPUT",
+            "operation_id": "030e7300-50e2-4017-b974-b84abbcd557c"
+          },
+          "base_asset_version_id": "841a41aa-c517-40dd-86c4-1a5742723e5c"
+        },
+        "updated_at": "2026-09-21 01:13:59.067322+00:00"
+      }
+    ],
+    "decisions": [
+      {
+        "project_id": "author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15",
+        "logical_ref": "author-editor/decisions/d51fd376-31ac-46b6-878e-fd8c73808e95",
+        "category": "author-editor",
+        "asset_id": "author_edit_decision:58e198fc-7b7b-4a05-b5e9-831271d326aa",
+        "asset_type": "author_edit_decision",
+        "asset_version_id": "b1070e01-b052-41fb-ba01-1bb34fd173a9",
+        "version_number": 1,
+        "lifecycle": "ACTIVE",
+        "eligibility": "ELIGIBLE",
+        "governance": "CLEAR",
+        "content_hash": "sha256:ef3b2505af608c30a3ac4a36d1004ab4fd090b013bfc0337dda30a4e798a93da",
+        "content": {
+          "status": "REJECTED",
+          "book_id": "author-book-2f80074e-a090-4855-84c3-75bbb0b23597",
+          "chapter": 1,
+          "actor_id": "local-operator",
+          "decision": "REJECT",
+          "authority": "AUTHOR_CANDIDATE_SELECTION",
+          "rationale": "保留原文，此候选仅用于拒绝检查。",
+          "text_hash": "sha256:4e7e1eaf5f8ea456ef053ce7e681e8f7f9798d55e72ca86e61259337051a57e3",
+          "project_id": "author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15",
+          "workspace_id": "author-workspace-3b7b3f9d-d764-4f46-80fe-05e680716849",
+          "book_acceptance": "NOT_GRANTED",
+          "contract_version": "chapter-author-edit.v1",
+          "base_asset_version_id": "841a41aa-c517-40dd-86c4-1a5742723e5c",
+          "candidate_content_hash": "sha256:f2fcbbeb0335f57a1054400439c053bd9190b583adfffe2da57466bafb7b67b0",
+          "candidate_asset_version_id": "0b77938c-32cb-4c3a-9c1a-e3ca1b532385"
+        },
+        "updated_at": "2026-09-21 01:14:01.368896+00:00"
+      },
+      {
+        "project_id": "author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15",
+        "logical_ref": "author-editor/decisions/3a76f461-fdda-44e8-8038-ae861161be5c",
+        "category": "author-editor",
+        "asset_id": "author_edit_decision:bc9579f5-7129-4ed7-905f-7ecf70f26e1c",
+        "asset_type": "author_edit_decision",
+        "asset_version_id": "69477a05-0e00-4435-ab13-c99b8d6b0da8",
+        "version_number": 1,
+        "lifecycle": "ACTIVE",
+        "eligibility": "ELIGIBLE",
+        "governance": "CLEAR",
+        "content_hash": "sha256:ef35617130373aa2b3baf467bd002555a262562d498125b5689f667e13d322e5",
+        "content": {
+          "status": "ADOPTED_PENDING_REVIEW",
+          "book_id": "author-book-2f80074e-a090-4855-84c3-75bbb0b23597",
+          "chapter": 1,
+          "actor_id": "local-operator",
+          "decision": "ACCEPT",
+          "authority": "AUTHOR_CANDIDATE_SELECTION",
+          "rationale": "浏览器检查：动作次序修改已核对。",
+          "text_hash": "sha256:df26b71cfe65c4dc28ee6308f86cd64f08fdacb70899ed4ac8a9127cd5eb7eca",
+          "project_id": "author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15",
+          "workspace_id": "author-workspace-3b7b3f9d-d764-4f46-80fe-05e680716849",
+          "book_acceptance": "NOT_GRANTED",
+          "contract_version": "chapter-author-edit.v1",
+          "base_asset_version_id": "841a41aa-c517-40dd-86c4-1a5742723e5c",
+          "candidate_content_hash": "sha256:82ef91b9af5b152b87d62e2ce635cba2baa6864ed01efc9adec91da613a32fb9",
+          "candidate_asset_version_id": "870368c9-3aa4-4d42-96fe-29c83dcf8f64"
+        },
+        "updated_at": "2026-09-21 01:13:59.227893+00:00"
+      }
+    ],
+    "diagnostics": [],
+    "book_runs": [],
+    "book_request": null,
+    "authority": "CHAPTER_CANDIDATES_ONLY",
+    "book_acceptance": "SEPARATE_CANON_AND_BOOK_GATES"
+  },
+  "native_review_admission": {
+    "root_operation_id": "91169054-11b5-4d82-8c7c-d9fa28e728bc",
+    "saga_id": "3df1116f-95a2-4adb-bb0d-51fc0830b350",
+    "status": "ACCEPTED",
+    "replayed": false,
+    "query_url": "/product/production/chapter-authority/run?project_id=author-project-5898cde7-7176-4ea9-a8dd-052c7d83de15&root_operation_id=91169054-11b5-4d82-8c7c-d9fa28e728bc",
+    "control_url": "/product/production/chapter-authority/operations/91169054-11b5-4d82-8c7c-d9fa28e728bc",
+    "preparation": {
+      "decision": "READY",
+      "context_digest": "sha256:f36edf4dbac747bf87d127ffac74879e55e066d3fc3d119a8db6c7a3e3a07f12",
+      "selected_asset_version_ids": [
+        "chapter_plan-1b576b33-beed-4ea6-9793-67c0503b09b1",
+        "style_policy-a67c5e73-ba4b-4214-8a31-11703671a92c",
+        "quality_rubric-26f4adb7-5a21-4d9d-ad65-82d35ae6e064",
+        "platform_profile-39f276da-5850-412b-bb02-b820d76addbf",
+        "operator_checklist-cfd6adba-8a56-4aff-9ff7-dbb67e503392",
+        "approval_decision-9e92e7b4-22d6-4f60-9c5d-10afdf8fc0a6",
+        "commercial_quality_report-6fc52be1-2c3d-480f-b859-9465ce8e7315",
+        "source_originality_quality_report-8eb2c6bd-8ad2-4d23-a7bf-a9e6ff519855",
+        "longform_quality_report-0e55d924-3775-4441-a6c1-eba6de86f5cd",
+        "platform_quality_report-d397455a-0bbe-4052-818e-cbe5b97648a5"
+      ]
+    }
+  },
+  "book_replacement": {
+    "chapter_request_id": "chapter-request:book-author:14fdd4c39a8f1f27cc378c18c00b9e626d8ada830683a06c7fdb91974249875a",
+    "book_run_id": "book-run:9524da96-8e1a-441d-8927-506fabdac909",
+    "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+    "chapter_number": 1,
+    "chapter_plan_version": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:chapter-plan-v1",
+    "chapter_plan_content_hash": "sha256:7dd70f8e1b4d64a4c370d622adcc1943040cb31d98b672e43e54cb586b02dd7b",
+    "parent_group_version_id": null,
+    "production_profile_version": "production-profile:v1",
+    "stable_idempotency_key": "book-author:14fdd4c39a8f1f27cc378c18c00b9e626d8ada830683a06c7fdb91974249875a",
+    "command_payload": {
+      "title": "Chapter 1",
+      "premise": "A decision creates an irreversible cost.",
+      "book_run_id": "book-run:9524da96-8e1a-441d-8927-506fabdac909",
+      "chapter_number": 1,
+      "context_candidates": [
+        {
+          "content": {
+            "title": "The Cost of a Promise",
+            "chapter": 1,
+            "premise": "The protagonist must pay a visible cost to keep a promise.",
+            "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "scene_plan": [
+              {
+                "goal": "keep the promise",
+                "beats": [
+                  "pressure",
+                  "choice",
+                  "visible cost"
+                ],
+                "conflict": "safety requires breaking the promise",
+                "scene_id": "s1",
+                "arc_progress": [
+                  "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:fixture-arc-plan-v1"
+                ]
+              }
+            ],
+            "chapter_hook": "The loss creates a second debt.",
+            "scene_sequence": [
+              {
+                "goal": "keep the promise",
+                "scene_id": "s1"
+              }
+            ],
+            "chapter_objective": "Force a public choice with an irreversible loss.",
+            "constraint_envelope": {
+              "arc_working_set": {
+                "selected_contributions": [
+                  {
+                    "role": "PRIMARY",
+                    "action": "ADVANCE",
+                    "arc_plan_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:fixture-arc-plan-v1"
+                  }
+                ]
+              }
+            },
+            "required_arc_contributions": [
+              {
+                "contribution": "ADVANCE",
+                "arc_plan_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:fixture-arc-plan-v1"
+              }
+            ]
+          },
+          "asset_type": "chapter_plan",
+          "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "content_hash": "sha256:7dd70f8e1b4d64a4c370d622adcc1943040cb31d98b672e43e54cb586b02dd7b",
+          "safe_summary": "A complete authoritative ChapterPlan.",
+          "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:chapter-plan-v1",
+          "estimated_tokens": 120,
+          "structured_facts": [],
+          "narrative_function": "chapter_plan"
+        },
+        {
+          "asset_type": "operator_checklist",
+          "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "content_hash": "sha256:db920885d5e94cdbacf2acc811d8039359815c6025b025305028cc726aa5c1f0",
+          "safe_summary": "Operator checklist completed.",
+          "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:checklist-v1",
+          "estimated_tokens": 20,
+          "structured_facts": [
+            {
+              "key": "completed",
+              "value": true
+            },
+            {
+              "key": "contract_version",
+              "value": "fixture-waiver-checklist-v1"
+            }
+          ],
+          "narrative_function": "release_evidence"
+        },
+        {
+          "asset_type": "quality_rubric",
+          "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "content_hash": "sha256:1d921de912b3a6b61264986e9f755a8cf686b24278557eff2a45d46dc2f9eb5f",
+          "safe_summary": "Versioned quality thresholds.",
+          "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:quality-rubric-v1",
+          "estimated_tokens": 20,
+          "structured_facts": [
+            {
+              "key": "thresholds",
+              "value": {
+                "readability": 70
+              }
+            }
+          ],
+          "narrative_function": "quality_policy"
+        },
+        {
+          "asset_type": "platform_profile",
+          "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "content_hash": "sha256:e6656b36017bf772ac7007961b6b63e9453b592a2be7115db4e37efe4df07bcf",
+          "safe_summary": "Versioned internal platform policy.",
+          "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:platform-profile-v1",
+          "estimated_tokens": 30,
+          "structured_facts": [
+            {
+              "key": "platform_rules",
+              "value": {
+                "format": {
+                  "paragraph_max": 500
+                },
+                "rhythm": [
+                  "payoff"
+                ],
+                "opening": [
+                  "visible conflict"
+                ],
+                "ai_content": {
+                  "mode": "internal"
+                },
+                "chapter_length": {
+                  "maximum": 10000,
+                  "minimum": 10
+                },
+                "publish_metadata": {
+                  "title_required": true
+                },
+                "sensitive_content": []
+              }
+            }
+          ],
+          "narrative_function": "platform_policy"
+        },
+        {
+          "asset_type": "operator_approval",
+          "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "content_hash": "sha256:a26462a1114e280c9beff67076baa99e83dadf0bacd5a203edcca06d4d6fa761",
+          "safe_summary": "Operator approved fixture release evidence.",
+          "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:approval-v1",
+          "estimated_tokens": 20,
+          "structured_facts": [
+            {
+              "key": "approved",
+              "value": true
+            },
+            {
+              "key": "decision",
+              "value": "APPROVED"
+            },
+            {
+              "key": "contract_version",
+              "value": "fixture-waiver-approval-v1"
+            },
+            {
+              "key": "fixture_protocol_only",
+              "value": true
+            },
+            {
+              "key": "waiver_reason",
+              "value": "Deterministic integration fixture release only."
+            },
+            {
+              "key": "waived_dimensions",
+              "value": [
+                "readability",
+                "mobile_reading",
+                "chapter_economy",
+                "basic_prose_integrity",
+                "scene_completeness",
+                "information_density",
+                "dialogue_narration_balance",
+                "paragraph_structure",
+                "repetition",
+                "summary_like_prose",
+                "golden_opening",
+                "reader_promise",
+                "reward",
+                "protagonist_charm",
+                "antagonist_pressure",
+                "toxic_point",
+                "chapter_hook",
+                "suspense_progression",
+                "emotional_curve",
+                "serialization_function",
+                "source_leakage",
+                "originality",
+                "anti_ai",
+                "style_drift",
+                "copyright_boundary",
+                "canon_consistency",
+                "causal_consistency",
+                "epistemic_consistency",
+                "character_motivation_drift",
+                "relationship_continuity",
+                "timeline_consistency",
+                "foreshadow_status",
+                "promise_payoff_debt",
+                "world_rule_conflict",
+                "power_state_conflict",
+                "narrative_pattern_repetition",
+                "arc_progress",
+                "chapter_length",
+                "format",
+                "sensitive_content",
+                "ai_content_policy",
+                "opening_expectations",
+                "platform_rhythm",
+                "publish_metadata"
+              ]
+            },
+            {
+              "key": "scope",
+              "value": {
+                "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+                "scope_type": "PROJECT_FIXTURE",
+                "release_readiness": "INTERNAL_REVIEW_RELEASE"
+              }
+            },
+            {
+              "key": "expiry",
+              "value": "2099-01-01T00:00:00Z"
+            }
+          ],
+          "narrative_function": "release_evidence"
+        },
+        {
+          "asset_type": "commercial_quality_report",
+          "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "allowed_use": "evidence_only",
+          "content_hash": "sha256:92bfadfb60888d807cb730215488103a97423b64a421cfb8a2cadb90c9ab9460",
+          "safe_summary": "Human-calibrated fixture quality evidence.",
+          "source_use_mode": "generation",
+          "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:commercial_quality_report-v1",
+          "estimated_tokens": 40,
+          "structured_facts": [
+            {
+              "key": "dimension_evidence",
+              "value": [
+                {
+                  "dimension": "golden_opening",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "reader_promise",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "reward",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "protagonist_charm",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "antagonist_pressure",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "toxic_point",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "chapter_hook",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "suspense_progression",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "emotional_curve",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "serialization_function",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                }
+              ]
+            }
+          ],
+          "narrative_function": "quality_evidence"
+        },
+        {
+          "asset_type": "source_originality_quality_report",
+          "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "allowed_use": "evidence_only",
+          "content_hash": "sha256:abd22b235b664fd483f6e3d6a1771b5bbc011482dd8dab192f5bb492504bcf55",
+          "safe_summary": "Human-calibrated fixture quality evidence.",
+          "source_use_mode": "generation",
+          "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:source_originality_quality_report-v1",
+          "estimated_tokens": 40,
+          "structured_facts": [
+            {
+              "key": "dimension_evidence",
+              "value": [
+                {
+                  "dimension": "originality",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "anti_ai",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "style_drift",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                }
+              ]
+            }
+          ],
+          "narrative_function": "quality_evidence"
+        },
+        {
+          "asset_type": "longform_quality_report",
+          "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "allowed_use": "evidence_only",
+          "content_hash": "sha256:9697d150e418115f68185911817dda55b9b1ac7e25eddee2e37c85d35bb5b7ec",
+          "safe_summary": "Human-calibrated fixture quality evidence.",
+          "source_use_mode": "generation",
+          "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:longform_quality_report-v1",
+          "estimated_tokens": 40,
+          "structured_facts": [
+            {
+              "key": "dimension_evidence",
+              "value": [
+                {
+                  "dimension": "character_motivation_drift",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "relationship_continuity",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "timeline_consistency",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "foreshadow_status",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "promise_payoff_debt",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "world_rule_conflict",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "power_state_conflict",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "narrative_pattern_repetition",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "arc_progress",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                }
+              ]
+            }
+          ],
+          "narrative_function": "quality_evidence"
+        },
+        {
+          "asset_type": "platform_quality_report",
+          "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "allowed_use": "evidence_only",
+          "content_hash": "sha256:0137f554e75cffd62970cc245d008f5b929eef977e916a1296a77279767dd0c5",
+          "safe_summary": "Human-calibrated fixture quality evidence.",
+          "source_use_mode": "generation",
+          "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:platform_quality_report-v1",
+          "estimated_tokens": 40,
+          "structured_facts": [
+            {
+              "key": "dimension_evidence",
+              "value": [
+                {
+                  "dimension": "chapter_length",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "format",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "sensitive_content",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "ai_content_policy",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "opening_expectations",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "platform_rhythm",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                },
+                {
+                  "dimension": "publish_metadata",
+                  "gate_status": "WAIVED_BY_APPROVAL",
+                  "human_verified": true,
+                  "calibration_status": "HUMAN_CALIBRATED",
+                  "fixture_protocol_only": true
+                }
+              ]
+            }
+          ],
+          "narrative_function": "quality_evidence"
+        }
+      ],
+      "preparation_report": {
+        "author_draft_adoption": {
+          "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "chapter": 1,
+          "author_id": "local-operator",
+          "text_hash": "sha256:c8f504f6e30606d0dcc9e19df79dba593e689b32e61a3d4e07eab71fb8c0366b",
+          "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "rights_basis": "ORIGINAL_AUTHOR_INPUT",
+          "workspace_id": "workspace:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+          "contract_version": "author-draft-adoption.v1",
+          "decision_actor_id": "local-operator",
+          "base_asset_version_id": "authority-output:40fd2867-80d5-48e1-824a-6f25e98f3620:chapter.draft:v1",
+          "decision_content_hash": "sha256:90b041622bd4ae8c3c889b823a4878949d1fbb25f3f0bb218c65f80a8133dba9",
+          "candidate_content_hash": "sha256:41550638e4124352f3c24a2e69ecb443d5f51d0f3dd4aedf56cf2dcfa4a4280d",
+          "decision_asset_version_id": "98f83e4b-440b-4a7c-aee3-f0817bb439ef",
+          "candidate_asset_version_id": "7442f858-575b-412b-b4e5-ebf5510cab02",
+          "source_chapter_plan_asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:chapter-plan-v1"
+        },
+        "author_book_replacement": {
+          "generation": 2,
+          "book_run_id": "book-run:9524da96-8e1a-441d-8927-506fabdac909",
+          "contract_version": "book-author-replacement.v1",
+          "chapter_request_id": "chapter-request:book-author:14fdd4c39a8f1f27cc378c18c00b9e626d8ada830683a06c7fdb91974249875a",
+          "predecessor_request_id": "chapter-request:a96745833097ff311cfb53fd44f6f06ca6d6890ba47ed65224b6d4bf322e3de0",
+          "predecessor_root_operation_id": "fea6b344-4a5a-4fbe-9e3f-e7c644dac0b1"
+        }
+      },
+      "context_token_budget": 16000,
+      "context_version_refs": null,
+      "parent_group_version_id": "",
+      "narrative_realization_id": "",
+      "chapter_plan_content_hash": "sha256:7dd70f8e1b4d64a4c370d622adcc1943040cb31d98b672e43e54cb586b02dd7b",
+      "chapter_plan_asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:chapter-plan-v1",
+      "narrative_realization_slice_id": "",
+      "author_replacement_chapter_command": {
+        "title": "Chapter 1",
+        "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+        "chapter": 1,
+        "premise": "A decision creates an irreversible cost.",
+        "actor_id": "local-operator",
+        "trace_id": "book-author:14fdd4c39a8f1f27cc378c18c00b9e626d8ada830683a06c7fdb91974249875a:review",
+        "commit_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+        "workspace_id": "workspace:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+        "correlation_id": "9524da96-8e1a-441d-8927-506fabdac909",
+        "idempotency_key": "book-author:14fdd4c39a8f1f27cc378c18c00b9e626d8ada830683a06c7fdb91974249875a",
+        "context_candidates": [
+          {
+            "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "content": {
+              "title": "The Cost of a Promise",
+              "chapter": 1,
+              "premise": "The protagonist must pay a visible cost to keep a promise.",
+              "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+              "scene_plan": [
+                {
+                  "goal": "keep the promise",
+                  "beats": [
+                    "pressure",
+                    "choice",
+                    "visible cost"
+                  ],
+                  "conflict": "safety requires breaking the promise",
+                  "scene_id": "s1",
+                  "arc_progress": [
+                    "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:fixture-arc-plan-v1"
+                  ]
+                }
+              ],
+              "chapter_hook": "The loss creates a second debt.",
+              "scene_sequence": [
+                {
+                  "goal": "keep the promise",
+                  "scene_id": "s1"
+                }
+              ],
+              "chapter_objective": "Force a public choice with an irreversible loss.",
+              "constraint_envelope": {
+                "arc_working_set": {
+                  "selected_contributions": [
+                    {
+                      "role": "PRIMARY",
+                      "action": "ADVANCE",
+                      "arc_plan_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:fixture-arc-plan-v1"
+                    }
+                  ]
+                }
+              },
+              "required_arc_contributions": [
+                {
+                  "contribution": "ADVANCE",
+                  "arc_plan_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:fixture-arc-plan-v1"
+                }
+              ]
+            },
+            "asset_type": "chapter_plan",
+            "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "content_hash": "sha256:7dd70f8e1b4d64a4c370d622adcc1943040cb31d98b672e43e54cb586b02dd7b",
+            "safe_summary": "A complete authoritative ChapterPlan.",
+            "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:chapter-plan-v1",
+            "estimated_tokens": 120,
+            "structured_facts": [],
+            "accepted_boundary": {
+              "canon_snapshot_version": "",
+              "accepted_through_chapter": 0,
+              "story_state_snapshot_version": ""
+            },
+            "narrative_function": "chapter_plan"
+          },
+          {
+            "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "asset_type": "operator_checklist",
+            "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "content_hash": "sha256:db920885d5e94cdbacf2acc811d8039359815c6025b025305028cc726aa5c1f0",
+            "safe_summary": "Operator checklist completed.",
+            "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:checklist-v1",
+            "estimated_tokens": 20,
+            "structured_facts": [
+              {
+                "key": "completed",
+                "value": true
+              },
+              {
+                "key": "contract_version",
+                "value": "fixture-waiver-checklist-v1"
+              }
+            ],
+            "accepted_boundary": {
+              "canon_snapshot_version": "",
+              "accepted_through_chapter": 0,
+              "story_state_snapshot_version": ""
+            },
+            "narrative_function": "release_evidence"
+          },
+          {
+            "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "asset_type": "quality_rubric",
+            "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "content_hash": "sha256:1d921de912b3a6b61264986e9f755a8cf686b24278557eff2a45d46dc2f9eb5f",
+            "safe_summary": "Versioned quality thresholds.",
+            "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:quality-rubric-v1",
+            "estimated_tokens": 20,
+            "structured_facts": [
+              {
+                "key": "thresholds",
+                "value": {
+                  "readability": 70
+                }
+              }
+            ],
+            "accepted_boundary": {
+              "canon_snapshot_version": "",
+              "accepted_through_chapter": 0,
+              "story_state_snapshot_version": ""
+            },
+            "narrative_function": "quality_policy"
+          },
+          {
+            "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "asset_type": "platform_profile",
+            "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "content_hash": "sha256:e6656b36017bf772ac7007961b6b63e9453b592a2be7115db4e37efe4df07bcf",
+            "safe_summary": "Versioned internal platform policy.",
+            "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:platform-profile-v1",
+            "estimated_tokens": 30,
+            "structured_facts": [
+              {
+                "key": "platform_rules",
+                "value": {
+                  "format": {
+                    "paragraph_max": 500
+                  },
+                  "rhythm": [
+                    "payoff"
+                  ],
+                  "opening": [
+                    "visible conflict"
+                  ],
+                  "ai_content": {
+                    "mode": "internal"
+                  },
+                  "chapter_length": {
+                    "maximum": 10000,
+                    "minimum": 10
+                  },
+                  "publish_metadata": {
+                    "title_required": true
+                  },
+                  "sensitive_content": []
+                }
+              }
+            ],
+            "accepted_boundary": {
+              "canon_snapshot_version": "",
+              "accepted_through_chapter": 0,
+              "story_state_snapshot_version": ""
+            },
+            "narrative_function": "platform_policy"
+          },
+          {
+            "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "asset_type": "operator_approval",
+            "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "content_hash": "sha256:a26462a1114e280c9beff67076baa99e83dadf0bacd5a203edcca06d4d6fa761",
+            "safe_summary": "Operator approved fixture release evidence.",
+            "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:approval-v1",
+            "estimated_tokens": 20,
+            "structured_facts": [
+              {
+                "key": "approved",
+                "value": true
+              },
+              {
+                "key": "decision",
+                "value": "APPROVED"
+              },
+              {
+                "key": "contract_version",
+                "value": "fixture-waiver-approval-v1"
+              },
+              {
+                "key": "fixture_protocol_only",
+                "value": true
+              },
+              {
+                "key": "waiver_reason",
+                "value": "Deterministic integration fixture release only."
+              },
+              {
+                "key": "waived_dimensions",
+                "value": [
+                  "readability",
+                  "mobile_reading",
+                  "chapter_economy",
+                  "basic_prose_integrity",
+                  "scene_completeness",
+                  "information_density",
+                  "dialogue_narration_balance",
+                  "paragraph_structure",
+                  "repetition",
+                  "summary_like_prose",
+                  "golden_opening",
+                  "reader_promise",
+                  "reward",
+                  "protagonist_charm",
+                  "antagonist_pressure",
+                  "toxic_point",
+                  "chapter_hook",
+                  "suspense_progression",
+                  "emotional_curve",
+                  "serialization_function",
+                  "source_leakage",
+                  "originality",
+                  "anti_ai",
+                  "style_drift",
+                  "copyright_boundary",
+                  "canon_consistency",
+                  "causal_consistency",
+                  "epistemic_consistency",
+                  "character_motivation_drift",
+                  "relationship_continuity",
+                  "timeline_consistency",
+                  "foreshadow_status",
+                  "promise_payoff_debt",
+                  "world_rule_conflict",
+                  "power_state_conflict",
+                  "narrative_pattern_repetition",
+                  "arc_progress",
+                  "chapter_length",
+                  "format",
+                  "sensitive_content",
+                  "ai_content_policy",
+                  "opening_expectations",
+                  "platform_rhythm",
+                  "publish_metadata"
+                ]
+              },
+              {
+                "key": "scope",
+                "value": {
+                  "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+                  "scope_type": "PROJECT_FIXTURE",
+                  "release_readiness": "INTERNAL_REVIEW_RELEASE"
+                }
+              },
+              {
+                "key": "expiry",
+                "value": "2099-01-01T00:00:00Z"
+              }
+            ],
+            "accepted_boundary": {
+              "canon_snapshot_version": "",
+              "accepted_through_chapter": 0,
+              "story_state_snapshot_version": ""
+            },
+            "narrative_function": "release_evidence"
+          },
+          {
+            "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "asset_type": "commercial_quality_report",
+            "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "allowed_use": "evidence_only",
+            "content_hash": "sha256:92bfadfb60888d807cb730215488103a97423b64a421cfb8a2cadb90c9ab9460",
+            "safe_summary": "Human-calibrated fixture quality evidence.",
+            "source_use_mode": "generation",
+            "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:commercial_quality_report-v1",
+            "estimated_tokens": 40,
+            "structured_facts": [
+              {
+                "key": "dimension_evidence",
+                "value": [
+                  {
+                    "dimension": "golden_opening",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "reader_promise",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "reward",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "protagonist_charm",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "antagonist_pressure",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "toxic_point",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "chapter_hook",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "suspense_progression",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "emotional_curve",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "serialization_function",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  }
+                ]
+              }
+            ],
+            "accepted_boundary": {
+              "canon_snapshot_version": "",
+              "accepted_through_chapter": 0,
+              "story_state_snapshot_version": ""
+            },
+            "narrative_function": "quality_evidence"
+          },
+          {
+            "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "asset_type": "source_originality_quality_report",
+            "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "allowed_use": "evidence_only",
+            "content_hash": "sha256:abd22b235b664fd483f6e3d6a1771b5bbc011482dd8dab192f5bb492504bcf55",
+            "safe_summary": "Human-calibrated fixture quality evidence.",
+            "source_use_mode": "generation",
+            "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:source_originality_quality_report-v1",
+            "estimated_tokens": 40,
+            "structured_facts": [
+              {
+                "key": "dimension_evidence",
+                "value": [
+                  {
+                    "dimension": "originality",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "anti_ai",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "style_drift",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  }
+                ]
+              }
+            ],
+            "accepted_boundary": {
+              "canon_snapshot_version": "",
+              "accepted_through_chapter": 0,
+              "story_state_snapshot_version": ""
+            },
+            "narrative_function": "quality_evidence"
+          },
+          {
+            "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "asset_type": "longform_quality_report",
+            "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "allowed_use": "evidence_only",
+            "content_hash": "sha256:9697d150e418115f68185911817dda55b9b1ac7e25eddee2e37c85d35bb5b7ec",
+            "safe_summary": "Human-calibrated fixture quality evidence.",
+            "source_use_mode": "generation",
+            "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:longform_quality_report-v1",
+            "estimated_tokens": 40,
+            "structured_facts": [
+              {
+                "key": "dimension_evidence",
+                "value": [
+                  {
+                    "dimension": "character_motivation_drift",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "relationship_continuity",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "timeline_consistency",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "foreshadow_status",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "promise_payoff_debt",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "world_rule_conflict",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "power_state_conflict",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "narrative_pattern_repetition",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "arc_progress",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  }
+                ]
+              }
+            ],
+            "accepted_boundary": {
+              "canon_snapshot_version": "",
+              "accepted_through_chapter": 0,
+              "story_state_snapshot_version": ""
+            },
+            "narrative_function": "quality_evidence"
+          },
+          {
+            "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "asset_type": "platform_quality_report",
+            "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "allowed_use": "evidence_only",
+            "content_hash": "sha256:0137f554e75cffd62970cc245d008f5b929eef977e916a1296a77279767dd0c5",
+            "safe_summary": "Human-calibrated fixture quality evidence.",
+            "source_use_mode": "generation",
+            "asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:platform_quality_report-v1",
+            "estimated_tokens": 40,
+            "structured_facts": [
+              {
+                "key": "dimension_evidence",
+                "value": [
+                  {
+                    "dimension": "chapter_length",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "format",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "sensitive_content",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "ai_content_policy",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "opening_expectations",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "platform_rhythm",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  },
+                  {
+                    "dimension": "publish_metadata",
+                    "gate_status": "WAIVED_BY_APPROVAL",
+                    "human_verified": true,
+                    "calibration_status": "HUMAN_CALIBRATED",
+                    "fixture_protocol_only": true
+                  }
+                ]
+              }
+            ],
+            "accepted_boundary": {
+              "canon_snapshot_version": "",
+              "accepted_through_chapter": 0,
+              "story_state_snapshot_version": ""
+            },
+            "narrative_function": "quality_evidence"
+          }
+        ],
+        "preparation_report": {
+          "author_draft_adoption": {
+            "book_id": "book:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "chapter": 1,
+            "author_id": "local-operator",
+            "text_hash": "sha256:c8f504f6e30606d0dcc9e19df79dba593e689b32e61a3d4e07eab71fb8c0366b",
+            "project_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "rights_basis": "ORIGINAL_AUTHOR_INPUT",
+            "workspace_id": "workspace:book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480",
+            "contract_version": "author-draft-adoption.v1",
+            "decision_actor_id": "local-operator",
+            "base_asset_version_id": "authority-output:40fd2867-80d5-48e1-824a-6f25e98f3620:chapter.draft:v1",
+            "decision_content_hash": "sha256:90b041622bd4ae8c3c889b823a4878949d1fbb25f3f0bb218c65f80a8133dba9",
+            "candidate_content_hash": "sha256:41550638e4124352f3c24a2e69ecb443d5f51d0f3dd4aedf56cf2dcfa4a4280d",
+            "decision_asset_version_id": "98f83e4b-440b-4a7c-aee3-f0817bb439ef",
+            "candidate_asset_version_id": "7442f858-575b-412b-b4e5-ebf5510cab02",
+            "source_chapter_plan_asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:chapter-plan-v1"
+          },
+          "author_book_replacement": {
+            "generation": 2,
+            "book_run_id": "book-run:9524da96-8e1a-441d-8927-506fabdac909",
+            "contract_version": "book-author-replacement.v1",
+            "chapter_request_id": "chapter-request:book-author:14fdd4c39a8f1f27cc378c18c00b9e626d8ada830683a06c7fdb91974249875a",
+            "predecessor_request_id": "chapter-request:a96745833097ff311cfb53fd44f6f06ca6d6890ba47ed65224b6d4bf322e3de0",
+            "predecessor_root_operation_id": "fea6b344-4a5a-4fbe-9e3f-e7c644dac0b1"
+          }
+        },
+        "application_build_id": "book-authority-control",
+        "context_token_budget": 16000,
+        "context_version_refs": {},
+        "chapter_idempotency_key": "book-chapter:a96745833097ff311cfb53fd44f6f06ca6d6890ba47ed65224b6d4bf322e3de0",
+        "chapter_plan_content_hash": "sha256:7dd70f8e1b4d64a4c370d622adcc1943040cb31d98b672e43e54cb586b02dd7b",
+        "chapter_root_operation_id": "",
+        "chapter_plan_asset_version_id": "book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480:chapter-plan-v1"
+      },
+      "execution_chapter_plan_content_hash": "",
+      "narrative_realization_contract_digest": "",
+      "execution_chapter_plan_asset_version_id": ""
+    },
+    "chapter_root_operation_id": "ae03110d-63f7-47e0-80a1-7900fcd9c70a",
+    "chapter_saga_id": "dc1a952a-9bc9-4f60-a19e-94b342ebe41c",
+    "status_reference": "ADMITTED",
+    "failure_classification": "",
+    "delegation_id": "child-delegation:book-author:14fdd4c39a8f1f27cc378c18c00b9e626d8ada830683a06c7fdb91974249875a",
+    "root_operation_id": "ae03110d-63f7-47e0-80a1-7900fcd9c70a",
+    "query_url": "/product/production/chapter-authority/run?project_id=book-authority-control-f439b7ec-64f2-4964-9949-a1a5cf8f9480&root_operation_id=ae03110d-63f7-47e0-80a1-7900fcd9c70a"
+  },
+  "real_provider_calls": 0,
+  "scripted_fixture_usage": "NOT_METERED_BY_BROWSER",
+  "real_provider": "NOT_RUN",
+  "human_quality": "NOT_RUN"
+}

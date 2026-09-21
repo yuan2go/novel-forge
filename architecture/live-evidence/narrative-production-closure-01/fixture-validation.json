@@ -1,0 +1,220 @@
+{
+  "schema_version": "narrative-closure-fixture-evidence.v1",
+  "evidence_state": "EXECUTABLE",
+  "proof_ceiling": "FIXTURE_ONLY",
+  "exported_at": "2026-09-21T00:57:14.965373+00:00",
+  "real_provider": "NOT_RUN",
+  "human": "NOT_RUN",
+  "long_form_quality": "NOT_PROVEN",
+  "creative_benefit": "NOT_PROVEN",
+  "execution_identity": {
+    "tests_ran_in": "DEVELOPMENT_SHARED_WORKTREE",
+    "exact_test_sha_binding": "NOT_CAPTURED_AT_TEST_START; final exact-SHA governance is separate",
+    "export_head_sha": "3a04a3724ea40eb2b7f9493ab78502f2b04acd5d",
+    "export_implementation_tree_sha": "sha256:feaca09a40023fe70acf1d36929079948156175d2cc78bfd2659ec55999ee00a",
+    "native_fixture_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "native_fixture_release_sha_is_repository_revision": false,
+    "database_migration_head": "20260921_0140_prose_editorial_closure"
+  },
+  "proof_boundaries": [
+    "Semantic judgments and costs are scripted controls, never real model or human evidence.",
+    "The miniature fixture deliberately mixes English skeleton prose and Chinese control sentences; the Quality edit is a mechanical scope probe, not readable fiction or a claimed improvement.",
+    "Native Book acceptance is an engineering fixture with scoped fixture waivers; it is not publication or whole-book editorial approval.",
+    "Repeated commands overlap; passed counts are per invocation and must not be summed as unique tests.",
+    "The exported case does not inject receipt loss. The separate campaign recovery test in the executed 17-test suite injects provider-success/receipt-commit loss and verifies no repeated Review send."
+  ],
+  "read_only_export": {
+    "method": "ChapterAuthorityQuery.require_workspace plus bounded SELECTs under default_transaction_read_only=on",
+    "source_identity": {
+      "project_id": "project-110115efeebe449a934fada0c0d5b269",
+      "book_id": "book:project-110115efeebe449a934fada0c0d5b269",
+      "book_run_id": "book-run:b4fe02bf-e31e-4ee9-80b0-c101fc7290fc",
+      "root_operation_id": "00ab61aa-b308-4ddf-8eb2-ebc21b524713"
+    },
+    "exported_chapter": 2,
+    "db_writes": 0
+  },
+  "test_executions": [
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_closure_campaign.py tests/unit/test_narrative_closure_review.py tests/unit/test_best_candidate_selection.py tests/unit/test_provider_task_views.py tests/unit/test_chapter_authority_domain_handlers.py tests/unit/test_cross_chapter_prose_review.py -q --tb=short",
+      "status": "PASS",
+      "passed": 99,
+      "elapsed_seconds": 1.0
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_creative_budget_contract.py tests/unit/test_human_blind_protocol.py -q --tb=short",
+      "status": "PASS",
+      "passed": 86,
+      "elapsed_seconds": 0.52
+    },
+    {
+      "command": "NOVEL_FORGE_DATABASE_URL=<isolated-experiment-test-dsn> PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_creative_experiment_budget_postgres.py tests/integration/test_narrative_closure_campaign_postgres.py tests/integration/test_narrative_craft_chapter_postgres.py -q --tb=short",
+      "status": "PASS",
+      "passed": 17,
+      "elapsed_seconds": 110.99
+    },
+    {
+      "command": "NOVEL_FORGE_DATABASE_URL=<isolated-experiment-test-dsn> PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_narrative_craft_chapter_postgres.py -q --tb=short -k joint_quality",
+      "status": "PASS",
+      "passed": 1,
+      "deselected": 3,
+      "elapsed_seconds": 43.17,
+      "purpose": "Latest retained native case after final FAILED-only scope validation"
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_closure_campaign.py tests/unit/test_narrative_closure_review.py -q --tb=short",
+      "status": "PASS",
+      "passed": 14,
+      "elapsed_seconds": 0.57
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.test_reality --repo-root .",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.historical_reality --repo-root .",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "command": ".venv/bin/ruff check scripts/narrative_closure_campaign.py scripts/narrative_closure_review.py src/novel_forge/modules/revision/domain.py src/novel_forge/modules/chapter_authority/candidate_selection.py src/novel_forge/modules/command_kernel/creative_budget_contract.py src/novel_forge/modules/command_kernel/creative_budget_runtime.py tests/unit/test_narrative_closure_campaign.py tests/unit/test_narrative_closure_review.py tests/integration/test_narrative_closure_campaign_postgres.py tests/integration/test_narrative_craft_chapter_postgres.py",
+      "status": "PASS"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS"
+    }
+  ],
+  "retained_failures_and_resolutions": [
+    {
+      "stage": "PG setup",
+      "result": "1 failed, 11 errors",
+      "cause": "The first launch used NOVEL_FORGE_TEST_DATABASE_URL instead of the repository NOVEL_FORGE_DATABASE_URL; default localhost:55432 refused connection.",
+      "resolution": "Loaded experiment_database_url from private local runtime config into NOVEL_FORGE_DATABASE_URL; native migrations and tests then passed. No default database mutation occurred."
+    },
+    {
+      "stage": "Joint Quality test",
+      "result": "FAILED",
+      "cause": "Fixture inspected inputs.draft for quality_longform; native payload uses revision.",
+      "resolution": "Corrected fixture field to inputs.revision."
+    },
+    {
+      "stage": "Joint Quality test",
+      "result": "FAILED",
+      "cause": "Initial fixture used causal_consistency, which is not a blocking Quality dimension, so no automatic correction was expected.",
+      "resolution": "Selected the existing blocking timeline_consistency dimension without changing policy thresholds."
+    },
+    {
+      "stage": "Joint Quality test",
+      "result": "FAILED",
+      "cause": "Existing pre-seeded waived longform evidence took precedence over the scripted failing judge input.",
+      "resolution": "Removed that pre-existing fixture report from this test Context so the native scripted judge result supplies the evidence."
+    },
+    {
+      "stage": "Native Quality revision admission",
+      "result": "PROVIDER_TOKEN_ADMISSION_REJECTED: PROVIDER_CONTEXT_LIMIT_EXCEEDED",
+      "cause": "The materialized correction request included all passing Quality evidence reports in addition to the failed task.",
+      "resolution": "Bounded correction view now includes the native failed dimensions and required tasks only; prose, history, Craft, complete request accounting and existing budget remain unchanged."
+    },
+    {
+      "stage": "test-reality",
+      "result": "FAILED",
+      "cause": "Exact script test mappings were initially placed after the generic first-match rule.",
+      "resolution": "Moved exact owner and script production-target mappings before generic rules; no proof ceiling relaxation."
+    },
+    {
+      "stage": "Current documentation CLI check",
+      "result": "FAILED",
+      "cause": "Direct script invocation with PYTHONPATH=src cannot import scripts; documented run/resume also omitted --root, reused output directory, and gave a JSON path to --results.",
+      "resolution": "Canonical runtime commands now use checked -m entry points, include --root, retain same ledger with a new immutable resume export directory, and pass the output directory to --results. All five actual subcommand --help invocations passed."
+    }
+  ],
+  "usage": {
+    "real_provider_calls": 0,
+    "real_provider_tokens": "NOT_RUN",
+    "real_provider_cost_or_entitlement": "NOT_RUN",
+    "fixture_effect_count": 35,
+    "fixture_effect_counts_by_capability": {
+      "model.memo": 2,
+      "model.draft": 2,
+      "model.review": 2,
+      "model.revision": 3,
+      "model.rereview": 3,
+      "model.canon_extraction": 3,
+      "model.canon_support": 3,
+      "model.quality_structural": 3,
+      "model.quality_commercial": 3,
+      "model.quality_source_originality": 3,
+      "model.quality_longform": 3,
+      "model.quality_platform": 3,
+      "object_store.put": 2
+    },
+    "fixture_reported_actual_tokens": 0,
+    "fixture_reported_amounts": [
+      {
+        "currency": "USD",
+        "amount": "0E-8"
+      }
+    ],
+    "unknown_fixture_usage_effects": [
+      "b70798cb-b054-4159-a18d-e4dc0424f2c1",
+      "9e23411d-dd95-4e22-8423-429f9fbe4186"
+    ],
+    "unresolved_fixture_effects": [],
+    "cost_interpretation": "Scripted zero usage is not a quote, account entitlement estimate, or real-provider invoice."
+  },
+  "joint_case": {
+    "evidence_path": "architecture/live-evidence/narrative-production-closure-01/fixture-joint-artifacts.json",
+    "evidence_sha256": "609a1e771f51a95e961a548d4ae47608a491fb7a20f5de6a9f649e857727bcd0",
+    "controls": {
+      "source": "tests/integration/test_narrative_craft_chapter_postgres.py::JointQualityCorrectionTransport",
+      "semantic_evidence_class": "FIXTURE_SEMANTIC_REVIEW"
+    },
+    "checks": {
+      "book_cursor_two_committed": true,
+      "dual_diagnoses_present": true,
+      "quality_task_v2_located": true,
+      "quality_failed_then_fixture_waived": true,
+      "materialized_task_hashes_match_current_projection": true,
+      "all_retained_effects_terminal": true,
+      "no_duplicate_effect_dispatch": true
+    },
+    "contents": [
+      "complete accepted history and original/revised prose",
+      "two source-bound diagnoses",
+      "revision/Quality edits and preserved ranges",
+      "candidate selection and fixture acceptance",
+      "materialized request hashes and complete admission measurement",
+      "all receipt/reservation references and unknown usage"
+    ]
+  },
+  "cli_parser_checks": {
+    "method": "actual module subcommand --help invocation",
+    "status": "PASS",
+    "entries": [
+      {
+        "entry": "scripts.narrative_closure_campaign freeze",
+        "status": "PASS"
+      },
+      {
+        "entry": "scripts.narrative_closure_campaign run",
+        "status": "PASS"
+      },
+      {
+        "entry": "scripts.narrative_closure_campaign resume",
+        "status": "PASS"
+      },
+      {
+        "entry": "scripts.narrative_closure_review export",
+        "status": "PASS"
+      },
+      {
+        "entry": "scripts.narrative_closure_review record",
+        "status": "PASS"
+      }
+    ],
+    "documentation": "docs/runtime-operations.md",
+    "required_semantics": "run/resume require --root; resume new output directory retains same native DB/manifests/ledger; --results is directory containing campaign-result.json"
+  }
+}

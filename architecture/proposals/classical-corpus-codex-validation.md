@@ -9,20 +9,20 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `a1b87a745619704c696abc0d578911e9c064cd78`
+Reality baseline: `25375164b8dd364ae03153dc4dca971f16f63769`
 Baseline implementation identity:
-`sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88`
+`sha256:ec8d7d361b84aa39eb6f06b50bcc62cbf1015a4865725164c5f2c711d703ef2c`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-20",
+  "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "a1b87a745619704c696abc0d578911e9c064cd78",
-    "implementation_tree_sha": "sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88"
+    "sha": "25375164b8dd364ae03153dc4dca971f16f63769",
+    "implementation_tree_sha": "sha256:ec8d7d361b84aa39eb6f06b50bcc62cbf1015a4865725164c5f2c711d703ef2c"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -110,12 +110,16 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-09-20): Implemented identity, entitlement, corpus-ingestion
+Current scope review (2026-09-21): Implemented identity, entitlement, corpus-ingestion
 and Source/MKAOS mechanics are documented only in [current-system](../../docs/current-system.md).
 The completed G1/G2 implementation plans and historical review paragraphs have been
 removed. G3/G4 below specify a proposed bounded real-Provider campaign, not observed
 results. Campaign sampling quotas and independent-input counts do not execute G3/G4
-or establish calibrated judges. The original Craft fixture corpus does not perform this campaign, establish
+or establish calibrated judges. The native paired-sample budget v4 and author-input
+review/revision campaign reuse the same ledger and isolation boundary. Their two-plus-six
+original scenes do not replace the twenty-work ingestion/consumption cohort or the G4
+four-arm twelve-chapter experiment. A matching new grant, real corpus consumption and
+independent editorial evidence remain missing for those original acceptance conditions. The original Craft fixture corpus does not perform this campaign, establish
 classical-text consumption, authorize model spend or supply independent editorial proof.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption

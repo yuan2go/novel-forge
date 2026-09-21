@@ -8,18 +8,18 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `a1b87a745619704c696abc0d578911e9c064cd78`
-Baseline implementation identity: `sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88`
+Current-reality baseline: `25375164b8dd364ae03153dc4dca971f16f63769`
+Baseline implementation identity: `sha256:ec8d7d361b84aa39eb6f06b50bcc62cbf1015a4865725164c5f2c711d703ef2c`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-20",
+  "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "a1b87a745619704c696abc0d578911e9c064cd78",
-    "implementation_tree_sha": "sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88"
+    "sha": "25375164b8dd364ae03153dc4dca971f16f63769",
+    "implementation_tree_sha": "sha256:ec8d7d361b84aa39eb6f06b50bcc62cbf1015a4865725164c5f2c711d703ef2c"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -123,6 +123,24 @@ Baseline implementation identity: `sha256:5b1aec78dbc38705e56f8adc925f70a92a2454
     {
       "path": "src/novel_forge/modules/story_design_authority/author_input.py",
       "symbol": "validate_author_decisions"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/editorial.py",
+      "symbol": "BookEditorialWorkflow"
+    },
+    {
+      "path": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
+      "symbol": "BookProseReviewCoordinator"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/author_editor.py"
+    },
+    {
+      "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py",
+      "symbol": "actor_task"
+    },
+    {
+      "path": "src/novel_forge/modules/plan_change_authority/semantic_impact.py"
     }
   ],
   "superseding_refs": [],
@@ -169,10 +187,13 @@ Baseline implementation identity: `sha256:5b1aec78dbc38705e56f8adc925f70a92a2454
     },
     {
       "id": "completion-human-quorum",
-      "description": "DESIGN_REVIEW_REQUIRED: independent human/editorial completion evidence and quorum by publication class.",
+      "description": "DESIGN_REVIEW_REQUIRED: publication-class-specific minimum independent human/editorial quorum and actual approved policy/signatures; runtime versioned policy, coverage and signature gates are implemented.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/chapter_quality_authority/qualification.py"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/editorial_domain.py"
         }
       ]
     },
@@ -195,16 +216,55 @@ Baseline implementation identity: `sha256:5b1aec78dbc38705e56f8adc925f70a92a2454
       ]
     }
   ],
-  "remaining_work": []
+  "remaining_work": [
+    {
+      "id": "closure-authorized-pilot-and-exploration",
+      "description": "Execute the original two-case pilot, then six-task native-path comparison under matching finite authorization, current qualifications and exact independent inputs; retain all failures and unknown usage.",
+      "evidence_refs": [
+        {
+          "path": "scripts/narrative_closure_campaign.py"
+        },
+        {
+          "path": "config/production/narrative-closure/authorization-request.json"
+        }
+      ]
+    },
+    {
+      "id": "craft-independent-effect-evaluation",
+      "description": "Run separate Craft intervention and collect real blind reader judgments, disagreements and adverse effects; do not infer generation quality from fixed-input revision controls.",
+      "evidence_refs": [
+        {
+          "path": "scripts/narrative_closure_review.py"
+        },
+        {
+          "path": "config/production/narrative-closure/protocol.json"
+        }
+      ]
+    },
+    {
+      "id": "actor-isolation-controlled-benefit",
+      "description": "Compare optional isolated actors against unified preparation with separately authorized budget and independent prose assessment; default remains unchanged without demonstrated benefit.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py"
+        }
+      ]
+    }
+  ]
 }
 -->
 
-Current scope review (2026-09-20): Current ontology, Authority, production descent and
-Craft behavior are documented only in [current-system](../../docs/current-system.md)
-and the checked reality inventory. Implemented architecture and obsolete gap matrices
-have been removed from this proposal. The seven decisions below remain unresolved;
-Craft engineering does not establish human completion quorum, reader-data policy or
-accepted-history correction authority.
+Current scope review (2026-09-21): Native author candidates, exact cross-chapter/Craft
+repair, bounded prose-review windows, Plan Change semantic candidates, optional isolated
+actors and versioned editorial signatures are projected in
+[current-system](../../docs/current-system.md). The execution checklist for
+WP-NARRATIVE-PRODUCTION-CLOSURE-01 is superseded by those executable consumers and
+[runtime operations](../../docs/runtime-operations.md); the remaining evaluation work is
+listed below. The former creative assimilation proposal stays terminal, and its WP01 audit
+retains the historical Git baseline `c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4`.
+Existing WP02–WP05 identities are unchanged. Runtime policy/signature support does not
+choose the independent human quorum for a publication class, grant model consumption,
+establish creative benefit or authorize retrospective accepted-history correction.
 
 ## Unresolved design decisions
 
@@ -231,38 +291,25 @@ single Story Design owner and Book Design's immutable binding; a physical servic
 is not a prerequisite for one-fact/one-Authority semantics.
 
 
-## WP-NARRATIVE-PRODUCTION-CLOSURE-01 execution checklist
+## Remaining bounded evaluation and decisions
 
-PROPOSAL / NOT_RUNTIME_AUTHORITY. This native follow-up uses baseline
-`e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332`, implementation identity
-`sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed`,
-and migration head `20260920_0139_narrative_reference_sampling`.
-The former creative assimilation proposal was removed by `adf3cd97` after projection;
-its WP01 audit remains fixed at `c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4`
-in Git. This checklist neither restores that terminal proposal nor renumbers WP02–WP05.
-Current Craft delivery is reused; catalog expansion is outside this batch.
+The original two-case pilot and six-task exploration now have native freeze/run/resume
+and evidence-export commands. Execution still requires a matching finite account grant,
+current Provider/Pack qualification and exact independent Book/Group/plan/author-input
+versions. Current same-implementation A/B runs compare declared native paths, not the
+historical defective SHA; neither those controls nor fixtures establish literary benefit.
+A system contract failure stops expansion. UNKNOWN effects require native reconciliation.
 
-| Priority / item | Verified gap and native owner | Deliverable / dependency | Acceptance |
-| --- | --- | --- | --- |
-| P0 WP02 contracts | Review window subtracts UTF-8 bytes from token allocation; ReReview provider view drops original prose; generic judgment enum admits invalid category combinations | Review/Chapter/Production Execution meter, versioned schema, exact comparison and edit scopes; preserve old frozen contracts | Chinese boundary and overflow; schema-normalization-domain combinations; materialized request contains before/after; exact Unicode edits and scene consistency |
-| P0 Cross-Chapter × Craft | ordinary and Quality repair use different payloads | Chapter handlers retain adopted strategy, source window and diagnosis lineage through corrective paths and selection | combined provider-input, old-candidate retention and unresolved multi-round tests; PostgreSQL receipt/commit-loss replay |
-| P0 bounded experiment | previous campaign has no grant for this scope; no independent editorial evidence | extend native campaign/Book/Chapter commands with original six-task controls, freeze/resume/export and stage caps; no new ledger | two-case admission before six-case expansion; failures and unknown effects retained; real calls require matching grant and qualification |
-| P1 WP05 exact author edit | EditorPage edits only local state and sends disk-path requests; no actual text submission | Chapter-owned exact-version candidate command/query, trusted permissions, CAS/idempotency; editor before/after, save and accept/reject | cross-Book and stale-base rejection, duplicate/retry recovery; real browser edit-save-review-decision journey |
-| P1 long manuscript review | accepted observations/recaps cannot establish prose coverage | existing Book Follow-up/Review frozen manifest, bounded windows, evidence aggregation and native action consumers | exact coverage/exclusions, drift, incremental resume and findings-to-revision/Plan Change/editorial pending item |
-| P1 Craft effect | delivery controls do not prove literary benefit | separate frozen Craft intervention and blinded human evaluation input with disagreements | adoption/implementation/model/human evidence separated; no synthetic reader certification |
-| P2 private actors | optional comparison has no benefit evidence | bounded private-observation action proposals and world adjudication inside World Preparation | no private leakage, partial failure does not advance world; disabled path unchanged |
-| P2 semantic impact | exact dependencies do not prove semantic effects | evidence-located impact candidates and explicit confirmation in Plan Change/workbench | inferred impacts cannot authorize invalidation; approved future scope only |
-| P2 completion | native case records only BLOCKED/REJECTED without an authorized human policy | versioned policy, exact manuscript/coverage signatures and revocation within Book completion | missing authority/evidence blocks; drift invalidates current signature while retaining history |
+Craft controls remain a separate fixed-author-input review/revision intervention.
+Generation quality and independent reader preference require additional evidence;
+HYPOTHESIS is not upgraded by adoption counts, lexical matches or model self-review.
+The optional actor path remains experimental pending a separately authorized comparison
+of privacy, motivation, surprise, prose naturalness, cost and latency. Editorial completion
+still waits for an approved policy and named human signatures against exact current prose,
+coverage and issue dispositions. Public release is separately authorized.
 
-Implementation proceeds in the order above with independent consumers developed in
-parallel, then integrated against one release identity. Run focused tests during changes,
-then complete exact-SHA PR governance, Web checks and browser acceptance. A new migration
-is allowed only for a demonstrated persistence invariant. Engineering, real Provider,
-human, longitudinal and production evidence remain separate. Each unexecuted experiment
-retains its exact missing grant/credential/qualification fields and executable resume path.
-
-Market observations remain HOLD pending a rights-backed source, comparable cohort and
-missing/time semantics consumed by topic proposals. A generic graph remains HOLD pending
-a concrete query not served by native accepted/inferred indexes. New content formats
-remain HOLD pending a version-bound accepted-manuscript consumer and separate resource
-or publication authorization. These do not block P0/P1 and add no platform in this batch.
+| Direction | Native consumer and unresolved prerequisite | Decision / exit condition |
+| --- | --- | --- |
+| Market observations | Topic proposal; one rights-backed source, comparable cohort, observation time and missing-value semantics | HOLD until source authorization and a testable topic-quality hypothesis exist; then one bounded input adapter |
+| General association graph | A concrete query unmet by existing accepted/inferred indexes; exact source and relation provenance | HOLD until that query and measured improvement are specified; never merge inferred relations into accepted truth |
+| Short form, scripts or multimedia | Explicit version of accepted prose and an identified downstream adapter; source/output rights | HOLD until the consumer and useful output are approved; model/resource generation and publication need separate authorization |

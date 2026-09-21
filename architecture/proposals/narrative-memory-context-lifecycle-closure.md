@@ -9,19 +9,19 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `a1b87a745619704c696abc0d578911e9c064cd78`
+Reality baseline: `25375164b8dd364ae03153dc4dca971f16f63769`
 Baseline implementation identity:
-`sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88`
+`sha256:ec8d7d361b84aa39eb6f06b50bcc62cbf1015a4865725164c5f2c711d703ef2c`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-20",
+  "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "a1b87a745619704c696abc0d578911e9c064cd78",
-    "implementation_tree_sha": "sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88"
+    "sha": "25375164b8dd364ae03153dc4dca971f16f63769",
+    "implementation_tree_sha": "sha256:ec8d7d361b84aa39eb6f06b50bcc62cbf1015a4865725164c5f2c711d703ef2c"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -138,12 +138,16 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-09-20): Gate A and current role Context/Provider behavior
+Current scope review (2026-09-21): Gate A and current role Context/Provider behavior
 are projected in [current-system](../../docs/current-system.md). Implemented Gate A
 design, former reality matrices and duplicate final-architecture tables have been
 removed. Craft uses the existing Context owner and adds no Digest, retention, GC,
 retrieval representation or cutover owner. Routing campaign accounting and sample
-isolation do not implement these memory lifecycle gates. Gates B–E below remain proposed design,
+isolation do not implement these memory lifecycle gates. Exact cross-chapter windows and
+whole-manuscript coverage now consume immutable accepted prose, while actor preparation
+uses private Context projections. These are source-bound consumers and execution evidence,
+not structured Narrative Digest, retention watermarks, representation cutover or purge.
+Their new persistence records do not supply Gate B–E acceptance evidence. Gates B–E below remain proposed design,
 not executable contracts or proven invariants; their stated bounds require qualification.
 
 ## 7. Gate B — Structured Narrative Digest

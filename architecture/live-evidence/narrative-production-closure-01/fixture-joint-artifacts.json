@@ -1,0 +1,2572 @@
+{
+  "schema_version": "narrative-closure-fixture-artifacts.v1",
+  "proof_ceiling": "FIXTURE_ONLY",
+  "real_provider": "NOT_RUN",
+  "human": "NOT_RUN",
+  "creative_benefit": "NOT_PROVEN",
+  "asset_projection_semantics": "Asset content_hash identifies the complete native stored asset. Exported content is a selected field projection, not a replacement full asset or a hashable reconstruction. Exact prose remains complete; repeated fixture reasons and mechanism definitions are omitted in favor of versioned references.",
+  "controls": {
+    "source": "tests/integration/test_narrative_craft_chapter_postgres.py::JointQualityCorrectionTransport",
+    "semantic_evidence_class": "FIXTURE_SEMANTIC_REVIEW"
+  },
+  "prose": [
+    {
+      "asset_version_id": "authority-output:e7c6c4f3-3380-445c-8e52-3743ca376f88:chapter.best_candidate:v1",
+      "asset_type": "best_draft_candidate",
+      "content_hash": "sha256:0b18118b08a8843cd6c6e127754d0bf4a1568bd89dcab920deed5499a83dde3b",
+      "role": "ACCEPTED_HISTORY",
+      "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。 沈舟左臂中箭，最后一枚雷符已经耗尽。许霜答应守住东门。",
+      "text_hash": "sha256:024c0b4c3586cba38d2016f561b14fddc60f5682d657a6ac40b2d7a542c1b36b",
+      "scene_artifacts": [
+        {
+          "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。 沈舟左臂中箭，最后一枚雷符已经耗尽。许霜答应守住东门。",
+          "slot_id": "chapter:1:scene:1:skeleton",
+          "used_fact_ids": []
+        }
+      ],
+      "composition_digest": "sha256:b8d30893985a8b161f0b65b8a3bc83323f962be310780c95774e468574dbcc2f",
+      "targeted_edits": [
+        {
+          "end": 143,
+          "quote": "他很有担当，特别有担当，大家都觉得他有担当。",
+          "start": 121,
+          "issue_codes": [
+            "CRAFT_CHOICE_REALIZATION"
+          ],
+          "replacement": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。"
+        }
+      ]
+    },
+    {
+      "asset_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1",
+      "asset_type": "draft_chapter",
+      "content_hash": "sha256:f9ab7301aba60c474da734aa3d3da908d0b3d2a7e9fc4374f4c1e17bab3e19ae",
+      "role": "ORIGINAL",
+      "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他很有担当，特别有担当，大家都觉得他有担当。 沈舟左臂完好，掏出雷符。",
+      "text_hash": "sha256:ca90b9c5e8109f5c46a3245da8053446f3a37eae5618f186f960fd1cbc3af1e5",
+      "scene_artifacts": [
+        {
+          "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他很有担当，特别有担当，大家都觉得他有担当。 沈舟左臂完好，掏出雷符。",
+          "slot_id": "chapter:2:scene:1:skeleton",
+          "used_fact_ids": []
+        }
+      ],
+      "composition_digest": "sha256:cc6b5a7af7e7754ad0e32e53be4069578d361dbef5c0b6ba6ce83dc2f001f0d7",
+      "targeted_edits": []
+    },
+    {
+      "asset_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1",
+      "asset_type": "draft_version",
+      "content_hash": "sha256:013f7213c2d3bd11e072e0ff7365bfebce0b1253856487937e9d2a58b5e47b25",
+      "role": "AFTER_CRAFT_AND_CROSS_CHAPTER_REPAIR",
+      "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。 沈舟左臂带伤，只能收起空符袋。",
+      "text_hash": "sha256:06a8d79f9913a0d0a8fb047d8b62b8e8474d63f2d4ce3190e7fd85e211f4e239",
+      "scene_artifacts": [
+        {
+          "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。 沈舟左臂带伤，只能收起空符袋。",
+          "slot_id": "chapter:2:scene:1:skeleton",
+          "used_fact_ids": []
+        }
+      ],
+      "composition_digest": "sha256:323a823941a699774c807c245136fbbe4aa9d01a3e61b7529ed08fe6b030e9bf",
+      "targeted_edits": [
+        {
+          "end": 143,
+          "quote": "他很有担当，特别有担当，大家都觉得他有担当。",
+          "start": 121,
+          "issue_codes": [
+            "CRAFT_CHOICE_REALIZATION"
+          ],
+          "replacement": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。"
+        },
+        {
+          "end": 156,
+          "quote": "沈舟左臂完好，掏出雷符。",
+          "start": 144,
+          "issue_codes": [
+            "CC-CAUSAL_CARRYOVER-E312EF3161171381D2DE"
+          ],
+          "replacement": "沈舟左臂带伤，只能收起空符袋。"
+        }
+      ]
+    },
+    {
+      "asset_version_id": "authority-output:e3508cb1-bc77-48ea-a90b-824d6d09db47:chapter.revision:v1",
+      "asset_type": "draft_version",
+      "content_hash": "sha256:18b883e6e5511be560a33ba53b86efe826917e00306f3bc5bf2f5b1192114699",
+      "role": "AFTER_BOUNDED_QUALITY_CORRECTION",
+      "text": "The prot（原地付出代价）agonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。 沈舟左臂带伤，只能收起空符袋。",
+      "text_hash": "sha256:c5e48d7293d64f297c55c70f86c8f9435c1fcdf0c207a6db7eb9003cd81eb6d3",
+      "scene_artifacts": [
+        {
+          "text": "The prot（原地付出代价）agonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。 沈舟左臂带伤，只能收起空符袋。",
+          "slot_id": "chapter:2:scene:1:skeleton",
+          "used_fact_ids": []
+        }
+      ],
+      "composition_digest": "sha256:b7582d52fb3456a34e627fd76ec2cd3a0a7dfc359418616ce679cbb28b0a69ae",
+      "targeted_edits": [
+        {
+          "end": 8,
+          "quote": "The prot",
+          "start": 0,
+          "issue_codes": [
+            "QUALITY_TIMELINE_CONSISTENCY_FAILED:task:1:range:1"
+          ],
+          "offset_unit": "UNICODE_CODE_POINT",
+          "replacement": "The prot（原地付出代价）",
+          "excerpt_digest": "sha256:9062b757bf2b52721c5cd1740d99fca90d62e23783df06276f6870faccbbf348"
+        }
+      ]
+    }
+  ],
+  "dual_source_review": {
+    "asset_version_id": "authority-output:33d6f7a2-5bc7-442c-9d43-361ab8a114f3:chapter.review:v1",
+    "asset_type": "review_report",
+    "content_hash": "sha256:525cbac8fec8b71037304ba34b04136f06a33067da3465ffbe52a3bb3d46d62b",
+    "content": {
+      "target_asset_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1",
+      "target_text_hash": "sha256:ca90b9c5e8109f5c46a3245da8053446f3a37eae5618f186f960fd1cbc3af1e5",
+      "score": 65.0,
+      "decision": "NEEDS_REVISION",
+      "issues": [
+        {
+          "code": "CRAFT_CHOICE_REALIZATION",
+          "status": "OPEN",
+          "message": "Repeated evaluation obscures the chosen character effect",
+          "category": "CRAFT_EFFECT",
+          "preserve": [
+            "Planned choice, facts, POV, voice, knowledge and all other prose"
+          ],
+          "severity": "minor",
+          "judgment_kind": "AESTHETIC_SUGGESTION",
+          "qualification": "ELIGIBLE",
+          "revision_goal": "Replace evaluation with the already planned cost",
+          "review_issue_id": "review-issue:a3eae880b28b64f65c3216e2",
+          "evidence_locator": {
+            "end": 143,
+            "quote": "他很有担当，特别有担当，大家都觉得他有担当。",
+            "start": 121,
+            "text_hash": "sha256:ca90b9c5e8109f5c46a3245da8053446f3a37eae5618f186f960fd1cbc3af1e5",
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:234048d73d5cbd1fdd2f131eb22fd69eb7d320fd479ac7a3353a292548973231",
+            "asset_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1"
+          },
+          "target_text_hash": "sha256:ca90b9c5e8109f5c46a3245da8053446f3a37eae5618f186f960fd1cbc3af1e5",
+          "acceptance_criteria": [
+            "Existing cost appears as an action rather than repeated author evaluation"
+          ],
+          "violated_constraint": "Adopted choice effect",
+          "target_asset_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1",
+          "context_bundle_version_id": "authority-output:9aa9b262-74cd-436a-9181-a24a63082dc4:chapter.context:v1"
+        },
+        {
+          "code": "CC-CAUSAL_CARRYOVER-E312EF3161171381D2DE",
+          "status": "OPEN",
+          "message": "伤势与已耗尽的符箓无因复原",
+          "category": "CAUSAL_CARRYOVER",
+          "preserve": [
+            "本章任务和其他场景"
+          ],
+          "severity": "blocking",
+          "confidence": "HIGH",
+          "judgment_kind": "SEMANTIC_CONTRADICTION",
+          "qualification": "ELIGIBLE",
+          "revision_goal": "保持伤势与资源后果",
+          "interpretation": "CONTINUITY_PROBLEM",
+          "review_issue_id": "review-issue:69f7a238fb82ec131a105a7e",
+          "evidence_locator": {
+            "end": 156,
+            "quote": "沈舟左臂完好，掏出雷符。",
+            "start": 144,
+            "text_hash": "sha256:ca90b9c5e8109f5c46a3245da8053446f3a37eae5618f186f960fd1cbc3af1e5",
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:0c49c26896085a3e4c9eec495fbdd743f5515e1afdae7938ca3574d4664f1f83",
+            "asset_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1"
+          },
+          "target_text_hash": "sha256:ca90b9c5e8109f5c46a3245da8053446f3a37eae5618f186f960fd1cbc3af1e5",
+          "diagnosis_identity": "CC-CAUSAL_CARRYOVER-E312EF3161171381D2DE",
+          "source_window_hash": "sha256:871f23e821e228a263f6d63d5de9a30743844f9680b95c951d4f6da9ab810300",
+          "acceptance_criteria": [
+            "不能无因复原伤势或资源"
+          ],
+          "supporting_evidence": [
+            {
+              "end": 183,
+              "quote": "沈舟左臂中箭，最后一枚雷符已经耗尽。许霜答应守住东门。",
+              "start": 156,
+              "text_hash": "sha256:024c0b4c3586cba38d2016f561b14fddc60f5682d657a6ac40b2d7a542c1b36b",
+              "offset_unit": "UNICODE_CODE_POINT",
+              "content_hash": "sha256:0b18118b08a8843cd6c6e127754d0bf4a1568bd89dcab920deed5499a83dde3b",
+              "chapter_number": 1,
+              "excerpt_digest": "sha256:1ae2457580ff6c805897e6ee72bbd72b4dd60e0923c6090035c6176f49b15993",
+              "asset_version_id": "authority-output:e7c6c4f3-3380-445c-8e52-3743ca376f88:chapter.best_candidate:v1",
+              "relation_to_issue": "承接伤势和资源消耗"
+            }
+          ],
+          "violated_constraint": "可见代价的连续性",
+          "target_asset_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1",
+          "context_bundle_version_id": "authority-output:9aa9b262-74cd-436a-9181-a24a63082dc4:chapter.context:v1"
+        }
+      ],
+      "craft_targets": [
+        {
+          "role": "PRIMARY",
+          "use_id": "craft-use:6d781d9dfb1bf555ac260cf4",
+          "decision": "ADAPT",
+          "scene_id": "chapter:2:scene:1",
+          "sequence": 1,
+          "content_hash": "sha256:b51b62beb66d05e4d638b8b769ea3643884d2920c982ae9ba277498e11fce8a5",
+          "mechanism_id": "choice-exposes-value",
+          "scene_ranges": [
+            {
+              "end": 156,
+              "start": 0
+            }
+          ],
+          "selection_digest": "sha256:b0971f054fcc293fe9c7fcabbc112a7084bb34c60978cb969717a0a943a1ab17",
+          "mechanism_version": 1,
+          "intended_reader_effect": "看见人物为了证人放弃安全而不是听作者评价",
+          "preservation_requirements": [
+            "保留公开承诺、证人、关闭退路的结果与未知事实边界",
+            "不得改变已接受Canon、世界规则或批准的场景结果",
+            "保留POV知识边界、人物声音与空间时间因果",
+            "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+          ],
+          "knowledge_card_asset_version_id": "knowledge-card:project-110115efeebe449a934fada0c0d5b269:7b8a4d0d0ffed3b3f0ce91a2e5ba2dd400589e6ddfcb546629237e23d2fb9691:v1"
+        }
+      ],
+      "craft_checks": [
+        {
+          "reason": "Original scripted contrast control; no independent reader measurement.",
+          "use_id": "craft-use:6d781d9dfb1bf555ac260cf4",
+          "evidence": {
+            "end": 143,
+            "quote": "他很有担当，特别有担当，大家都觉得他有担当。",
+            "start": 121,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:234048d73d5cbd1fdd2f131eb22fd69eb7d320fd479ac7a3353a292548973231"
+          },
+          "scene_id": "chapter:2:scene:1",
+          "issue_codes": [
+            "CRAFT_CHOICE_REALIZATION"
+          ],
+          "content_hash": "sha256:b51b62beb66d05e4d638b8b769ea3643884d2920c982ae9ba277498e11fce8a5",
+          "formal_proof": false,
+          "mechanism_id": "choice-exposes-value",
+          "side_effects": [
+            {
+              "kind": "MISUSE",
+              "status": "CLEAR",
+              "issue_codes": [],
+              "evidence_ref": "parent_craft_check.evidence"
+            },
+            {
+              "kind": "OVERUSE",
+              "status": "CLEAR",
+              "issue_codes": [],
+              "evidence_ref": "parent_craft_check.evidence"
+            },
+            {
+              "kind": "ARTIFICIALITY",
+              "status": "PRESENT",
+              "issue_codes": [
+                "CRAFT_CHOICE_REALIZATION"
+              ],
+              "evidence_ref": "parent_craft_check.evidence"
+            },
+            {
+              "kind": "PACING_DAMAGE",
+              "status": "CLEAR",
+              "issue_codes": [],
+              "evidence_ref": "parent_craft_check.evidence"
+            },
+            {
+              "kind": "VOICE_CONFLICT",
+              "status": "CLEAR",
+              "issue_codes": [],
+              "evidence_ref": "parent_craft_check.evidence"
+            },
+            {
+              "kind": "POV_VIOLATION",
+              "status": "CLEAR",
+              "issue_codes": [],
+              "evidence_ref": "parent_craft_check.evidence"
+            },
+            {
+              "kind": "NEARBY_REPETITION",
+              "status": "CLEAR",
+              "issue_codes": [],
+              "evidence_ref": "parent_craft_check.evidence"
+            },
+            {
+              "kind": "UNINTENDED_EXPOSITION",
+              "status": "CLEAR",
+              "issue_codes": [],
+              "evidence_ref": "parent_craft_check.evidence"
+            },
+            {
+              "kind": "PRESERVATION_DAMAGE",
+              "status": "CLEAR",
+              "issue_codes": [],
+              "evidence_ref": "parent_craft_check.evidence"
+            }
+          ],
+          "effect_status": "FAILED",
+          "evidence_class": "FIXTURE_SEMANTIC_REVIEW",
+          "human_approved": false,
+          "signals_checked": [
+            "Chosen action gives up the existing safe return option"
+          ],
+          "selection_digest": "sha256:b0971f054fcc293fe9c7fcabbc112a7084bb34c60978cb969717a0a943a1ab17",
+          "target_text_hash": "sha256:ca90b9c5e8109f5c46a3245da8053446f3a37eae5618f186f960fd1cbc3af1e5",
+          "mechanism_version": 1,
+          "reader_effect_proven": false,
+          "intended_reader_effect": "看见人物为了证人放弃安全而不是听作者评价",
+          "target_asset_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project-110115efeebe449a934fada0c0d5b269:7b8a4d0d0ffed3b3f0ce91a2e5ba2dd400589e6ddfcb546629237e23d2fb9691:v1"
+        }
+      ],
+      "cross_chapter_window": {
+        "book_id": "book:project-110115efeebe449a934fada0c0d5b269",
+        "sources": [
+          {
+            "book_id": "book:project-110115efeebe449a934fada0c0d5b269",
+            "coverage": "FULL",
+            "excerpts": [
+              {
+                "end": 183,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。 沈舟左臂中箭，最后一枚雷符已经耗尽。许霜答应守住东门。",
+                "start": 0
+              }
+            ],
+            "text_hash": "sha256:024c0b4c3586cba38d2016f561b14fddc60f5682d657a6ac40b2d7a542c1b36b",
+            "project_id": "project-110115efeebe449a934fada0c0d5b269",
+            "book_run_id": "book-run:b4fe02bf-e31e-4ee9-80b0-c101fc7290fc",
+            "text_length": 183,
+            "content_hash": "sha256:0b18118b08a8843cd6c6e127754d0bf4a1568bd89dcab920deed5499a83dde3b",
+            "workspace_id": "workspace-110115efeebe449a934fada0c0d5b269",
+            "chapter_number": 1,
+            "coverage_reason": "FULL_PROSE_FITS",
+            "excluded_ranges": [],
+            "asset_version_id": "authority-output:e7c6c4f3-3380-445c-8e52-3743ca376f88:chapter.best_candidate:v1",
+            "acceptance_status": "COMMITTED",
+            "acceptance_operation_id": "9f8bb5f6-cd1e-411c-863e-f744f0751287"
+          }
+        ],
+        "project_id": "project-110115efeebe449a934fada0c0d5b269",
+        "book_run_id": "book-run:b4fe02bf-e31e-4ee9-80b0-c101fc7290fc",
+        "workspace_id": "workspace-110115efeebe449a934fada0c0d5b269",
+        "snapshot_hash": "sha256:1159c8d7da9b2d1cadd35a27f491a5abcc25c787d3c7daa24dc9ba4b912e9bd1",
+        "window_policy": {
+          "version": "accepted-prose-neighbours.v1",
+          "coverage_policy": "whole-paragraph-ending.v1",
+          "source_token_budget": 8000,
+          "maximum_previous_chapters": 2
+        },
+        "coverage_policy": "whole-paragraph-ending.v1",
+        "selection_meter": {
+          "version": "utf8-third-ceiling.v1",
+          "identity": "ConservativeTokenEstimator",
+          "precision": "ESTIMATE_ONLY",
+          "model_policy": "MODEL_INDEPENDENT_SELECTION_ONLY",
+          "source_tokens": 102,
+          "safety_margin_tokens": 256,
+          "required_context_tokens": 18380,
+          "complete_request_admission": "FROZEN_ROUTE_METER_INCLUDING_PROMPT_SCHEMA_OUTPUT_RESERVE"
+        },
+        "contract_version": "cross-chapter-review-window.v2",
+        "provider_admission": "EXISTING_COMPLETE_REQUEST_TOKEN_ACCOUNTING_REQUIRED",
+        "source_window_hash": "sha256:871f23e821e228a263f6d63d5de9a30743844f9680b95c951d4f6da9ab810300",
+        "context_token_budget": 64000,
+        "selection_accounting": "CONTEXT_TOKEN_ESTIMATE_V1",
+        "target_chapter_number": 2,
+        "accepted_through_chapter": 1,
+        "preservation_requirements": {
+          "dimensions": [
+            "CHAPTER_MISSION",
+            "REQUIRED_EVENTS",
+            "CHARACTER_KNOWLEDGE",
+            "POV",
+            "VOICE",
+            "FACTS",
+            "SCENE_CAUSALITY",
+            "KNOWLEDGE_MECHANISMS",
+            "RESOLVED_ISSUES"
+          ],
+          "memo_asset_version_id": "authority-output:83b3de24-587a-4ff2-b23e-1f3973205dcc:chapter.memo:v1",
+          "approved_hard_constraints": [],
+          "context_bundle_content_hash": "sha256:dd747cd3abffdf143982959f0dd7baa40ef36a4eb16b542881a6fbdc7326c760",
+          "context_bundle_asset_version_id": "authority-output:9aa9b262-74cd-436a-9181-a24a63082dc4:chapter.context:v1"
+        },
+        "target_candidate_text_hash": "sha256:ca90b9c5e8109f5c46a3245da8053446f3a37eae5618f186f960fd1cbc3af1e5",
+        "target_candidate_asset_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1"
+      },
+      "cross_chapter_coverage": {
+        "coverage_reason": "No conclusion about excluded ranges; exact accepted prose only.",
+        "excluded_sources": [],
+        "reviewed_sources": [
+          {
+            "book_id": "book:project-110115efeebe449a934fada0c0d5b269",
+            "coverage": "FULL",
+            "excerpts": [
+              {
+                "end": 183,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。 沈舟左臂中箭，最后一枚雷符已经耗尽。许霜答应守住东门。",
+                "start": 0
+              }
+            ],
+            "text_hash": "sha256:024c0b4c3586cba38d2016f561b14fddc60f5682d657a6ac40b2d7a542c1b36b",
+            "project_id": "project-110115efeebe449a934fada0c0d5b269",
+            "book_run_id": "book-run:b4fe02bf-e31e-4ee9-80b0-c101fc7290fc",
+            "text_length": 183,
+            "content_hash": "sha256:0b18118b08a8843cd6c6e127754d0bf4a1568bd89dcab920deed5499a83dde3b",
+            "workspace_id": "workspace-110115efeebe449a934fada0c0d5b269",
+            "chapter_number": 1,
+            "coverage_reason": "FULL_PROSE_FITS",
+            "excluded_ranges": [],
+            "asset_version_id": "authority-output:e7c6c4f3-3380-445c-8e52-3743ca376f88:chapter.best_candidate:v1",
+            "acceptance_status": "COMMITTED",
+            "acceptance_operation_id": "9f8bb5f6-cd1e-411c-863e-f744f0751287"
+          }
+        ],
+        "source_window_hash": "sha256:871f23e821e228a263f6d63d5de9a30743844f9680b95c951d4f6da9ab810300"
+      }
+    }
+  },
+  "rereviews": [
+    {
+      "asset_version_id": "authority-output:4f824e3a-8945-4fd0-be03-af8bd92850a9:chapter.rereview:v1",
+      "asset_type": "re_review_report",
+      "content_hash": "sha256:ef01e757da9a86c150835a321c949ee54776eb78b7d521a2edcab9be032adb34",
+      "content": {
+        "target_asset_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1",
+        "target_text_hash": "sha256:06a8d79f9913a0d0a8fb047d8b62b8e8474d63f2d4ce3190e7fd85e211f4e239",
+        "original_draft_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1",
+        "initial_review_version_id": "authority-output:33d6f7a2-5bc7-442c-9d43-361ab8a114f3:chapter.review:v1",
+        "revision_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1",
+        "decision": "PASSED",
+        "resolved_issue_codes": [
+          "CC-CAUSAL_CARRYOVER-E312EF3161171381D2DE",
+          "CRAFT_CHOICE_REALIZATION"
+        ],
+        "remaining_issue_codes": [],
+        "resolution_checks": [
+          {
+            "code": "CRAFT_CHOICE_REALIZATION",
+            "reason": "Scripted local edit satisfies the stated control criterion.",
+            "status": "SATISFIED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121
+            },
+            "preservation": "PRESERVED",
+            "resolution_status": "RESOLVED",
+            "supporting_evidence": []
+          },
+          {
+            "code": "CC-CAUSAL_CARRYOVER-E312EF3161171381D2DE",
+            "reason": "Scripted local edit satisfies the stated control criterion.",
+            "status": "SATISFIED",
+            "evidence": {
+              "end": 171,
+              "quote": "沈舟左臂带伤，只能收起空符袋。",
+              "start": 156
+            },
+            "preservation": "PRESERVED",
+            "resolution_status": "RESOLVED",
+            "supporting_evidence": [
+              {
+                "end": 183,
+                "quote": "沈舟左臂中箭，最后一枚雷符已经耗尽。许霜答应守住东门。",
+                "start": 156,
+                "text_hash": "sha256:024c0b4c3586cba38d2016f561b14fddc60f5682d657a6ac40b2d7a542c1b36b",
+                "offset_unit": "UNICODE_CODE_POINT",
+                "content_hash": "sha256:0b18118b08a8843cd6c6e127754d0bf4a1568bd89dcab920deed5499a83dde3b",
+                "chapter_number": 1,
+                "excerpt_digest": "sha256:1ae2457580ff6c805897e6ee72bbd72b4dd60e0923c6090035c6176f49b15993",
+                "asset_version_id": "authority-output:e7c6c4f3-3380-445c-8e52-3743ca376f88:chapter.best_candidate:v1",
+                "relation_to_issue": "承接伤势和资源消耗"
+              }
+            ]
+          }
+        ],
+        "issue_lineage": [
+          {
+            "code": "CRAFT_CHOICE_REALIZATION",
+            "to_status": "RESOLVED",
+            "from_status": "OPEN",
+            "review_issue_id": "review-issue:a3eae880b28b64f65c3216e2",
+            "revision_claimed": true,
+            "verified_by_rereview": true
+          },
+          {
+            "code": "CC-CAUSAL_CARRYOVER-E312EF3161171381D2DE",
+            "to_status": "RESOLVED",
+            "from_status": "OPEN",
+            "review_issue_id": "review-issue:69f7a238fb82ec131a105a7e",
+            "revision_claimed": true,
+            "verified_by_rereview": true
+          }
+        ],
+        "preservation_checks": [
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121
+            },
+            "dimension": "CHAPTER_MISSION"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121
+            },
+            "dimension": "REQUIRED_EVENTS"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121
+            },
+            "dimension": "CHARACTER_KNOWLEDGE"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121
+            },
+            "dimension": "POV"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121
+            },
+            "dimension": "VOICE"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121
+            },
+            "dimension": "FACTS"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121
+            },
+            "dimension": "SCENE_CAUSALITY"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121
+            },
+            "dimension": "KNOWLEDGE_MECHANISMS"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121
+            },
+            "dimension": "RESOLVED_ISSUES"
+          }
+        ],
+        "craft_checks": [
+          {
+            "reason": "Original scripted contrast control; no independent reader measurement.",
+            "use_id": "craft-use:6d781d9dfb1bf555ac260cf4",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "scene_id": "chapter:2:scene:1",
+            "issue_codes": [],
+            "content_hash": "sha256:b51b62beb66d05e4d638b8b769ea3643884d2920c982ae9ba277498e11fce8a5",
+            "formal_proof": false,
+            "mechanism_id": "choice-exposes-value",
+            "side_effects": [
+              {
+                "kind": "MISUSE",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "OVERUSE",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "ARTIFICIALITY",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "PACING_DAMAGE",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "VOICE_CONFLICT",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "POV_VIOLATION",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "NEARBY_REPETITION",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "UNINTENDED_EXPOSITION",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "PRESERVATION_DAMAGE",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              }
+            ],
+            "effect_status": "ACHIEVED",
+            "evidence_class": "FIXTURE_SEMANTIC_REVIEW",
+            "human_approved": false,
+            "signals_checked": [
+              "Chosen action gives up the existing safe return option"
+            ],
+            "selection_digest": "sha256:b0971f054fcc293fe9c7fcabbc112a7084bb34c60978cb969717a0a943a1ab17",
+            "target_text_hash": "sha256:06a8d79f9913a0d0a8fb047d8b62b8e8474d63f2d4ce3190e7fd85e211f4e239",
+            "mechanism_version": 1,
+            "reader_effect_proven": false,
+            "intended_reader_effect": "看见人物为了证人放弃安全而不是听作者评价",
+            "target_asset_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1",
+            "knowledge_card_asset_version_id": "knowledge-card:project-110115efeebe449a934fada0c0d5b269:7b8a4d0d0ffed3b3f0ce91a2e5ba2dd400589e6ddfcb546629237e23d2fb9691:v1"
+          }
+        ],
+        "craft_preservation_checks": [
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "CANON"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "CHARACTER_VOICE"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "CHARACTER_KNOWLEDGE"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "POV"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "SCENE_CAUSALITY"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "ACTIVE_PLAN"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "SATISFIED_CRAFT"
+          }
+        ]
+      }
+    },
+    {
+      "asset_version_id": "authority-output:41123ad3-6ff6-47ae-bbae-39729ad21f49:chapter.rereview:v1",
+      "asset_type": "re_review_report",
+      "content_hash": "sha256:6d6947f49ca50c744d2e474341950d2e98c8b4a55fdcd5a4959391e961997357",
+      "content": {
+        "target_asset_version_id": "authority-output:e3508cb1-bc77-48ea-a90b-824d6d09db47:chapter.revision:v1",
+        "target_text_hash": "sha256:c5e48d7293d64f297c55c70f86c8f9435c1fcdf0c207a6db7eb9003cd81eb6d3",
+        "original_draft_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1",
+        "initial_review_version_id": "authority-output:4f824e3a-8945-4fd0-be03-af8bd92850a9:chapter.rereview:v1",
+        "revision_version_id": "authority-output:e3508cb1-bc77-48ea-a90b-824d6d09db47:chapter.revision:v1",
+        "decision": "PASSED",
+        "resolved_issue_codes": [],
+        "remaining_issue_codes": [],
+        "resolution_checks": [],
+        "issue_lineage": [],
+        "preservation_checks": [
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129
+            },
+            "dimension": "CHAPTER_MISSION"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129
+            },
+            "dimension": "REQUIRED_EVENTS"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129
+            },
+            "dimension": "CHARACTER_KNOWLEDGE"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129
+            },
+            "dimension": "POV"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129
+            },
+            "dimension": "VOICE"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129
+            },
+            "dimension": "FACTS"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129
+            },
+            "dimension": "SCENE_CAUSALITY"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129
+            },
+            "dimension": "KNOWLEDGE_MECHANISMS"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129
+            },
+            "dimension": "RESOLVED_ISSUES"
+          }
+        ],
+        "craft_checks": [
+          {
+            "reason": "Original scripted contrast control; no independent reader measurement.",
+            "use_id": "craft-use:6d781d9dfb1bf555ac260cf4",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "scene_id": "chapter:2:scene:1",
+            "issue_codes": [],
+            "content_hash": "sha256:b51b62beb66d05e4d638b8b769ea3643884d2920c982ae9ba277498e11fce8a5",
+            "formal_proof": false,
+            "mechanism_id": "choice-exposes-value",
+            "side_effects": [
+              {
+                "kind": "MISUSE",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "OVERUSE",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "ARTIFICIALITY",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "PACING_DAMAGE",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "VOICE_CONFLICT",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "POV_VIOLATION",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "NEARBY_REPETITION",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "UNINTENDED_EXPOSITION",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              },
+              {
+                "kind": "PRESERVATION_DAMAGE",
+                "status": "CLEAR",
+                "issue_codes": [],
+                "evidence_ref": "parent_craft_check.evidence"
+              }
+            ],
+            "effect_status": "ACHIEVED",
+            "evidence_class": "FIXTURE_SEMANTIC_REVIEW",
+            "human_approved": false,
+            "signals_checked": [
+              "Chosen action gives up the existing safe return option"
+            ],
+            "selection_digest": "sha256:b0971f054fcc293fe9c7fcabbc112a7084bb34c60978cb969717a0a943a1ab17",
+            "target_text_hash": "sha256:c5e48d7293d64f297c55c70f86c8f9435c1fcdf0c207a6db7eb9003cd81eb6d3",
+            "mechanism_version": 1,
+            "reader_effect_proven": false,
+            "intended_reader_effect": "看见人物为了证人放弃安全而不是听作者评价",
+            "target_asset_version_id": "authority-output:e3508cb1-bc77-48ea-a90b-824d6d09db47:chapter.revision:v1",
+            "knowledge_card_asset_version_id": "knowledge-card:project-110115efeebe449a934fada0c0d5b269:7b8a4d0d0ffed3b3f0ce91a2e5ba2dd400589e6ddfcb546629237e23d2fb9691:v1"
+          }
+        ],
+        "craft_preservation_checks": [
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "CANON"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "CHARACTER_VOICE"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "CHARACTER_KNOWLEDGE"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "POV"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "SCENE_CAUSALITY"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "ACTIVE_PLAN"
+          },
+          {
+            "status": "PRESERVED",
+            "evidence": {
+              "end": 163,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 129,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:554278e8fabcf24f67fd5e7e1d439e6d5ec45d7e0ba5594f5db8d6984fd30255"
+            },
+            "dimension": "SATISFIED_CRAFT"
+          }
+        ],
+        "quality_resolution_checks": [
+          {
+            "reason": "Fixture only: corrected local expression keeps frozen Craft and historical cost.",
+            "status": "SATISFIED",
+            "evidence": {
+              "end": 18,
+              "quote": "The prot（原地付出代价）ag",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:e4e098de73914a7f1720b0469f6189fb816ce61661b36d9ca75adbef22ead85e"
+            },
+            "observation": "timeline_consistency",
+            "preservation": "PRESERVED",
+            "evidence_class": "MODEL_REVIEW_PROPOSAL_REQUIRES_QUALITY_REEVALUATION",
+            "source_text_hash": "sha256:06a8d79f9913a0d0a8fb047d8b62b8e8474d63f2d4ce3190e7fd85e211f4e239",
+            "target_text_hash": "sha256:c5e48d7293d64f297c55c70f86c8f9435c1fcdf0c207a6db7eb9003cd81eb6d3",
+            "source_asset_version_id": "authority-output:5b691b29-43f4-4c4e-9f95-9afa53819510:chapter.best_candidate:v1",
+            "target_asset_version_id": "authority-output:e3508cb1-bc77-48ea-a90b-824d6d09db47:chapter.revision:v1",
+            "source_quality_asset_version_id": "authority-output:d0485b76-0853-4042-9a4e-e2e2f0a87f45:chapter.quality:v1"
+          }
+        ],
+        "prior_review_evidence": {
+          "issue_lineage": [
+            {
+              "code": "CRAFT_CHOICE_REALIZATION",
+              "to_status": "RESOLVED",
+              "from_status": "OPEN",
+              "review_issue_id": "review-issue:a3eae880b28b64f65c3216e2",
+              "revision_claimed": true,
+              "verified_by_rereview": true
+            },
+            {
+              "code": "CC-CAUSAL_CARRYOVER-E312EF3161171381D2DE",
+              "to_status": "RESOLVED",
+              "from_status": "OPEN",
+              "review_issue_id": "review-issue:69f7a238fb82ec131a105a7e",
+              "revision_claimed": true,
+              "verified_by_rereview": true
+            }
+          ],
+          "asset_version_id": "authority-output:4f824e3a-8945-4fd0-be03-af8bd92850a9:chapter.rereview:v1",
+          "target_text_hash": "sha256:06a8d79f9913a0d0a8fb047d8b62b8e8474d63f2d4ce3190e7fd85e211f4e239",
+          "resolved_issue_codes": [
+            "CC-CAUSAL_CARRYOVER-E312EF3161171381D2DE",
+            "CRAFT_CHOICE_REALIZATION"
+          ],
+          "prior_review_evidence": null,
+          "target_asset_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1"
+        }
+      }
+    }
+  ],
+  "quality_revision_tasks": [
+    {
+      "asset_version_id": "authority-output:d0485b76-0853-4042-9a4e-e2e2f0a87f45:chapter.quality.required_action.1:v1",
+      "asset_type": "revision_task",
+      "content_hash": "sha256:6347cc8b57a40bbda45452b5c591580513ebc82457d312fa75cb4bb38ae48f1f",
+      "content": {
+        "type": "GovernedRevisionTask",
+        "issue": {
+          "code": "QUALITY_TIMELINE_CONSISTENCY_FAILED",
+          "status": "OPEN",
+          "severity": "BLOCKING"
+        },
+        "status": "OPEN",
+        "chapter": 2,
+        "project_id": "project-110115efeebe449a934fada0c0d5b269",
+        "observation": "timeline_consistency",
+        "required_action": "LOCAL_REPAIR",
+        "contract_version": "governed-revision-task-v2",
+        "reevaluation_gate": "longform_quality_gate",
+        "bounded_edit_scope": {
+          "policy": "EXACT_NATIVE_EVIDENCE_RANGES_ONLY",
+          "status": "LOCATED",
+          "text_hash": "sha256:06a8d79f9913a0d0a8fb047d8b62b8e8474d63f2d4ce3190e7fd85e211f4e239",
+          "observation": "timeline_consistency",
+          "contract_version": "quality-located-edit-scope.v1",
+          "permitted_ranges": [
+            {
+              "end": 8,
+              "quote": "The prot",
+              "start": 0
+            }
+          ],
+          "diagnostic_ranges": [
+            {
+              "end": 8,
+              "quote": "The prot",
+              "start": 0
+            }
+          ],
+          "semantic_evidence": "MODEL_OR_RULE_CLAIM_REQUIRES_REVIEW",
+          "target_asset_version_id": "authority-output:5b691b29-43f4-4c4e-9f95-9afa53819510:chapter.best_candidate:v1",
+          "whole_chapter_edit_authorized": false
+        },
+        "required_authority": "CHAPTER_AUTHORITY",
+        "preserved_invariants": [
+          "accepted_canon",
+          "executed_chapter_history",
+          "active_parent_plan_identity"
+        ],
+        "mutates_accepted_canon": false,
+        "permitted_change_scope": "CHAPTER",
+        "evidence_asset_version_ids": [],
+        "source_quality_operation_id": "d0485b76-0853-4042-9a4e-e2e2f0a87f45",
+        "target_revision_asset_version_id": "authority-output:5b691b29-43f4-4c4e-9f95-9afa53819510:chapter.best_candidate:v1"
+      }
+    }
+  ],
+  "candidate_selection": [
+    {
+      "asset_version_id": "authority-output:5b691b29-43f4-4c4e-9f95-9afa53819510:chapter.best_candidate.comparison:v1",
+      "asset_type": "candidate_comparison",
+      "content_hash": "sha256:83ffc642d747a3d5a3dec01025f9aabd45c33972f8eed5cfb15b7301551d7b59",
+      "content": {
+        "type": "CandidateComparison",
+        "improved": true,
+        "previous": {
+          "score": 65.0,
+          "blocker_codes": [
+            "CC-CAUSAL_CARRYOVER-E312EF3161171381D2DE"
+          ],
+          "asset_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1",
+          "review_asset_version_id": "authority-output:33d6f7a2-5bc7-442c-9d43-361ab8a114f3:chapter.review:v1",
+          "workspace_asset_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1"
+        },
+        "challenger": {
+          "score": 95.0,
+          "blocker_codes": [],
+          "asset_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1",
+          "review_asset_version_id": "authority-output:4f824e3a-8945-4fd0-be03-af8bd92850a9:chapter.rereview:v1",
+          "workspace_asset_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1"
+        },
+        "project_id": "project-110115efeebe449a934fada0c0d5b269",
+        "stop_reason": "QUALITY_SATISFIED",
+        "comparison_id": "candidate-comparison:aef0a5ed7c400f1123ad4c9e3244e52aa8687e5da9e0015f74d45b2a8bc1971e",
+        "comparison_hash": "sha256:b10a4c60e9c59d6860d4bd0b30244328bbde432ca2e5cfee9a021907c56dae73",
+        "net_improvement": 30.0,
+        "contract_version": "candidate-comparison-v1",
+        "new_blocker_codes": [],
+        "resolution_checks": [
+          {
+            "code": "CRAFT_CHOICE_REALIZATION",
+            "reason": "Scripted local edit satisfies the stated control criterion.",
+            "status": "SATISFIED",
+            "evidence": {
+              "end": 155,
+              "quote": "他把仅有的返程木牌推到证人手边，收回手时，守门人已经划掉了他的名字。",
+              "start": 121
+            },
+            "preservation": "PRESERVED",
+            "resolution_status": "RESOLVED",
+            "supporting_evidence": []
+          },
+          {
+            "code": "CC-CAUSAL_CARRYOVER-E312EF3161171381D2DE",
+            "reason": "Scripted local edit satisfies the stated control criterion.",
+            "status": "SATISFIED",
+            "evidence": {
+              "end": 171,
+              "quote": "沈舟左臂带伤，只能收起空符袋。",
+              "start": 156
+            },
+            "preservation": "PRESERVED",
+            "resolution_status": "RESOLVED",
+            "supporting_evidence": [
+              {
+                "end": 183,
+                "quote": "沈舟左臂中箭，最后一枚雷符已经耗尽。许霜答应守住东门。",
+                "start": 156,
+                "text_hash": "sha256:024c0b4c3586cba38d2016f561b14fddc60f5682d657a6ac40b2d7a542c1b36b",
+                "offset_unit": "UNICODE_CODE_POINT",
+                "content_hash": "sha256:0b18118b08a8843cd6c6e127754d0bf4a1568bd89dcab920deed5499a83dde3b",
+                "chapter_number": 1,
+                "excerpt_digest": "sha256:1ae2457580ff6c805897e6ee72bbd72b4dd60e0923c6090035c6176f49b15993",
+                "asset_version_id": "authority-output:e7c6c4f3-3380-445c-8e52-3743ca376f88:chapter.best_candidate:v1",
+                "relation_to_issue": "承接伤势和资源消耗"
+              }
+            ]
+          }
+        ],
+        "correction_generation": 0,
+        "resolved_blocker_codes": [
+          "CC-CAUSAL_CARRYOVER-E312EF3161171381D2DE"
+        ],
+        "minimum_net_improvement": 3.0,
+        "chapter_root_operation_id": "00ab61aa-b308-4ddf-8eb2-ebc21b524713",
+        "selected_asset_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1",
+        "diagnostic_contract_version": "actionable-diagnostics.v1",
+        "maximum_correction_generations": 1
+      }
+    },
+    {
+      "asset_version_id": "authority-output:acf3f27a-1bef-43c6-aba3-e74e3c40cce1:chapter.best_candidate.comparison:v1",
+      "asset_type": "candidate_comparison",
+      "content_hash": "sha256:d32c52ab98d8e87e57be044efd82086c4048cb6efde2474bdcb923d7f1f0bb65",
+      "content": {
+        "type": "CandidateComparison",
+        "improved": true,
+        "previous": {
+          "score": 95.0,
+          "blocker_codes": [
+            "timeline_consistency"
+          ],
+          "asset_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1",
+          "review_asset_version_id": "authority-output:4f824e3a-8945-4fd0-be03-af8bd92850a9:chapter.rereview:v1",
+          "workspace_asset_version_id": "authority-output:5b691b29-43f4-4c4e-9f95-9afa53819510:chapter.best_candidate:v1"
+        },
+        "challenger": {
+          "score": 95.0,
+          "blocker_codes": [],
+          "asset_version_id": "authority-output:e3508cb1-bc77-48ea-a90b-824d6d09db47:chapter.revision:v1",
+          "review_asset_version_id": "authority-output:41123ad3-6ff6-47ae-bbae-39729ad21f49:chapter.rereview:v1",
+          "quality_resolution_checks": [
+            {
+              "reason": "Fixture only: corrected local expression keeps frozen Craft and historical cost.",
+              "status": "SATISFIED",
+              "evidence": {
+                "end": 18,
+                "quote": "The prot（原地付出代价）ag",
+                "start": 0,
+                "offset_unit": "UNICODE_CODE_POINT",
+                "excerpt_digest": "sha256:e4e098de73914a7f1720b0469f6189fb816ce61661b36d9ca75adbef22ead85e"
+              },
+              "observation": "timeline_consistency",
+              "preservation": "PRESERVED",
+              "evidence_class": "MODEL_REVIEW_PROPOSAL_REQUIRES_QUALITY_REEVALUATION",
+              "source_text_hash": "sha256:06a8d79f9913a0d0a8fb047d8b62b8e8474d63f2d4ce3190e7fd85e211f4e239",
+              "target_text_hash": "sha256:c5e48d7293d64f297c55c70f86c8f9435c1fcdf0c207a6db7eb9003cd81eb6d3",
+              "source_asset_version_id": "authority-output:5b691b29-43f4-4c4e-9f95-9afa53819510:chapter.best_candidate:v1",
+              "target_asset_version_id": "authority-output:e3508cb1-bc77-48ea-a90b-824d6d09db47:chapter.revision:v1",
+              "source_quality_asset_version_id": "authority-output:d0485b76-0853-4042-9a4e-e2e2f0a87f45:chapter.quality:v1"
+            }
+          ],
+          "workspace_asset_version_id": "authority-output:e3508cb1-bc77-48ea-a90b-824d6d09db47:chapter.revision:v1"
+        },
+        "project_id": "project-110115efeebe449a934fada0c0d5b269",
+        "stop_reason": "QUALITY_SATISFIED",
+        "comparison_id": "candidate-comparison:d3e6f5c3a395c99750185c1ce8b9ceaa9c0b586aa8bff9b0c2d156409276a9e5",
+        "comparison_hash": "sha256:8f5a7a37d8c705e97809b29c6f3adef32d5df39befca3719ad51315549fe3823",
+        "net_improvement": 0.0,
+        "contract_version": "candidate-comparison-v1",
+        "new_blocker_codes": [],
+        "resolution_checks": [],
+        "correction_generation": 1,
+        "resolved_blocker_codes": [
+          "timeline_consistency"
+        ],
+        "minimum_net_improvement": 3.0,
+        "chapter_root_operation_id": "00ab61aa-b308-4ddf-8eb2-ebc21b524713",
+        "selected_asset_version_id": "authority-output:e3508cb1-bc77-48ea-a90b-824d6d09db47:chapter.revision:v1",
+        "diagnostic_contract_version": "actionable-diagnostics.v1",
+        "maximum_correction_generations": 1
+      }
+    }
+  ],
+  "quality_gates": [
+    {
+      "asset_version_id": "authority-output:d0485b76-0853-4042-9a4e-e2e2f0a87f45:chapter.quality:v1",
+      "asset_type": "quality_score_report",
+      "content_hash": "sha256:46e9d79df1b8fa15170a1c28caa936bcaa7928b3f0add91acd5a0370e8ae23d6",
+      "content": {
+        "gate": "FAILED",
+        "target_asset_version_id": "authority-output:5b691b29-43f4-4c4e-9f95-9afa53819510:chapter.best_candidate:v1",
+        "blocking_dimensions": [
+          "timeline_consistency"
+        ],
+        "required_actions": [
+          {
+            "issue": {
+              "code": "QUALITY_TIMELINE_CONSISTENCY_FAILED",
+              "status": "OPEN",
+              "severity": "BLOCKING"
+            },
+            "observation": "timeline_consistency",
+            "required_action": "LOCAL_REPAIR",
+            "reevaluation_gate": "longform_quality_gate",
+            "required_authority": "CHAPTER_AUTHORITY",
+            "preserved_invariants": [
+              "accepted_canon",
+              "executed_chapter_history",
+              "active_parent_plan_identity"
+            ],
+            "permitted_change_scope": "CHAPTER",
+            "evidence_asset_version_ids": []
+          }
+        ],
+        "quality_contract_version": "chapter-quality-aggregate-v4",
+        "fixture": true,
+        "production_verified": false,
+        "provider_verified": true,
+        "human_verified": true
+      }
+    },
+    {
+      "asset_version_id": "authority-output:a446e756-0563-496c-9d2d-6c15dc1f9729:chapter.quality:v1",
+      "asset_type": "quality_score_report",
+      "content_hash": "sha256:96422825a6ea39e150b86b2b1570959afd41f8945584fe07e26cea709e545119",
+      "content": {
+        "gate": "PASSED_WITH_UNCALIBRATED",
+        "target_asset_version_id": "authority-output:acf3f27a-1bef-43c6-aba3-e74e3c40cce1:chapter.best_candidate:v1",
+        "blocking_dimensions": [],
+        "required_actions": [],
+        "quality_contract_version": "chapter-quality-aggregate-v4",
+        "fixture": true,
+        "production_verified": false,
+        "provider_verified": true,
+        "human_verified": true
+      }
+    }
+  ],
+  "acceptance": {
+    "acceptance_id": "chapter-acceptance:a2131dc8ad8639098e694249bb7e890ee73271e176545654db4e5de948d5ae31",
+    "status": "COMMITTED",
+    "accepted_through_chapter": 2,
+    "outcome_asset_version_id": "authority-output:8332d7bc-6593-4aad-a191-d6533dd591bc:chapter.outcome:v1",
+    "story_state_asset_version_id": "authority-output:8332d7bc-6593-4aad-a191-d6533dd591bc:chapter.story_state:v1",
+    "canon_snapshot_asset_version_id": "authority-output:8332d7bc-6593-4aad-a191-d6533dd591bc:chapter.canon.current:v1",
+    "longform_projection_set_id": "longform-projection:e5caa6eeab78d7bb4649ff142f3d4d7807e29c432e4d89110546fd0baed36333",
+    "next_input_policy": "ACCEPTED_BOUNDARY_WITH_COMPLETED_PROJECTIONS"
+  },
+  "outcome": {
+    "asset_version_id": "authority-output:8332d7bc-6593-4aad-a191-d6533dd591bc:chapter.outcome:v1",
+    "asset_type": "chapter_outcome",
+    "content_hash": "sha256:962369d2243cff655800705ec483a66689702309f7e3cb73f42728e29aa5cc31",
+    "content": {
+      "accepted_draft_asset_version_id": "authority-output:acf3f27a-1bef-43c6-aba3-e74e3c40cce1:chapter.best_candidate:v1",
+      "canon_patch_asset_version_id": "authority-output:7324aa84-ff75-436e-8cec-ac4c9c865087:chapter.canon:v1",
+      "quality_aggregate_asset_version_id": "authority-output:a446e756-0563-496c-9d2d-6c15dc1f9729:chapter.quality:v1",
+      "final_release_gate_asset_version_id": "authority-output:5c03dc45-ff29-4479-b5d2-b61a7d59ea31:chapter.final_release_gate:v1",
+      "grounding": {
+        "text_hash": "sha256:c5e48d7293d64f297c55c70f86c8f9435c1fcdf0c207a6db7eb9003cd81eb6d3",
+        "project_id": "project-110115efeebe449a934fada0c0d5b269",
+        "claim_set_hash": "sha256:b33aae4fe9b945ed85984c8e3d1748d28b09fad3d0e043432b68a23e80ab5a9a",
+        "support_review": {
+          "claims": [
+            {
+              "reason": "Scripted transport evidence only; no model entailment proof.",
+              "claim_id": "sha256:c86e76c0be54e43d81e4a6547adc53b48cfbd61850bdd080af8600557b39f17a",
+              "assessment": "SUPPORTED",
+              "observed_kind": "OBJECTIVE_EVENT"
+            },
+            {
+              "reason": "Scripted transport evidence only; no model entailment proof.",
+              "claim_id": "sha256:5e2954a4e7dc580b9405271d50b7ad480c6421837277247e8e31e397defa1e5c",
+              "assessment": "SUPPORTED",
+              "observed_kind": "OBJECTIVE_EVENT"
+            },
+            {
+              "reason": "Scripted transport evidence only; no model entailment proof.",
+              "claim_id": "sha256:cd1a0fef97ded7bef2b6a1731e2b9c7c4be787ee392d6d33535f9f98e136fef7",
+              "assessment": "SUPPORTED",
+              "observed_kind": "READER_DISCLOSURE"
+            }
+          ],
+          "coverage": "COMPLETE",
+          "no_change_supported": false
+        },
+        "semantic_status": "SUPPORTED_CANDIDATE",
+        "contract_version": "grounded-canon.v1",
+        "no_change_reason": "",
+        "extraction_status": "EXTRACTED",
+        "context_asset_version_id": "authority-output:9aa9b262-74cd-436a-9181-a24a63082dc4:chapter.context:v1",
+        "candidate_asset_version_id": "authority-output:acf3f27a-1bef-43c6-aba3-e74e3c40cce1:chapter.best_candidate:v1"
+      }
+    }
+  },
+  "materialized_provider_requests": [
+    {
+      "external_effect_id": "380d241e-1188-4ba6-87ea-f392bb37c826",
+      "stage": "review",
+      "provider_admission_asset_version_id": "52cbfa62-6653-4553-9b7b-7b33db75ecad",
+      "provider_admission_content_hash": "sha256:7e7f0d4abb20d7eacfa328beb835c258595a3fd344cec5d7e604ed31d4065930",
+      "frozen_output_schema_ref": "schema:chapter-provider-output:review:cross-chapter-v2:narrative-craft-v1",
+      "provider_admission": {
+        "reason": "ADMITTED",
+        "status": "ADMITTED",
+        "precision": "EXACT",
+        "envelope_hash": "sha256:ab4fd63252b1e67ad51c0bdd84c393350ff603ff210063335d54acce94c11c80",
+        "total_reserved": 161766,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 64000,
+          "provider_input": 97494,
+          "request_framing": 16
+        },
+        "applicable_limit": 262144,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "scripted_provider_v2-review",
+          "provider": "scripted_provider_v2",
+          "precision": "EXACT",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "scripted-byte-token-meter",
+          "output_reserve": 64000,
+          "contract_version": "provider-token-accounting-v2",
+          "framing_overhead": 16,
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "model_context_limit": 262144,
+          "execution_token_limit": 262144,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 10833,
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "provider_task_hash": "sha256:d816d91ce4c7bcbbae239f4677716a0d3d2f62d43b99f1e9d792dadba610a7e3",
+      "current_projection_matches_frozen_task_hash": true
+    },
+    {
+      "external_effect_id": "e665049d-f8b2-4acd-aa6d-7ee726f57aea",
+      "stage": "revision",
+      "provider_admission_asset_version_id": "aee5cf56-5a3d-4a8c-a4d4-1925d1230173",
+      "provider_admission_content_hash": "sha256:42b7eaf6af40fe632e81739e35c4e6e20a9dc1280daa9c485d0f537693199624",
+      "frozen_output_schema_ref": "schema:chapter-provider-output:revision:cross-chapter-v2:narrative-craft-v1",
+      "provider_admission": {
+        "reason": "ADMITTED",
+        "status": "ADMITTED",
+        "precision": "EXACT",
+        "envelope_hash": "sha256:1be98f51d6561fb8e669e9cd58e359c94861a0679ba1e729d2a1df3b420f80e6",
+        "total_reserved": 152247,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 64000,
+          "provider_input": 87975,
+          "request_framing": 16
+        },
+        "applicable_limit": 262144,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "scripted_provider_v2-revision",
+          "provider": "scripted_provider_v2",
+          "precision": "EXACT",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "scripted-byte-token-meter",
+          "output_reserve": 64000,
+          "contract_version": "provider-token-accounting-v2",
+          "framing_overhead": 16,
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "model_context_limit": 262144,
+          "execution_token_limit": 262144,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 10833,
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "provider_task_hash": "sha256:f956780d4e8f88863be7c34cc233cabd75f94d5b9b16d491a40b1fb663452ae0",
+      "current_projection_matches_frozen_task_hash": true
+    },
+    {
+      "external_effect_id": "00c973ad-c905-4064-81d4-04ff2411fc33",
+      "stage": "rereview",
+      "provider_admission_asset_version_id": "68585503-296a-4ff8-9d9c-80f1c8f387c9",
+      "provider_admission_content_hash": "sha256:3944b67f30c274be999f670d8fd2a57ae2dd794c302f6ac644f55b6c7818a1c1",
+      "frozen_output_schema_ref": "schema:chapter-provider-output:rereview:cross-chapter-v2:narrative-craft-v1",
+      "provider_admission": {
+        "reason": "ADMITTED",
+        "status": "ADMITTED",
+        "precision": "EXACT",
+        "envelope_hash": "sha256:acf66b4aa2fba505cc18a3ccd96be20a3a78580bb1a393b2eaaf721ab7f12869",
+        "total_reserved": 174848,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 64000,
+          "provider_input": 110576,
+          "request_framing": 16
+        },
+        "applicable_limit": 262144,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "scripted_provider_v2-rereview",
+          "provider": "scripted_provider_v2",
+          "precision": "EXACT",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "scripted-byte-token-meter",
+          "output_reserve": 64000,
+          "contract_version": "provider-token-accounting-v2",
+          "framing_overhead": 16,
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "model_context_limit": 262144,
+          "execution_token_limit": 262144,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 10833,
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "provider_task_hash": "sha256:cf84e17581aff73385d90d101f947dacab262946eb83665047a4c5a53a3bc2f4",
+      "current_projection_matches_frozen_task_hash": true,
+      "before_after": {
+        "contract_version": "exact-prose-comparison.v1",
+        "offset_unit": "UNICODE_CODE_POINT",
+        "original": {
+          "asset_version_id": "authority-output:e049e95c-0883-441c-8679-7d555b139e72:chapter.draft:v1",
+          "text_hash": "sha256:ca90b9c5e8109f5c46a3245da8053446f3a37eae5618f186f960fd1cbc3af1e5",
+          "complete_text_ref": "prose[1].text"
+        },
+        "revised": {
+          "asset_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1",
+          "text_hash": "sha256:06a8d79f9913a0d0a8fb047d8b62b8e8474d63f2d4ce3190e7fd85e211f4e239"
+        },
+        "edits": [
+          {
+            "before_start": 122,
+            "before_end": 123,
+            "after_start": 122,
+            "after_end": 124,
+            "before": "很",
+            "after": "把仅"
+          },
+          {
+            "before_start": 124,
+            "before_end": 126,
+            "after_start": 125,
+            "after_end": 136,
+            "before": "担当",
+            "after": "的返程木牌推到证人手边"
+          },
+          {
+            "before_start": 127,
+            "before_end": 132,
+            "after_start": 137,
+            "after_end": 141,
+            "before": "特别有担当",
+            "after": "收回手时"
+          },
+          {
+            "before_start": 133,
+            "before_end": 138,
+            "after_start": 142,
+            "after_end": 150,
+            "before": "大家都觉得",
+            "after": "守门人已经划掉了"
+          },
+          {
+            "before_start": 139,
+            "before_end": 142,
+            "after_start": 151,
+            "after_end": 154,
+            "before": "有担当",
+            "after": "的名字"
+          },
+          {
+            "before_start": 148,
+            "before_end": 150,
+            "after_start": 160,
+            "after_end": 162,
+            "before": "完好",
+            "after": "带伤"
+          },
+          {
+            "before_start": 151,
+            "before_end": 154,
+            "after_start": 163,
+            "after_end": 168,
+            "before": "掏出雷",
+            "after": "只能收起空"
+          },
+          {
+            "before_start": 155,
+            "before_end": 155,
+            "after_start": 169,
+            "after_end": 170,
+            "before": "",
+            "after": "袋"
+          }
+        ],
+        "unchanged_ranges": [
+          {
+            "before_start": 0,
+            "before_end": 122,
+            "after_start": 0,
+            "after_end": 122,
+            "text_hash": "sha256:2f617c5de75b404b93f9af5c0386e1de522a7bf1956e8ca12f30b1f3f4022894"
+          },
+          {
+            "before_start": 123,
+            "before_end": 124,
+            "after_start": 124,
+            "after_end": 125,
+            "text_hash": "sha256:90ce0f66f09488f205e53736a105dfd310614e02421123f93d21abf06811efa1"
+          },
+          {
+            "before_start": 126,
+            "before_end": 127,
+            "after_start": 136,
+            "after_end": 137,
+            "text_hash": "sha256:ad9464da161a8d5ae3709ec94baad99de11664bfadb5d02d94caf72fa3bea203"
+          },
+          {
+            "before_start": 132,
+            "before_end": 133,
+            "after_start": 141,
+            "after_end": 142,
+            "text_hash": "sha256:ad9464da161a8d5ae3709ec94baad99de11664bfadb5d02d94caf72fa3bea203"
+          },
+          {
+            "before_start": 138,
+            "before_end": 139,
+            "after_start": 150,
+            "after_end": 151,
+            "text_hash": "sha256:8b7b91e0001c6971c65812693c87ee82229fe846648a544419c3b19473173d3f"
+          },
+          {
+            "before_start": 142,
+            "before_end": 148,
+            "after_start": 154,
+            "after_end": 160,
+            "text_hash": "sha256:17751720bcba027722cdf46f27d4786ad18b55451116e8560a62c1d780911bfc"
+          },
+          {
+            "before_start": 150,
+            "before_end": 151,
+            "after_start": 162,
+            "after_end": 163,
+            "text_hash": "sha256:ad9464da161a8d5ae3709ec94baad99de11664bfadb5d02d94caf72fa3bea203"
+          },
+          {
+            "before_start": 154,
+            "before_end": 155,
+            "after_start": 168,
+            "after_end": 169,
+            "text_hash": "sha256:628d8d9a6f4b14573d52263a50bcf9fb0e2927ecf253dcf76a280e160eef91fc"
+          },
+          {
+            "before_start": 155,
+            "before_end": 156,
+            "after_start": 170,
+            "after_end": 171,
+            "text_hash": "sha256:eb0d5884569b398e475b89e77a068c6c575a0064ff6a72fafc173102c4cfcd57"
+          }
+        ],
+        "coverage": "COMPLETE_BEFORE_AND_AFTER"
+      },
+      "cross_chapter_window_hash": "sha256:871f23e821e228a263f6d63d5de9a30743844f9680b95c951d4f6da9ab810300",
+      "craft_use_ids": [
+        "craft-use:6d781d9dfb1bf555ac260cf4"
+      ]
+    },
+    {
+      "external_effect_id": "4fdac741-4ded-4c7f-88ec-76e5c5bd81f4",
+      "stage": "revision",
+      "provider_admission_asset_version_id": "e10128de-3079-4431-9f6b-53a22251880f",
+      "provider_admission_content_hash": "sha256:98ffaf4bf205e6323ef6c92d1a08d55c51fc3201b619c3cfc0c00f9a5c1e3c3b",
+      "frozen_output_schema_ref": "schema:chapter-provider-output:revision:v2:quality-targeted-v1",
+      "provider_admission": {
+        "reason": "ADMITTED",
+        "status": "ADMITTED",
+        "precision": "EXACT",
+        "envelope_hash": "sha256:43c098116ce05af2a092755c92edd694c38d910b9e9895d8557d1dbe1e425b27",
+        "total_reserved": 154417,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 64000,
+          "provider_input": 90145,
+          "request_framing": 16
+        },
+        "applicable_limit": 262144,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "scripted_provider_v2-revision",
+          "provider": "scripted_provider_v2",
+          "precision": "EXACT",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "scripted-byte-token-meter",
+          "output_reserve": 64000,
+          "contract_version": "provider-token-accounting-v2",
+          "framing_overhead": 16,
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "model_context_limit": 262144,
+          "execution_token_limit": 262144,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 10833,
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "provider_task_hash": "sha256:fb24ad283aedd74c2cbef6870a1d4cdae64937179a8fda0127298451c4a39dfc",
+      "current_projection_matches_frozen_task_hash": true,
+      "quality_targeted_repair": {
+        "instructions": "Return exact ordered non-overlapping edits, naming the permitted range code in issue_codes. Edit only inside those frozen ranges. Keep every other Unicode code point unchanged, including whitespace. Preserve adopted Craft, facts and accepted history. Updated scene artifacts must reconstruct the same resulting text. Unresolved or unlocated evidence requires author review, never wider edits.",
+        "contract_version": "quality-targeted-repair.v1",
+        "permitted_ranges": [
+          {
+            "code": "QUALITY_TIMELINE_CONSISTENCY_FAILED:task:1:range:1",
+            "status": "OPEN",
+            "severity": "blocking",
+            "observation": "timeline_consistency",
+            "qualification": "ELIGIBLE",
+            "evidence_locator": {
+              "end": 8,
+              "quote": "The prot",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:9062b757bf2b52721c5cd1740d99fca90d62e23783df06276f6870faccbbf348"
+            }
+          }
+        ],
+        "target_text_hash": "sha256:06a8d79f9913a0d0a8fb047d8b62b8e8474d63f2d4ce3190e7fd85e211f4e239",
+        "target_asset_version_id": "authority-output:5b691b29-43f4-4c4e-9f95-9afa53819510:chapter.best_candidate:v1"
+      }
+    },
+    {
+      "external_effect_id": "42975442-ee20-4d77-8e66-e8719e1553a5",
+      "stage": "rereview",
+      "provider_admission_asset_version_id": "47bbe159-ae4d-4343-8dc9-9060f870828b",
+      "provider_admission_content_hash": "sha256:95f296123764455da5348dd083c705582fa66d89e365d8c0d5de3bea64f97553",
+      "frozen_output_schema_ref": "schema:chapter-provider-output:rereview:cross-chapter-v2:quality-resolution-v1:narrative-craft-v1",
+      "provider_admission": {
+        "reason": "ADMITTED",
+        "status": "ADMITTED",
+        "precision": "EXACT",
+        "envelope_hash": "sha256:04f9eba97bae6b2f87e790d5fb6835bc9287adca344a266f054ef7e533602410",
+        "total_reserved": 171889,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 64000,
+          "provider_input": 107617,
+          "request_framing": 16
+        },
+        "applicable_limit": 262144,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "scripted_provider_v2-rereview",
+          "provider": "scripted_provider_v2",
+          "precision": "EXACT",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "scripted-byte-token-meter",
+          "output_reserve": 64000,
+          "contract_version": "provider-token-accounting-v2",
+          "framing_overhead": 16,
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "model_context_limit": 262144,
+          "execution_token_limit": 262144,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 10833,
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "provider_task_hash": "sha256:47a71f7b163476630d8dc34396b3acf700f034fa6ca7559fb61608e4b688af09",
+      "current_projection_matches_frozen_task_hash": true,
+      "before_after": {
+        "contract_version": "exact-prose-comparison.v1",
+        "offset_unit": "UNICODE_CODE_POINT",
+        "original": {
+          "asset_version_id": "authority-output:efdef3fa-c62d-4cda-9d1f-4df335dee32f:chapter.revision:v1",
+          "text_hash": "sha256:06a8d79f9913a0d0a8fb047d8b62b8e8474d63f2d4ce3190e7fd85e211f4e239",
+          "complete_text_ref": "prose[2].text"
+        },
+        "revised": {
+          "asset_version_id": "authority-output:e3508cb1-bc77-48ea-a90b-824d6d09db47:chapter.revision:v1",
+          "text_hash": "sha256:c5e48d7293d64f297c55c70f86c8f9435c1fcdf0c207a6db7eb9003cd81eb6d3"
+        },
+        "edits": [
+          {
+            "before_start": 8,
+            "before_end": 8,
+            "after_start": 8,
+            "after_end": 16,
+            "before": "",
+            "after": "（原地付出代价）"
+          }
+        ],
+        "unchanged_ranges": [
+          {
+            "before_start": 0,
+            "before_end": 8,
+            "after_start": 0,
+            "after_end": 8,
+            "text_hash": "sha256:9062b757bf2b52721c5cd1740d99fca90d62e23783df06276f6870faccbbf348"
+          },
+          {
+            "before_start": 8,
+            "before_end": 171,
+            "after_start": 16,
+            "after_end": 179,
+            "text_hash": "sha256:8dc7f8e219cfcdcf59def6e823a7ae3441d5d88cbfc2f963d0845dbe12d9cc52"
+          }
+        ],
+        "coverage": "COMPLETE_BEFORE_AND_AFTER"
+      },
+      "cross_chapter_window_hash": "sha256:871f23e821e228a263f6d63d5de9a30743844f9680b95c951d4f6da9ab810300",
+      "craft_use_ids": [
+        "craft-use:6d781d9dfb1bf555ac260cf4"
+      ],
+      "quality_action_reassessment": {
+        "source_edit_contract": {
+          "instructions": "Return exact ordered non-overlapping edits, naming the permitted range code in issue_codes. Edit only inside those frozen ranges. Keep every other Unicode code point unchanged, including whitespace. Preserve adopted Craft, facts and accepted history. Updated scene artifacts must reconstruct the same resulting text. Unresolved or unlocated evidence requires author review, never wider edits.",
+          "contract_version": "quality-targeted-repair.v1",
+          "permitted_ranges": [
+            {
+              "code": "QUALITY_TIMELINE_CONSISTENCY_FAILED:task:1:range:1",
+              "status": "OPEN",
+              "severity": "blocking",
+              "observation": "timeline_consistency",
+              "qualification": "ELIGIBLE",
+              "evidence_locator": {
+                "end": 8,
+                "quote": "The prot",
+                "start": 0,
+                "offset_unit": "UNICODE_CODE_POINT",
+                "excerpt_digest": "sha256:9062b757bf2b52721c5cd1740d99fca90d62e23783df06276f6870faccbbf348"
+              }
+            }
+          ],
+          "target_text_hash": "sha256:06a8d79f9913a0d0a8fb047d8b62b8e8474d63f2d4ce3190e7fd85e211f4e239",
+          "target_asset_version_id": "authority-output:5b691b29-43f4-4c4e-9f95-9afa53819510:chapter.best_candidate:v1"
+        },
+        "observations": [
+          "timeline_consistency"
+        ],
+        "instructions": "Return a separate quality_resolution_checks entry for every frozen Quality observation. Cite exact revised prose and explicitly assess preservation. Do not fabricate a Review issue or treat an increased score as resolving Quality. This is model evidence; native Quality gates must reevaluate before acceptance."
+      }
+    }
+  ],
+  "fixture_receipts": {
+    "representation": "COLUMN_ORDERED_ROWS",
+    "columns": [
+      "external_effect_id",
+      "operation_id",
+      "capability",
+      "effect_status",
+      "request_hash",
+      "dispatch_id",
+      "dispatch_generation",
+      "dispatch_status",
+      "receipt_id",
+      "receipt_payload_hash",
+      "reservation_id",
+      "reservation_status",
+      "actual_tokens",
+      "settled_amount",
+      "currency",
+      "accounting_basis"
+    ],
+    "rows": [
+      [
+        "0402f8f1-e6b0-4dbf-b105-e71d4265dedd",
+        "c0ab06db-950d-457e-9e0b-966acd9d9a7d",
+        "model.memo",
+        "SUCCEEDED",
+        "sha256:def951c0c16ee3231b1860eb01f572ac2b4d7c41b17bf35c347a419c376cf060",
+        "99dabdc8-afb2-4515-ac76-8e39bd4150c5",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:0402f8f1-e6b0-4dbf-b105-e71d4265dedd",
+        "sha256:def951c0c16ee3231b1860eb01f572ac2b4d7c41b17bf35c347a419c376cf060",
+        "44f2d5df-6e9e-4f30-89fb-0cff36482ae4",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "49fe133c-6277-482f-8069-f7be4064ac4b",
+        "9ab435b5-0270-4f83-b9c6-ddf6f3c65696",
+        "model.draft",
+        "SUCCEEDED",
+        "sha256:60e927f6dc7bb056a0501736d80481f76b84b4c641dbdab80c62dce0f0651309",
+        "3cd7de82-809a-48ee-b62f-4279fde78057",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:49fe133c-6277-482f-8069-f7be4064ac4b",
+        "sha256:60e927f6dc7bb056a0501736d80481f76b84b4c641dbdab80c62dce0f0651309",
+        "9972816b-9522-45db-9416-39bd91fb3094",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "621ebe0a-03e0-40e8-afcb-c1eefddd4eff",
+        "27410a0c-6205-4c29-a310-de6226081522",
+        "model.review",
+        "SUCCEEDED",
+        "sha256:98a52cafc0c232620162b2815240a54972f1b7df88831c5886caf14663014cd5",
+        "f1da3a14-3bdc-4b1f-9669-4237b4b14099",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:621ebe0a-03e0-40e8-afcb-c1eefddd4eff",
+        "sha256:98a52cafc0c232620162b2815240a54972f1b7df88831c5886caf14663014cd5",
+        "d7860af0-76ab-4b5b-8b34-29b32b222330",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "b82597ce-b49e-4347-8494-7d09ec8937b4",
+        "fca5ce82-0d91-43aa-b45f-bb3a936209dc",
+        "model.revision",
+        "SUCCEEDED",
+        "sha256:eeed1fb84cf6233a07ac1bc7ef1ff30105db520476af4e1396b866e0b44f4fa2",
+        "cd4ee963-d281-4421-87fb-195aa9fb86a8",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:b82597ce-b49e-4347-8494-7d09ec8937b4",
+        "sha256:eeed1fb84cf6233a07ac1bc7ef1ff30105db520476af4e1396b866e0b44f4fa2",
+        "2a614342-3ea4-4dab-b02c-a9afa97608d1",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "f8a10b46-4527-43b0-92c8-9af5c6863c0c",
+        "91c4f751-a259-438a-9674-a1dbe29dd410",
+        "model.rereview",
+        "SUCCEEDED",
+        "sha256:2cd03eaecfcc27d28254ea4eea6e4d8f92ac155e375794601d9e636539fa4fcf",
+        "c7216b3d-2a44-4e8d-a9a9-fb76da955370",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:f8a10b46-4527-43b0-92c8-9af5c6863c0c",
+        "sha256:2cd03eaecfcc27d28254ea4eea6e4d8f92ac155e375794601d9e636539fa4fcf",
+        "7be6e326-e6cc-42a9-a3b6-4de5c01b1029",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "0e3e96cf-d304-458a-9593-98f01b7a0fed",
+        "953975c5-b1a6-4d7f-b8f7-017a2cfa09e2",
+        "model.canon_extraction",
+        "SUCCEEDED",
+        "sha256:ff86a1464e841c07f0abc5e808313163aeb38d7e16c472f1fa984b4d736c9ef2",
+        "c00fc5cd-cfba-49b0-aed1-519597a85b6f",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:0e3e96cf-d304-458a-9593-98f01b7a0fed",
+        "sha256:ff86a1464e841c07f0abc5e808313163aeb38d7e16c472f1fa984b4d736c9ef2",
+        "b04c2c1b-7592-4319-bfce-25e8d844ef9d",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "0eced9c9-17c5-46c4-a13c-1299033c793f",
+        "bf935768-272c-4a4b-becd-615d0bf73c6f",
+        "model.canon_support",
+        "SUCCEEDED",
+        "sha256:b6d8b5bb511073c110ab102c80463e78bd9aac57edb23820580dd51f991c7001",
+        "e6ed6c3a-125a-4ec3-90f3-be5b82c4deac",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:0eced9c9-17c5-46c4-a13c-1299033c793f",
+        "sha256:b6d8b5bb511073c110ab102c80463e78bd9aac57edb23820580dd51f991c7001",
+        "5ba28b45-28be-460e-8695-11389f7db7ab",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "dc4e3f0a-b81b-446d-9db0-106ee06a5b28",
+        "43dac529-664c-4569-aa9b-d7811342dcc9",
+        "model.quality_structural",
+        "SUCCEEDED",
+        "sha256:f916e079ef805695f94bdeef8333a8d2b680460b6ba752c07be7e625ce485a52",
+        "b69b2675-7dd7-4453-8383-ba0b687020a2",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:dc4e3f0a-b81b-446d-9db0-106ee06a5b28",
+        "sha256:f916e079ef805695f94bdeef8333a8d2b680460b6ba752c07be7e625ce485a52",
+        "7677a612-f662-467c-adbe-646db6d9d39f",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "66f6162d-94e3-42d7-8f52-282b307399c5",
+        "292774c5-49af-4fbc-915f-7c9128bbc3b3",
+        "model.quality_commercial",
+        "SUCCEEDED",
+        "sha256:456f034001198eb2e15abd1c69cd25fca6824f50e15c1831dafaba46dfe56962",
+        "0033c524-1245-46fc-b69c-5b7ae573a4db",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:66f6162d-94e3-42d7-8f52-282b307399c5",
+        "sha256:456f034001198eb2e15abd1c69cd25fca6824f50e15c1831dafaba46dfe56962",
+        "366c509a-44e4-49fb-a9aa-9a0350654173",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "4a2057ee-cf17-4e5c-8060-d1608013f9ce",
+        "d731a817-abf3-473e-a43a-6bd3dd1c19ab",
+        "model.quality_source_originality",
+        "SUCCEEDED",
+        "sha256:3ed69ac4fae04a10966619b735ed7d83ccf1e9e5dd4f04972549627565e3b41c",
+        "2734e373-0164-416c-8f54-625eb85e2144",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:4a2057ee-cf17-4e5c-8060-d1608013f9ce",
+        "sha256:3ed69ac4fae04a10966619b735ed7d83ccf1e9e5dd4f04972549627565e3b41c",
+        "f736e569-4d5c-49a4-aa3a-dc26cce050b3",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "74eaccc4-0b93-42ab-9a93-122870e7f673",
+        "3f88dc8c-2cbf-4957-a22b-75dfd05318ed",
+        "model.quality_longform",
+        "SUCCEEDED",
+        "sha256:eb43c9fdb60e4d339b60da29b5cc53cb6aba34d38fac647ea6c9c90492afde0e",
+        "1f42edf4-da35-4a3d-9eb4-ff4f65ec0ce8",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:74eaccc4-0b93-42ab-9a93-122870e7f673",
+        "sha256:eb43c9fdb60e4d339b60da29b5cc53cb6aba34d38fac647ea6c9c90492afde0e",
+        "14a92f45-b006-47f5-9ffc-6c06c37d2748",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "a4a0ee98-da42-4b48-959c-42dc20e11a6f",
+        "d79cf802-2004-437c-893b-e427c6c9843d",
+        "model.quality_platform",
+        "SUCCEEDED",
+        "sha256:2f97d8c1497ea0c14e2899c95a00ea80e37fd9d967a9ce095de06a7ad24314e5",
+        "7c5d02b2-5b86-45c4-9829-50b6bc58f3ae",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:a4a0ee98-da42-4b48-959c-42dc20e11a6f",
+        "sha256:2f97d8c1497ea0c14e2899c95a00ea80e37fd9d967a9ce095de06a7ad24314e5",
+        "eab7c08e-8906-46c9-bbbd-a3ce08e556b5",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "b70798cb-b054-4159-a18d-e4dc0424f2c1",
+        "1d90cc7b-b711-4a8b-ab47-1c39c8740cf6",
+        "object_store.put",
+        "SUCCEEDED",
+        "sha256:55bcce724258b678c8a86101654d2203065730cded13c8da01e88cb9f74fdbd7",
+        "57a641d4-3340-43c1-b6a4-a58ef148d9a7",
+        1,
+        "SUCCEEDED",
+        "local:blob.upload:project-110115efeebe449a934fada0c0d5b269:dfb9fe13-808d-4821-929e-32efd41ab945",
+        "sha256:55bcce724258b678c8a86101654d2203065730cded13c8da01e88cb9f74fdbd7",
+        null,
+        null,
+        null,
+        "None",
+        null,
+        null
+      ],
+      [
+        "4506df16-29ef-4ce8-9f1a-23791cc52115",
+        "83b3de24-587a-4ff2-b23e-1f3973205dcc",
+        "model.memo",
+        "SUCCEEDED",
+        "sha256:c807a46913dace98fbb3a7ab0f49e74b226fad72f43b413e31cf97197473887a",
+        "459b1747-e7e2-4259-aea8-e00ef4dbae62",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:4506df16-29ef-4ce8-9f1a-23791cc52115",
+        "sha256:c807a46913dace98fbb3a7ab0f49e74b226fad72f43b413e31cf97197473887a",
+        "5935edb3-bd5c-42dd-8820-17cdd7db4850",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "4c06456d-53b2-4e20-85b1-1e53a0b3133b",
+        "e049e95c-0883-441c-8679-7d555b139e72",
+        "model.draft",
+        "SUCCEEDED",
+        "sha256:3d82917569261deb00da22af71e6312c7384dffc235fd811827f98515fb4c685",
+        "b8227a0e-d1e1-42aa-ba0b-234008e0bee3",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:4c06456d-53b2-4e20-85b1-1e53a0b3133b",
+        "sha256:3d82917569261deb00da22af71e6312c7384dffc235fd811827f98515fb4c685",
+        "960c4ca9-9c6e-406c-983e-7c7f2eee9ad4",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "380d241e-1188-4ba6-87ea-f392bb37c826",
+        "33d6f7a2-5bc7-442c-9d43-361ab8a114f3",
+        "model.review",
+        "SUCCEEDED",
+        "sha256:7456dc4254f08f09e31b437c02a919b284cdd56c3613e73892eea31223d8f68a",
+        "887fbc5f-e6a1-42a3-bdaa-316b880f58e1",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:380d241e-1188-4ba6-87ea-f392bb37c826",
+        "sha256:7456dc4254f08f09e31b437c02a919b284cdd56c3613e73892eea31223d8f68a",
+        "a99d9c65-16c3-45dc-9aa2-21f6d873205c",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "e665049d-f8b2-4acd-aa6d-7ee726f57aea",
+        "efdef3fa-c62d-4cda-9d1f-4df335dee32f",
+        "model.revision",
+        "SUCCEEDED",
+        "sha256:b5c740a62d4d88d4b094ab5eca1109eee055a6a736d9d9931b2780aa361cfcd4",
+        "40dad55c-fce1-4f08-99f2-62fbba53aa0c",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:e665049d-f8b2-4acd-aa6d-7ee726f57aea",
+        "sha256:b5c740a62d4d88d4b094ab5eca1109eee055a6a736d9d9931b2780aa361cfcd4",
+        "da3f7b17-6796-4fce-b711-da4848cc2180",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "00c973ad-c905-4064-81d4-04ff2411fc33",
+        "4f824e3a-8945-4fd0-be03-af8bd92850a9",
+        "model.rereview",
+        "SUCCEEDED",
+        "sha256:731340cf92d182f57b2b7d85f3987d842b90a3967098baf25469e6e534631886",
+        "85367213-8d0c-4649-8da1-8486e0cf5569",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:00c973ad-c905-4064-81d4-04ff2411fc33",
+        "sha256:731340cf92d182f57b2b7d85f3987d842b90a3967098baf25469e6e534631886",
+        "d272b079-e5d4-4728-bc30-042bcd845241",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "e7083644-4f54-48ff-908f-4ffba45a6a61",
+        "ceddf3d4-9bf8-4c6d-b721-e0258f430855",
+        "model.canon_extraction",
+        "SUCCEEDED",
+        "sha256:8a4b8c97941df2e32d4808f0359d0842fa53bd0c9f2de0001d1467205d3c17b8",
+        "9a9356c3-f9d8-4310-8064-6ad0cf11709e",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:e7083644-4f54-48ff-908f-4ffba45a6a61",
+        "sha256:8a4b8c97941df2e32d4808f0359d0842fa53bd0c9f2de0001d1467205d3c17b8",
+        "84c41e09-2adb-456a-8ad4-d4fb1325091a",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "2279d0a4-13c6-4ceb-ad1f-44efa054d88f",
+        "95f38878-850b-4132-a9f6-6971f2b05e57",
+        "model.canon_support",
+        "SUCCEEDED",
+        "sha256:2108503a7890f7bd1b6c6a77957f6277afffcd8a4b2a65c3378ee0a4730aabe5",
+        "64a34d49-0919-43ae-9dea-e835e6530d0e",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:2279d0a4-13c6-4ceb-ad1f-44efa054d88f",
+        "sha256:2108503a7890f7bd1b6c6a77957f6277afffcd8a4b2a65c3378ee0a4730aabe5",
+        "65863eec-8c6e-420f-a556-d60b3cf11656",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "ebfbe245-ca25-4ba1-93c4-9a5562497a89",
+        "1487bc62-a2ac-4381-a6d9-39ab8e7edad5",
+        "model.quality_structural",
+        "SUCCEEDED",
+        "sha256:0a86af50306ab661b8e338c0bdc7d261918520aaf61c726f113f571688f09d3b",
+        "65eb1ba9-fee6-49af-b328-e16c4d7597a7",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:ebfbe245-ca25-4ba1-93c4-9a5562497a89",
+        "sha256:0a86af50306ab661b8e338c0bdc7d261918520aaf61c726f113f571688f09d3b",
+        "cde5d867-7289-4205-93c2-8ccc75691111",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "7571da98-23af-45d8-9515-72c5006485da",
+        "9e0fe2da-fcb1-4292-9bb8-131eb6d1bdc8",
+        "model.quality_commercial",
+        "SUCCEEDED",
+        "sha256:e8f383ada55a0d81d2eb72b2f969ecaf22b22fb1363c4752f98439e01f1674a9",
+        "2fc00185-0785-4d00-ad4c-922b5bf47027",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:7571da98-23af-45d8-9515-72c5006485da",
+        "sha256:e8f383ada55a0d81d2eb72b2f969ecaf22b22fb1363c4752f98439e01f1674a9",
+        "3090d8c4-285d-4990-b644-babc61ed5de2",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "9daa9486-fbe3-499f-8e27-748546141305",
+        "70b0cc7c-6109-4cf1-9374-1290ec1373d3",
+        "model.quality_source_originality",
+        "SUCCEEDED",
+        "sha256:c9f07ef66393abf5aa922b932e78654f198c8368b53522ea0eb6c4e3597ca795",
+        "0107e14f-b64c-4adf-af6b-7f57c13b1446",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:9daa9486-fbe3-499f-8e27-748546141305",
+        "sha256:c9f07ef66393abf5aa922b932e78654f198c8368b53522ea0eb6c4e3597ca795",
+        "87fb7a1b-ae96-4e92-b614-06f9724ea4cc",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "d642accb-4dd9-49bb-a72c-23e0b66407a6",
+        "9cb1bb22-6498-49d7-bbb2-242bef176dff",
+        "model.quality_longform",
+        "SUCCEEDED",
+        "sha256:7afa77fa0a08e44560bdaf152f3226cb0f593f55b0fe6d33f6118186c522ef77",
+        "f2d0abd5-0e97-4888-8bdf-69665a056c0d",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:d642accb-4dd9-49bb-a72c-23e0b66407a6",
+        "sha256:7afa77fa0a08e44560bdaf152f3226cb0f593f55b0fe6d33f6118186c522ef77",
+        "dc69025d-0a99-4ea7-b4c1-8a73cfe8054b",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "54ff3b69-1698-43f9-906f-855c0686bce8",
+        "1d8c44a9-d88c-433e-85ce-0e79790a387d",
+        "model.quality_platform",
+        "SUCCEEDED",
+        "sha256:25554ed2c709f0cdcb14670cdb1ab217455a55d3dfd40f5402874ab81d51eaa5",
+        "af9dd807-fe8f-4930-b26a-274f1efa2ef8",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:54ff3b69-1698-43f9-906f-855c0686bce8",
+        "sha256:25554ed2c709f0cdcb14670cdb1ab217455a55d3dfd40f5402874ab81d51eaa5",
+        "f2ea0fec-26ac-4b36-ba56-9ab8ecc05cfa",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "4fdac741-4ded-4c7f-88ec-76e5c5bd81f4",
+        "e3508cb1-bc77-48ea-a90b-824d6d09db47",
+        "model.revision",
+        "SUCCEEDED",
+        "sha256:b80d51e2d7726fba8f191b60ade11462cb67f758b1eed108ead62a153b039fa0",
+        "ae899c83-d15a-4a77-bbd4-9741e352f63b",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:4fdac741-4ded-4c7f-88ec-76e5c5bd81f4",
+        "sha256:b80d51e2d7726fba8f191b60ade11462cb67f758b1eed108ead62a153b039fa0",
+        "974fc4bd-4c1a-462e-a48c-f81d72b0d206",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "42975442-ee20-4d77-8e66-e8719e1553a5",
+        "41123ad3-6ff6-47ae-bbae-39729ad21f49",
+        "model.rereview",
+        "SUCCEEDED",
+        "sha256:82333b52e2f109517100e52665f30502b66583024df9f24237f17ae5ee64bce4",
+        "a48851cd-c366-45e2-82e6-421caf0e4bfd",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:42975442-ee20-4d77-8e66-e8719e1553a5",
+        "sha256:82333b52e2f109517100e52665f30502b66583024df9f24237f17ae5ee64bce4",
+        "385100c7-2b1a-4d7c-9ccf-5e445830f4ed",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "19af9686-bce1-472d-bc38-14a036621d90",
+        "1432577a-9e83-4e43-9eb3-dc00ab08459d",
+        "model.canon_extraction",
+        "SUCCEEDED",
+        "sha256:d26bb663417059224fbef49e335ac2e42b6a26e3215a1f3fd4b084930f7d90e8",
+        "bd184bb6-cf9f-4072-8a09-3beb1f71afd8",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:19af9686-bce1-472d-bc38-14a036621d90",
+        "sha256:d26bb663417059224fbef49e335ac2e42b6a26e3215a1f3fd4b084930f7d90e8",
+        "054666f9-3921-4d3d-b7e8-9dcbdbd6aff5",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "aa983875-01bc-4cae-a900-b0d400338776",
+        "c426b4a4-7153-44c1-bbf7-2a3911f11f04",
+        "model.canon_support",
+        "SUCCEEDED",
+        "sha256:666e703b9fdf0b5623bfe8a3feb494314303003e08fe362ca004ec752f8c4f21",
+        "cf9606fa-4dda-4227-89b8-5db38fc3e78a",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:aa983875-01bc-4cae-a900-b0d400338776",
+        "sha256:666e703b9fdf0b5623bfe8a3feb494314303003e08fe362ca004ec752f8c4f21",
+        "218a7882-f025-4ccc-98f6-8d680b559c1d",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "08c241b5-f063-4c0f-943c-2a68701db68f",
+        "601bc72a-6bec-4cbd-9838-a9c3c4bb787a",
+        "model.quality_structural",
+        "SUCCEEDED",
+        "sha256:7f12fa2062823701db9a3b94961264b7570e08fa947f265aa39cc8cd27a53f03",
+        "e0bfe06f-d80a-4cc2-8db0-cf1462ef1456",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:08c241b5-f063-4c0f-943c-2a68701db68f",
+        "sha256:7f12fa2062823701db9a3b94961264b7570e08fa947f265aa39cc8cd27a53f03",
+        "7617f08b-e00d-4321-8cdc-722c88e73bec",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "15c9c358-5834-424c-baff-6eda37277347",
+        "8950d227-5cdc-4159-9dcd-0b3efd2207e7",
+        "model.quality_commercial",
+        "SUCCEEDED",
+        "sha256:050e1c1b4da886de3eeaead908ab5c41eda522a1a8dafa69eca804aa41af5c41",
+        "ba0ab624-96f4-4a9b-9775-96d7e60ab13f",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:15c9c358-5834-424c-baff-6eda37277347",
+        "sha256:050e1c1b4da886de3eeaead908ab5c41eda522a1a8dafa69eca804aa41af5c41",
+        "4bc9926e-1567-41e4-afa2-0305ce7ae0bd",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "f919094c-c097-4fd8-a643-8e0aa2b76c23",
+        "cfce9547-7cd8-4fc8-86b9-a56c4caebec2",
+        "model.quality_source_originality",
+        "SUCCEEDED",
+        "sha256:b17cab1b87008d441dbe8cdbc02c28afc933f2647cca9878580d4e000b1d5688",
+        "9691a770-e06e-4ce5-99c4-ab9e0e82336c",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:f919094c-c097-4fd8-a643-8e0aa2b76c23",
+        "sha256:b17cab1b87008d441dbe8cdbc02c28afc933f2647cca9878580d4e000b1d5688",
+        "6480c8c1-ce03-479e-ae2c-1fecd7dcb109",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "cbb8608d-de66-484b-9d07-30dcc29c62f4",
+        "6317b56c-13bf-4f26-aaab-ac83e651f763",
+        "model.quality_longform",
+        "SUCCEEDED",
+        "sha256:e02cdef29b8be33f122bbeb8d660826cd51d7c56434052f5a53d3a24b60d717c",
+        "b7abdf65-c530-49ad-86dc-01212adbe65b",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:cbb8608d-de66-484b-9d07-30dcc29c62f4",
+        "sha256:e02cdef29b8be33f122bbeb8d660826cd51d7c56434052f5a53d3a24b60d717c",
+        "0bf21297-089b-4bca-9b6f-53b255d09017",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "f319a0bd-60c9-422d-ac66-0180ae54817d",
+        "5ed720ce-d49f-4454-860e-12f7fb8c48ba",
+        "model.quality_platform",
+        "SUCCEEDED",
+        "sha256:cbec8e03ae39f352cbfd53c6444ab85d556d991772cf1de5337167952fb81634",
+        "923180a9-e2f0-4cb8-b8cf-e4f964008b0e",
+        1,
+        "SUCCEEDED",
+        "fixture:chapter-execution:f319a0bd-60c9-422d-ac66-0180ae54817d",
+        "sha256:cbec8e03ae39f352cbfd53c6444ab85d556d991772cf1de5337167952fb81634",
+        "c1425f75-a8cb-4863-8f36-9a093e211abf",
+        "SETTLED",
+        0,
+        "0E-8",
+        "USD",
+        "PRICED"
+      ],
+      [
+        "9e23411d-dd95-4e22-8423-429f9fbe4186",
+        "1ba6ba75-a0d5-417d-9f9b-fb437516ccdc",
+        "object_store.put",
+        "SUCCEEDED",
+        "sha256:dce8ccac07e5d314bce1f160689581d46f79330cbe7088de4b097caeebca3052",
+        "80522724-e5d7-4d46-8b2b-7fed377a01be",
+        1,
+        "SUCCEEDED",
+        "local:blob.upload:project-110115efeebe449a934fada0c0d5b269:de5c612d-2388-4e02-b1e3-390f87d6f5cf",
+        "sha256:dce8ccac07e5d314bce1f160689581d46f79330cbe7088de4b097caeebca3052",
+        null,
+        null,
+        null,
+        "None",
+        null,
+        null
+      ]
+    ]
+  },
+  "checks": {
+    "book_cursor_two_committed": true,
+    "dual_diagnoses_present": true,
+    "quality_task_v2_located": true,
+    "quality_failed_then_fixture_waived": true,
+    "materialized_task_hashes_match_current_projection": true,
+    "all_retained_effects_terminal": true,
+    "no_duplicate_effect_dispatch": true
+  }
+}
