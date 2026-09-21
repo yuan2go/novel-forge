@@ -135,7 +135,7 @@ def require_business_scope(policy: dict[str, Any], actual: dict[str, Any]) -> No
         admitted = allowed["source_allowed"]
     elif origin == "DESIGN":
         admitted = allowed["design_allowed"]
-    elif origin in {"CREATION_EARLY", "CREATION_LATE"}:
+    elif origin in {"CREATION_EARLY", "CREATION_LATE", "PRODUCTION"}:
         chapter = _number(actual["chapter_number"], minimum=1)
         admitted = chapter <= allowed["max_chapter_number"]
     else:

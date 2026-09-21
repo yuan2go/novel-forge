@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime
+from decimal import Decimal
 import hashlib
 import json
 import re
@@ -12,6 +14,8 @@ from .errors import KernelError
 PHASES = ("SOURCE", "CREATION", "REPAIR")
 SINGLE_BOOK_VERSION = "creative-single-book-budget.v2"
 PRODUCTION_BOOK_VERSION = "creative-book-production-budget.v3"
+PROVIDER_CAMPAIGN_VERSION = "creative-provider-campaign-budget.v4"
+PROVIDER_CAMPAIGN_PHASES = ("REFERENCE", "SCREENING", "CALIBRATION", "HOLDOUT", "SOURCE", "DESIGN", "PRODUCTION", "REPAIR")
 SINGLE_BOOK_VERSIONS = {SINGLE_BOOK_VERSION, PRODUCTION_BOOK_VERSION}
 SINGLE_BOOK_PHASES = ("SOURCE", "DESIGN", "CREATION_EARLY", "CREATION_LATE", "REPAIR")
 _ALLOCATIONS = dict(zip(PHASES, ("source_allocation", "creation_allocation", "repair_allocation"), strict=True))
@@ -88,6 +92,43 @@ _V3_ARM_SCHEMA["properties"]["chapter_ranges"] = _object_schema({
 })
 V3_POLICY_SCHEMA["properties"]["authorization"]["properties"]["business_scope"]["properties"]["max_chapter_number"].pop("maximum")
 POLICY_SCHEMA = V1_POLICY_SCHEMA
+_MIXED_ALLOCATION_SCHEMA = _object_schema({
+    **_ALLOCATION_SCHEMA["properties"],
+    "priced_usd": {"type": "string", "pattern": r"^(0|[1-9][0-9]*)(\.[0-9]+)?$"},
+})
+V4_POLICY_SCHEMA = _object_schema({
+    "policy_version": _TEXT_SCHEMA,
+    "comparison_budget": _object_schema({
+        "contract_version": {"const": PROVIDER_CAMPAIGN_VERSION},
+        "experiment_id": _TEXT_SCHEMA,
+        "manifest_hash": {"type": "string", "pattern": r"^sha256:[0-9a-f]{64}$"},
+        "expires_at": {"type": "string", "format": "date-time"},
+        "accounting_basis": {"const": "MIXED"},
+        "shared_total": _MIXED_ALLOCATION_SCHEMA,
+        "arms": {"type": "array", "minItems": 1, "maxItems": 1, "items": _object_schema({
+            "arm": {"const": "SINGLE"}, "project_id": _TEXT_SCHEMA, "book_id": _TEXT_SCHEMA,
+            "project_total": _MIXED_ALLOCATION_SCHEMA,
+            **{phase.lower() + "_allocation": _MIXED_ALLOCATION_SCHEMA for phase in PROVIDER_CAMPAIGN_PHASES},
+            "chapter_ranges": _object_schema({"PRODUCTION": {
+                "type": "array", "minItems": 2, "maxItems": 2,
+                "items": {"type": "integer", "minimum": 1},
+            }}),
+        })},
+        "entitlements": {"type": "array", "items": _object_schema({
+            "provider": _TEXT_SCHEMA, "authorization_ref": _TEXT_SCHEMA,
+            **{key: {"type": "integer", "minimum": 1} for key in ("calls", "tokens")},
+        })},
+    }),
+    "authorization": _object_schema({
+        "authorization_ref": _TEXT_SCHEMA, "project_id": _TEXT_SCHEMA, "book_id": _TEXT_SCHEMA,
+        "evidence_hash": {"type": "string", "pattern": r"^sha256:[0-9a-f]{64}$"},
+        "authorized_cumulative_caps": _object_schema({phase: _MIXED_ALLOCATION_SCHEMA for phase in PROVIDER_CAMPAIGN_PHASES}),
+        "business_scope": _object_schema({
+            "source_allowed": {"type": "boolean"}, "design_allowed": {"type": "boolean"},
+            "max_chapter_number": {"type": "integer", "minimum": 0},
+        }),
+    }),
+})
 
 
 def _invalid(message: str) -> KernelError:
@@ -124,6 +165,8 @@ def _allocation(value: Any, label: str, *, positive: bool = False, paired: bool 
 
 
 def validate_comparison_budget(value: Any, *, require_both_arms: bool = False) -> dict[str, Any]:
+    if isinstance(value, dict) and value.get("contract_version") == PROVIDER_CAMPAIGN_VERSION:
+        return _validate_provider_campaign(value, require_both_arms=require_both_arms)
     production = isinstance(value, dict) and value.get("contract_version") == PRODUCTION_BOOK_VERSION
     contract = _object(value, "comparison_budget", {
         "contract_version", "experiment_id", "accounting_basis", "shared_total", "arms",
@@ -176,6 +219,8 @@ def validate_comparison_budget(value: Any, *, require_both_arms: bool = False) -
 
 
 def budget_phases(plan: dict[str, Any]) -> tuple[str, ...]:
+    if plan["contract_version"] == PROVIDER_CAMPAIGN_VERSION:
+        return PROVIDER_CAMPAIGN_PHASES
     return SINGLE_BOOK_PHASES if plan["contract_version"] in SINGLE_BOOK_VERSIONS else PHASES
 
 
@@ -245,6 +290,8 @@ def validate_policy(value: Any) -> dict[str, Any]:
     policy = _object(value, "policy", {"policy_version", "comparison_budget", "authorization"})
     _text(policy["policy_version"], "policy_version")
     plan = validate_comparison_budget(policy["comparison_budget"])
+    if plan["contract_version"] == PROVIDER_CAMPAIGN_VERSION:
+        return _validate_provider_campaign_policy(policy, plan)
     if plan["accounting_basis"] != "ACCOUNT_ENTITLEMENT":
         raise _invalid("Native stage budget requires ACCOUNT_ENTITLEMENT; PRICED needs an explicit monetary phase contract")
     authorization = _object(policy["authorization"], "authorization", {
@@ -271,6 +318,99 @@ def validate_policy(value: Any) -> dict[str, Any]:
             raise _invalid("Single-book business permissions must be booleans")
         if _integer(scope["max_chapter_number"], "max_chapter_number") > arm["chapter_ranges"]["CREATION_LATE"][1]:
             raise _invalid("Single-book business scope cannot exceed its frozen chapter range")
+    return deepcopy(policy)
+
+
+def _monetary_allocation(value: Any, label: str) -> dict[str, Any]:
+    result = _object(value, label, {"calls", "tokens", "priced_usd"})
+    _allocation({key: result[key] for key in ("calls", "tokens")}, label)
+    if not isinstance(result["priced_usd"], str) or not re.fullmatch(r"(0|[1-9][0-9]*)(\.[0-9]+)?", result["priced_usd"]):
+        raise _invalid("priced USD requires a decimal string")
+    try:
+        amount = Decimal(result["priced_usd"])
+    except ArithmeticError as exc:
+        raise _invalid("priced USD is invalid") from exc
+    if not amount.is_finite() or amount < 0 or (not result["calls"] and amount):
+        raise _invalid("priced USD must be finite, non-negative and bound to calls")
+    return result
+
+
+def _validate_provider_campaign(value: dict[str, Any], *, require_both_arms: bool) -> dict[str, Any]:
+    plan = _object(value, "provider campaign", {
+        "contract_version", "experiment_id", "manifest_hash", "expires_at", "accounting_basis",
+        "shared_total", "arms", "entitlements",
+    })
+    if require_both_arms or plan["accounting_basis"] != "MIXED":
+        raise _invalid("Provider campaign budget does not itself prove a paired comparison")
+    _text(plan["experiment_id"], "experiment_id")
+    if not isinstance(plan["manifest_hash"], str) or not _HASH.fullmatch(plan["manifest_hash"]):
+        raise _invalid("Provider campaign requires its frozen manifest hash")
+    try:
+        if datetime.fromisoformat(plan["expires_at"]).tzinfo is None:
+            raise ValueError("timezone required")
+    except (ValueError, TypeError) as exc:
+        raise _invalid("Provider campaign requires a timezone-aware expiry") from exc
+    total = _monetary_allocation(plan["shared_total"], "shared_total")
+    if not total["calls"] or not total["tokens"]:
+        raise _invalid("Provider campaign requires a positive cumulative allowance")
+    if not isinstance(plan["arms"], list) or len(plan["arms"]) != 1:
+        raise _invalid("Provider campaign binds one project and one production Book")
+    fields = allocation_fields(plan)
+    arm = _object(plan["arms"][0], "campaign participant", {
+        "arm", "project_id", "book_id", "project_total", "chapter_ranges", *fields.values(),
+    })
+    if arm["arm"] != "SINGLE":
+        raise _invalid("Provider campaign requires the SINGLE participant")
+    for key in ("project_id", "book_id"):
+        _text(arm[key], key)
+    for key in ("project_total", *fields.values()):
+        _monetary_allocation(arm[key], key)
+    ranges = _object(arm["chapter_ranges"], "chapter_ranges", {"PRODUCTION"})
+    span = ranges["PRODUCTION"]
+    if (not isinstance(span, list) or len(span) != 2 or span[0] != 1
+        or any(type(number) is not int or number < 1 for number in span)):
+        raise _invalid("Provider campaign binds a contiguous production range starting at chapter 1")
+    if arm["project_total"] != total or any(
+        Decimal(str(total[key])) != sum(Decimal(str(arm[field][key])) for field in fields.values())
+        for key in total
+    ):
+        raise _invalid("Provider campaign totals must equal all phase allocations")
+    if not isinstance(plan["entitlements"], list):
+        raise _invalid("Provider campaign requires an explicit entitlement list")
+    identities = set()
+    for lane in plan["entitlements"]:
+        lane = _object(lane, "entitlement", {"provider", "authorization_ref", "calls", "tokens"})
+        identity = tuple(_text(lane[key], key) for key in ("provider", "authorization_ref"))
+        if identity in identities:
+            raise _invalid("Provider campaign entitlement identity is duplicated")
+        identities.add(identity)
+        for key in ("calls", "tokens"):
+            if _integer(lane[key], "entitlement " + key, 1) > total[key]:
+                raise _invalid("entitlement allowance exceeds the complete campaign")
+    return deepcopy(plan)
+
+
+def _validate_provider_campaign_policy(policy: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
+    authorization = _object(policy["authorization"], "campaign authorization", {
+        "authorization_ref", "evidence_hash", "project_id", "book_id", "authorized_cumulative_caps", "business_scope",
+    })
+    for key in ("authorization_ref", "project_id", "book_id"):
+        _text(authorization[key], key)
+    if not isinstance(authorization["evidence_hash"], str) or not _HASH.fullmatch(authorization["evidence_hash"]):
+        raise _invalid("Provider campaign requires exact authorization evidence")
+    arm = arm_for_project(plan, authorization["project_id"])
+    if authorization["book_id"] != arm["book_id"]:
+        raise _invalid("Provider campaign authorization must bind its production Book")
+    caps = _object(authorization["authorized_cumulative_caps"], "campaign phase authorization", set(PROVIDER_CAMPAIGN_PHASES))
+    for phase, cap in caps.items():
+        _monetary_allocation(cap, phase)
+        if any(Decimal(str(cap[key])) > Decimal(str(arm[phase.lower() + "_allocation"][key])) for key in cap):
+            raise _invalid("phase authorization exceeds its frozen campaign allocation")
+    scope = _object(authorization["business_scope"], "business_scope", {"source_allowed", "design_allowed", "max_chapter_number"})
+    if any(type(scope[key]) is not bool for key in ("source_allowed", "design_allowed")):
+        raise _invalid("Provider campaign business permissions require booleans")
+    if _integer(scope["max_chapter_number"], "max_chapter_number") > arm["chapter_ranges"]["PRODUCTION"][1]:
+        raise _invalid("Provider campaign authorization exceeds its production chapter range")
     return deepcopy(policy)
 
 
@@ -359,4 +499,4 @@ def classify_phase(operation_name: str, capability: str, request_payload: dict[s
     raise failure
 
 
-__all__ = ["PHASES", "POLICY_SCHEMA", "SINGLE_BOOK_PHASES", "SINGLE_BOOK_VERSION", "SINGLE_BOOK_VERSIONS", "PRODUCTION_BOOK_VERSION", "V1_POLICY_SCHEMA", "V2_POLICY_SCHEMA", "V3_POLICY_SCHEMA", "allocation_fields", "arm_for_project", "budget_phases", "classify_phase", "contract_hash", "validate_comparison_budget", "validate_policy"]
+__all__ = ["PHASES", "POLICY_SCHEMA", "SINGLE_BOOK_PHASES", "SINGLE_BOOK_VERSION", "SINGLE_BOOK_VERSIONS", "PRODUCTION_BOOK_VERSION", "PROVIDER_CAMPAIGN_VERSION", "PROVIDER_CAMPAIGN_PHASES", "V1_POLICY_SCHEMA", "V2_POLICY_SCHEMA", "V3_POLICY_SCHEMA", "V4_POLICY_SCHEMA", "allocation_fields", "arm_for_project", "budget_phases", "classify_phase", "contract_hash", "validate_comparison_budget", "validate_policy"]

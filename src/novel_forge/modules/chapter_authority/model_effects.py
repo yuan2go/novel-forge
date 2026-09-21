@@ -188,93 +188,16 @@ class ModelProviderResult:
 
 
 def _model_budget_settlement(
-    result: ModelProviderResult,
-    *,
-    reserved_amount: str | None,
-    reserved_tokens: int,
+    result: ModelProviderResult, *, reserved_amount: str | None, reserved_tokens: int,
     frozen_capability_profile: Mapping[str, Any],
 ) -> tuple[str | None, int, dict[str, Any]]:
-    """INVARIANT: Use frozen receipt capabilities or retain the reservation ceiling.
+    from novel_forge.modules.command_kernel.provider_failure_accounting import successful_provider_budget_settlement
 
-    A successful real Provider response is not evidence that its transport
-    supplied billable cost.  Releasing a bounded reservation to zero when the
-    frozen Adapter declared ``supports_cost_receipt=False`` makes the hard
-    stop fail open.  Fixtures retain their explicit zero-cost semantics.
-    """
-    cost = dict(result.cost_evidence or {})
-    accounting_basis = str(cost.get("accounting_basis") or "PRICED").upper()
-    if accounting_basis == "ACCOUNT_ENTITLEMENT":
-        return (
-            None,
-            result.total_tokens if result.total_tokens > 0 else reserved_tokens,
-            {
-                "token_settlement_basis": (
-                    "PROVIDER_USAGE_RECEIPT"
-                    if result.total_tokens > 0
-                    else "RESERVATION_CEILING"
-                ),
-                "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
-                "accounting_basis": accounting_basis,
-                "cost_status": "UNKNOWN",
-            },
-        )
-    if reserved_amount is None:
-        raise KernelError(
-            "MODEL_EFFECT_COST_ACCOUNTING_CONFLICT",
-            "priced Provider result has no monetary reservation",
-        )
-    if not result.real_model_call:
-        return (
-            result.cost_amount,
-            result.total_tokens,
-            {
-                "token_settlement_basis": "FIXTURE_RECEIPT",
-                "cost_settlement_basis": "FIXTURE_RECEIPT",
-            },
-        )
-    supports_usage = bool(frozen_capability_profile.get("supports_usage_receipt"))
-    supports_cost = bool(frozen_capability_profile.get("supports_cost_receipt"))
-    usage_tokens = result.total_tokens
-    actual_tokens = (
-        usage_tokens if supports_usage and usage_tokens > 0 else reserved_tokens
-    )
-    cost_available = (
-        supports_cost
-        and str(cost.get("availability") or "").upper() == "AVAILABLE"
-        and str(cost.get("source") or "").lower() != "not_provided"
-        and cost.get("measurement") != "ESTIMATED_UPPER_BOUND"
-        and cost.get("source") not in {"usage_pricing", "usage_pricing_upper_bound"}
-        and cost.get("provider_billed") is True
-    )
-    usage_pricing = (
-        supports_usage and bool(frozen_capability_profile.get("supports_usage_pricing"))
-        and cost.get("source") in {"usage_pricing_upper_bound", "usage_pricing"}
-        and cost.get("measurement") in {"ESTIMATED_UPPER_BOUND", "PRICED_FROM_PROVIDER_USAGE"}
-        and bool(cost.get("pricing_version")) and bool(cost.get("pricing_snapshot"))
-    )
-    legacy_pricing = bool(
-        supports_cost and cost.get("measurement") == "ESTIMATED"
-        and cost.get("pricing_ref") and cost.get("pricing_snapshot_hash")
-        and cost.get("calculation_basis")
-    )
-    actual_amount = result.cost_amount if cost_available or usage_pricing or legacy_pricing else reserved_amount
-    return (
-        actual_amount,
-        actual_tokens,
-        {
-            "token_settlement_basis": (
-                "PROVIDER_USAGE_RECEIPT"
-                if actual_tokens == usage_tokens and supports_usage
-                else "RESERVATION_CEILING"
-            ),
-            "cost_settlement_basis": (
-                "PROVIDER_COST_RECEIPT" if cost_available
-                else "LEGACY_PRICING_ESTIMATE" if legacy_pricing
-                else "FROZEN_USAGE_PRICING" if usage_pricing and cost.get("measurement") == "PRICED_FROM_PROVIDER_USAGE"
-                else "FROZEN_USAGE_PRICING_UPPER_BOUND" if usage_pricing
-                else "RESERVATION_CEILING"
-            ),
-        },
+    return successful_provider_budget_settlement(
+        real_model_call=result.real_model_call, usage_tokens=result.total_tokens,
+        cost_amount=result.cost_amount, cost=result.cost_evidence or {},
+        reserved_amount=reserved_amount, reserved_tokens=reserved_tokens,
+        frozen_capability_profile=frozen_capability_profile,
     )
 
 
@@ -1036,7 +959,8 @@ class ExternalEffectChapterModelPort:
                             )
                             or ""
                         ),
-                        "real_model_call": True,
+                        "real_model_call": (dispatched.get("provider_evidence") or {}).get("real_model_call") is True,
+                        "fixture_protocol_only": (dispatched.get("provider_evidence") or {}).get("fixture_protocol_only") is True,
                         "execution_outcome": str(dispatched["outcome"]).upper(),
                         "accepted_candidate": False,
                         "submission_state": str(decision["submission_state"]),
@@ -1057,19 +981,16 @@ class ExternalEffectChapterModelPort:
                         ),
                     },
                 )
+            self._record_failed_model_call(
+                request, stage, dispatched=dispatched,
+                logical_ref=logical_ref + ":failure", external_effect_id=external_effect_id,
+            )
             measurement = _failed_provider_measurement(dispatched)
             if (
                 decision.get("measurement_available") is True
                 and measurement is not None
             ):
                 usage, cost = measurement
-                self._record_failed_model_call(
-                    request,
-                    stage,
-                    dispatched=dispatched,
-                    logical_ref=logical_ref,
-                    external_effect_id=external_effect_id,
-                )
                 self._record_failed_cost_evidence(
                     request,
                     stage,
@@ -1475,7 +1396,7 @@ class ExternalEffectChapterModelPort:
                     request.attempt_id,
                     stage,
                     external_effect_id,
-                ),
+                ) + ":failure",
                 asset_type="model_call_log",
                 schema_version="model-call-log.v1",
                 logical_ref=logical_ref,
@@ -1495,6 +1416,8 @@ class ExternalEffectChapterModelPort:
                     "external_effect_id": external_effect_id,
                     "call_status": str(dispatched.get("outcome") or "").upper(),
                     "accepted_candidate": False,
+                    "real_model_call": evidence.get("real_model_call") is True,
+                    "fixture_protocol_only": evidence.get("fixture_protocol_only") is True,
                     "failure_code": str(
                         process.get("failure_code")
                         if isinstance(process, dict)
@@ -1523,7 +1446,7 @@ class ExternalEffectChapterModelPort:
             request.attempt_id,
             stage,
             external_effect_id,
-        )
+        ) + ":failure"
         try:
             self.query.require(project_id=request.project_id, logical_ref=logical_ref)
             return
@@ -1545,7 +1468,7 @@ class ExternalEffectChapterModelPort:
                     request.attempt_id,
                     stage,
                     external_effect_id,
-                ),
+                ) + ":failure",
                 asset_type="cost_ledger",
                 schema_version="model-cost-ledger.v1",
                 logical_ref=logical_ref,
@@ -1601,7 +1524,7 @@ class ExternalEffectChapterModelPort:
                         request.attempt_id,
                         stage,
                         external_effect_id,
-                    ),
+                    ) + ":failure",
                 ),
             )
         )

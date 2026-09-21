@@ -29,11 +29,12 @@ def _priced_observation_metrics(observations: list[Any]) -> dict[str, Any]:
             for row in observations
             if row.evidence_class == "BENCHMARK_CHALLENGER"
         ],
+        "reference_evaluation": [row for row in observations if row.evidence_class == "REFERENCE_EVALUATION"],
         "unclassified": [
             row
             for row in observations
             if not row.production_eligible
-            and row.evidence_class != "BENCHMARK_CHALLENGER"
+            and row.evidence_class not in {"BENCHMARK_CHALLENGER", "REFERENCE_EVALUATION"}
         ],
     }
     result: dict[str, Any] = {}

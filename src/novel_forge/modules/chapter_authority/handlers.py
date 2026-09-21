@@ -1326,16 +1326,12 @@ class _ReviewHandler:
     provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
-        draft = request.require_input("draft_chapter")
-        context = request.require_input("context_bundle")
-        from novel_forge.modules.review.knowledge import knowledge_review_targets
-        targets = knowledge_review_targets(context.content)
-        from .review_window import prepare_review_window, require_review_frontier
-        window = prepare_review_window(request, draft, context)
+        from .review_window import prepare_native_review, require_review_frontier
+        draft, context, targets, window, payload = prepare_native_review(request, stage="review")
         reviewed = self.provider.invoke(
             request,
             stage="review",
-            payload={**({"cross_chapter_window": window, "target_candidate_asset_version_id": draft.asset_version_id} if window is not None else {}), "draft": draft.content, "knowledge_review_targets": targets, "author_design_review_targets": draft.content.get("author_design_guidance") or {}},
+            payload=payload,
         )
         require_review_frontier(request)
         return _model_output(
@@ -1430,24 +1426,12 @@ class _ReReviewHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
-        revision = request.require_input("draft_version")
-        context = request.require_input("context_bundle")
-        from novel_forge.modules.review.knowledge import knowledge_review_targets
-        targets = knowledge_review_targets(context.content)
-        from .review_window import prepare_review_window, require_review_frontier
-        window = prepare_review_window(request, revision, context, review.content)
+        from .review_window import prepare_native_review, require_review_frontier
+        revision, context, targets, _, payload = prepare_native_review(request, stage="rereview")
         reviewed = self.provider.invoke(
             request,
             stage="rereview",
-            payload={
-                **({"cross_chapter_window": window, "target_candidate_asset_version_id": revision.asset_version_id} if window is not None else {}),
-                "draft": revision.content,
-                "original_draft": draft.content,
-                "review": review.content,
-                "revision": revision.content,
-                "knowledge_review_targets": targets,
-                "author_design_review_targets": draft.content.get("author_design_guidance") or {},
-            },
+            payload=payload,
         )
         require_review_frontier(request)
         return _model_output(
@@ -1805,6 +1789,7 @@ class _QualityGroupHandler:
         )
         context_content = dict(context.content)
         generated: ModelProviderResult | None = None
+        reference_calibration = None
         quality_context = build_quality_context_view(
             group=self.group,
             revision=revision.content,
@@ -1832,14 +1817,17 @@ class _QualityGroupHandler:
                     "dimensions": list(QUALITY_GROUPS[self.group]),
                 },
             )
+            from novel_forge.modules.chapter_quality_authority.reference_sampling import admitted_reference_calibration
+            reference_calibration = admitted_reference_calibration(request, generated,
+                stage=f"quality_{self.group}", target_asset_version_id=revision.asset_version_id)
             provider_entries = []
             for item in generated.output.get("dimensions", []):
                 provider_entries.append(
                     {
                         **dict(item),
                         "target_asset_version_id": revision.asset_version_id,
-                        "calibration_status": "PROVIDER_UNCALIBRATED",
-                        "provider_verified": True,
+                        "calibration_status": "REFERENCE_CALIBRATED" if reference_calibration else "PROVIDER_UNCALIBRATED",
+                        "provider_verified": True, "human_verified": False,
                         # WHY: Scripted Provider output is useful only for exercising
                         # the internal protocol.  Quality Authority will turn a
                         # passing result into an explicit fixture waiver only
@@ -1866,7 +1854,7 @@ class _QualityGroupHandler:
             revision_asset_version_id=revision.asset_version_id,
             context_bundle=context_content,
             canon=canon.content,
-            fixture=fixture,
+            fixture=fixture, reference_calibration=reference_calibration,
         )
         content["quality_context_type"] = quality_context["type"]
         content["quality_context_digest"] = quality_context["context_digest"]

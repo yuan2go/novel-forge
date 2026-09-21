@@ -3,6 +3,14 @@ from __future__ import annotations
 from typing import Any
 
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
+from novel_forge.modules.command_kernel.routing_bootstrap import (
+    CHAPTER_BOOTSTRAP_TASKS,
+    CHAPTER_SAMPLE_DEFINITION_VERSION,
+    CHAPTER_REFERENCE_SAMPLE_VERSION,
+    CHAPTER_REFERENCE_SAMPLE_SOURCES,
+    CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE,
+    chapter_sample_definition_name,
+)
 
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.2.1"
@@ -52,6 +60,88 @@ CHAPTER_PROJECTION_CONSUMERS = [
     "operation_timeline",
     "project_cockpit",
 ]
+
+CHAPTER_SAMPLE_OUTPUT_KEY = "chapter.provider.sample"
+CHAPTER_SAMPLE_COMPLETION_TOPIC = "chapter.provider.sample.materialized"
+CHAPTER_SAMPLE_WORKFLOW_ID = "chapter_provider_sampling"
+CHAPTER_SAMPLE_WORKFLOW_REF = f"{CHAPTER_SAMPLE_WORKFLOW_ID}@{CHAPTER_SAMPLE_DEFINITION_VERSION}"
+CHAPTER_REFERENCE_WORKFLOW_ID = "chapter_reference_sampling"
+CHAPTER_REFERENCE_WORKFLOW_REF = f"{CHAPTER_REFERENCE_WORKFLOW_ID}@{CHAPTER_SAMPLE_DEFINITION_VERSION}"
+
+
+def chapter_provider_sample_definitions(
+    *, application_build_id: str, commit_sha: str, reference_samples: bool = False,
+) -> tuple[dict[str, Any], ...]:
+    if not application_build_id or len(commit_sha) != 40:
+        raise ValueError("Chapter sampling requires an exact implementation identity")
+    command_schema = {
+        "type": "object",
+        "required": ["project_id", "input_asset_version_ids", "payload"],
+        "properties": {
+            "project_id": {"type": "string", "minLength": 1},
+            "input_asset_version_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "payload": {"type": "object"},
+        },
+        "additionalProperties": False,
+    }
+    formal = {item["name"]: item for item in chapter_operation_definitions(
+        application_build_id=application_build_id, commit_sha=commit_sha, model_effects_required=True,
+    )}
+    definitions = []
+    for node in ChapterNode:
+        stage = CHAPTER_BOOTSTRAP_TASKS.get(node.definition_name)
+        if stage is None:
+            continue
+        if reference_samples and stage not in CHAPTER_REFERENCE_SAMPLE_SOURCES:
+            continue
+        name = chapter_sample_definition_name(stage)
+        definitions.append({
+            "name": name,
+            "definition_version": CHAPTER_REFERENCE_SAMPLE_VERSION if reference_samples else CHAPTER_SAMPLE_DEFINITION_VERSION,
+            "family": "chapter_authority",
+            "enabled": True,
+            "command_schema": command_schema,
+            "result_schema": {"type": "object"},
+            "input_contract": command_schema,
+            "output_contract": {"asset_type": "chapter_provider_sample", "output_key": CHAPTER_SAMPLE_OUTPUT_KEY},
+            "handler_key": "novel_forge.chapter_authority.sample." + stage,
+            "handler_contract_version": "chapter-provider-sample.v1",
+            "application_build_id": application_build_id,
+            "commit_sha": commit_sha,
+            "execution_mode": "worker",
+            "permissions": ["chapter.authority.execute"],
+            "approval_policy": {"required": False},
+            "idempotency_scope": CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE,
+            "concurrency_key_template": "book:{book_id}:chapter-sample:{logical_key}",
+            "retry_policy": {"max_attempts": 1, "dead_letter_on_exhausted": True},
+            "timeout_policy": dict(formal[node.definition_name]["timeout_policy"]),
+            "cancellation_policy": {"mode": "cancel_active_attempt"},
+            "compensation_policy": {"supported": False, "reason": "append_only_sample_evidence"},
+            "irreversible_effect_policy": {"allowed": False},
+            "external_capabilities": ["model." + stage],
+            "definition_status": "implemented",
+            "migration_owner": "chapter-authority",
+            "projection_consumers": ["operation_timeline", "provider_routing_campaign"],
+            "policy": {
+                "source_definition_name": node.definition_name,
+                "source_definition_version": CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+                "routing_bootstrap_sample": True,
+                "production_eligible": False,
+                **({"chapter_reference_sample_input_allowed": True} if reference_samples else {}),
+            },
+            "completion_contract": {
+                "version": name + ".completion.v1",
+                "required_asset_selectors": [{
+                    "selector": "chapter_provider_sample", "output_key": CHAPTER_SAMPLE_OUTPUT_KEY,
+                    "role": "primary", "lifecycle": "ACTIVE", "eligibility": "INELIGIBLE", "governance": "CLEAR",
+                }],
+                "required_external_effects": [{"capability": "model." + stage, "allowed_states": ["SUCCEEDED"]}],
+                "required_evidence": ["trace", "audit"],
+                "required_audit_actions": [CHAPTER_SAMPLE_COMPLETION_TOPIC],
+                "required_outbox_events": [CHAPTER_SAMPLE_COMPLETION_TOPIC],
+            },
+        })
+    return tuple(definitions)
 
 
 def chapter_operation_definitions(

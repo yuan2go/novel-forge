@@ -341,3 +341,36 @@ class ChapterAuthorityApiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_chapter_sample_api_uses_trusted_actor_and_keeps_dry_run_non_mutating():
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from novel_forge.api import models
+    from novel_forge.api.routers.chapter_authority import create_router
+    from novel_forge.modules.authority_security import TrustedPrincipalResolver
+
+    calls = []
+    application = SimpleNamespace(
+        prepare_provider_sample=lambda command, **kwargs: calls.append(("prepare", command, kwargs)) or {"provider_calls": 0},
+        admit_provider_sample=lambda command, **kwargs: calls.append(("admit", command, kwargs)) or {"operation_id": "sample-operation"},
+    )
+    ctx = SimpleNamespace(
+        models={name: getattr(models, name) for name in (
+            "AuthorityChapterRunRequest", "AuthorityChapterCommandRequest", "AuthorityOperationControlRequest",
+        )}, services=SimpleNamespace(chapter_application=application),
+    )
+    app = FastAPI()
+    app.include_router(create_router(ctx))
+    body = {"project_id": "sample-project", "actor_id": "untrusted", "source_operation_id": "frozen-draft",
+            "authorization_id": "grant", "idempotency_key": "sample:one"}
+    with patch("novel_forge.api.routers.chapter_authority.build_trusted_principal_resolver", return_value=TrustedPrincipalResolver(
+        environment="test", configured_local_operator_id="trusted-operator",
+    )), TestClient(app) as client:
+        assert client.post("/product/production/chapter-authority/provider-samples?dry_run=true", json=body).json() == {"provider_calls": 0}
+        assert [item[0] for item in calls] == ["prepare"]
+        response = client.post("/product/production/chapter-authority/provider-samples", json=body)
+        assert response.status_code == 202
+        assert [item[0] for item in calls] == ["prepare", "admit"]
+        assert all(item[1].actor_id == "trusted-operator" for item in calls)
+        assert client.post("/product/production/chapter-authority/provider-samples", json={**body, "model": "caller-selected"}).status_code == 422

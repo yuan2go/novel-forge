@@ -3,20 +3,19 @@
   "campaign_id": "real-provider-campaign-20260920",
   "status": "NOT_FROZEN_IMPLEMENTATION_AND_AUTHORIZATION_GAPS",
   "executable_campaign": false,
-  "implementation_sha": "f5ba1faf058af2613f7116904a6230eac1f0e02c",
-  "implementation_tree_sha": "sha256:2a0f369f4e29d34f5d56bbf9dcd9d0401c568c0188050d3a389640d95bbfb408",
+  "implementation_sha": "76446099dee54b0248c9625a02e3d22b391c9086",
+  "implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed",
   "authorization": {
-    "matching_grant": null,
-    "authorized_new_campaign_calls": 0,
-    "authorized_new_campaign_usd": "0",
-    "authorization_required_for": [
-      "DeepSeek priced inference",
-      "Source import/analysis and governed knowledge use",
-      "reference evaluation",
-      "Codex calibration/escalation scope",
-      "new validation project or explicit existing-project scope extension"
+    "matching_durable_grant": null,
+    "finite_new_campaign_calls_authorized": "NOT_ESTABLISHED",
+    "finite_new_campaign_usd_authorized": "NOT_ESTABLISHED",
+    "current_request_business_scope_authorized": true,
+    "additional_financial_information_or_authorization_required_for": [
+      "Finite DeepSeek paid inference cap",
+      "Verified reusable remaining Codex entitlement within existing account and lifetime caps"
     ],
-    "existing_codex_grants": "NOT_SCOPE_COMPATIBLE; Source and paid API forbidden; historical use shares finite project limits"
+    "existing_codex_grants": "Finite book-scoped cumulative caps include historical usage; cannot be added, reset, or converted into DeepSeek paid API authorization",
+    "durable_policy_binding": "NOT_REGISTERED"
   },
   "models": [
     {
@@ -234,7 +233,7 @@
     "all_budget_status_command": "novel-forge authority-provider-routing metrics --project-id <authorized-project>",
     "frozen_decision_command": "novel-forge authority-provider-routing replay --project-id <authorized-project> --decision-id <routing-decision-id>",
     "full_campaign_resume_command": null,
-    "reason": "No complete native full-family campaign runner/reference-evaluator path exists yet. Inventing an executable resume command would misstate readiness."
+    "reason": "Native Planning, Narrative operator-proxy reference, and three Source task samplers exist. Chapter/World/other reviewer sampling, trusted evaluator admission, full-stage mixed-accounting campaign binding and frozen dataset are incomplete; no truthful full-campaign resume command exists."
   },
   "official_sources": [
     "https://api-docs.deepseek.com/quick_start/pricing/",
@@ -252,7 +251,7 @@
     "included_in_novel_forge_kernel_ledger": false
   },
   "real_calls_scope": "NOVEL_FORGE_PROVIDER_RUNTIME_ONLY",
-  "tested_sha": "bbca0e7a4a0ed61381d0175272e9fe1763d7137a",
+  "tested_sha": "45fa74ace314735112a3447e660c685172c6f79f",
   "reference_evaluation_runtime": {
     "entry": "POST /product/production/book-authority/books/{book_id}/planning-evaluations",
     "read_only_preflight_query": "dry_run=true",
@@ -279,7 +278,25 @@
     "state": "WIRED_SCRIPTED_FOCUSED_VERIFIED",
     "production_output_eligible": false,
     "terminal_no_effect_replacement": "NATIVE_CAUSATION_PRESERVED",
-    "terminal_provider_failure_replacement": "NOT_IMPLEMENTED",
-    "independent_evaluation_and_qualification": "NOT_PROVEN"
+    "terminal_provider_failure_replacement": "PROVEN_TERMINAL_FAILURE_ONLY_WITH_CAUSATION_AND_CUMULATIVE_BUDGET",
+    "independent_evaluation_and_qualification": "NOT_PROVEN",
+    "unknown_outcome_recovery": "NATIVE_QUERY_RECONCILIATION_WITH_HELD_BUDGET; NO_RESEND",
+    "failure_statistics": "APPEND_ONLY_FAILURE_MODEL_CALL_LOG; SENT_CALLS_ACCOUNTED; AMBIGUOUS_USAGE_HELD"
+  },
+  "budget_feasibility": {
+    "status": "NOT_SUFFICIENT_FOR_PER_TASK_FIRST_HOLDOUT_LOOK",
+    "artifact": "budget-feasibility.json",
+    "required_tasks_static": 27,
+    "minimum_first_look_candidate_calls": 1620,
+    "proposed_holdout_calls": 720,
+    "candidate_call_gap_before_review_retries": 900,
+    "authorization_increased": false
+  },
+  "producer_contract_scope": "Prompt/Skill/Context/Schema/tool/projection identity is isolated before the benchmark query limit. Judge/risk/length compatibility and trusted quality projection remain separate requirements.",
+  "auxiliary_provider_budget": {
+    "stage": "retrieval",
+    "purpose": "conditional embedding projection and query",
+    "configured_for_campaign": "NOT_FROZEN",
+    "remaining_requirement": "Freeze activation, existing governed route and explicit accounting scope; do not silently omit activated embedding calls from E2E costs"
   }
 }

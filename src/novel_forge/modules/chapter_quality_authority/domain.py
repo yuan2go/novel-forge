@@ -134,7 +134,12 @@ def build_quality_group_evidence(
     context_bundle: dict[str, Any],
     canon: dict[str, Any],
     fixture: bool,
+    reference_calibration: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if reference_calibration is not None and (fixture or reference_calibration.get("schema_version") != "chapter-reference-calibration.v1"
+        or reference_calibration.get("target_asset_version_id") != revision_asset_version_id
+        or reference_calibration.get("stage") != "quality_" + group or not reference_calibration.get("operation_id")):
+        raise KernelError("QUALITY_REFERENCE_SCOPE_INVALID", "calibrated evidence requires its exact real native target and group")
     if group not in QUALITY_GROUPS:
         raise KernelError("QUALITY_GROUP_INVALID", f"unknown quality group: {group}")
     text = str(revision.get("text") or "").strip()
@@ -156,7 +161,7 @@ def build_quality_group_evidence(
             context_bundle=context_bundle,
             canon=canon,
             fixture=fixture,
-            profile_ids=profile_ids,
+            profile_ids=profile_ids, reference_calibration=reference_calibration,
         )
         for dimension in QUALITY_GROUPS[group]
     ]
@@ -185,6 +190,7 @@ def build_quality_group_evidence(
     )
     return {
         "type": "ChapterQualityGroupReport",
+        **({"reference_calibration": dict(reference_calibration)} if reference_calibration else {}),
         "group": group,
         "project_id": project_id,
         "target_asset_version_id": revision_asset_version_id,
@@ -571,6 +577,7 @@ def _evaluate(
     canon: dict[str, Any],
     fixture: bool,
     profile_ids: dict[str, str],
+    reference_calibration: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     if dimension == "chapter_length":
         profile_id = profile_ids["platform_profile_version_id"]
@@ -592,7 +599,7 @@ def _evaluate(
                 locations=[{"unit": rules["unit"], "observed": count, "minimum": minimum, "maximum": maximum}],
                 fixture=fixture, profile_ids=profile_ids)
     calibrated = _calibrated_evidence(
-        dimension, segments, target_asset_version_id=target, fixture=fixture
+        dimension, segments, target_asset_version_id=target, fixture=fixture, reference_calibration=reference_calibration
     )
     if calibrated is not None:
         status = str(calibrated.get("gate_status") or "INSUFFICIENT_EVIDENCE").upper()
@@ -641,6 +648,8 @@ def _evaluate(
             provider_verified=bool(calibrated.get("provider_verified")),
             human_verified=bool(calibrated.get("human_verified")),
         )
+        if calibrated.get("reference_calibration"):
+            report["reference_calibration"] = dict(calibrated["reference_calibration"])
         if waiver is not None:
             report["waiver"] = waiver
         return report
@@ -779,6 +788,7 @@ def _calibrated_evidence(
     *,
     target_asset_version_id: str,
     fixture: bool,
+    reference_calibration: Mapping[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     for segment in segments:
         facts = {
@@ -800,7 +810,12 @@ def _calibrated_evidence(
             calibration = str(entry.get("calibration_status") or "").upper()
             human = entry.get("human_verified") is True
             provider = entry.get("provider_verified") is True
-            qualified = (
+            reference_bound = bool(reference_calibration and not fixture and provider and calibration == "REFERENCE_CALIBRATED"
+                and reference_calibration.get("schema_version") == "chapter-reference-calibration.v1"
+                and reference_calibration.get("target_asset_version_id") == target_asset_version_id
+                and dimension in QUALITY_GROUPS.get(str(reference_calibration.get("stage", "")).removeprefix("quality_"), ())
+                and segment.get("asset_version_id") == "external-effect:" + str(reference_calibration.get("operation_id", "")))
+            qualified = reference_bound or (
                 calibration
                 in {
                     "HUMAN_CALIBRATED",
@@ -824,6 +839,7 @@ def _calibrated_evidence(
                 gate_status = "PASSED_WITH_UNCALIBRATED"
             return {
                 "gate_status": gate_status,
+                **({"reference_calibration": dict(reference_calibration)} if reference_bound else {}),
                 "score": entry.get("score"),
                 "calibration_status": (
                     "FIXTURE_UNCALIBRATED"

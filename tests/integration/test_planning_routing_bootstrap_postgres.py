@@ -90,6 +90,7 @@ def test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible():
         "generation_idempotency_key": command.idempotency_key,
         "input_versions_hash": snapshot_hash(dict(command.input_versions)),
         "command_hash": bootstrap_command_hash(_command_payload(command)),
+        "producer_contract_hash": snapshot_hash({"fixture_prompt": "v1"}),
         "candidate_id": candidate.candidate_id,
         "model_revision": candidate.model_revision,
         "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),

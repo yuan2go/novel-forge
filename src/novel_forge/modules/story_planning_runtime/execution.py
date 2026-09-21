@@ -3709,6 +3709,7 @@ class PostgresPlanningExecutionPreparer:
         attempt_snapshot: CapabilityPackAttemptSnapshot,
         provider_stage: Any = None,
         world_action: AuthorityAssetDocument | None = None,
+        frozen_world_sample: Any = None,
     ) -> PreparedPlanningExecution:
         stage_name = (
             provider_stage.name
@@ -3734,13 +3735,26 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_CAPABILITY_PACK_NODE_INVALID",
                 "Planning Pack capability differs from the Generator",
             )
-        context_document, input_documents = self._context_bundle(
-            operation_id=operation_id,
-            attempt_id=attempt_id,
-            command=command,
-            inputs=inputs,
-        )
-        if provider_stage is not None:
+        if frozen_world_sample is not None:
+            from .world_sampling import require_frozen_world_execution
+
+            require_frozen_world_execution(self.database_url, operation_id=operation_id, command=command,
+                inputs=inputs, provider_stage=provider_stage, frozen=frozen_world_sample)
+            context_document = frozen_world_sample.context
+            input_documents = (*frozen_world_sample.input_documents, frozen_world_sample.source)
+            if frozen_world_sample.generation_sample is not None:
+                context_document, _ = self._world_context_bundle(operation_id=operation_id, command=command,
+                    base=context_document, stage=provider_stage, calibration_sample=True)
+                if context_document.content != frozen_world_sample.derived_context:
+                    raise KernelError("WORLD_SAMPLE_CONTEXT_DRIFT", "reference execution must retain its preflight Context hash")
+        else:
+            context_document, input_documents = self._context_bundle(
+                operation_id=operation_id,
+                attempt_id=attempt_id,
+                command=command,
+                inputs=inputs,
+            )
+        if provider_stage is not None and frozen_world_sample is None:
             context_document, source_document = self._world_context_bundle(
                 operation_id=operation_id,
                 command=command,
@@ -3778,7 +3792,7 @@ class PostgresPlanningExecutionPreparer:
             attempt_snapshot
         )
         tools = json.loads(frozen.tool_policy_payload_json)
-        allowed_tools = self._allowed_tools(tools, command.generator_operation_name)
+        allowed_tools = self._allowed_tools(tools, stage_name if frozen_world_sample is not None else command.generator_operation_name)
         if allowed_tools != ("model.provider.invoke",):
             raise KernelError(
                 "PLANNING_CAPABILITY_TOOL_UNAUTHORIZED",
@@ -4145,15 +4159,19 @@ class PostgresPlanningExecutionPreparer:
             )
             output_reserve = int(stable_request_payload["max_output_tokens"])
             if provider_router is not None:
-                routing_lineage = _planning_repair_routing_lineage(
-                    self.database_url,
-                    project_id=command.project_id,
-                    book_id=command.book_id,
-                    generator_operation_name=command.generator_operation_name,
-                    operation_id=operation_id,
-                    repair_of_operation_id=command.repair_of_operation_id,
-                    repair_of_candidate_id=command.repair_of_candidate_id,
-                )
+                if frozen_world_sample is not None:
+                    from .world_sampling import world_sample_routing_lineage
+                    routing_lineage = world_sample_routing_lineage(self.database_url, project_id=command.project_id, operation_id=operation_id)
+                else:
+                    routing_lineage = _planning_repair_routing_lineage(
+                        self.database_url,
+                        project_id=command.project_id,
+                        book_id=command.book_id,
+                        generator_operation_name=command.generator_operation_name,
+                        operation_id=operation_id,
+                        repair_of_operation_id=command.repair_of_operation_id,
+                        repair_of_candidate_id=command.repair_of_candidate_id,
+                    )
                 planning_route, routing_decision = provider_router.select(
                     planning_route,
                     task_type=stage_name,
@@ -5072,7 +5090,7 @@ class PostgresPlanningExecutionPreparer:
         )
         return context, tuple(documents)
 
-    def _world_context_bundle(self, *, operation_id, command, base, stage):
+    def _world_context_bundle(self, *, operation_id, command, base, stage, calibration_sample=False):
         source = self.query.require(
             project_id=command.project_id,
             asset_version_id=stage.task["source_ref"]["asset_version_id"],
@@ -5082,28 +5100,9 @@ class PostgresPlanningExecutionPreparer:
                 "WORLD_CONTEXT_SOURCE_DRIFT",
                 "world role projection must retain its exact source version",
             )
-        content = {**base.content, "world_preparation": dict(stage.task)}
-        content["token_budget"] = stage.task["policy"]["context_token_budget"]
-        selected = [
-            {
-                "role": stage.task["role"],
-                "asset_version_id": source.asset_version_id,
-                "asset_type": source.asset_type,
-                "content_hash": source.content_hash,
-                "content": source.content,
-            }
-        ]
-        content["input_versions"] = selected
-        content["context_manifest"] = self._planning_context_manifest(
-            command=command,
-            selected_inputs=selected,
-            content=content,
-            provider_stage=stage,
-        )
-        content["estimated_tokens"] = content["context_manifest"]["token_accounting"][
-            "accepted_tokens"
-        ]
-        logical_ref = f"world_preparation/context/{operation_id}/{stage.name}"
+        content = self._world_context_content(command=command, base=base, stage=stage, source=source)
+        prefix = "world_sampling" if calibration_sample else "world_preparation"
+        logical_ref = f"{prefix}/context/{operation_id}/{stage.name}"
         try:
             frozen = self.query.require(
                 project_id=command.project_id, logical_ref=logical_ref
@@ -5112,7 +5111,7 @@ class PostgresPlanningExecutionPreparer:
             if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
                 raise
         else:
-            if frozen.content != content:
+            if frozen.content != content or frozen.eligibility != ("INELIGIBLE" if calibration_sample else "ELIGIBLE"):
                 raise KernelError(
                     "WORLD_CONTEXT_FROZEN_CONFLICT",
                     "retry cannot replace the confirmed world stage Context",
@@ -5130,13 +5129,28 @@ class PostgresPlanningExecutionPreparer:
                 output_key=f"planning.context_bundle.{stage.name}",
                 role="context_bundle",
                 content=content,
-                qualification_policy="world-role-context-v1",
+                qualification_policy="world-reference-sample-context-v1" if calibration_sample else "world-role-context-v1",
+                eligibility="INELIGIBLE" if calibration_sample else "ELIGIBLE",
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
                 reference_asset_ids=(source.asset_id,),
             )
         )
         return document, source
+
+    @classmethod
+    def _world_context_content(cls, *, command, base, stage, source):
+        if stage.task["source_ref"] != {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}:
+            raise KernelError("WORLD_CONTEXT_SOURCE_DRIFT", "World Context must retain its exact source version")
+        content = {**base.content, "world_preparation": dict(stage.task)}
+        content["token_budget"] = stage.task["policy"]["context_token_budget"]
+        selected = [{"role": stage.task["role"], "asset_version_id": source.asset_version_id,
+                     "asset_type": source.asset_type, "content_hash": source.content_hash, "content": source.content}]
+        content["input_versions"] = selected
+        content["context_manifest"] = cls._planning_context_manifest(command=command, selected_inputs=selected,
+            content=content, provider_stage=stage)
+        content["estimated_tokens"] = content["context_manifest"]["token_accounting"]["accepted_tokens"]
+        return content
 
     @staticmethod
     def _planning_context_manifest(

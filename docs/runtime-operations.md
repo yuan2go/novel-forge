@@ -383,7 +383,7 @@ For initial Planning evidence collection, the same policy may contain
 `bootstrap_authorizations`. Each grant requires `authorization_id`, audit `reason`,
 `environment: validation`, `purpose: BENCHMARK_CHALLENGER`, `production_eligible: false`,
 exact `book_id`, generation `task_type`, `logical_key`, `generation_idempotency_key`,
-the canonical `input_versions_hash`, `command_hash`, `candidate_id`, `model_revision`, timezone-aware
+the canonical `input_versions_hash`, `command_hash`, `producer_contract_hash`, `candidate_id`, `model_revision`, timezone-aware
 `expires_at`, positive `maximum_calls`, `maximum_tokens`, `maximum_amount`, and `currency:
 USD`. The current challenger lane supports priced DeepSeek execution. A local operator
 passes only `routing_bootstrap_authorization_id` to the existing Planning generation
@@ -395,6 +395,11 @@ The router emits `BENCHMARK_SELECTED` with the original quality exclusions prese
 Kernel checks immutable decision identity, expiry and locked aggregate quota before send.
 Reusing an authorization ID in a later policy version does not reset its quota.
 Historical replay uses the frozen grant, while a new send must still precede expiry.
+New sampling admission requires the producer contract hash. Router selection and Kernel
+dispatch compare it with the actual Prompt/Context/Schema contract; changing that contract
+requires a new sample version. Historical unbound grants remain readable for reconciliation
+but cannot authorize another inference. Arms sharing one sample bind the same producer
+contract as well as equivalent input identities.
 Candidates remain ineligible for production even after an explicit independent evaluation.
 No automatic judge or repair is authorized by the generator grant. Independent calibrated
 evaluation remains necessary; a model cannot establish its own qualification.
@@ -409,14 +414,50 @@ or identical input-version set cannot cross partitions, and identical inputs can
 acquire another data group. Changing sample IDs inside one group does not increase
 independent qualification counts. These checks do not detect
 semantic paraphrases or replace an independently frozen dataset.
+Reference-evaluation arms also retain the exact label binding and protocol within one
+sample; changing labels after a failed arm requires a new declared experiment sample.
 `novel-forge authority-provider-routing campaign --project-id <id> --campaign-id <id>`
 reads all historical grants, Operation states, output/hash references and native
 reservation/effect references, including failures and unresolved outcomes. `RECONCILIATION_REQUIRED` requires native ExternalEffect recovery,
-never a new grant to resend. This command reports bootstrap sampling usage only. Configure
-existing project/Book budgets separately for reviews, production and entitlement; do not
-treat the sampling ceiling as authorization for those activities. Development and holdout
+never a new grant to resend. This command reports bootstrap sampling usage only. For a
+whole campaign, select `creative-provider-campaign-budget.v4` through the existing
+`authority-creative-budget configure` command. Its immutable `comparison_budget` binds
+`experiment_id`, `manifest_hash`, `expires_at`, `accounting_basis: MIXED`, one `SINGLE`
+project/Book arm and `chapter_ranges.PRODUCTION`. `shared_total`, `project_total`, each
+phase allocation and each `authorized_cumulative_caps` entry contain `calls`, `tokens`
+and decimal-string `priced_usd`. Phases are `REFERENCE`, `SCREENING`, `CALIBRATION`,
+`HOLDOUT`, `SOURCE`, `DESIGN`, `PRODUCTION`, and `REPAIR`; phase allocations sum to the
+project and shared totals. `entitlements` contains separately capped `provider`,
+`authorization_ref`, `calls` and `tokens` lanes. The Codex lane must match the configured
+account authorization. Existing project/Book controls continue to apply as additional
+constraints. This plan does not itself authorize payment or confer A/B independence.
+
+The configure command verifies the existing authorization-evidence file; phase grants
+retain explicit Source/design/chapter business scope. `authority-creative-budget query`
+returns cumulative native-ledger usage by phase, priced USD, unknown-cost entitlement
+calls and account lanes, including prior usage and unresolved calls. Changing a run key,
+policy version or evidence directory cannot reset consumption or rename its frozen plan.
+Expiry is rechecked before send. Settlement after expiry remains possible; actual usage
+above the authorized ceiling is recorded and held for reconciliation. Model-side token
+consumption remains observable only to the extent supported by its actual receipt.
+Development and holdout
 observations are excluded from automatic qualification feedback. Release of held-out
 evidence and full-family reference-evaluator bootstrap remain implementation gaps.
+
+For an explicitly authorized Codex validation control, the existing bootstrap grant
+sets `accounting_basis: ACCOUNT_ENTITLEMENT`, `cost_authorization_ref` to the configured
+account authorization, `maximum_amount: null`, and `currency: UNKNOWN`. Its finite
+`maximum_calls`/`maximum_tokens`, campaign identity, manifest and expiry must match the
+selected `creative-provider-campaign-budget.v4` policy and fit its Codex entitlement
+lane. The common campaign `maximum_amount` still caps priced USD; it does not price
+subscription usage. Omitting the whole-campaign authorization fails before reservation.
+Use the existing governed task policy for a justified high-risk control; bootstrap
+does not relax the production escalation threshold, account capacity, model revision,
+availability or Provider admission. Kernel rejects cross-account or priced/subscription
+substitution. Expired calls can still reconcile and settle their original reservations.
+The campaign query's `priced_settled_or_reserved_usd` excludes subscription use;
+`settled_or_reserved_usd` is null when entitlement use is present, and `entitlements`
+reports its calls/tokens with unknown USD. Neither field verifies an invoice.
 
 For Source sampling, POST `/product/source-imports/provider-samples?dry_run=true` with
 `project_id`, `source_operation_id`, `authorization_id` and `idempotency_key`. The local
@@ -443,6 +484,159 @@ Sample outputs never advance the original Source import or become production kno
 The current sampler does not automatically release Source observations into Router quality
 qualification; independent task-specific evaluation and feedback admission remain required.
 
+Chapter generator sampling uses `POST /product/production/chapter-authority/provider-samples?dry_run=true`
+with `project_id`, `actor_id`, `source_operation_id`, `authorization_id`, `idempotency_key`
+and optional `predecessor_operation_id`. The trusted Principal supplies the effective actor.
+The source must be an existing frozen native `chapter.memo.generate`, `chapter.draft.generate`,
+`chapter.revision.apply` or `chapter.canon.extract` Operation at definition version `3.4.1`.
+The returned task types are respectively `memo`, `draft`, `revision` and `canon_extraction`;
+use the returned book, command and input identities in the same campaign grant. Dry-run
+performs no admission or Provider call. Admit the identical request without `dry_run`.
+The existing Chapter worker consumes its own root Operation through the original handler,
+Router, Provider admission, Attempt, ExternalEffect and Agent Runtime. It does not join or
+advance the source Chapter Saga. The worker root is the single registered Saga step;
+Saga coordination follows terminal worker completion, so ordinary Chapter orchestration
+cannot admit production descendants from a sample.
+
+Install the separately approved `chapter_provider_sampling@1.0.0` binding through
+`install_chapter_validation_pack(..., provider_sampling=True)` in the existing Capability
+Pack authority workflow. It derives `<configured_chapter_pack_id>.provider_sampling`
+from the supplied Chapter pack and retains its Prompt, Skill, Schema and source isolation.
+Only the four generator nodes remain; their typed completion requires an `INELIGIBLE`
+`chapter_provider_sample` and its successful model Effect. The expanded external input
+contract accepts the frozen predecessor artifacts but never commits those sampled outputs
+as formal Chapter/Canon assets. Formal Chapter definitions and quality gates are unchanged.
+Chapter producer compatibility projects Context allowance onto the exact physical types
+reachable by that stage and Tool allowance onto that stage's default-deny permissions;
+Prompt, Schema, remaining Context policy and all original materialization hashes remain
+bound. This prevents administrative workflow differences from fragmenting identical
+producer evidence without borrowing quality from different semantic contracts.
+
+`GET /product/production/chapter-authority/provider-samples/{operation_id}?project_id=<id>`
+returns the frozen command, sample content, output hashes, Attempts and Effect references.
+Successful replay materializes no second Provider call. Unknown outcomes retain their
+reservation and use the same native receipt reconciliation; they cannot be replaced.
+A terminal no-effect/proven-failed arm may have an explicitly granted successor preserving
+its predecessor, actor, input and campaign identity. Failure model-call evidence is retained
+separately from later successful recovery evidence. Kernel receipt recovery and Chapter
+synchronous completion use the same settlement policy: missing real receipts retain
+conservative usage, explicit fixture receipts remain fixtures, and subscription charges
+remain unknown rather than zero. Samples do not grant calibrated reviewer admission or
+publish generator quality observations; those remain separate required steps.
+
+World sampling uses `POST /product/production/book-authority/books/{book_id}/world-provider-samples?dry_run=true`.
+Supply `project_id`, `book_id`, the authenticated `actor_id`, `source_operation_id`,
+`stage` (`world_candidates.generate` or `world_candidates.evaluate`), `authorization_id`
+and a stable `idempotency_key`. The source is the original native ChapterPlan Operation
+with its persisted World source, Context and producer materialization. The read-only
+response supplies exact input/command hashes and `producer_contract_hash`; it performs
+no Provider call and does not grant spending authority. An unprepared source fails closed.
+Install a separately approved validation Pack with `build_world_sampling_pack_profile`
+and the existing `install_longform_validation_pack`; its ID is the configured Planning
+Pack ID plus `.world_sampling`. Keep its Prompt, Skill, Schema and policy artifacts equal
+to the source producer, and register the matching native sample definitions.
+
+Freeze a campaign grant for the returned hashes and producer identity. World generation
+requires `BENCHMARK_CHALLENGER`; World evaluation requires `REFERENCE_EVALUATION` and
+native adjudications for every `<transition_id>:<Director dimension>`. Each adjudication
+binds the exact generation target, chapter, protocol and independent blind authors.
+Label scores use 0–100; observed native Director scores use 0–1 and are multiplied by 100
+only for agreement comparison. Labels stay outside Provider Context. Recorded disagreement
+is retained; neither agreement nor World rule validation activates a calibrated reviewer.
+
+To evaluate a calibration generation directly, supply `generation_sample:
+{asset_version_id, content_hash}` for its exact native `world_provider_sample` output.
+Its originating grant must be `BENCHMARK_CHALLENGER`, and its original ChapterPlan,
+World source and generator Context must match this request. Record independent native
+human evaluations and adjudications with the same `reference_sample` binding; Content
+uses version `2.3.0` for this World annotation scope. Reuse their exact references in
+`reference_evaluation`. No label enters the Provider prompt.
+Install `build_world_sampling_pack_profile(..., reference_samples=True)` through the
+same Pack authority; it binds `world_provider_sampling@1.1.0` and
+`world.provider.sample.evaluate@1.1.0` under `.world_reference_sampling`. Its approved
+producer artifacts remain those of the original Planning pack. Preflight derives and
+hashes the Director Context using the native World task factory; execution freezes it
+under the sample Operation as `INELIGIBLE`. No formal generation or earlier Director
+Context is required. Invalid or mismatched source samples fail before dispatch; their
+original sample records remain available for failure accounting.
+
+Replay the POST without `dry_run=true` to run or resume through the native Content
+scheduler and Planning execution port. Query
+`GET /product/production/book-authority/books/{book_id}/world-provider-samples/{operation_id}?project_id=<id>`
+for frozen inputs, Attempts, Effects, raw sample and validation/reference results.
+Successful replay consumes its existing result. Unknown outcomes retain their budget
+and reconcile; a renamed request cannot replace them. An explicitly granted terminal
+no-effect/proven-failed successor supplies `predecessor_operation_id` and preserves
+the actor, task, reference labels and campaign arm. Kernel causation and cumulative
+campaign accounting retain every predecessor. These samples cannot create a World action,
+active plan or production knowledge. Trusted evaluator activation and publishing qualified
+World feedback remain required work; a successful reference sample alone supplies neither.
+
+The same Chapter endpoint supports native `review`, `rereview`, `quality_structural`,
+`quality_commercial`, `quality_source_originality`, `quality_longform`, and
+`quality_platform` reference tasks. Supply an existing frozen native reviewer Operation
+and `reference_evaluation: {protocol_version, adjudications: [{asset_version_id,
+content_hash}]}`. Each reference must be the successful immutable output of
+`quality.adjudication.record`, supported by at least two blind
+`quality.human_evaluation.record` outputs for the exact target draft, chapter, dimension,
+protocol and evaluation version. Native author identities must match the recorded human
+and adjudicator identities and differ from the candidate generator and sampling operator;
+the adjudicator is separate from the blind evaluators. These records require actual
+independent human input. A coding agent's labels cannot be submitted as human evaluations.
+The software checks provenance and declared independence; it cannot certify a person's
+judgment or turn subjective labels into universal truth.
+
+Reference coverage must include every dimension of the selected Quality group; review
+and rereview use respectively `review_decision` and `rereview_decision`. Freeze an explicit
+`REFERENCE_EVALUATION` grant with the exact binding and producer contract. Install the
+approved `<configured_chapter_pack_id>.reference_sampling` pack with
+`install_chapter_validation_pack(..., provider_sampling=True, reference_sampling=True)`;
+its native binding is `chapter_reference_sampling@1.0.0`. Reference labels are checked
+before inference and compared with the exact successful ModelCallLog afterward. They
+never enter Provider task inputs. The sample retains status agreement, score-range
+agreement and all reference hashes separately, with `calibration_claim_allowed: false`
+and `production_qualification_eligible: false`. Replay and unknown-result reconciliation
+retain the same Kernel budget and reference scope. This entry reuses existing native
+review tasks and labeled drafts; authoring a new reference corpus, admitting a calibrated
+evaluator and closing generator feedback are not implied by this sampling path.
+
+To annotate a completed Chapter generator sample, use the existing
+`POST /product/content-authority/commands` with `quality.human_evaluation.record` or
+`quality.adjudication.record`, the ordinary label payload and
+`reference_sample: {asset_version_id, content_hash}` inside that payload. Freeze the
+same sample in `input_assets`; adjudication also freezes its human records. The
+authenticated local operator must match `evaluator_id` or `adjudicator_id`. Admission
+selects the separate `2.2.0` definition and verifies the successful native sample,
+its original campaign grant and exact hash again during execution. Other inputs retain
+ordinary eligibility checks. The sample remains ineligible and cannot become accepted
+prose, Canon or production knowledge. Record actual independent labels only: this
+input exception supplies no human expertise, reader preference or reviewer admission.
+To review that sample, use the Chapter provider-sample endpoint with the original
+generator `source_operation_id`, `generation_sample: {asset_version_id, content_hash}`,
+`reference_stage: "review"` for a draft sample or `"rereview"` for a revision sample,
+and independent `reference_evaluation` adjudications targeting that sample. The original
+native generator must be respectively `chapter.draft.generate` or `chapter.revision.apply`.
+Install the approved Pack with `install_chapter_validation_pack(...,
+provider_sampling=True, reference_sampling=True, reference_samples=True)`; this uses
+`.reference_samples`, `chapter_reference_sampling@1.1.0` and version `1.1.0` of the
+native review sample definitions. Preflight returns the actual reviewer producer identity,
+including its Skill and Schema, for the grant. It performs no persistent admission or
+Provider call; any provisional Pack canary assignment is rolled back with its read unit
+of work. Existing attempts reuse their frozen Pack instead of resolving a new deployment.
+The original generator inputs and sample stay bound through input hashes, Kernel lineage,
+Provider admission and shared campaign accounting. Each review consumes the `REFERENCE`
+allocation; its business Chapter still comes from the original generator. No formal
+review Operation or accepted draft is required for this sampling call, and the ordinary
+Chapter Authority still refuses the ineligible sample as a production input. Quality-group
+sample targets remain a separate gap. `novel-forge authority-provider-routing metrics` reads the
+same native reference outcome projection used by later decisions. For reviewer tasks,
+inspect `REFERENCE_AGREEMENT`, `reference_label_strata`, evidence class, producer hash
+and outcome references separately from generation quality or accepted prose. Fixture
+human labels, broad score ranges, absent positive/negative strata, duplicate prose,
+retries and holdout evidence cannot establish reviewer eligibility. A disagreement is
+retained as an evaluator failure. This native feedback supplies routing evidence; it does
+not activate a formal Quality profile or promote any sample.
+
 For semantic evaluator reference sampling, first register independent operator labels
 through `story_design.review.author` with the exact benchmark candidate as its only
 candidate input. This authoring command may read the ineligible candidate solely for
@@ -450,6 +644,26 @@ review; it cannot activate the candidate. Its successful immutable output must h
 `ground_truth_claimed: false`, `human_preference_evidence: false` and
 `provider_evidence_claimed: false`. Its native author must differ from the generation
 and evaluator actors. Changing a caller-supplied actor string is not authentication.
+
+To bind trusted semantic references, record actual independent HumanEvaluation and
+AdjudicatedEvaluation assets through the same Content commands, using
+`reference_sample: {asset_version_id, content_hash}` for the exact Planning benchmark
+candidate. Admission chooses `2.4.0`, validates its native generation/grant and preserves
+`CANDIDATE / INELIGIBLE`. Use dimension `<layer>:<criterion>` for every canonical
+qualification criterion, `PASSED` or `FAILED`, and one consistent protocol and Chapter/Arc
+scope. Freeze at least two independent human records per adjudication; the evaluator
+and generator cannot author those labels. These commands record real supplied labels;
+the Coding Agent must not manufacture human evidence.
+
+Extend the ordinary `reference_evaluation` binding with
+`adjudicated_reference: {adjudications: [{asset_version_id, content_hash}], scope:
+{scope_type, chapter_start, chapter_end}}`. Its original operator review must agree with
+every adjudicated criterion. Preflight rejects missing dimensions, scope drift and
+overlapping authors before a Provider call. The immutable grant binds the entire extended
+reference object. Successful outputs use `narrative-reference-agreement.v2`; subsequent
+native routing reads that outcome through the same `REFERENCE_AGREEMENT` metric with
+separate positive/negative coverage, producer/protocol/risk/context scope and fixture
+exclusion. This does not promote a sample or establish literary quality or reader preference.
 
 Use the existing `POST /product/production/book-authority/books/{book_id}/planning-evaluations?dry_run=true`
 with the ordinary evaluation command plus `routing_bootstrap_authorization_id` and

@@ -25,6 +25,36 @@ PROTOCOL_VERSION = "human-blind-comparison-v1"
 EVALUATION_VERSION = "editorial-pairwise-v1"
 
 
+def test_reference_agreement_retains_false_pass_and_never_mints_calibration():
+    from novel_forge.modules.chapter_quality_authority.reference_sampling import chapter_reference_agreement
+
+    reference = {"labels": [{"dimension": "review_decision", "status": "NEEDS_REVISION", "score_range": [0, 100]}],
+                 "production_qualification_eligible": False, "reference_basis": "ADJUDICATED_SUBJECTIVE_EVIDENCE"}
+    result = chapter_reference_agreement(reference, stage="review", result={"decision": "PASSED"})
+    assert result["status_accuracy"] == 0
+    assert result["comparisons"][0]["observed_status"] == "PASSED"
+    assert result["comparisons"][0]["score_in_range"] is None
+    assert result["calibration_claim_allowed"] is False
+    assert result["reader_preference_proven"] is False
+    assert result["production_qualification_eligible"] is False
+
+
+def test_reference_quality_compares_every_dimension_and_separates_status_from_score():
+    from novel_forge.modules.chapter_quality_authority.reference_sampling import chapter_reference_agreement, reference_dimensions
+
+    dimensions = reference_dimensions("quality_structural")
+    reference = {"labels": [{"dimension": dimension, "status": "PASSED", "score_range": [75, 85]} for dimension in dimensions]}
+    output = {"dimensions": [{"dimension": dimension, "gate_status": "PASSED", "score": 90} for dimension in dimensions]}
+    result = chapter_reference_agreement(reference, stage="quality_structural", result=output)
+    assert result["status_accuracy"] == 1
+    assert not any(row["score_in_range"] for row in result["comparisons"])
+    with pytest.raises(KernelError, match="QUALITY_REFERENCE_RESULT_INVALID"):
+        chapter_reference_agreement(reference, stage="quality_structural", result={"dimensions": output["dimensions"][:-1]})
+    output["dimensions"][-1] = output["dimensions"][0]
+    with pytest.raises(KernelError, match="QUALITY_REFERENCE_RESULT_INVALID"):
+        chapter_reference_agreement(reference, stage="quality_structural", result=output)
+
+
 def _scores(a: int | None = 4, b: int | None = 3):
     return {dimension: {"a": a, "b": b} for dimension in BLIND_EVALUATION_DIMENSIONS}
 
@@ -381,3 +411,83 @@ def test_v1_calibration_is_not_a_current_content_authority() -> None:
         )
         is None
     )
+
+
+def test_new_quality_call_requires_its_qualified_reference_route_and_unchanged_served_model():
+    from copy import deepcopy
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+    from novel_forge.modules.chapter_quality_authority.reference_sampling import reference_decision_qualifies
+    from tests.unit.test_cost_aware_routing import candidate, samples, task, route
+
+    current = task(task_type="quality_structural", producer_contract={"fixture": "exact-producer-v1"},
+        producer_contract_hash=snapshot_hash({"fixture": "exact-producer-v1"}))
+    model = candidate(model_revision="revision-1")
+    observations = [replace(row, evidence_class="REFERENCE_EVALUATION", production_eligible=False,
+        quality_score=None, accepted=None, reference_agreed=True, reference_label_classes=("PASS" if i % 2 else "FAIL",),
+        reference_risk="MEDIUM", reference_context_tokens=1000, reference_protocol_hash="sha256:" + "d" * 64,
+        served_model_identity_hash="sha256:" + "e" * 64, outcome_refs=("asset-version:reference:" + str(i),))
+        for i, row in enumerate(samples(n=80))]
+    frozen = route(current, [model], {"flash": observations})
+    evidence = {"real_model_call": True, "provider_id": model.provider, "model_id": model.model,
+        "production_execution": {"execution_request": {key: frozen["task"][key] for key in ("project_id", "operation_id", "attempt_id")},
+            "execution_result": {"outcome": "SUCCEEDED"}, "route_snapshot": {"reasoning_effort": model.reasoning},
+            "process_evidence": {"model_revision": model.model_revision, "served_model_identity_hash": "sha256:" + "e" * 64}}}
+    assert reference_decision_qualifies(frozen, evidence=evidence, stage=current.task_type)
+    for mutation in ("sampling", "missing-protocol", "missing-stratum", "wrong-task", "changed-producer", "lowered-policy"):
+        invalid = deepcopy(frozen)
+        if mutation == "sampling":
+            invalid.update(status="BENCHMARK_SELECTED", bootstrap_authorization={"authorization_id": "fixture"})
+        elif mutation == "missing-protocol":
+            invalid["selected"]["benchmark"]["reference_protocol_hashes"] = []
+        elif mutation == "missing-stratum":
+            invalid["selected"]["benchmark"]["reference_label_strata"]["FAIL"]["sample_count"] = 0
+        elif mutation == "wrong-task":
+            invalid["task"]["task_type"] = "quality_commercial"
+        elif mutation == "changed-producer":
+            invalid["task"]["producer_contract"] = {"fixture": "changed"}
+        else:
+            invalid["policy"]["minimum_samples"] = 0
+        assert not reference_decision_qualifies(invalid, evidence=evidence, stage=current.task_type)
+    for mutation in ("fixture", "model", "fingerprint", "revision", "operation", "reasoning"):
+        invalid = deepcopy(evidence)
+        if mutation == "fixture":
+            invalid["real_model_call"] = False
+        elif mutation == "model":
+            invalid["model_id"] = "another-model"
+        elif mutation in {"fingerprint", "revision"}:
+            invalid["production_execution"]["process_evidence"]["served_model_identity_hash" if mutation == "fingerprint" else "model_revision"] = "changed"
+        elif mutation == "operation":
+            invalid["production_execution"]["execution_request"]["operation_id"] = "another-operation"
+        else:
+            invalid["production_execution"]["route_snapshot"]["reasoning_effort"] = "max"
+        assert not reference_decision_qualifies(frozen, evidence=invalid, stage=current.task_type)
+
+
+def test_quality_context_cannot_self_assert_reference_calibration_or_retarget_a_receipt():
+    from copy import deepcopy
+    from novel_forge.modules.chapter_quality_authority.domain import build_quality_group_evidence
+
+    receipt = {"schema_version": "chapter-reference-calibration.v1", "stage": "quality_source_originality",
+        "target_asset_version_id": "draft-target", "operation_id": "native-quality-operation"}
+    context = {"context_segments": [{"asset_version_id": "external-effect:native-quality-operation",
+        "structured_facts": [{"key": "dimension_evidence", "value": [{"dimension": "originality",
+            "target_asset_version_id": "draft-target", "gate_status": "PASSED", "score": 90,
+            "provider_verified": True, "calibration_status": "REFERENCE_CALIBRATED"}]}]}]}
+    inputs = dict(group="source_originality", project_id="project", revision={"text": "The choice creates a consequence."},
+        revision_asset_version_id="draft-target", context_bundle=context, canon={}, fixture=False)
+    def originality(report):
+        return next(row for row in report["dimensions"] if row["dimension"] == "originality")
+    assert originality(build_quality_group_evidence(**inputs))["gate_status"] != "PASSED"
+    report = build_quality_group_evidence(**inputs, reference_calibration=receipt)
+    assert originality(report)["gate_status"] == "PASSED"
+    assert originality(report)["calibration_status"] == "REFERENCE_CALIBRATED"
+    assert originality(report)["reference_calibration"] == receipt
+    assert not report["human_verified"] and not report["production_verified"]
+    forged_context = deepcopy(context)
+    forged_context["context_segments"][0]["asset_version_id"] = "arbitrary-context-claim"
+    assert originality(build_quality_group_evidence(**{**inputs, "context_bundle": forged_context}, reference_calibration=receipt))["gate_status"] != "PASSED"
+    for invalid in ({**receipt, "target_asset_version_id": "other-target"}, {**receipt, "stage": "quality_commercial"}):
+        with pytest.raises(KernelError, match="QUALITY_REFERENCE_SCOPE_INVALID"):
+            build_quality_group_evidence(**inputs, reference_calibration=invalid)
+    with pytest.raises(KernelError, match="QUALITY_REFERENCE_SCOPE_INVALID"):
+        build_quality_group_evidence(**{**inputs, "fixture": True}, reference_calibration=receipt)

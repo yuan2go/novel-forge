@@ -15,9 +15,10 @@
       "real_sample_count": 0,
       "holdout_sample_count": 0,
       "calibration": "NOT_PROVEN",
-      "source_sha256": "sha256:f130fc6a712f8fb2efcebf607db6b37bf843e4fbd76348728b0674de33b34186",
+      "source_sha256": "sha256:5cbab9be5a433ec0faabd1a26e4073373b5009845d31c3d289179b56f1acc5cd",
       "sampling_entry": "POST /product/source-imports/provider-samples",
-      "limitation": "Existing native frozen inputs required; no production commit or automatic quality admission"
+      "limitation": "Existing native frozen inputs required; no production commit or automatic quality admission",
+      "recovery": "TERMINAL_NO_EFFECT_OR_PROVEN_FAILURE_REPLACEMENT; UNKNOWN_QUERY_RECONCILIATION; NO_SUCCESS_RESEND"
     },
     {
       "task_type": "source.deconstruction.observe",
@@ -30,7 +31,7 @@
       "real_sample_count": 0,
       "holdout_sample_count": 0,
       "calibration": "NOT_PROVEN",
-      "source_sha256": "sha256:f130fc6a712f8fb2efcebf607db6b37bf843e4fbd76348728b0674de33b34186",
+      "source_sha256": "sha256:5cbab9be5a433ec0faabd1a26e4073373b5009845d31c3d289179b56f1acc5cd",
       "sampling_entry": "POST /product/source-imports/provider-samples",
       "limitation": "Existing native frozen inputs required; no production commit or automatic quality admission",
       "roles": [
@@ -42,7 +43,8 @@
         "REVIEW",
         "REPAIR",
         "SYNTHESIZE"
-      ]
+      ],
+      "recovery": "TERMINAL_NO_EFFECT_OR_PROVEN_FAILURE_REPLACEMENT; UNKNOWN_QUERY_RECONCILIATION; NO_SUCCESS_RESEND"
     },
     {
       "task_type": "source.mkaos.extract",
@@ -55,9 +57,10 @@
       "real_sample_count": 0,
       "holdout_sample_count": 0,
       "calibration": "NOT_PROVEN",
-      "source_sha256": "sha256:f130fc6a712f8fb2efcebf607db6b37bf843e4fbd76348728b0674de33b34186",
+      "source_sha256": "sha256:5cbab9be5a433ec0faabd1a26e4073373b5009845d31c3d289179b56f1acc5cd",
       "sampling_entry": "POST /product/source-imports/provider-samples",
-      "limitation": "Existing native frozen inputs required; no production commit or automatic quality admission"
+      "limitation": "Existing native frozen inputs required; no production commit or automatic quality admission",
+      "recovery": "TERMINAL_NO_EFFECT_OR_PROVEN_FAILURE_REPLACEMENT; UNKNOWN_QUERY_RECONCILIATION; NO_SUCCESS_RESEND"
     },
     {
       "task_type": "creative.candidates.generate",
@@ -241,10 +244,9 @@
       "calibration": "NOT_PROVEN",
       "source_sha256": "sha256:21b9a0fafad1c9ff8d69339ece48afc99c9b53faf7bbf1ae308cecc7ac0a1538",
       "limitations": [
-        "One immutable evaluation contract per candidate",
-        "No calibrated reference labels in this campaign",
-        "No automatic proxy-to-production admission",
-        "Terminal standalone reference replacement not implemented"
+        "No trusted calibrated reference labels in this campaign",
+        "Operator proxy agreement does not grant evaluator production admission",
+        "Standalone successful-effect projection repair is not implemented"
       ],
       "scope_note": "Paired model arms and no-effect/terminal-failure predecessor replacement use native Kernel Operations. Operator proxy labels are not trusted human ground truth or evaluator admission. Unknown and successful effects cannot be resent."
     },
@@ -350,7 +352,7 @@
       "real_sample_count": 0,
       "holdout_sample_count": 0,
       "calibration": "NOT_PROVEN",
-      "source_sha256": "sha256:2e09e4f89c27927e88e12dcad43ace4894d78a6e6669764928bd97b123091cd0"
+      "source_sha256": "sha256:d9eb7debaff028b514f7538425856a0acb621962d5fd51645bf5231abc167105"
     },
     {
       "task_type": "quality_commercial",
@@ -363,7 +365,7 @@
       "real_sample_count": 0,
       "holdout_sample_count": 0,
       "calibration": "NOT_PROVEN",
-      "source_sha256": "sha256:2e09e4f89c27927e88e12dcad43ace4894d78a6e6669764928bd97b123091cd0"
+      "source_sha256": "sha256:d9eb7debaff028b514f7538425856a0acb621962d5fd51645bf5231abc167105"
     },
     {
       "task_type": "quality_source_originality",
@@ -376,7 +378,7 @@
       "real_sample_count": 0,
       "holdout_sample_count": 0,
       "calibration": "NOT_PROVEN",
-      "source_sha256": "sha256:2e09e4f89c27927e88e12dcad43ace4894d78a6e6669764928bd97b123091cd0"
+      "source_sha256": "sha256:d9eb7debaff028b514f7538425856a0acb621962d5fd51645bf5231abc167105"
     },
     {
       "task_type": "quality_platform",
@@ -389,7 +391,7 @@
       "real_sample_count": 0,
       "holdout_sample_count": 0,
       "calibration": "NOT_PROVEN",
-      "source_sha256": "sha256:2e09e4f89c27927e88e12dcad43ace4894d78a6e6669764928bd97b123091cd0"
+      "source_sha256": "sha256:d9eb7debaff028b514f7538425856a0acb621962d5fd51645bf5231abc167105"
     },
     {
       "task_type": "quality_longform",
@@ -402,7 +404,7 @@
       "real_sample_count": 0,
       "holdout_sample_count": 0,
       "calibration": "NOT_PROVEN",
-      "source_sha256": "sha256:2e09e4f89c27927e88e12dcad43ace4894d78a6e6669764928bd97b123091cd0"
+      "source_sha256": "sha256:d9eb7debaff028b514f7538425856a0acb621962d5fd51645bf5231abc167105"
     },
     {
       "task_type": "retrieval_query_expansion",
@@ -440,7 +442,38 @@
     "routing benchmark projection"
   ],
   "excluded_abstract_taxonomy_aliases_are_not_execution_evidence": true,
-  "implementation_sha": "f5ba1faf058af2613f7116904a6230eac1f0e02c",
-  "tested_sha": "bf77e0892c0bbc4cb06f13d00beae1805b7a4a05",
-  "implementation_tree_sha": "sha256:2a0f369f4e29d34f5d56bbf9dcd9d0401c568c0188050d3a389640d95bbfb408"
+  "implementation_sha": "76446099dee54b0248c9625a02e3d22b391c9086",
+  "tested_sha": "45fa74ace314735112a3447e660c685172c6f79f",
+  "implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed",
+  "producer_contract_scope": "Prompt/Skill/Context/Schema/tool/projection identity is isolated before the benchmark query limit. Judge/risk/length compatibility and trusted quality projection remain separate requirements.",
+  "auxiliary_provider_stages": [
+    {
+      "provider_stage": "retrieval",
+      "roles": [
+        "ACCEPTED_DOCUMENT_EMBEDDING_PROJECTION",
+        "ACCEPTED_HISTORY_QUERY_EMBEDDING"
+      ],
+      "owner": "Context Builder / Chapter Authority",
+      "activation": "Configured retrieval embedding route; query embedding also requires enabled semantic policy and ready projected documents",
+      "native_router_boundary": "Existing embedding output contract skips generative ProductionProviderRouter selection; remains governed by Provider admission and Kernel ExternalEffect",
+      "flash_pro_calibration_scope": "NOT_A_GENERATIVE_ROUTING_TASK_TYPE; DO_NOT_INVENT_MODEL_CAPABILITY",
+      "required_budget_treatment": "Include every invocation and unknown fee if the frozen production configuration enables it; current draft has no verified embedding allocation",
+      "real_calls": 0,
+      "activated_runtime_coverage": "NOT_RUN",
+      "call_sites": [
+        {
+          "path": "src/novel_forge/modules/context_builder/embedding_projection.py",
+          "source_sha256": "sha256:5dda7d42c624ecf8bc5f65c7e07761d93b58c694af1b932f659a2013e1e910e2"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+          "source_sha256": "sha256:d3074c45ee040c5f229bf891b51e73e29a4cc9fb5d80c1845b124cb5f1700af8"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+          "source_sha256": "sha256:d9eb7debaff028b514f7538425856a0acb621962d5fd51645bf5231abc167105"
+        }
+      ]
+    }
+  ]
 }

@@ -39,6 +39,25 @@ class _Handler:
 
 
 class ChapterAuthorityDefinitionTests(unittest.TestCase):
+    def test_sample_definition_requires_ineligible_output_without_weakening_formal_contract(self) -> None:
+        from novel_forge.modules.chapter_authority.definitions import chapter_provider_sample_definitions
+
+        samples = chapter_provider_sample_definitions(application_build_id="test", commit_sha="a" * 40)
+        formal = {item["name"]: item for item in chapter_operation_definitions(
+            application_build_id="test", commit_sha="a" * 40, model_effects_required=True,
+        )}
+        for sample in samples:
+            with self.subTest(definition=sample["name"]):
+                original = formal[sample["policy"]["source_definition_name"]]
+                self.assertNotEqual(sample["name"], original["name"])
+                selector = sample["completion_contract"]["required_asset_selectors"][0]
+                self.assertEqual(selector["selector"], "chapter_provider_sample")
+                self.assertEqual(selector["eligibility"], "INELIGIBLE")
+                self.assertEqual(original["completion_contract"]["required_qualifications"], ["production_eligible"])
+                self.assertTrue(all(item["eligibility"] == "ELIGIBLE" for item in original["completion_contract"]["required_asset_selectors"]))
+                self.assertEqual(sample["completion_contract"]["required_external_effects"], original["completion_contract"]["required_external_effects"])
+                self.assertEqual(sample["retry_policy"]["max_attempts"], 1)
+
     def test_root_definition_requires_every_node_and_is_saga_owned(self) -> None:
         definition = chapter_root_operation_definition(
             application_build_id="unit-test-build",

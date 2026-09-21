@@ -95,20 +95,111 @@ reserved usage, and ambiguous usage remains held. Failure model logs remain evid
 Unknown outcomes checkpoint for reconciliation; known terminal Provider failure is not
 turned into an automatic retry of the same task.
 This does not calibrate Source reviewers or authorize reference material for production.
+Chapter memo, draft, revision and Canon extraction also have native campaign sampling
+Operations. They freeze an existing stage command and inputs, use a separately approved
+Capability Pack binding with the original handler, and complete only an ineligible sample.
+Their single-step Saga, Router, Provider admission, Agent Runtime, ExternalEffect and budget
+remain native; the source production Saga and Book acceptance cannot consume the sample.
+Both synchronous and reconciled model receipts use one Kernel settlement policy. Failures
+without measurements retain model-call evidence, and later success appends separate evidence.
+Chapter review, rereview and five Quality groups additionally support reference sampling
+against native adjudications backed by independent blind human-evaluation records. The
+labels are excluded from Provider input and compared afterward with the exact ModelCallLog.
+This checks recorded identity, scope and agreement; it does not certify human judgment.
+Native human evaluation and adjudication commands have a separate `2.2.0` definition for
+annotating an exact completed Chapter generator sample. Admission requires an authenticated
+local operator, the sample hash and its native benchmark grant. Only that ineligible input
+is readable; annotation neither promotes the sample nor certifies the author's expertise.
+Review and ReReview sampling at definition version `1.1.0` can instead bind an exact
+draft or revision generator sample and its original generator Operation. They reuse the
+native review task constructor, original Context, Narrative Craft and cross-chapter
+frontier checks. The approved reviewer Pack supplies its own Skill and Schema; the
+preflight producer hash is checked again by Router before any Effect. The target keeps
+its physical sample type and ineligible state. Replay uses the existing Attempt Pack
+snapshot. Quality-group sampling still requires a frozen native Quality task and target.
+The sampling result cannot activate a Quality profile or qualify itself. Router policy
+`quality-constrained-routing.v9` reads native Chapter, World and trusted semantic reference outcomes using a separate
+`REFERENCE_AGREEMENT` metric. The projection revalidates the native grant, target, labels,
+real receipt and recomputed agreement. Fixture labels and calls do not contribute.
+Reference protocol/version hashes, risk and context-length bands stay separate; mixed
+reference protocols cannot qualify a candidate. Identical normalized prose is one sample
+even after renaming its campaign group. Both
+positive and negative label strata must satisfy sample coverage and the unchanged quality
+floor using separate conservative binary lower bounds; literary scores and production
+acceptance remain separate. Development and holdout partitions remain excluded.
+The current maximum score-reference interval width is 20 points on the 0–100 scale
+(`UNRESOLVED_DESIGN_CONSTRAINT`): it rejects uninformative broad labels and still requires
+campaign protocol review. These admission estimates do not prove non-inferiority or
+reader preference. Context-length bands use the frozen input estimate; aggregated billed
+tokens, including Codex internal calls, do not represent a single invocation's context.
+A new formal Quality call may consume its frozen reference-qualified RoutingDecision
+only with the matching successful native Effect, Attempt, ModelCallLog, target, producer
+and served model identity. Its group report retains these references and marks those
+dimensions `REFERENCE_CALIBRATED`; Context and Provider JSON cannot assert this status.
+Missing or changed receipts fail closed. Sampling cannot acquire that status or activate
+a global Quality profile. Generator feedback admission remains unimplemented; Narrative
+operator proxy labels alone cannot qualify a semantic evaluator.
+For a Planning benchmark candidate, native Content annotation version `2.4.0` binds
+HumanEvaluation and AdjudicatedEvaluation to the exact ineligible generation and its
+campaign grant. Semantic reference sampling can additionally freeze those adjudications
+and a Chapter/Arc scope alongside its original operator-review binding. Every required
+criterion must match independent native labels, authored by two humans and a separate
+adjudicator outside the generation/evaluation actors. The labels remain outside Provider
+context. `narrative-reference-agreement.v2` retains this provenance; proxy-only sampling
+keeps its original nonqualifying protocol. The feedback projection revalidates the native
+receipt, target, model log and labels, and separates generator/profile protocols before
+reviewer admission. A reference result still cannot create a domain qualification or
+activate its candidate. Scripted labels cannot supply real calibration evidence.
 This does not prove judge calibration or bootstrap every task family. Ordinary production
 routing blocks when sufficient quality evidence is absent.
+
+The normal Book supervisor supplies `world_preparation_request` for ChapterPlan generation,
+and `PlanningWorldPreparation.prepare` executes `world_candidates.generate` followed by
+`world_candidates.evaluate`. Planning now has separate single-stage World sample Operations
+that reuse these factories, the original Context and approved producer artifacts. The
+validation Pack binds a distinct sample Operation; ordinary multistage bootstrap remains
+forbidden. Native Router, admission, ExternalEffect, settlement and recovery retain their
+owners. Results are ineligible World samples; they cannot materialize a World action or
+activate a ChapterPlan. Reference sampling uses independent native adjudications outside
+Provider input and records score disagreement separately from World rule validation.
+World reference sampling at definition version `1.1.0` also accepts an exact native
+`world_provider_sample` generation output. Native Content annotation version `2.3.0`
+permits independent labels for that ineligible target. Planning derives the Director task
+and Context from the original generator Context and producer artifacts without reading a
+formal World generation or Director Context. The derived Context remains ineligible;
+its hash, sample origin and separate reference grant are checked again before dispatch.
+Provider source-policy eligibility does not promote that Context to business eligibility.
+World evaluator reference outcomes now feed the same routing benchmark. Projection
+revalidates native source, grant, receipt, target and independent labels, recomputes rule
+and score-range results, and counts rule failures as disagreements. Repeated portfolio
+content cannot gain extra sample credit through renamed campaign groups. Director
+dimension names and the frozen World policy define protocol scope; per-candidate IDs
+do not define a new evaluation protocol. Fixture calls or labels supply no qualifying
+reference evidence. Sufficient compatible positive and negative strata can admit a new
+World evaluator call; this does not qualify its generator or activate sample outputs.
+World generator feedback admission remains a gap. Both World tasks are required by the
+continuous Book chain and must remain in its calibration coverage matrix.
 
 Planning sampling grants may bind a frozen campaign identity, manifest hash, sample/data
 group and experiment partition. Kernel aggregates their reservations across authorization
 and policy versions. A campaign project cannot replace that identity or admit new unbound
-sampling grants. This quota covers authorized Planning, Source and reference sampling;
-production, ordinary review and entitlement
-still require their existing project and Book budget policies. It is not a campaign-wide
-mixed-billing authorization. Router v5 counts first attempts per campaign data group
+sampling grants. This quota covers authorized Planning, Source, Chapter generator and reference sampling;
+production, ordinary review and entitlement still require their native project and Book
+policies, including the separate whole-campaign contract described below. A bootstrap
+quota alone is not mixed-billing authorization. Router v5 counts first attempts per campaign data group
 (input hashes outside campaigns) for quality
 qualification, keeps retries in operational cost/yield, and excludes development and
 holdout partitions from qualification feedback. The provider view removes routing/grant
 metadata from narrative evaluation context; this does not establish evaluator calibration.
+
+Validation bootstrap may also target the configured Codex escalation candidate under
+an explicit `ACCOUNT_ENTITLEMENT` grant. Its amount is null and currency is `UNKNOWN`;
+the exact account authorization and finite calls/tokens must also fit the native
+whole-campaign entitlement lane. The ordinary high-risk/escalation, availability and
+capacity restrictions still apply. A priced grant cannot select the subscription lane
+or change the authorized account. Campaign queries report priced USD and entitlement
+usage separately, with mixed total monetary cost unknown. This capability does not
+prove that a real Codex escalation has executed or that its result is better.
 
 New Chapter, Planning and Source decisions bind the materialized Prompt/Skill, provider
 view versions, Context policy and output schema to a producer-contract hash. Native
@@ -175,8 +266,16 @@ the grant on that Effect. The existing PostgreSQL budget ledger enforces cumulat
 project and shared totals, including unresolved usage; new run keys and evidence directories
 do not create allowances. Source uses its curated consumption lineage to identify the
 authorized Book, rather than its internal synthetic Source Book. Allocation plans are not
-authorization. This phase contract currently supports account entitlement; priced runs
-without this experiment contract retain their existing monetary controls.
+authorization. Existing single-Book contracts retain their account-entitlement semantics.
+The `creative-provider-campaign-budget.v4` contract binds one Book, a frozen campaign
+manifest and expiry across reference evaluation, screening, calibration, holdout, Source,
+design, production and repair. It adds cumulative priced USD ceilings and exact
+Provider/account entitlement lanes to the same Kernel ledger. Subscription USD remains
+unknown; all lanes also consume the common call/token ceilings. Native Operation and
+chapter boundaries determine business scope, while sampling phases come from the frozen
+grant. Expiry prevents new sends but permits reconciliation of existing calls. This
+budget contract does not supply evaluator calibration, paid authorization or campaign
+qualification.
 
 ## Governed corpus works and Book knowledge isolation
 

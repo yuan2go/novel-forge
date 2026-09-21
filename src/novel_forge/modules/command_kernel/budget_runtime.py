@@ -1351,6 +1351,11 @@ def assert_provider_execution_authorized(
     """SECURITY: Hard-stop immediately before a Provider request can leave the process."""
     with AuthorityUnitOfWork(database_url) as uow:
         from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_dispatch
+        from novel_forge.modules.command_kernel.creative_budget_runtime import assert_creative_budget_dispatch
+
+        assert_creative_budget_dispatch(uow.cursor, project_id=project_id,
+                                       external_effect_id=external_effect_id,
+                                       reservation_id=budget_reservation_id)
 
         verify_routing_bootstrap_dispatch(
             uow.cursor, external_effect_id=external_effect_id, project_id=project_id,
@@ -3408,14 +3413,15 @@ def _enforce_routing_chain_budget(
 
     require_effect_retry_ready(cursor, request.external_effect_id)
     cursor.execute(
-        """SELECT count(*), count(*) FILTER (
-                    WHERE e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,selected,candidate,escalation_only}'='true'),
+        f"""SELECT count(*), count(*) FILTER (
+                    WHERE b.usage_accounted AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,selected,candidate,escalation_only}}'='true'),
                   bool_or(b.status IN ('RESERVED','HELD_UNKNOWN')),
                   bool_or(e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED'))
-           FROM authority_budget_reservation b JOIN authority_external_effect e USING(external_effect_id)
+           FROM (SELECT *,{provider_usage_accounted_sql()} AS usage_accounted FROM authority_budget_reservation) b
+           JOIN authority_external_effect e USING(external_effect_id)
            WHERE b.project_id=%s AND b.operation_id=ANY(%s::text[]) AND b.stable_idempotency_key<>%s
              AND b.status<>'REJECTED'
-             AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}'=%s""",
+             AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,task,chain_id}}'=%s""",
         [
             request.project_id,
             lineage_operations,
@@ -3723,13 +3729,18 @@ def settle_provider_budget_in_uow(
                 }
             )
     from novel_forge.modules.command_kernel.creative_budget_runtime import check_creative_settlement_in_uow
+    campaign_budget_error_code = ""
     try:
-        check_creative_settlement_in_uow(uow, row, actual_tokens)
+        check_creative_settlement_in_uow(uow, row, actual_tokens, actual_amount=amount)
     except KernelError as exc:
-        if exc.code != "CREATIVE_BUDGET_EXHAUSTED":
+        if exc.code not in {"CREATIVE_BUDGET_EXHAUSTED", "CREATIVE_BUDGET_USD_EXHAUSTED"}:
             raise
-        token_overrun = True
-        entitlement_usage_cap_error = exc.code
+        campaign_budget_error_code = exc.code
+        if exc.code == "CREATIVE_BUDGET_USD_EXHAUSTED":
+            monetary_breach = True
+        else:
+            token_overrun = True
+            entitlement_usage_cap_error = exc.code
     if monetary_breach or token_overrun:
         uow.cursor.execute(
             """
@@ -3755,6 +3766,7 @@ def settle_provider_budget_in_uow(
                         "estimated_tokens": int(row["estimated_tokens"]),
                         "manual_resolution_required": True,
                         "token_cap_error_code": entitlement_usage_cap_error,
+                        "campaign_budget_error_code": campaign_budget_error_code,
                     }
                 ),
                 reservation_id,
@@ -3777,6 +3789,7 @@ def settle_provider_budget_in_uow(
                 "actual_tokens": actual_tokens,
                 "estimated_tokens": int(row["estimated_tokens"]),
                 "token_cap_error_code": entitlement_usage_cap_error,
+                "campaign_budget_error_code": campaign_budget_error_code,
             },
         )
         return {

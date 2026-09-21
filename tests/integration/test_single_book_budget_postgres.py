@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import replace
+from decimal import Decimal
 
 import pytest
 
@@ -249,3 +250,149 @@ def test_native_semantic_scope_uses_exact_generation_output_and_original_chapter
         identity["request_payload"]["_production_execution"]["target_content_hash"] = "sha256:" + "0" * 64
         with AuthorityUnitOfWork(DATABASE_URL) as uow, pytest.raises(KernelError, match="CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN"):
             _business_scope(uow.cursor, identity, project_id=single.projects["A"])
+
+
+def provider_campaign_fixture():
+    from tests.unit.test_creative_budget_contract import provider_campaign_policy
+
+    ensure_migrated()
+    fixture = SingleBookBudget()
+    policy = provider_campaign_policy()
+    policy["comparison_budget"]["experiment_id"] = identifier("provider-campaign")
+    policy["comparison_budget"]["arms"][0].update(project_id=fixture.projects["A"], book_id=fixture.books["A"])
+    policy["authorization"].update(project_id=fixture.projects["A"], book_id=fixture.books["A"])
+    fixture.plan = policy["comparison_budget"]
+    fixture.configure(policy)
+    return fixture
+
+
+def campaign_reservation(fixture, effect, *, entitlement=False, amount="0.6", tokens=200, authorization="fixture-codex-entitlement"):
+    from novel_forge.modules.command_kernel.budget_runtime import BudgetReservationRequest
+
+    context, effect_id = effect
+    return BudgetReservationRequest(context.operation_id, effect_id, fixture.projects["A"], "reservation:" + effect_id,
+        "codex-cli" if entitlement else "deepseek", "UNKNOWN" if entitlement else "USD",
+        None if entitlement else amount, tokens, accounting_basis="ACCOUNT_ENTITLEMENT" if entitlement else "PRICED",
+        cost_authorization_ref=authorization if entitlement else "")
+
+
+def test_mixed_campaign_counts_production_and_subscription_without_reset_or_free_usd():
+    from novel_forge.modules.command_kernel.creative_budget_runtime import get_creative_budget
+    from novel_forge.modules.command_kernel.budget_runtime import assert_provider_execution_authorized
+
+    fixture = provider_campaign_fixture()
+    effects = [fixture.native_effect(chapter_identity(chapter, stage=stage)) for chapter, stage in ((1, "draft"), (1, "review"))]
+    for entitlement, effect in zip((False, True), effects, strict=True):
+        request = campaign_reservation(fixture, effect, entitlement=entitlement)
+        reserved = reserve_provider_budget(DATABASE_URL, request)
+        assert_provider_execution_authorized(DATABASE_URL, operation_id=effect[0].operation_id,
+            external_effect_id=effect[1], project_id=fixture.projects["A"], budget_reservation_id=reserved["reservation_id"])
+        dispatch_external_effect(DATABASE_URL, effect[0], effect_id=effect[1], worker_id="fixture-budget",
+            lease_seconds=60, adapter=FakeDeterministicProvider("success"), budget_reservation_id=reserved["reservation_id"])
+        settled = settle_provider_budget(DATABASE_URL, reservation_id=reserved["reservation_id"],
+            project_id=fixture.projects["A"], actual_amount=None if entitlement else "0.4", actual_tokens=100,
+            evidence={"fixture": True, "accounting_basis": request.accounting_basis, "cost_status": "UNKNOWN" if entitlement else "KNOWN"})
+        assert settled["status"] == "SETTLED"
+        assert reserve_provider_budget(DATABASE_URL, request)["replayed"]
+    usage = get_creative_budget(DATABASE_URL, fixture.projects["A"])["budget_usage"]
+    assert usage["project_total"]["calls_used_or_reserved"] == 2
+    assert Decimal(usage["phases"]["PRODUCTION"]["priced_usd"]) == Decimal("0.4")
+    assert usage["project_total"]["unpriced_calls"] == 1
+    assert usage["entitlement_usd"] is None
+    assert usage["entitlements"][0]["calls"] == 1
+    changed = deepcopy(fixture.policies["A"])
+    changed["policy_version"] = "new-run-key-same-campaign"
+    changed["authorization"]["authorization_ref"] += ":new-run"
+    fixture.configure(changed)
+    for identity, entitlement, auth in ((chapter_identity(2), False, ""),
+                                        (chapter_identity(1, stage="revision"), True, "fixture-codex-entitlement"),
+                                        (chapter_identity(1, stage="rereview"), True, "another-account")):
+        effect = fixture.native_effect(identity)
+        with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
+            reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, effect, entitlement=entitlement, authorization=auth))
+    redefined = deepcopy(changed)
+    redefined["policy_version"] = "reset-campaign"
+    redefined["comparison_budget"]["experiment_id"] += ":renamed"
+    with pytest.raises(KernelError, match="CREATIVE_BUDGET_PLAN_IMMUTABLE"):
+        fixture.configure(redefined)
+
+
+def test_mixed_campaign_serializes_price_reservations_and_rechecks_expiry_before_send():
+    from concurrent.futures import ThreadPoolExecutor
+    from datetime import datetime, timezone
+    from novel_forge.modules.command_kernel.creative_budget_runtime import get_creative_budget
+    from novel_forge.modules.command_kernel.budget_runtime import assert_provider_execution_authorized
+    from unittest.mock import patch
+
+    fixture = provider_campaign_fixture()
+    effects = [fixture.native_effect(planning_identity()) for _ in range(2)]
+
+    def reserve(effect):
+        try:
+            return reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, effect))
+        except KernelError as exc:
+            return {"status": exc.code}
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = list(pool.map(reserve, effects))
+    assert sorted(row["status"] for row in outcomes) == ["CREATIVE_BUDGET_USD_EXHAUSTED", "RESERVED"]
+    index = next(i for i, row in enumerate(outcomes) if row["status"] == "RESERVED")
+    effect, reservation = effects[index], outcomes[index]
+
+    class ExpiredClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2100, 1, 1, tzinfo=timezone.utc)
+
+    with patch("novel_forge.modules.command_kernel.creative_budget_runtime.datetime", ExpiredClock):
+        with pytest.raises(KernelError, match="CREATIVE_BUDGET_AUTHORIZATION_EXPIRED"):
+            assert_provider_execution_authorized(DATABASE_URL, operation_id=effect[0].operation_id,
+                external_effect_id=effect[1], project_id=fixture.projects["A"], budget_reservation_id=reservation["reservation_id"])
+    resolve_provider_budget_failure(DATABASE_URL, reservation_id=reservation["reservation_id"],
+        project_id=fixture.projects["A"], external_state_unknown=True)
+    with pytest.raises(KernelError, match="BUDGET_IDEMPOTENCY_CONFLICT"):
+        reserve_provider_budget(DATABASE_URL, replace(campaign_reservation(fixture, effect), stable_idempotency_key="renamed-repair"))
+    usage = get_creative_budget(DATABASE_URL, fixture.projects["A"])["budget_usage"]
+    assert usage["phases"]["DESIGN"]["calls_used_or_reserved"] == 1
+    assert usage["phases"]["DESIGN"]["conservative_tokens"] == 200
+    assert Decimal(usage["phases"]["DESIGN"]["priced_usd"]) == Decimal("0.6")
+
+
+@pytest.mark.parametrize("actual_amount,expected_status", [("0.4", "SETTLED"), ("1.1", "HELD_UNKNOWN")])
+def test_mixed_campaign_reconciles_expired_calls_and_retains_monetary_breach(actual_amount, expected_status):
+    from datetime import datetime, timezone
+    from unittest.mock import patch
+    from novel_forge.modules.command_kernel.creative_budget_runtime import get_creative_budget
+
+    fixture = provider_campaign_fixture()
+    effect = fixture.native_effect(planning_identity())
+    reservation = reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, effect))
+    dispatch_external_effect(DATABASE_URL, effect[0], effect_id=effect[1], worker_id="fixture-budget",
+        lease_seconds=60, adapter=FakeDeterministicProvider("success"), budget_reservation_id=reservation["reservation_id"])
+
+    class ExpiredClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2100, 1, 1, tzinfo=timezone.utc)
+
+    with patch("novel_forge.modules.command_kernel.creative_budget_runtime.datetime", ExpiredClock):
+        arguments = dict(reservation_id=reservation["reservation_id"], project_id=fixture.projects["A"],
+            actual_amount=actual_amount, actual_tokens=100, evidence={"fixture": True, "real_model_call": False})
+        if expected_status == "HELD_UNKNOWN":
+            with pytest.raises(KernelError, match="BUDGET_ACTUAL_EXCEEDS_RESERVATION"):
+                settle_provider_budget(DATABASE_URL, **arguments)
+        else:
+            assert settle_provider_budget(DATABASE_URL, **arguments)["status"] == expected_status
+    usage = get_creative_budget(DATABASE_URL, fixture.projects["A"])["budget_usage"]
+    assert Decimal(usage["phases"]["DESIGN"]["priced_usd"]) == Decimal(actual_amount)
+    assert usage["phases"]["DESIGN"]["calls_used_or_reserved"] == 1
+    if expected_status == "HELD_UNKNOWN":
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT evidence FROM authority_budget_reservation WHERE reservation_id=%s", [reservation["reservation_id"]])
+            evidence = cursor.fetchone()[0]
+        assert evidence["campaign_budget_error_code"] == "CREATIVE_BUDGET_USD_EXHAUSTED"
+        assert evidence["token_cap_error_code"] == ""
+        assert evidence["manual_resolution_required"] is True
+        assert usage["phases"]["DESIGN"]["conservative_tokens"] == 200
+        with pytest.raises(KernelError, match="CREATIVE_BUDGET_USD_EXHAUSTED"):
+            reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, fixture.native_effect(planning_identity()), amount="0.01"))

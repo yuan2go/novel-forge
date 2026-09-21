@@ -195,6 +195,40 @@
   "source_report_sha256": "sha256:857ee3789cd5c0b0cf8d2268e7c7d2c8478c896cf93ad63fce9d8e92f94d5e78",
   "evidence_root_name": "nf-real-provider-campaign-pr-v2-20260920",
   "failure_reason": "",
+  "pr_governance": {
+    "schema_version": "novel-forge.pr-governance.v1",
+    "status": "PASS",
+    "head_sha": "22cf0354c897fa383fa7def58cd8969e5cf02e88",
+    "base_sha": "feba06582b6cadf2e80f5c573cf427114cf2a926",
+    "base_implementation_tree_sha": "sha256:e1dd43acca11bcecbb7e736e65332fa8824e305e85e6fa1ab503ed103a560537",
+    "implementation_tree_sha": "sha256:207d4cfc38485d80edb2fc36b358cf6301686c447b50d58e4f6b5ca3f2706d0f",
+    "implementation_changed": true,
+    "focused_test_paths": [
+      "tests/integration/test_provider_routing_postgres.py",
+      "tests/integration/test_routing_bootstrap_budget_postgres.py",
+      "tests/unit/test_cost_aware_routing.py",
+      "tests/unit/test_provider_task_views.py",
+      "tests/unit/test_routing_bootstrap.py"
+    ],
+    "checks": [
+      {
+        "exit_code": 0,
+        "gate": "repository-governance"
+      },
+      {
+        "exit_code": 0,
+        "gate": "focused-tests"
+      },
+      {
+        "exit_code": 0,
+        "gate": "canonical-exact-sha-p0"
+      }
+    ],
+    "qualification": "PASS_EXACT_SHA_P0",
+    "qualification_reason": "IMPLEMENTATION_CHANGED",
+    "provider_qualification": "NOT_ASSESSED_BY_PR_GATE",
+    "source_report_sha256": "sha256:b81af9aed0e8e1bcd2593755d4bff4d3fafc32d93ed389f986a5c45e0f647ae7"
+  },
   "gates": [
     {
       "gate_id": "source-preflight",
@@ -292,6 +326,20 @@
       "skipped": 0,
       "seconds": 6486.142,
       "failed_cases": []
+    }
+  ],
+  "pytest_summaries": [
+    {
+      "artifact": "backend-pytest-process.json",
+      "summary": "2827 passed, 15 warnings, 1452 subtests passed in 135.16s (0:02:15)"
+    },
+    {
+      "artifact": "migration-compatibility-process.json",
+      "summary": "92 passed, 13 subtests passed in 314.69s (0:05:14)"
+    },
+    {
+      "artifact": "postgresql-pytest-process.json",
+      "summary": "777 passed, 85 warnings, 96 subtests passed in 6487.55s (1:48:07)"
     }
   ],
   "artifacts": [

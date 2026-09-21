@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Iterator
 from copy import deepcopy
 from dataclasses import replace
-import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -693,10 +692,7 @@ def _seed_inputs(
                         },
                     }
                 ]
-            digest = (
-                "sha256:"
-                + hashlib.sha256(str(sorted(content.items())).encode()).hexdigest()
-            )
+            digest = canonical_hash(content)
             cursor.execute(
                 "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",
                 [asset_id, project_id, role],
@@ -1949,6 +1945,37 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
                 project_id=project_id,
                 book_run_id=native_evidence["book_run_id"],
             )
+            if autonomous_world is True:
+                from novel_forge.modules.story_planning_runtime.world_sampling import (
+                    WorldProviderSampleCommand, prepare_world_sample, require_world_sample_source,
+                )
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("""SELECT operation.operation_id,generation.book_id FROM authority_operation operation
+                        JOIN authority_story_planning_generation generation USING(operation_id)
+                        WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
+                          AND operation.command_payload#>>'{payload,generator_operation_name}'='chapter_plan.generate'
+                        ORDER BY operation.created_at LIMIT 1""", [project_id])
+                    world_origin, world_book = uow.cursor.fetchone()
+                    uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [project_id])
+                    effects_before = uow.cursor.fetchone()[0]
+                operator = harness.principal("world-sample-fixture", "story_planning.authority.execute")
+                prepared = prepare_world_sample(composition.planning, WorldProviderSampleCommand(
+                    project_id, world_book, operator.principal_id, world_origin, "world_candidates.generate",
+                    "fixture-unapproved-grant", "fixture-world-preflight"), principal=operator)
+                assert prepared["provider_calls"] == 0 and prepared["production_eligible"] is False
+                for world_stage in ("world_candidates.generate", "world_candidates.evaluate"):
+                    frozen_world = require_world_sample_source(DATABASE_URL, project_id=project_id,
+                        book_id=world_book, source_operation_id=world_origin, stage=world_stage)
+                    assert frozen_world.context.content["world_preparation"] == frozen_world.stage.task
+                    assert frozen_world.context.content["narrative_intelligence"]["selection_digest"] == frozen_world.stage.task["narrative_intelligence"]["selection_digest"]
+                with pytest.raises(KernelError, match="WORLD_SAMPLE_SOURCE_INVALID"):
+                    require_world_sample_source(DATABASE_URL, project_id=project_id, book_id="wrong-book",
+                        source_operation_id=world_origin, stage="world_candidates.generate")
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [project_id])
+                    assert uow.cursor.fetchone()[0] == effects_before
+                from tests.integration.world_provider_sampling_support import exercise_world_generator_sample
+                exercise_world_generator_sample(composition.planning, harness, book_id=world_book, source_operation_id=world_origin)
         else:
             native_evidence = execute_native_reality_vertical(
                 composition=composition,

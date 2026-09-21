@@ -440,7 +440,7 @@ class PostgresChapterAgentBindingRecorder:
                 project_id=request.project_id,
                 workspace_id=request.workspace_id,
                 book_id=book_id,
-                workflow_definition_ref=self.workflow_definition_ref,
+                workflow_definition_ref=(pack_snapshot.workflow_definition_ref if pack_snapshot else self.workflow_definition_ref),
                 workflow_node_id=stage,
                 operation_definition_ref=(
                     f"{operation['definition_name']}@{operation['definition_version']}"

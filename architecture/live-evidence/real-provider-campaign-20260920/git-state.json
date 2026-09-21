@@ -1,14 +1,14 @@
 {
   "schema_version": "campaign-delivery-git-state.v1",
   "baseline_sha": "feba06582b6cadf2e80f5c573cf427114cf2a926",
-  "implementation_sha": "f5ba1faf058af2613f7116904a6230eac1f0e02c",
-  "tested_sha": "bbca0e7a4a0ed61381d0175272e9fe1763d7137a",
-  "tested_git_tree": "f292d3b29f690fe5fc53bec4ca285031fb7828fd",
-  "implementation_tree_sha": "sha256:2a0f369f4e29d34f5d56bbf9dcd9d0401c568c0188050d3a389640d95bbfb408",
-  "tested_branch": "codex/real-provider-source-bootstrap-20260920",
-  "delivery_branch": "codex/real-provider-campaign-delivery-20260920",
-  "last_observed_origin_main": "19da636dae5d0b615bc22124f83908ff8af710ac",
-  "baseline_to_tested_commit_count": 16,
+  "implementation_sha": "76446099dee54b0248c9625a02e3d22b391c9086",
+  "tested_sha": "45fa74ace314735112a3447e660c685172c6f79f",
+  "tested_git_tree": "14d1f4a7c7e8bcdb3dff27a08de466e30e054360",
+  "implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed",
+  "tested_branch": "codex/real-provider-campaign-final-isolated-20260920",
+  "delivery_branch": "codex/real-provider-campaign-final-evidence-20260920",
+  "last_observed_origin_main": "e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332",
+  "baseline_to_tested_commit_count": 29,
   "commits": [
     {
       "sha": "2cd04a649aa9042f17470ae92d09263bd77de668",
@@ -35,6 +35,12 @@
         "tests/unit/test_routing_bootstrap.py"
       ],
       "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "19da636dae5d0b615bc22124f83908ff8af710ac",
+      "subject": "Merge pull request #93 from yuan2go/codex/real-provider-campaign-20260920",
+      "files": [],
+      "classification": "MERGE"
     },
     {
       "sha": "9fc18957d1f6f2e8d0b0a1eebbb83aabcb87189e",
@@ -224,12 +230,181 @@
         "architecture/proposals/narrative-memory-context-lifecycle-closure.md"
       ],
       "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "a1b87a745619704c696abc0d578911e9c064cd78",
+      "subject": "Bind native benchmark qualification to producer contracts",
+      "files": [
+        "architecture/reality-evidence.json",
+        "docs/current-system.md",
+        "docs/runtime-operations.md",
+        "src/novel_forge/cli/provider_routing.py",
+        "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+        "src/novel_forge/modules/production_execution/cost_routing.py",
+        "src/novel_forge/modules/production_execution/routing_runtime.py",
+        "src/novel_forge/modules/source_import/execution.py",
+        "src/novel_forge/modules/story_planning_runtime/execution.py",
+        "tests/integration/test_provider_routing_postgres.py",
+        "tests/integration/test_source_import_runtime_postgres.py",
+        "tests/unit/test_cost_aware_routing.py"
+      ],
+      "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "8f502267a1df9d1aff52880079891ace5d18b9fd",
+      "subject": "Refresh unresolved proposal baselines after producer scope fix",
+      "files": [
+        "architecture/proposals/classical-corpus-codex-validation.md",
+        "architecture/proposals/industrial-novel-os-blueprint.md",
+        "architecture/proposals/narrative-memory-context-lifecycle-closure.md"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "a908f0dd88dc1607b31fba61de630f6a162ac63e",
+      "subject": "evidence(provider): retain campaign delivery package",
+      "files": [
+        "architecture/live-evidence/real-provider-campaign-20260920/authorization-audit.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/campaign-proposal.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/engineering-index.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/engineering/22cf0354c897fa383fa7def58cd8969e5cf02e88.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/engineering/5235672ce0f84f2fe4597d9234d8678b2959c1bc.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/engineering/a0cdb884189b60c6d0ff0340ea2501ff9a33b17d.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/engineering/e9a9a75d25aacae1fa1f263410527b2f790537b6.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/git-state.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/index.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/native-config-preflight-bf77e0892c0b.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/native-config-preflight-e9a9a75d25aa.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/native-config-preflight.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/official-source-identities.json",
+        "architecture/live-evidence/real-provider-campaign-20260920/report.md",
+        "architecture/live-evidence/real-provider-campaign-20260920/task-coverage.json"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "5617d616b86f0ac256f968783b7497f8e8b34a4e",
+      "subject": "fix(provider): account for terminal source failures",
+      "files": [
+        "docs/current-system.md",
+        "docs/runtime-operations.md",
+        "src/novel_forge/modules/chapter_authority/model_effects.py",
+        "src/novel_forge/modules/command_kernel/provider_failure_accounting.py",
+        "src/novel_forge/modules/command_kernel/worker_execution.py",
+        "src/novel_forge/modules/source_import/execution.py",
+        "src/novel_forge/modules/source_import/sampling.py",
+        "tests/integration/test_source_import_runtime_postgres.py",
+        "tests/unit/test_authority_worker_execution.py"
+      ],
+      "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "74a4d092bf731a9584911705a5bba4d93a2d5c3d",
+      "subject": "Merge remote-tracking branch 'origin/main' into codex/all-branch-convergence-20260920",
+      "files": [],
+      "classification": "MERGE"
+    },
+    {
+      "sha": "bf60377848266fd3e42da85f09ffe7ced6089ea8",
+      "subject": "Merge branch 'codex/real-provider-campaign-delivery-20260920' into codex/all-branch-convergence-20260920",
+      "files": [],
+      "classification": "MERGE"
+    },
+    {
+      "sha": "9da714973c90140ee108455a022717c8d9bbe77b",
+      "subject": "Merge pull request #94 from yuan2go/codex/all-branch-convergence-20260920",
+      "files": [],
+      "classification": "MERGE"
+    },
+    {
+      "sha": "a9af5a0c097d29265a7babf8a9fe188e565b732c",
+      "subject": "fix(source): qualify failure evidence asset lookup",
+      "files": [
+        "architecture/reality-evidence.json",
+        "tests/integration/test_source_import_runtime_postgres.py"
+      ],
+      "classification": "IMPLEMENTATION_OR_TEST"
+    },
+    {
+      "sha": "66a64ce68b93a3d2b974a8a76c2120b5c80e96c1",
+      "subject": "docs(evidence): project provider failure accounting",
+      "files": [
+        "architecture/reality-evidence.json"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "76446099dee54b0248c9625a02e3d22b391c9086",
+      "subject": "Verify Source failure accounting and receipt recovery on current main",
+      "files": [
+        "architecture/reality-evidence.json"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
+    },
+    {
+      "sha": "2be11a564f376d064d89b58e23c5e147f7db82b3",
+      "subject": "Merge branch 'codex/real-provider-source-recovery-20260920' into codex/real-provider-campaign-final-20260920",
+      "files": [],
+      "classification": "MERGE"
+    },
+    {
+      "sha": "45fa74ace314735112a3447e660c685172c6f79f",
+      "subject": "Bind retained proposal reviews to verified Source recovery implementation",
+      "files": [
+        "architecture/proposals/classical-corpus-codex-validation.md",
+        "architecture/proposals/industrial-novel-os-blueprint.md",
+        "architecture/proposals/narrative-memory-context-lifecycle-closure.md"
+      ],
+      "classification": "DOCUMENTATION_OR_EVIDENCE"
     }
   ],
-  "remote_status": "FIRST_TWO_COMMITS_MERGED_EXTERNALLY_IN_PR_93; REMAINING_LOCAL",
+  "remote_status": "IMPLEMENTATION_MERGED_BY_CONCURRENT_WORKFLOW_IN_PR_93_94_95; CURRENT_PROPOSAL_REFRESH_AND_FINAL_EVIDENCE_LOCAL",
   "this_session_push": false,
   "this_session_pr_create": false,
   "this_session_github_merge": false,
   "original_user_checkout_modified": false,
-  "final_evidence_commit": "RESOLVE_FROM_GIT_DESCENDANT_OF_TESTED_SHA"
+  "final_evidence_commit": "RESOLVE_FROM_GIT_DESCENDANT_OF_TESTED_SHA",
+  "observed_at": "2026-09-20T18:30:58.557015+00:00",
+  "independent_clone": true,
+  "canonical_gate_comparison_base": "feba06582b6cadf2e80f5c573cf427114cf2a926",
+  "latest_integration_main": "e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332",
+  "implementation_identity_equals_latest_integration_main": true,
+  "external_publications": [
+    {
+      "pr": 93,
+      "url": "https://github.com/yuan2go/novel-forge/pull/93",
+      "head": "47094e01c23f53aa4a5ff9c89f395b126bf8d9b5",
+      "merge": "19da636dae5d0b615bc22124f83908ff8af710ac",
+      "merged_at": "2026-09-20T10:22:25Z"
+    },
+    {
+      "pr": 94,
+      "url": "https://github.com/yuan2go/novel-forge/pull/94",
+      "head": "bf60377848266fd3e42da85f09ffe7ced6089ea8",
+      "merge": "9da714973c90140ee108455a022717c8d9bbe77b",
+      "merged_at": "2026-09-20T15:49:26Z"
+    },
+    {
+      "pr": 95,
+      "url": "https://github.com/yuan2go/novel-forge/pull/95",
+      "head": "2be11a564f376d064d89b58e23c5e147f7db82b3",
+      "merge": "e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332",
+      "merged_at": "2026-09-20T15:52:56Z"
+    }
+  ],
+  "concurrent_worktree_mutation": {
+    "observed": true,
+    "shared_git_mutations_stopped": true,
+    "response": "Independent clone for fixed-SHA validation and evidence; existing work preserved",
+    "coordination_response": "NOT_RECEIVED"
+  },
+  "remote_ci": {
+    "observed_at": "2026-09-20T16:34:28.289175+00:00",
+    "github_actions_enabled": false,
+    "latest_external_pr": 95,
+    "latest_external_pr_head": "2be11a564f376d064d89b58e23c5e147f7db82b3",
+    "status_check_rollup": [],
+    "tested_sha_remote_ci": "NOT_RUN",
+    "remote_branch_governance": "OPEN_NOT_CLOSED_BY_LOCAL_P0"
+  }
 }

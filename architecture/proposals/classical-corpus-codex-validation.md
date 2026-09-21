@@ -9,20 +9,20 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `a1b87a745619704c696abc0d578911e9c064cd78`
+Reality baseline: `5580b4d7de74cae2478e52248b94a60c11165bb2`
 Baseline implementation identity:
-`sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88`
+`sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-20",
+  "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "a1b87a745619704c696abc0d578911e9c064cd78",
-    "implementation_tree_sha": "sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88"
+    "sha": "5580b4d7de74cae2478e52248b94a60c11165bb2",
+    "implementation_tree_sha": "sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -110,12 +110,16 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-09-20): Implemented identity, entitlement, corpus-ingestion
+Current scope review (2026-09-21): Implemented identity, entitlement, corpus-ingestion
 and Source/MKAOS mechanics are documented only in [current-system](../../docs/current-system.md).
 The completed G1/G2 implementation plans and historical review paragraphs have been
 removed. G3/G4 below specify a proposed bounded real-Provider campaign, not observed
 results. Campaign sampling quotas and independent-input counts do not execute G3/G4
-or establish calibrated judges. The original Craft fixture corpus does not perform this campaign, establish
+or establish calibrated judges. Native Chapter generator sampling now preserves the
+original frozen task and approved producer contract in an isolated Kernel Saga; its
+ineligible samples and scripted recovery tests do not execute the four-arm campaign. World reference sampling can now evaluate a generator sample without formal World generation; this does not supply calibrated judges or real corpus consumption. Scoped Chapter reference outcomes now feed the native routing benchmark with separate
+label strata and protocol identities; no real reference observations exist from this WP.
+The original Craft fixture corpus does not perform this campaign, establish
 classical-text consumption, authorize model spend or supply independent editorial proof.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption

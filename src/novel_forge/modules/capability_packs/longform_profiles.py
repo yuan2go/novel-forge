@@ -47,6 +47,45 @@ class LongformCapabilityPackProfile:
     agent_skill_ref: str
 
 
+def build_world_sampling_pack_profile(source: LongformCapabilityPackProfile, *, application_build_id: str,
+                                     commit_sha: str, reference_samples: bool = False) -> LongformCapabilityPackProfile:
+    from novel_forge.modules.story_planning_runtime.world_sampling import (
+        WORLD_SAMPLE_SCOPE, WORLD_SAMPLE_VERSION, WORLD_REFERENCE_SAMPLE_VERSION, world_sample_definitions,
+    )
+    from novel_forge.storage.authority_repositories import definition_hash
+
+    manifest = deepcopy(source.manifest)
+    template = next(item for item in manifest["workflow_template"]["nodes"] if item["node_id"] == "chapter_plan.generate")
+    nodes = []
+    version = WORLD_REFERENCE_SAMPLE_VERSION if reference_samples else WORLD_SAMPLE_VERSION
+    workflow_ref = "world_provider_sampling@" + version
+    for definition in world_sample_definitions(application_build_id=application_build_id, commit_sha=commit_sha,
+                                              reference_samples=reference_samples):
+        stage = "world_candidates." + definition["name"].rsplit(".", 1)[1]
+        node = deepcopy(template)
+        node.update(node_id=stage, stage=stage, operation_name=definition["name"],
+            operation_definition_ref=definition["name"] + "@" + version,
+            operation_definition_hash=definition_hash(definition), handler_key=definition["handler_key"],
+            output_asset_types=["world_provider_sample"], depends_on=[],
+            retry_policy={**definition["retry_policy"], "retryable_errors": []})
+        nodes.append(node)
+    pack_id = source.pack_id + (".world_reference_sampling" if reference_samples else ".world_sampling")
+    manifest["identity"].update(pack_id=pack_id, name="World Provider Sampling Pack",
+                               description="Isolated World stage samples using frozen native Planning inputs.")
+    manifest["workflow_template"].update(workflow_id="world_provider_sampling", workflow_version=version,
+        idempotency_scope=WORLD_SAMPLE_SCOPE, nodes=nodes, completion={"required_terminal_nodes": [node["node_id"] for node in nodes],
+            "required_evidence": ["trace", "audit"], "required_output_asset_types": ["world_provider_sample"]})
+    tool = next(item for item in manifest["tool_permissions"]["tools"] if item["tool_ref"] == "model.provider.invoke")
+    tool["allowed_operations"] = [node["node_id"] for node in nodes]
+    manifest["tool_permissions"]["tools"] = [tool]
+    manifest["evaluation"]["required_gates"] = [{"gate_id": "world_sample_source_isolation",
+        "judge_capability_id": "quality.originality.judge", "blocking": True, "threshold": 1,
+        "required_evidence": ["world_provider_sample"]}]
+    manifest["evaluation"]["metrics"] = []
+    return LongformCapabilityPackProfile(pack_id=pack_id, workflow_ref=workflow_ref, manifest=manifest,
+        artifact_catalog=deepcopy(source.artifact_catalog), agent_skill_ref=source.agent_skill_ref)
+
+
 def build_story_planning_pack_profile(
     repository_root: str | Path,
     *,

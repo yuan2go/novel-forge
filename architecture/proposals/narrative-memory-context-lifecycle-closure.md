@@ -9,19 +9,19 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `a1b87a745619704c696abc0d578911e9c064cd78`
+Reality baseline: `5580b4d7de74cae2478e52248b94a60c11165bb2`
 Baseline implementation identity:
-`sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88`
+`sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-20",
+  "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "a1b87a745619704c696abc0d578911e9c064cd78",
-    "implementation_tree_sha": "sha256:5b1aec78dbc38705e56f8adc925f70a92a2454b46d67b7cf63fb877ebf2aaf88"
+    "sha": "5580b4d7de74cae2478e52248b94a60c11165bb2",
+    "implementation_tree_sha": "sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -138,12 +138,19 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-09-20): Gate A and current role Context/Provider behavior
+Current scope review (2026-09-21): Gate A and current role Context/Provider behavior
 are projected in [current-system](../../docs/current-system.md). Implemented Gate A
 design, former reality matrices and duplicate final-architecture tables have been
 removed. Craft uses the existing Context owner and adds no Digest, retention, GC,
 retrieval representation or cutover owner. Routing campaign accounting and sample
-isolation do not implement these memory lifecycle gates. Gates B–E below remain proposed design,
+isolation do not implement these memory lifecycle gates. Chapter sampling retains the
+effective stage Context, schema and tool constraints in its producer identity; this
+does not add Digest generation, retention, retrieval generations or lifecycle cutover.
+Reference Review and ReReview retain the original Context and accepted frontier,
+read only the exact authorized sample, and bind their approved reviewer Pack artifacts.
+These input exceptions do not change memory ownership or implement Gates B–E.
+Reference-agreement routing reads immutable Quality evidence and changes no memory
+mutation, retention or retrieval owner. Gates B–E below remain proposed design,
 not executable contracts or proven invariants; their stated bounds require qualification.
 
 ## 7. Gate B — Structured Narrative Digest

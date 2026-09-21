@@ -72,6 +72,64 @@ def test_bootstrap_reference_roundtrips_without_changing_historical_commands():
         replace(command, auto_approve_low_risk=True)
 
 
+def test_world_sampling_api_preserves_scope_and_trusted_actor(monkeypatch):
+    from dataclasses import asdict
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from novel_forge.api.models import product_model_map
+    from novel_forge.api.routers import book_authority
+    from novel_forge.api.routers.context import ProductRouterContext
+    from novel_forge.modules.story_planning_runtime import world_sampling
+
+    principal = replace(_principal(), permissions=frozenset({"story_planning.authority.execute"}))
+    captured = []
+
+    def prepared(app, command, *, principal):
+        captured.append((command, principal))
+        return {"status": "PREPARED_NO_PROVIDER_CALL", "provider_calls": 0}
+
+    monkeypatch.setattr(world_sampling, "prepare_world_sample", prepared)
+    monkeypatch.setattr(book_authority, "build_trusted_principal_resolver",
+                        lambda: SimpleNamespace(resolve_api_principal=lambda **_: principal))
+    app = FastAPI()
+    app.include_router(book_authority.create_router(ProductRouterContext(app_settings=SimpleNamespace(), models=product_model_map(),
+        services=SimpleNamespace(book_production=SimpleNamespace(planning=SimpleNamespace())))))
+    command = world_sampling.WorldProviderSampleCommand("project-1", "book-1", "caller-string", "source-op",
+        "world_candidates.generate", "unapproved-grant", "preflight-key")
+    with TestClient(app) as client:
+        response = client.post("/product/production/book-authority/books/book-1/world-provider-samples?dry_run=true", json=asdict(command))
+        assert response.status_code == 200 and response.json()["provider_calls"] == 0
+        rejected = client.post("/product/production/book-authority/books/another-book/world-provider-samples?dry_run=true", json=asdict(command))
+        assert rejected.status_code != 200
+    assert len(captured) == 1 and captured[0][0].actor_id == principal.principal_id
+    assert captured[0][1] is principal
+
+
+@pytest.mark.parametrize("operation_status,effect_status,dispatch_status,replaceable", [
+    ("SUCCEEDED", None, None, False), ("FAILED_FINAL", "UNKNOWN", None, False),
+    ("FAILED_FINAL", "FAILED_FINAL", "SUCCEEDED", False),
+    ("FAILED_FINAL", "FAILED_FINAL", "FAILED_FINAL", True), ("FAILED_FINAL", None, None, True),
+])
+def test_world_sample_replacement_requires_proven_terminal_failure(operation_status, effect_status, dispatch_status, replaceable):
+    from unittest.mock import Mock
+    from novel_forge.modules.story_planning_runtime.world_sampling import WorldProviderSampleCommand, require_world_sample_predecessor
+
+    command = WorldProviderSampleCommand("project", "book", "operator", "source", "world_candidates.generate", "new-grant", "new-key", "prior")
+    grant = {"campaign": {"campaign_id": "campaign", "sample_id": "sample"}, "candidate_id": "flash", "model_revision": "revision"}
+    payload = {"world_sampling": {"source_operation_id": "source"}, "input_versions": [{"asset_version_id": "input", "content_hash": "hash"}],
+               "routing_bootstrap_authorization": {"authorization": grant}}
+    rows = [[("prior", operation_status, "operator", "old-key", payload)], [("effect", effect_status)] if effect_status else []]
+    if dispatch_status:
+        rows.append([(dispatch_status,)])
+    cursor = Mock()
+    cursor.fetchall.side_effect = rows
+    if replaceable:
+        require_world_sample_predecessor(cursor, command=command, payload=payload)
+    else:
+        with pytest.raises(KernelError, match="WORLD_SAMPLE_PREDECESSOR_NOT_REPLACEABLE"):
+            require_world_sample_predecessor(cursor, command=command, payload=payload)
+
+
 def test_native_planning_api_binds_authorization_reference_and_trusted_actor(
     monkeypatch,
 ):

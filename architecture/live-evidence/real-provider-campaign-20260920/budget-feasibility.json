@@ -1,0 +1,303 @@
+{
+  "schema_version": "campaign-budget-feasibility.v1",
+  "evidence_class": "DETERMINISTIC_POLICY_ARITHMETIC_NOT_PROVIDER_EVIDENCE",
+  "tested_sha": "45fa74ace314735112a3447e660c685172c6f79f",
+  "router_policy_version": "quality-constrained-routing.v5",
+  "assumption": "Every independent observation scores 1.0 and is accepted with perfect Schema delivery. Native trusted-quality projection and applicable compatibility strata are prerequisites. These synthetic arithmetic rows are never persisted or counted as campaign samples.",
+  "tasks": [
+    {
+      "task_type": "source.content.classify",
+      "required": true,
+      "risk": "LOW",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 3,
+      "floor": 0.6,
+      "perfect_data_minimum_for_routing_floor": 3
+    },
+    {
+      "task_type": "source.deconstruction.observe",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 11
+    },
+    {
+      "task_type": "source.mkaos.extract",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "creative.candidates.generate",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 23
+    },
+    {
+      "task_type": "theme.candidates.generate",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 23
+    },
+    {
+      "task_type": "ending.intent.generate",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 23
+    },
+    {
+      "task_type": "reader.promise.generate",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 23
+    },
+    {
+      "task_type": "world.design.generate",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 23
+    },
+    {
+      "task_type": "character.cast.generate",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 23
+    },
+    {
+      "task_type": "book_plan.generate",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 23
+    },
+    {
+      "task_type": "volume_plan.generate",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 23
+    },
+    {
+      "task_type": "arc_plan.generate",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 23
+    },
+    {
+      "task_type": "chapter_group_plan.generate",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 11
+    },
+    {
+      "task_type": "chapter_plan.generate",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 11
+    },
+    {
+      "task_type": "world_candidates.generate",
+      "required": false,
+      "risk": "MEDIUM",
+      "metric": "DOMAIN_GATE_ACCEPTANCE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 11
+    },
+    {
+      "task_type": "world_candidates.evaluate",
+      "required": false,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "narrative_semantic_evaluation",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 36
+    },
+    {
+      "task_type": "memo",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "draft",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "revision",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "canon_extraction",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "review",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "rereview",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "canon_support",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 36
+    },
+    {
+      "task_type": "quality_structural",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "quality_commercial",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "quality_source_originality",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "quality_platform",
+      "required": true,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    },
+    {
+      "task_type": "quality_longform",
+      "required": true,
+      "risk": "HIGH",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 20,
+      "floor": 0.85,
+      "perfect_data_minimum_for_routing_floor": 36
+    },
+    {
+      "task_type": "retrieval_query_expansion",
+      "required": false,
+      "risk": "LOW",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 3,
+      "floor": 0.6,
+      "perfect_data_minimum_for_routing_floor": 3
+    },
+    {
+      "task_type": "reader_outcome",
+      "required": false,
+      "risk": "MEDIUM",
+      "metric": "CALIBRATED_SCORE",
+      "minimum_samples_policy": 8,
+      "floor": 0.75,
+      "perfect_data_minimum_for_routing_floor": 8
+    }
+  ],
+  "required_task_count": 27,
+  "two_candidate_perfect_calibration_output_lower_bound": 878,
+  "first_holdout_look_pairs_if_30_per_required_task": 810,
+  "first_holdout_look_candidate_outputs_if_30_per_required_task": 1620,
+  "proposed_holdout_call_cap": 720,
+  "per_task_first_look_funded": false,
+  "additional_review_retry_revision_calls_included_in_lower_bounds": false,
+  "production_calls_included_in_lower_bounds": false,
+  "real_sample_count": 0,
+  "quality_noninferiority": "NOT_PROVEN",
+  "interpretation": "The aggregate budget is a draft stopping cap, not a demonstrated sufficient budget for per-task noninferiority. At 30 paired independent groups per required task, candidate generation alone exceeds the proposed holdout allocation; independent review, failures and production add calls. Freeze activated tasks, comparison scope and evaluation plan before requesting an executable campaign authorization.",
+  "risk_scope": "Static coverage risk only; critical-chapter policy, long-context, length, prompt and judge strata can require additional samples.",
+  "constraint_class": "CURRENT_RUNTIME_FACT_NOT_STATISTICAL_PROOF",
+  "implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed",
+  "computed_at": "2026-09-20T18:30:58.557015+00:00"
+}
