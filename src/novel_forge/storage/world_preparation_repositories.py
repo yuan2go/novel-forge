@@ -52,8 +52,9 @@ class WorldPreparationRepository:
                 "WORLD_BINDING_SOURCE_DRIFT",
                 "private working source differs from its immutable source artifact",
             )
-        for stage in ("generation", "evaluation"):
-            output = contract(action[stage])
+        stage_refs = [action["generation"], action["evaluation"], *action.get("actor_proposals", [])]
+        for stage_ref in stage_refs:
+            output = contract(stage_ref)
             evidence = output["evidence"]
             if output["source"] != action["source"]:
                 raise KernelError(
@@ -69,6 +70,22 @@ class WorldPreparationRepository:
                     "WORLD_BINDING_EFFECT_UNCONFIRMED",
                     "world output requires a confirmed governed Provider effect",
                 )
+        if source.get("actor_experiment"):
+            from novel_forge.modules.worldbuilding.actor_isolation import actor_task, validate_actor_output, require_actor_judgments
+            actors = source["actor_experiment"]["actor_ids"]
+            refs = action.get("actor_proposals", [])
+            if action.get("actor_experiment") != source["actor_experiment"] or len(refs) != len(actors):
+                raise KernelError("WORLD_ACTOR_JUDGMENT_INCOMPLETE", "world binding lost an admitted actor proposal")
+            proposals = []
+            for actor_id, ref in zip(actors, refs, strict=True):
+                output = contract(ref)["output"]
+                raw = {key: output[key] for key in ("actor_id", "action", "basis_summary", "basis_refs")}
+                if validate_actor_output(raw, actor_task(source, action["source"], actor_id)) != output:
+                    raise KernelError("WORLD_ACTOR_PROPOSAL_DRIFT", "actor receipt differs from its private frozen projection")
+                proposals.append(output)
+            require_actor_judgments(contract(action["generation"])["output"], proposals)
+        elif action.get("actor_proposals"):
+            raise KernelError("WORLD_ACTOR_POLICY_REQUIRED", "actor proposals cannot appear on the unified world path")
         if require_current:
             self.assert_source_current(
                 project_id=project_id, book_id=book_id, frozen=source
@@ -519,6 +536,12 @@ class WorldPreparationRepository:
         )
         policy_raw = row[7].get("world_production_policy") or {}
         policy = WorldProductionPolicy(**policy_raw)
+        actor_experiment = row[7].get("world_actor_experiment")
+        if actor_experiment is not None:
+            from novel_forge.modules.worldbuilding.actor_isolation import validate_actor_policy
+            actor_experiment = validate_actor_policy(actor_experiment, character_ids=character_ids, policy=policy)
+        elif policy.version != "world-production-policy.v1":
+            raise KernelError("WORLD_ACTOR_POLICY_REQUIRED", "v2 World policy requires an explicit actor experiment")
         planning_refs = request.get("planning_input_refs") or []
         if not isinstance(planning_refs, list) or not planning_refs:
             raise KernelError(
@@ -587,6 +610,7 @@ class WorldPreparationRepository:
             "planning_window": planning_window,
             "entity_ids": reality["approved_entity_ids"],
             "policy": asdict(policy),
+            **({"actor_experiment": actor_experiment} if actor_experiment is not None else {}),
             "control_snapshot": control_snapshot,
             "fact_mutation_allowed": False,
         }

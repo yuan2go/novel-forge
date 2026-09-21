@@ -37,13 +37,21 @@ def prepare_native_review(request: ChapterHandlerRequest, *, stage: str) -> tupl
     context = request.require_input("context_bundle")
     draft = target if stage == "review" else request.require_input("draft_chapter")
     review = request.require_input("review_report") if stage == "rereview" else None
+    if review is not None:
+        incumbent = next((item for item in request.inputs if item.asset_type == "best_draft_candidate"), None)
+        if incumbent is not None:
+            from .candidate_selection import retained_candidate_evidence
+            retained = retained_candidate_evidence(incumbent.asset_version_id, incumbent.content)
+            draft = replace(draft, asset_version_id=retained.asset_version_id, content=incumbent.content)
+            review = replace(review, asset_version_id=retained.review_asset_version_id, content=dict(incumbent.content["selected_review"]))
     targets = knowledge_review_targets(context.content)
     window = prepare_review_window(request, target, context, review.content if review else None)
     payload = {**({"cross_chapter_window": window, "target_candidate_asset_version_id": target.asset_version_id} if window is not None else {}),
         "draft": target.content, "knowledge_review_targets": targets,
         "author_design_review_targets": draft.content.get("author_design_guidance") or {}}
     if review is not None:
-        payload.update(original_draft=draft.content, review=review.content, revision=target.content)
+        payload.update(original_draft=draft.content, original_draft_asset_version_id=draft.asset_version_id,
+                       target_candidate_asset_version_id=target.asset_version_id, review=review.content, revision=target.content)
     return target, context, targets, window, payload
 
 

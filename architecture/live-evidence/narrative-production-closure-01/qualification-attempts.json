@@ -1,0 +1,105 @@
+{
+  "schema_version": "narrative-closure-qualification-attempts.v1",
+  "attempts": [
+    {
+      "tested_sha": "bdd7799d659c35d2f92ef710eede6d55cd6a0449",
+      "status": "FAIL",
+      "repository_governance": "PASS",
+      "focused_tests": {
+        "status": "PASS",
+        "passed": 193
+      },
+      "backend_junit": {
+        "tests": 4402,
+        "passed": 4401,
+        "failures": 1,
+        "skipped": 0
+      },
+      "failure": "tests.unit.test_instruction_surface.test_repository_instruction_surface_is_complete_and_identity_bound required a retired frontend prompt surface",
+      "resolution": "Require real native Revision/Actor/Longform instruction surfaces and explicitly prohibit the removed EditorPage prompt; six focused tests pass. No thresholds or skip policies changed.",
+      "postgresql_and_compose": "NOT_RUN_DEPENDENCY_GATE_FAILED",
+      "evidence": [
+        {
+          "path": "/Volumes/DevSSD/Development/Workspace/evidence/nf-closure-0a18d60d9f85/governance-r1/p0-backend-qualification-bdd7799d659c35d2f92ef710eede6d55cd6a0449.json",
+          "sha256": "5e7aa7a28d6f8c39f61df76c6f4b2a9431329a1077123ce8c6911ba882dc09ba"
+        },
+        {
+          "path": "/Volumes/DevSSD/Development/Workspace/evidence/nf-closure-0a18d60d9f85/governance-r1/pr-governance-bdd7799d659c35d2f92ef710eede6d55cd6a0449.json",
+          "sha256": "f7dd56b014779b876f5f6a195e4cb153f2ce6c128545278b2ce751011757de20"
+        }
+      ]
+    },
+    {
+      "tested_sha": "c6f316adb7dcebcfce888804652d6252ce0e569d",
+      "status": "FAIL",
+      "repository_governance": "PASS",
+      "focused_tests": {
+        "status": "PASS",
+        "passed": 199
+      },
+      "backend_junit": {
+        "tests": 4402,
+        "passed": 4402,
+        "failures": 0,
+        "skipped": 0
+      },
+      "migration_fresh": "PASS",
+      "migration_compatibility_junit": {
+        "tests": 105,
+        "passed": 103,
+        "failures": 2,
+        "skipped": 0
+      },
+      "failure": "Five missing foreign-key indexes in migration0140 prose review and editorial tables",
+      "resolution": "Append forward migration0142; published migration0140/0141 remain immutable. Reuse existing full-chain and rollback/replay assertions, no waiver.",
+      "postgresql_complete_collection_and_compose": "NOT_RUN_DEPENDENCY_GATE_FAILED",
+      "evidence": [
+        {
+          "path": "/Volumes/DevSSD/Development/Workspace/evidence/nf-closure-0a18d60d9f85/governance-r2/pr-governance-c6f316adb7dcebcfce888804652d6252ce0e569d.json",
+          "sha256": "ebf465ce7a826381e5b3982a157eba03f71d96897bdd38f06303f37c46b51ab9"
+        },
+        {
+          "path": "/Volumes/DevSSD/Development/Workspace/evidence/nf-closure-0a18d60d9f85/governance-r2/p0-backend-qualification-c6f316adb7dcebcfce888804652d6252ce0e569d.json",
+          "sha256": "36aa4842796375508edb41496180ef88d44f6cb2a1f964765083e23658f83848"
+        }
+      ]
+    },
+    {
+      "tested_sha": "b08acad151276156cbee95f0744ae5c4e8d72eab",
+      "status": "FAIL",
+      "execution_disposition": "INTERRUPTED_BY_USER",
+      "complete_matrix_status": "NOT_RUN",
+      "details": "user-directed-test-scope.json",
+      "evidence": [
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/pr-governance-b08acad151276156cbee95f0744ae5c4e8d72eab.json",
+          "sha256": "sha256:2886020daa03cc19967cd066c9b58a0cb8f2bbe4770023eaf95f7dcd4eee93f5"
+        },
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/p0-backend-qualification-b08acad151276156cbee95f0744ae5c4e8d72eab.json",
+          "sha256": "sha256:e44b0b9835e420c3e944b32a846a7d2151039de61b623feb8b0c6bba3655df0d"
+        },
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/backend-pytest.xml",
+          "sha256": "sha256:39a9b8bed29f8a49bba4b55ff30646b58d2fcb99b335569e55aedd90e04d394f"
+        },
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/migration-compatibility-pytest.xml",
+          "sha256": "sha256:af0b40d47f8c11192679b3389bdba91c3bfdb363d532f018cc85b42863ad816b"
+        },
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/postgresql-pytest.xml.gz",
+          "sha256": "sha256:3c78f1620c1f6f0ceac4e492bb06912a64b94440a6be1fff2f56ddb3d2760a8f",
+          "compression": "gzip",
+          "uncompressed_sha256": "sha256:c385e42e10cab172ff493a692ba3f185f3cb25f32b189cde3919494725aa5c67",
+          "uncompressed_bytes": 59211769
+        },
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/compose-resource-ownership-nf-p0-6f1aababfc324ef9b7417c3c530287a7.json",
+          "sha256": "sha256:cc8f9a1fc433b984163bb1011c5714367fb5a0cb8fd8f863714efc191d447307"
+        }
+      ]
+    }
+  ],
+  "current_candidate_qualification": "COMPLETE_MATRIX_NOT_RUN_USER_REQUEST; focused/native/browser evidence only; no full PASS claimed"
+}

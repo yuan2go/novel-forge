@@ -264,7 +264,7 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
 
 
 @pytest.mark.parametrize("reference_author", ["independent", "generator", "unknown", "trusted_projection"])
-def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path, reference_author):
+def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path, reference_author, monkeypatch):
     from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentOperationRequest
     from novel_forge.modules.content_authority.definitions import CONTENT_INTEGRATION_PROVEN
     from novel_forge.modules.story_design_authority import scripted_qualification
@@ -494,7 +494,11 @@ def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path,
         from novel_forge.modules.authority_handler_runtime.routing_feedback import domain_gate_outcomes
         uow.cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s", [result.lineage.evaluation_operation_id])
         effect_ids = [row[0] for row in uow.cursor.fetchall()]
-        outcomes = domain_gate_outcomes(uow.cursor, project_id=project, effect_ids=effect_ids)
+        with monkeypatch.context() as guard:
+            def forbid_reopened_reference_uow(*args, **kwargs):
+                raise AssertionError("Reference projection must query its existing authenticated transaction")
+            guard.setattr("novel_forge.modules.story_design_authority.evaluation_reference.AuthorityUnitOfWork", forbid_reopened_reference_uow)
+            outcomes = domain_gate_outcomes(uow.cursor, project_id=project, effect_ids=effect_ids)
         if reference_author == "trusted_projection":
             assert len(outcomes) == 1
             projected = outcomes[effect_ids[0]]

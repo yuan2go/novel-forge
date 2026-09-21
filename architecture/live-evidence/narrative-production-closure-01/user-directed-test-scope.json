@@ -1,0 +1,86 @@
+{
+  "schema_version": "narrative-closure-user-directed-test-scope.v1",
+  "scope": "WP-NARRATIVE-PRODUCTION-CLOSURE-01",
+  "user_instruction": "只进行必要测试，不要跑全量",
+  "execution_disposition": "INTERRUPTED_BY_USER",
+  "tested_sha": "b08acad151276156cbee95f0744ae5c4e8d72eab",
+  "implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc",
+  "stop_method": "SIGINT to the owned PostgreSQL pytest process; parent gate exited and owned qualification resources were cleaned",
+  "processes_exited": true,
+  "runner_report_status": "FAIL",
+  "complete_matrix_status": "NOT_RUN",
+  "complete_matrix_reason": "User requested necessary tests only while complete PostgreSQL suite was running; partial results do not qualify the full suite",
+  "completed_before_interruption": {
+    "repository_governance": "PASS",
+    "focused_non_postgresql": {
+      "status": "PASS",
+      "passed": 199
+    },
+    "backend_junit": {
+      "status": "PASS",
+      "tests": 4402,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "migration_fresh": "PASS",
+    "migration_compatibility_junit": {
+      "status": "PASS",
+      "tests": 105,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "postgresql_partial_junit": {
+    "observed_passed": 451,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "collection_complete": false,
+    "elapsed_seconds": 2108.256
+  },
+  "not_run_after_stop": [
+    "migration-head-finalization",
+    "query-plan-release",
+    "compose-runtime",
+    "complete-evidence-finalization"
+  ],
+  "cleanup": "PASS",
+  "new_tests_after_user_instruction": "NOT_RUN; existing focused/native/browser checks suffice for these source changes; only evidence and Git delivery continue",
+  "evidence": [
+    {
+      "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/pr-governance-b08acad151276156cbee95f0744ae5c4e8d72eab.json",
+      "sha256": "sha256:2886020daa03cc19967cd066c9b58a0cb8f2bbe4770023eaf95f7dcd4eee93f5"
+    },
+    {
+      "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/p0-backend-qualification-b08acad151276156cbee95f0744ae5c4e8d72eab.json",
+      "sha256": "sha256:e44b0b9835e420c3e944b32a846a7d2151039de61b623feb8b0c6bba3655df0d"
+    },
+    {
+      "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/backend-pytest.xml",
+      "sha256": "sha256:39a9b8bed29f8a49bba4b55ff30646b58d2fcb99b335569e55aedd90e04d394f"
+    },
+    {
+      "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/migration-compatibility-pytest.xml",
+      "sha256": "sha256:af0b40d47f8c11192679b3389bdba91c3bfdb363d532f018cc85b42863ad816b"
+    },
+    {
+      "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/postgresql-pytest.xml.gz",
+      "sha256": "sha256:3c78f1620c1f6f0ceac4e492bb06912a64b94440a6be1fff2f56ddb3d2760a8f",
+      "compression": "gzip",
+      "uncompressed_sha256": "sha256:c385e42e10cab172ff493a692ba3f185f3cb25f32b189cde3919494725aa5c67",
+      "uncompressed_bytes": 59211769
+    },
+    {
+      "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/compose-resource-ownership-nf-p0-6f1aababfc324ef9b7417c3c530287a7.json",
+      "sha256": "sha256:cc8f9a1fc433b984163bb1011c5714367fb5a0cb8fd8f863714efc191d447307"
+    }
+  ],
+  "evidence_state": "EXECUTABLE",
+  "full_qualification": "NOT_PROVEN",
+  "real_provider": "NOT_RUN",
+  "human": "NOT_RUN",
+  "longform_quality": "NOT_PROVEN",
+  "production": "NOT_PROVEN"
+}

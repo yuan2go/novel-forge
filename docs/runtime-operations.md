@@ -821,8 +821,13 @@ separate. A real-Provider runtime probe alone cannot establish an accepted real 
 The trusted Book Completion API creates immutable cases, queries exact scoped cases and
 records version-checked decisions. Assessment reads accepted history; it cannot complete
 a Book cursor or repair Canon. A new case/version is required after changed source
-evidence. Whole-book acceptance remains blocked until its native editorial authorization
-contract is defined; generic Chapter/Arc preferences and AI review do not substitute.
+evidence. `POST /api/book-completion/editorial-events` appends explicit POLICY,
+SIGNATURE or REVOCATION events with expected-version CAS and trusted human identity.
+`GET /api/book-completion/editorial-history` exposes current readiness. Signatures require
+the exact current case source digest, complete prose review manifest/report and release
+identity. Missing policy, named signatures, coverage or key-issue dispositions blocks
+acceptance; generic Chapter/Arc preferences and AI review do not substitute. Changes
+invalidate current signatures, preserve historical decisions and require reassessment.
 
 ## Narrative Reality and editorial control
 
@@ -1063,6 +1068,87 @@ that exceeds its declared budget. A passing Context correctness receipt does not
 the renderer to discard those facts. Rebuild the governed selection before dispatch;
 the limit error is not permission to expand the budget or retry a different payload
 under the same frozen operation.
+
+## Exact author edits and bounded closure campaigns
+
+Use the existing Admin Editor after starting API, native workers and Web. Select a
+project and exact Chapter asset, edit the text or selection, inspect before/after and
+save a candidate. Adopt or reject that candidate explicitly; adoption does not accept a
+chapter. The separate native-review action binds the candidate and decision versions to
+Chapter admission. Review work and any Provider call still require the existing
+qualification and budget authority. On a stale-version conflict retain the visible author
+input and reload the base before creating a new candidate. Retrying an interrupted save
+uses its pending idempotency key, rather than creating a duplicate candidate. When the
+base belongs to the current unaccepted Book request, the review action uses
+`/product/editor/book-reviews` to append a replacement generation. The previous run must
+be terminal and its external effects settled; finish or explicitly cancel/reconcile it
+first. Interrupted reservation/admission resumes through the same native Book request.
+The replacement remains unaccepted until the ordinary Book acceptance gates succeed.
+
+The Editor's manuscript review panel consumes
+`/product/production/book-authority/runs/{book_run_id}/prose-reviews`. Start freezes an
+explicit `policy_version`, `window_codepoints`, `overlap_codepoints`,
+`context_token_budget` and `maximum_windows`. Advance dispatches at most the next native
+window, using expected progress version; the Book Follow-up worker executes it. Query the
+report for covered/excluded ranges, errors, effects and dispositions. Use `/control` to
+pause/resume and `/findings/{lineage_id}/disposition` for a version-bound author decision.
+The Plan Change action requires exact target/proposed plan versions, current evidence
+and a rationale. It creates a proposal, retaining the existing approval and future-only
+invalidation boundary. A new source or policy requires a new frozen review run; identical
+valid windows can be reused without pretending unreviewed text was read.
+
+Original pilot and exploration materials and the separate Craft protocol are under
+`config/production/narrative-closure/`. The authorization request there is a proposal,
+not a grant. Register inputs through native author/Content/Formation commands and prepare
+independent Book runs, accepted histories and adopted exact candidates before freezing a
+manifest. Paired arms select `creative-paired-samples-budget.v5`; the separately published
+Provider-calibration campaign retains `creative-provider-campaign-budget.v4`. Its participant versions, route policy, implementation and native stage caps
+must match the selected finite authorization. Initialization, qualification, failures,
+repairs and evaluation are included. No directory reset supplies new allowance.
+
+```bash
+PYTHONPATH=src .venv/bin/python -m scripts.narrative_closure_campaign freeze \
+  --manifest <native-manifest.json> --output <retained-frozen-manifest.json>
+PYTHONPATH=src .venv/bin/python -m scripts.narrative_closure_campaign run \
+  --manifest <retained-frozen-manifest.json> --manifest-hash <sha256-digest> \
+  --root <runtime-directory> --stage PILOT --output <new-evidence-directory> --execute
+PYTHONPATH=src .venv/bin/python -m scripts.narrative_closure_campaign resume \
+  --manifest <retained-frozen-manifest.json> --manifest-hash <sha256-digest> \
+  --root <same-runtime-directory> --stage PILOT --output <new-resume-evidence-directory> --execute
+PYTHONPATH=src .venv/bin/python -m scripts.narrative_closure_review export \
+  --manifest <retained-frozen-manifest.json> --results <campaign-output-directory> \
+  --reviewer <first-human-id> --reviewer <second-human-id> --output <blind-pack-directory>
+```
+
+Run six-task EXPLORATION only after exact pilot reading decisions and the native positive
+stage grant. A system contract failure stops expansion. UNKNOWN effects must reconcile;
+the runner never silently changes account, model or billing. Resume writes a new evidence
+directory while retaining the same native manifest, database identities and ledger; changing
+the output location grants no allowance. Offline reviewer responses
+are recorded with `PYTHONPATH=src .venv/bin/python -m scripts.narrative_closure_review record --packs <blind-pack-directory>
+--response <first.json> --response <second.json> --output <comparison.json>`; disagreement
+and missing human review remain visible. These packs do not satisfy editorial signatures.
+
+To try the corrected recurrence classification, explicitly set the frozen production
+profile's `craft_budget_policy.schema_version` to `narrative-craft-budget.v2`. Selection
+fills and freezes the complete `mechanism_cadence` map: `spatial-anchor` is CONTINUOUS;
+`exchange-response-cost`, `subtext-pressure` and `choice-exposes-value` are EXPRESSIVE.
+Unknown mechanisms remain EXPRESSIVE. V1 remains the default. This selection policy
+change needs a separately frozen Craft intervention; it is not benefit evidence.
+
+Optional actor isolation is configured in the frozen production profile, never enabled
+by default: set `world_production_policy.version` to `world-production-policy.v2`,
+`max_provider_stages` to actor count plus two, `max_candidates` no greater than actor
+count, and `max_paths_per_candidate`, `max_preparation_steps`,
+`planning_window_chapters` to one. Set `world_actor_experiment` to
+`{"version":"world-actor-experiment.v1","actor_ids":["<approved-character-id>"],
+"max_rounds":1,"max_actions_per_actor":1}`. Keep the existing bounded Context and native
+budget limits. Each actor needs its own knowledge/belief entry in the frozen initial
+StoryState or accepted reality, plus its approved goal. Missing private evidence blocks
+before any actor call; another actor's knowledge cannot substitute. Actor source/proposal receipts persist under the same World Preparation
+operation; resume that operation after reconciliation. Changing to unified generation
+on a failed actor run is forbidden. A separate controlled comparison and finite model
+allowance are needed to assess benefit, leakage, naturalness, cost and latency.
 
 ## Failure and recovery procedure
 

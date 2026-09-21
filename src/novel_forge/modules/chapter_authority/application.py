@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -139,6 +140,21 @@ class ChapterAuthorityApplication:
         principal.require("chapter.authority.execute", request.project_id)
         if request.actor_id != principal.principal_id:
             raise PermissionError("Chapter command actor must be the trusted Principal")
+        adoption = (request.preparation_report or {}).get("author_draft_adoption")
+        if adoption:
+            from .author_draft import freeze_author_adoption
+            frozen = freeze_author_adoption(
+                self.database_url, project_id=request.project_id, workspace_id=request.workspace_id,
+                book_id=request.book_id, chapter=request.chapter,
+                candidate_asset_version_id=str(adoption.get("candidate_asset_version_id") or ""),
+                decision_asset_version_id=str(adoption.get("decision_asset_version_id") or ""), principal=principal,
+            )
+            if dict(adoption) != frozen:
+                raise ValueError("Author adoption must match its exact immutable candidate and author decision")
+            if frozen["source_chapter_plan_asset_version_id"] and frozen["source_chapter_plan_asset_version_id"] != request.chapter_plan_asset_version_id:
+                from novel_forge.modules.command_kernel.errors import KernelError
+                raise KernelError("AUTHOR_PLAN_DRIFT", "Reprepare from the author's exact source Chapter Plan before dispatch")
+            request = replace(request, preparation_report={**dict(request.preparation_report or {}), "author_draft_adoption": frozen})
         return admit_single_chapter_saga(
             self.database_url,
             request=request,

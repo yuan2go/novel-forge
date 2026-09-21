@@ -1,219 +1,213 @@
 "use client";
 
 import { FileSearch, GitPullRequest, Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
-import type { AssetRow, ProjectRow } from "../../shared/types";
-import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { applyEditorPatch, createDraftDiffReport, createEditorPatch, loadDraftEditor, loadEditorData, type DraftEditorState, type EditorArtifactRow } from "./api";
+import type { ProjectRow } from "../../shared/types";
+import { PanelHeader } from "../../shared/ui";
+import { loadEditorProjects, loadEditorDrafts, loadDraftEditor, submitEditorCommand, requestAuthorReview, loadAuthorReview, type AuthorReviewStatus,
+  type EditorDraft, type DraftEditorState, type EditorCommand } from "./api";
+import { ProseReviewPanel, type ReviewSource } from "./ProseReviewPanel";
+import { exactOffset, retainExactLineEndings } from "./text";
+
+const EDITOR_COMMANDS = ["保存候选", "采用候选", "拒绝候选", "提交章节复核"];
+const storageKey = (draft: EditorDraft) => `novel-forge:author-input:${draft.project_id}:${draft.asset_version_id}`;
+const workingText = (state: DraftEditorState) => state.session?.status !== "REJECTED"
+  ? state.candidates.find((item) => item.asset_version_id === state.session?.candidate_asset_version_id)?.content.text ?? state.text : state.text;
 
 export function EditorPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
-  const [artifacts, setArtifacts] = useState<EditorArtifactRow[]>([]);
-  const [assets, setAssets] = useState<AssetRow[]>([]);
   const [projectId, setProjectId] = useState("");
-  const [draftPath, setDraftPath] = useState("");
-  const [patchPath, setPatchPath] = useState("");
-  const [basePath, setBasePath] = useState("");
-  const [targetPath, setTargetPath] = useState("");
-  const [instructions, setInstructions] = useState("按审稿问题生成段落级修改建议，保持原创性边界和项目连续性。");
-  const [editorState, setEditorState] = useState<DraftEditorState | null>(null);
+  const [drafts, setDrafts] = useState<EditorDraft[]>([]);
+  const [draftId, setDraftId] = useState("");
+  const [state, setState] = useState<DraftEditorState | null>(null);
   const [editorText, setEditorText] = useState("");
-  const [commandMode, setCommandMode] = useState("polish");
-  const [selectedOperationIds, setSelectedOperationIds] = useState<string[]>([]);
+  const [savedText, setSavedText] = useState("");
+  const [rationale, setRationale] = useState("");
+  const [rights, setRights] = useState<"ORIGINAL_AUTHOR_INPUT" | "AUTHORIZED_INPUT">("ORIGINAL_AUTHOR_INPUT");
+  const [selection, setSelection] = useState<{start: number; end: number} | null>(null);
+  const [reviewSource, setReviewSource] = useState<ReviewSource | null>(null);
+  const [pending, setPending] = useState<EditorCommand | null>(null);
   const [busy, setBusy] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState<AuthorReviewStatus | null>(null);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const lock = useRef(false);
+  const editor = useRef<HTMLTextAreaElement>(null);
+  const reviewKey = useRef("");
+  const draft = drafts.find((item) => item.asset_version_id === draftId);
+  const dirty = state !== null && editorText !== savedText;
+  const candidate = state?.candidates.find((item) => item.asset_version_id === state.session?.candidate_asset_version_id);
+  const canLeave = () => !(dirty || pending) || window.confirm("当前有未保存输入或待确认请求。保留本地输入并切换？");
 
-  const selectedProject = projects.find((project) => project.project_id === projectId);
-  const drafts = assets.filter((asset) => ["draft_chapter", "draft_version"].includes(asset.type));
-  const patches = artifacts.filter((artifact) => artifact.type === "editor_patch");
-  const diffs = artifacts.filter((artifact) => artifact.type === "draft_diff_report");
-  const selectedPatch = patches.find((patch) => patch.path === patchPath);
-  const operations = selectedPatch?.operations ?? [];
+  useEffect(() => { loadEditorProjects().then((rows) => {setProjects(rows); setProjectId(rows[0]?.project_id || "");}).catch(showError); }, []);
+  useEffect(() => {
+    if (!projectId) return;
+    let active = true;
+    loadEditorDrafts(projectId).then((rows) => { if (active) {setDrafts(rows); setDraftId(rows.find((item) => item.book_id)?.asset_version_id || "");} }).catch(showError);
+    return () => {active = false;};
+  }, [projectId]);
+  useEffect(() => {
+    if (!draft) {setState(null); return;}
+    let active = true;
+    setState(null); setReviewStatus(null); setError(""); setSelection(null); setReviewSource(null); reviewKey.current = "";
+    loadDraftEditor(draft).then((next) => {
+      if (!active) return;
+      setState(next);
+      const previousReview = localStorage.getItem(`novel-forge:author-review-run:${next.project_id}:${next.session?.decision_asset_version_id}`);
+      if (previousReview) loadAuthorReview(next.project_id, previousReview).then((run) => {if (active) setReviewStatus(run);}).catch(showError);
+      const stored = localStorage.getItem(storageKey(draft));
+      const recovered = stored ? JSON.parse(stored) : null;
+      const saved = workingText(next);
+      setSavedText(saved);
+      setEditorText(recovered?.base_text_hash === next.base_text_hash ? recovered.text : saved);
+      setPending(recovered?.pending || null);
+      if (recovered?.text && recovered.text !== next.text) setNotice("已恢复本机尚未提交的作者输入；它尚未改变已接纳正文。");
+    }).catch(showError);
+    return () => {active = false;};
+  }, [draftId, drafts]);
+  useEffect(() => {
+    if (!state || !draft || state.base_asset_version_id !== draft.asset_version_id || state.project_id !== draft.project_id) return;
+    if (dirty || pending) localStorage.setItem(storageKey(draft), JSON.stringify({text: editorText, base_text_hash: state.base_text_hash, pending}));
+    else localStorage.removeItem(storageKey(draft));
+  }, [editorText, state, draft, dirty, pending]);
+  useEffect(() => {
+    const guard = (event: BeforeUnloadEvent) => {if (dirty || pending) {event.preventDefault(); event.returnValue = "";}};
+    const navigate = (event: MouseEvent) => {
+      if (!(dirty || pending) || !(event.target instanceof Element) || !event.target.closest("a[href]")) return;
+      if (!window.confirm("有未保存的作者输入。保留本地输入并离开？")) {event.preventDefault(); event.stopPropagation();}
+    };
+    window.addEventListener("beforeunload", guard);
+    document.addEventListener("click", navigate, true);
+    return () => {window.removeEventListener("beforeunload", guard); document.removeEventListener("click", navigate, true);};
+  }, [dirty, pending]);
 
-  async function refresh(nextProjectId = projectId) {
-    const [projectRows, artifactRows, assetRows] = await loadEditorData(nextProjectId);
-    setProjects(projectRows);
-    setArtifacts(artifactRows);
-    setAssets(assetRows);
-    setProjectId(nextProjectId || projectRows[0]?.project_id || "");
-    setDraftPath((current) => current || assetRows.find((asset) => asset.type.includes("draft"))?.path || "");
-    setPatchPath((current) => current || artifactRows.find((row) => row.type === "editor_patch")?.path || "");
-  }
-
-  async function runAction(action: () => Promise<unknown>, message: string) {
-    setBusy(true);
-    setNotice("");
-    setError("");
+  function showError(caught: unknown) { setError(caught instanceof Error ? caught.message : String(caught)); }
+  async function reload(preserve = true) {
+    if (!draft) return;
     try {
-      await action();
-      setNotice(message);
-      await refresh();
+      const next = await loadDraftEditor(draft); setState(next); setSavedText(workingText(next));
+      if (!preserve) {setEditorText(workingText(next)); setSelection(null);}
+      setNotice(preserve ? "已重新加载当前版本，作者输入已保留。请核对差异后重试。" : "已撤销未提交修改。");
+    } catch (caught) {showError(caught);}
+  }
+  function baseCommand(action: EditorCommand["action"]): EditorCommand {
+    if (!state) throw new Error("请先读取精确版本");
+    return {action, project_id: state.project_id, workspace_id: state.workspace_id, book_id: state.book_id,
+      chapter: state.chapter, base_asset_version_id: state.base_asset_version_id, base_asset_hash: state.base_asset_hash,
+      base_text_hash: state.base_text_hash, expected_version: state.version, idempotency_key: crypto.randomUUID()};
+  }
+  async function send(command: EditorCommand) {
+    if (lock.current) return;
+    lock.current = true; setBusy(true); setError(""); setPending(command);
+    try {
+      const result = await submitEditorCommand(command);
+      setPending(null); reviewKey.current = ""; setReviewStatus(null);
+      if (draft) {
+        const next = await loadDraftEditor(draft); setState(next); setSavedText(workingText(next));
+        setEditorText(workingText(next));
+      }
+      setNotice(result.editor_status === "ADOPTED_PENDING_REVIEW" ? "已采用候选，等待章节复核。尚未接纳章节或完成整书。" :
+        result.editor_status === "REJECTED" ? "已拒绝候选，原正文未改变。" : "作者实际输入已保存为独立候选。请检查修改对照后采用或拒绝。");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setBusy(false);
-    }
+      showError(caught);
+      const message = caught instanceof Error ? caught.message : String(caught);
+      if (/AUTHOR_VERSION_CONFLICT|AUTHOR_BASE_STALE|AUTHOR_BASE_HASH_CONFLICT|AUTHOR_EDIT_|AUTHOR_SCENE_|AUTHOR_NO_CHANGE/.test(message)) setPending(null);
+    } finally {lock.current = false; setBusy(false);}
+  }
+  function save() {
+    const command = {...baseCommand("save"), text: editorText, rights_basis: rights,
+      ...(selection ? {allowed_ranges: [selection]} : {}), ...(reviewSource || {})};
+    void send(command);
+  }
+  function decide(action: "accept" | "reject") {
+    void send({...baseCommand(action), candidate_asset_version_id: candidate?.asset_version_id, rationale});
+  }
+  async function review() {
+    if (!state || lock.current) return;
+    lock.current = true; setBusy(true); setError("");
+    const key = `novel-forge:author-review:${state.project_id}:${state.session?.decision_asset_version_id}`;
+    reviewKey.current ||= localStorage.getItem(key) || crypto.randomUUID();
+    localStorage.setItem(key, reviewKey.current);
+    try {
+      const result = await requestAuthorReview(state, reviewKey.current);
+      localStorage.setItem(`novel-forge:author-review-run:${state.project_id}:${state.session?.decision_asset_version_id}`, result.root_operation_id);
+      setReviewStatus(await loadAuthorReview(state.project_id, result.root_operation_id));
+      setNotice(`章节复核已登记：${result.root_operation_id}。后续 Review、Canon 与 Book 接纳分别受原生门控。`);
+    } catch (caught) {showError(caught);} finally {lock.current = false; setBusy(false);}
   }
 
-  useEffect(() => {
-    refresh().catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)));
-  }, []);
-
-  useEffect(() => {
-    setSelectedOperationIds([]);
-  }, [patchPath]);
-
-  useEffect(() => {
-    if (!draftPath) return;
-    loadDraftEditor(draftPath)
-      .then((state) => {
-        setEditorState(state);
-        setEditorText(state.text || "");
-        setBasePath((current) => current || state.path);
-      })
-      .catch(() => {
-        setEditorState(null);
-        setEditorText("");
-      });
-  }, [draftPath]);
-
-  return (
-    <FeatureShell title="AI 编辑器" subtitle="基于 editor_patch 和 draft_diff_report 做段落级建议、应用、diff 和回滚前复盘。">
-      {notice ? <div className="noticeLine">{notice}</div> : null}
-      {error ? <div className="errorLine">{error}</div> : null}
-      <section className="summaryBand manuscriptSummary">
-        <Metric label="Patch" value={String(patches.length)} />
-        <Metric label="Diff" value={String(diffs.length)} />
-        <Metric label="Drafts" value={String(drafts.length)} />
-        <Metric label="Artifacts" value={String(artifacts.length)} />
-        <Metric label="当前字数" value={String(editorText.length)} />
-      </section>
-      <section className="editorWorkbenchGrid">
-        <div className="panel">
-          <PanelHeader title="相关资料侧栏" icon={<FileSearch size={18} />} />
-          <DataTable
-            emptyText="暂无相关资料"
-            columns={["类型", "标题", "风险"]}
-            rows={assets
-              .filter((asset) => ["context_bundle", "chapter_plan", "review_report", "revision_plan", "continuity_bible", "quality_standard_profile", "style_profile"].includes(asset.type))
-              .slice(0, 12)
-              .map((asset) => [asset.type, asset.title, asset.risk_level || asset.status || "-"])}
-          />
-        </div>
-        <div className="panel richEditorPanel">
-          <PanelHeader title="富文本编辑区" icon={<Save size={18} />} />
-          <div className="studioActions">
-            {EDITOR_COMMANDS.map((command) => (
-              <button className={commandMode === command.key ? "primaryButton" : "secondaryButton"} key={command.key} onClick={() => { setCommandMode(command.key); setInstructions(command.prompt); }}>
-                {command.label}
-              </button>
-            ))}
-          </div>
-          <textarea className="richDraftEditor" value={editorText} onChange={(event) => setEditorText(event.target.value)} rows={20} />
-          <div className="previewText">当前稿件：{editorState?.title || draftPath || "未选择"} / 状态 {editorState?.status || "-"} / 版本 {editorState?.version_index ?? "-"}</div>
-        </div>
-        <div className="panel">
-          <PanelHeader title="版本历史侧栏" icon={<GitPullRequest size={18} />} />
-          <DataTable
-            emptyText="暂无版本"
-            columns={["类型", "状态", "路径"]}
-            rows={[...patches, ...diffs].slice(0, 12).map((artifact) => [
-              artifact.type,
-              <span className={statusClass(artifact.status || "")} key={`${artifact.path}-version-status`}>{artifact.status || "-"}</span>,
-              <button className="linkButton" key={artifact.path} onClick={() => artifact.type === "editor_patch" ? setPatchPath(artifact.path) : setTargetPath(artifact.path)}>{artifact.path}</button>
-            ])}
-          />
-        </div>
-      </section>
-      <section className="workspaceGrid">
-        <div className="panel">
-          <PanelHeader title="生成修订建议" icon={<Save size={18} />} />
-          <div className="formGrid wide">
-            <select value={projectId} onChange={(event) => refresh(event.target.value)}>
-              <option value="">全局</option>
-              {projects.map((project) => <option value={project.project_id} key={project.project_id}>{project.title}</option>)}
-            </select>
-            <select value={draftPath} onChange={(event) => setDraftPath(event.target.value)}>
-              <option value="">选择稿件</option>
-              {drafts.map((asset) => <option value={asset.path} key={asset.path}>{asset.title}</option>)}
-            </select>
-            <textarea value={instructions} onChange={(event) => setInstructions(event.target.value)} rows={5} />
-            <button className="primaryButton" disabled={busy || !draftPath} onClick={() => runAction(() => createEditorPatch(draftPath, instructions, selectedProject?.path), "编辑 Patch 已创建")}>创建 Patch</button>
-          </div>
-        </div>
-        <div className="panel">
-          <PanelHeader title="应用与 Diff" icon={<GitPullRequest size={18} />} />
-          <div className="formGrid wide">
-            <select value={patchPath} onChange={(event) => setPatchPath(event.target.value)}>
-              <option value="">选择 Patch</option>
-              {patches.map((patch) => <option value={patch.path} key={patch.path}>{patch.title}</option>)}
-            </select>
-            <button className="secondaryButton" disabled={busy || !patchPath || !selectedOperationIds.length} onClick={() => runAction(() => applyEditorPatch(patchPath, selectedOperationIds), "选中建议已应用")}>应用选中</button>
-            <button className="secondaryButton" disabled={busy || !patchPath} onClick={() => runAction(() => applyEditorPatch(patchPath), "Patch 已全部应用")}>应用全部</button>
-            <input value={basePath} onChange={(event) => setBasePath(event.target.value)} placeholder="base draft path" />
-            <input value={targetPath} onChange={(event) => setTargetPath(event.target.value)} placeholder="target draft path" />
-            <button className="secondaryButton" disabled={busy || !basePath || !targetPath} onClick={() => runAction(() => createDraftDiffReport(basePath, targetPath), "Diff 报告已创建")}>创建 Diff</button>
-          </div>
-        </div>
-      </section>
-      <section className="panel">
-        <PanelHeader title="段落级建议" icon={<GitPullRequest size={18} />} />
+  return <FeatureShell title="作者编辑器" subtitle="读取精确版本，保存真实作者输入，检查对照并采用候选，再进入章节复核。">
+    {notice ? <div role="status" className="noticeLine">{notice}</div> : null}
+    {error ? <div role="alert" className="errorLine">{error}<button className="secondaryButton" disabled={busy} onClick={() => reload()}>重新加载并保留输入</button></div> : null}
+    <section className="panel"><div className="studioActions">
+      <label>项目 <select aria-label="项目" value={projectId} disabled={busy} onChange={(event) => {if (canLeave()) setProjectId(event.target.value);}}>
+        {projects.map((item) => <option value={item.project_id} key={item.project_id}>{item.title}</option>)}</select></label>
+      <label>稿件版本 <select aria-label="稿件版本" value={draftId} disabled={busy} onChange={(event) => {if (canLeave()) setDraftId(event.target.value);}}>
+        <option value="">选择已绑定 Book 的稿件</option>{drafts.map((item) => <option disabled={!item.book_id} key={item.asset_version_id} value={item.asset_version_id}>{item.title} · {item.asset_type} · {item.asset_version_id.slice(-8)}</option>)}</select></label>
+      <span>{dirty ? "有未保存修改" : "无未保存修改"}</span>
+    </div></section>
+    <section className="editorWorkbenchGrid">
+      <aside className="panel"><PanelHeader title="相关资料侧栏" icon={<FileSearch size={18} />} />
+        <p>项目：{state?.project_id || "—"}</p><p>工作区：{state?.workspace_id || "—"}</p><p>Book：{state?.book_id || "—"}</p>
+        <p>章节：{state?.chapter || "—"}</p><p style={{overflowWrap: "anywhere"}}>基准版本：{state?.base_asset_version_id || "—"}</p>
+        <p style={{overflowWrap: "anywhere"}}>正文 hash：{state?.base_text_hash || "—"}</p><p>编辑版本：{state?.version ?? "—"}</p>
+        <p>保存草稿、采用候选、接纳章节、完成整书是四个独立动作。</p>
+        <h3>基准诊断</h3>
+        {state?.diagnostics.length ? state.diagnostics.map((report) => <div key={report.asset_version_id}>
+          <p className="pathText">{report.asset_version_id}</p>{report.content.issues?.map((issue) => <p key={issue.code}>{issue.severity} · {issue.message}</p>)}
+        </div>) : <p>此精确版本尚无诊断记录。</p>}
+      </aside>
+      <div className="panel richEditorPanel"><PanelHeader title="富文本编辑区" icon={<Save size={18} />} />
+        <textarea ref={editor} aria-label="章节正文" className="richDraftEditor" value={editorText} disabled={!state || busy || !!pending} onChange={(event) => setEditorText((current) => retainExactLineEndings(current, event.target.value))} rows={20} />
+        <p>{Array.from(editorText).length} 字符 · {selection ? `限定基准选区 [${selection.start}, ${selection.end})` : "全章作者编辑"}</p>
+        {reviewSource ? <p style={{overflowWrap: "anywhere"}}>针对审读问题：{reviewSource.source_lineage_id}<button className="secondaryButton" onClick={() => setReviewSource(null)}>取消问题关联</button></p> : null}
         <div className="studioActions">
-          <button className="secondaryButton" disabled={!operations.length} onClick={() => setSelectedOperationIds(operations.map(operationId))}>全选</button>
-          <button className="secondaryButton" disabled={!selectedOperationIds.length} onClick={() => setSelectedOperationIds([])}>清空</button>
+          <button className="secondaryButton" disabled={dirty || !state || editorText !== state.text || busy || !!pending} onClick={() => {
+            const area = editor.current; if (!area || area.selectionStart === area.selectionEnd) return;
+            setSelection({start: Array.from(editorText.slice(0, exactOffset(editorText, area.selectionStart))).length, end: Array.from(editorText.slice(0, exactOffset(editorText, area.selectionEnd))).length});
+          }}>锁定当前选区</button>
+          <button className="secondaryButton" disabled={busy || !!pending} onClick={() => setSelection(null)}>取消选区限制</button>
+          <button className="secondaryButton" disabled={!dirty || busy || !!pending} onClick={() => reload(false)}>撤销未提交修改</button>
         </div>
-        <DataTable
-          emptyText="选择或生成 editor_patch 后显示建议"
-          columns={["选择", "段落", "风险", "修订原因", "原文", "建议"]}
-          rows={operations.map((operation, index) => {
-            const opId = operationId(operation, index);
-            return [
-              <input
-                type="checkbox"
-                checked={selectedOperationIds.includes(opId)}
-                onChange={(event) => {
-                  setSelectedOperationIds((current) => event.target.checked ? [...new Set([...current, opId])] : current.filter((item) => item !== opId));
-                }}
-                key={`${opId}-check`}
-              />,
-              String(operation.paragraph_index ?? operation.target ?? index + 1),
-              <span className={statusClass(String(operation.risk ?? "low"))} key={`${opId}-risk`}>{String(operation.risk ?? "low")}</span>,
-              String(operation.rationale || operation.instruction || "-"),
-              <span className="previewText" key={`${opId}-before`}>{String(operation.before || "").slice(0, 160)}</span>,
-              <span className="previewText" key={`${opId}-after`}>{String(operation.after || "").slice(0, 160)}</span>
-            ];
-          })}
-        />
-      </section>
-      <section className="panel">
-        <PanelHeader title="编辑资产" icon={<FileSearch size={18} />} />
-        <DataTable
-          emptyText="暂无编辑资产"
-          columns={["类型", "标题", "状态", "目标稿件", "操作数", "路径"]}
-          rows={artifacts.map((artifact) => [
-            artifact.type,
-            artifact.title,
-            <span className={statusClass(artifact.status || "")} key={`${artifact.path}-status`}>{artifact.status || "-"}</span>,
-            artifact.target_draft_path || "-",
-            String(artifact.operations?.length ?? 0),
-            <span className="pathText" key={artifact.path}>{artifact.path}</span>
-          ])}
-        />
-      </section>
-    </FeatureShell>
-  );
+        <label>输入权利 <select aria-label="输入权利" value={rights} onChange={(event) => setRights(event.target.value as typeof rights)}>
+          <option value="ORIGINAL_AUTHOR_INPUT">本人原创输入</option><option value="AUTHORIZED_INPUT">已获授权的输入</option></select></label>
+        <button className="primaryButton" disabled={!dirty || busy || !!pending} onClick={save}>{EDITOR_COMMANDS[0]}</button>
+        {pending ? <button className="primaryButton" disabled={busy} onClick={() => send(pending)}>重试上次请求（相同幂等键）</button> : null}
+      </div>
+      <aside className="panel"><PanelHeader title="版本历史侧栏" icon={<GitPullRequest size={18} />} />
+        <p>当前候选状态：{state?.session?.status || "尚无候选"}</p>
+        {state?.candidates.map((item) => <p key={item.asset_version_id} style={{overflowWrap: "anywhere"}}>候选 {item.asset_version_id} · {item.content.text_hash}</p>)}
+        {state?.decisions.map((item) => <p key={item.asset_version_id}>{String(item.content.decision)} · {String(item.content.rationale)}</p>)}
+      </aside>
+    </section>
+    <section className="workspaceGrid">
+      <div className="panel"><PanelHeader title="修改前" icon={<FileSearch size={18} />} /><pre style={{whiteSpace: "pre-wrap"}}>{state?.text}</pre></div>
+      <div className="panel"><PanelHeader title="修改后候选" icon={<FileSearch size={18} />} /><pre style={{whiteSpace: "pre-wrap"}}>{candidate?.content.text || editorText}</pre></div>
+    </section>
+    <section className="panel"><PanelHeader title="修改对照与决定" icon={<GitPullRequest size={18} />} />
+      {candidate?.content.edits.map((edit, index) => <div key={index}><p>基准位置 [{edit.start}, {edit.end})</p><del>{edit.before || "（插入位置）"}</del><ins>{edit.after || "（删除）"}</ins></div>)}
+      <p>诊断与语义影响：新候选尚需独立复核。作者采用不代表连续性、Craft 或正文质量已通过。</p>
+      <textarea aria-label="决定理由" value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="说明采用或拒绝本候选的理由" rows={3} />
+      <div className="studioActions">
+        <button className="primaryButton" disabled={busy || !!pending || dirty || state?.session?.status !== "SAVED_CANDIDATE" || !rationale.trim()} onClick={() => decide("accept")}>{EDITOR_COMMANDS[1]}</button>
+        <button className="secondaryButton" disabled={busy || !!pending || state?.session?.status !== "SAVED_CANDIDATE" || !rationale.trim()} onClick={() => decide("reject")}>{EDITOR_COMMANDS[2]}</button>
+        <button className="primaryButton" disabled={busy || !!pending || dirty || !!reviewStatus || (!!state?.book_request && (!state.book_request.is_current || !state.book_request.unaccepted)) || state?.session?.status !== "ADOPTED_PENDING_REVIEW"} onClick={review}>{EDITOR_COMMANDS[3]}</button>
+      </div>
+    </section>
+    <section className="panel">
+      <p>提交章节复核会登记模型工作，沿用项目现有的 Provider 资格、授权与预算门控。</p>
+      {reviewStatus ? <>
+        <h3>章节复核进度</h3><p style={{overflowWrap: "anywhere"}}>{reviewStatus.root_operation_id} · {reviewStatus.run.status}</p>
+        <button className="secondaryButton" disabled={busy} onClick={() => state && loadAuthorReview(state.project_id, reviewStatus.root_operation_id).then(setReviewStatus).catch(showError)}>刷新章节复核状态</button>
+        <p>Book 接纳：{reviewStatus.acceptance?.status || "尚未接纳"}</p>
+        {reviewStatus.run.operations.map((operation) => <p key={operation.operation_id}>{operation.definition_name} · {operation.status}</p>)}
+        {Object.entries(reviewStatus.artifacts).filter(([kind]) => ["diagnoses", "gates"].includes(kind)).flatMap(([kind, rows]) => rows.map((row) => <details key={row.asset_version_id}><summary>{kind} · {row.asset_type} · {row.asset_version_id}</summary><pre style={{whiteSpace: "pre-wrap", overflowWrap: "anywhere"}}>{JSON.stringify(row.content, null, 2)}</pre></details>))}
+        <a href="/manuscript">前往章节生产工作台查看后续接纳门控</a>
+      </> : null}
+    </section>
+    {state ? <ProseReviewPanel key={`${state.project_id}:${state.book_id}`} state={state} onSelect={(source) => {
+      setReviewSource(source); setNotice("已选定审读问题；编辑正文并保存后，可显式关联修改候选。"); editor.current?.focus();
+    }} /> : null}
+  </FeatureShell>;
 }
-
-function operationId(operation: Record<string, unknown>, index = 0) {
-  return String(operation.op_id || `op-${index + 1}`);
-}
-
-const EDITOR_COMMANDS = [
-  { key: "continue", label: "继续写", prompt: "续写当前章节 600-1000 字，承接最后一段的因果，不引入未登记设定，保留下一章钩子。" },
-  { key: "expand", label: "扩写", prompt: "扩写选中段落的动作、心理和环境压力，但不改变剧情事实和人物状态。" },
-  { key: "shorten", label: "缩写", prompt: "压缩冗余表达，保留关键因果、情绪转折和伏笔信号。" },
-  { key: "polish", label: "润色", prompt: "润色段落表达，降低 AI 味，保持项目 style_profile 参数，不模仿具体作者。" },
-  { key: "risk", label: "风险修订", prompt: "根据审稿、原创性和连续性风险生成段落级修订建议，所有改动必须可回滚。" }
-];

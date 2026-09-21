@@ -24,6 +24,8 @@ from novel_forge.modules.mkaos_authority.craft_authoring import AuthorCoreCraftC
 from novel_forge.modules.mkaos_authority.craft_selection import (
     build_craft_strategy,
     DEFAULT_CRAFT_POLICY,
+    craft_candidate_assessment,
+    validate_craft_policy,
 )
 from novel_forge.modules.production_preparation.contracts import ResolvedProductionAsset
 from novel_forge.modules.production_preparation.service import (
@@ -51,6 +53,11 @@ REPAIRED = "他把仅有的返程木牌推到证人手边，收回手时，守�
 
 
 class CraftTransport:
+    mechanism_id = "choice-exposes-value"
+    policy = DEFAULT_CRAFT_POLICY
+    broken = BROKEN
+    repaired = REPAIRED
+
     def __init__(self, loss):
         self.loss, self.lost = loss, False
         self.calls = []
@@ -77,7 +84,7 @@ class CraftTransport:
             AuthorCoreCraftCommand(
                 project,
                 workspace,
-                "choice-exposes-value",
+                self.mechanism_id,
                 core_catalog_hash(),
                 "craft-operator",
                 f"{project}:craft",
@@ -112,7 +119,7 @@ class CraftTransport:
                     "evidence": "FIXTURE_PLANNING_LINEAGE",
                 }
             ),
-            "craft_policy": DEFAULT_CRAFT_POLICY,
+            "craft_policy": self.policy,
             "selected": [
                 {
                     "knowledge_card_asset_version_id": document.asset_version_id,
@@ -136,6 +143,10 @@ class CraftTransport:
                 "realization_excerpt": content["scene_plan"][0]["goal"],
                 "expected_application": "把既定代价落实为一次物件处置",
             }
+            if self.mechanism_id == "spatial-anchor":
+                site.update(intended_reader_effect="追踪双方距离、桥头出口和阻挡",
+                    verification_checks=["既定通路与移动后位置可定位"],
+                    expected_application="在既定行动中给出可观察的空间锚点")
             translation = {
                 "knowledge_card_asset_version_id": document.asset_version_id,
                 "decision": "ADAPT",
@@ -146,6 +157,8 @@ class CraftTransport:
             }
             content["knowledge_translations"] = [translation]
             content["craft_strategy"] = build_craft_strategy(content, self.selection)
+            self.strategies = getattr(self, "strategies", {})
+            self.strategies[int(content.get("chapter") or 1)] = content["craft_strategy"]
             if int(content.get("chapter") or 1) == 1:
                 self.strategy = content["craft_strategy"]
                 projection = {
@@ -178,7 +191,7 @@ class CraftTransport:
 
     def check(self, draft, status):
         target = craft_review_targets(draft)[0]
-        sentence = BROKEN if status == "FAILED" else REPAIRED
+        sentence = self.broken if status == "FAILED" else self.repaired
         start = draft["text"].index(sentence)
         evidence = {"start": start, "end": start + len(sentence), "quote": sentence}
         codes = ["CRAFT_CHOICE_REALIZATION"] if status == "FAILED" else []
@@ -188,7 +201,7 @@ class CraftTransport:
             "evidence": evidence,
             "reason": "Original scripted contrast control; no independent reader measurement.",
             "signals_checked": [
-                "Chosen action gives up the existing safe return option"
+                "Scripted selected mechanism realization matches its located control span"
             ],
             "issue_codes": codes,
             "side_effects": [
@@ -209,8 +222,8 @@ class CraftTransport:
         self.calls.append((stage, deepcopy(inputs)))
         result = default_chapter_fixture_response(stage, inputs)
         if stage == "draft":
-            assert inputs["realization_contract"]["craft_strategy"] == self.strategy
-            result["scene_artifacts"][-1]["text"] += " " + BROKEN
+            assert inputs["realization_contract"]["craft_strategy"] == self.strategies[inputs["plan"]["chapter"]]
+            result["scene_artifacts"][-1]["text"] += " " + self.broken
             result["text"] = "\n\n".join(
                 item["text"] for item in result["scene_artifacts"]
             )
@@ -253,9 +266,9 @@ class CraftTransport:
         elif stage == "revision":
             draft, issue = inputs["draft"], inputs["review"]["issues"][0]
             artifacts = deepcopy(draft["scene_artifacts"])
-            artifacts[-1]["text"] = artifacts[-1]["text"].replace(BROKEN, REPAIRED)
+            artifacts[-1]["text"] = artifacts[-1]["text"].replace(self.broken, self.repaired)
             result = {
-                "text": draft["text"].replace(BROKEN, REPAIRED),
+                "text": draft["text"].replace(self.broken, self.repaired),
                 "scene_artifacts": artifacts,
                 "resolved_issue_codes": [issue["code"]],
                 "edits": [
@@ -264,7 +277,7 @@ class CraftTransport:
                             key: issue["evidence_locator"][key]
                             for key in ("start", "end", "quote")
                         },
-                        "replacement": REPAIRED,
+                        "replacement": self.repaired,
                         "issue_codes": [issue["code"]],
                     }
                 ],
@@ -456,3 +469,184 @@ def test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_recei
         )
         assert uow.cursor.fetchone() == (1,)
     assert "SOURCE_ABSTRACTION" not in json.dumps(transport.strategy)
+
+
+class JointCraftTransport(CraftTransport):
+    def __call__(self, stage, inputs):
+        from tests.integration.test_cross_chapter_prose_review_postgres import (
+            HISTORY, BROKEN as CONTINUITY_BROKEN, REPAIRED as CONTINUITY_REPAIRED,
+            ProseTransport,
+        )
+        if stage == "revision":
+            self.calls.append((stage, deepcopy(inputs)))
+            draft = inputs["draft"]
+            result = {"text": draft["text"], "scene_artifacts": deepcopy(draft["scene_artifacts"]),
+                      "resolved_issue_codes": [], "edits": []}
+            for issue in inputs["review"]["issues"]:
+                original, replacement = ((self.broken, self.repaired) if issue["category"] == "CRAFT_EFFECT"
+                                         else (CONTINUITY_BROKEN, CONTINUITY_REPAIRED))
+                result["text"] = result["text"].replace(original, replacement)
+                for artifact in result["scene_artifacts"]:
+                    artifact["text"] = artifact["text"].replace(original, replacement)
+                result["resolved_issue_codes"].append(issue["code"])
+                result["edits"].append({**{key: issue["evidence_locator"][key] for key in ("start", "end", "quote")},
+                                        "replacement": replacement, "issue_codes": [issue["code"]]})
+            return result
+        result = super().__call__(stage, inputs)
+        if stage == "draft":
+            result["scene_artifacts"][-1]["text"] += " " + (HISTORY if inputs["plan"]["chapter"] == 1 else CONTINUITY_BROKEN)
+            result["text"] = "\n\n".join(item["text"] for item in result["scene_artifacts"])
+        if stage == "review" and inputs["cross_chapter_window"]["sources"]:
+            result["issues"].extend(ProseTransport()(stage, inputs)["issues"])
+        if stage == "rereview":
+            for check in result["resolution_checks"]:
+                prior = next(issue for issue in inputs["review"]["issues"] if issue["code"] == check["code"])
+                if prior.get("supporting_evidence"):
+                    check["supporting_evidence"] = prior["supporting_evidence"]
+                    start = inputs["revision"]["text"].index(CONTINUITY_REPAIRED)
+                    check["evidence"] = {"start": start, "end": start + len(CONTINUITY_REPAIRED), "quote": CONTINUITY_REPAIRED}
+        return result
+
+
+class ContinuousSpatialTransport(JointCraftTransport):
+    mechanism_id = "spatial-anchor"
+    policy = validate_craft_policy({"schema_version": "narrative-craft-budget.v2"})
+    broken = "他冲向敌人，又退了几步，回头时出口已被挡住。"
+    repaired = "他由西桥头向东踏出两步，横剑退回桥柱内侧；守门人从他右肩后堵住西岸出口。"
+
+
+@pytest.mark.parametrize("continuous_spatial", [False, True])
+def test_same_chapter_combines_accepted_history_and_adopted_craft_through_book_acceptance(tmp_path, continuous_spatial):
+    from tests.integration.test_cross_chapter_prose_review_postgres import REPAIRED as CONTINUITY_REPAIRED
+
+    transport = ContinuousSpatialTransport(False) if continuous_spatial else JointCraftTransport(False)
+    project, authority, chapter, principal, worker, book, candidates, plans, _ = make_book(
+        tmp_path, transport, prepare_plans=transport.prepare)
+    for number in (1, 2):
+        if number == 2 and continuous_spatial:
+            from novel_forge.modules.mkaos_authority.runtime_usage import list_runtime_usage
+            from novel_forge.modules.mkaos_authority.domain import NarrativeIntelligenceNeed, select_narrative_intelligence
+
+            delivered = list_runtime_usage(DATABASE_URL, project_id=project, book_id=f"book:{project}", target_capability_id="prose.chapter.draft")
+            recent = tuple(use for row in delivered for use in row.get("craft_usage", []))
+            assert recent and all(use["external_receipt_ids"] and use["chapter"] == 1 for use in recent)
+            context = {"chapter_number": 2, "scene_goal": ["交战位置与通路难以想象，连续战斗仍须交代距离和出口"]}
+            mechanism = transport.card.content["abstract_content"]["craft_mechanism"]
+            assert craft_candidate_assessment(mechanism, context=context, recent_usage=recent,
+                policy=DEFAULT_CRAFT_POLICY)["rejection_reason"] == "CRAFT_COOLDOWN"
+            selected = select_narrative_intelligence(NarrativeIntelligenceNeed(scope="SCENE", target_stage="chapter_plan.generate",
+                craft_context=context, craft_policy=transport.policy, recent_craft_usage=recent),
+                ({"asset_version_id": transport.card_id, "content_hash": transport.card.content_hash, "content": transport.card.content},))
+            assert selected["selected"][0]["knowledge_card_asset_version_id"] == transport.card_id
+            budget = selected["selected"][0]["craft_assessment"]["budget_assessment"]
+            assert budget["in_cooldown"] and not budget["temporal_budget_applied"]
+            assert budget["creative_benefit"] == "NOT_PROVEN"
+        plan = plans[number]
+        dispatched = authority.submit_chapter(SubmitBookChapterCommand(
+            book_run_id=book.book_run_id, chapter_number=number, title="双源修订", premise="既定代价不可无因消失。",
+            chapter_plan_asset_version_id=plan["asset_version_id"], chapter_plan_content_hash=plan["content_hash"],
+            context_candidates=tuple(plan if item["asset_type"] == "chapter_plan" else item for item in candidates),
+            preparation_report={"stage_context_token_budgets": {stage: 64000 for stage in ("memo", "draft", "review", "revision", "rereview")}},
+        ), principal=principal)
+        for _ in range(len(ChapterNode) * 3):
+            tick = chapter.scheduler(principal=worker).tick(project_id=project, root_operation_id=dispatched["chapter_root_operation_id"])
+            if tick.saga_status == "SUCCEEDED":
+                break
+        assert tick.saga_status == "SUCCEEDED"
+        authority.reconcile_chapter(dispatched["chapter_request_id"])
+        authority.accept_chapter(dispatched["chapter_request_id"], principal=principal)
+    workspace = chapter.query.require_workspace(project_id=project, root_operation_id=dispatched["chapter_root_operation_id"])
+    selected = next(item for item in workspace["artifacts"]["candidates"] if item["asset_type"] == "best_draft_candidate")
+    assert transport.repaired in selected["content"]["text"] and CONTINUITY_REPAIRED in selected["content"]["text"]
+    diagnoses = workspace["artifacts"]["diagnoses"]
+    review = next(item["content"] for item in diagnoses if item["asset_type"] == "review_report")
+    after = next(item["content"] for item in diagnoses if item["asset_type"] == "re_review_report")
+    assert {issue["category"] for issue in review["issues"]} == {"CRAFT_EFFECT", "CAUSAL_CARRYOVER"}
+    assert set(after["resolved_issue_codes"]) == {issue["code"] for issue in review["issues"]}
+    assert after["cross_chapter_window"] == review["cross_chapter_window"]
+    assert after["craft_checks"][0]["knowledge_card_asset_version_id"] == transport.card_id
+    assert workspace["acceptance"]["accepted_through_chapter"] == 2
+    if continuous_spatial:
+        assert all(strategy["policy"] == transport.policy for strategy in transport.strategies.values())
+        assert all(inputs["realization_contract"]["craft_strategy"]["policy"] == transport.policy for stage, inputs in transport.calls if stage == "draft")
+        assert all(inputs["draft"]["realization_contract"]["craft_strategy"]["policy"] == transport.policy for stage, inputs in transport.calls if stage == "review")
+        assert all(not item["reader_effect_proven"] for item in workspace["craft_trace"]["effect_observations"])
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT request_payload FROM authority_external_effect WHERE project_id=%s AND capability='model.rereview' ORDER BY created_at", [project])
+        payload = uow.cursor.fetchall()[-1][0]
+        task = build_provider_task_view("rereview", payload["input"])
+        assert task["prose_comparison"]["original"]["text"] == payload["input"]["original_draft"]["text"]
+        assert task["craft_review_targets"] and task["cross_chapter_window"]["sources"]
+        binding = payload["_production_execution"]["capability_runtime"]
+        admission = uow.repositories.asset_documents.require(project_id=project, asset_version_id=binding["provider_admission_asset_version_id"]).content["contract"]
+        assert admission["prompt_materialization"]["provider_view"]["component_hashes"]["provider_task_view"] == craft_hash(task)
+
+
+class JointQualityCorrectionTransport(JointCraftTransport):
+    def __init__(self):
+        super().__init__(False)
+        self.quality_calls = 0
+
+    def prepare(self, project, workspace, candidates):
+        candidates[:] = [candidate for candidate in candidates if candidate["asset_type"] != "longform_quality_report"]
+        return super().prepare(project, workspace, candidates)
+
+    def __call__(self, stage, inputs):
+        if stage == "revision" and inputs.get("quality_edit_contract"):
+            self.calls.append((stage, deepcopy(inputs)))
+            draft = inputs["draft"]
+            scope = inputs["quality_edit_contract"]
+            located = scope["permitted_ranges"][0]
+            span = located["evidence_locator"]
+            replacement = span["quote"] + "（原地付出代价）"
+            text = draft["text"][:span["start"]] + replacement + draft["text"][span["end"]:]
+            artifacts = deepcopy(draft["scene_artifacts"])
+            artifacts[0]["text"] = artifacts[0]["text"].replace(span["quote"], replacement, 1)
+            return {"text": text, "scene_artifacts": artifacts, "resolved_issue_codes": [],
+                "edits": [{**span, "replacement": replacement, "issue_codes": [located["code"]]}]}
+        result = super().__call__(stage, inputs)
+        if stage == "quality_longform" and inputs["revision"]["chapter"] == 2:
+            self.quality_calls += 1
+            if self.quality_calls == 1:
+                row = next(item for item in result["dimensions"] if item["dimension"] == "timeline_consistency")
+                row.update(gate_status="FAILED", score=30, evidence_locations=[{"start": 0, "end": 8, "claim": "Fixture bounded Quality correction location"}],
+                    issue_codes=["QUALITY_CAUSAL_SCOPE_FIXTURE"], revision_strategies=["Clarify the local cost without replacing the scene"])
+        if stage == "rereview" and inputs["revision"].get("quality_edit_contract"):
+            result["quality_resolution_checks"] = [{"observation": item, "status": "SATISFIED", "preservation": "PRESERVED",
+                "evidence": {"start": 0, "end": 18, "quote": inputs["revision"]["text"][:18]},
+                "reason": "Fixture only: corrected local expression keeps frozen Craft and historical cost."}
+                for item in inputs["revision"]["quality_action_observations"]]
+        return result
+
+
+def test_joint_quality_correction_uses_selected_original_frozen_ranges_and_explicit_quality_checks(tmp_path):
+    from tests.integration.test_cross_chapter_prose_review_postgres import REPAIRED as CONTINUITY_REPAIRED
+    transport = JointQualityCorrectionTransport()
+    project, authority, chapter, principal, worker, book, candidates, plans, _ = make_book(tmp_path, transport, prepare_plans=transport.prepare)
+    for number in (1, 2):
+        plan = plans[number]
+        dispatched = authority.submit_chapter(SubmitBookChapterCommand(book_run_id=book.book_run_id, chapter_number=number,
+            title="Quality 双源修订", premise="对既定代价作局部澄清。", chapter_plan_asset_version_id=plan["asset_version_id"],
+            chapter_plan_content_hash=plan["content_hash"], context_candidates=tuple(plan if item["asset_type"] == "chapter_plan" else item for item in candidates),
+            preparation_report={"stage_context_token_budgets": {stage: 64000 for stage in ("memo", "draft", "review", "revision", "rereview")}}), principal=principal)
+        for _ in range(len(ChapterNode) * 5):
+            tick = chapter.scheduler(principal=worker).tick(project_id=project, root_operation_id=dispatched["chapter_root_operation_id"])
+            if tick.saga_status == "SUCCEEDED":
+                break
+        assert tick.saga_status == "SUCCEEDED", tick
+        authority.reconcile_chapter(dispatched["chapter_request_id"])
+        authority.accept_chapter(dispatched["chapter_request_id"], principal=principal)
+    correction_inputs = next(inputs for stage, inputs in transport.calls if stage == "revision" and inputs.get("quality_edit_contract"))
+    after_inputs = next(inputs for stage, inputs in transport.calls if stage == "rereview" and inputs["revision"].get("quality_edit_contract"))
+    assert after_inputs["original_draft"]["text"] == correction_inputs["draft"]["text"]
+    assert REPAIRED in after_inputs["original_draft"]["text"] and CONTINUITY_REPAIRED in after_inputs["original_draft"]["text"]
+    assert after_inputs["review"]["cross_chapter_window"] == correction_inputs["review"]["cross_chapter_window"]
+    assert after_inputs["review"]["craft_checks"] == correction_inputs["review"]["craft_checks"]
+    task = build_provider_task_view("revision", correction_inputs)
+    assert task["quality_targeted_repair"]["permitted_ranges"]
+    workspace = chapter.query.require_workspace(project_id=project, root_operation_id=dispatched["chapter_root_operation_id"])
+    accepted_id = workspace["acceptance"]["outcome"]["content"]["accepted_draft_asset_version_id"]
+    selected = next(item for item in workspace["artifacts"]["candidates"] if item["asset_version_id"] == accepted_id)
+    assert "（原地付出代价）" in selected["content"]["text"]
+    assert selected["content"]["selected_review"]["quality_resolution_checks"][0]["status"] == "SATISFIED"
+    assert transport.quality_calls == 2

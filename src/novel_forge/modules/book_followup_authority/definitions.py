@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .prose_review import PROSE_REVIEW_DEFINITION
+
 from .contracts import (
     BOOK_FOLLOWUP_DEFINITION_VERSION,
     LONGFORM_RECAP_DEFINITION,
@@ -13,7 +15,9 @@ def book_followup_operation_definitions(
     *, application_build_id: str, commit_sha: str
 ) -> tuple[dict[str, Any], ...]:
     if not application_build_id or len(commit_sha) != 40:
-        raise ValueError("Book follow-up definitions require build id and full commit SHA")
+        raise ValueError(
+            "Book follow-up definitions require build id and full commit SHA"
+        )
     command = {
         "type": "object",
         "required": ["project_id", "input_asset_version_ids", "payload"],
@@ -38,6 +42,14 @@ def book_followup_operation_definitions(
     }
     specifications = (
         (
+            PROSE_REVIEW_DEFINITION,
+            "longform_prose_review_report",
+            "longform.prose_review.report",
+            (),
+            ("model.longform_prose_review",),
+            180,
+        ),
+        (
             READER_OUTCOME_DEFINITION,
             "reader_outcome_report",
             "reader_outcome.report",
@@ -55,7 +67,14 @@ def book_followup_operation_definitions(
         ),
     )
     definitions: list[dict[str, Any]] = []
-    for name, asset_type, output_key, auxiliary_types, capabilities, timeout in specifications:
+    for (
+        name,
+        asset_type,
+        output_key,
+        auxiliary_types,
+        capabilities,
+        timeout,
+    ) in specifications:
         definitions.append(
             {
                 "name": name,
@@ -105,6 +124,13 @@ def book_followup_operation_definitions(
                 "irreversible_effect_policy": {"allowed": False},
                 "external_capabilities": list(capabilities),
                 "projection_consumers": [
+                    "book_prose_review_progress",
+                    "author_editor",
+                    "plan_change_proposal",
+                    "book_editorial_completion",
+                ]
+                if name == PROSE_REVIEW_DEFINITION
+                else [
                     "reader_outcome_projection"
                     if name == READER_OUTCOME_DEFINITION
                     else "longform_recap_projection",
@@ -115,7 +141,7 @@ def book_followup_operation_definitions(
                 "migration_owner": "book-followup-authority",
                 "legacy_entrypoints": (
                     []
-                    if name == READER_OUTCOME_DEFINITION
+                    if name != LONGFORM_RECAP_DEFINITION
                     else [
                         "novel_forge.modules.longform_recap.service.run_longform_recap"
                     ]

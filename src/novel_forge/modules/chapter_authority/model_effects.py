@@ -377,7 +377,7 @@ class ExternalEffectChapterModelPort:
         reservation_tokens: int | None = None,
         pre_send_assertion: Callable[[], None] | None = None,
     ) -> ModelProviderResult:
-        if stage not in MODEL_CAPABILITY_STAGES | {"reader_outcome"}:
+        if stage not in MODEL_CAPABILITY_STAGES | {"reader_outcome", "longform_prose_review"}:
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}"
             )
@@ -1775,8 +1775,8 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise KernelError("MODEL_RESPONSE_INVALID", "model response must be an object")
     if stage == "draft":
-        text = str(raw.get("text") or "").strip()
-        if not text:
+        text = str(raw.get("text") or "")
+        if not text.strip():
             raise KernelError("MODEL_RESPONSE_INVALID", "draft response has no text")
         return {"text": text, "scene_artifacts": raw.get("scene_artifacts", [])}
     if stage == "agent_session":
@@ -1873,7 +1873,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                 raise KernelError(
                     "MODEL_RESPONSE_INVALID", "review issue must be an object"
                 )
-            code = str(item.get("code") or item.get("dimension") or "").strip().upper()
+            code = str(item.get("code") or item.get("dimension") or "").strip()
             severity = _review_severity(str(item.get("severity") or ""))
             message = str(item.get("message") or "").strip()
             if not code or not message:
@@ -1898,6 +1898,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             ),
             **({"knowledge_checks": raw["knowledge_checks"]} if "knowledge_checks" in raw else {}),
             **({"craft_checks": raw["craft_checks"]} if "craft_checks" in raw else {}),
+            **({"quality_resolution_checks": raw["quality_resolution_checks"]} if "quality_resolution_checks" in raw else {}),
             **({"craft_preservation_checks": raw["craft_preservation_checks"]} if "craft_preservation_checks" in raw else {}),
             **({"preservation_checks": raw["preservation_checks"]} if "preservation_checks" in raw else {}),
         }
@@ -2008,6 +2009,9 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                 }
             )
         return {"dimensions": normalized_dimensions}
+    if stage == "longform_prose_review":
+        from novel_forge.modules.book_followup_authority.prose_review import normalize_prose_review_output
+        return normalize_prose_review_output(raw)
     if stage == "reader_outcome":
         state = raw.get("reader_state")
         evidence = raw.get("evidence")
@@ -2055,14 +2059,12 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             "evidence": [dict(item) for item in evidence],
         }
     text = str(raw.get("text") or raw.get("revised_text") or "")
-    if "edits" not in raw:
-        text = text.strip()
     resolved = [
         str(item).strip()
         for item in raw.get("resolved_issue_codes", [])
         if str(item).strip()
     ]
-    if not text:
+    if not text.strip():
         raise KernelError(
             "MODEL_RESPONSE_INVALID", "revision response has no revised text"
         )

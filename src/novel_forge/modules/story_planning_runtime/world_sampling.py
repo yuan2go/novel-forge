@@ -6,7 +6,7 @@ from typing import Any
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.routing_bootstrap import authorization_hash, bootstrap_command_hash
-from novel_forge.storage.authority_asset_store import AuthorityAssetDocument, AuthorityAssetQuery
+from novel_forge.storage.authority_asset_store import AuthorityAssetDocument, AuthorityAssetDocumentRepository
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .domain import FrozenPlanningInput
@@ -61,30 +61,37 @@ class FrozenWorldSample:
 def require_world_sample_source(database_url: str, *, project_id: str, book_id: str,
                                 source_operation_id: str, stage: str,
                                 generation_sample: dict[str, str] | None = None) -> FrozenWorldSample:
+    with AuthorityUnitOfWork(database_url) as uow:
+        return _require_world_sample_source(uow.cursor, project_id=project_id, book_id=book_id,
+            source_operation_id=source_operation_id, stage=stage, generation_sample=generation_sample)
+
+
+def _require_world_sample_source(cursor: Any, *, project_id: str, book_id: str,
+                                source_operation_id: str, stage: str,
+                                generation_sample: dict[str, str] | None = None) -> FrozenWorldSample:
     if stage not in WORLD_SAMPLE_STAGES:
         raise KernelError("WORLD_SAMPLE_TASK_UNSUPPORTED", "World sampling requires one native World Provider stage")
     if generation_sample is not None and stage != "world_candidates.evaluate":
         raise KernelError("WORLD_SAMPLE_TASK_UNSUPPORTED", "only reference evaluation may consume a generator sample")
-    with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute("""SELECT operation.definition_name,operation.definition_version,
-            operation.command_payload->'payload',generation.input_snapshot,generation.input_snapshot_hash,
-            operation.input_asset_snapshot
-            FROM authority_operation operation JOIN authority_story_planning_generation generation USING(operation_id)
-            WHERE operation.project_id=%s AND operation.operation_id=%s AND generation.project_id=operation.project_id
-              AND generation.book_id=%s""", [project_id, source_operation_id, book_id])
-        row = uow.cursor.fetchone()
-        if (not row or row[:2] != ("story_planning.generate", "1.16.0")
-            or row[2].get("generator_operation_name") != "chapter_plan.generate"
-            or not row[2].get("world_preparation_request") or row[2].get("routing_bootstrap_authorization_id")
-            or row[2].get("repair_of_candidate_id") or row[2].get("repair_of_operation_id")
-            or row[2].get("project_id") != project_id or row[2].get("book_id") != book_id
-            or authorization_hash(row[3]) != row[4]):
-            raise KernelError("WORLD_SAMPLE_SOURCE_INVALID", "World sample requires the original frozen native ChapterPlan task")
-        source_payload, typed_inputs, admitted = row[2], row[3], row[5]
-        admitted_versions = {(item["asset_version_id"], item["content_hash"]) for item in admitted}
-        if any((item["asset_version_id"], item["content_hash"]) not in admitted_versions for item in typed_inputs):
-            raise KernelError("WORLD_SAMPLE_INPUT_DRIFT", "Planning typed inputs differ from the admitted native snapshot")
-    query = AuthorityAssetQuery(database_url)
+    cursor.execute("""SELECT operation.definition_name,operation.definition_version,
+        operation.command_payload->'payload',generation.input_snapshot,generation.input_snapshot_hash,
+        operation.input_asset_snapshot
+        FROM authority_operation operation JOIN authority_story_planning_generation generation USING(operation_id)
+        WHERE operation.project_id=%s AND operation.operation_id=%s AND generation.project_id=operation.project_id
+          AND generation.book_id=%s""", [project_id, source_operation_id, book_id])
+    row = cursor.fetchone()
+    if (not row or row[:2] != ("story_planning.generate", "1.16.0")
+        or row[2].get("generator_operation_name") != "chapter_plan.generate"
+        or not row[2].get("world_preparation_request") or row[2].get("routing_bootstrap_authorization_id")
+        or row[2].get("repair_of_candidate_id") or row[2].get("repair_of_operation_id")
+        or row[2].get("project_id") != project_id or row[2].get("book_id") != book_id
+        or authorization_hash(row[3]) != row[4]):
+        raise KernelError("WORLD_SAMPLE_SOURCE_INVALID", "World sample requires the original frozen native ChapterPlan task")
+    source_payload, typed_inputs, admitted = row[2], row[3], row[5]
+    admitted_versions = {(item["asset_version_id"], item["content_hash"]) for item in admitted}
+    if any((item["asset_version_id"], item["content_hash"]) not in admitted_versions for item in typed_inputs):
+        raise KernelError("WORLD_SAMPLE_INPUT_DRIFT", "Planning typed inputs differ from the admitted native snapshot")
+    query = AuthorityAssetDocumentRepository(cursor)
     context_stage = "world_candidates.generate" if generation_sample is not None else stage
     context = query.require(project_id=project_id, logical_ref=f"world_preparation/context/{source_operation_id}/{context_stage}")
     source = query.require(project_id=project_id, logical_ref=f"world_preparation/{source_operation_id}/source")
@@ -108,9 +115,8 @@ def require_world_sample_source(database_url: str, *, project_id: str, book_id: 
         from .application import _command_from_payload
         from .execution import PostgresPlanningExecutionPreparer
 
-        with AuthorityUnitOfWork(database_url) as uow:
-            subject = require_reference_subject(uow.cursor, project_id=project_id, binding=generation_sample,
-                allowed_types=frozenset({"world_provider_sample"}))
+        subject = require_reference_subject(cursor, project_id=project_id, binding=generation_sample,
+            allowed_types=frozenset({"world_provider_sample"}))
         if (subject["content"].get("source_operation_id") != source_operation_id
             or subject["content"].get("context") != _binding(context)
             or subject["content"].get("source") != source_ref):
@@ -127,16 +133,15 @@ def require_world_sample_source(database_url: str, *, project_id: str, book_id: 
     context_task = PlanningWorldPreparation.generation_stage(source_contract, source_ref, selection).task if subject else provider_stage.task
     if context.content.get("world_preparation") != context_task:
         raise KernelError("WORLD_SAMPLE_CONTEXT_DRIFT", "World task differs from the frozen production role Context")
-    with AuthorityUnitOfWork(database_url) as uow:
-        for document in native_documents:
-            if (document.lifecycle != "ACTIVE" or document.eligibility != "ELIGIBLE" or document.governance != "CLEAR"
-                or document.content_hash != authorization_hash(document.content)):
-                raise KernelError("WORLD_SAMPLE_CONTEXT_DRIFT", "World sampling requires unchanged governed native evidence")
-            uow.cursor.execute("""SELECT 1 FROM authority_operation_output_asset
-                WHERE operation_id=%s AND asset_version_id=%s AND content_hash=%s""",
-                [source_operation_id, document.asset_version_id, document.content_hash])
-            if uow.cursor.fetchone() is None:
-                raise KernelError("WORLD_SAMPLE_PROVENANCE_INVALID", "World source and Context must belong to the original native Operation")
+    for document in native_documents:
+        if (document.lifecycle != "ACTIVE" or document.eligibility != "ELIGIBLE" or document.governance != "CLEAR"
+            or document.content_hash != authorization_hash(document.content)):
+            raise KernelError("WORLD_SAMPLE_CONTEXT_DRIFT", "World sampling requires unchanged governed native evidence")
+        cursor.execute("""SELECT 1 FROM authority_operation_output_asset
+            WHERE operation_id=%s AND asset_version_id=%s AND content_hash=%s""",
+            [source_operation_id, document.asset_version_id, document.content_hash])
+        if cursor.fetchone() is None:
+            raise KernelError("WORLD_SAMPLE_PROVENANCE_INVALID", "World source and Context must belong to the original native Operation")
     return FrozenWorldSample(source_payload, tuple(FrozenPlanningInput(**item) for item in typed_inputs),
                              documents, context, source, provider_stage, subject, derived_context)
 
@@ -239,19 +244,25 @@ def _binding(document: AuthorityAssetDocument) -> dict[str, str]:
 
 def require_world_reference(database_url: str, *, frozen: FrozenWorldSample, binding: Any,
                             evaluator_actor_id: str) -> dict[str, Any]:
+    with AuthorityUnitOfWork(database_url) as uow:
+        return _require_world_reference(uow.cursor, frozen=frozen, binding=binding,
+            evaluator_actor_id=evaluator_actor_id)
+
+
+def _require_world_reference(cursor: Any, *, frozen: FrozenWorldSample, binding: Any,
+                            evaluator_actor_id: str) -> dict[str, Any]:
     from novel_forge.modules.chapter_quality_authority.reference_sampling import require_adjudicated_reference
     from novel_forge.modules.hierarchical_planning.causal_domain import DIRECTOR_DIMENSIONS
 
     generation = frozen.stage.task["generation_ref"]
-    with AuthorityUnitOfWork(database_url) as uow:
-        return require_adjudicated_reference(uow.cursor, project_id=frozen.command_payload["project_id"], binding=binding,
-            target_id=generation["asset_version_id"], target_hash=generation["content_hash"],
-            generators=[frozen.generation_sample["generation_actor_id"] if frozen.generation_sample else frozen.command_payload["actor_id"]],
-            evaluator_actor_id=evaluator_actor_id,
-            chapter=int(frozen.command_payload["world_preparation_request"]["accepted_through_chapter"]) + 1,
-            expected_dimensions=tuple(f"{item['transition']['transition_id']}:{dimension}"
-                for item in frozen.stage.task["generated_portfolio"]["candidates"] for dimension in DIRECTOR_DIMENSIONS),
-            allowed_statuses={"PASSED", "FAILED"})
+    return require_adjudicated_reference(cursor, project_id=frozen.command_payload["project_id"], binding=binding,
+        target_id=generation["asset_version_id"], target_hash=generation["content_hash"],
+        generators=[frozen.generation_sample["generation_actor_id"] if frozen.generation_sample else frozen.command_payload["actor_id"]],
+        evaluator_actor_id=evaluator_actor_id,
+        chapter=int(frozen.command_payload["world_preparation_request"]["accepted_through_chapter"]) + 1,
+        expected_dimensions=tuple(f"{item['transition']['transition_id']}:{dimension}"
+            for item in frozen.stage.task["generated_portfolio"]["candidates"] for dimension in DIRECTOR_DIMENSIONS),
+        allowed_statuses={"PASSED", "FAILED"})
 
 
 def world_sample_result_review(frozen: FrozenWorldSample, result: dict[str, Any], reference: dict[str, Any] | None) -> dict[str, Any]:
@@ -350,15 +361,14 @@ def world_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list[s
             if not provider["real_model_call"] or provider["result"] != content.get("sampled_output"):
                 continue
             metadata = payload["world_sampling"]
-            database_url = cursor.connection.info.dsn
-            frozen = require_world_sample_source(database_url, project_id=project_id, book_id=payload["book_id"],
+            frozen = _require_world_sample_source(cursor, project_id=project_id, book_id=payload["book_id"],
                 source_operation_id=metadata["source_operation_id"], stage=stage, generation_sample=metadata.get("generation_sample"))
             if (content.get("source_operation_id") != metadata["source_operation_id"]
                 or content.get("source") != _binding(frozen.source) or content.get("context") != _binding(frozen.context)
                 or metadata.get("stage_hash") != authorization_hash(dict(frozen.stage.task))
                 or content.get("generation_sample") != metadata.get("generation_sample")):
                 continue
-            reference = require_world_reference(database_url, frozen=frozen, binding=payload["reference_evaluation"], evaluator_actor_id=actor)
+            reference = _require_world_reference(cursor, frozen=frozen, binding=payload["reference_evaluation"], evaluator_actor_id=actor)
             reviewed = world_sample_result_review(frozen, provider["result"], reference)
             if (reviewed["rule_validation"] != content.get("rule_validation")
                 or reviewed["reference_evaluation"] != content.get("reference_evaluation")):

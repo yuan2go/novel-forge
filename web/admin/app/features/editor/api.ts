@@ -1,54 +1,59 @@
-import { fetchJson, postJson } from "../../shared/api";
-import type { AssetRow, FeatureAssetRow, ProjectRow } from "../../shared/types";
+import { fetchJson } from "../../shared/api";
+import type { ProjectRow } from "../../shared/types";
 
-export type EditorArtifactRow = FeatureAssetRow & {
-  target_draft_path?: string;
-  operations?: Array<Record<string, unknown>>;
-  summary?: Record<string, unknown>;
+export type EditorScope = { project_id: string; workspace_id: string; book_id: string; chapter: number };
+export type EditorDraft = EditorScope & { asset_version_id: string; asset_type: string; title: string; content_hash: string };
+export type EditorCandidate = { asset_version_id: string; content_hash: string; content: {
+  text: string; text_hash: string; status: string; base_asset_version_id: string;
+  edits: Array<{start: number; end: number; before: string; after: string}>;
+} };
+export type DraftEditorState = EditorScope & {
+  base_asset_version_id: string; base_asset_hash: string; base_text_hash: string; text: string; title: string;
+  book_runs: string[];
+  book_request: {chapter_request_id: string; book_run_id: string; root_operation_id: string; book_version: number; is_current: boolean; unaccepted: boolean} | null;
+  version: number; candidates: EditorCandidate[]; decisions: Array<{asset_version_id: string; content: Record<string, unknown>}>;
+  diagnostics: Array<{asset_version_id: string; content: {issues?: Array<{code: string; message: string; severity: string}>}}>;
+  session: {status: string; candidate_asset_version_id: string; decision_asset_version_id: string} | null;
 };
-
-export type DraftEditorState = {
-  path: string;
-  id: string;
-  title: string;
-  chapter?: number | string;
-  text: string;
-  version_index?: number;
-  root_draft_id?: string;
-  status?: string;
-  updated_at?: string;
+export type EditorCommand = EditorScope & {
+  action: "save" | "accept" | "reject"; base_asset_version_id: string; base_asset_hash: string;
+  base_text_hash: string; expected_version: number; idempotency_key: string;
+  text?: string; rights_basis?: "ORIGINAL_AUTHOR_INPUT" | "AUTHORIZED_INPUT";
+  allowed_ranges?: Array<{start: number; end: number}>; candidate_asset_version_id?: string; rationale?: string;
+  source_review_run_id?: string; source_lineage_id?: string;
 };
+export type EditorResult = {version: number; candidate_asset_version_id: string; decision_asset_version_id: string; editor_status: string; replayed: boolean};
 
-export function loadEditorData(projectId?: string) {
-  return Promise.all([
-    fetchJson<ProjectRow[]>("/product/projects"),
-    fetchJson<EditorArtifactRow[]>(projectId ? `/product/editor/artifacts?project_id=${encodeURIComponent(projectId)}&limit=160` : "/product/editor/artifacts?limit=160"),
-    fetchJson<AssetRow[]>(projectId ? `/product/projects/${encodeURIComponent(projectId)}/assets?limit=160` : "/assets?limit=120&rank=path")
-  ]);
+export function loadEditorProjects() { return fetchJson<ProjectRow[]>("/product/projects"); }
+export function loadEditorDrafts(projectId: string) {
+  return fetchJson<EditorDraft[]>(`/product/editor/drafts?project_id=${encodeURIComponent(projectId)}`);
 }
-
-export function createEditorPatch(draftPath: string, instructions: string, workspacePath?: string) {
-  return postJson("/product/editor/patch", {
-    draft_path: draftPath,
-    instructions,
-    operations: [],
-    workspace_path: workspacePath || null
+export function loadDraftEditor(draft: EditorDraft) {
+  const params = new URLSearchParams({ project_id: draft.project_id, workspace_id: draft.workspace_id,
+    book_id: draft.book_id, chapter: String(draft.chapter), base_asset_version_id: draft.asset_version_id });
+  return fetchJson<DraftEditorState>(`/product/editor/draft?${params}`);
+}
+export function submitEditorCommand(body: EditorCommand) {
+  return fetchJson<EditorResult>("/product/editor/commands", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+}
+export function requestAuthorReview(state: DraftEditorState, idempotencyKey: string) {
+  if (state.book_request) return fetchJson<{root_operation_id: string; query_url: string}>("/product/editor/book-reviews", {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({
+      project_id: state.project_id, workspace_id: state.workspace_id, book_id: state.book_id,
+      chapter_request_id: state.book_request.chapter_request_id, expected_book_version: state.book_request.book_version,
+      expected_root_operation_id: state.book_request.root_operation_id,
+      candidate_asset_version_id: state.session?.candidate_asset_version_id, decision_asset_version_id: state.session?.decision_asset_version_id,
+      idempotency_key: idempotencyKey})});
+  return fetchJson<{root_operation_id: string; query_url: string}>("/product/production/chapter-authority/commands", {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({
+      project_id: state.project_id, workspace_id: state.workspace_id, book_id: state.book_id, chapter: state.chapter,
+      idempotency_key: idempotencyKey, author_candidate_asset_version_id: state.session?.candidate_asset_version_id,
+      author_decision_asset_version_id: state.session?.decision_asset_version_id
+    })
   });
 }
 
-export function applyEditorPatch(patchPath: string, operationIds: string[] = []) {
-  return postJson("/product/editor/apply", {
-    patch_path: patchPath,
-    apply: true,
-    change_summary: operationIds.length ? "selected editor patch operations applied from editor workbench" : "applied from editor workbench",
-    operation_ids: operationIds
-  });
-}
-
-export function createDraftDiffReport(basePath: string, targetPath: string) {
-  return postJson("/product/editor/diff-report", { base_path: basePath, target_path: targetPath });
-}
-
-export function loadDraftEditor(path: string) {
-  return fetchJson<DraftEditorState>(`/product/drafts/editor?path=${encodeURIComponent(path)}`);
+export type AuthorReviewStatus = {root_operation_id: string; run: {status: string; operations: Array<{operation_id: string; definition_name: string; status: string}>}; acceptance: {status: string} | null; artifacts: Record<string, Array<{asset_version_id: string; asset_type: string; content: Record<string, unknown>}>>};
+export function loadAuthorReview(projectId: string, rootOperationId: string) {
+  return fetchJson<AuthorReviewStatus>(`/product/production/chapter-authority/run?${new URLSearchParams({project_id: projectId, root_operation_id: rootOperationId, include_workspace: "true"})}`);
 }

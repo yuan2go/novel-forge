@@ -80,6 +80,7 @@ def register_validation_runtime_definitions(
         )
         if item["name"] == "reader_outcome.evaluate"
     )
+    prose_review = next(item for item in book_followup_operation_definitions(application_build_id=application_build_id, commit_sha=commit_sha) if item["name"] == "longform.prose_review")
     narrative_evaluation = narrative_semantic_evaluation_definition(
         application_build_id=NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
         commit_sha=commit_sha,
@@ -94,7 +95,7 @@ def register_validation_runtime_definitions(
     from novel_forge.modules.story_planning_runtime.world_sampling import world_sample_definitions
 
     with AuthorityUnitOfWork(database_url) as uow:
-        for item in (planning, reader, narrative_evaluation, *chapter, *chapter_provider_sample_definitions(
+        for item in (planning, reader, prose_review, narrative_evaluation, *chapter, *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha,
         ), *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha, reference_samples=True,
@@ -108,6 +109,7 @@ def register_validation_runtime_definitions(
     return {
         "planning": definition_hash(planning),
         "reader_proxy": definition_hash(reader),
+        "prose_review": definition_hash(prose_review),
         "narrative_evaluation": definition_hash(narrative_evaluation),
     }
 

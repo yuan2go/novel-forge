@@ -122,6 +122,7 @@ def admit_single_chapter_saga(
         commit_sha=request.commit_sha,
         model_effects_required=registry.model_effects_required,
         semantic_retrieval_available=registry.semantic_retrieval_available,
+        author_input=bool((request.preparation_report or {}).get("author_draft_adoption")),
     )
     root_definition = chapter_root_operation_definition(
         application_build_id=request.application_build_id,
@@ -217,6 +218,7 @@ def run_single_chapter_slice(
         application_build_id=request.application_build_id,
         commit_sha=request.commit_sha,
         model_effects_required=registry.model_effects_required,
+        author_input=bool((request.preparation_report or {}).get("author_draft_adoption")),
     )
     root_definition = chapter_root_operation_definition(
         application_build_id=request.application_build_id,
@@ -255,6 +257,20 @@ def run_single_chapter_slice(
         ),
         context=admission,
     )["operation_id"]
+    if (request.preparation_report or {}).get("author_book_replacement"):
+        from novel_forge.modules.book_authority.author_revision import (
+            require_author_replacement_dispatch,
+        )
+
+        require_author_replacement_dispatch(
+            database_url,
+            command_payload={
+                "book_id": request.book_id,
+                "chapter": request.chapter,
+                "preparation_report": dict(request.preparation_report or {}),
+            },
+            root_operation_id=root,
+        )
     _transition_root_to_executing(database_url, request, root)
     graph_context = GraphCommandContext(
         project_id=request.project_id,
@@ -478,6 +494,7 @@ def _run_successful_attempt(
         command=worker,
         node=node,
         registry=registry,
+        author_input=bool((request.preparation_report or {}).get("author_draft_adoption")),
     )
     delivery = None
     if node is ChapterNode.EXPORT:
@@ -601,6 +618,9 @@ def _command(
     definition_version: str = CHAPTER_SLICE_DEFINITION_VERSION,
     input_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if definition_name == ChapterNode.DRAFT.definition_name and (request.preparation_report or {}).get("author_draft_adoption"):
+        from .definitions import CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
+        definition_version = CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
     return {
         "definition_name": definition_name,
         "definition_version": definition_version,

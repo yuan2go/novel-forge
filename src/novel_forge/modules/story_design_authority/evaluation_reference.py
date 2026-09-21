@@ -96,30 +96,38 @@ def require_reference_review(
     database_url: str, *, project_id: str, payload: Mapping[str, Any],
     evaluator_actor_id: str,
 ) -> Mapping[str, Any]:
+    with AuthorityUnitOfWork(database_url) as uow:
+        return _require_reference_review(uow.cursor, project_id=project_id,
+            payload=payload, evaluator_actor_id=evaluator_actor_id)
+
+
+def _require_reference_review(
+    cursor: Any, *, project_id: str, payload: Mapping[str, Any],
+    evaluator_actor_id: str,
+) -> Mapping[str, Any]:
     reference = payload["reference_evaluation"]
     validate_reference_evaluation_binding(reference)
-    with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute(
-            """SELECT version.content,version.content_hash,operation.actor_id,
-                      operation.operation_id
-               FROM authority_asset_version version
-               JOIN authority_asset asset USING(asset_id)
-               JOIN authority_operation_output_asset output
-                 ON output.asset_version_id=version.asset_version_id
-                 AND output.content_hash=version.content_hash
-               JOIN authority_operation operation ON operation.operation_id=output.operation_id
-                 AND operation.project_id=asset.project_id
-               WHERE asset.project_id=%s AND version.asset_version_id=%s
-                 AND asset.asset_type='narrative_design_operator_review'
-                 AND version.governance='CLEAR' AND version.lifecycle='ACTIVE'
-                 AND operation.definition_name='story_design.review.author'
-                 AND operation.status='SUCCEEDED'
-                 AND NOT EXISTS (SELECT 1 FROM authority_external_effect effect
-                     WHERE effect.operation_id=operation.operation_id)
-               ORDER BY output.created_at""",
-            [project_id, reference["asset_version_id"]],
-        )
-        rows = uow.cursor.fetchall()
+    cursor.execute(
+        """SELECT version.content,version.content_hash,operation.actor_id,
+                  operation.operation_id
+           FROM authority_asset_version version
+           JOIN authority_asset asset USING(asset_id)
+           JOIN authority_operation_output_asset output
+             ON output.asset_version_id=version.asset_version_id
+             AND output.content_hash=version.content_hash
+           JOIN authority_operation operation ON operation.operation_id=output.operation_id
+             AND operation.project_id=asset.project_id
+           WHERE asset.project_id=%s AND version.asset_version_id=%s
+             AND asset.asset_type='narrative_design_operator_review'
+             AND version.governance='CLEAR' AND version.lifecycle='ACTIVE'
+             AND operation.definition_name='story_design.review.author'
+             AND operation.status='SUCCEEDED'
+             AND NOT EXISTS (SELECT 1 FROM authority_external_effect effect
+                 WHERE effect.operation_id=operation.operation_id)
+           ORDER BY output.created_at""",
+        [project_id, reference["asset_version_id"]],
+    )
+    rows = cursor.fetchall()
     if len(rows) != 1:
         raise KernelError("NARRATIVE_REFERENCE_PROVENANCE_INVALID",
                           "reference labels require one successful native operator-review author Operation")
@@ -154,19 +162,18 @@ def require_reference_review(
         statuses = {"PASS": "PASSED", "FAIL": "FAILED"}
         if any(value not in statuses for value in verdicts.values()):
             raise KernelError("NARRATIVE_REFERENCE_COVERAGE_INCOMPLETE", "trusted calibration requires determinate native criterion labels")
-        with AuthorityUnitOfWork(database_url) as uow:
-            subject = require_reference_subject(uow.cursor, project_id=project_id,
-                binding={"asset_version_id": payload["candidate_asset_version_id"], "content_hash": payload["candidate_content_hash"]},
-                allowed_types=frozenset({"planning_generation_candidate"}))
-            if (subject["generation_operation_id"] != payload["generation_operation_id"]
-                or subject["generation_actor_id"] != payload["generation_actor_id"]):
-                raise KernelError("NARRATIVE_REFERENCE_NOT_INDEPENDENT", "trusted reference candidate generation lineage differs")
-            adjudicated = require_adjudicated_reference(uow.cursor, project_id=project_id,
-                binding={"protocol_version": reference["protocol_version"], "adjudications": native["adjudications"]},
-                target_id=payload["candidate_asset_version_id"], target_hash=payload["candidate_content_hash"],
-                generators=[payload["generation_actor_id"]], evaluator_actor_id=evaluator_actor_id,
-                chapter=native["scope"]["chapter_start"], chapter_end=native["scope"]["chapter_end"], scope_type=native["scope"]["scope_type"],
-                expected_dimensions=tuple(verdicts), allowed_statuses=set(statuses.values()))
+        subject = require_reference_subject(cursor, project_id=project_id,
+            binding={"asset_version_id": payload["candidate_asset_version_id"], "content_hash": payload["candidate_content_hash"]},
+            allowed_types=frozenset({"planning_generation_candidate"}))
+        if (subject["generation_operation_id"] != payload["generation_operation_id"]
+            or subject["generation_actor_id"] != payload["generation_actor_id"]):
+            raise KernelError("NARRATIVE_REFERENCE_NOT_INDEPENDENT", "trusted reference candidate generation lineage differs")
+        adjudicated = require_adjudicated_reference(cursor, project_id=project_id,
+            binding={"protocol_version": reference["protocol_version"], "adjudications": native["adjudications"]},
+            target_id=payload["candidate_asset_version_id"], target_hash=payload["candidate_content_hash"],
+            generators=[payload["generation_actor_id"]], evaluator_actor_id=evaluator_actor_id,
+            chapter=native["scope"]["chapter_start"], chapter_end=native["scope"]["chapter_end"], scope_type=native["scope"]["scope_type"],
+            expected_dimensions=tuple(verdicts), allowed_statuses=set(statuses.values()))
         if any(label["status"] != statuses[verdicts[label["dimension"]]] for label in adjudicated["labels"]):
             raise KernelError("NARRATIVE_REFERENCE_LABEL_CONFLICT", "operator proxy labels differ from independent native adjudications")
         adjudicated = {**adjudicated, "scope": dict(native["scope"])}
@@ -261,7 +268,7 @@ def narrative_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: li
                 or content.get("candidate_content_hash") != payload["candidate_content_hash"]
                 or content.get("generation_operation_id") != payload["generation_operation_id"]):
                 continue
-            reference = require_reference_review(cursor.connection.info.dsn, project_id=project_id, payload=payload, evaluator_actor_id=actor)
+            reference = _require_reference_review(cursor, project_id=project_id, payload=payload, evaluator_actor_id=actor)
             agreement = reference_agreement(payload=payload, reference=reference, evaluation=provider["result"])
             if agreement != content.get("reference_evaluation") or not reference.get("adjudicated_reference"):
                 continue

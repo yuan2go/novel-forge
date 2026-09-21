@@ -334,6 +334,119 @@ def build_reader_outcome_pack_profile(
     )
 
 
+def build_longform_prose_review_pack_profile(
+    repository_root: str | Path,
+    *,
+    operation_definition_hash: str,
+    pack_id: str = "longform_prose_review_pack",
+) -> LongformCapabilityPackProfile:
+    root, manifest, artifacts = _base(repository_root, pack_id)
+    _require_hash(operation_definition_hash)
+    manifest["identity"]["version"] = "1.1.0"
+    template = next(
+        item
+        for item in manifest["workflow_template"]["nodes"]
+        if item.get("node_id") == "draft"
+    )
+    node = deepcopy(template)
+    node.update(
+        node_id="longform_prose_review",
+        operation_name="longform.prose_review",
+        operation_definition_ref=(
+            f"longform.prose_review@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+        ),
+        operation_definition_hash=operation_definition_hash,
+        handler_key=("novel_forge.book_followup_authority.longform.prose_review"),
+        stage="longform_prose_review",
+        capability_id="review.chapter.evaluate",
+        input_asset_types=["longform_prose_review_window"],
+        output_asset_types=["longform_prose_review_report"],
+        depends_on=[],
+        commit_authority="BOOK_FOLLOWUP_AUTHORITY",
+        timeout_policy_ref="timeout:review-chapter-evaluate:v1",
+    )
+    manifest["identity"].update(
+        name="Longform Prose Review Pack",
+        domain="book_followup",
+        description="Governed Longform Prose Review execution constrained to SHADOW evidence.",
+    )
+    manifest["compatibility"]["required_capabilities"] = [
+        "review.chapter.evaluate",
+        "quality.originality.judge",
+    ]
+    manifest["workflow_template"].update(
+        workflow_id="book_followup_longform_prose_review",
+        workflow_version=BOOK_FOLLOWUP_DEFINITION_VERSION,
+        nodes=[node],
+        completion={
+            "required_terminal_nodes": ["longform_prose_review"],
+            "required_evidence": ["trace", "audit"],
+            "required_output_asset_types": ["longform_prose_review_report"],
+        },
+    )
+    manifest["context_sources"]["allowed_asset_types"] = [
+        "longform_prose_review_window",
+        "context_bundle",
+    ]
+    manifest["tool_permissions"]["tools"] = [
+        {
+            **manifest["tool_permissions"]["tools"][0],
+            "allowed_operations": ["longform_prose_review"],
+        }
+    ]
+    manifest["evaluation"]["required_gates"] = [
+        {
+            "gate_id": "longform_prose_review_source_isolation",
+            "judge_capability_id": "quality.originality.judge",
+            "blocking": True,
+            "threshold": 1,
+            "required_evidence": ["longform_prose_review_report"],
+        }
+    ]
+    manifest["evaluation"]["metrics"] = []
+    artifacts = _bind_domain_artifacts(
+        root,
+        manifest,
+        artifacts,
+        skill_ref="quality-review",
+        skill_version="quality-review-v1",
+        skill_path="skills/quality-review/SKILL.md",
+        system_ref="prompt-system:longform-prose-review-pack",
+        system_path=(
+            "config/capability_packs/artifacts/longform_prose_review_system_instruction.md"
+        ),
+        template_ref="prompt-template:longform-prose-review-pack",
+        template_path=("config/capability_packs/artifacts/longform_prose_review_template.md"),
+        input_schema_ref="schema:longform-prose-review-pack-input:v1",
+        output_schema_ref="schema:longform-prose-review-pack-output:v1",
+        template_version="v2",
+    )
+    _update_policy_artifacts(manifest, artifacts)
+    _append_capability_schemas(artifacts, "review.chapter.evaluate")
+    _append_artifact(
+        artifacts,
+        ArtifactKind.TIMEOUT_POLICY,
+        "timeout:review-chapter-evaluate:v1",
+        "v1",
+        {
+            "policy_id": "timeout:review-chapter-evaluate:v1",
+            "operation_timeout_seconds": 180,
+            "timeout_action": "FAIL_ATTEMPT",
+            "authority_binding": (
+                f"longform.prose_review@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+            ),
+        },
+        "generated:longform-prose-review-pack-profile",
+    )
+    return LongformCapabilityPackProfile(
+        pack_id,
+        f"book_followup_longform_prose_review@{BOOK_FOLLOWUP_DEFINITION_VERSION}",
+        manifest,
+        _catalog(artifacts),
+        "quality-review",
+    )
+
+
 def build_narrative_evaluation_pack_profile(
     repository_root: str | Path,
     *,
@@ -694,5 +807,6 @@ __all__ = [
     "NARRATIVE_EVALUATION_PROMPT_VERSION",
     "build_narrative_evaluation_pack_profile",
     "build_reader_outcome_pack_profile",
+    "build_longform_prose_review_pack_profile",
     "build_story_planning_pack_profile",
 ]

@@ -14,6 +14,8 @@ from .errors import KernelError
 PHASES = ("SOURCE", "CREATION", "REPAIR")
 SINGLE_BOOK_VERSION = "creative-single-book-budget.v2"
 PRODUCTION_BOOK_VERSION = "creative-book-production-budget.v3"
+PAIRED_SAMPLES_VERSION = "creative-paired-samples-budget.v5"
+PAIRED_SAMPLES_PHASES = (*PHASES, "QUALIFICATION")
 PROVIDER_CAMPAIGN_VERSION = "creative-provider-campaign-budget.v4"
 PROVIDER_CAMPAIGN_PHASES = ("REFERENCE", "SCREENING", "CALIBRATION", "HOLDOUT", "SOURCE", "DESIGN", "PRODUCTION", "REPAIR")
 SINGLE_BOOK_VERSIONS = {SINGLE_BOOK_VERSION, PRODUCTION_BOOK_VERSION}
@@ -92,6 +94,15 @@ _V3_ARM_SCHEMA["properties"]["chapter_ranges"] = _object_schema({
 })
 V3_POLICY_SCHEMA["properties"]["authorization"]["properties"]["business_scope"]["properties"]["max_chapter_number"].pop("maximum")
 POLICY_SCHEMA = V1_POLICY_SCHEMA
+V5_POLICY_SCHEMA = deepcopy(V1_POLICY_SCHEMA)
+_V5_PLAN_SCHEMA = V5_POLICY_SCHEMA["properties"]["comparison_budget"]
+_V5_PLAN_SCHEMA["properties"]["contract_version"] = {"type": "string", "const": PAIRED_SAMPLES_VERSION}
+_V5_ARM_SCHEMA = deepcopy(_ARM_SCHEMA)
+_V5_ARM_SCHEMA["properties"].update(sample_id=_TEXT_SCHEMA, stage={"type": "string", "enum": ["PILOT", "EXPLORATION"]})
+_V5_ARM_SCHEMA["properties"]["qualification_allocation"] = _ALLOCATION_SCHEMA
+_V5_ARM_SCHEMA["required"].extend(["sample_id", "stage", "qualification_allocation"])
+_V5_PLAN_SCHEMA["properties"]["arms"] = {"type": "array", "minItems": 4, "maxItems": 16, "items": _V5_ARM_SCHEMA}
+V5_POLICY_SCHEMA["properties"]["authorization"]["properties"]["authorized_cumulative_caps"] = _object_schema({phase: _ALLOCATION_SCHEMA for phase in PAIRED_SAMPLES_PHASES})
 _MIXED_ALLOCATION_SCHEMA = _object_schema({
     **_ALLOCATION_SCHEMA["properties"],
     "priced_usd": {"type": "string", "pattern": r"^(0|[1-9][0-9]*)(\.[0-9]+)?$"},
@@ -176,6 +187,8 @@ def validate_comparison_budget(value: Any, *, require_both_arms: bool = False) -
         raise _invalid("Comparison budget contract version must be a string")
     if contract["contract_version"] in SINGLE_BOOK_VERSIONS:
         return _validate_single_book_budget(contract, require_both_arms=require_both_arms)
+    if contract["contract_version"] == PAIRED_SAMPLES_VERSION:
+        return _validate_paired_samples_budget(contract)
     if contract["contract_version"] != "creative-experiment-budget.v1":
         raise _invalid("Comparison budget contract version is unsupported")
     _text(contract["experiment_id"], "experiment_id")
@@ -218,7 +231,53 @@ def validate_comparison_budget(value: Any, *, require_both_arms: bool = False) -
     return deepcopy(contract)
 
 
+def _validate_paired_samples_budget(contract: dict[str, Any]) -> dict[str, Any]:
+    _text(contract["experiment_id"], "experiment_id")
+    if contract["accounting_basis"] != "ACCOUNT_ENTITLEMENT":
+        raise _invalid("Paired samples require a single ACCOUNT_ENTITLEMENT lane; mixed billing is not authorized")
+    total = _allocation(contract["shared_total"], "shared_total", positive=True)
+    arms = contract["arms"]
+    if not isinstance(arms, list) or len(arms) not in {4, 16}:
+        raise _invalid("Paired samples require two pilot pairs or two pilot and six exploration pairs")
+    samples: dict[str, list[dict[str, Any]]] = {}
+    projects, books = set(), set()
+    for item in arms:
+        arm = _object(item, "sample arm", {"sample_id", "stage", "arm", "project_id", "book_id", "project_total", "qualification_allocation", *_ALLOCATIONS.values()})
+        sample = _text(arm["sample_id"], "sample_id")
+        if not isinstance(arm["stage"], str) or arm["stage"] not in {"PILOT", "EXPLORATION"}:
+            raise _invalid("Paired sample stage is invalid")
+        _allocation(arm["qualification_allocation"], "qualification_allocation")
+        _allocation(arm["project_total"], "project_total", positive=True)
+        for key, seen in (("project_id", projects), ("book_id", books)):
+            value = _text(arm[key], key)
+            if value in seen:
+                raise _invalid("Paired samples require independent project and Book identities")
+            seen.add(value)
+        samples.setdefault(sample, []).append(arm)
+    stages = {"PILOT": 0, "EXPLORATION": 0}
+    for pair in samples.values():
+        if len(pair) != 2 or {arm["arm"] for arm in pair} != {"A", "B"} or len({arm["stage"] for arm in pair}) != 1:
+            raise _invalid("Every sample requires one A/B pair in the same stage")
+        stages[pair[0]["stage"]] += 1
+        if pair[0]["qualification_allocation"] != pair[1]["qualification_allocation"]:
+            raise _invalid("Paired qualification opportunity must be equal")
+        legacy_arms = []
+        for arm in pair:
+            legacy = {key: value for key, value in arm.items() if key not in {"sample_id", "stage", "qualification_allocation"}}
+            legacy["project_total"] = {key: arm["project_total"][key] - arm["qualification_allocation"][key] for key in total}
+            legacy_arms.append(legacy)
+        legacy = {**contract, "contract_version": "creative-experiment-budget.v1", "arms": legacy_arms}
+        validate_comparison_budget(legacy, require_both_arms=True)
+    if stages["PILOT"] != 2 or stages["EXPLORATION"] not in {0, 6}:
+        raise _invalid("Paired samples must freeze two pilot and optionally six exploration tasks")
+    if any(sum(arm["project_total"][key] for arm in arms) != total[key] for key in total):
+        raise _invalid("Paired sample total must equal every frozen stage allocation including repair")
+    return deepcopy(contract)
+
+
 def budget_phases(plan: dict[str, Any]) -> tuple[str, ...]:
+    if plan["contract_version"] == PAIRED_SAMPLES_VERSION:
+        return PAIRED_SAMPLES_PHASES
     if plan["contract_version"] == PROVIDER_CAMPAIGN_VERSION:
         return PROVIDER_CAMPAIGN_PHASES
     return SINGLE_BOOK_PHASES if plan["contract_version"] in SINGLE_BOOK_VERSIONS else PHASES
@@ -442,6 +501,7 @@ _CHAPTER_STAGES = {
     "chapter.quality.longform.evaluate": "quality_longform",
     "chapter.quality.platform.evaluate": "quality_platform",
     "reader_outcome.evaluate": "reader_outcome",
+    "longform.prose_review": "longform_prose_review",
     "story_design.semantic_evaluate": "narrative_semantic_evaluation",
 }
 _PLANNING_CAPABILITIES = {
@@ -483,7 +543,7 @@ def classify_phase(operation_name: str, capability: str, request_payload: dict[s
             raise failure
         return "REPAIR" if attempt_no > 1 or stage in {"revision", "rereview"} else "CREATION"
     if operation_name == "story_planning.generate":
-        if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
+        if stage in {"world_candidates.generate", "world_candidates.evaluate", "world_candidates.actor_0", "world_candidates.actor_1", "world_candidates.actor_2"}:
             if capability != "planning.story_chapter.generate" or not isinstance(inputs.get("world_preparation"), dict):
                 raise failure
             return "REPAIR" if attempt_no > 1 else "CREATION"
@@ -499,4 +559,4 @@ def classify_phase(operation_name: str, capability: str, request_payload: dict[s
     raise failure
 
 
-__all__ = ["PHASES", "POLICY_SCHEMA", "SINGLE_BOOK_PHASES", "SINGLE_BOOK_VERSION", "SINGLE_BOOK_VERSIONS", "PRODUCTION_BOOK_VERSION", "PROVIDER_CAMPAIGN_VERSION", "PROVIDER_CAMPAIGN_PHASES", "V1_POLICY_SCHEMA", "V2_POLICY_SCHEMA", "V3_POLICY_SCHEMA", "V4_POLICY_SCHEMA", "allocation_fields", "arm_for_project", "budget_phases", "classify_phase", "contract_hash", "validate_comparison_budget", "validate_policy"]
+__all__ = ["PAIRED_SAMPLES_VERSION", "PAIRED_SAMPLES_PHASES", "V5_POLICY_SCHEMA", "PHASES", "POLICY_SCHEMA", "SINGLE_BOOK_PHASES", "SINGLE_BOOK_VERSION", "SINGLE_BOOK_VERSIONS", "PRODUCTION_BOOK_VERSION", "PROVIDER_CAMPAIGN_VERSION", "PROVIDER_CAMPAIGN_PHASES", "V1_POLICY_SCHEMA", "V2_POLICY_SCHEMA", "V3_POLICY_SCHEMA", "V4_POLICY_SCHEMA", "allocation_fields", "arm_for_project", "budget_phases", "classify_phase", "contract_hash", "validate_comparison_budget", "validate_policy"]

@@ -3860,6 +3860,8 @@ class PostgresPlanningExecutionPreparer:
         if provider_stage is not None:
             output_schema = dict(provider_stage.output_schema)
             output_schema_ref = f"schema:{stage_name}:v1"
+            if provider_stage.task.get("actor_proposals"):
+                output_schema_ref += ":actor-isolation-v1"
         else:
             from .knowledge_translation import add_translation_contract
 
@@ -3946,6 +3948,10 @@ class PostgresPlanningExecutionPreparer:
                 "content": output_schema,
             },
         }
+        if provider_stage is not None and provider_stage.task.get("role") == "ACTOR":
+            materialization["knowledge_selection"] = []
+            materialization["narrative_intelligence_selection"] = {}
+            materialization["source_isolation"] = {"policy": "world-actor-private-projection.v1", "unscoped_knowledge": "EXCLUDED"}
         materialization["materialization_hash"] = canonical_hash(materialization)
         materialization_ref = (
             "production_execution/capability_materializations/"

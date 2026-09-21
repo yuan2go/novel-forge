@@ -1,0 +1,97 @@
+{
+  "schema_version": "narrative-closure-local-verification.v1",
+  "recorded_at": "2026-09-21T01:31:26.017957+00:00",
+  "scope": [
+    "PR96_CHAPTER_SAMPLING_MERGE_COMPATIBILITY",
+    "EXACT_AUTHOR_EDITOR_NATIVE_REVIEW"
+  ],
+  "evidence_state": "EXECUTABLE",
+  "evidence_kind": "SCRIPTED_FIXTURE_POSTGRESQL_AND_REAL_BROWSER",
+  "tested_merge_parents": [
+    "d5b7be1f63ee78d165fca1a740a7089f84b89b52",
+    "84035e3c57ce263fb4b52b427f41d4f89e6a7ac2"
+  ],
+  "implementation_identity": {
+    "committed": false,
+    "identity_kind": "WORKING_TREE_SOURCE_HASHES",
+    "source_sha256": {
+      "src/novel_forge/api/models.py": "f434a063bd1431dc7a62d2131a55f9eb9535a9ba734599f1eca2de4dee35cb44",
+      "src/novel_forge/api/routers/chapter_authority.py": "c1e8db0106ecdd7e1de54b2505730fa86568afe76eaf4dbbec29be3a0fa10b50",
+      "src/novel_forge/api/routers/chapter_editor.py": "bb5f9891c8c026ddebb0e729fd2f3bdd59a0d11f2a09b7131a6636007019f9c8",
+      "src/novel_forge/modules/book_authority/author_revision.py": "1bd46e9384b18e67f0d42091b7697bfbd40963df86d90520136907c2f0d61e92",
+      "src/novel_forge/modules/book_authority/production.py": "fa9f7ed259559e28c26ef7b809dd2e65a38b4f1225c40cd2045df1148f276a68",
+      "src/novel_forge/modules/chapter_authority/application.py": "612e75e0759c9c059e6a0336286bbb0317966217271a44881a6ddb4dc8eba0c6",
+      "src/novel_forge/modules/chapter_authority/author_draft.py": "66e3828cbc571d41a2ce76b0ca4cd1a572585937f5bc6bda42ddb6d113ad6577",
+      "src/novel_forge/modules/chapter_authority/author_editor.py": "07c3a52e6b022e050bac1d53e7ffb1277b773b508aefe5acbd1324f41624ff3b",
+      "src/novel_forge/modules/chapter_authority/definitions.py": "cd571e4206fe8fd0777a9be9010d2f116617dc0fa1e8f7654557bb77438320a7",
+      "src/novel_forge/modules/chapter_authority/execution_gateway.py": "c6deebd3925609a94598f78697dcac63a358cc93505191dfd13f07ca51bee3a8",
+      "src/novel_forge/modules/chapter_authority/export_delivery.py": "96ec2e488b8aa2fe816256488c64cc057de48943572d982fa08772b0d8834658",
+      "src/novel_forge/modules/chapter_authority/handlers.py": "2880d0e29bee058cbbabedbac6b357283b3b804cd5acc02552837e699dd6fe34",
+      "src/novel_forge/modules/chapter_authority/model_effects.py": "e6c12337c20060c037cb5fd605ef4eca41b884a6eb89155c1d1cdb73cf2ddf4e",
+      "src/novel_forge/modules/chapter_authority/orchestrator.py": "9005fabfe2d527fd87d578ed26e9e1548260577aa16960c5bbd16020208eee54",
+      "src/novel_forge/modules/chapter_authority/review_window.py": "abb65c05b473196aed577bc4cc90669ac1492f1ef2fe449e7d6e48102bf14304",
+      "src/novel_forge/modules/chapter_authority/runtime.py": "9cba2ad2c9639a4578327de667e63004667f8490196451a930b61f1fa36784d4",
+      "src/novel_forge/modules/chapter_authority/sampling.py": "95c079cd98e30e3b035466906e7fc6dcf0bd0e5c50834c6cfc4173aab874f86a",
+      "src/novel_forge/modules/chapter_authority/scheduler.py": "606f956770196d8fe428a07906f37ed91931f80f21500222f07e99de9b89601d",
+      "src/novel_forge/modules/chapter_group_authority/author_revision.py": "b6d29ba73bc830f07cbc17c9bf9f2cf39bd94cc4404a1d509a14a9a82a95f160",
+      "src/novel_forge/storage/book_authority_repositories.py": "f1a59782b98c13e7f11cec2b654aeaf71b2080b0dcac27b6132233f7d17dbabb",
+      "src/novel_forge/storage/migrations/versions/v20260921_0141_author_chapter_replacement.py": "8d5746d7d9865bfdfe1746c731c0ed8d9ddaa5f169239a928586a875dbadcdcd",
+      "tests/integration/author_editor_browser_server.py": "90803be52b032bb583f2eb71664638a523c630d4bc9b815996323637f9433b6a",
+      "tests/integration/test_author_book_replacement_postgres.py": "3001429035aeac8ca40543983acd33ffc31572090b7bd92ef5760ebc3cdf2a1e",
+      "tests/integration/test_author_editor_postgres.py": "cf5860a4e2e1fb1fa615318b486d3848b928db4d3ddbec76d4e7b597a2e43731",
+      "tests/unit/test_author_editor.py": "b860f5f101d7c7ae1d50660509679ed9f0f4229ccd1422c0d2939e35ca21561e",
+      "tests/unit/test_cross_chapter_prose_review.py": "da0bda76e751b836d94223fd494e96159312bedcbd4a79b4673ebba81b1937ca",
+      "web/admin/app/features/editor/EditorPage.tsx": "3ce57f86cced68672dccb61b7024496f2f835147094aec0bc584bd53f1e34811",
+      "web/admin/app/features/editor/ProseReviewPanel.tsx": "0e9c8f82ae3820b193745d7565f8797c36c82688c851293c9a33722fdbac80a6",
+      "web/admin/app/features/editor/api.ts": "f448fe4dbebdff556b4921d288f76899d9b53ad8101e705fdb0d3dc5da3f4e98",
+      "web/admin/app/features/editor/text.ts": "6f6d8d945ea409a96a925b4ea9380ee66512ba230e70b0afce3d044f6d5090f4",
+      "web/admin/tests/author-editor-browser.mjs": "31b914b770fe96702a27867ab7cb6b70816256e22e1e38053c99c414d7eee561",
+      "web/admin/tests/author-editor-text.test.mjs": "7b61400c2d1275db8aca05ef08823a12e16caa7f0469bb1ef6016573f1abc91e"
+    }
+  },
+  "executed_migration_head": "20260921_0141_author_chapter_replacement",
+  "verification": {
+    "unit": {
+      "status": "PASS",
+      "passed": 55,
+      "subtests_passed": 37,
+      "duration_seconds": 2.55,
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_chapter_authority_definitions.py tests/unit/test_chapter_authority_api.py tests/unit/test_author_editor.py tests/unit/test_cross_chapter_prose_review.py -q"
+    },
+    "postgresql": {
+      "status": "PASS",
+      "passed": 31,
+      "subtests_passed": 4,
+      "duration_seconds": 119.29,
+      "command": "NOVEL_FORGE_DATABASE_URL=<isolated editor_test> PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_author_editor_postgres.py tests/integration/test_author_book_replacement_postgres.py tests/integration/test_chapter_provider_sampling_postgres.py tests/integration/test_chapter_model_effects_postgres.py -q -x"
+    },
+    "browser": {
+      "status": "PASS",
+      "groups": 10,
+      "command": "with_server.py (explicit isolated author_editor_browser_server + Next development server) -- node web/admin/tests/author-editor-browser.mjs",
+      "browser_channel": "chrome",
+      "http_api": "ACTUAL_NATIVE_API",
+      "persistence": "ACTUAL_POSTGRESQL",
+      "artifact": "browser-result.json"
+    },
+    "ruff": "PASS",
+    "diff_check": "PASS",
+    "web_build": "NOT_RERUN_NO_FRONTEND_IMPLEMENTATION_CHANGE"
+  },
+  "merge_checks": [
+    "Sampling uses its separate frozen definition and remains non-production eligible; author input Draft preserves its exact completion evidence and no model.draft effect.",
+    "Scheduler verifies Book replacement linkage before production coordination; provider sampling retains its native authorized branch.",
+    "Native ReReview and reference-sampling preflight share incumbent before text, exact original and target IDs, selected review and frozen source window.",
+    "Author and Book receipt-loss recovery and subsequent native acceptance survive the merge.",
+    "Auto-merged gateway retains private Actor task validation; model effects retain full admission and frozen receipt settlement."
+  ],
+  "boundaries": {
+    "real_provider_calls": 0,
+    "real_provider": "NOT_RUN",
+    "human_editorial_quality": "NOT_RUN",
+    "production_operation": "NOT_PROVEN",
+    "scripted_fixture_usage": "NOT_METERED_BY_BROWSER",
+    "final_exact_sha_governance": "SEPARATE_ROOT_RUN",
+    "previous_evidence": "../verification.json remains unchanged and applies to its recorded pre-merge source identity"
+  }
+}

@@ -1,0 +1,602 @@
+{
+  "schema_version": "narrative-closure-local-verification.v1",
+  "recorded_at": "2026-09-21T01:19:33.298541+00:00",
+  "scope": [
+    "P2A_OPTIONAL_ISOLATED_ACTOR_NATIVE_PATH"
+  ],
+  "evidence_state": "EXECUTABLE",
+  "evidence_kind": "CONTROLLED_INTEGRATION_FIXTURE_SCRIPTED_PROVIDER_NOT_HUMAN",
+  "baseline_sha": "e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332",
+  "observed_head_sha": "3a04a3724ea40eb2b7f9493ab78502f2b04acd5d",
+  "implementation_identity": {
+    "committed": false,
+    "identity_kind": "WORKING_TREE_SOURCE_HASHES",
+    "source_sha256": {
+      "src/novel_forge/modules/worldbuilding/actor_isolation.py": "1a0a709f53ec819f6a3582eea4a96e240179162cdb7ec9acddcff8c32429c4cf",
+      "src/novel_forge/modules/chapter_authority/provider_views.py": "c35e55d452197000453f2839dfe9e9ee992372126765de3c50579b20ef958f1e",
+      "src/novel_forge/modules/story_planning_runtime/world_preparation.py": "4a4baec385145eb8c01c78fd60d3fab3409e27267cfd1b7288a9e6de25040bdf",
+      "tests/integration/test_world_actor_isolation_postgres.py": "789010b04d1791cd4823661684c16774b741718ef55c1e586a1d818e8a43c037",
+      "tests/integration/test_core_functional_loops_postgres.py": "f3b34d0cbaf4ba5ea4bf72c1d35d56309119e3fee4e65f153f0a1b1e100cfc2e",
+      "tests/integration/world_causal_production_support.py": "56ba1c9d744858fa03d65c98250ef0339a7183be906eb1d37af2f304aee26425",
+      "tests/unit/test_world_actor_isolation.py": "4ec9ffb58304bfc5a5f5d5f88e4977b2e34c16128fe676f683f8afd6b068c053",
+      "tests/unit/test_author_design_adoption.py": "54575990615db0fd599b58b2df7f5aebdc9713a304bdd01018b45c103460475b"
+    }
+  },
+  "verification": {
+    "status": "PASS",
+    "tests_passed": 63,
+    "duration_seconds": 51.98,
+    "command": "NOVEL_FORGE_DATABASE_URL=<isolated book_test> PYTHONPATH=src .venv/bin/python -m pytest -q tests/integration/test_world_actor_isolation_postgres.py tests/unit/test_world_actor_isolation.py tests/unit/test_author_design_adoption.py",
+    "case": "test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director"
+  },
+  "native_observation": {
+    "book_run_id": "book-run:7af892ba-8915-44a9-a3b6-45999f2f7aa6",
+    "scenario": "isolated_actors_first_window_then_budget_boundary",
+    "accepted_through_chapter": 1,
+    "budget_boundary": "WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+    "rejected_stage": "world_candidates.evaluate",
+    "frozen_context_token_budget": 8192
+  },
+  "initial_fixture_boundary": {
+    "owner": "Book frozen input snapshot initial_story_state_version",
+    "characters": [
+      "mara",
+      "ilya"
+    ],
+    "knowledge_source_event_ids": [
+      "fixture-initial:mara:observed",
+      "fixture-initial:ilya:observed"
+    ],
+    "acceptance_claim": "CONTROLLED_INITIAL_INPUT_NOT_ACCEPTED_CHAPTER",
+    "subsequent_boundary": "ACCEPTED_REALITY_AFTER_NATIVE_CHAPTER_ONE_ACCEPTANCE"
+  },
+  "receipt_loss_recovery": {
+    "checkpoint": "after_provider_receipt_before_budget_settlement",
+    "actor_stage": "world_candidates.actor_1",
+    "fault_count": 1,
+    "at_fault": {
+      "accepted_cursor": 0,
+      "narrative_reality_revisions": 0,
+      "world_preparation_generation": 0,
+      "narrative_governance_action": 0,
+      "prior_actor_proposals": 1
+    },
+    "final_world_stage_dispatch_counts": {
+      "world_candidates.actor_0": 2,
+      "world_candidates.actor_1": 2,
+      "world_candidates.evaluate": 1,
+      "world_candidates.generate": 2
+    },
+    "stage_status_counts": {
+      "world_candidates.actor_1:SUCCEEDED": 2,
+      "world_candidates.generate:SUCCEEDED": 2,
+      "world_candidates.actor_0:SUCCEEDED": 2,
+      "world_candidates.evaluate:SUCCEEDED": 1
+    },
+    "world_effects": [
+      {
+        "external_effect_id": "ec30f2b4-59d7-4169-8233-e3672e9d84d2",
+        "status": "SUCCEEDED",
+        "request_hash": "sha256:d0b405f65d32e9c5e040baf7ad426399873d9e5c27ef5784571e589b53b120da",
+        "operation_id": "d1e4b8e3-0edc-429e-8413-8f382d90de9a",
+        "stage": "world_candidates.actor_1"
+      },
+      {
+        "external_effect_id": "1312078b-a9ac-417a-9736-3e853a8cbe06",
+        "status": "SUCCEEDED",
+        "request_hash": "sha256:0ecdae8839a71c0ecef2e2689cd93166e824c8aa673b97f0dca731ec79227b9f",
+        "operation_id": "d1e4b8e3-0edc-429e-8413-8f382d90de9a",
+        "stage": "world_candidates.generate"
+      },
+      {
+        "external_effect_id": "9f16346c-5478-41ad-a0e2-e19119c169b9",
+        "status": "SUCCEEDED",
+        "request_hash": "sha256:f32114e85bf5045e5113554bd4e6d1c1caf54197fd948b7b32df8bb705c4b9b0",
+        "operation_id": "d1e4b8e3-0edc-429e-8413-8f382d90de9a",
+        "stage": "world_candidates.actor_0"
+      },
+      {
+        "external_effect_id": "b4b96090-00fa-46cb-a930-c294de752f9a",
+        "status": "SUCCEEDED",
+        "request_hash": "sha256:f4bcf7ffaa47d8f809c802acb75e38ada357cf3df60381e8aee1089bb990eb1c",
+        "operation_id": "d1e4b8e3-0edc-429e-8413-8f382d90de9a",
+        "stage": "world_candidates.evaluate"
+      },
+      {
+        "external_effect_id": "c5a7cd45-4cae-4f34-98cf-6a7993c69c98",
+        "status": "SUCCEEDED",
+        "request_hash": "sha256:18b319563514e98af86031e98387af0feda5ac5fe3d58316d01bc2b0bb3d9f08",
+        "operation_id": "a30e984b-a226-4b9f-ba46-718a2c7bca01",
+        "stage": "world_candidates.actor_0"
+      },
+      {
+        "external_effect_id": "cbe43ab6-3dce-467c-b7b8-4b256e64cac4",
+        "status": "SUCCEEDED",
+        "request_hash": "sha256:3500cda794c0a98b3416575c1a15fe79329ba4312cae99f680ff2ef00c0f388d",
+        "operation_id": "a30e984b-a226-4b9f-ba46-718a2c7bca01",
+        "stage": "world_candidates.generate"
+      },
+      {
+        "external_effect_id": "d5a087e4-896e-40cd-aa3b-c0bea8f6d926",
+        "status": "SUCCEEDED",
+        "request_hash": "sha256:6b2666c7f8d66a4a647a27cc21cd7250e49d1ccc854e0be82126ba865a198d75",
+        "operation_id": "a30e984b-a226-4b9f-ba46-718a2c7bca01",
+        "stage": "world_candidates.actor_1"
+      }
+    ],
+    "receipts": [
+      {
+        "external_receipt_id": 16,
+        "status": "VERIFIED",
+        "payload_hash": "sha256:4a850f9f4b5436a62d7dc2aeac3e8d1c705b37b0f51fb01baa212f4a4f9b4c74",
+        "dispatch_id": "6ae34c03-1267-450f-8772-44e22a9f208d",
+        "stage": "world_candidates.actor_0"
+      },
+      {
+        "external_receipt_id": 17,
+        "status": "VERIFIED",
+        "payload_hash": "sha256:2dee6dc7a7dc676479f740c85d8a8c107afcdb60da3840fec2108da5fc36af19",
+        "dispatch_id": "75340e95-abb6-44ea-a5c7-42c5319644e1",
+        "stage": "world_candidates.actor_1"
+      },
+      {
+        "external_receipt_id": 18,
+        "status": "VERIFIED",
+        "payload_hash": "sha256:35ed82c78f9e0de21ce6a0aeb9420e5e2e0f6ee8d63fdfe2010238f9d08aff9f",
+        "dispatch_id": "9df37d98-29e3-48d3-b258-553aac0bb7a8",
+        "stage": "world_candidates.generate"
+      },
+      {
+        "external_receipt_id": 19,
+        "status": "VERIFIED",
+        "payload_hash": "sha256:2b48678ed44c62193e55bc340bb1a25bcd02dd6e87923351df069da14728877e",
+        "dispatch_id": "d3c4f2cf-f9a9-4494-b814-1a87aa3cd7e7",
+        "stage": "world_candidates.evaluate"
+      },
+      {
+        "external_receipt_id": 34,
+        "status": "VERIFIED",
+        "payload_hash": "sha256:43fa93caf49f59fbd9a59f88475ab4b9e3fbd646be5cc6e875055e9cc40c3914",
+        "dispatch_id": "5044c070-ae1a-4e30-8543-0415331768f7",
+        "stage": "world_candidates.actor_0"
+      },
+      {
+        "external_receipt_id": 35,
+        "status": "VERIFIED",
+        "payload_hash": "sha256:b0bbed47e15f3a3fe9507d3d35f15be822e65a2f5cf31bd393a6584c6f6edcb5",
+        "dispatch_id": "7c10d5ac-c28c-41e0-8a10-f710aa92d992",
+        "stage": "world_candidates.actor_1"
+      },
+      {
+        "external_receipt_id": 36,
+        "status": "VERIFIED",
+        "payload_hash": "sha256:5eff4a8d8351f51d41d6e6d6b7a3330808002b84266c48875dbc484b861fca32",
+        "dispatch_id": "e2308a39-3b5b-4d5d-ae3d-556a83632807",
+        "stage": "world_candidates.generate"
+      }
+    ]
+  },
+  "provider_requests": [
+    {
+      "execution_id": "planning-execution:cbe43ab6-3dce-467c-b7b8-4b256e64cac4:0b510e8a-164f-49e3-8064-881229bb950d",
+      "stage": "world_candidates.generate",
+      "external_effect_id": "cbe43ab6-3dce-467c-b7b8-4b256e64cac4",
+      "actual_materialized_input_hash": "sha256:70c68201e1eaae25498f6f6f8f3413d8d2bfb6c54140c114b98dc37e72372f0c",
+      "actual_materialized_input_characters": 38329,
+      "rendered_prompt_estimated_tokens": 13330,
+      "full_request_admission": {
+        "status": "ADMITTED",
+        "accounting_contract": {
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "contract_version": "provider-token-accounting-v2",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "execution_token_limit": 262144,
+          "framing_overhead": 16,
+          "meter_identity": "scripted-byte-token-meter",
+          "meter_version": "v1",
+          "model": "scripted-planning-fixture",
+          "model_context_limit": 262144,
+          "output_reserve": 16000,
+          "precision": "EXACT",
+          "provider": "scripted_provider_v2",
+          "route_identity": "chapter_plan.generate:scripted_provider_v2:scripted-planning-fixture:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:5e3721bdf88f03b33721e1eecd0687264a5e6f0489bde513b95f1e83791f80ce",
+          "safety_margin": 256,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "component_usage": {
+          "output_reserve": 16000,
+          "provider_input": 39989,
+          "request_framing": 16,
+          "safety_margin": 256
+        },
+        "total_reserved": 56261,
+        "applicable_limit": 262144,
+        "envelope_hash": "sha256:e793fe4dff149c420f1a020af0bf308e018a5d11e26a57fb89da052021c1099c",
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      }
+    },
+    {
+      "execution_id": "planning-execution:d5a087e4-896e-40cd-aa3b-c0bea8f6d926:0b510e8a-164f-49e3-8064-881229bb950d",
+      "stage": "world_candidates.actor_1",
+      "external_effect_id": "d5a087e4-896e-40cd-aa3b-c0bea8f6d926",
+      "actual_materialized_input_hash": "sha256:135b6842aba5ab9622666b684be4316ac0c528511537534208c4c1e7ba7d83cd",
+      "actual_materialized_input_characters": 12344,
+      "rendered_prompt_estimated_tokens": 4668,
+      "full_request_admission": {
+        "status": "ADMITTED",
+        "accounting_contract": {
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "contract_version": "provider-token-accounting-v2",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "execution_token_limit": 262144,
+          "framing_overhead": 16,
+          "meter_identity": "scripted-byte-token-meter",
+          "meter_version": "v1",
+          "model": "scripted-planning-fixture",
+          "model_context_limit": 262144,
+          "output_reserve": 16000,
+          "precision": "EXACT",
+          "provider": "scripted_provider_v2",
+          "route_identity": "chapter_plan.generate:scripted_provider_v2:scripted-planning-fixture:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:5e3721bdf88f03b33721e1eecd0687264a5e6f0489bde513b95f1e83791f80ce",
+          "safety_margin": 256,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "component_usage": {
+          "output_reserve": 16000,
+          "provider_input": 14004,
+          "request_framing": 16,
+          "safety_margin": 256
+        },
+        "total_reserved": 30276,
+        "applicable_limit": 262144,
+        "envelope_hash": "sha256:3947fef0d6a549ab293372e94d4564111c5ea301edb4033d9bd349b971b4db47",
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "private_observation_checks": {
+        "own_observation_present": true,
+        "other_observation_absent": true,
+        "global_private_secrets_absent": true
+      }
+    },
+    {
+      "execution_id": "planning-execution:c5a7cd45-4cae-4f34-98cf-6a7993c69c98:0b510e8a-164f-49e3-8064-881229bb950d",
+      "stage": "world_candidates.actor_0",
+      "external_effect_id": "c5a7cd45-4cae-4f34-98cf-6a7993c69c98",
+      "actual_materialized_input_hash": "sha256:ef3f3ea863f5a5b6db8fde90ced6ccfa7b05b22dcbd016a4d8332368b4eb0b6c",
+      "actual_materialized_input_characters": 12354,
+      "rendered_prompt_estimated_tokens": 4672,
+      "full_request_admission": {
+        "status": "ADMITTED",
+        "accounting_contract": {
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "contract_version": "provider-token-accounting-v2",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "execution_token_limit": 262144,
+          "framing_overhead": 16,
+          "meter_identity": "scripted-byte-token-meter",
+          "meter_version": "v1",
+          "model": "scripted-planning-fixture",
+          "model_context_limit": 262144,
+          "output_reserve": 16000,
+          "precision": "EXACT",
+          "provider": "scripted_provider_v2",
+          "route_identity": "chapter_plan.generate:scripted_provider_v2:scripted-planning-fixture:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:5e3721bdf88f03b33721e1eecd0687264a5e6f0489bde513b95f1e83791f80ce",
+          "safety_margin": 256,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "component_usage": {
+          "output_reserve": 16000,
+          "provider_input": 14014,
+          "request_framing": 16,
+          "safety_margin": 256
+        },
+        "total_reserved": 30286,
+        "applicable_limit": 262144,
+        "envelope_hash": "sha256:0721de4b0523f518aa4e3da462fa2927bf2d37ea5d77fd0741fb274375033a97",
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "private_observation_checks": {
+        "own_observation_present": true,
+        "other_observation_absent": true,
+        "global_private_secrets_absent": true
+      }
+    },
+    {
+      "execution_id": "planning-execution:b4b96090-00fa-46cb-a930-c294de752f9a:e5a57ce0-e8a2-46d3-8c91-27ba8940f567",
+      "stage": "world_candidates.evaluate",
+      "external_effect_id": "b4b96090-00fa-46cb-a930-c294de752f9a",
+      "actual_materialized_input_hash": "sha256:e5a9c772b6924ed813794f209f6e2a16525c6e2a36b70ffd83998254aeb26657",
+      "actual_materialized_input_characters": 32555,
+      "rendered_prompt_estimated_tokens": 11405,
+      "full_request_admission": {
+        "status": "ADMITTED",
+        "accounting_contract": {
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "contract_version": "provider-token-accounting-v2",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "execution_token_limit": 262144,
+          "framing_overhead": 16,
+          "meter_identity": "scripted-byte-token-meter",
+          "meter_version": "v1",
+          "model": "scripted-planning-fixture",
+          "model_context_limit": 262144,
+          "output_reserve": 16000,
+          "precision": "EXACT",
+          "provider": "scripted_provider_v2",
+          "route_identity": "chapter_plan.generate:scripted_provider_v2:scripted-planning-fixture:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:5e3721bdf88f03b33721e1eecd0687264a5e6f0489bde513b95f1e83791f80ce",
+          "safety_margin": 256,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "component_usage": {
+          "output_reserve": 16000,
+          "provider_input": 34215,
+          "request_framing": 16,
+          "safety_margin": 256
+        },
+        "total_reserved": 50487,
+        "applicable_limit": 262144,
+        "envelope_hash": "sha256:ebd9af20b0e061369cf13af4aead08022f2d2b278449dd83d619ac8e83b4eb82",
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      }
+    },
+    {
+      "execution_id": "planning-execution:1312078b-a9ac-417a-9736-3e853a8cbe06:e5a57ce0-e8a2-46d3-8c91-27ba8940f567",
+      "stage": "world_candidates.generate",
+      "external_effect_id": "1312078b-a9ac-417a-9736-3e853a8cbe06",
+      "actual_materialized_input_hash": "sha256:cb5855e065295ff8d071c50d53f4e8b301c965cceedc8549980df90fe775cc9d",
+      "actual_materialized_input_characters": 33560,
+      "rendered_prompt_estimated_tokens": 11740,
+      "full_request_admission": {
+        "status": "ADMITTED",
+        "accounting_contract": {
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "contract_version": "provider-token-accounting-v2",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "execution_token_limit": 262144,
+          "framing_overhead": 16,
+          "meter_identity": "scripted-byte-token-meter",
+          "meter_version": "v1",
+          "model": "scripted-planning-fixture",
+          "model_context_limit": 262144,
+          "output_reserve": 16000,
+          "precision": "EXACT",
+          "provider": "scripted_provider_v2",
+          "route_identity": "chapter_plan.generate:scripted_provider_v2:scripted-planning-fixture:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:5e3721bdf88f03b33721e1eecd0687264a5e6f0489bde513b95f1e83791f80ce",
+          "safety_margin": 256,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "component_usage": {
+          "output_reserve": 16000,
+          "provider_input": 35220,
+          "request_framing": 16,
+          "safety_margin": 256
+        },
+        "total_reserved": 51492,
+        "applicable_limit": 262144,
+        "envelope_hash": "sha256:5db462e2b7383804bf9ac1d9f246ee7c52d654d50d7d66563545c864a4d702e7",
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      }
+    },
+    {
+      "execution_id": "planning-execution:ec30f2b4-59d7-4169-8233-e3672e9d84d2:e2340f50-3af7-4692-9b4b-47d4487524f9",
+      "stage": "world_candidates.actor_1",
+      "external_effect_id": "ec30f2b4-59d7-4169-8233-e3672e9d84d2",
+      "actual_materialized_input_hash": "sha256:d714652dd82576654480617d2777663b5dfd379e60657146d5bbcc74a0c1db6e",
+      "actual_materialized_input_characters": 12356,
+      "rendered_prompt_estimated_tokens": 4672,
+      "full_request_admission": {
+        "status": "ADMITTED",
+        "accounting_contract": {
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "contract_version": "provider-token-accounting-v2",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "execution_token_limit": 262144,
+          "framing_overhead": 16,
+          "meter_identity": "scripted-byte-token-meter",
+          "meter_version": "v1",
+          "model": "scripted-planning-fixture",
+          "model_context_limit": 262144,
+          "output_reserve": 16000,
+          "precision": "EXACT",
+          "provider": "scripted_provider_v2",
+          "route_identity": "chapter_plan.generate:scripted_provider_v2:scripted-planning-fixture:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:5e3721bdf88f03b33721e1eecd0687264a5e6f0489bde513b95f1e83791f80ce",
+          "safety_margin": 256,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "component_usage": {
+          "output_reserve": 16000,
+          "provider_input": 14016,
+          "request_framing": 16,
+          "safety_margin": 256
+        },
+        "total_reserved": 30288,
+        "applicable_limit": 262144,
+        "envelope_hash": "sha256:461b66aaa431cf0636480db6d70983a86822fc6de3ef815c29bea57586dfcdbb",
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "private_observation_checks": {
+        "own_observation_present": true,
+        "other_observation_absent": true,
+        "global_private_secrets_absent": true
+      }
+    },
+    {
+      "execution_id": "planning-execution:9f16346c-5478-41ad-a0e2-e19119c169b9:e2340f50-3af7-4692-9b4b-47d4487524f9",
+      "stage": "world_candidates.actor_0",
+      "external_effect_id": "9f16346c-5478-41ad-a0e2-e19119c169b9",
+      "actual_materialized_input_hash": "sha256:31c6df6b3a9788e00185c108f3da5dd73e0972dc36041a5ea65c8184c35b6f49",
+      "actual_materialized_input_characters": 12366,
+      "rendered_prompt_estimated_tokens": 4676,
+      "full_request_admission": {
+        "status": "ADMITTED",
+        "accounting_contract": {
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "contract_version": "provider-token-accounting-v2",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "execution_token_limit": 262144,
+          "framing_overhead": 16,
+          "meter_identity": "scripted-byte-token-meter",
+          "meter_version": "v1",
+          "model": "scripted-planning-fixture",
+          "model_context_limit": 262144,
+          "output_reserve": 16000,
+          "precision": "EXACT",
+          "provider": "scripted_provider_v2",
+          "route_identity": "chapter_plan.generate:scripted_provider_v2:scripted-planning-fixture:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:5e3721bdf88f03b33721e1eecd0687264a5e6f0489bde513b95f1e83791f80ce",
+          "safety_margin": 256,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "component_usage": {
+          "output_reserve": 16000,
+          "provider_input": 14026,
+          "request_framing": 16,
+          "safety_margin": 256
+        },
+        "total_reserved": 30298,
+        "applicable_limit": 262144,
+        "envelope_hash": "sha256:fb207fa7d2e7685e3f9095bd14915492ca666b247ea8ad840bfeaa02881f31a6",
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "private_observation_checks": {
+        "own_observation_present": true,
+        "other_observation_absent": true,
+        "global_private_secrets_absent": true
+      }
+    }
+  ],
+  "projection": {
+    "version": "world-empty-selection-query-receipt.v1",
+    "scope": "Only valid NO_ELIGIBLE_MATCH with selected=[] and no required card; query-only retrieval directory replaced by exact frozen-source hash receipt",
+    "preserved": [
+      "hard_constraints",
+      "actual private observations",
+      "world facts",
+      "plans",
+      "prose",
+      "selected knowledge",
+      "frozen 8192 world-role context limit"
+    ],
+    "compatibility": "Existing source-only frozen v1 receipt materializes without adding new query projection",
+    "unit_checks": [
+      "empty retrieval-directory receipt",
+      "hard constraint retention",
+      "nonempty selected knowledge unchanged",
+      "legacy materialization unchanged",
+      "frozen source drift rejected"
+    ]
+  },
+  "observed_failures_and_resolution": [
+    {
+      "code": "UNSUPPORTED_FIXTURE_ACTOR_STAGE",
+      "resolution": "ActorTransport explicitly handles actor stage in bounded test; native production Provider path remains used"
+    },
+    {
+      "code": "WORLD_CHARACTER_DECISION_BASIS_REQUIRED",
+      "resolution": "Positive fixture seeds character-local initial knowledge before native Book snapshot freezes; no accepted facts are inserted after execution"
+    },
+    {
+      "code": "WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+      "stage": "world_candidates.generate",
+      "resolution": "Only unused empty-selection retrieval directory receives versioned exact receipt; selected content and constraints preserved"
+    },
+    {
+      "code": "WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+      "stage": "world_candidates.evaluate",
+      "resolution": "Second window stops before Director dispatch; one accepted chapter and prior Actor/judge receipts preserved; no budget increase"
+    }
+  ],
+  "external_consumption": {
+    "real_provider": "NOT_RUN",
+    "independent_human": "NOT_RUN",
+    "creative_comparison": "NOT_RUN",
+    "paid_calls": 0,
+    "paid_tokens": 0,
+    "paid_cost": 0,
+    "unresolved_paid_effects": 0,
+    "fixture_meter_note": "Full-envelope scripted byte-exact accounting is the explicit test transport contract, not real-model token usage. World-role input separately enforces ConservativeTokenEstimator at frozen 8192."
+  },
+  "expansion_decision": "HOLD_AFTER_FIRST_ACCEPTED_WINDOW_PENDING_SECOND_DIRECTOR_SCOPE_REDUCTION_AND_REAL_AUTHORIZED_COMPARISON",
+  "limits": [
+    "Optional experimental mode only; no claim of creative quality improvement or production maturity.",
+    "Second chapter is not accepted; bounded test asserts exact Director predispatch rejection.",
+    "Fixture initial state is explicit controlled input, not human-provided or independently verified Canon.",
+    "Full exact-SHA governance is separately owned by batch release."
+  ]
+}

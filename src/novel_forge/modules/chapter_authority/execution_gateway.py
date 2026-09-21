@@ -113,6 +113,7 @@ _STAGES = frozenset(
         "quality_longform",
         "quality_platform",
         "reader_outcome",
+        "longform_prose_review",
         "narrative_semantic_evaluation",
     }
 )
@@ -146,6 +147,7 @@ _STAGE_CAPABILITIES = {
     "quality_longform": CapabilityId.QUALITY_INTRINSIC_JUDGE,
     "quality_platform": CapabilityId.QUALITY_PLATFORM_JUDGE,
     "reader_outcome": CapabilityId.QUALITY_READER_OUTCOME_JUDGE,
+    "longform_prose_review": CapabilityId.REVIEW_CHAPTER_EVALUATE,
     "narrative_semantic_evaluation": CapabilityId.QUALITY_INTRINSIC_JUDGE,
     "agent_session": CapabilityId.AGENT_WORKSPACE_EXECUTE,
     "retrieval": CapabilityId.RETRIEVAL_EMBED,
@@ -399,6 +401,7 @@ def _provider_effective_context_policy(
         ),
         "novelos.reader_outcome_context_bundle.v1": "reader_outcome",
         "novelos.reader_outcome_context_bundle.v2": "reader_outcome",
+        "novelos.longform_prose_review_context_bundle.v2": "longform_prose_review",
     }.get(typed_schema)
     if typed_stage and not isinstance(manifest, Mapping):
         provider_view = build_provider_context_view(typed_stage, content, {})
@@ -1113,9 +1116,17 @@ class PostgresChapterExecutionContractBinder:
         )
         schema = chapter_provider_output_schema(stage, causal_batch=causal_batch)
         schema_ref = chapter_provider_output_schema_ref(stage, causal_batch=causal_batch)
-        if inputs.get("cross_chapter_window") or (stage == "revision" and (inputs.get("review") or {}).get("cross_chapter_window")):
+        if inputs.get("cross_chapter_window") or (stage == "revision" and inputs.get("required_actions") is None and (inputs.get("review") or {}).get("cross_chapter_window")):
             from novel_forge.modules.review.cross_chapter import extend_provider_schema
-            schema, schema_ref = extend_provider_schema(schema, stage), f"schema:chapter-provider-output:{stage}:cross-chapter-v1"
+            schema, schema_ref = extend_provider_schema(schema, stage), f"schema:chapter-provider-output:{stage}:cross-chapter-v2"
+        if stage == "revision" and inputs.get("quality_edit_contract"):
+            from novel_forge.modules.review.cross_chapter import extend_provider_schema
+            schema = extend_provider_schema(schema, stage)
+            schema_ref += ":quality-targeted-v1"
+        if stage == "rereview" and (inputs.get("revision") or {}).get("quality_edit_contract"):
+            from novel_forge.modules.revision.domain import extend_quality_rereview_schema
+            schema = extend_quality_rereview_schema(schema)
+            schema_ref += ":quality-resolution-v1"
         if stage in {"review", "revision", "rereview"}:
             from novel_forge.modules.review.craft import craft_review_targets, extend_craft_provider_schema
             candidate = inputs.get("revision") or inputs.get("draft") or {}
@@ -2462,6 +2473,9 @@ def default_chapter_fixture_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
 
+    if stage == "longform_prose_review":
+        from novel_forge.modules.book_followup_authority.prose_review import PROSE_DIMENSIONS
+        return {"schema_version": "longform-prose-review.v1", "manifest_digest": inputs["manifest_digest"], "window_id": inputs["window_id"], "reviewed_dimensions": list(PROSE_DIMENSIONS), "findings": []}
     if stage == "memo":
         intent = inputs["execution_intent"]
         scenes = intent.get("scene_plans") or []
@@ -3996,6 +4010,10 @@ def _materialize_production_codex_prompt(
             )
         return text, artifact
 
+    from novel_forge.modules.worldbuilding.actor_isolation import ACTOR_STAGES, validate_actor_task
+    if stage in ACTOR_STAGES:
+        validate_actor_task(inputs.get("world_preparation") or {})
+
     system_text, system = required_text("system_instruction")
     template_text, template = required_text("prompt_template")
     skill_text, skill = required_text("skill")
@@ -4010,7 +4028,7 @@ def _materialize_production_codex_prompt(
         or not isinstance(knowledge, list)
         or (
             not knowledge
-            and stage not in {"agent_session", "retrieval", "retrieval_query_expansion"}
+            and stage not in {"agent_session", "retrieval", "retrieval_query_expansion", *ACTOR_STAGES}
         )
         or not isinstance(tools, Mapping)
         or not isinstance(schema, Mapping)
@@ -4045,9 +4063,7 @@ def _materialize_production_codex_prompt(
         item for item in knowledge if isinstance(item, Mapping)
     )
     if not knowledge_view and stage not in {
-        "agent_session",
-        "retrieval",
-        "retrieval_query_expansion",
+        "agent_session", "retrieval", "retrieval_query_expansion", *ACTOR_STAGES,
     }:
         raise KernelError(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
@@ -4158,8 +4174,11 @@ def _materialize_production_codex_prompt(
         key: "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
         for key, value in component_text.items()
     }
+    from novel_forge.modules.chapter_quality_authority.context_views import ConservativeTokenEstimator
+
+    component_estimator = ConservativeTokenEstimator()
     component_tokens = {
-        key: max(1, count // 4) for key, count in component_characters.items()
+        key: component_estimator.estimate(value) for key, value in component_text.items()
     }
     authority_context_tokens = int(context_content.get("estimated_tokens") or 0)
     provider_context_tokens = component_tokens["provider_context_view"]
@@ -4217,6 +4236,7 @@ def _materialize_production_codex_prompt(
             "component_utf8_byte_upper_bounds": component_bytes,
             "component_hashes": component_hashes,
             "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+            "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
             "provider_admission_uses_component_estimates": False,
             "authority_context_estimated_tokens": authority_context_tokens,
             "provider_context_estimated_tokens": provider_context_tokens,

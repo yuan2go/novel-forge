@@ -69,7 +69,7 @@ def classify_business_scope(identity: dict[str, Any], *, dispatch_generation: in
             command = original
         elif operation == "story_planning.generate":
             generator = command.get("generator_operation_name")
-            expected = "chapter_plan.generate" if stage in {"world_candidates.generate", "world_candidates.evaluate"} else stage
+            expected = "chapter_plan.generate" if stage in {"world_candidates.generate", "world_candidates.evaluate", "world_candidates.actor_0", "world_candidates.actor_1", "world_candidates.actor_2"} else stage
             if generator != expected:
                 raise _unknown("Planning Effect and native generator differ")
         if generator:
@@ -84,7 +84,7 @@ def classify_business_scope(identity: dict[str, Any], *, dispatch_generation: in
                     raise _unknown("Chapter Planning has no frozen realization")
                 add_chapter(realization.get("chapter_number"), "operation.narrative_realization.chapter_number")
                 if operation == "story_planning.generate":
-                    if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
+                    if stage in {"world_candidates.generate", "world_candidates.evaluate", "world_candidates.actor_0", "world_candidates.actor_1", "world_candidates.actor_2"}:
                         world = inputs.get("world_preparation")
                         frontier = command.get("world_preparation_request")
                         if not isinstance(world, dict) or not isinstance(frontier, dict):

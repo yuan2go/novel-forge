@@ -7,10 +7,11 @@ import re
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.chapter_quality_authority.context_views import ConservativeTokenEstimator
 from .diagnostics import prose_hash, validate_location
 
 
-WINDOW_CONTRACT = "cross-chapter-review-window.v1"
+WINDOW_CONTRACT = "cross-chapter-review-window.v2"
 WINDOW_POLICY = "accepted-prose-neighbours.v1"
 COVERAGE_POLICY = "whole-paragraph-ending.v1"
 CROSS_CHAPTER_CATEGORIES = frozenset(
@@ -145,7 +146,9 @@ def freeze_review_window(
             "CROSS_CHAPTER_REVIEW_TARGET_INVALID", "exact current candidate required"
         )
     policy = snapshot["window_policy"]
-    required_cost = len(
+    meter = ConservativeTokenEstimator()
+    safety_margin = 256
+    required_cost = meter.estimate(
         json.dumps(
             {
                 "text": text,
@@ -153,9 +156,9 @@ def freeze_review_window(
                 "context": required_context or {},
             },
             ensure_ascii=False,
-        ).encode()
+        )
     )
-    remaining = min(policy["source_token_budget"], context_token_budget - required_cost)
+    remaining = min(policy["source_token_budget"], context_token_budget - required_cost - safety_margin)
     if remaining < 0:
         raise KernelError(
             "CROSS_CHAPTER_REVIEW_CONTEXT_INSUFFICIENT",
@@ -166,12 +169,12 @@ def freeze_review_window(
         prose = source["text"]
         ranges = [(0, len(prose))]
         coverage, reason = "FULL", "FULL_PROSE_FITS"
-        if len(prose.encode()) > remaining:
+        if meter.estimate(prose) > remaining:
             paragraphs = list(re.finditer(r"[^\n]+(?:\n+|$)", prose))
             start = paragraphs[max(0, len(paragraphs) - 2)].start() if paragraphs else 0
             ranges = [(start, len(prose))]
             coverage, reason = "EXCERPT", "ONLY_COMPLETE_ENDING_PARAGRAPHS_FIT"
-            if len(prose[start:].encode()) > remaining:
+            if meter.estimate(prose[start:]) > remaining:
                 if source["chapter_number"] == snapshot["accepted_through_chapter"]:
                     raise KernelError(
                         "CROSS_CHAPTER_REVIEW_CONTEXT_INSUFFICIENT",
@@ -182,7 +185,7 @@ def freeze_review_window(
             {"start": start, "end": end, "text": prose[start:end]}
             for start, end in ranges
         ]
-        remaining -= sum(len(item["text"].encode()) for item in excerpts)
+        remaining -= sum(meter.estimate(item["text"]) for item in excerpts)
         exclusions = (
             []
             if coverage == "FULL"
@@ -206,7 +209,17 @@ def freeze_review_window(
         "target_candidate_text_hash": prose_hash(text),
         "coverage_policy": COVERAGE_POLICY,
         "context_token_budget": context_token_budget,
-        "selection_accounting": "UTF8_BYTES_CONSERVATIVE_SCREENING_ONLY",
+        "selection_accounting": "CONTEXT_TOKEN_ESTIMATE_V1",
+        "selection_meter": {
+            "identity": "ConservativeTokenEstimator",
+            "version": "utf8-third-ceiling.v1",
+            "precision": "ESTIMATE_ONLY",
+            "model_policy": "MODEL_INDEPENDENT_SELECTION_ONLY",
+            "safety_margin_tokens": safety_margin,
+            "required_context_tokens": required_cost,
+            "source_tokens": sum(meter.estimate(part["text"]) for source in sources for part in source["excerpts"]),
+            "complete_request_admission": "FROZEN_ROUTE_METER_INCLUDING_PROMPT_SCHEMA_OUTPUT_RESERVE",
+        },
         "provider_admission": "EXISTING_COMPLETE_REQUEST_TOKEN_ACCOUNTING_REQUIRED",
         "preservation_requirements": deepcopy(protected_context),
     }
@@ -215,7 +228,7 @@ def freeze_review_window(
 
 
 def validate_window(window: dict[str, Any]) -> None:
-    if window.get("contract_version") != WINDOW_CONTRACT or window.get(
+    if window.get("contract_version") not in {WINDOW_CONTRACT, "cross-chapter-review-window.v1"} or window.get(
         "source_window_hash"
     ) != digest({k: v for k, v in window.items() if k != "source_window_hash"}):
         raise KernelError(

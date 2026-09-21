@@ -42,8 +42,9 @@ class WorldProductionPolicy:
             (self.max_world_time_advance, 1_000_000),
         )
         if (
-            self.version != "world-production-policy.v1"
-            or self.max_provider_stages != 2
+            self.version not in {"world-production-policy.v1", "world-production-policy.v2"}
+            or (self.version == "world-production-policy.v1" and self.max_provider_stages != 2)
+            or (self.version == "world-production-policy.v2" and (type(self.max_provider_stages) is not int or not 3 <= self.max_provider_stages <= 5))
             or any(
                 isinstance(value, bool)
                 or not isinstance(value, int)

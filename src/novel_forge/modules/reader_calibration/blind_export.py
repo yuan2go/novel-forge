@@ -186,6 +186,7 @@ def export_blind_evaluation_packs(
     campaign_secret: str,
     evaluators: Iterable[BlindEvaluator],
     subjects: Iterable[BlindComparisonSubject],
+    subject_population: str = "CHAPTER_ARC",
 ) -> BlindExportBundle:
 
     reviewers = tuple(evaluators)
@@ -212,15 +213,20 @@ def export_blind_evaluation_packs(
             key=lambda item: (item.chapter_start, item.chapter_end, item.subject_id),
         )
     )
-    if not chapters or not arcs:
+    if subject_population not in {"CHAPTER_ARC", "INDEPENDENT_TASKS"}:
+        raise ValueError("blind subject population is invalid")
+    independent = subject_population == "INDEPENDENT_TASKS"
+    if independent and (arcs or len({item.subject_id for item in chapters}) != len(chapters)):
+        raise ValueError("Independent tasks cannot invent Arc coverage or repeat a subject")
+    if not chapters or not independent and not arcs:
         raise ValueError("blind campaign requires Chapter and Arc subjects")
     first_chapter = chapters[0].chapter_start
     last_chapter = chapters[-1].chapter_end
-    if tuple(item.chapter_start for item in chapters) != tuple(
+    if not independent and tuple(item.chapter_start for item in chapters) != tuple(
         range(first_chapter, last_chapter + 1)
     ):
         raise ValueError("blind campaign Chapter subjects must be contiguous")
-    if not any(
+    if not independent and not any(
         item.chapter_start <= first_chapter and item.chapter_end >= last_chapter
         for item in arcs
     ):
@@ -316,6 +322,8 @@ def export_blind_evaluation_packs(
             "evaluation_version": evaluation_version,
             "instructions": {
                 "sequence": (
+                    "Read each independent task pair separately; these tasks do not form an Arc."
+                    if independent else
                     f"Read Chapter pairs {first_chapter} through {last_chapter} "
                     "in order, then complete the Arc pair."
                 ),

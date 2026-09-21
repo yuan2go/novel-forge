@@ -1,0 +1,142 @@
+{
+  "schema_version": "narrative-closure-local-verification.v1",
+  "recorded_at": "2026-09-21T01:14:18.093408+00:00",
+  "scope": [
+    "P1_EXACT_AUTHOR_EDITING",
+    "NATIVE_UNACCEPTED_BOOK_CHAPTER_REPLACEMENT"
+  ],
+  "evidence_state": "EXECUTABLE",
+  "evidence_kind": "SCRIPTED_FIXTURE_POSTGRESQL_AND_REAL_BROWSER",
+  "tested_checkout_head": "3a04a3724ea40eb2b7f9493ab78502f2b04acd5d",
+  "implementation_identity": {
+    "committed": false,
+    "identity_kind": "WORKING_TREE_SOURCE_HASHES",
+    "source_sha256": {
+      "src/novel_forge/api/routers/chapter_editor.py": "bb5f9891c8c026ddebb0e729fd2f3bdd59a0d11f2a09b7131a6636007019f9c8",
+      "src/novel_forge/api/routers/chapter_authority.py": "69085f697c833db97964d4693243fc7eacdc595083d95f2635085aa72e29356c",
+      "src/novel_forge/api/models.py": "f434a063bd1431dc7a62d2131a55f9eb9535a9ba734599f1eca2de4dee35cb44",
+      "src/novel_forge/modules/chapter_authority/author_editor.py": "07c3a52e6b022e050bac1d53e7ffb1277b773b508aefe5acbd1324f41624ff3b",
+      "src/novel_forge/modules/chapter_authority/author_draft.py": "66e3828cbc571d41a2ce76b0ca4cd1a572585937f5bc6bda42ddb6d113ad6577",
+      "src/novel_forge/modules/chapter_authority/application.py": "f4b7ca98a3905120a6cb2c6db9317fafe2923683be3348b8d59a6a366b479777",
+      "src/novel_forge/modules/chapter_authority/definitions.py": "645b84f579b451a3a59af3443a0fefe52ecf0180b77de9c0bdb494e06b1005f9",
+      "src/novel_forge/modules/chapter_authority/handlers.py": "22d2cf98eeebd3ebc08908b04a71e50be1c547abc6652e1efccf5b74cdd5b1e1",
+      "src/novel_forge/modules/chapter_authority/runtime.py": "20eea5be704d220a4e5469230f8311b8027c90c9691f890b77b7d8917da83381",
+      "src/novel_forge/modules/chapter_authority/scheduler.py": "28829fa00e8e80e2d7aed281db9b1eec6b04c6e28817b7d1bc52327d98ba3508",
+      "src/novel_forge/modules/chapter_authority/orchestrator.py": "9005fabfe2d527fd87d578ed26e9e1548260577aa16960c5bbd16020208eee54",
+      "src/novel_forge/modules/chapter_authority/export_delivery.py": "96ec2e488b8aa2fe816256488c64cc057de48943572d982fa08772b0d8834658",
+      "src/novel_forge/modules/book_authority/author_revision.py": "1bd46e9384b18e67f0d42091b7697bfbd40963df86d90520136907c2f0d61e92",
+      "src/novel_forge/modules/book_authority/production.py": "fa9f7ed259559e28c26ef7b809dd2e65a38b4f1225c40cd2045df1148f276a68",
+      "src/novel_forge/modules/chapter_group_authority/author_revision.py": "b6d29ba73bc830f07cbc17c9bf9f2cf39bd94cc4404a1d509a14a9a82a95f160",
+      "src/novel_forge/storage/book_authority_repositories.py": "f1a59782b98c13e7f11cec2b654aeaf71b2080b0dcac27b6132233f7d17dbabb",
+      "src/novel_forge/storage/migrations/versions/v20260921_0141_author_chapter_replacement.py": "8d5746d7d9865bfdfe1746c731c0ed8d9ddaa5f169239a928586a875dbadcdcd",
+      "web/admin/app/features/editor/EditorPage.tsx": "3ce57f86cced68672dccb61b7024496f2f835147094aec0bc584bd53f1e34811",
+      "web/admin/app/features/editor/api.ts": "f448fe4dbebdff556b4921d288f76899d9b53ad8101e705fdb0d3dc5da3f4e98",
+      "web/admin/app/features/editor/text.ts": "6f6d8d945ea409a96a925b4ea9380ee66512ba230e70b0afce3d044f6d5090f4",
+      "web/admin/app/features/editor/ProseReviewPanel.tsx": "0e9c8f82ae3820b193745d7565f8797c36c82688c851293c9a33722fdbac80a6",
+      "web/admin/tests/author-editor-browser.mjs": "31b914b770fe96702a27867ab7cb6b70816256e22e1e38053c99c414d7eee561",
+      "web/admin/tests/author-editor-text.test.mjs": "7b61400c2d1275db8aca05ef08823a12e16caa7f0469bb1ef6016573f1abc91e",
+      "tests/unit/test_author_editor.py": "b860f5f101d7c7ae1d50660509679ed9f0f4229ccd1422c0d2939e35ca21561e",
+      "tests/integration/test_author_editor_postgres.py": "cf5860a4e2e1fb1fa615318b486d3848b928db4d3ddbec76d4e7b597a2e43731",
+      "tests/integration/test_author_book_replacement_postgres.py": "3001429035aeac8ca40543983acd33ffc31572090b7bd92ef5760ebc3cdf2a1e",
+      "tests/integration/author_editor_browser_server.py": "90803be52b032bb583f2eb71664638a523c630d4bc9b815996323637f9433b6a"
+    }
+  },
+  "executed_migration_head": "20260921_0141_author_chapter_replacement",
+  "verification": {
+    "unit_and_postgresql": {
+      "status": "PASS",
+      "passed": 15,
+      "subtests_passed": 8,
+      "duration_seconds": 46.74,
+      "command": "NOVEL_FORGE_DATABASE_URL=<isolated editor_test> PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_author_editor.py tests/integration/test_author_editor_postgres.py tests/integration/test_author_book_replacement_postgres.py tests/integration/test_postgresql_only_chapter_slice.py::PostgreSQLOnlyChapterSliceTests::test_standard_success_adapter_completes_without_unknown_probe -q"
+    },
+    "web_unit": {
+      "status": "PASS",
+      "passed": 13,
+      "command": "npm --prefix web/admin test"
+    },
+    "web_typecheck": {
+      "status": "PASS",
+      "command": "npm --prefix web/admin run lint"
+    },
+    "web_production_build": {
+      "status": "PASS",
+      "static_pages": 72,
+      "command": "npm --prefix web/admin run build"
+    },
+    "browser": {
+      "status": "PASS",
+      "groups": 10,
+      "command": "with_server.py (explicit isolated author_editor_browser_server + Next development server) -- node web/admin/tests/author-editor-browser.mjs",
+      "browser_channel": "chrome",
+      "http_api": "ACTUAL_NATIVE_API",
+      "persistence": "ACTUAL_POSTGRESQL",
+      "model": "EXPLICIT_SCRIPTED_FIXTURE_ONLY",
+      "artifact": "browser-result.json"
+    },
+    "ruff": "PASS",
+    "diff_check": "PASS",
+    "generated_next_env_diff": "NONE"
+  },
+  "recovery": [
+    {
+      "case": "save-response-loss-after-commit",
+      "result": "PASS",
+      "injected_at": "browser receives network failure after actual server commit",
+      "verified": "same idempotency key returns one candidate and preserves exact input"
+    },
+    {
+      "case": "book-replacement-admission-before-link-loss",
+      "result": "PASS",
+      "injected_at": "after_author_replacement_admission",
+      "verified": "unlinked new child cannot dispatch; native recover_chapter_submission links same root; repeat does not duplicate request; native Review/Canon completes and Book accepts atomically"
+    },
+    {
+      "case": "superseded-predecessor",
+      "result": "PASS",
+      "verified": "old request/root/assets/delegation terminal status retained; old Chapter cannot be accepted; current group pointer consumes new request"
+    },
+    {
+      "case": "paused-aborted-book",
+      "result": "PASS",
+      "verified": "author replacement cannot implicitly resume or reopen Book"
+    }
+  ],
+  "corrected_failures": [
+    {
+      "observed": "source had no authority_asset_locator and was incorrectly rejected as stale",
+      "correction": "query latest immutable asset version when locator absent; normal locator CAS retained"
+    },
+    {
+      "observed": "frozen native root command omits envelope project/workspace fields",
+      "correction": "bind server-owned Book project/workspace/book into replacement command"
+    },
+    {
+      "observed": "second same-chapter export conflicted on authority_blob_object_key_key",
+      "correction": "new frozen author Draft variant exports under exact asset-version object key; historical contracts retain original object key"
+    },
+    {
+      "observed": "cross-project UI asynchronous load could overwrite recovered local text",
+      "correction": "persist only when loaded project and source version match active selection"
+    },
+    {
+      "observed": "editor session from another source version could display its candidate under the newly selected exact base",
+      "correction": "response attaches a candidate session only to its matching base asset version; full chapter CAS version remains; real browser switches two native source versions and returns to preserved adopted input"
+    }
+  ],
+  "boundaries": {
+    "real_provider_calls": 0,
+    "real_provider": "NOT_RUN",
+    "paid_usage": "NONE",
+    "scripted_fixture_usage": "NOT_METERED_BY_BROWSER",
+    "human_editorial_quality": "NOT_RUN",
+    "independent_reader_preference": "NOT_RUN",
+    "longform_creative_quality": "NOT_PROVEN",
+    "production_operation": "NOT_PROVEN",
+    "history": "Accepted historical manuscripts remain read-only. Saved historical edit candidates wait for separately authorized edition workflow.",
+    "scene_boundaries": "Changes spanning Scene boundaries require explicit Scene artifacts via the exact backend contract; text-only page keeps scene slot identity and reports mapping conflict.",
+    "acceptance": "Author Adopt records a candidate selection. It is neither Book acceptance nor final manuscript editorial signature nor publication permission.",
+    "page_proof": "Browser registers native Chapter/Book commands and shows progress; scripted PostgreSQL vertical tests exercise subsequent model stages and atomic Book/ChapterGroup acceptance.",
+    "exact_sha": "Full final exact-SHA governance and candidate identity binding are separate root delivery evidence."
+  }
+}

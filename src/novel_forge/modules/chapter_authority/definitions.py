@@ -15,6 +15,7 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.2.1"
 CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.4.1"
+CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION = "3.4.1-author-input.v1"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_ID = "chapter_authority_slice"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION = CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
 CHAPTER_MODEL_WORKFLOW_DEFINITION_REF = (
@@ -150,12 +151,13 @@ def chapter_operation_definitions(
     commit_sha: str,
     model_effects_required: bool = False,
     semantic_retrieval_available: bool = False,
+    author_input: bool = False,
 ) -> tuple[dict[str, Any], ...]:
     if not application_build_id or len(commit_sha) != 40:
         raise ValueError(
             "application_build_id and a 40-character commit_sha are required"
         )
-    return tuple(
+    definitions = tuple(
         _definition(
             node,
             application_build_id=application_build_id,
@@ -165,6 +167,20 @@ def chapter_operation_definitions(
         )
         for node in ChapterNode
     )
+    if not author_input:
+        return definitions
+    from copy import deepcopy
+    author = deepcopy(next(item for item in definitions if item["name"] == ChapterNode.DRAFT.definition_name))
+    author["definition_version"] = CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
+    author["external_capabilities"] = []
+    completion = author["completion_contract"]
+    completion.pop("required_external_effects", None)
+    completion["version"] = "chapter.draft.author-input.completion.v1"
+    completion["required_asset_selectors"].append({
+        "selector": "author_draft_adoption_evidence", "output_key": "chapter.draft.author_adoption",
+        "role": "completion_evidence", "lifecycle": "ACTIVE", "eligibility": "ELIGIBLE", "governance": "CLEAR",
+    })
+    return (*definitions, author)
 
 
 def chapter_root_operation_definition(

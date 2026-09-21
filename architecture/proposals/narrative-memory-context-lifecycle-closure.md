@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `5580b4d7de74cae2478e52248b94a60c11165bb2`
+Reality baseline: `6b67b212abed2e0ffbe8250b752f9d4f2dadb33a`
 Baseline implementation identity:
-`sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a`
+`sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "5580b4d7de74cae2478e52248b94a60c11165bb2",
-    "implementation_tree_sha": "sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a"
+    "sha": "6b67b212abed2e0ffbe8250b752f9d4f2dadb33a",
+    "implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -143,14 +143,14 @@ are projected in [current-system](../../docs/current-system.md). Implemented Gat
 design, former reality matrices and duplicate final-architecture tables have been
 removed. Craft uses the existing Context owner and adds no Digest, retention, GC,
 retrieval representation or cutover owner. Routing campaign accounting and sample
-isolation do not implement these memory lifecycle gates. Chapter sampling retains the
-effective stage Context, schema and tool constraints in its producer identity; this
-does not add Digest generation, retention, retrieval generations or lifecycle cutover.
-Reference Review and ReReview retain the original Context and accepted frontier,
-read only the exact authorized sample, and bind their approved reviewer Pack artifacts.
-These input exceptions do not change memory ownership or implement Gates B–E.
-Reference-agreement routing reads immutable Quality evidence and changes no memory
-mutation, retention or retrieval owner. Gates B–E below remain proposed design,
+isolation do not implement these memory lifecycle gates. Exact cross-chapter windows and
+whole-manuscript coverage now consume immutable accepted prose, while actor preparation
+uses private Context projections. These are source-bound consumers and execution evidence,
+not structured Narrative Digest, retention watermarks, representation cutover or purge.
+Native reference Review/ReReview retain exact authorized samples, effective stage
+Context, accepted frontier and approved reviewer artifacts. Reference-agreement routing
+reads immutable Quality evidence without changing memory mutation or retention owners.
+These persistence records do not supply Gate B–E acceptance evidence. Gates B–E below remain proposed design,
 not executable contracts or proven invariants; their stated bounds require qualification.
 
 ## 7. Gate B — Structured Narrative Digest

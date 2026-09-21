@@ -46,12 +46,14 @@ def evaluate_review_result(
         raise KernelError("REVIEW_SOURCE_REQUIRED", "actionable review requires exact candidate prose")
     normalized: list[dict[str, Any]] = []
     seen_codes: set[str] = set()
+    code_bindings: dict[str, list[str]] = {}
     for ordinal, item in enumerate(issues, start=1):
         code = str(item.get("code") or "").strip()
         severity = str(item.get("severity") or "").lower()
         message = str(item.get("message") or "").strip()
         if not code or severity not in {"blocking", "major", "minor"} or not message:
             raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "review issue is incomplete")
+        provider_code = code
         diagnosis = validate_diagnosis(item, str(prose_text)) if actionable and cross_chapter_window is None else {}
         if cross_chapter_window is not None:
             target = item.get("evidence") or {}
@@ -63,6 +65,7 @@ def evaluate_review_result(
         if code in seen_codes:
             raise KernelError("REVIEW_ISSUE_IDENTITY_INVALID", "review issue codes must be unique so distinct diagnoses survive revision")
         seen_codes.add(code)
+        code_bindings.setdefault(provider_code, []).append(code)
         evidence = item.get("evidence", {}) if isinstance(item.get("evidence"), dict) else {}
         fingerprint = f"{project_id}:{target_asset_version_id}:{code}:{ordinal}".encode()
         normalized.append(
@@ -90,9 +93,16 @@ def evaluate_review_result(
     if decision == "PASSED" and blocking_count:
         raise KernelError("REVIEW_DECISION_CONFLICT", "PASSED review cannot contain blocking issues")
     from .knowledge import validate_knowledge_checks
+    def bind_issue_references(value: Any) -> Any:
+        if isinstance(value, list):
+            return [bind_issue_references(item) for item in value]
+        if isinstance(value, dict):
+            return {key: list(dict.fromkeys(bound for code in item for bound in code_bindings.get(code, [code]))) if key == "issue_codes" and isinstance(item, list)
+                    else bind_issue_references(item) for key, item in value.items()}
+        return value
     targets = list(knowledge_targets or [])
     knowledge_checks = validate_knowledge_checks(
-        checks=result.get("knowledge_checks", []), targets=targets, issues=normalized,
+        checks=bind_issue_references(result.get("knowledge_checks", [])), targets=targets, issues=normalized,
         text=str(prose_text or ""), target_asset_version_id=target_asset_version_id,
         real_model_call=provider_evidence.get("real_model_call") is True,
     )
@@ -100,7 +110,7 @@ def evaluate_review_result(
         decision = "NEEDS_REVISION"
     from .craft import CRAFT_REVIEW_CONTRACT, validate_craft_checks
     craft_checks = validate_craft_checks(
-        checks=result.get("craft_checks", []), targets=list(craft_targets or []), issues=normalized,
+        checks=bind_issue_references(result.get("craft_checks", [])), targets=list(craft_targets or []), issues=normalized,
         text=str(prose_text or ""), target_asset_version_id=target_asset_version_id,
         real_model_call=provider_evidence.get("real_model_call") is True,
     )
@@ -209,8 +219,15 @@ def evaluate_rereview_result(
     decision = reviewed["decision"]
     if blocking_remaining and decision == "PASSED":
         decision = "NEEDS_REVISION"
+    from novel_forge.modules.revision.domain import validate_quality_resolution_checks
+    quality_checks = validate_quality_resolution_checks(revision=revision, revision_asset_version_id=revision_version_id, result=result)
+    if any(row["status"] != "SATISFIED" or row["preservation"] != "PRESERVED" for row in quality_checks):
+        decision = "NEEDS_REVISION"
     before_score = require_review_score(initial_review)
     after_score = float(reviewed["score"])
+    from .diagnostics import validate_location
+    relocated = {check["code"]: validate_location(dict(check["evidence"]), str(revision.get("text") or ""))
+                 for check in result.get("resolution_checks", []) if check.get("evidence")}
     return {
         **reviewed,
         **craft_preservation,
@@ -221,11 +238,23 @@ def evaluate_rereview_result(
         "revision_version_id": revision_version_id,
         "issue_lineage": issue_lineage,
         "resolution_checks": list(result.get("resolution_checks") or []),
+        **({"quality_resolution_checks": quality_checks,
+            "prior_review_evidence": {"asset_version_id": initial_review_version_id,
+                "target_asset_version_id": initial_review.get("target_asset_version_id"),
+                "target_text_hash": initial_review.get("target_text_hash"),
+                "resolved_issue_codes": list(initial_review.get("resolved_issue_codes") or []),
+                "issue_lineage": list(initial_review.get("issue_lineage") or []),
+                "prior_review_evidence": initial_review.get("prior_review_evidence")}}
+           if quality_checks else {}),
         **({"preservation_checks": result["preservation_checks"]} if initial_review.get("cross_chapter_window") else {}),
         "resolved_issue_codes": sorted(resolved),
         "remaining_issue_codes": sorted(remaining),
         "unresolved_issues": [
-            {**initial_by_code[code], "status": "OPEN", "evidence_scope": "PRIOR_CANDIDATE",
+            {**initial_by_code[code], "status": "OPEN", "evidence_scope": "CURRENT_CANDIDATE" if code in relocated else "PRIOR_CANDIDATE",
+             **({"evidence_locator": relocated[code], "target_asset_version_id": revision_version_id,
+                 "target_text_hash": reviewed["target_text_hash"],
+                 "origin_evidence_locator": initial_by_code[code].get("origin_evidence_locator", initial_by_code[code]["evidence_locator"]),
+                 "origin_target_asset_version_id": initial_by_code[code].get("origin_target_asset_version_id", initial_by_code[code]["target_asset_version_id"])} if code in relocated else {}),
              "origin_review_issue_id": initial_by_code[code].get("origin_review_issue_id", initial_by_code[code].get("review_issue_id"))}
             for code in sorted(remaining)
         ],

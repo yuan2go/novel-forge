@@ -619,6 +619,7 @@ def _seed_inputs(
     governance_action: tuple[str, str] | None = None,
     world_foundation: dict[str, Any] | None = None,
     world_production_policy: dict[str, Any] | None = None,
+    initial_current_state: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     roles = sorted(
         {role for values in GENERATOR_INPUT_ROLES.values() for role in values}
@@ -721,7 +722,7 @@ def _seed_inputs(
             "chapter": 0,
             "chapter_number": 0,
             "state_version": 0,
-            "current_state": {},
+            "current_state": deepcopy(initial_current_state or {}),
             "reducer_applications": [],
             "accepted_state_only": True,
             "initial_state_boundary": "BOOK_PRODUCTION_INPUT_SNAPSHOT",

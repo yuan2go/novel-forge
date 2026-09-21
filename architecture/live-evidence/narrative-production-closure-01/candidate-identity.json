@@ -1,0 +1,662 @@
+{
+  "schema_version": "narrative-closure-candidate-identity.v1",
+  "baseline_sha": "e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332",
+  "baseline_implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed",
+  "baseline_migration_head": "20260920_0139_narrative_reference_sampling",
+  "implementation_commit_sha": "6b67b212abed2e0ffbe8250b752f9d4f2dadb33a",
+  "implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc",
+  "implementation_path_count": 1323,
+  "migration_head": "20260921_0142_prose_editorial_foreign_key_indexes",
+  "frontend_source_records": [
+    {
+      "path": "web/admin/.dockerignore",
+      "sha256": "6f8f287b6223b1ccfe7615bd6d5b737240b1d56f4f13268769d401941d6265b6"
+    },
+    {
+      "path": "web/admin/Dockerfile",
+      "sha256": "261bfbced39a67b15bd30059e1e8d585f777716c2d6e6fb9ed7aa1a97e6811ab"
+    },
+    {
+      "path": "web/admin/app/agent-center/page.tsx",
+      "sha256": "57d6f2d3f755470fc3c77dfae2cdd5e3b14ffd378d40c62f39f832d554be6381"
+    },
+    {
+      "path": "web/admin/app/agent-dispatch/page.tsx",
+      "sha256": "d3c4081e12f8efa9b3068a463d212f31889be49e0b2289dd4f2d037290c8f82f"
+    },
+    {
+      "path": "web/admin/app/agent-operation-coverage/page.tsx",
+      "sha256": "2c0a5c774c09c268156bd3c02eac7ea9942b5b97679e19357fdcfb76fb1178d6"
+    },
+    {
+      "path": "web/admin/app/agent-registry/page.tsx",
+      "sha256": "514ef0a0e7daac309acfd2047f2362f3bdf7f897b5529a96259f06b7df73bfbd"
+    },
+    {
+      "path": "web/admin/app/analysis/page.tsx",
+      "sha256": "0eb9f8c0e34e814fc3e2a0bcee815ce21a4fb04dfa5c65b21e1c7105e21802fc"
+    },
+    {
+      "path": "web/admin/app/analytics/page.tsx",
+      "sha256": "082ed34dbb90244d870522370e081aaab2a246c52737e2a23f2f65eb2e987717"
+    },
+    {
+      "path": "web/admin/app/arc-console/page.tsx",
+      "sha256": "9c8b47661a7446dc1031fdc93362e9ac3af987a63ac1eb790737b309165d8ca8"
+    },
+    {
+      "path": "web/admin/app/assets/page.tsx",
+      "sha256": "0657f07e6614c39add261fb8d8010194f3ba85fb8d88ed9d484f4416af6888d3"
+    },
+    {
+      "path": "web/admin/app/audit-log/page.tsx",
+      "sha256": "6dc6431426eef7e55fd35ba2c0b66cfed14763f249b90a6e4679593f57050931"
+    },
+    {
+      "path": "web/admin/app/batch/page.tsx",
+      "sha256": "882cd5176cd1fe9e2a208aadbf2e22505993d2c16230d595faaf1aa1e5f2c010"
+    },
+    {
+      "path": "web/admin/app/canon-console/page.tsx",
+      "sha256": "995faf0570d6fc991807a5444656d62d7e10004867e85ec320158e0437ea37c7"
+    },
+    {
+      "path": "web/admin/app/canon-graph-v2/page.tsx",
+      "sha256": "78e0444b0e9b32f0b71c2fbd3f36e318d2274afff7c7ad90771b38045ce61727"
+    },
+    {
+      "path": "web/admin/app/character-console/page.tsx",
+      "sha256": "393cc50c8c19ea2b7974e538c005596fefe82b9ee9a1d9815af061475254839e"
+    },
+    {
+      "path": "web/admin/app/context/page.tsx",
+      "sha256": "94ca48363eb53b8473d1f32b8e1e7c2ed6b74ef985b6a1369ac489acba091695"
+    },
+    {
+      "path": "web/admin/app/control/page.tsx",
+      "sha256": "76dbfa5119cafa1eb6656eac5aa12ac210d3562cd95a7e056dbcf4dfb60b610f"
+    },
+    {
+      "path": "web/admin/app/cost-dashboard/page.tsx",
+      "sha256": "af4ed050712bb3b973c63faabff62c57949cfa60a862d433000244ced6a61e18"
+    },
+    {
+      "path": "web/admin/app/editor-chief/page.tsx",
+      "sha256": "91f89c8810fbda3b186a653247183cadcc42ebd8e5b79a125c24655a55c68013"
+    },
+    {
+      "path": "web/admin/app/editor/page.tsx",
+      "sha256": "650ce9d868a986bfef456dfc4e60469ba7332df4a2b7c2299136d7c1537db5ef"
+    },
+    {
+      "path": "web/admin/app/evaluation/page.tsx",
+      "sha256": "9814bc3b955c0bea71735abc38c08c2063fb0f9d58ae8bfc7d579b62061407d3"
+    },
+    {
+      "path": "web/admin/app/features/analysis/AnalysisCenterPage.tsx",
+      "sha256": "efb933e843d6f12932a7ae815ad70fbbb1208624b764b0e872b315f21aecec02"
+    },
+    {
+      "path": "web/admin/app/features/analysis/api.ts",
+      "sha256": "0c6dee1ae1a550231640e0702c07a08a0e1d985c87a5b045edf729af05a4b020"
+    },
+    {
+      "path": "web/admin/app/features/assets/AssetsCenterPage.tsx",
+      "sha256": "ac74602ee8f3444c5b8c3fdccdddfc07e26e94433a11e554365f5a819c52720c"
+    },
+    {
+      "path": "web/admin/app/features/assets/api.ts",
+      "sha256": "0ea50ebc3ecff1aeebcafaa34b6ddbf8d2a2b94bf2f1d401f54d12206daeaac9"
+    },
+    {
+      "path": "web/admin/app/features/batch/BatchProcessingPage.tsx",
+      "sha256": "d2333d98077ceb5550f1aac40acf0757f6ca3112f66ca98392fe9a7c5bcc4942"
+    },
+    {
+      "path": "web/admin/app/features/batch/api.ts",
+      "sha256": "ffb58bd4b187d96d544a8052398271107635899db32a94921d887362ea4dcadd"
+    },
+    {
+      "path": "web/admin/app/features/content-intelligence/ContentIntelligencePages.tsx",
+      "sha256": "0896b16ce8d3678c7a63d635f7465e0eff884d87d27e50bc0a1e0e595b1cfa25"
+    },
+    {
+      "path": "web/admin/app/features/context/ContextBuilderPage.tsx",
+      "sha256": "b2c835fdcc58b5538ca4449c5248f1bfdc1787709ce8c4a58ea5c92e4b25049c"
+    },
+    {
+      "path": "web/admin/app/features/context/api.ts",
+      "sha256": "8303046b45959e5d3c38668e23deb07006395f10eae9985c6e6534bbdec6a55c"
+    },
+    {
+      "path": "web/admin/app/features/control/ProductionControlPage.tsx",
+      "sha256": "140548ba4fea86ce258173d08f3bb1db7f93e360844ebe09e5b3f39f31e12297"
+    },
+    {
+      "path": "web/admin/app/features/control/api.ts",
+      "sha256": "e9d670e32f8f4ae022c7f96d283d3dfe7286fff8994b06579bcd8b9542c4b433"
+    },
+    {
+      "path": "web/admin/app/features/dashboard/DashboardPage.tsx",
+      "sha256": "af94349c4a4864b2314182a905eadd4597e26dd8369845395d7dab82520f9c5e"
+    },
+    {
+      "path": "web/admin/app/features/dashboard/api.ts",
+      "sha256": "b27e02eb71fa9a7375a2cf209d98364cb2a8e3f414cfacd381e049ed6c62107b"
+    },
+    {
+      "path": "web/admin/app/features/editor/EditorPage.tsx",
+      "sha256": "3ce57f86cced68672dccb61b7024496f2f835147094aec0bc584bd53f1e34811"
+    },
+    {
+      "path": "web/admin/app/features/editor/ProseReviewPanel.tsx",
+      "sha256": "0e9c8f82ae3820b193745d7565f8797c36c82688c851293c9a33722fdbac80a6"
+    },
+    {
+      "path": "web/admin/app/features/editor/api.ts",
+      "sha256": "f448fe4dbebdff556b4921d288f76899d9b53ad8101e705fdb0d3dc5da3f4e98"
+    },
+    {
+      "path": "web/admin/app/features/editor/text.ts",
+      "sha256": "6f6d8d945ea409a96a925b4ea9380ee66512ba230e70b0afce3d044f6d5090f4"
+    },
+    {
+      "path": "web/admin/app/features/evaluation/EvaluationCenterPage.tsx",
+      "sha256": "4f3f297e94db3388ecdea77727957bccfe3079e39b426372ce4f47d83c3c3a1d"
+    },
+    {
+      "path": "web/admin/app/features/evaluation/api.ts",
+      "sha256": "4710cea0d08a0a8ac31a5367b858226ff7d92c6e3b650d1c601643ab30dc1fda"
+    },
+    {
+      "path": "web/admin/app/features/feedback/ReaderFeedbackPage.tsx",
+      "sha256": "7cf289100791e56133155ea8629b1f1c97ed1c9305522fe075166665145a580c"
+    },
+    {
+      "path": "web/admin/app/features/feedback/api.ts",
+      "sha256": "cbd015602ddde611b54bd8eacf1cc6927da28d0ac67778d98fd9c9bde55771a1"
+    },
+    {
+      "path": "web/admin/app/features/governance/GovernancePages.tsx",
+      "sha256": "c7d02b521012c8013fa4f358054fc2a00321575da903409051cc8ffeca766681"
+    },
+    {
+      "path": "web/admin/app/features/governance/api.ts",
+      "sha256": "bc26622065eb6d8bcf7263cdae7d548f0d43598b2474e302a85ad82fa28d594f"
+    },
+    {
+      "path": "web/admin/app/features/handoffs/HandoffsPage.tsx",
+      "sha256": "d28e4fc3c7ca1914685c20efcb79a9adb5022fed9d13fa963cff37c2c3c0082d"
+    },
+    {
+      "path": "web/admin/app/features/handoffs/api.ts",
+      "sha256": "e7455ec77a1739494257dd8120e77400b8c916fac178fa4161c93aff762f2786"
+    },
+    {
+      "path": "web/admin/app/features/health/HealthCenterPage.tsx",
+      "sha256": "46276e812e8319380200c4ba0959808771be314c46b2f9f9df1f58dd2c1ba2f3"
+    },
+    {
+      "path": "web/admin/app/features/health/api.ts",
+      "sha256": "85e220d632cb5d5df82f910926fecb09c2bd7384623ea9e852e4bafceec8f78b"
+    },
+    {
+      "path": "web/admin/app/features/impact/ChangeImpactPage.tsx",
+      "sha256": "7d07d1caaa5db5b354c4396c1826866ac2957e7eb7ffe6db669420f32b57c0e3"
+    },
+    {
+      "path": "web/admin/app/features/impact/api.ts",
+      "sha256": "e3ff6bfa58e8ab0d43ee68f2143d300f9c584fa2b778f44a7eae59f4f68d7b68"
+    },
+    {
+      "path": "web/admin/app/features/kg/NovelKGWorkbenchPage.tsx",
+      "sha256": "0e74847cc030337d25c8d21696182657c142def78d6ed007a3224695db1f47c8"
+    },
+    {
+      "path": "web/admin/app/features/kg/api.ts",
+      "sha256": "4dfad5d802b5f2365d04c1e59dc32c28c589fcd3474a6300414e3b015b59cc60"
+    },
+    {
+      "path": "web/admin/app/features/manuscript/ManuscriptWorkbenchPage.tsx",
+      "sha256": "8b8fc5675d0f8fb48b04dc2e56c9b99c86d93683fb665aad2358ef22c8258314"
+    },
+    {
+      "path": "web/admin/app/features/manuscript/api.ts",
+      "sha256": "c7574b36c9a2f47cf03449c941c4e80579fd826f65e39be19898838fa788d326"
+    },
+    {
+      "path": "web/admin/app/features/manuscript/types.ts",
+      "sha256": "1909b1c549b7dfa0e59f4f27ab373843c2b747f7fa90b4b51e0841ad9ad3df87"
+    },
+    {
+      "path": "web/admin/app/features/mkaos/MkaosConsolePage.tsx",
+      "sha256": "ced9b14b278ce82640949fc6fccb3ed27e74f338438138c9a973a647ab5de71f"
+    },
+    {
+      "path": "web/admin/app/features/mkaos/MkaosIngestionPages.tsx",
+      "sha256": "fdefc8754093847a1734f162a00bce4475e1073cc384e1696ba58d1c0629fce8"
+    },
+    {
+      "path": "web/admin/app/features/mkaos/api.ts",
+      "sha256": "dacef4f35239d8fa144c099fffb3f03482a5a6d2b815881f78a2138fe7154dc6"
+    },
+    {
+      "path": "web/admin/app/features/os/AgentDispatchCenterPage.tsx",
+      "sha256": "a4e2472d1cdfa12e7eceab68fbd640757992fe22e3c0a487e0d32cb1a33ef268"
+    },
+    {
+      "path": "web/admin/app/features/os/CostDashboardPage.tsx",
+      "sha256": "c5aa638234cf8bba913d4432674618fe935ff7c7b7243868f05fad06a78663c3"
+    },
+    {
+      "path": "web/admin/app/features/os/EditableAssetConsolePage.tsx",
+      "sha256": "d99439984f9dce833eb53daf505add513c4e19f50edd057cd1ba580d06ae51ed"
+    },
+    {
+      "path": "web/admin/app/features/os/EditorChiefConsolePage.tsx",
+      "sha256": "a804d0524913d43727a14b0ef860e44a4a3e209679adf3231f6c661aede085a3"
+    },
+    {
+      "path": "web/admin/app/features/os/InvalidationMapPage.tsx",
+      "sha256": "c8e25aa1603bfa2f0b8cb4ac6c24aa318fe9617502947f3f93675c961e26e161"
+    },
+    {
+      "path": "web/admin/app/features/os/LongformStabilityPage.tsx",
+      "sha256": "7f75bf89060f3cd421c1aef46a1eb1c4afc739c2976cbb6b6efc234fa2e27c55"
+    },
+    {
+      "path": "web/admin/app/features/os/OperatingSystemConsolePage.tsx",
+      "sha256": "4933e7aa696130167a4117c55f372f1d81d69e3de43d0286ade60402f805a68e"
+    },
+    {
+      "path": "web/admin/app/features/os/ReviewReworkBoardPage.tsx",
+      "sha256": "78ff9097a705648af25b8b4b89800e47a36a7be54629aca8bb4d2ab4578827d7"
+    },
+    {
+      "path": "web/admin/app/features/os/TraceTimelinePage.tsx",
+      "sha256": "f4e40cac3d0eb06d62fad8bf267a7769c0994d94b98eb3d503059be7714693b6"
+    },
+    {
+      "path": "web/admin/app/features/os/WorkflowRuntimeConsolePage.tsx",
+      "sha256": "3948c3301b0aee1473abcb566d544fdbe7e5625d31fb07b90a32e5105cf2acde"
+    },
+    {
+      "path": "web/admin/app/features/os/api.ts",
+      "sha256": "00ea9a06b40beaf8e808a76d7d6aa3f20da05c7dcaf7fcd7d47e48cd65f64384"
+    },
+    {
+      "path": "web/admin/app/features/os/helpers.tsx",
+      "sha256": "881d05b48c0c9a2ace5ea19182b6f775ae0aeb0a2ab4837e5430afe7d99a22bf"
+    },
+    {
+      "path": "web/admin/app/features/production/ProductionChainPage.tsx",
+      "sha256": "0e248f2753b90d0778905d23698afd57692304f94ea36551ddffb21713500a68"
+    },
+    {
+      "path": "web/admin/app/features/production/api.ts",
+      "sha256": "da5cfd663d8afdcb97480f1621b717082807457f812affae7d03f21fb814ae90"
+    },
+    {
+      "path": "web/admin/app/features/projects/ProjectsPage.tsx",
+      "sha256": "e72f7e40ad7b3b2f6b3772a00a10e3b7e63f9edc8c9c70f0ac3e4f06349c32a3"
+    },
+    {
+      "path": "web/admin/app/features/projects/api.ts",
+      "sha256": "27ef0b5b1c3052314e424fb1e3625eba82137cfbc4bd9c0c5aefed315616ac7e"
+    },
+    {
+      "path": "web/admin/app/features/quality/QualityGatePage.tsx",
+      "sha256": "33ca461af3076f0513b7a9ba6a7ec4ea6dfba63454a6bb9723782a16904a499c"
+    },
+    {
+      "path": "web/admin/app/features/quality/api.ts",
+      "sha256": "5b0a648e64d95d0ddd26650284723e0a5471090a6a4c29e75e96fe26ab231150"
+    },
+    {
+      "path": "web/admin/app/features/review/ReviewCenterPage.tsx",
+      "sha256": "7d5cf96e224b7bf70c353609036bfb34371cd3dfab1a935364acd8d2dbf958d9"
+    },
+    {
+      "path": "web/admin/app/features/review/api.ts",
+      "sha256": "156634dcafdceb03bb4389786990eb0d703b1f73bcebd18d6cf9d231de77a192"
+    },
+    {
+      "path": "web/admin/app/features/settings/SettingsCenterPage.tsx",
+      "sha256": "64fe7f68bff797f59b1370fa803c3cde0ed8510b3822b3e186bec118ccdaef5d"
+    },
+    {
+      "path": "web/admin/app/features/settings/api.ts",
+      "sha256": "68da589d1c30790f0d062ec5413c0618f807c8c61b2dcdf51a2cc4553648affd"
+    },
+    {
+      "path": "web/admin/app/features/statistics/DataStatisticsPage.tsx",
+      "sha256": "4d02d0e919fa84570895e4939e2cbb5145a38827d9ad039340aa3d1e6d8ac5ae"
+    },
+    {
+      "path": "web/admin/app/features/statistics/api.ts",
+      "sha256": "60073b4a5a6b1eb87ae4c804e4e9c713a64ad6a14c747172b6acdd81d42d512b"
+    },
+    {
+      "path": "web/admin/app/features/tasks/TasksCenterPage.tsx",
+      "sha256": "d858b8369e8690d2b86c9af94f83aa092cf2118b25e27a4ed5fa805966a5c760"
+    },
+    {
+      "path": "web/admin/app/features/tasks/api.ts",
+      "sha256": "3d2816a1d2d87723f4e1355aef25533bd7d490e0dfcbf5e7978679da875d558d"
+    },
+    {
+      "path": "web/admin/app/features/templates/TemplatesPage.tsx",
+      "sha256": "ae5c04cad9ed204cbaace7cd48f5b2d402a8f010f933e3324668e8d345b6b8ea"
+    },
+    {
+      "path": "web/admin/app/feedback-console/page.tsx",
+      "sha256": "871c24f66ccd6ab5adc6b8f9c491012ffbc72f0f13eaafaa6235170b7b9667f8"
+    },
+    {
+      "path": "web/admin/app/feedback/page.tsx",
+      "sha256": "45d9d25bdc0197b17642de14a74714dc6f0560ce0b35d58f2da74db8b7e77329"
+    },
+    {
+      "path": "web/admin/app/foreshadowing-console/page.tsx",
+      "sha256": "215351578e0fbb1a8736d545a590500630439542cd73579c5310b796e48caa7d"
+    },
+    {
+      "path": "web/admin/app/genre-console/page.tsx",
+      "sha256": "cdd91f7e6c6ad6711afa21176f179341feb32b013abfe378b9a886224c37f6d2"
+    },
+    {
+      "path": "web/admin/app/globals.css",
+      "sha256": "5ce41f53aa56667f0d097524a807ed010b5acc341f26cc72ff227786f6b7228b"
+    },
+    {
+      "path": "web/admin/app/handoffs/page.tsx",
+      "sha256": "287c2d2b804c10d2b865db8e078350bc98489d18d063d9a71fe00851176ca9c2"
+    },
+    {
+      "path": "web/admin/app/health/page.tsx",
+      "sha256": "d00487d6d1216045d18c884aa6c27d36aaa98877e1e2624b4a71c474bcc4549c"
+    },
+    {
+      "path": "web/admin/app/impact/page.tsx",
+      "sha256": "66f4efea6cd0c12cb77a40ada08ac76bec08b52881b1231bed94c145c3613ce6"
+    },
+    {
+      "path": "web/admin/app/invalidation/page.tsx",
+      "sha256": "d9e00362218c7c020709d5d883cc8e937280296041b003bc2ff10f6488007ad9"
+    },
+    {
+      "path": "web/admin/app/kg/page.tsx",
+      "sha256": "c299e8d58554d2afd00b4b51bebe6f466c790521b387cfe98b3617b047aa1c79"
+    },
+    {
+      "path": "web/admin/app/layout.tsx",
+      "sha256": "00d21bf4475fa9de4750c2a3c773f7d6d58afe4004cd0ef410ca87418089704a"
+    },
+    {
+      "path": "web/admin/app/longform-recap/page.tsx",
+      "sha256": "72f7d934e092e9090da457c5867ab0b49d625e6ea4cafb6ddd1a6d065f1bd450"
+    },
+    {
+      "path": "web/admin/app/longform-stability/page.tsx",
+      "sha256": "1423452fc783b1807b40aeda2fda79664a692531b30c11f657374c0500d13a67"
+    },
+    {
+      "path": "web/admin/app/loop-runs/page.tsx",
+      "sha256": "60d8229acc1847e56848c9548d7e837f20fc67c25f610dbf8b16213b23265859"
+    },
+    {
+      "path": "web/admin/app/manuscript/page.tsx",
+      "sha256": "714a5b12884bc6dfbc8b1b0261dc790a1096908a9a76240060bdcc8030089cfd"
+    },
+    {
+      "path": "web/admin/app/mkaos/books/page.tsx",
+      "sha256": "8d11a90bd7a232841c8d2bed2f3d1ef68ed6652f9fec2e88320cb425b43a399c"
+    },
+    {
+      "path": "web/admin/app/mkaos/creative-assets/page.tsx",
+      "sha256": "439238750596f2240d57d2a32baa4184c0694379c7f3e7cc2864449bc37422d5"
+    },
+    {
+      "path": "web/admin/app/mkaos/extraction-jobs/page.tsx",
+      "sha256": "31c5400fcf0a4d866ac56b63bba6aa0596beb6cb5c5506ef28f853f7941f2302"
+    },
+    {
+      "path": "web/admin/app/mkaos/feedback-attribution/page.tsx",
+      "sha256": "8ebc0fd3642056dad48b6c8af095fec82fb07ad36d138e9d167025c34cd366e0"
+    },
+    {
+      "path": "web/admin/app/mkaos/impact/page.tsx",
+      "sha256": "e1145d2af30672a1511c0a614cf09be6d52c4ca3ae6eb140f1efa9d42a882fc8"
+    },
+    {
+      "path": "web/admin/app/mkaos/import/page.tsx",
+      "sha256": "edc8423c8afc3909c8bc3c6281c74f1c9a113880a6d15817cae1e1dedecb67e2"
+    },
+    {
+      "path": "web/admin/app/mkaos/knowledge-graph/page.tsx",
+      "sha256": "cc2d588a1ac1fa170cc25f4d2a1652314899dc45d5f5c69e08867ff4001e7e2a"
+    },
+    {
+      "path": "web/admin/app/mkaos/lineage/page.tsx",
+      "sha256": "d7adcfebd7a418418982c427378c066dc5c223b6fc7cbfcbf5ae19f898e4d751"
+    },
+    {
+      "path": "web/admin/app/mkaos/model-extraction/benchmarks/page.tsx",
+      "sha256": "e06585234bf66def965af1d024a03dec5a28c1ff3f5fdbafe5780b155fb473c6"
+    },
+    {
+      "path": "web/admin/app/mkaos/model-extraction/jobs/page.tsx",
+      "sha256": "df6467b93982233baeb7536a128ac77c19ef21db01817de5f3a9135c59515afe"
+    },
+    {
+      "path": "web/admin/app/mkaos/model-extraction/page.tsx",
+      "sha256": "68f25406a330fbcc94f2627edb11852eb372b6f94936fd6c23b4cc20541ab17c"
+    },
+    {
+      "path": "web/admin/app/mkaos/model-extraction/prompts/page.tsx",
+      "sha256": "06a9a79e5bab114e950b0c09b5a8c0ee209c52ec3d47f14344d96b77d12d686f"
+    },
+    {
+      "path": "web/admin/app/mkaos/model-extraction/review/page.tsx",
+      "sha256": "c80479d51cf17137340dd54b343efe738baaf4e63cdb8475bf9be3a8d97ad367"
+    },
+    {
+      "path": "web/admin/app/mkaos/page.tsx",
+      "sha256": "1656343087d3c95e31498d80a8b9cff3794d3ea9ae03cc5f1d9451bb4103c897"
+    },
+    {
+      "path": "web/admin/app/mkaos/production-gate/page.tsx",
+      "sha256": "1997ee3e953aba9744cba7ea47101dce65ee8e9fe9822c2548080abf6c5a8218"
+    },
+    {
+      "path": "web/admin/app/mkaos/production-gate/reports/page.tsx",
+      "sha256": "d1a7d9a96b415d7486fd9ccee21cb5393a74630dd8be724818a647c353a28d0e"
+    },
+    {
+      "path": "web/admin/app/mkaos/quality/page.tsx",
+      "sha256": "e8c3a3d47cabf662f336844019b9311248aef329e77550f45de47ec3b2150a0e"
+    },
+    {
+      "path": "web/admin/app/mkaos/repositories/page.tsx",
+      "sha256": "faef25f017c50da86e87bff8722ee774c3b9288ab4606d80d2f1b279a66d6179"
+    },
+    {
+      "path": "web/admin/app/novel-kg/page.tsx",
+      "sha256": "3bd41d820ad68db2829da4d56d39e61ef2fc88016dad06f1473443fa54d1311c"
+    },
+    {
+      "path": "web/admin/app/os/page.tsx",
+      "sha256": "b66cfa940e59157e3f371092d67e875ec2eeb40247bc6757aa4bae3089d3d8c3"
+    },
+    {
+      "path": "web/admin/app/page.tsx",
+      "sha256": "83e73d8c924a83095c998088748b7d3000ebc7abc40512e1941182eed4ef10f0"
+    },
+    {
+      "path": "web/admin/app/permission-center/page.tsx",
+      "sha256": "6ab6bdbf3307fd7e4e24f7d4c50311febdf8916f26fec77b886e7d60435ef9ba"
+    },
+    {
+      "path": "web/admin/app/production/page.tsx",
+      "sha256": "6ec1d45d45052182d7157adb41b7851318b983e91f5c7c987a62c83630ec9de1"
+    },
+    {
+      "path": "web/admin/app/projects/page.tsx",
+      "sha256": "3f3b059a854f3db10fcabb22b14b3211905a3fc2d630b84058fbb64555217f9d"
+    },
+    {
+      "path": "web/admin/app/publish-gate/page.tsx",
+      "sha256": "ed340cc32a56ce6e5299f6efc60138e7ec9fb22a6fdc33dbd23600602ec2bdc0"
+    },
+    {
+      "path": "web/admin/app/publishing-feedback-v2/page.tsx",
+      "sha256": "29229ba5b069c618373691acfdf594eaacec2f7632e67890dc299430c9bc739f"
+    },
+    {
+      "path": "web/admin/app/quality/page.tsx",
+      "sha256": "4aedae1c7bd262e2404d6bea64c93f99f17e7371f919ed568ea5d47bf08e1397"
+    },
+    {
+      "path": "web/admin/app/retrieval/page.tsx",
+      "sha256": "4de537d876eaff65483d639a93264994fc050815ff6686764aa282993cf7e1c6"
+    },
+    {
+      "path": "web/admin/app/review-issues/page.tsx",
+      "sha256": "bbf123b071f9797cdbf921e8aa676d75f463412bdd2115c44bef59195cb2ac59"
+    },
+    {
+      "path": "web/admin/app/review-rework/page.tsx",
+      "sha256": "95834a8e4cfa2235c57a85fe396618654e8a40664689ea1f72cbe583b71db7cc"
+    },
+    {
+      "path": "web/admin/app/review/page.tsx",
+      "sha256": "832b329bb8b68b5accc076d226e389534156bb53b8d13ae6b3b14d829fd35b03"
+    },
+    {
+      "path": "web/admin/app/settings/page.tsx",
+      "sha256": "988f29b40a7426c5a1ef42be706e71c0a05ceb4b4352a52684324620f962077f"
+    },
+    {
+      "path": "web/admin/app/shared/api.ts",
+      "sha256": "ed522f0780d1200bed6bf292b2c614f904cd59fda1a87a41cdd5389c90bd423c"
+    },
+    {
+      "path": "web/admin/app/shared/console-shell.tsx",
+      "sha256": "512c9b62f04b22e8bf88909fb633102ba7d98d8b02c83619780bf1e6505bdf70"
+    },
+    {
+      "path": "web/admin/app/shared/feature-shell.tsx",
+      "sha256": "b42d03e1cb26008acaf3c7758f5f9e3b6c0e04502e9746926df28fabd798064d"
+    },
+    {
+      "path": "web/admin/app/shared/navigation.tsx",
+      "sha256": "b808cbb49244ad0d904dae9b13fe7ffa68ae497d1be5c650854e7af4dfdd58d3"
+    },
+    {
+      "path": "web/admin/app/shared/types.ts",
+      "sha256": "65c92502fd5f8a0cd2350751d54f2281bb9c113ed82deb06e4a21affaa86eded"
+    },
+    {
+      "path": "web/admin/app/shared/ui.tsx",
+      "sha256": "1025934d628bac1e5f13c280a164d84fb454a93f8eb3812f6a8138a347a98d38"
+    },
+    {
+      "path": "web/admin/app/statistics/page.tsx",
+      "sha256": "b8d7eae32c627831f5d2897d1840d6e802cbbb3ebbf2433ccb61228cce517809"
+    },
+    {
+      "path": "web/admin/app/style-console/page.tsx",
+      "sha256": "3b990d1406f9b714ed4763ece972f5f4692679a8a2d20f85893512e491775a73"
+    },
+    {
+      "path": "web/admin/app/tasks/page.tsx",
+      "sha256": "06c0adc17c79fbf92cfc527d2e816d1e6b515157f4b2bb608222035ade206190"
+    },
+    {
+      "path": "web/admin/app/templates/page.tsx",
+      "sha256": "a95fed0ab8e6ad9a3f12cacd8c43b44585c7b176a1b79c9352915a79af23aba4"
+    },
+    {
+      "path": "web/admin/app/trace-timeline/page.tsx",
+      "sha256": "05c1f4988f9bda96e1672885cbf7d0e214563cebe0f6886ed6d68e0900f9c23b"
+    },
+    {
+      "path": "web/admin/app/workflow-runtime/page.tsx",
+      "sha256": "13964e36dd2a9133b362428374422abde16eb810eb531deba7197f2b402c1a06"
+    },
+    {
+      "path": "web/admin/next-env.d.ts",
+      "sha256": "7b550dda9686c16f36a17bf9051d5dbf31e98555b30d114ac49fc49a1e712651"
+    },
+    {
+      "path": "web/admin/next.config.mjs",
+      "sha256": "2e7658165913fcc752ca38e8cb478f9ed606d532a3a3566777a70de35fb723b9"
+    },
+    {
+      "path": "web/admin/package-lock.json",
+      "sha256": "f65df2a8045bfd5267f7ee0c0de0db5f498421b1a54719b3dca2f656a5a09f00"
+    },
+    {
+      "path": "web/admin/package.json",
+      "sha256": "eb9aa48605f137abfe73b69ffc41af44578d73e6869de01e38897df523300265"
+    },
+    {
+      "path": "web/admin/public/.gitkeep",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "web/admin/tests/author-editor-browser.mjs",
+      "sha256": "31b914b770fe96702a27867ab7cb6b70816256e22e1e38053c99c414d7eee561"
+    },
+    {
+      "path": "web/admin/tests/author-editor-text.test.mjs",
+      "sha256": "7b61400c2d1275db8aca05ef08823a12e16caa7f0469bb1ef6016573f1abc91e"
+    },
+    {
+      "path": "web/admin/tests/feature-architecture.test.mjs",
+      "sha256": "bb20e2369b632ec87efbf264caa1df22dd731682428343b6fdd0552a683520db"
+    },
+    {
+      "path": "web/admin/tests/playwright-smoke.test.mjs",
+      "sha256": "5dd5eb0a039163a85707e9459d2ef72f4c2df30abf840f18a1548e65bc915ea5"
+    },
+    {
+      "path": "web/admin/tsconfig.json",
+      "sha256": "89b8e14135411a3fe7292f09ca66e7658b214b0976fc848360613807914cb563"
+    }
+  ],
+  "qualification": "COMPLETE_MATRIX_NOT_RUN_USER_REQUEST; see user-directed-test-scope.json; final evidence-only delivery commit does not upgrade partial results",
+  "development_artifacts": "Sourced fixtures and real-browser/API engineering journeys; individual artifacts retain their original development identity and failures. These are not final exact-SHA qualification or real model quality evidence.",
+  "real_provider": "NOT_RUN",
+  "human_review": "NOT_RUN",
+  "longform_quality": "NOT_PROVEN",
+  "production": "NOT_PROVEN",
+  "new_real_provider_calls": 0,
+  "new_real_provider_tokens": 0,
+  "new_real_provider_cost": 0,
+  "existing_account_balance_and_unknown_usage": "NOT_VERIFIED; applicable native grant read failed OperationalError; no permission inferred from historical grants",
+  "full_governance_evidence_root": "/Volumes/DevSSD/Development/Workspace/evidence/nf-closure-0a18d60d9f85",
+  "ci_artifact": "NOT_RUN: GitHub Actions permissions.enabled=false confirmed 2026-09-21; workflow artifact template is repository-pr-governance-${GITHUB_SHA} if enabled by repository owner",
+  "retained_development_failures": [
+    {
+      "run": "unit-r1",
+      "result": "2857 PASS, 22 FAIL",
+      "cause": "v1 World preliminary budget compatibility regression plus stale manifests/projections during development",
+      "resolution": "Restore frozen v1 behavior; retain v2 complete-request estimation; update actual registration/manifests, no threshold change"
+    },
+    {
+      "run": "unit-r2",
+      "result": "2870 PASS, 10 FAIL",
+      "cause": "Uncommitted migration0141/manifest mismatch, stale projection/instruction/test inventories, untracked source identity",
+      "resolution": "Register migration0141 and concrete new tests/instructions; bind projection to committed implementation; final exact-SHA rerun required"
+    }
+  ],
+  "expansion_decision": "HOLD until compatible finite grant, current Provider qualification, two original pilot pairs, independent review and stage release; no literary quality claim from fixture scores",
+  "previous_freeze": {
+    "implementation_commit_sha": "25375164b8dd364ae03153dc4dca971f16f63769",
+    "implementation_tree_sha": "sha256:ec8d7d361b84aa39eb6f06b50bcc62cbf1015a4865725164c5f2c711d703ef2c",
+    "implementation_path_count": 1316
+  },
+  "integrated_origin_main_sha": "84035e3c57ce263fb4b52b427f41d4f89e6a7ac2",
+  "governance_base_sha": "84035e3c57ce263fb4b52b427f41d4f89e6a7ac2"
+}

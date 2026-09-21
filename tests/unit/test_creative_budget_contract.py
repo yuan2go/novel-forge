@@ -7,6 +7,8 @@ import pytest
 
 from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
 from novel_forge.modules.command_kernel.creative_budget_contract import (
+    PAIRED_SAMPLES_VERSION,
+    V5_POLICY_SCHEMA,
     POLICY_SCHEMA,
     arm_for_project,
     classify_phase,
@@ -14,6 +16,59 @@ from novel_forge.modules.command_kernel.creative_budget_contract import (
     validate_comparison_budget,
     validate_policy,
 )
+
+
+def paired_samples_policy():
+    policy = budget_policy()
+    plan = policy["comparison_budget"]
+    plan["contract_version"] = PAIRED_SAMPLES_VERSION
+    pair = deepcopy(plan["arms"])
+    plan["arms"] = []
+    for index in range(8):
+        for original in pair:
+            arm = deepcopy(original)
+            arm.update(sample_id=f"sample-{index}", stage="PILOT" if index < 2 else "EXPLORATION",
+                       project_id=original["project_id"] + str(index), book_id=original["book_id"] + str(index))
+            arm["qualification_allocation"] = {"calls": 1, "tokens": 1000}
+            arm["project_total"] = {key: amount + arm["qualification_allocation"][key] for key, amount in arm["project_total"].items()}
+            plan["arms"].append(arm)
+    plan["shared_total"] = {key: sum(arm["project_total"][key] for arm in plan["arms"]) for key in ("calls", "tokens")}
+    policy["authorization"].update(project_id="project-A0", book_id="book-A0")
+    policy["authorization"]["authorized_cumulative_caps"]["QUALIFICATION"] = {"calls": 1, "tokens": 1000}
+    return policy
+
+
+def test_bounded_paired_samples_use_existing_authorization_contract():
+    policy = paired_samples_policy()
+    _validate(V5_POLICY_SCHEMA, policy, path="$")
+    assert validate_policy(policy) == policy
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+    from novel_forge.modules.command_kernel.creative_budget_contract import V4_POLICY_SCHEMA
+    definition = owned_policy_definition(owner="CREATIVE_EXPERIMENT_BUDGET", content=policy,
+        application_build_id="fixture", commit_sha="a" * 40)
+    assert definition["definition_version"] == "1.5.0"
+    with pytest.raises(ValueError):
+        _validate(V4_POLICY_SCHEMA, policy, path="$")
+    assert arm_for_project(policy["comparison_budget"], "project-B7")["sample_id"] == "sample-7"
+    assert policy["authorization"]["authorized_cumulative_caps"]["CREATION"]["calls"] == 0
+    with pytest.raises(ValueError):
+        _validate(POLICY_SCHEMA, policy, path="$")
+
+
+@pytest.mark.parametrize("mutation", [
+    lambda p: p["arms"][1].update(project_id=p["arms"][0]["project_id"]),
+    lambda p: p["arms"][2].update(book_id=p["arms"][0]["book_id"]),
+    lambda p: p["arms"][0].update(stage="EXPLORATION"),
+    lambda p: p["arms"].pop(),
+    lambda p: p["shared_total"].update(calls=10_000),
+    lambda p: p["arms"][1]["creation_allocation"].update(tokens=5000),
+    lambda p: p.update(accounting_basis="PRICED"),
+])
+def test_paired_samples_cannot_share_scope_shift_stage_or_reset_allowance(mutation):
+    plan = paired_samples_policy()["comparison_budget"]
+    mutation(plan)
+    with pytest.raises(ValueError):
+        validate_comparison_budget(plan)
 
 
 def budget_policy():

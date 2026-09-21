@@ -295,6 +295,8 @@ def create_authority_app(settings: IndustrialSettings):
         create_router as create_book_router,
     )
     from novel_forge.api.routers.book_completion import create_router as create_book_completion_router
+    from novel_forge.api.routers.prose_review import create_router as create_prose_review_router
+    from novel_forge.api.routers.chapter_editor import create_router as create_chapter_editor_router
     from novel_forge.api.routers.context import ProductRouterContext
     from novel_forge.api.routers.authority_projects import (
         create_router as create_project_router,
@@ -426,11 +428,17 @@ def create_authority_app(settings: IndustrialSettings):
             )
         )
     )
+    app.include_router(create_prose_review_router(
+        ProductRouterContext(app_settings=settings, models=product_model_map(), services=services)
+    ))
     app.include_router(
         create_book_completion_router(
             ProductRouterContext(app_settings=settings, models=product_model_map(), services=services)
         )
     )
+    app.include_router(create_chapter_editor_router(
+        ProductRouterContext(app_settings=settings, models=product_model_map(), services=services)
+    ))
     app.include_router(
         create_temporal_query_router(
             ProductRouterContext(

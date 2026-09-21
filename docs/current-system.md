@@ -328,10 +328,10 @@ Formation, World Preparation, Chapter Memo, scene realization, candidate retenti
 accepted-state reconciliation use their native Authorities. External writing workflows
 are not runtime dependencies or competing architecture truth. Independent editorial
 comparison, calibrated semantic review, real reader preference and longitudinal creative
-quality remain unproven. Accepted-history correction and whole-book human acceptance
-retain the unresolved boundaries in the industrial proposal. Actor-isolated decisions,
-market observations and broad author-workbench changes have no authorization or production
-proof through these existing interfaces.
+quality remain unproven. Accepted-history correction retains its edition-policy boundary.
+Versioned editorial policies and signatures are executable contracts, not evidence that a
+real manuscript has received authorized human acceptance. Optional actor isolation is an
+experimental World Preparation mode; market observations have no production proof.
 
 ## Narrative Craft intelligence
 
@@ -504,16 +504,20 @@ Book cursor lock. Chapter carries that snapshot in its existing preparation/inpu
 no additional store, scheduler or Authority is involved.
 
 The existing Review handler binds the current candidate and freezes
-`cross-chapter-review-window.v1`. Coverage is `FULL`, `EXCERPT`, or `NOT_INCLUDED`.
+`cross-chapter-review-window.v2` (existing frozen v1 windows remain readable). Coverage is `FULL`, `EXCERPT`, or `NOT_INCLUDED`.
 `whole-paragraph-ending.v1` keeps complete final paragraphs when full prose does not fit,
 prioritizes the immediately preceding chapter, and reports every excluded range. The
 required previous ending, target, and existing role Context cannot be silently truncated.
-UTF-8 byte screening only selects coverage; the existing complete-request Provider token
-admission and budget reservation remain the hard bound. Insufficient context fails before
+Coverage selection uses the existing `ConservativeTokenEstimator`, records its
+`utf8-third-ceiling.v1` estimate, source/required-context quantities and safety margin.
+It never subtracts byte counts from a token allocation. This selection estimate is not
+a model tokenizer. Existing route-specific complete-request admission includes the
+materialized Prompt, Schema, Craft, before/after evidence, framing, output reserve and
+safety margin; its frozen meter and native budget reservation remain the hard bound. Insufficient context fails before
 Review dispatch. Uncovered prose receives no continuity assurance.
 
-Only Review and ReReview receive that accepted prose window. Revision receives the paired
-source evidence attached to its existing diagnoses. Target/source identities, hashes,
+Review, Revision and ReReview retain the same frozen accepted window. Revision receives
+its paired source evidence and bounded allowed edit locations. Target/source identities, hashes,
 Unicode spans and literal quotes are checked. Six categories cover retelling, causal and
 spatial carryover, motivation, relationships and voice. Serious semantic contradictions
 need high confidence and paired evidence to block; intentional narrative variation,
@@ -525,11 +529,21 @@ Cross-chapter repair uses ordered edits confined to diagnosed candidate location
 server-side reconstruction rejects changes elsewhere. ReReview retains the same source
 coverage, binds the new target hash, and requires explicit per-issue dispositions plus
 mission, event, knowledge, POV, voice, fact, causality, KnowledgeCard and resolved-issue
-preservation checks. Stable diagnosis codes distinguish multiple locations in one category
+preservation checks. The actual Provider view also contains exact original prose and its
+asset/text hashes, Unicode before/after mappings and unchanged-range hashes. Review v4
+and cross-chapter-v2 schema variants align category, judgment, severity and confidence;
+structural validity remains separate from factual and literary judgment. Stable diagnosis codes distinguish multiple locations in one category
 and retain repair lineage. Candidate Selection keeps the prior candidate if a prior blocker
 remains, preservation regresses, or a new blocker appears. Existing Canon and Book
 acceptance remain independent downstream gates. Historical manuscripts remain read-only;
 there is no new historical repair/edition consumer.
+
+Quality-triggered corrections freeze failed-dimension evidence into
+`governed-revision-task-v2` edit ranges. An unlocated issue stops before Provider dispatch
+and requires an author decision; it cannot authorize a whole-chapter rewrite. ReReview
+receives separate Quality resolution checks, retained review evidence and exact before/after
+prose. Candidate selection consumes preservation and those checks before the existing
+Quality and Canon gates run again. Older frozen v1 tasks retain their original contract.
 
 Workspace queries expose the window, paired issues, edits, resolution and comparison
 through existing artifacts, alongside route, admission, trace, receipt and budget evidence.
@@ -554,6 +568,73 @@ Canon source locator from the Canon AssetVersion, state kind and ordinal, retain
 grounded claim for replay. This locator identifies the source claim, not a separate
 accepted event. Causal Debt keeps its stricter prerequisite and exact accepted-event
 validation. Already accepted historical payloads are not rewritten.
+
+## Author editing and manuscript prose review
+
+The existing Admin Editor reads exact Chapter assets through `/product/editor/drafts`
+and `/product/editor/draft`. Saving actual text creates an immutable author candidate;
+Accept/Reject appends an author decision using project/workspace/Book/Chapter scope,
+base asset/text hashes, expected session version and idempotency. A stale base cannot
+win by overwriting newer input. Browser recovery retains unsubmitted text and pending
+command identity; text-area newline presentation is mapped back to exact source text.
+Selection edits use Unicode code-point ranges, and scene artifacts must reconstruct the
+candidate exactly. Saving, adopting, submitting native review, chapter acceptance and
+Book completion are separate actions.
+
+An adopted author candidate enters `chapter.draft.generate@3.4.1-author-input.v1` with
+an exact author adoption evidence asset. This contract performs no `model.draft` effect;
+Review, Revision, ReReview, candidate selection, Quality, Canon and Book acceptance still
+run through their existing owners and gates. Already accepted historical chapters remain
+read-only; an editing candidate does not grant retrospective edition authority. For an
+unaccepted Book child, the Book command appends a replacement request generation bound
+to the exact adopted candidate and settled predecessor. Reservation, native Chapter
+admission and atomic Book/ChapterGroup linkage retain recoverable evidence. Unlinked
+replacement roots cannot dispatch, and a superseded child cannot be accepted. Previous
+requests, results and decisions remain available.
+
+`BookProseReviewCoordinator` extends Book Follow-up with immutable accepted-manuscript
+manifests, exact prose windows, coverage and excluded ranges. `longform.prose_review`
+uses the governed `longform_prose_review` Provider stage through the existing worker and
+ExternalEffect path. Recaps are navigation, never evidence of full prose reading. Reports
+cover structural repetition, character/relationship movement, setup/progression/payoff,
+voice/expression, arc pacing and motivated/costly turns. Located model claims remain
+observations; matching text coordinates do not prove their semantic correctness.
+
+Review progress, pause/resume and dispositions append events. Identical windows may be
+reused only under the same source bytes, policy and implementation; source drift blocks
+currentness. Cross-window aggregation requires lineage and overlapping evidence, with
+conflicting judgments retained for review. Additional exact source ranges can be frozen
+for follow-up verification. The Editor displays covered text and findings and links
+current candidates or native Plan Change proposals. Historical findings remain versioned
+pending editing decisions; neither reports nor inferred impacts rewrite accepted history.
+
+Separate WP02 and Craft campaigns use the existing Book/Chapter commands and native
+creative-experiment budget ledger under `creative-paired-samples-budget.v5`. This contract
+is separate from the existing Provider-calibration campaign v4. The versioned runner freezes paired conditions, gates
+six exploration tasks behind two pilot tasks, resumes native execution and exports text,
+diagnoses, edits, candidate decisions, receipts, costs and failures. Craft observations
+separate adoption, prose implementation, model judgment and independent preference.
+Explicit `narrative-craft-budget.v2` distinguishes continuous spatial clarity from
+expressive devices: spatial-anchor can recur across chapters without temporal hard
+rejection, while relevance, existing scoring, adoption, scene density and composition
+checks still apply. Expressive mechanisms keep cooldown and frequency limits. The default
+and frozen v1 policy remain unchanged; v2 fixes a demonstrated selection exclusion and
+carries no independent effect certification. Blinded offline response packs retain
+disagreements and never mint human qualification
+or a production policy. A matching finite account grant and current Provider/Pack
+qualification are required before real dispatch; engineering fixtures prove no benefit.
+
+World Production v1 remains the default unified two-stage path. An explicit v2 profile
+can enable `world-actor-experiment.v1` for up to three approved actors, one action each,
+one round, and judge plus Director stages. Actor tasks contain allowlisted self traits
+and only that character's known/suspected facts or beliefs from the exact frozen initial
+state or accepted reality; missing private evidence fails before any actor dispatch. Global intent,
+other private states and future outline are excluded from its Provider view. Each actor
+has a stable native effect/receipt and a concise action-basis summary. The judge must
+adjudicate every exact proposal and preserve its action text; no preparation branches or
+partial world action are committed when an actor fails. Existing Planning selects feasible
+proposals; accepted reality changes only through the existing acceptance boundary.
+This is an experimental mode with no demonstrated literary or cost advantage.
 
 ## Production topology
 
@@ -589,7 +670,7 @@ ownership boundaries are:
 | Hierarchical Planning / Plan Change | typed plan contracts, active bindings and future-only replacements | semantic design or executed history |
 | Narrative Realization Authority | approved and frozen event-chain realization contracts | plan scale or accepted actual |
 | Book Authority | book run, accepted cursor and chapter-acceptance transaction | Chapter attempts or Provider receipts |
-| Whole-book Completion Authority | immutable completion cases, exact accepted-source bindings and versioned blocked/rejected decisions | accepted Chapter history, Canon or human evaluator authorization |
+| Whole-book Completion Authority | immutable cases, exact source bindings, authorized editorial policy/signature events and versioned decisions | accepted Chapter history, Canon or publication authorization |
 | ChapterGroup Authority | bounded child coordination and group closure | child saga internals or Book acceptance |
 | ChapterGroup execution policy Authority | immutable execution-policy versions, project selection and frozen Book bindings | narrative quality or child execution state |
 | Chapter Authority | chapter saga, draft/revision candidates and release artifacts | accepted Canon or Book cursor |
@@ -641,7 +722,7 @@ accepted-fact projection.
 | Scene realization slot | prose candidate component | dynamically selected capability and actor knowledge scope; deterministic ordered integration |
 | Planned / accepted Obligation | planning commitment / accepted projection | planned actions never rewrite accepted setup/payoff history |
 | Reader Evidence | observation | may motivate a proposal but cannot directly rewrite truth or plans |
-| Whole-book Completion | case and decision evidence | distinct from terminal cursor; missing native whole-book human policy blocks acceptance |
+| Whole-book Completion | case, policy, signature and decision evidence | distinct from terminal cursor; missing policy, coverage, quality or exact authorized signatures blocks acceptance |
 
 The machine object inventory records `KEEP`, `MERGE`, `SPLIT`, `RENAME`, `DEMOTE`,
 `RETIRE` or `ADD` dispositions. Mission and Scene are a logical split with one persisted
@@ -765,8 +846,14 @@ production command that starts from an idea and owns a finished book. Terminal B
 cursor completion does not imply whole-book acceptance. The independent Completion
 Authority assesses complete accepted/projection history and Arc/obligation closure into
 immutable cases; its decisions bind source digest and case/decision versions. Native
-Chapter/Arc preference evidence does not authorize whole-book acceptance, so absent
-typed whole-book editorial policy produces a recorded blocker, not an accepted book.
+Chapter/Arc preference evidence does not authorize whole-book acceptance.
+`BookEditorialWorkflow` records approved named-reviewer policy, signatures of the exact
+source/manifest/review/release, and revocations. Completion requires current complete
+prose coverage, explicit key-issue dispositions, existing Quality/closure gates and the
+policy signature quorum. Drift or revocation makes current editorial acceptance invalid
+while preserving historical decisions. No completion decision grants publication rights.
+Old immutable v1 assessment markers remain historical; queries separately report the
+current editorial policy and signature state.
 The synchronous
 `ChapterAuthorityApplication.run` seam is fixture-guarded; the production path is durable
 admission plus scheduler ticks. These absences are explicit machine boundaries, not

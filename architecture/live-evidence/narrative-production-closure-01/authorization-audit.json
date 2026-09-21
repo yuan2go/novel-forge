@@ -1,0 +1,351 @@
+{
+  "checked_at": "2026-09-21T00:18:07.506726+00:00",
+  "scope": "WP-NARRATIVE-PRODUCTION-CLOSURE-01",
+  "evidence_class": "LOCAL_OPERATOR_FILES_READ_CURRENT",
+  "records": [
+    {
+      "resource_ref": "operator-local:yu-xian-zhi-wai/historical-authorization-request.json",
+      "content_hash": "sha256:6d7d4619a68c81f694a52e02f6f6e9ad278c50dee6ba727e3bdec238193c008d",
+      "fields": [
+        "book_id",
+        "budget_basis",
+        "confirmation_required",
+        "constraints",
+        "current_task_observable_tokens",
+        "current_task_remote_calls",
+        "independent_human_review",
+        "native_runtime_binding_after_confirmation",
+        "not_an_authorization",
+        "project_id",
+        "proposed_shared_total",
+        "proposed_stage_caps",
+        "smallest_suggested_start",
+        "status",
+        "suggested_route",
+        "task"
+      ],
+      "scope": {
+        "project_id": "first-novel-pilot-20260912",
+        "book_id": "first-novel-pilot-a"
+      },
+      "authorization": {},
+      "budget_contract": {}
+    },
+    {
+      "resource_ref": "operator-local:yu-xian-zhi-wai/budget-policy.json",
+      "content_hash": "sha256:0cab7879e3196dc773ac6e107ee229297fc85d3ee17cb4169943747ef9ace499",
+      "fields": [
+        "authorization",
+        "comparison_budget",
+        "policy_version"
+      ],
+      "scope": {},
+      "authorization": {
+        "authorization_ref": "user:WP-CODEX-NOVEL-PRODUCTION-AND-EXPORT-01:20260913",
+        "project_id": "first-novel-pilot-20260912",
+        "book_id": "first-novel-pilot-a",
+        "authorized_cumulative_caps": {
+          "SOURCE": {
+            "calls": 0,
+            "tokens": 0
+          },
+          "DESIGN": {
+            "calls": 60,
+            "tokens": 1500000
+          },
+          "CREATION_EARLY": {
+            "calls": 150,
+            "tokens": 3750000
+          },
+          "CREATION_LATE": {
+            "calls": 150,
+            "tokens": 3750000
+          },
+          "REPAIR": {
+            "calls": 100,
+            "tokens": 2500000
+          }
+        },
+        "business_scope": {
+          "source_allowed": false,
+          "design_allowed": true,
+          "max_chapter_number": 12
+        }
+      },
+      "budget_contract": {
+        "contract_version": "creative-single-book-budget.v2",
+        "experiment_id": "yu-xian-zhi-wai-author-guided-twelve-v1",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "shared_total": {
+          "calls": 460,
+          "tokens": 11500000
+        }
+      }
+    },
+    {
+      "resource_ref": "operator-local:yu-xian-zhi-wai/authorization.json",
+      "content_hash": "sha256:dfe5c91b4c1ec2a1c5f3ab2b6e18066dbb41abbf87bc73a687c3fcc408361d8e",
+      "fields": [
+        "account_directory",
+        "accounting_basis",
+        "authorization_ref",
+        "authorized_actions",
+        "authorized_cumulative_caps",
+        "authorizer",
+        "book_id",
+        "business_scope",
+        "concurrency",
+        "cumulative_total",
+        "model",
+        "monetary_cost",
+        "operator_identity",
+        "project_id",
+        "reasoning",
+        "restrictions",
+        "source",
+        "task",
+        "unobservable_CLI_overhead"
+      ],
+      "scope": {
+        "authorization_ref": "user:WP-CODEX-NOVEL-PRODUCTION-AND-EXPORT-01:20260913",
+        "project_id": "first-novel-pilot-20260912",
+        "book_id": "first-novel-pilot-a",
+        "business_scope": {
+          "source_allowed": false,
+          "design_allowed": true,
+          "max_chapter_number": 12
+        },
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "authorized_cumulative_caps": {
+          "SOURCE": {
+            "calls": 0,
+            "tokens": 0
+          },
+          "DESIGN": {
+            "calls": 60,
+            "tokens": 1500000
+          },
+          "CREATION_EARLY": {
+            "calls": 150,
+            "tokens": 3750000
+          },
+          "CREATION_LATE": {
+            "calls": 150,
+            "tokens": 3750000
+          },
+          "REPAIR": {
+            "calls": 100,
+            "tokens": 2500000
+          }
+        },
+        "restrictions": [
+          "No paid API switch",
+          "No account/model switch",
+          "No credits purchase",
+          "No budget reset",
+          "Unknown outcomes retain reservations",
+          "No push/PR/merge",
+          "Independent human review NOT_REVIEWED"
+        ]
+      },
+      "authorization": {},
+      "budget_contract": {}
+    },
+    {
+      "resource_ref": "operator-local:guofeng-xuanhuan-01/budget-policy-v2.json",
+      "content_hash": "sha256:5c163b3854adb4b122a517842e5746ebf08313bc24141276423310754307bc64",
+      "fields": [
+        "authorization",
+        "comparison_budget",
+        "policy_version"
+      ],
+      "scope": {},
+      "authorization": {
+        "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913:unused-balance-reallocation-v2",
+        "project_id": "first-novel-pilot-20260912",
+        "book_id": "guofeng-xuanhuan-01",
+        "authorized_cumulative_caps": {
+          "SOURCE": {
+            "calls": 0,
+            "tokens": 0
+          },
+          "DESIGN": {
+            "calls": 100,
+            "tokens": 3500000
+          },
+          "CREATION_EARLY": {
+            "calls": 90,
+            "tokens": 2250000
+          },
+          "CREATION_LATE": {
+            "calls": 210,
+            "tokens": 4250000
+          },
+          "REPAIR": {
+            "calls": 60,
+            "tokens": 1500000
+          }
+        },
+        "business_scope": {
+          "source_allowed": false,
+          "design_allowed": true,
+          "max_chapter_number": 40
+        }
+      },
+      "budget_contract": {
+        "shared_total": {
+          "calls": 460,
+          "tokens": 11500000
+        },
+        "experiment_id": "yu-xian-zhi-wai-author-guided-twelve-v1",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "contract_version": "creative-book-production-budget.v3"
+      }
+    },
+    {
+      "resource_ref": "operator-local:guofeng-xuanhuan-01/formation-authorization-registration.json",
+      "content_hash": "sha256:15be0995d10379c7ed5d87be4a10e05bcfee2d83f20c4903d98731783896505b",
+      "fields": [
+        "derivation",
+        "effective_policy",
+        "effective_policy_sha256",
+        "independent_human_review",
+        "initial_rejection",
+        "registered_at",
+        "registered_by",
+        "registration_executor",
+        "source",
+        "source_policy_sha256"
+      ],
+      "scope": {},
+      "authorization": {},
+      "budget_contract": {}
+    },
+    {
+      "resource_ref": "operator-local:guofeng-xuanhuan-01/budget-policy.json",
+      "content_hash": "sha256:d609c08ee5236a48dae9c342ad954e892a07e0289cb9c5dcefeb77e780c04f9e",
+      "fields": [
+        "authorization",
+        "comparison_budget",
+        "policy_version"
+      ],
+      "scope": {},
+      "authorization": {
+        "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913",
+        "project_id": "first-novel-pilot-20260912",
+        "book_id": "guofeng-xuanhuan-01",
+        "authorized_cumulative_caps": {
+          "SOURCE": {
+            "calls": 0,
+            "tokens": 0
+          },
+          "DESIGN": {
+            "calls": 70,
+            "tokens": 2000000
+          },
+          "CREATION_EARLY": {
+            "calls": 90,
+            "tokens": 2250000
+          },
+          "CREATION_LATE": {
+            "calls": 240,
+            "tokens": 5750000
+          },
+          "REPAIR": {
+            "calls": 60,
+            "tokens": 1500000
+          }
+        },
+        "business_scope": {
+          "source_allowed": false,
+          "design_allowed": true,
+          "max_chapter_number": 40
+        }
+      },
+      "budget_contract": {
+        "shared_total": {
+          "calls": 460,
+          "tokens": 11500000
+        },
+        "experiment_id": "yu-xian-zhi-wai-author-guided-twelve-v1",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "contract_version": "creative-book-production-budget.v3"
+      }
+    },
+    {
+      "resource_ref": "operator-local:guofeng-xuanhuan-01/authorization.json",
+      "content_hash": "sha256:69b3aee7dcd7c90a30df2e81d4703cdeea563b6de676a413f0563d84bed05fa5",
+      "fields": [
+        "account_directory",
+        "accounting_basis",
+        "authorization_ref",
+        "authorized_cumulative_caps",
+        "book_id",
+        "business_scope",
+        "concurrency",
+        "cumulative_total",
+        "decision_summary",
+        "independent_human_review",
+        "model",
+        "operator_identity",
+        "previous_policy",
+        "project_id",
+        "reasoning",
+        "registered_by_execution_agent",
+        "restrictions",
+        "source",
+        "task",
+        "workspace_id"
+      ],
+      "scope": {
+        "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913",
+        "project_id": "first-novel-pilot-20260912",
+        "book_id": "guofeng-xuanhuan-01",
+        "business_scope": {
+          "source_allowed": false,
+          "design_allowed": true,
+          "max_chapter_number": 40
+        },
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "authorized_cumulative_caps": {
+          "SOURCE": {
+            "calls": 0,
+            "tokens": 0
+          },
+          "DESIGN": {
+            "calls": 70,
+            "tokens": 2000000
+          },
+          "CREATION_EARLY": {
+            "calls": 90,
+            "tokens": 2250000
+          },
+          "CREATION_LATE": {
+            "calls": 240,
+            "tokens": 5750000
+          },
+          "REPAIR": {
+            "calls": 60,
+            "tokens": 1500000
+          }
+        },
+        "restrictions": [
+          "No paid API, account change, credits purchase or Source deconstruction",
+          "No budget or unknown reservation reset",
+          "No push, PR, merge or business-database tests",
+          "Exact new pack compilation approvals registered separately with duties separation"
+        ]
+      },
+      "authorization": {},
+      "budget_contract": {}
+    }
+  ],
+  "scope_compatible_grant": false,
+  "native_grant_selection": {
+    "status": "READ_ONLY_NATIVE_SELECTION_UNAVAILABLE",
+    "error_type": "OperationalError"
+  },
+  "real_provider": "NOT_RUN",
+  "new_calls": 0,
+  "qualification": "NOT_CHECKED_FOR_NEW_SCOPE_NO_COMPATIBLE_AUTHORIZATION"
+}

@@ -135,6 +135,16 @@ class ChapterAuthorityScheduler:
 
     def tick(self, *, project_id: str, root_operation_id: str) -> ChapterSchedulerTick:
         root, saga, children = self._graph_state(project_id, root_operation_id)
+        if (root["command_payload"].get("preparation_report") or {}).get("author_book_replacement"):
+            from novel_forge.modules.book_authority.author_revision import (
+                require_author_replacement_dispatch,
+            )
+
+            require_author_replacement_dispatch(
+                self.database_url,
+                command_payload=root["command_payload"],
+                root_operation_id=root_operation_id,
+            )
         if root["definition_snapshot"].get("policy", {}).get("routing_bootstrap_sample") is True:
             return self._tick_provider_sample(project_id, root, saga)
         context = GraphCommandContext(
@@ -785,6 +795,7 @@ class ChapterAuthorityScheduler:
                 [
                     common[ChapterNode.DRAFT],
                     common[ChapterNode.REVIEW],
+                    common[ChapterNode.BEST_CANDIDATE],
                     revision_ref,
                     common[ChapterNode.CONTEXT],
                 ],
@@ -1357,6 +1368,7 @@ class ChapterAuthorityScheduler:
                     command=worker,
                     node=node,
                     registry=self.registry,
+                    author_input=bool((request.preparation_report or {}).get("author_draft_adoption")),
                     sampling=sampling,
                     execution_probe=lambda: probe_operation_execution(
                         self.database_url,

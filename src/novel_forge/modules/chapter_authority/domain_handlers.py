@@ -523,8 +523,8 @@ def normalize_draft_result(
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
 ) -> dict[str, Any]:
-    text = str(result.get("text") or "").strip()
-    if not text:
+    text = str(result.get("text") or "")
+    if not text.strip():
         raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "draft result has no text")
     lineage: dict[str, Any] = {}
     if context_content is not None:

@@ -1,0 +1,22 @@
+{
+  "schema_version": "narrative-closure-owned-fixture-cleanup.v1",
+  "compose_project": "nf-closure-0a18d60d9f85",
+  "run_id": "0a18d60d9f854a7e861861e484c4822d",
+  "ownership_verified": true,
+  "before": {
+    "container": [
+      "bdc47eb27d77"
+    ],
+    "network": [
+      "2d448380f8b1"
+    ],
+    "volume": []
+  },
+  "after": {
+    "container": [],
+    "network": [],
+    "volume": []
+  },
+  "status": "PASS",
+  "exit_code": 0
+}

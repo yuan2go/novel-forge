@@ -8,8 +8,8 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `5580b4d7de74cae2478e52248b94a60c11165bb2`
-Baseline implementation identity: `sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a`
+Current-reality baseline: `6b67b212abed2e0ffbe8250b752f9d4f2dadb33a`
+Baseline implementation identity: `sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc`
 
 <!-- proposal-lifecycle
 {
@@ -18,8 +18,8 @@ Baseline implementation identity: `sha256:a7d4e0d5ff914401699e756fef045618868831
   "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "5580b4d7de74cae2478e52248b94a60c11165bb2",
-    "implementation_tree_sha": "sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a"
+    "sha": "6b67b212abed2e0ffbe8250b752f9d4f2dadb33a",
+    "implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -123,6 +123,24 @@ Baseline implementation identity: `sha256:a7d4e0d5ff914401699e756fef045618868831
     {
       "path": "src/novel_forge/modules/story_design_authority/author_input.py",
       "symbol": "validate_author_decisions"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/editorial.py",
+      "symbol": "BookEditorialWorkflow"
+    },
+    {
+      "path": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
+      "symbol": "BookProseReviewCoordinator"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/author_editor.py"
+    },
+    {
+      "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py",
+      "symbol": "actor_task"
+    },
+    {
+      "path": "src/novel_forge/modules/plan_change_authority/semantic_impact.py"
     }
   ],
   "superseding_refs": [],
@@ -169,10 +187,13 @@ Baseline implementation identity: `sha256:a7d4e0d5ff914401699e756fef045618868831
     },
     {
       "id": "completion-human-quorum",
-      "description": "DESIGN_REVIEW_REQUIRED: independent human/editorial completion evidence and quorum by publication class.",
+      "description": "DESIGN_REVIEW_REQUIRED: publication-class-specific minimum independent human/editorial quorum and actual approved policy/signatures; runtime versioned policy, coverage and signature gates are implemented.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/chapter_quality_authority/qualification.py"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/editorial_domain.py"
         }
       ]
     },
@@ -195,18 +216,57 @@ Baseline implementation identity: `sha256:a7d4e0d5ff914401699e756fef045618868831
       ]
     }
   ],
-  "remaining_work": []
+  "remaining_work": [
+    {
+      "id": "closure-authorized-pilot-and-exploration",
+      "description": "Execute the original two-case pilot, then six-task native-path comparison under matching finite authorization, current qualifications and exact independent inputs; retain all failures and unknown usage.",
+      "evidence_refs": [
+        {
+          "path": "scripts/narrative_closure_campaign.py"
+        },
+        {
+          "path": "config/production/narrative-closure/authorization-request.json"
+        }
+      ]
+    },
+    {
+      "id": "craft-independent-effect-evaluation",
+      "description": "Run separate Craft intervention and collect real blind reader judgments, disagreements and adverse effects; do not infer generation quality from fixed-input revision controls.",
+      "evidence_refs": [
+        {
+          "path": "scripts/narrative_closure_review.py"
+        },
+        {
+          "path": "config/production/narrative-closure/protocol.json"
+        }
+      ]
+    },
+    {
+      "id": "actor-isolation-controlled-benefit",
+      "description": "Compare optional isolated actors against unified preparation with separately authorized budget and independent prose assessment; default remains unchanged without demonstrated benefit.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py"
+        }
+      ]
+    }
+  ]
 }
 -->
 
-Current scope review (2026-09-21): Current ontology, Authority, production descent and
-Craft behavior are documented only in [current-system](../../docs/current-system.md)
-and the checked reality inventory. Implemented architecture and obsolete gap matrices
-have been removed from this proposal. The seven decisions below remain unresolved;
-Craft engineering does not establish human completion quorum, reader-data policy or
-accepted-history correction authority. Native human adjudications used for bounded
-semantic evaluator calibration do not define whole-book completion quorum, grant
-strategic approval or authorize accepted-history mutation.
+Current scope review (2026-09-21): Native author candidates, exact cross-chapter/Craft
+repair, bounded prose-review windows, Plan Change semantic candidates, optional isolated
+actors and versioned editorial signatures are projected in
+[current-system](../../docs/current-system.md). The execution checklist for
+WP-NARRATIVE-PRODUCTION-CLOSURE-01 is superseded by those executable consumers and
+[runtime operations](../../docs/runtime-operations.md); the remaining evaluation work is
+listed below. The former creative assimilation proposal stays terminal, and its WP01 audit
+retains the historical Git baseline `c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4`.
+Existing WP02–WP05 identities are unchanged. Runtime policy/signature support does not
+choose the independent human quorum for a publication class, grant model consumption,
+establish creative benefit or authorize retrospective accepted-history correction. Native human adjudications for
+bounded semantic evaluator calibration remain separate from whole-book completion
+quorum, strategic approval and accepted-history mutation.
 
 ## Unresolved design decisions
 
@@ -231,3 +291,27 @@ required before changing the affected current contract.
 Unresolved decision count: **7**. Foundation ownership is resolved by the implemented
 single Story Design owner and Book Design's immutable binding; a physical service split
 is not a prerequisite for one-fact/one-Authority semantics.
+
+
+## Remaining bounded evaluation and decisions
+
+The original two-case pilot and six-task exploration now have native freeze/run/resume
+and evidence-export commands. Execution still requires a matching finite account grant,
+current Provider/Pack qualification and exact independent Book/Group/plan/author-input
+versions. Current same-implementation A/B runs compare declared native paths, not the
+historical defective SHA; neither those controls nor fixtures establish literary benefit.
+A system contract failure stops expansion. UNKNOWN effects require native reconciliation.
+
+Craft controls remain a separate fixed-author-input review/revision intervention.
+Generation quality and independent reader preference require additional evidence;
+HYPOTHESIS is not upgraded by adoption counts, lexical matches or model self-review.
+The optional actor path remains experimental pending a separately authorized comparison
+of privacy, motivation, surprise, prose naturalness, cost and latency. Editorial completion
+still waits for an approved policy and named human signatures against exact current prose,
+coverage and issue dispositions. Public release is separately authorized.
+
+| Direction | Native consumer and unresolved prerequisite | Decision / exit condition |
+| --- | --- | --- |
+| Market observations | Topic proposal; one rights-backed source, comparable cohort, observation time and missing-value semantics | HOLD until source authorization and a testable topic-quality hypothesis exist; then one bounded input adapter |
+| General association graph | A concrete query unmet by existing accepted/inferred indexes; exact source and relation provenance | HOLD until that query and measured improvement are specified; never merge inferred relations into accepted truth |
+| Short form, scripts or multimedia | Explicit version of accepted prose and an identified downstream adapter; source/output rights | HOLD until the consumer and useful output are approved; model/resource generation and publication need separate authorization |

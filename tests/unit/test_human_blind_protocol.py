@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -25,6 +26,27 @@ def _scores(a: int = 4, b: int = 3) -> dict[str, dict[str, int]]:
         dimension: {"a": a, "b": b}
         for dimension in BLIND_EVALUATION_DIMENSIONS
     }
+
+
+def test_independent_scene_tasks_reuse_blinding_without_inventing_an_arc():
+    subjects = [BlindComparisonSubject(subject_id=f"task-{number}", scope_type=BlindScope.CHAPTER,
+        chapter_start=2, chapter_end=2, canonical_asset_version_id=f"treatment-{number}",
+        baseline_asset_version_id=f"control-{number}", canonical_text="她放下剑，仍守着门。",
+        baseline_text="她把剑收回鞘中，站在门边。", arc_plan_version_ids=()) for number in range(2)]
+    arguments = {"campaign_token": "independent-scenes", "campaign_version": 1,
+                 "protocol_version": "independent-tasks.v1", "evaluation_version": "editorial.v1",
+                 "campaign_secret": "test-independent-secret",
+                 "evaluators": [BlindEvaluator(f"human-{n}", EvaluatorIdentityClass.EXPERIENCED_READER) for n in (1, 2)],
+                 "subjects": subjects}
+    with pytest.raises(ValueError, match="Chapter and Arc"):
+        export_blind_evaluation_packs(**arguments)
+    bundle = export_blind_evaluation_packs(**arguments, subject_population="INDEPENDENT_TASKS")
+    left, right = bundle.packs.values()
+    assert [row.canonical_position for row in left.private_mapping] != [row.canonical_position for row in right.private_mapping]
+    assert "do not form an Arc" in left.public_payload["instructions"]["sequence"]
+    assert all(pair["scope"]["type"] == "CHAPTER" for pair in left.public_payload["pairs"])
+    with pytest.raises(ValueError, match="repeat"):
+        export_blind_evaluation_packs(**{**arguments, "subjects": [subjects[0], replace(subjects[1], subject_id=subjects[0].subject_id)]}, subject_population="INDEPENDENT_TASKS")
 
 
 def _decision(

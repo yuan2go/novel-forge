@@ -17,7 +17,10 @@ from novel_forge.modules.chapter_authority.contracts import (
     ChapterInputAsset,
     ChapterNode,
 )
-from novel_forge.modules.chapter_authority.definitions import chapter_definition_version
+from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION,
+    chapter_definition_version,
+)
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.routing_bootstrap import (
@@ -151,6 +154,7 @@ def execute_chapter_handler(
     command: WorkerLeaseCommand,
     node: ChapterNode,
     registry: ChapterHandlerRegistry,
+    author_input: bool = False,
     execution_probe: Callable[[], object] | None = None,
     sampling: bool = False,
 ) -> ChapterExecutionResult:
@@ -167,7 +171,9 @@ def execute_chapter_handler(
         execution_probe=execution_probe,
         registration=AuthorityHandlerRegistration(
             definition_name=chapter_sample_definition_name(node.value) if sampling else node.definition_name,
-            definition_version=sample_version if sampling else chapter_definition_version(registry.model_effects_required),
+            definition_version=(sample_version if sampling else
+                CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION if author_input and node is ChapterNode.DRAFT
+                else chapter_definition_version(registry.model_effects_required)),
             handler_key="novel_forge.chapter_authority.sample." + node.value if sampling else node.handler_key,
             handler_contract_version="chapter-provider-sample.v1" if sampling else "chapter-authority-handler-v2",
             output_asset_type="chapter_provider_sample" if sampling else node.asset_type,

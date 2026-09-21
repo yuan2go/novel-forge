@@ -909,6 +909,8 @@ class AuthorityChapterCommandRequest(BaseModel):
     book_id: str = Field(min_length=1)
     chapter: int = Field(ge=1)
     idempotency_key: str = Field(min_length=1)
+    author_candidate_asset_version_id: str = ""
+    author_decision_asset_version_id: str = ""
     title_override: str = ""
     premise_override: str = ""
     explicit_asset_version_overrides: dict[str, str | list[str]] = Field(

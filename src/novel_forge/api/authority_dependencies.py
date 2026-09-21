@@ -205,6 +205,7 @@ _PACK_SKILL_FOR_STAGE = {
     "quality_longform": "quality-review",
     "quality_platform": "quality-review",
     "reader_outcome": "quality-review",
+    "longform_prose_review": "quality-review",
     "narrative_semantic_evaluation": "quality-review",
     "agent_session": "agent-loop-governance",
     "retrieval": "context-builder-source-isolation",
@@ -434,6 +435,11 @@ def build_production_execution_composition(
             "NOVEL_FORGE_QUALITY_MODEL",
         ),
         (
+            "longform_prose_review",
+            "NOVEL_FORGE_REVIEW_PROVIDER",
+            "NOVEL_FORGE_REVIEW_MODEL",
+        ),
+        (
             "reader_outcome",
             "NOVEL_FORGE_READER_OUTCOME_PROVIDER",
             "NOVEL_FORGE_READER_OUTCOME_MODEL",
@@ -537,7 +543,7 @@ def build_production_execution_composition(
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_PROVIDER")
                 if stage.startswith("quality_")
-                or stage in {"reader_outcome", "narrative_semantic_evaluation"}
+                or stage in {"reader_outcome", "longform_prose_review", "narrative_semantic_evaluation"}
                 else ""
             )
             or values.get("NOVEL_FORGE_MODEL_PROVIDER")
@@ -557,7 +563,7 @@ def build_production_execution_composition(
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_MODEL")
                 if stage.startswith("quality_")
-                or stage in {"reader_outcome", "narrative_semantic_evaluation"}
+                or stage in {"reader_outcome", "longform_prose_review", "narrative_semantic_evaluation"}
                 else ""
             )
             or ""
@@ -1788,6 +1794,7 @@ def build_book_followup_authority_application(
             execution=execution,
             env=values,
         ),
+        prose_model_port=build_longform_prose_review_model_port(settings, execution=execution, env=values),
         worker_id=str(
             values.get("NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID")
             or "book-followup-authority-worker"
@@ -2060,6 +2067,55 @@ def build_reader_outcome_model_port(
         budget_caps=execution.budget_caps(),
         capability_binder=binder,
         execution_binding_domain="reader_outcome",
+    )
+
+
+def build_longform_prose_review_model_port(
+    settings: IndustrialSettings,
+    *,
+    execution: ProductionExecutionComposition,
+    env: Mapping[str, str] | None = None,
+) -> ExternalEffectChapterModelPort:
+
+    from novel_forge.modules.book_followup_authority.prose_execution import PostgresLongformProseReviewExecutionContractBinder
+
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL database is required for Reader Outcome")
+    values = os.environ if env is None else env
+    runtime_environment = RuntimeEnvironment.parse(
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+    )
+    if runtime_environment is not execution.runtime_environment:
+        raise RuntimeError(
+            "Reader Outcome and Production Execution environments must match"
+        )
+    environment = runtime_environment.value
+    binder = PostgresLongformProseReviewExecutionContractBinder(
+        settings.database_url,
+        execution.gateway.routes,
+        capability_pack_id=str(
+            values.get("NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID")
+            or "longform_prose_review_pack"
+        ),
+        pack_environment=environment,
+        pack_runtime_profile=environment,
+        pack_release_channel=str(
+            values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+        ).upper(),
+        pack_required=runtime_environment.controlled,
+    )
+    execution.gateway.register_execution_binder("longform_prose_review", binder)
+    return ExternalEffectChapterModelPort(
+        settings.database_url,
+        adapter=execution.gateway,
+        worker_id=str(
+            values.get("NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID")
+            or "book-followup-authority-worker"
+        ),
+        max_cost_per_call=execution.max_cost_per_call,
+        budget_caps=execution.budget_caps(),
+        capability_binder=binder,
+        execution_binding_domain="longform_prose_review",
     )
 
 

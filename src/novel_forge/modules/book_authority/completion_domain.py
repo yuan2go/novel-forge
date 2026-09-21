@@ -62,7 +62,7 @@ def completion_result_schema(action: str) -> dict[str, Any]:
                 "type": "string",
                 "enum": ["SUPPORTING_ONLY", "FAIL"]
                 if name == "NARRATIVE_CORRECTNESS"
-                else ["WAITING_EVIDENCE"]
+                else ["WAITING_EVIDENCE", "BOUNDED_HUMAN_EVIDENCE"]
                 if name == "HUMAN_EDITORIAL"
                 else ["NOT_PROVEN"],
             }
@@ -102,6 +102,7 @@ def completion_result_schema(action: str) -> dict[str, Any]:
                     "type": "string",
                     "enum": ["ACCEPTED_HISTORY_CLOSURE_CONTRACT"],
                 },
+                "current_editorial_policy_status": {"type": "string", "enum": ["WAITING_POLICY_APPROVAL", "POLICY_INACTIVE", "AWAITING_AUTHORIZED_SIGNATURES"]},
                 "acceptance_policy_status": {
                     "type": "string",
                     "enum": ["DESIGN_REVIEW_REQUIRED"],
@@ -121,7 +122,7 @@ def completion_result_schema(action: str) -> dict[str, Any]:
                     "type": "string",
                     "enum": ["ACCEPTED", "REJECTED"],
                 },
-                "status": {"type": "string", "enum": ["BLOCKED", "REJECTED"]},
+                "status": {"type": "string", "enum": ["BLOCKED", "REJECTED", "ACCEPTED"]},
                 "rationale": text,
                 "recovery_instruction": text,
             }

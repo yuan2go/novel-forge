@@ -1,0 +1,240 @@
+{
+  "status": "PASS",
+  "proof_ceiling": "SCRIPTED_FIXTURE_API_AND_POSTGRESQL_BROWSER",
+  "steps": [
+    "reload recovers unsaved exact author input",
+    "undo restores exact base",
+    "actual database commit with simulated lost response replays same idempotency key",
+    "native production preparation and Chapter command admit exact adoption; repeat reuses same run; page queries progress separately from Book acceptance",
+    "stale concurrent save rejects and retains author input",
+    "reject persists decision and original text unchanged",
+    "native accepted Book report shows coverage, exact cited evidence, editor linkage, and explicit KEEP_HISTORY disposition",
+    "native prose controls pause/resume unchanged allowance, freeze explicit one-window policy, advance once and disable complete run"
+  ],
+  "scope": {
+    "project_id": "author-project-4f8084f3-189c-4297-97a6-94ab26740d3c",
+    "workspace_id": "author-workspace-840dd173-4b83-4d09-9ed4-a0972e988173",
+    "book_id": "author-book-5522cee7-43a2-4fea-ac13-fae2c452f2eb",
+    "chapter": 1,
+    "base_asset_version_id": "1eada5a6-2e70-4ffe-960b-8a3d886bcbe4",
+    "base_asset_hash": "sha256:26e598347391119fe8a354d25b9a869cee8b46d4e7d9c4d02a4a1730733d9153",
+    "base_text_hash": "sha256:46a79816eb5af1498ee465120bfc5b866136c76981e01882b0748c9e74b102ce",
+    "expected_version": 0
+  },
+  "state": {
+    "project_id": "author-project-4f8084f3-189c-4297-97a6-94ab26740d3c",
+    "workspace_id": "author-workspace-840dd173-4b83-4d09-9ed4-a0972e988173",
+    "book_id": "author-book-5522cee7-43a2-4fea-ac13-fae2c452f2eb",
+    "chapter": 1,
+    "base_asset_version_id": "1eada5a6-2e70-4ffe-960b-8a3d886bcbe4",
+    "base_asset_hash": "sha256:26e598347391119fe8a354d25b9a869cee8b46d4e7d9c4d02a4a1730733d9153",
+    "base_text_hash": "sha256:46a79816eb5af1498ee465120bfc5b866136c76981e01882b0748c9e74b102ce",
+    "text": "　剑😀未出。\n\n她留步。\n",
+    "title": "关山旧约",
+    "scene_artifacts": [],
+    "version": 4,
+    "session": {
+      "status": "REJECTED",
+      "book_id": "author-book-5522cee7-43a2-4fea-ac13-fae2c452f2eb",
+      "chapter": 1,
+      "actor_id": "local-operator",
+      "project_id": "author-project-4f8084f3-189c-4297-97a6-94ab26740d3c",
+      "workspace_id": "author-workspace-840dd173-4b83-4d09-9ed4-a0972e988173",
+      "base_text_hash": "sha256:46a79816eb5af1498ee465120bfc5b866136c76981e01882b0748c9e74b102ce",
+      "contract_version": "chapter-author-edit.v1",
+      "base_asset_version_id": "1eada5a6-2e70-4ffe-960b-8a3d886bcbe4",
+      "decision_asset_version_id": "97b8a38e-33f3-42d6-8ee3-de75774c8cbc",
+      "candidate_asset_version_id": "e81bebb6-0c8d-474e-b03e-f426b6f61bf8"
+    },
+    "candidates": [
+      {
+        "project_id": "author-project-4f8084f3-189c-4297-97a6-94ab26740d3c",
+        "logical_ref": "author-editor/candidates/304b89cc-c0ef-442a-8921-3e685d7cfa45",
+        "category": "author-editor",
+        "asset_id": "author_edit_candidate:50d82f56-ab4d-4c4c-aabb-576fea8c267f",
+        "asset_type": "author_edit_candidate",
+        "asset_version_id": "e81bebb6-0c8d-474e-b03e-f426b6f61bf8",
+        "version_number": 1,
+        "lifecycle": "ACTIVE",
+        "eligibility": "ELIGIBLE",
+        "governance": "CLEAR",
+        "content_hash": "sha256:d9341f57b74e846fa4d832941d1fb48487e16d850de8fa650654100ffa4e3d52",
+        "content": {
+          "text": "　剑😀已归。\n\n她留步。\n",
+          "edits": [
+            {
+              "end": 5,
+              "after": "已归",
+              "start": 3,
+              "before": "未出",
+              "after_end": 5,
+              "after_start": 3
+            }
+          ],
+          "title": "关山旧约",
+          "status": "SAVED_CANDIDATE",
+          "book_id": "author-book-5522cee7-43a2-4fea-ac13-fae2c452f2eb",
+          "chapter": 1,
+          "author_id": "local-operator",
+          "text_hash": "sha256:4e7e1eaf5f8ea456ef053ce7e681e8f7f9798d55e72ca86e61259337051a57e3",
+          "project_id": "author-project-4f8084f3-189c-4297-97a6-94ab26740d3c",
+          "rights_basis": "ORIGINAL_AUTHOR_INPUT",
+          "workspace_id": "author-workspace-840dd173-4b83-4d09-9ed4-a0972e988173",
+          "draft_content": {
+            "text": "　剑😀已归。\n\n她留步。\n",
+            "title": "关山旧约",
+            "chapter": 1,
+            "scene_artifacts": []
+          },
+          "allowed_ranges": [
+            {
+              "end": 13,
+              "start": 0
+            }
+          ],
+          "base_text_hash": "sha256:46a79816eb5af1498ee465120bfc5b866136c76981e01882b0748c9e74b102ce",
+          "base_asset_hash": "sha256:26e598347391119fe8a354d25b9a869cee8b46d4e7d9c4d02a4a1730733d9153",
+          "scene_artifacts": [],
+          "semantic_review": "NOT_RUN",
+          "contract_version": "chapter-author-edit.v1",
+          "source_provenance": {
+            "kind": "HUMAN_AUTHOR_INPUT",
+            "operation_id": "304b89cc-c0ef-442a-8921-3e685d7cfa45"
+          },
+          "base_asset_version_id": "1eada5a6-2e70-4ffe-960b-8a3d886bcbe4"
+        },
+        "updated_at": "2026-09-21 00:56:54.564968+00:00"
+      },
+      {
+        "project_id": "author-project-4f8084f3-189c-4297-97a6-94ab26740d3c",
+        "logical_ref": "author-editor/candidates/b754df38-136d-4f9b-9a50-1f64bd763b34",
+        "category": "author-editor",
+        "asset_id": "author_edit_candidate:426899c3-f023-4417-9411-0e089a22ab4e",
+        "asset_type": "author_edit_candidate",
+        "asset_version_id": "f64a2496-4aab-473e-a309-2cb59e06acbd",
+        "version_number": 1,
+        "lifecycle": "ACTIVE",
+        "eligibility": "ELIGIBLE",
+        "governance": "CLEAR",
+        "content_hash": "sha256:0da26d57851591b5719ace790ed7c51cabc36173eb200fadfe2f49c7e3408b01",
+        "content": {
+          "text": "　剑😀已出。\n\n她留步。\n",
+          "edits": [
+            {
+              "end": 4,
+              "after": "已",
+              "start": 3,
+              "before": "未",
+              "after_end": 4,
+              "after_start": 3
+            }
+          ],
+          "title": "关山旧约",
+          "status": "SAVED_CANDIDATE",
+          "book_id": "author-book-5522cee7-43a2-4fea-ac13-fae2c452f2eb",
+          "chapter": 1,
+          "author_id": "local-operator",
+          "text_hash": "sha256:df26b71cfe65c4dc28ee6308f86cd64f08fdacb70899ed4ac8a9127cd5eb7eca",
+          "project_id": "author-project-4f8084f3-189c-4297-97a6-94ab26740d3c",
+          "rights_basis": "ORIGINAL_AUTHOR_INPUT",
+          "workspace_id": "author-workspace-840dd173-4b83-4d09-9ed4-a0972e988173",
+          "draft_content": {
+            "text": "　剑😀已出。\n\n她留步。\n",
+            "title": "关山旧约",
+            "chapter": 1,
+            "scene_artifacts": []
+          },
+          "allowed_ranges": [
+            {
+              "end": 13,
+              "start": 0
+            }
+          ],
+          "base_text_hash": "sha256:46a79816eb5af1498ee465120bfc5b866136c76981e01882b0748c9e74b102ce",
+          "base_asset_hash": "sha256:26e598347391119fe8a354d25b9a869cee8b46d4e7d9c4d02a4a1730733d9153",
+          "scene_artifacts": [],
+          "semantic_review": "NOT_RUN",
+          "contract_version": "chapter-author-edit.v1",
+          "source_provenance": {
+            "kind": "HUMAN_AUTHOR_INPUT",
+            "operation_id": "b754df38-136d-4f9b-9a50-1f64bd763b34"
+          },
+          "base_asset_version_id": "1eada5a6-2e70-4ffe-960b-8a3d886bcbe4"
+        },
+        "updated_at": "2026-09-21 00:56:52.598700+00:00"
+      }
+    ],
+    "decisions": [
+      {
+        "project_id": "author-project-4f8084f3-189c-4297-97a6-94ab26740d3c",
+        "logical_ref": "author-editor/decisions/5d0602c5-7a78-4fb1-9cbb-730d34ffaa34",
+        "category": "author-editor",
+        "asset_id": "author_edit_decision:2f73d440-634b-4c22-84d3-d13171d64a2d",
+        "asset_type": "author_edit_decision",
+        "asset_version_id": "97b8a38e-33f3-42d6-8ee3-de75774c8cbc",
+        "version_number": 1,
+        "lifecycle": "ACTIVE",
+        "eligibility": "ELIGIBLE",
+        "governance": "CLEAR",
+        "content_hash": "sha256:a910efe352507c29b6ecce34dee8d0ceb4fb59ab90df71be4a2874574656dd8b",
+        "content": {
+          "status": "REJECTED",
+          "book_id": "author-book-5522cee7-43a2-4fea-ac13-fae2c452f2eb",
+          "chapter": 1,
+          "actor_id": "local-operator",
+          "decision": "REJECT",
+          "authority": "AUTHOR_CANDIDATE_SELECTION",
+          "rationale": "保留原文，此候选仅用于拒绝检查。",
+          "text_hash": "sha256:4e7e1eaf5f8ea456ef053ce7e681e8f7f9798d55e72ca86e61259337051a57e3",
+          "project_id": "author-project-4f8084f3-189c-4297-97a6-94ab26740d3c",
+          "workspace_id": "author-workspace-840dd173-4b83-4d09-9ed4-a0972e988173",
+          "book_acceptance": "NOT_GRANTED",
+          "contract_version": "chapter-author-edit.v1",
+          "base_asset_version_id": "1eada5a6-2e70-4ffe-960b-8a3d886bcbe4",
+          "candidate_content_hash": "sha256:d9341f57b74e846fa4d832941d1fb48487e16d850de8fa650654100ffa4e3d52",
+          "candidate_asset_version_id": "e81bebb6-0c8d-474e-b03e-f426b6f61bf8"
+        },
+        "updated_at": "2026-09-21 00:56:54.963813+00:00"
+      },
+      {
+        "project_id": "author-project-4f8084f3-189c-4297-97a6-94ab26740d3c",
+        "logical_ref": "author-editor/decisions/76807b2f-1d0a-442a-b3b4-ab000e15dee8",
+        "category": "author-editor",
+        "asset_id": "author_edit_decision:2c317aa1-d17c-4ab7-900f-89c6d701c477",
+        "asset_type": "author_edit_decision",
+        "asset_version_id": "253a469f-2a52-4cc8-908d-ffbcd2ec63e4",
+        "version_number": 1,
+        "lifecycle": "ACTIVE",
+        "eligibility": "ELIGIBLE",
+        "governance": "CLEAR",
+        "content_hash": "sha256:6a1811e47159fc0bb7f9ad3fc003f7de782a73da4e1f456a0187eaf7f65bf57c",
+        "content": {
+          "status": "ADOPTED_PENDING_REVIEW",
+          "book_id": "author-book-5522cee7-43a2-4fea-ac13-fae2c452f2eb",
+          "chapter": 1,
+          "actor_id": "local-operator",
+          "decision": "ACCEPT",
+          "authority": "AUTHOR_CANDIDATE_SELECTION",
+          "rationale": "浏览器检查：动作次序修改已核对。",
+          "text_hash": "sha256:df26b71cfe65c4dc28ee6308f86cd64f08fdacb70899ed4ac8a9127cd5eb7eca",
+          "project_id": "author-project-4f8084f3-189c-4297-97a6-94ab26740d3c",
+          "workspace_id": "author-workspace-840dd173-4b83-4d09-9ed4-a0972e988173",
+          "book_acceptance": "NOT_GRANTED",
+          "contract_version": "chapter-author-edit.v1",
+          "base_asset_version_id": "1eada5a6-2e70-4ffe-960b-8a3d886bcbe4",
+          "candidate_content_hash": "sha256:0da26d57851591b5719ace790ed7c51cabc36173eb200fadfe2f49c7e3408b01",
+          "candidate_asset_version_id": "f64a2496-4aab-473e-a309-2cb59e06acbd"
+        },
+        "updated_at": "2026-09-21 00:56:52.815552+00:00"
+      }
+    ],
+    "diagnostics": [],
+    "book_runs": [],
+    "book_request": null,
+    "authority": "CHAPTER_CANDIDATES_ONLY",
+    "book_acceptance": "SEPARATE_CANON_AND_BOOK_GATES"
+  },
+  "provider_calls": 0,
+  "real_provider": "NOT_RUN",
+  "human_quality": "NOT_RUN"
+}

@@ -1490,7 +1490,7 @@ def capture_final_provider_requests(*, composition, project_id):
             "review",
             "revision",
             "canon_extraction",
-        } and not request.stage.startswith("quality_"):
+        } and not request.stage.startswith(("quality_", "world_candidates.actor_")):
             continue
         route = contracts.route_snapshot(request.route_snapshot_id)
         admission = SimpleNamespace(route_snapshot=route)

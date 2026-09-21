@@ -235,6 +235,36 @@ def budget() -> BudgetFixture:
     return BudgetFixture()
 
 
+def test_paired_samples_share_one_native_ledger_and_grants_do_not_reset_it():
+    from novel_forge.modules.command_kernel.creative_budget_contract import PAIRED_SAMPLES_VERSION
+
+    ensure_migrated()
+    fixtures = [BudgetFixture(), BudgetFixture()]
+    plan = deepcopy(fixtures[0].plan)
+    plan["contract_version"] = PAIRED_SAMPLES_VERSION
+    plan["arms"] = [{**deepcopy(arm), "sample_id": f"pilot-{index}", "stage": "PILOT", "qualification_allocation": {"calls": 0, "tokens": 0}}
+                    for index, fixture in enumerate(fixtures) for arm in fixture.plan["arms"]]
+    plan["shared_total"] = {key: sum(arm["project_total"][key] for arm in plan["arms"]) for key in ("calls", "tokens")}
+    for fixture in fixtures:
+        fixture.plan = deepcopy(plan)
+        for arm in ("A", "B"):
+            policy = deepcopy(fixture.policies[arm])
+            policy["comparison_budget"] = deepcopy(plan)
+            policy["authorization"]["authorized_cumulative_caps"]["QUALIFICATION"] = {"calls": 0, "tokens": 0}
+            fixture.configure(policy, arm=arm)
+            request, reservation = fixture.reserve("CREATION", 400, arm=arm)
+            assert reserve_provider_budget(DATABASE_URL, request)["reservation_id"] == reservation["reservation_id"]
+    for fixture in fixtures:
+        assert fixture.usage()["shared_total"]["calls_used_or_reserved"] == 4
+        assert fixture.usage()["shared_total"]["conservative_tokens"] == 1600
+        assert fixture.usage()["project_total"]["calls_used_or_reserved"] == 1
+    changed = deepcopy(fixtures[0].policies["A"])
+    changed["policy_version"] = "renamed-campaign-must-not-reset"
+    changed["comparison_budget"]["experiment_id"] += "-reset"
+    with pytest.raises(KernelError, match="CREATIVE_BUDGET_PLAN_IMMUTABLE"):
+        fixtures[0].configure(changed)
+
+
 def test_source_only_grant_and_unused_source_cannot_fund_creation_or_repair(budget: BudgetFixture) -> None:
     policy = budget.policy()
     caps = policy["authorization"]["authorized_cumulative_caps"]

@@ -473,7 +473,7 @@ def test_book_accepted_prose_drives_targeted_repair_and_acceptance(
         assert len(effects) == 2
         effect_id, payload, receipt = effects[-1]
         binding = payload["_production_execution"]["capability_runtime"]
-        assert binding["output_schema_ref"].endswith("cross-chapter-v1")
+        assert binding["output_schema_ref"].endswith("cross-chapter-v2")
         assert binding["provider_admission"]["total_reserved"] > len(HISTORY.encode())
         from novel_forge.modules.chapter_authority.provider_views import (
             build_provider_task_view,
@@ -504,6 +504,24 @@ def test_book_accepted_prose_drives_targeted_repair_and_acceptance(
             [effect_id],
         )
         assert uow.cursor.fetchone() == (1,)
+
+        uow.cursor.execute(
+            "SELECT request_payload FROM authority_external_effect WHERE project_id=%s AND capability='model.rereview' ORDER BY created_at",
+            [project],
+        )
+        rereview_payload = uow.cursor.fetchall()[-1][0]
+        actual_task = build_provider_task_view("rereview", rereview_payload["input"])
+        comparison = actual_task["prose_comparison"]
+        assert BROKEN in comparison["original"]["text"]
+        assert comparison["original"]["asset_version_id"] != comparison["revised"]["asset_version_id"]
+        assert comparison["unchanged_ranges"] and comparison["edits"]
+        assert comparison["original"]["text_hash"] == review["target_text_hash"]
+        rereview_binding = rereview_payload["_production_execution"]["capability_runtime"]
+        frozen_admission = uow.repositories.asset_documents.require(
+            project_id=project,
+            asset_version_id=rereview_binding["provider_admission_asset_version_id"],
+        ).content["contract"]
+        assert frozen_admission["prompt_materialization"]["provider_view"]["component_hashes"]["provider_task_view"] == digest(actual_task)
 
         uow.cursor.execute(
             "SELECT count(*) FROM authority_budget_reservation WHERE project_id=%s AND operation_id=(SELECT operation_id FROM authority_external_effect WHERE external_effect_id=%s) AND status='SETTLED'",

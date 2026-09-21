@@ -215,7 +215,9 @@ def exercise_world_generator_sample(app, harness, *, book_id, source_operation_i
     assert all(item["eligibility"] == "INELIGIBLE" for item in result["outputs"] if item["asset_type"] in {"world_provider_sample", "context_bundle"})
     assert PostgresRoutingRegistry(database_url).campaign(project_id=project_id, campaign_id=project_id)["usage"]["calls_used_or_reserved"] == 3
     with AuthorityUnitOfWork(database_url) as uow:
-        outcomes = domain_gate_outcomes(uow.cursor, project_id=project_id, effect_ids=[item["external_effect_id"] for item in result["effects"]])
+        with patch("novel_forge.modules.story_planning_runtime.world_sampling.AuthorityUnitOfWork",
+                   side_effect=AssertionError("reference projection must reuse its current transaction")):
+            outcomes = domain_gate_outcomes(uow.cursor, project_id=project_id, effect_ids=[item["external_effect_id"] for item in result["effects"]])
         assert len(outcomes) == 1
         projected = next(iter(outcomes.values()))
         assert projected["reference_agreed"] is False and projected["accepted"] is None

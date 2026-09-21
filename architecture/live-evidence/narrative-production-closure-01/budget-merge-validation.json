@@ -1,0 +1,95 @@
+{
+  "schema_version": "narrative-closure-budget-merge-evidence.v1",
+  "exported_at": "2026-09-21T01:32:33.514671+00:00",
+  "evidence_state": "EXECUTABLE",
+  "proof_ceiling": "FIXTURE_ONLY",
+  "real_provider": "NOT_RUN",
+  "human": "NOT_RUN",
+  "creative_benefit": "NOT_PROVEN",
+  "new_origin_main_sha": "84035e3c57ce263fb4b52b427f41d4f89e6a7ac2",
+  "pre_merge_head_sha": "d5b7be1f63ee78d165fca1a740a7089f84b89b52",
+  "exact_sha_qualification": "NOT_CLAIMED; tests ran against the integration working tree before the merge commit",
+  "frozen_source_hashes": {
+    "src/novel_forge/modules/command_kernel/creative_budget_contract.py": "e51caaa6f8aac443548ce11e636547298e8edfdacedf02db871131f6dd9fe27f",
+    "src/novel_forge/modules/command_kernel/creative_budget_runtime.py": "9da6bbcbc7029fecab707e5b81efb34eba8d2d0e25ff3e4263b3dce011c83a51",
+    "src/novel_forge/modules/authority_handler_runtime/policy_commands.py": "829cb9e1ce0610de0292dfa8f892e2631b770250eaeaa6b60724f5e701805526",
+    "src/novel_forge/modules/story_design_authority/evaluation_reference.py": "6b245d6de418b515d73de243c150462d2e8d385486a04bbfeb2f3d8e44656a38",
+    "tests/unit/test_creative_budget_contract.py": "d4efab2fe8223586576a1671d42bb467e15b94e356646e106c8f7ad017e7f41f",
+    "tests/integration/test_routing_bootstrap_budget_postgres.py": "4521f54b21524f039a2037438de2645b023d4271059ac17ea389cc16d4eeb3c8",
+    "config/production/narrative-closure/budget-proposal.json": "6bcdcce56144dccea362310f59973c8da22313b34aa15b4500cf3859ba1320b2"
+  },
+  "contracts": {
+    "upstream_provider_campaign": {
+      "contract_version": "creative-provider-campaign-budget.v4",
+      "schema": "V4_POLICY_SCHEMA",
+      "definition_version": "1.4.0",
+      "schema_equals_upstream": true,
+      "validation_and_monetary_reservation_settlement_functions_ast_equal_to_upstream": true
+    },
+    "unreleased_paired_samples": {
+      "contract_version": "creative-paired-samples-budget.v5",
+      "schema": "V5_POLICY_SCHEMA",
+      "definition_version": "1.5.0",
+      "prior_development_name": "creative-paired-samples-budget.v4",
+      "historical_fixture_evidence_rewritten": false,
+      "accounting_basis": "ACCOUNT_ENTITLEMENT",
+      "phases": [
+        "SOURCE",
+        "CREATION",
+        "REPAIR",
+        "QUALIFICATION"
+      ]
+    }
+  },
+  "database": {
+    "scope": "new isolated *_merge_budget_test database on existing test PostgreSQL instance",
+    "creation_reason": "Keep previous development-only paired-v4 fixture ledger and definition history intact while validating independent published-v4 and unpublished-v5 contracts. No real campaign or allowance was reset.",
+    "fresh_native_migrations": "PASS",
+    "real_database_mutation": false
+  },
+  "executions": [
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_creative_budget_contract.py tests/unit/test_cost_aware_routing.py tests/unit/test_provider_budget_scope.py tests/unit/test_narrative_closure_campaign.py -q --tb=short",
+      "status": "PASS",
+      "passed": 158,
+      "elapsed_seconds": 1.04
+    },
+    {
+      "command": "NOVEL_FORGE_DATABASE_URL=<isolated-merge-budget-test-dsn> PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_creative_experiment_budget_postgres.py tests/integration/test_single_book_budget_postgres.py tests/integration/test_routing_bootstrap_budget_postgres.py tests/integration/test_narrative_closure_campaign_postgres.py -q --tb=short",
+      "status": "FAIL",
+      "passed": 31,
+      "failed": 1,
+      "elapsed_seconds": 82.55,
+      "failure": "test_native_reference_evaluation_stays_out_of_domain_qualification[trusted_projection]",
+      "root_cause": "New upstream reference projection reopened a database UoW from cursor.connection.info.dsn. The driver omits the password, so the reopened pool could not authenticate.",
+      "fix": "Extracted existing exact reference validation into a cursor helper. Public database-url callers open one UoW; outcome projection reuses its existing authenticated cursor for label, subject and adjudication reads. No DSN exposure or PGPASSWORD workaround.",
+      "regression": "The existing real PostgreSQL test now forbids new reference UoW construction during outcome projection and retains all independent-author, exact-lineage, subjective-reference and no-domain-qualification assertions."
+    },
+    {
+      "command": "NOVEL_FORGE_DATABASE_URL=<isolated-merge-budget-test-dsn> PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_creative_experiment_budget_postgres.py tests/integration/test_single_book_budget_postgres.py tests/integration/test_routing_bootstrap_budget_postgres.py tests/integration/test_narrative_closure_campaign_postgres.py -q --tb=short",
+      "status": "PASS",
+      "passed": 32,
+      "elapsed_seconds": 76.84
+    },
+    {
+      "command": ".venv/bin/ruff check <six scoped changed Python files>",
+      "status": "PASS"
+    },
+    {
+      "command": "git diff --check -- <seven scoped modified files>",
+      "status": "PASS"
+    }
+  ],
+  "compatibility_checks": [
+    "Upstream v4 schema object compared equal to merge-stage-3 source.",
+    "Upstream monetary allocation/campaign validators and campaign scope/entitlement/limits/settlement function ASTs compared unchanged.",
+    "Paired v5 schema and definition 1.5.0 validated; published v4 schema rejects paired policy.",
+    "Automatic creative_budget_scope PRODUCTION permission and cost_routing reference metric retain native behavior; new Actor and longform stages remain present.",
+    "The PostgreSQL suite covers paired cumulative ledger, immutable scope, unknown usage, retries, source permission, single-book reallocation, mixed USD and entitlement settlement, price expiry, native reference evaluation, and campaign receipt-loss recovery."
+  ],
+  "limits": [
+    "All Provider observations in these tests are explicit scripted fixtures. Native-shaped trusted-reference projection data does not establish real model or human evidence.",
+    "Overlapping test invocations must not be summed as unique tests.",
+    "Final exact-SHA governance and release evidence are owned by the parent delivery flow."
+  ]
+}

@@ -57,7 +57,9 @@
         "src/novel_forge/modules/story_planning_runtime/execution.py",
         "src/novel_forge/modules/chapter_authority/provider_views.py",
         "src/novel_forge/modules/source_import/corpus_ingestion/narrative_contracts.py",
-        "src/novel_forge/modules/review/craft.py"
+        "src/novel_forge/modules/review/craft.py",
+        "src/novel_forge/modules/revision/domain.py",
+        "src/novel_forge/modules/worldbuilding/actor_isolation.py"
       ],
       "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
       "owner": "runtime-authorities",
@@ -67,7 +69,6 @@
     {
       "id": "admin-embedded-instructions",
       "patterns": [
-        "web/admin/app/features/editor/EditorPage.tsx",
         "web/admin/app/features/evaluation/api.ts"
       ],
       "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",

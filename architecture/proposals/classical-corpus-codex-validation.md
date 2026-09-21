@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `5580b4d7de74cae2478e52248b94a60c11165bb2`
+Reality baseline: `6b67b212abed2e0ffbe8250b752f9d4f2dadb33a`
 Baseline implementation identity:
-`sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a`
+`sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "5580b4d7de74cae2478e52248b94a60c11165bb2",
-    "implementation_tree_sha": "sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a"
+    "sha": "6b67b212abed2e0ffbe8250b752f9d4f2dadb33a",
+    "implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -115,11 +115,14 @@ and Source/MKAOS mechanics are documented only in [current-system](../../docs/cu
 The completed G1/G2 implementation plans and historical review paragraphs have been
 removed. G3/G4 below specify a proposed bounded real-Provider campaign, not observed
 results. Campaign sampling quotas and independent-input counts do not execute G3/G4
-or establish calibrated judges. Native Chapter generator sampling now preserves the
-original frozen task and approved producer contract in an isolated Kernel Saga; its
-ineligible samples and scripted recovery tests do not execute the four-arm campaign. World reference sampling can now evaluate a generator sample without formal World generation; this does not supply calibrated judges or real corpus consumption. Scoped Chapter reference outcomes now feed the native routing benchmark with separate
-label strata and protocol identities; no real reference observations exist from this WP.
-The original Craft fixture corpus does not perform this campaign, establish
+or establish calibrated judges. The native paired-sample budget v5 and author-input
+review/revision campaign reuse the same ledger and isolation boundary. Their two-plus-six
+original scenes do not replace the twenty-work ingestion/consumption cohort or the G4
+four-arm twelve-chapter experiment. A matching new grant, real corpus consumption and
+independent editorial evidence remain missing for those original acceptance conditions. Native Chapter and World reference sampling
+retains frozen task/producer contracts, independent label strata and routing protocol
+identities. These isolated scripted sampling paths do not execute G3/G4 or supply real
+reference observations. The original Craft fixture corpus does not perform this campaign, establish
 classical-text consumption, authorize model spend or supply independent editorial proof.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption

@@ -421,3 +421,109 @@ def test_provider_views_isolate_history_and_schema_keeps_legacy_contract():
     )
     with pytest.raises(KernelError):
         validate_chapter_provider_output_against_schema("review", old, response)
+
+
+def test_normal_chinese_chapter_uses_token_estimate_then_complete_admission():
+    text = "沈舟沿着石阶退到东门，左臂的旧伤仍使他不能举剑。" * 120
+    frozen = freeze_review_window(source_snapshot(), candidate_id="draft", text=text,
+                                 context_token_budget=6000, protected_context={},
+                                 required_context={"craft": "交代目标、空间和代价。" * 20})
+    assert len(text.encode()) > 6000
+    assert frozen["sources"][0]["coverage"] == "FULL"
+    meter = frozen["selection_meter"]
+    assert meter["precision"] == "ESTIMATE_ONLY"
+    assert meter["required_context_tokens"] + meter["source_tokens"] + meter["safety_margin_tokens"] <= 6000
+    with pytest.raises(KernelError, match="CONTEXT_INSUFFICIENT"):
+        freeze_review_window(source_snapshot(), candidate_id="draft", text=text * 3,
+                             context_token_budget=6000, protected_context={})
+
+
+def test_schema_normalization_and_domain_agree_on_judgment_combinations():
+    from itertools import product
+    from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+    schema = extend_provider_schema(chapter_provider_output_schema("review"), "review")
+    judgments = ["SEMANTIC_CONFLICT", "SEMANTIC_CONTRADICTION", "LIKELY_CONTINUITY_PROBLEM", "AESTHETIC_SUGGESTION", "UNCERTAIN"]
+    for category, judgment, severity, confidence, interpretation in product(
+        ["CRAFT_EFFECT", "CAUSAL_CARRYOVER"], judgments, ["blocking", "major", "minor"],
+        ["HIGH", "LOW"], ["CONTINUITY_PROBLEM", "MOTIVATED_CHANGE"],
+    ):
+        value = {**issue(category), "judgment_kind": judgment, "severity": severity,
+                 "confidence": confidence, "interpretation": interpretation}
+        raw = {"score": 70, "issues": [value], "knowledge_checks": [], "resolution_checks": [], "preservation_checks": []}
+        try:
+            validate_chapter_provider_output_against_schema("review", schema, raw)
+            structural = True
+        except KernelError:
+            structural = False
+        try:
+            normalized = normalize_model_output("review", raw)
+            evaluate_review_result(project_id="p", target_asset_version_id="draft:2", context_bundle_version_id="ctx",
+                                   chapter=2, result=normalized, provider_evidence={}, prose_text=TARGET, cross_chapter_window=window())
+            domain = True
+        except KernelError:
+            domain = False
+        assert structural == domain, (category, judgment, severity, confidence, interpretation)
+
+
+def test_rereview_materialized_task_retains_exact_before_and_changed_target():
+    original = " \n沈舟😀走到门边。\r\n他没有回头。 "
+    revised = original.replace("走到", "退到")
+    task = build_provider_task_view("rereview", {
+        "original_draft": {"text": original}, "original_draft_asset_version_id": "before:v1",
+        "revision": {"text": revised}, "target_candidate_asset_version_id": "after:v1",
+        "review": {"issues": []}, "cross_chapter_window": window(),
+    })
+    comparison = task["prose_comparison"]
+    assert comparison["original"] == {"asset_version_id": "before:v1", "text_hash": prose_hash(original), "text": original}
+    assert comparison["revised"]["asset_version_id"] == task["target_identity"]["asset_version_id"] == "after:v1"
+    assert task["cross_chapter_window"]["target_candidate_asset_version_id"] == "draft:2"
+    assert comparison["coverage"] == "COMPLETE_BEFORE_AND_AFTER"
+    for span in comparison["unchanged_ranges"]:
+        before = original[span["before_start"]:span["before_end"]]
+        after = revised[span["after_start"]:span["after_end"]]
+        assert before == after and prose_hash(before) == span["text_hash"]
+
+
+def test_unresolved_issue_moves_to_exact_new_span_without_losing_origin():
+    review = initial()
+    text = "雨落了下来。" + TARGET
+    result = rereview_result(review, text=text, status="UNRESOLVED")
+    result["resolution_checks"][0]["evidence"] = {"start": 6, "end": 13, "quote": text[6:13]}
+    after = evaluate_rereview_result(project_id="p", original_draft_version_id="draft:2",
+        initial_review_version_id="review:2", revision_version_id="revision:2", context_bundle_version_id="ctx",
+        initial_review=review, revision={"chapter": 2, "text": text}, result=result, provider_evidence={})
+    carried = after["unresolved_issues"][0]
+    assert carried["code"] == review["issues"][0]["code"]
+    assert carried["evidence_locator"]["quote"] == text[6:13]
+    assert carried["target_text_hash"] == prose_hash(text)
+    assert carried["origin_evidence_locator"] == review["issues"][0]["evidence_locator"]
+    assert after["blocking_issue_count"] == 1
+
+
+@pytest.mark.parametrize('sampling', [False, True])
+def test_native_review_preflight_and_handler_keep_exact_incumbent_and_sample_target(sampling):
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset
+    from novel_forge.modules.chapter_authority.review_window import prepare_native_review
+
+    selected_review = {'score': 80, 'issues': [], 'selection_review_source_asset_version_id': 'kept-review:v1'}
+    incumbent = {'text': '沈舟伤臂仍然不能抬起。', 'selected_source_asset_version_id': 'kept:v1',
+                 'selected_review': selected_review, 'candidate_comparison': {
+                     'selected_asset_version_id': 'kept:v1',
+                     'previous': {'asset_version_id': 'kept:v1', 'score': 80, 'blocker_codes': [], 'review_asset_version_id': 'kept-review:v1'},
+                     'challenger': {'asset_version_id': 'rejected:v1'}}}
+    target = {'text': '沈舟用右手推开东门。'}
+    target_id = 'sample:v1' if sampling else 'revision:v1'
+    target_content = {'sampled_asset_type': 'draft_version', 'sampled_output': target, 'production_eligible': False} if sampling else target
+    command = {'chapter': 2, **({'chapter_sampling': {'generation_sample': {
+        'asset_version_id': target_id, 'content_hash': digest(target_content)}}} if sampling else {})}
+    values = [('original:v1', 'draft_chapter', {'text': TARGET}), ('review:v1', 'review_report', {'issues': []}),
+              ('context:v1', 'context_bundle', {}), ('incumbent:v1', 'best_draft_candidate', incumbent),
+              (target_id, 'chapter_provider_sample' if sampling else 'draft_version', target_content)]
+    request = ChapterHandlerRequest('operation', 'p', 'w', 'trace', 'correlation', command,
+        tuple(ChapterInputAsset(identity, kind, digest(content), content) for identity, kind, content in values))
+    _, _, _, _, payload = prepare_native_review(request, stage='rereview')
+    assert payload['original_draft_asset_version_id'] == 'kept:v1'
+    assert payload['original_draft']['text'] == incumbent['text']
+    assert payload['review'] == selected_review
+    assert payload['target_candidate_asset_version_id'] == target_id
+    assert payload['draft'] == payload['revision'] == target

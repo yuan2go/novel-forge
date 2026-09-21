@@ -1280,6 +1280,10 @@ class _DraftHandler:
     provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        from .author_draft import adopted_author_draft
+        authored = adopted_author_draft(request)
+        if authored is not None:
+            return authored
         plan = request.require_input("chapter_plan")
         intent = request.require_input("chapter_execution_intent")
         memo = request.require_input("chapter_memo")
@@ -1363,11 +1367,16 @@ class _RevisionHandler:
             revision = request.require_input("best_draft_candidate")
             quality = request.require_input("quality_score_report")
             context = request.require_input("context_bundle")
+            from novel_forge.modules.revision.domain import quality_edit_contract
+            edit_contract = quality_edit_contract(revision=revision.content, revision_asset_version_id=revision.asset_version_id,
+                                                  revision_tasks=tuple(item.content for item in quality_tasks))
             revised = self.provider.invoke(
                 request,
                 stage="revision",
                 payload={
+                    **({"quality_edit_contract": edit_contract} if edit_contract is not None else {}),
                     "draft": revision.content,
+                    "review": dict(revision.content.get("selected_review") or {}),
                     "quality": quality.content,
                     "required_actions": [item.content for item in quality_tasks],
                 },
@@ -1426,6 +1435,13 @@ class _ReReviewHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
+        incumbent = next((item for item in request.inputs if item.asset_type == "best_draft_candidate"), None)
+        if incumbent is not None:
+            from dataclasses import replace
+            from .candidate_selection import retained_candidate_evidence
+            retained = retained_candidate_evidence(incumbent.asset_version_id, incumbent.content)
+            draft = replace(draft, asset_version_id=retained.asset_version_id, content=incumbent.content)
+            review = replace(review, asset_version_id=retained.review_asset_version_id, content=dict(incumbent.content["selected_review"]))
         from .review_window import prepare_native_review, require_review_frontier
         revision, context, targets, _, payload = prepare_native_review(request, stage="rereview")
         reviewed = self.provider.invoke(
@@ -1535,12 +1551,15 @@ class _BestCandidateHandler:
                 asset_version_id=revision.asset_version_id,
                 content=revision.content,
                 score=require_review_score(rereview.content),
-                blocker_codes=_blocking_issue_codes(rereview.content),
+                blocker_codes=tuple(sorted(set(_blocking_issue_codes(rereview.content)) | {
+                    check["observation"] for check in rereview.content.get("quality_resolution_checks", [])
+                    if check["status"] != "SATISFIED" or check["preservation"] != "PRESERVED"})),
                 review_asset_version_id=rereview.asset_version_id,
                 diagnostic_contract_version=str(rereview.content.get("diagnostic_contract_version") or ""),
                 resolution_checks=tuple(rereview.content.get("resolution_checks") or []),
                 cross_chapter_review=bool(rereview.content.get("cross_chapter_window")),
                 preservation_checks=tuple(rereview.content.get("preservation_checks") or []),
+                quality_resolution_checks=tuple(rereview.content.get("quality_resolution_checks") or []),
             ),
             minimum_net_improvement=threshold,
             correction_generation=generation,
@@ -2040,6 +2059,7 @@ class _QualityHandler:
             )
             for report in content["evidence_reports"]
         )
+        from novel_forge.modules.revision.domain import freeze_quality_edit_scope
         action_outputs = (
             tuple(
                 ChapterAuxiliaryOutput(
@@ -2050,6 +2070,9 @@ class _QualityHandler:
                         **dict(action),
                         "type": "GovernedRevisionTask",
                         "contract_version": "governed-revision-task-v1",
+                        **({"contract_version": "governed-revision-task-v2", "bounded_edit_scope": freeze_quality_edit_scope(revision=revision.content,
+                            revision_asset_version_id=revision.asset_version_id, quality=content, action=action)}
+                           if (review.content.get("cross_chapter_window") or {}).get("contract_version") == "cross-chapter-review-window.v2" or review.content.get("craft_targets") else {}),
                         "project_id": request.project_id,
                         "chapter": int(content["chapter"]),
                         "target_revision_asset_version_id": revision.asset_version_id,

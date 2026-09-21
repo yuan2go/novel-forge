@@ -1,0 +1,391 @@
+{
+  "schema_version": "craft-policy-fixture-evidence.v1",
+  "exported_at": "2026-09-21T01:09:57.016154+00:00",
+  "evidence_state": "EXECUTABLE",
+  "proof_ceiling": "FIXTURE_ONLY",
+  "real_provider": "NOT_RUN",
+  "human": "NOT_RUN",
+  "creative_benefit": "NOT_PROVEN",
+  "classification": "CONFIGURABLE_POLICY",
+  "identity": {
+    "export_head_sha": "3a04a3724ea40eb2b7f9493ab78502f2b04acd5d",
+    "export_implementation_tree_sha": "sha256:8759133f59d4f51aa61a7adec1c8893f0a51fc3399cc72c3c2b3ffc3b352ec65",
+    "native_fixture_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "exact_test_sha_binding": "DEVELOPMENT_WORKTREE_ONLY"
+  },
+  "read_only_export": {
+    "project_id": "project-22a46f37946a4963ade7d14dbfb74f8a",
+    "method": "native Query/list_runtime_usage and SELECTs under default_transaction_read_only=on",
+    "db_writes": 0
+  },
+  "failure_evidence": {
+    "trigger": "Prior receipt-backed spatial-anchor delivery in chapter 1; chapter 2 still explicitly needs combat positions and exits",
+    "v1_rejection": "CRAFT_COOLDOWN",
+    "red_command": "PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_craft_selection.py -q --tb=short -k \"opt_in_v2 or v2_keeps\"",
+    "red_result": {
+      "failed": 2,
+      "deselected": 9,
+      "cause": "CRAFT_POLICY_INVALID: v2 did not yet exist"
+    },
+    "fix": "Explicit optional v2 exempts only spatial-anchor from temporal hard bans. Default/frozen v1 remains unchanged; context, approvals, composition, density, preservation and ranking penalties remain."
+  },
+  "test_executions": [
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_craft_selection.py tests/unit/test_narrative_closure_campaign.py tests/unit/test_narrative_closure_review.py -q --tb=short",
+      "passed": 25,
+      "status": "PASS",
+      "elapsed_seconds": 1.01
+    },
+    {
+      "command": "NOVEL_FORGE_DATABASE_URL=<isolated-experiment-test-dsn> PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_narrative_craft_chapter_postgres.py -q --tb=short",
+      "passed": 5,
+      "status": "PASS",
+      "elapsed_seconds": 101.37
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_craft_selection.py tests/unit/test_craft_execution.py tests/unit/test_craft_discovery.py tests/unit/test_knowledge_translation.py tests/unit/test_narrative_craft_review.py -q --tb=short",
+      "status": "PASS",
+      "passed": 58,
+      "elapsed_seconds": 1.05
+    },
+    {
+      "command": ".venv/bin/ruff check src/novel_forge/modules/mkaos_authority/craft_selection.py tests/unit/test_craft_selection.py tests/integration/test_narrative_craft_chapter_postgres.py",
+      "status": "PASS"
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.test_reality --repo-root .",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "frozen_policy": {
+    "classification": "CONFIGURABLE_POLICY",
+    "schema_version": "narrative-craft-budget.v2",
+    "variation_bonus": 1,
+    "salience_penalty": 2,
+    "cooldown_chapters": 1,
+    "mechanism_cadence": {
+      "spatial-anchor": "CONTINUOUS",
+      "subtext-pressure": "EXPRESSIVE",
+      "choice-exposes-value": "EXPRESSIVE",
+      "exchange-response-cost": "EXPRESSIVE"
+    },
+    "max_uses_per_scene": 3,
+    "repetition_penalty": 4,
+    "max_craft_candidates": 6,
+    "max_uses_per_chapter": 8,
+    "recent_chapter_window": 5,
+    "max_frequency_in_window": 3,
+    "pattern_similarity_penalty": 2,
+    "pattern_similarity_threshold_percent": 60
+  },
+  "context": {
+    "chapter_number": 2,
+    "scene_goal": [
+      "交战位置与通路难以想象，连续战斗仍须交代距离和出口"
+    ]
+  },
+  "assessment_replay": {
+    "narrative-craft-budget.v1": {
+      "rejection_reason": "CRAFT_COOLDOWN",
+      "score": 1,
+      "match_reasons": [
+        "CRAFT_CONTEXT:scene_goal:与通,交战,交战位置与通路难以想象,以想,位置",
+        "CRAFT_RECENT_DELIVERY_FREQUENCY:1"
+      ],
+      "budget_assessment": {
+        "frequency": 1,
+        "repetition_penalty": 4,
+        "pattern_similarity_penalty": 0,
+        "salience_penalty": 2,
+        "in_cooldown": true,
+        "evidence_ceiling": "DELIVERY_OBSERVATION_NOT_READER_EFFECT"
+      },
+      "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+    },
+    "narrative-craft-budget.v2": {
+      "rejection_reason": "",
+      "score": 1,
+      "match_reasons": [
+        "CRAFT_CONTEXT:scene_goal:与通,交战,交战位置与通路难以想象,以想,位置",
+        "CRAFT_RECENT_DELIVERY_FREQUENCY:1"
+      ],
+      "budget_assessment": {
+        "frequency": 1,
+        "repetition_penalty": 4,
+        "pattern_similarity_penalty": 0,
+        "salience_penalty": 2,
+        "in_cooldown": true,
+        "evidence_ceiling": "DELIVERY_OBSERVATION_NOT_READER_EFFECT",
+        "cadence_class": "CONTINUOUS",
+        "policy_version": "narrative-craft-budget.v2",
+        "temporal_budget_applied": false,
+        "classification": "CONFIGURABLE_POLICY",
+        "creative_benefit": "NOT_PROVEN"
+      },
+      "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+    }
+  },
+  "previous_native_receipts": [
+    {
+      "chapter": 1,
+      "use_id": "craft-use:5cbe44c3b3da30399ebd24cf",
+      "mechanism_id": "spatial-anchor",
+      "external_effect_id": "cc5e99b8-b3d1-435e-bb58-26429e9364b2",
+      "external_receipt_ids": [
+        64
+      ],
+      "delivery_evidence_class": "FIXTURE_PROTOCOL_RECEIPT"
+    },
+    {
+      "chapter": 1,
+      "use_id": "craft-use:5cbe44c3b3da30399ebd24cf",
+      "mechanism_id": "spatial-anchor",
+      "external_effect_id": "69ab4a63-f17f-4b42-85f9-8f982777cb01",
+      "external_receipt_ids": [
+        63
+      ],
+      "delivery_evidence_class": "FIXTURE_PROTOCOL_RECEIPT"
+    },
+    {
+      "chapter": 1,
+      "use_id": "craft-use:5cbe44c3b3da30399ebd24cf",
+      "mechanism_id": "spatial-anchor",
+      "external_effect_id": "0df8f373-b850-467e-a18b-5f6024a1a2f8",
+      "external_receipt_ids": [
+        62
+      ],
+      "delivery_evidence_class": "FIXTURE_PROTOCOL_RECEIPT"
+    },
+    {
+      "chapter": 1,
+      "use_id": "craft-use:5cbe44c3b3da30399ebd24cf",
+      "mechanism_id": "spatial-anchor",
+      "external_effect_id": "4ed72b95-6c8e-4d71-8385-ba202be12f58",
+      "external_receipt_ids": [
+        61
+      ],
+      "delivery_evidence_class": "FIXTURE_PROTOCOL_RECEIPT"
+    },
+    {
+      "chapter": 1,
+      "use_id": "craft-use:5cbe44c3b3da30399ebd24cf",
+      "mechanism_id": "spatial-anchor",
+      "external_effect_id": "d02dd0e0-a750-4f6f-859b-ae4a6e115235",
+      "external_receipt_ids": [
+        60
+      ],
+      "delivery_evidence_class": "FIXTURE_PROTOCOL_RECEIPT"
+    },
+    {
+      "chapter": 1,
+      "use_id": "craft-use:5cbe44c3b3da30399ebd24cf",
+      "mechanism_id": "spatial-anchor",
+      "external_effect_id": "ea07a2f7-0e15-4d8d-8ea3-93b0c6509fe4",
+      "external_receipt_ids": [
+        59
+      ],
+      "delivery_evidence_class": "FIXTURE_PROTOCOL_RECEIPT"
+    },
+    {
+      "chapter": 1,
+      "use_id": "craft-use:5cbe44c3b3da30399ebd24cf",
+      "mechanism_id": "spatial-anchor",
+      "external_effect_id": "e61bb71e-c3ee-447a-bd0a-808b60323f9d",
+      "external_receipt_ids": [
+        58
+      ],
+      "delivery_evidence_class": "FIXTURE_PROTOCOL_RECEIPT"
+    },
+    {
+      "chapter": 1,
+      "use_id": "craft-use:5cbe44c3b3da30399ebd24cf",
+      "mechanism_id": "spatial-anchor",
+      "external_effect_id": "4b4a21e0-05fa-4843-9b2c-a41e56860df2",
+      "external_receipt_ids": [
+        57
+      ],
+      "delivery_evidence_class": "FIXTURE_PROTOCOL_RECEIPT"
+    },
+    {
+      "chapter": 1,
+      "use_id": "craft-use:5cbe44c3b3da30399ebd24cf",
+      "mechanism_id": "spatial-anchor",
+      "external_effect_id": "1b0936d4-c97d-4349-b740-7e3bfa9995b4",
+      "external_receipt_ids": [
+        56
+      ],
+      "delivery_evidence_class": "FIXTURE_PROTOCOL_RECEIPT"
+    },
+    {
+      "chapter": 1,
+      "use_id": "craft-use:5cbe44c3b3da30399ebd24cf",
+      "mechanism_id": "spatial-anchor",
+      "external_effect_id": "5a8b0678-d37e-4687-9d3c-b5368e83b2cb",
+      "external_receipt_ids": [
+        55
+      ],
+      "delivery_evidence_class": "FIXTURE_PROTOCOL_RECEIPT"
+    },
+    {
+      "chapter": 1,
+      "use_id": "craft-use:5cbe44c3b3da30399ebd24cf",
+      "mechanism_id": "spatial-anchor",
+      "external_effect_id": "2ccaaa80-1789-4246-825f-b06538755b0c",
+      "external_receipt_ids": [
+        54
+      ],
+      "delivery_evidence_class": "FIXTURE_PROTOCOL_RECEIPT"
+    }
+  ],
+  "native_chapters": [
+    {
+      "root_operation_id": "0f6598c5-7db7-4a3e-8cdc-7cb45074572f",
+      "memo_asset_version_id": "authority-output:055ed934-d987-4136-9ad0-da569813da64:chapter.memo:v1",
+      "strategy_digest": "sha256:7d1d205a0e4ee476671709cedbdd53c795f1d7d3c6433d62166fb59a00742d21",
+      "policy": "narrative-craft-budget.v2",
+      "accepted_through_chapter": 1,
+      "acceptance_status": "COMMITTED",
+      "prose": [
+        {
+          "role": "ORIGINAL",
+          "asset_version_id": "authority-output:1830f6b7-e0c6-4dd5-9fdc-42113b6b509d:chapter.draft:v1",
+          "asset_hash": "sha256:5217615354b3c86d2961aebab1fdc7cbed93019ff68b6099e7802847262d13cf",
+          "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他冲向敌人，又退了几步，回头时出口已被挡住。 沈舟左臂中箭，最后一枚雷符已经耗尽。许霜答应守住东门。"
+        },
+        {
+          "role": "ACCEPTED_FIXTURE",
+          "asset_version_id": "authority-output:22042259-3cc3-41cd-80f7-7d956a0f9ef2:chapter.best_candidate:v1",
+          "asset_hash": "sha256:c67696c62eea3801b43d284da2fac77c96924e3452fc7c7940d2e840c2b2b8f5",
+          "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他由西桥头向东踏出两步，横剑退回桥柱内侧；守门人从他右肩后堵住西岸出口。 沈舟左臂中箭，最后一枚雷符已经耗尽。许霜答应守住东门。"
+        }
+      ],
+      "semantic_evidence_classes": [
+        "FIXTURE_SEMANTIC_REVIEW"
+      ],
+      "reader_effect_proven": false
+    },
+    {
+      "root_operation_id": "7119eef6-5a0e-45b0-b46c-15966080847d",
+      "memo_asset_version_id": "authority-output:3ed8aa69-4f9f-44dc-9615-b0efd93d05a7:chapter.memo:v1",
+      "strategy_digest": "sha256:a73b25d7618b87b7fd789646e377d00142a9fcfbbe4a0cff1762049571d8250c",
+      "policy": "narrative-craft-budget.v2",
+      "accepted_through_chapter": 2,
+      "acceptance_status": "COMMITTED",
+      "prose": [
+        {
+          "role": "ORIGINAL",
+          "asset_version_id": "authority-output:a5fc2c43-4870-4bc5-afd8-06494edf1a6a:chapter.draft:v1",
+          "asset_hash": "sha256:123f49a16e8b8be1dcff809de89912b20375025b9374ebf514ab5559ffa414eb",
+          "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他冲向敌人，又退了几步，回头时出口已被挡住。 沈舟左臂完好，掏出雷符。"
+        },
+        {
+          "role": "ACCEPTED_FIXTURE",
+          "asset_version_id": "authority-output:713178f5-a68b-4bed-bd05-ff366ecbf742:chapter.best_candidate:v1",
+          "asset_hash": "sha256:400e37e90ff99a854078e950db688d0713ace7ef4ef17ef958d969ec883cff2a",
+          "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 他由西桥头向东踏出两步，横剑退回桥柱内侧；守门人从他右肩后堵住西岸出口。 沈舟左臂带伤，只能收起空符袋。"
+        }
+      ],
+      "semantic_evidence_classes": [
+        "FIXTURE_SEMANTIC_REVIEW"
+      ],
+      "reader_effect_proven": false
+    }
+  ],
+  "materialized_requests": [
+    {
+      "external_effect_id": "2ccaaa80-1789-4246-825f-b06538755b0c",
+      "capability": "model.draft",
+      "status": "SUCCEEDED",
+      "dispatch_generation": 1,
+      "receipt_id": "fixture:chapter-execution:2ccaaa80-1789-4246-825f-b06538755b0c",
+      "receipt_payload_hash": "sha256:3e3a692e1d7cef8bd00f0b67e17e62259020289bec22f85c2e01c0518b66f6f3",
+      "provider_admission_asset_version_id": "ae84132b-09a6-496c-815d-75bc58b4d2e9",
+      "materialized_task_hash": "sha256:17c90e6cb8128e554cd52cbba3a77ce8c8c9716f0e21f85b40f2ad96487ce3a4",
+      "task_matches_receipted_hash": true
+    },
+    {
+      "external_effect_id": "5a8b0678-d37e-4687-9d3c-b5368e83b2cb",
+      "capability": "model.review",
+      "status": "SUCCEEDED",
+      "dispatch_generation": 1,
+      "receipt_id": "fixture:chapter-execution:5a8b0678-d37e-4687-9d3c-b5368e83b2cb",
+      "receipt_payload_hash": "sha256:3528dc665d06aed42c365bdbe568fd3199d67d206e79f2825f83dab224dc393f",
+      "provider_admission_asset_version_id": "76d1e729-cd1a-417a-9be1-671869782979",
+      "materialized_task_hash": "sha256:bf448b3029b9119a18e0a89bb2d64a641532b4797b8bc08e5ad5eb3cb26ebc43",
+      "task_matches_receipted_hash": true
+    },
+    {
+      "external_effect_id": "1b0936d4-c97d-4349-b740-7e3bfa9995b4",
+      "capability": "model.revision",
+      "status": "SUCCEEDED",
+      "dispatch_generation": 1,
+      "receipt_id": "fixture:chapter-execution:1b0936d4-c97d-4349-b740-7e3bfa9995b4",
+      "receipt_payload_hash": "sha256:af5967f538f281b8d939b451fb40aedf42aa861ba92e31548a38e3c2b4c98f15",
+      "provider_admission_asset_version_id": "11855d58-56c1-4ac5-a785-25f4e1b1d9b9",
+      "materialized_task_hash": "sha256:3646917ddef2688e41e01546bedca5fb234758ba332550ef7a96dff1dc398190",
+      "task_matches_receipted_hash": true
+    },
+    {
+      "external_effect_id": "4b4a21e0-05fa-4843-9b2c-a41e56860df2",
+      "capability": "model.rereview",
+      "status": "SUCCEEDED",
+      "dispatch_generation": 1,
+      "receipt_id": "fixture:chapter-execution:4b4a21e0-05fa-4843-9b2c-a41e56860df2",
+      "receipt_payload_hash": "sha256:fd7a50e74e030d9a4629cd1db636d7af98b4b699e677a86e1403868f64f185ec",
+      "provider_admission_asset_version_id": "ac465827-f76e-4bac-b23a-271c09a6f34a",
+      "materialized_task_hash": "sha256:65e9656d9b06692adde793b7757af8fa0e8cbba39f39faa273de5809c954c451",
+      "task_matches_receipted_hash": true
+    },
+    {
+      "external_effect_id": "f2a1a11a-b414-4516-9dca-6d23cebcdfb8",
+      "capability": "model.draft",
+      "status": "SUCCEEDED",
+      "dispatch_generation": 1,
+      "receipt_id": "fixture:chapter-execution:f2a1a11a-b414-4516-9dca-6d23cebcdfb8",
+      "receipt_payload_hash": "sha256:ca4f0f896e5dadacdc6c20c2658dba4cdb7d30daab53b49b9578a09bb25b9849",
+      "provider_admission_asset_version_id": "f6fab451-6b53-4e26-b286-6696bd0bd5a0",
+      "materialized_task_hash": "sha256:1443f80627ff2916a966d9a7013042a395be268d0dbe721167e469e4ba0972b5",
+      "task_matches_receipted_hash": true
+    },
+    {
+      "external_effect_id": "612a3749-8619-4fc9-ad9e-99f2e45a8fd2",
+      "capability": "model.review",
+      "status": "SUCCEEDED",
+      "dispatch_generation": 1,
+      "receipt_id": "fixture:chapter-execution:612a3749-8619-4fc9-ad9e-99f2e45a8fd2",
+      "receipt_payload_hash": "sha256:f9a8f66f6276589e18f75b43242d97b65984bd2b4aaa1c5a69667bc047600bd4",
+      "provider_admission_asset_version_id": "11f9c8ea-b449-4200-97fd-5b7de38a3ed7",
+      "materialized_task_hash": "sha256:08135ec1d61cef5cd2f8a24300a48d6ae06e24bec3946a4ce266cc1cd6391f2d",
+      "task_matches_receipted_hash": true
+    },
+    {
+      "external_effect_id": "e30aef74-1656-46ec-b11e-437ef1af5dd1",
+      "capability": "model.revision",
+      "status": "SUCCEEDED",
+      "dispatch_generation": 1,
+      "receipt_id": "fixture:chapter-execution:e30aef74-1656-46ec-b11e-437ef1af5dd1",
+      "receipt_payload_hash": "sha256:9f2fa9ee52e6e0b7b0b3caae43f369ba396e82db7b2ba66af34e52705c21736b",
+      "provider_admission_asset_version_id": "0c232482-c660-46b7-b46e-49919d5d5898",
+      "materialized_task_hash": "sha256:ce2762738a4c7ee11c05f6dfd1fc770be9aea3bfbfa3b5a894fdc202b319939b",
+      "task_matches_receipted_hash": true
+    },
+    {
+      "external_effect_id": "0ab7a7a4-3970-4b93-a1ec-df37ae8a3e29",
+      "capability": "model.rereview",
+      "status": "SUCCEEDED",
+      "dispatch_generation": 1,
+      "receipt_id": "fixture:chapter-execution:0ab7a7a4-3970-4b93-a1ec-df37ae8a3e29",
+      "receipt_payload_hash": "sha256:826fdf8853ba18a11b3e1fa727d5eefc2d52773a9474d1f997266ebf7eeadee7",
+      "provider_admission_asset_version_id": "7dbe484e-8601-42bd-a1fe-bf43cb62e4a2",
+      "materialized_task_hash": "sha256:b4bca0606110e9b4a6120054cc931909d96ec08f670db8d9a999bbc27b7deaca",
+      "task_matches_receipted_hash": true
+    }
+  ],
+  "limits": [
+    "Two chapter plans in this fixture are pre-seeded with approved scene-bound strategy. Actual first-chapter receipt history additionally exercises native selection before the second Chapter submit; it is not real Provider Planning qualification.",
+    "Scripted semantic judgements and miniature mixed-language prose are engineering controls, not creative quality benefit or author-reading acceptance.",
+    "The policy is opt-in and remains a hypothesis. No policy promotion or new catalogue entry occurred.",
+    "Overlapping test commands report invocation counts, not cumulative unique totals."
+  ]
+}

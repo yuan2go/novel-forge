@@ -1,0 +1,120 @@
+{
+  "schema_version": "narrative-closure-local-verification.v1",
+  "recorded_at": "2026-09-21T01:21:20.435272+00:00",
+  "scope": [
+    "P1_LONGFORM_PROSE_REVIEW",
+    "P2B_SEMANTIC_IMPACT_CONSUMER",
+    "P2C_EDITORIAL_POLICY_SIGNATURE_CONTRACT"
+  ],
+  "evidence_state": "EXECUTABLE",
+  "evidence_kind": "SCRIPTED_FIXTURE_POSTGRESQL_AND_UNIT",
+  "baseline_sha": "e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332",
+  "implementation_identity": {
+    "committed": false,
+    "identity_kind": "WORKING_TREE_SOURCE_HASHES",
+    "source_sha256": {
+      "src/novel_forge/modules/book_followup_authority/prose_coordinator.py": "5e6b642331a1fed290acd4d0ee72235079f6899b67898526e3df8f05430ee17f",
+      "src/novel_forge/modules/book_followup_authority/prose_review.py": "1880a8d4e9a9fb7adfd3e78077f2904160d327d48d3e88a943f6021405656c62",
+      "src/novel_forge/modules/book_followup_authority/prose_handler.py": "cd3e09b48db6d7ba31313a40bf5227789f2139a04ca0e22c2ba09625c8f1636d",
+      "src/novel_forge/modules/book_followup_authority/prose_execution.py": "1afdbe22e2842841c5bb09d39f24e6886bd4ad0ceb338f670034da6306dc64a9",
+      "src/novel_forge/modules/book_authority/editorial.py": "6451b8a2970741dcab159ad9954db6f198485791810309afd69b16da58fbd665",
+      "src/novel_forge/modules/book_authority/editorial_domain.py": "1c57634560cb5b68a011935bd4a9bc345abab3825ebf288256569f9881806c6d",
+      "src/novel_forge/modules/book_authority/evidence_commands.py": "08013d57dac3b47a99963eee3592e57d7835e0fa1a9b510f6ea1d645ba00a566",
+      "src/novel_forge/modules/book_authority/completion.py": "160f5c8a2b5bf076067848c96c23e211ef6854bb54a66167c4cf4530c4a2a5f4",
+      "src/novel_forge/modules/book_authority/completion_domain.py": "8fcd14b214d000eeb692952e3d4b4471bbebe706bf1d12eabfb8ac5cbcd84de6",
+      "src/novel_forge/modules/plan_change_authority/semantic_impact.py": "0cbf2d8008cd3e6ba003f607f5b417e7802c1bba93c3dd2a89301109434f74b5",
+      "src/novel_forge/api/routers/prose_review.py": "beb805e46314a939646e795327d3695f8c2250f38ddeab3207122d088a9a3b32",
+      "tests/integration/test_longform_prose_editorial_postgres.py": "9d21c30b799cac19888b58e146cf2a849ffa22d1dc7883b838b643906de5c0dd",
+      "tests/integration/test_plan_change_authority_postgres.py": "94ddbce7ce06c164c443c9ad0e8cf437a1f5b07c5250bec3a20eb7a7c5eb6a42",
+      "tests/unit/test_longform_prose_editorial.py": "7740a6eb905bbdfec2bbbf50a6e9150605ea4c0c1c7b7606999401a64a7471a2",
+      "web/admin/app/features/editor/ProseReviewPanel.tsx": "0e9c8f82ae3820b193745d7565f8797c36c82688c851293c9a33722fdbac80a6",
+      "src/novel_forge/modules/chapter_authority/provider_views.py": "c35e55d452197000453f2839dfe9e9ee992372126765de3c50579b20ef958f1e"
+    }
+  },
+  "executed_migration_head": "20260921_0141_author_chapter_replacement",
+  "verification": {
+    "status": "PASS",
+    "tests_passed": 34,
+    "duration_seconds": 43.74,
+    "command": "NOVEL_FORGE_DATABASE_URL=<isolated book_test> PYTHONPATH=src .venv/bin/python -m pytest -q tests/integration/test_longform_prose_editorial_postgres.py tests/integration/test_plan_change_authority_postgres.py tests/unit/test_book_production_authority.py tests/unit/test_longform_prose_editorial.py tests/unit/test_book_completion.py tests/integration/test_book_completion_postgres.py",
+    "web_typecheck": "PASS",
+    "web_unit_tests": {
+      "status": "PASS",
+      "passed": 13
+    },
+    "web_browser_controls": {
+      "status": "PASS",
+      "proof_ceiling": "SCRIPTED_FIXTURE_API_AND_POSTGRESQL_BROWSER",
+      "command": "with_server.py (native fixture API58321 + Next58322) -- node web/admin/tests/author-editor-browser.mjs",
+      "screenshot": "longform-prose-controls.png",
+      "result": "longform-browser-result.json"
+    },
+    "final_pack_prompt_materialization": {
+      "status": "PASS",
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest -q tests/unit/test_longform_prose_editorial.py",
+      "passed": 7,
+      "duration_seconds": 0.48
+    }
+  },
+  "coverage": [
+    "frozen exact accepted prose, Unicode citations and bounded cross-chapter windows",
+    "window report validation; six dimensions and insufficient/intentional judgments",
+    "durable pause/resume with unchanged allowance, original window deduplication, coverage exclusions",
+    "accepted-source and implementation drift invalidation; incremental exact-window reuse",
+    "native ExternalEffect materialized provider request; durable success receipt before lost output; recovery dispatch count remains one",
+    "transaction commit before response loss replays the same frozen run",
+    "native StoryDesign and PlanChange read-only impact preview, pending proposal, finding disposition, same-key replay, changed target rejection",
+    "declared dependency closure separate from semantic candidates; future-only approved invalidation; executed history preserved",
+    "local operator policy permissions, worker denial, exact signature source/manifest/review/release binding, revocation domain; missing whole-book evidence remains blocked"
+  ],
+  "resolved_failures": [
+    {
+      "failure": "generic reader binder inferred chapter zero for window-scoped prose inputs",
+      "fix": "dedicated stage binder binds exact longform_prose_review_window asset_version scope",
+      "verification": "scripted native Provider materialization and receipt-loss recovery pass"
+    },
+    {
+      "failure": "chapter two drift fixture reused chapter one plan asset",
+      "fix": "bind seeded chapter-plan-v2 exact asset/hash/content",
+      "verification": "two accepted chapters make original manifest stale; unchanged prior windows reused"
+    },
+    {
+      "failure": "legacy unit expectation contained exactly two Book Followup definitions",
+      "fix": "assert third native prose handler, output, effect requirement and immutable body/plan policy",
+      "verification": "test_book_production_authority passes"
+    },
+    {
+      "failure": "proposal wrapper rejected same-key successful response replay at stale progress check",
+      "fix": "replay exact recorded native disposition before new work; differing targets still rejected",
+      "verification": "native PlanChange test returns same pending proposal id"
+    },
+    {
+      "failure": "old implementation could resume or record a new disposition against unchanged text",
+      "fix": "implementation_current projection plus exact release gates for resume/disposition/preview/proposal",
+      "verification": "changed implementation read-only report visible; resume fails requiring refreeze"
+    },
+    {
+      "failure": "typed longform provider view lacked generic context contract_version used by deployed Pack final prompt materializer",
+      "fix": "include provider-context-view-v2 alongside exact frozen prose projection",
+      "verification": "actual prompt materializer consumes checked-in system/template plus strict schema and retains exact frozen Unicode spans"
+    }
+  ],
+  "external_consumption": {
+    "real_provider": "NOT_RUN",
+    "human_review": "NOT_RUN",
+    "long_form_quality": "NOT_RUN",
+    "production_operation": "NOT_RUN",
+    "paid_calls": 0,
+    "actual_paid_tokens": 0,
+    "actual_paid_cost": 0,
+    "currency": null,
+    "fixture_effect_status_counts": {},
+    "fixture_effect_note": "Test-only scripted effects are checked during each case. Suite isolation may clear their database rows; observed failures remain documented here. No paid/model success is inferred."
+  },
+  "limits": [
+    "No real Provider or independent human signature was collected.",
+    "Positive human completion acceptance remains contract/runtime implementation, not independently reviewed manuscript proof.",
+    "Full exact-SHA governance and final identity binding are recorded separately by root batch delivery."
+  ],
+  "observed_head_sha": "3a04a3724ea40eb2b7f9493ab78502f2b04acd5d"
+}

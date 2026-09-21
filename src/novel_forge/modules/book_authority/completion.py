@@ -24,8 +24,8 @@ from .completion_domain import (
 )
 
 
-VERSION = "1.0.0"
-HUMAN_POLICY_BLOCKER = "DESIGN_REVIEW_REQUIRED:NATIVE_WHOLE_BOOK_EDITORIAL_POLICY"
+VERSION = "1.1.0"
+HUMAN_POLICY_BLOCKER = "WHOLE_BOOK_EDITORIAL_POLICY_REQUIRED"
 
 
 def book_completion_definitions(
@@ -175,7 +175,17 @@ def _load_source(
         """,
         [project_id, book_run_id],
     )
-    return {"book": book, "accepted": _rows(uow.cursor)}
+    accepted = _rows(uow.cursor)
+    for row in accepted:
+        outcome = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=row["outcome_version_id"])
+        draft_id = str(outcome.content.get("accepted_draft_asset_version_id") or "")
+        if draft_id:
+            draft = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=draft_id)
+            from novel_forge.modules.book_followup_authority.prose_review import text_digest
+            row["accepted_draft_asset_version_id"] = draft_id
+            row["accepted_draft_asset_hash"] = draft.content_hash
+            row["accepted_draft_text_hash"] = text_digest(str(draft.content.get("text") or ""))
+    return {"book": book, "accepted": accepted}
 
 
 class PostgresBookCompletionAuthority:
@@ -409,7 +419,16 @@ class PostgresBookCompletionAuthority:
             "case_id": case_id,
             "case_version": version,
             "book_run_id": book["book_run_id"],
+            "current_editorial_policy_status": self._editorial_policy_status(uow, book["book_run_id"]),
         }
+
+    @staticmethod
+    def _editorial_policy_status(uow: AuthorityUnitOfWork, book_run_id: str) -> str:
+        from .editorial import load_editorial_events
+        policies = [event for event in load_editorial_events(uow, book_run_id) if event["kind"] == "POLICY"]
+        if not policies:
+            return "WAITING_POLICY_APPROVAL"
+        return "AWAITING_AUTHORIZED_SIGNATURES" if policies[-1]["content"]["policy"]["enabled"] else "POLICY_INACTIVE"
 
     def _case(
         self, uow: AuthorityUnitOfWork, case_id: str, book_run_id: str
@@ -490,8 +509,10 @@ class PostgresBookCompletionAuthority:
                 blockers.append("COMPLETION_IMPLEMENTATION_CHANGED")
             quality_blockers, quality_ids = self._quality_evidence(uow, case, payload)
             blockers.extend(quality_blockers)
-            blockers.append(HUMAN_POLICY_BLOCKER)
-        outcome = "REJECTED" if payload["decision"] == "REJECTED" else "BLOCKED"
+            from .editorial import completion_editorial_evidence
+            editorial_blockers, _editorial = completion_editorial_evidence(uow, case=case, payload=payload, release_sha=self.commit_sha)
+            blockers.extend(editorial_blockers)
+        outcome = "REJECTED" if payload["decision"] == "REJECTED" else "BLOCKED" if blockers else "ACCEPTED"
         result = {
             "schema_version": "book-completion-decision.v1",
             "case_id": case["case_id"],
@@ -503,9 +524,9 @@ class PostgresBookCompletionAuthority:
             "status": outcome,
             "rationale": payload["rationale"],
             "blockers": sorted(set(blockers)),
-            "evidence_dimensions": current["evidence_dimensions"],
+            "evidence_dimensions": {**current["evidence_dimensions"], "HUMAN_EDITORIAL": "BOUNDED_HUMAN_EVIDENCE" if outcome == "ACCEPTED" else "WAITING_EVIDENCE"},
             "accepted_history_mutation_allowed": False,
-            "recovery_instruction": "Create a new case after remediation; whole-book acceptance requires a native editorial policy and independently authenticated human closure evidence.",
+            "recovery_instruction": "Append a new case after remediation; activate an authorized editorial policy, complete exact prose coverage and obtain its named signatures. Book acceptance does not authorize publication.",
         }
         uow.cursor.execute(
             """INSERT INTO authority_book_completion_decision(
@@ -635,11 +656,20 @@ class PostgresBookCompletionAuthority:
                 [case_id],
             )
             row = uow.cursor.fetchone()
+            decision = row[0] if row else None
+            editorial_current = None
+            if decision and decision["status"] == "ACCEPTED":
+                from .editorial import completion_editorial_evidence
+                blockers, _status = completion_editorial_evidence(uow, case=case, payload={"book_run_id": book_run_id}, release_sha=self.commit_sha)
+                editorial_current = not blockers and current_digest == case["source_digest"]
             return {
                 **case["assessment"],
                 "case_id": case_id,
                 "case_version": case["case_version"],
                 "book_run_id": book_run_id,
                 "source_current": current_digest == case["source_digest"],
-                "decision": row[0] if row else None,
+                "decision": decision,
+                "editorial_acceptance_current": editorial_current,
+                "current_editorial_policy_status": self._editorial_policy_status(uow, book_run_id),
+                "public_release_authorized": False,
             }

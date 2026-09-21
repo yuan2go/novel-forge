@@ -6,6 +6,7 @@ from novel_forge.modules.capability_packs.validation_deployment import (
     register_validation_runtime_definitions,
 )
 from novel_forge.modules.capability_packs.longform_profiles import (
+    build_longform_prose_review_pack_profile,
     build_narrative_evaluation_pack_profile,
     build_reader_outcome_pack_profile,
     build_story_planning_pack_profile,
@@ -37,6 +38,7 @@ def test_quality_validation_packs_deploy_to_one_exact_book_scope() -> None:
     }
     planning_id = f"{harness.pack_id}-planning"
     reader_id = f"{harness.pack_id}-reader"
+    prose_id = f"{harness.pack_id}-prose"
     evaluator_id = f"{harness.pack_id}-evaluator"
     chapter_id = f"{harness.pack_id}-chapter"
     evaluator = install_longform_validation_pack(
@@ -81,6 +83,20 @@ def test_quality_validation_packs_deploy_to_one_exact_book_scope() -> None:
         agent_scope_type="CHAPTER",
         **common,
     )
+    prose = install_longform_validation_pack(
+        DATABASE_URL,
+        profile=build_longform_prose_review_pack_profile(
+            ROOT,
+            operation_definition_hash=hashes["prose_review"],
+            pack_id=prose_id,
+        ),
+        pack_version="1.1.0",
+        agent_generation=1,
+        expected_activation_version=0,
+        agent_domain="book_followup",
+        agent_scope_type="BOOK",
+        **common,
+    )
     chapter = install_chapter_validation_pack(
         DATABASE_URL,
         repository_root=ROOT,
@@ -89,11 +105,12 @@ def test_quality_validation_packs_deploy_to_one_exact_book_scope() -> None:
         **common,
     )
 
-    installed = (evaluator, planning, reader, chapter)
+    installed = (evaluator, planning, reader, prose, chapter)
     assert {item["pack_id"] for item in installed} == {
         evaluator_id,
         planning_id,
         reader_id,
+        prose_id,
         chapter_id,
     }
     assert all(item["manifest_hash"].startswith("sha256:") for item in installed)
@@ -121,7 +138,7 @@ def test_quality_validation_packs_deploy_to_one_exact_book_scope() -> None:
             ],
         )
         rows = uow.cursor.fetchall()
-    assert len(rows) == 4
+    assert len(rows) == 5
     assert all(
         status == "ACTIVE"
         and project_id == harness.project_id

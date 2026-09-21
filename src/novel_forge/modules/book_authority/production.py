@@ -1139,6 +1139,8 @@ class PostgresBookAuthority:
                     "longform_projection_set_id"
                 ],
             }
+        if book["active_chapter_request_id"] != chapter_request_id:
+            raise KernelError("BOOK_CHAPTER_SUPERSEDED", "Only the current unaccepted Book child can be accepted")
         if not request["chapter_root_operation_id"]:
             raise KernelError(
                 "BOOK_CHAPTER_ACCEPTANCE_NOT_READY",
@@ -1259,6 +1261,9 @@ class PostgresBookAuthority:
             operation_id: str,
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
+            uow.cursor.execute("SELECT active_chapter_request_id FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [request["book_run_id"]])
+            if uow.cursor.fetchone()[0] != chapter_request_id:
+                raise KernelError("BOOK_CHAPTER_SUPERSEDED", "Book child changed before acceptance commit")
             locked_outputs = uow.repositories.book_authority.lock_acceptance_assets(
                 project_id=request["project_id"], selected=selected_acceptance_outputs,
             )
@@ -2056,6 +2061,9 @@ class PostgresBookAuthority:
         if request["chapter_root_operation_id"]:
             return self.reconcile_chapter(chapter_request_id)
         payload = dict(request["command_payload"])
+        if payload.get("author_replacement_chapter_command"):
+            from .author_revision import resume_author_chapter_replacement
+            return resume_author_chapter_replacement(self, chapter_request_id=chapter_request_id, principal=principal)
         return self.submit_chapter(
             SubmitBookChapterCommand(
                 book_run_id=str(payload["book_run_id"]),
@@ -2095,6 +2103,9 @@ class PostgresBookAuthority:
             # INVARIANT: Acceptance and the Book narrative cursor commit atomically. A
             # ChapterGroup replay may still need to consume that acceptance,
             # but reconciliation must never regress the accepted Book state.
+            return request
+        book = self.require(request["book_run_id"])
+        if book["active_chapter_request_id"] != chapter_request_id:
             return request
         root = request["chapter_root_operation_id"]
         if not root:

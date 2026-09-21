@@ -38,11 +38,9 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             test_hierarchical_planning_postgres as planning_tests,
         )
 
-        self.planning_fixture = (
-            planning_tests.HierarchicalPlanningPostgresTests(
+        self.planning_fixture = planning_tests.HierarchicalPlanningPostgresTests(
             methodName=(
                 "test_active_plan_unique_and_frozen_replacement_requires_approval"
-            )
             )
         )
         self.planning_fixture.setUp()
@@ -106,10 +104,7 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
 
         def inject(point: str) -> None:
             self.failure_points.append(point)
-            if (
-                point == "after_plan_activation_before_binding"
-                and fail_once["pending"]
-            ):
+            if point == "after_plan_activation_before_binding" and fail_once["pending"]:
                 fail_once["pending"] = False
                 raise RuntimeError("injected activation interruption")
 
@@ -164,6 +159,68 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             )
             self.assertEqual(int(uow.cursor.fetchone()[0]), 1)
         self.assertEqual(proposal["status"], "PENDING_APPROVAL")
+        from novel_forge.modules.plan_change_authority.semantic_impact import (
+            exact_plan_dependency_closure,
+            semantic_impact_projection,
+        )
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            exact_dependencies = exact_plan_dependency_closure(
+                uow.cursor,
+                project_id=self.project_id,
+                book_id=self.book_id,
+                target_asset_version_id=old["asset_version_id"],
+            )
+        impact = semantic_impact_projection(
+            target_asset_version_id=old["asset_version_id"],
+            proposed_asset_version_id=proposed_version,
+            changes=proposal["semantic_diff"],
+            finding={
+                "members": [
+                    {
+                        "confidence": 0.7,
+                        "evidence": [
+                            {
+                                "asset_version_id": source_evidence,
+                                "start": 0,
+                                "end": 4,
+                                "quote": "原创证据",
+                            }
+                        ],
+                    }
+                ]
+            },
+            exact_dependencies=exact_dependencies,
+            accepted_sources=[
+                {"asset_version_id": "accepted-history", "text_hash": "exact-text-hash"}
+            ],
+            uncovered_ranges=[
+                {"asset_version_id": "accepted-history", "start": 4, "end": 8}
+            ],
+            confirmation_rationale="fixture-only semantic proposal; no human evidence",
+        )
+        self.assertEqual(
+            {item["asset_version_id"] for item in impact["required"]}, {planned}
+        )
+        self.assertIn(
+            executed, {item["asset_version_id"] for item in impact["preserve"]}
+        )
+        self.assertIn(
+            requalification_only,
+            {item["asset_version_id"] for item in impact["needs_review"]},
+        )
+        self.assertEqual(impact["semantic_candidates"][0]["status"], "NEEDS_REVIEW")
+        self.assertEqual(impact["semantic_candidates"][0]["confidence"], 0.7)
+        self.assertIn(
+            "/ending_contract",
+            {
+                item["json_pointer"]
+                for item in impact["semantic_candidates"][0]["plan_positions"]
+            },
+        )
+        self.assertEqual(impact["unknown"][0]["status"], "UNKNOWN")
+        self.assertFalse(impact["hard_dependency_created"])
+        self.assertFalse(impact["plan_activation_performed"])
         self.assertEqual(proposal["risk"], "HIGH")
         self.assertIn(
             "ENDING_CONTRACT_CHANGED",
@@ -195,21 +252,15 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             principal=self.principal,
         )
         self.assertEqual(approved["status"], "APPROVED")
-        with self.assertRaisesRegex(
-            RuntimeError, "injected activation interruption"
-        ):
-            authority.activate(
-                proposal["proposal_id"], principal=self.principal
-            )
+        with self.assertRaisesRegex(RuntimeError, "injected activation interruption"):
+            authority.activate(proposal["proposal_id"], principal=self.principal)
         interrupted = authority.require(proposal["proposal_id"])
         self.assertEqual(interrupted["status"], "ACTIVATION_PENDING")
         activated = authority.activate(
             proposal["proposal_id"], principal=self.principal
         )
         self.assertEqual(activated["status"], "ACTIVE")
-        self.assertIn(
-            "after_plan_activation_before_binding", self.failure_points
-        )
+        self.assertIn("after_plan_activation_before_binding", self.failure_points)
 
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
@@ -232,8 +283,7 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
                 [[planned, executed, requalification_only]],
             )
             impacted = {
-                str(row[0]): (str(row[1]), str(row[2]))
-                for row in uow.cursor.fetchall()
+                str(row[0]): (str(row[1]), str(row[2])) for row in uow.cursor.fetchall()
             }
             uow.cursor.execute(
                 """
@@ -258,9 +308,7 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(active, proposed_version)
         self.assertEqual(impacted[planned], ("PLANNED", "STALE"))
         self.assertEqual(impacted[executed], ("EXECUTED", "CURRENT"))
-        self.assertEqual(
-            impacted[requalification_only], ("PLANNED", "IMPACTED")
-        )
+        self.assertEqual(impacted[requalification_only], ("PLANNED", "IMPACTED"))
         self.assertEqual(impact_count, 3)
 
         requalification_evidence = self._seed_asset(
@@ -287,9 +335,7 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             "CURRENT",
         )
 
-    def _approved_candidate(
-        self, *, logical_key: str, extra: dict
-    ) -> str:
+    def _approved_candidate(self, *, logical_key: str, extra: dict) -> str:
         content = self.planning_fixture._contract_content(
             self._book_type(),
             logical_key,
@@ -325,8 +371,7 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
                     trace_id=f"trace:{self.project_id}",
                     correlation_id=f"book:{self.book_id}",
                     idempotency_key=(
-                        f"{self.project_id}:{version_id}:"
-                        f"{transition.value}"
+                        f"{self.project_id}:{version_id}:{transition.value}"
                     ),
                     asset_version_id=version_id,
                     content_hash=content_hash,
@@ -335,9 +380,7 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
                     transition=transition,
                     planning_scope=PlanningScope.BOOK,
                     expected_version=version,
-                    evidence=self.planning_fixture._fixture_pep_evidence(
-                        transition
-                    ),
+                    evidence=self.planning_fixture._fixture_pep_evidence(transition),
                 ),
                 principal=self.principal,
             )
@@ -442,23 +485,20 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             uow.commit()
         return version_id
 
-    def _seed_asset(
-        self, label: str, asset_type: str, content: dict
-    ) -> str:
-        return self._seed_asset_with_hash(
-            label, asset_type, content
-        )[0]
+    def _seed_asset(self, label: str, asset_type: str, content: dict) -> str:
+        return self._seed_asset_with_hash(label, asset_type, content)[0]
 
     def _seed_asset_with_hash(
         self, label: str, asset_type: str, content: dict
     ) -> tuple[str, str]:
         asset_id = f"{self.project_id}:{label}:asset"
         version_id = f"{self.project_id}:{label}:v1"
-        content_hash = "sha256:" + hashlib.sha256(
-            json.dumps(
-                content, sort_keys=True, separators=(",", ":")
-            ).encode()
-        ).hexdigest()
+        content_hash = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
