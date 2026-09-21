@@ -83,14 +83,18 @@ def test_repository_instruction_surface_is_complete_and_identity_bound() -> None
 
     assert report["status"] == "PASS", report["errors"]
     assert report["instruction_identity_sha256"].startswith("sha256:")
-    assert {source["path"] for source in report["sources"]} >= {
+    paths = {source["path"] for source in report["sources"]}
+    assert paths >= {
         "AGENTS.md",
         "CLAUDE.md",
         "skills/skill-governance/SKILL.md",
         "config/capability_packs/artifacts/chapter_generation_system_instruction.md",
         "src/novel_forge/modules/source_import/execution.py",
-        "web/admin/app/features/editor/EditorPage.tsx",
+        "src/novel_forge/modules/revision/domain.py",
+        "src/novel_forge/modules/worldbuilding/actor_isolation.py",
+        "config/capability_packs/artifacts/longform_prose_review_system_instruction.md",
     }
+    assert "web/admin/app/features/editor/EditorPage.tsx" not in paths
 
 
 def test_unmanaged_hidden_command_is_rejected(tmp_path: Path) -> None:
