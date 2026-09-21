@@ -97,24 +97,26 @@ def _scene_ranges(draft: Mapping[str, Any]) -> dict[str, list[dict[str, Any]]]:
         for item in artifacts
     ):
         raise KernelError("CRAFT_REVIEW_TARGET_INVALID", "scene prose cannot be empty")
-    if "\n\n".join(item["text"].strip() for item in artifacts) != text.strip():
+    from novel_forge.modules.chapter_authority.realization_composition import realization_separators, serialize_realization
+    separators = realization_separators(artifacts, draft.get("scene_separators"))
+    if serialize_realization(artifacts, separators) != text:
         raise KernelError(
             "CRAFT_REVIEW_TARGET_INVALID",
             "scene realization no longer matches candidate prose",
         )
     ranges: dict[str, list[dict[str, Any]]] = {}
-    offset = len(text) - len(text.lstrip())
+    offset = 0
     previous_scene = None
-    for slot, artifact in zip(slots, artifacts, strict=True):
+    for index, (slot, artifact) in enumerate(zip(slots, artifacts, strict=True)):
         if slot["slot_id"] != artifact.get("slot_id"):
             raise KernelError("CRAFT_REVIEW_TARGET_INVALID", "scene slot order changed")
-        end = offset + len(artifact["text"].strip())
+        end = offset + len(artifact["text"])
         scene_id = slot["scene_id"]
         if previous_scene == scene_id:
             ranges[scene_id][-1]["end"] = end
         else:
             ranges.setdefault(scene_id, []).append({"start": offset, "end": end})
-        offset, previous_scene = end + 2, scene_id
+        offset, previous_scene = end + (len(separators[index]) if index < len(separators) else 0), scene_id
     return ranges
 
 

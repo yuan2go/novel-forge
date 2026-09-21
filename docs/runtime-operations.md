@@ -1081,9 +1081,21 @@ input and reload the base before creating a new candidate. Retrying an interrupt
 uses its pending idempotency key, rather than creating a duplicate candidate. When the
 base belongs to the current unaccepted Book request, the review action uses
 `/product/editor/book-reviews` to append a replacement generation. The previous run must
-be terminal and its external effects settled; finish or explicitly cancel/reconcile it
+be terminal, its external effects settled and its budget reservations settled, released
+or rejected; finish or explicitly cancel/reconcile it
 first. Interrupted reservation/admission resumes through the same native Book request.
 The replacement remains unaccepted until the ordinary Book acceptance gates succeed.
+
+The backend `POST /product/editor/commands` accepts `scene_artifacts` and optional
+`scene_separators` on `action: save`. Use one whitespace string per adjacent slot;
+`[""]` joins two mapped slots without a paragraph break. The serialized text must equal
+`text` byte-for-byte, while `allowed_ranges` uses the base text's Unicode code-point
+coordinates. Preserve existing slot IDs/order and `used_fact_ids` within the retained
+knowledge contract. `edit_intent: PLAN_STRUCTURE_CHANGE` returns
+`AUTHOR_PLAN_CHANGE_REQUIRED`; submit the change through native Planning before editing
+a replacement plan's prose. A save is still a candidate and must be adopted and reviewed.
+Book cancellation retains successful unaccepted candidates and accepted history; it does
+not authorize replacement or erase pending reconciliation.
 
 The Editor's manuscript review panel consumes
 `/product/production/book-authority/runs/{book_run_id}/prose-reviews`. Start freezes an
@@ -1096,6 +1108,17 @@ The Plan Change action requires exact target/proposed plan versions, current evi
 and a rationale. It creates a proposal, retaining the existing approval and future-only
 invalidation boundary. A new source or policy requires a new frozen review run; identical
 valid windows can be reused without pretending unreviewed text was read.
+
+For a finding disposition, obtain `finding_digest` and `expected_version` from the current
+report. `KEEP_HISTORY`, `CURRENT_CANDIDATE_REVISION` and `FUTURE_PLAN_PROPOSAL` retain an
+unresolved issue until the appropriate review/approval consumer completes. A candidate
+must bind the exact source run, lineage, finding and manuscript. `MINOR_EXCEPTION` requires
+an enabled current policy naming the authenticated reviewer and permitting minor exceptions;
+conflicting, major and blocking issues cannot use it. For `DISMISSED_WITH_EVIDENCE`, set
+`consumer_asset_version_id` to the successful report in this same run whose located
+counterevidence covers every challenged member. Unknown evidence or a rationale-only
+request is rejected. Signatures may include `expires_at` in timezone-aware ISO 8601;
+inspect editorial history and completion readiness for the valid group and exact blockers.
 
 Original pilot and exploration materials and the separate Craft protocol are under
 `config/production/narrative-closure/`. The authorization request there is a proposal,

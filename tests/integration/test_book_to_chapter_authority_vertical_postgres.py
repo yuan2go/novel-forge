@@ -1252,6 +1252,43 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         self.assertEqual(cancelled["state"], "ABORTED")
         self.assertIn(child["status"], {"CANCELLATION_REQUESTED", "CANCELLED"})
 
+    def test_book_cancel_preserves_successful_unaccepted_child(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=2)
+        delegated = fixture["authority"].submit_chapter(
+            self._chapter_command(fixture, chapter_number=1), principal=fixture["principal"])
+        self._run_child(fixture, delegated["chapter_root_operation_id"])
+        fixture["authority"].reconcile_chapter(delegated["chapter_request_id"])
+        stopped = fixture["authority"].cancel(fixture["book"].book_run_id,
+            reason="retain candidate without acceptance", principal=fixture["principal"])
+        self.assertEqual(stopped["state"], "ABORTED")
+        self.assertEqual(stopped["accepted_through_chapter"], 0)
+        child = fixture["chapter"].query.require_run(project_id=fixture["project_id"],
+            root_operation_id=delegated["chapter_root_operation_id"])
+        self.assertEqual(child["status"], "SUCCEEDED")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT status FROM authority_child_delegation WHERE chapter_request_id=%s",
+                [delegated["chapter_request_id"]])
+            self.assertEqual(uow.cursor.fetchone()[0], "SUCCEEDED")
+        replay = fixture["authority"].cancel(fixture["book"].book_run_id,
+            reason="retain candidate without acceptance", principal=fixture["principal"])
+        self.assertEqual(replay["version"], stopped["version"])
+
+    def test_book_cancel_preserves_accepted_chapter_history(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=2)
+        delegated = fixture["authority"].submit_chapter(self._chapter_command(fixture, chapter_number=1), principal=fixture["principal"])
+        self._run_child(fixture, delegated["chapter_root_operation_id"])
+        fixture["authority"].reconcile_chapter(delegated["chapter_request_id"])
+        accepted = fixture["authority"].accept_chapter(delegated["chapter_request_id"], principal=fixture["principal"])
+        stopped = fixture["authority"].cancel(fixture["book"].book_run_id, reason="stop after accepted chapter", principal=fixture["principal"])
+        self.assertEqual(stopped["state"], "ABORTED")
+        self.assertEqual(stopped["accepted_through_chapter"], 1)
+        self.assertEqual(stopped["last_chapter_outcome_version_id"], accepted["last_chapter_outcome_version_id"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT status FROM authority_child_delegation WHERE chapter_request_id=%s", [delegated["chapter_request_id"]])
+            self.assertEqual(uow.cursor.fetchone()[0], "ACCEPTED")
+            uow.cursor.execute("SELECT status FROM authority_book_chapter_acceptance WHERE chapter_request_id=%s", [delegated["chapter_request_id"]])
+            self.assertEqual(uow.cursor.fetchone()[0], "COMMITTED")
+
     def test_book_reconcile_after_worker_restart(self) -> None:
         failure = {"enabled": True}
 

@@ -11,6 +11,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .editorial_domain import (
     editorial_readiness,
+    signature_unexpired,
     require_editorial_principal,
     validate_editorial_policy,
 )
@@ -49,7 +50,12 @@ def require_review_closure(progress: dict[str, Any], policy: dict[str, Any]) -> 
                 "BOOK_EDITORIAL_ISSUE_UNRESOLVED",
                 "every conflicting or open finding requires version-bound disposition",
             )
+        resolution = disposition.get("resolution_evidence") or {}
+        if disposition["decision"] in {"DISMISSED_WITH_EVIDENCE", "MINOR_EXCEPTION"} and resolution.get("policy") != policy:
+            raise KernelError("BOOK_EDITORIAL_POLICY_STALE", "finding resolution requires the current exact policy")
         if disposition["decision"] == "DISMISSED_WITH_EVIDENCE":
+            if resolution.get("resolution") != "DISMISSED_BY_AUTHORIZED_REVIEWER":
+                raise KernelError("BOOK_EDITORIAL_COUNTEREVIDENCE_REQUIRED", "legacy rationale-only dismissal requires a new evidence-bound decision")
             continue
         if finding["status"] == "CONFLICT_REQUIRES_REVIEW":
             raise KernelError(
@@ -68,6 +74,7 @@ def require_review_closure(progress: dict[str, Any], policy: dict[str, Any]) -> 
             )
         if (
             disposition["decision"] != "MINOR_EXCEPTION"
+            or resolution.get("resolution") != "PERMITTED_EXCEPTION"
             or not policy["allow_minor_exceptions"]
         ):
             raise KernelError(
@@ -146,7 +153,9 @@ class BookEditorialWorkflow:
                     "statement",
                     "exception_rationale",
                 }
-                if set(content) != required or not str(content["statement"]).strip():
+                if (set(content) - {"expires_at"} != required
+                    or not str(content["statement"]).strip()
+                    or not signature_unexpired(content)):
                     raise KernelError(
                         "BOOK_EDITORIAL_SIGNATURE_INVALID",
                         "signature must explicitly bind case, prose review, policy and statement",
@@ -343,30 +352,46 @@ def completion_editorial_evidence(
         review_progress,
     )
 
-    signature = signatures[-1]
-    run = load_review_run(
-        uow,
-        run_id=signature["content"]["review_run_id"],
-        **{key: case[key] for key in ("project_id", "workspace_id", "book_run_id")},
-    )
-    progress = review_progress(uow, run)
-    status = editorial_readiness(
-        events=[
-            event
-            for event in events
-            if event["kind"] != "SIGNATURE"
-            or event["content"].get("case_id") == case["case_id"]
-        ],
-        source_digest=case["source_digest"],
-        manifest_digest=progress["manifest_digest"],
-        review_digest=progress["review_digest"],
-        release_sha=release_sha,
-    )
-    blockers = list(status["blockers"])
-    if (
-        not progress["source_current"]
-        or not progress["coverage_complete"]
-        or not progress["review_complete"]
-    ):
-        blockers.append("BOOK_EDITORIAL_REVIEW_STALE")
-    return blockers, status
+    policy_events = [event for event in events if event["kind"] == "POLICY"]
+    if not policy_events:
+        return ["WHOLE_BOOK_EDITORIAL_POLICY_REQUIRED"], {}
+    current_policy = policy_events[-1]
+    revoked = {event["content"]["signature_id"] for event in events if event["kind"] == "REVOCATION"}
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for signature in signatures:
+        content = signature["content"]
+        if (signature["event_id"] in revoked or not signature_unexpired(content)
+            or content.get("policy_event_id") != current_policy["event_id"]
+            or content.get("source_digest") != case["source_digest"]
+            or content.get("release_sha") != release_sha):
+            continue
+        groups.setdefault(content["review_run_id"], []).append(signature)
+    assessments = []
+    for run_id, members in sorted(groups.items()):
+        run = load_review_run(
+            uow, run_id=run_id,
+            **{key: case[key] for key in ("project_id", "workspace_id", "book_run_id")},
+        )
+        progress = review_progress(uow, run)
+        status = editorial_readiness(
+            events=[event for event in events if event["kind"] != "SIGNATURE"] + members,
+            source_digest=case["source_digest"], manifest_digest=progress["manifest_digest"],
+            review_digest=progress["review_digest"], release_sha=release_sha, review_run_id=run_id,
+        )
+        blockers = list(status["blockers"])
+        if run["exact_release_sha"] != release_sha:
+            blockers.append("BOOK_EDITORIAL_REVIEW_STALE")
+        try:
+            require_review_closure(progress, current_policy["content"]["policy"])
+        except KernelError as error:
+            blockers.append(error.code)
+        assessment = {**status, "status": "WAITING_EVIDENCE" if blockers else "SIGNED", "review_run_id": run_id, "blockers": sorted(set(blockers)),
+                      "manifest_digest": progress["manifest_digest"], "review_digest": progress["review_digest"]}
+        assessments.append(assessment)
+        if not blockers:
+            return [], {**assessment, "groups_checked": assessments}
+    blockers = sorted({code for group in assessments for code in group["blockers"]})
+    if not blockers:
+        blockers = ["WAITING_AUTHORIZED_EDITORIAL_SIGNATURES"]
+    return blockers, {"status": "WAITING_EVIDENCE", "signature_ids": [],
+                      "policy_event_id": current_policy["event_id"], "groups_checked": assessments}

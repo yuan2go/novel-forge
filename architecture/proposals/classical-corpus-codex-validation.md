@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `6b67b212abed2e0ffbe8250b752f9d4f2dadb33a`
+Reality baseline: `f0dca5e313128fe281c90585b140d60f630ce840`
 Baseline implementation identity:
-`sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc`
+`sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "6b67b212abed2e0ffbe8250b752f9d4f2dadb33a",
-    "implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc"
+    "sha": "f0dca5e313128fe281c90585b140d60f630ce840",
+    "implementation_tree_sha": "sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -122,7 +122,10 @@ four-arm twelve-chapter experiment. A matching new grant, real corpus consumptio
 independent editorial evidence remain missing for those original acceptance conditions. Native Chapter and World reference sampling
 retains frozen task/producer contracts, independent label strata and routing protocol
 identities. These isolated scripted sampling paths do not execute G3/G4 or supply real
-reference observations. The original Craft fixture corpus does not perform this campaign, establish
+reference observations. Evidence-bound editorial dispositions and exact Scene mapping
+preservation change the existing review/revision consumer contract; G4 must bind the new
+implementation identity and cannot reuse the older contract's qualification. These backend
+repairs supply no real corpus consumption or independent generator evaluation. The original Craft fixture corpus does not perform this campaign, establish
 classical-text consumption, authorize model spend or supply independent editorial proof.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption

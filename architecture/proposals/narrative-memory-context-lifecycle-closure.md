@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `6b67b212abed2e0ffbe8250b752f9d4f2dadb33a`
+Reality baseline: `f0dca5e313128fe281c90585b140d60f630ce840`
 Baseline implementation identity:
-`sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc`
+`sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-09-21",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "6b67b212abed2e0ffbe8250b752f9d4f2dadb33a",
-    "implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc"
+    "sha": "f0dca5e313128fe281c90585b140d60f630ce840",
+    "implementation_tree_sha": "sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -150,7 +150,10 @@ not structured Narrative Digest, retention watermarks, representation cutover or
 Native reference Review/ReReview retain exact authorized samples, effective stage
 Context, accepted frontier and approved reviewer artifacts. Reference-agreement routing
 reads immutable Quality evidence without changing memory mutation or retention owners.
-These persistence records do not supply Gate B–E acceptance evidence. Gates B–E below remain proposed design,
+Author cross-Scene mappings now preserve exact separators and realization contracts through
+repeated edits and Revision; Craft locates the same Unicode text without trimming. These
+changes constrain existing Context/prose consumers and do not introduce a Digest or
+retention owner. These persistence records do not supply Gate B–E acceptance evidence. Gates B–E below remain proposed design,
 not executable contracts or proven invariants; their stated bounds require qualification.
 
 ## 7. Gate B — Structured Narrative Digest

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from novel_forge.modules.authority_security import Principal
-from novel_forge.modules.chapter_authority.author_editor import require_source, text_hash
+from novel_forge.modules.chapter_authority.author_editor import require_source, source_draft_content, text_hash
 from novel_forge.modules.chapter_authority.contracts import ChapterAuxiliaryOutput, ChapterHandlerOutput, ChapterNode
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -17,12 +17,13 @@ def freeze_author_adoption(database_url: str, *, project_id: str, workspace_id: 
     with AuthorityUnitOfWork(database_url) as uow:
         candidate, decision = _require_adoption(uow, scope, candidate_asset_version_id, decision_asset_version_id)
         source = require_source(uow, scope, candidate.content["base_asset_version_id"])
-    realization = source.content.get("realization_contract") or {}
+    realization = source_draft_content(source).get("realization_contract") or {}
     plan_id = source.asset_version_id if source.asset_type == "chapter_plan" else realization.get("plan_version_id", "")
     return {**scope, "contract_version": "author-draft-adoption.v1",
             "candidate_asset_version_id": candidate.asset_version_id, "candidate_content_hash": candidate.content_hash,
             "decision_asset_version_id": decision.asset_version_id, "decision_content_hash": decision.content_hash,
             "text_hash": candidate.content["text_hash"], "base_asset_version_id": candidate.content["base_asset_version_id"],
+            "originating_draft_asset_version_id": candidate.content.get("originating_draft_asset_version_id", candidate.content["base_asset_version_id"]),
             "author_id": candidate.content["author_id"], "decision_actor_id": decision.content["actor_id"],
             "rights_basis": candidate.content["rights_basis"], "source_chapter_plan_asset_version_id": plan_id}
 

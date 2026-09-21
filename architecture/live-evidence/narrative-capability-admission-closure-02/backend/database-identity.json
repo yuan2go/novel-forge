@@ -1,0 +1,15 @@
+{
+  "evidence_class": "DISPOSABLE_POSTGRESQL_FIXTURE_IDENTITY",
+  "database": "nf_closure02_test",
+  "server": "PostgreSQL 16.15 (Debian 16.15-1.pgdg12+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+  "read_only": "on",
+  "head": "20260921_0142_prose_editorial_foreign_key_indexes",
+  "head_applied": true,
+  "missing_migrations": [],
+  "unexpected_migrations": [],
+  "applied_count": 143,
+  "book_fixture_records": "Not retained after the next module isolation; native assertions are in final-focused.xml.",
+  "container": "nf-admission-closure02-20260921",
+  "fixture_address": "127.0.0.1:53629",
+  "production_provider_proof": false
+}

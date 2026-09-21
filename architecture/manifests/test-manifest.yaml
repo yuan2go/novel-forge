@@ -8,6 +8,66 @@
   ],
   "classification_rules": [
     {
+      "id": "author-editor-contract",
+      "patterns": [
+        "tests/unit/test_author_editor.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-authority",
+      "capability": "author-editor-contract",
+      "production_target": "src/novel_forge/modules/chapter_authority/author_editor.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "author-editor-postgres",
+      "patterns": [
+        "tests/integration/test_author_editor_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "chapter-authority",
+      "capability": "author-editor-postgres",
+      "production_target": "src/novel_forge/modules/chapter_authority/author_editor.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "author-replacement-postgres",
+      "patterns": [
+        "tests/integration/test_author_book_replacement_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "author-replacement-postgres",
+      "production_target": "src/novel_forge/modules/book_authority/author_revision.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "prose-editorial-contract",
+      "patterns": [
+        "tests/unit/test_longform_prose_editorial.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "prose-editorial-contract",
+      "production_target": "src/novel_forge/modules/book_authority/editorial_domain.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "prose-editorial-postgres",
+      "patterns": [
+        "tests/integration/test_longform_prose_editorial_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-followup-authority",
+      "capability": "prose-editorial-postgres",
+      "production_target": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
       "id": "chapter-provider-sampling",
       "patterns": [
         "tests/integration/test_chapter_provider_sampling_postgres.py"

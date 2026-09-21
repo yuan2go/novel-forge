@@ -23,7 +23,8 @@ def seed_editor_source():
         document = uow.repositories.asset_documents.materialize_output(AuthorityAssetWriteCommand(
             operation_id=root, project_id=project_id, asset_id=identifier("author-draft"), asset_type="draft_chapter",
             schema_version="fixture-author-prose.v1", logical_ref=f"drafts/{root}", category="drafts", output_key="chapter.draft",
-            role="primary", content={"chapter": 1, "title": "关山旧约", "text": "　剑😀未出。\n\n她留步。\n"},
+            role="primary", content={"chapter": 1, "title": "关山旧约", "text": "　剑😀未出。\n\n她留步。\n",
+                "scene_artifacts": [{"slot_id": "s1:skeleton", "text": "　剑😀未出。\n\n她留步。\n", "used_fact_ids": []}]},
             qualification_policy="fixture-only", trace_id=identifier("trace"), correlation_id=identifier("correlation")))
         uow.commit()
     return {"project_id": project_id, "workspace_id": workspace_id, "book_id": book_id, "chapter": 1,
@@ -65,6 +66,27 @@ class AuthorEditorPostgresTests(unittest.TestCase):
         self.assertIsNone(different_base['session'])
         self.assertEqual(different_base['version'], accepted['version'])
         self.assertEqual(different_base['text'], self.payload['text'])
+
+    def test_repeated_author_candidate_retains_original_contract_and_scope(self):
+        saved = self.app.execute(action="save", payload=self.payload, idempotency_key=identifier("first-edit"), principal=self.principal)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            first = uow.repositories.asset_documents.require(project_id=self.scope["project_id"], asset_version_id=saved["candidate_asset_version_id"])
+        second_payload = {**self.payload, "expected_version": saved["version"],
+            "base_asset_version_id": first.asset_version_id, "base_asset_hash": first.content_hash,
+            "base_text_hash": first.content["text_hash"], "text": first.content["text"].replace("留步", "止步")}
+        second = self.app.execute(action="save", payload=second_payload, idempotency_key=identifier("second-edit"), principal=self.principal)
+        adopted = self.app.execute(action="accept", payload={**second_payload, "expected_version": second["version"],
+            "candidate_asset_version_id": second["candidate_asset_version_id"], "rationale": "复核两轮措辞"},
+            idempotency_key=identifier("adopt-second"), principal=self.principal)
+        frozen = freeze_author_adoption(DATABASE_URL, **{key: self.scope[key] for key in ("project_id", "workspace_id", "book_id", "chapter")},
+            candidate_asset_version_id=second["candidate_asset_version_id"], decision_asset_version_id=adopted["decision_asset_version_id"], principal=self.principal)
+        self.assertEqual(frozen["originating_draft_asset_version_id"], self.source.asset_version_id)
+        self.assertEqual(frozen["base_asset_version_id"], first.asset_version_id)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            candidate = uow.repositories.asset_documents.require(project_id=self.scope["project_id"], asset_version_id=second["candidate_asset_version_id"])
+        self.assertNotIn("draft_content", candidate.content["draft_content"])
+        self.assertEqual(candidate.content["draft_content"]["scene_artifacts"][0]["text"], second_payload["text"])
+        self.assertEqual(candidate.content["draft_content"]["chapter"], 1)
 
     def test_commit_response_loss_replays_once_and_conflict_keeps_author_input(self):
         def lose_response(name):
