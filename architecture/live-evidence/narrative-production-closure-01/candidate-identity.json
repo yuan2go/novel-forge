@@ -3,10 +3,10 @@
   "baseline_sha": "e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332",
   "baseline_implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed",
   "baseline_migration_head": "20260920_0139_narrative_reference_sampling",
-  "implementation_commit_sha": "dc6bafaa35d0fca1a59f20c93bb493dab5e1b95f",
-  "implementation_tree_sha": "sha256:cbd5f0f6f088e4024f0d41a0adf565c5c26f4c3e7801e82e9c33591cf7952ad7",
-  "implementation_path_count": 1322,
-  "migration_head": "20260921_0141_author_chapter_replacement",
+  "implementation_commit_sha": "6b67b212abed2e0ffbe8250b752f9d4f2dadb33a",
+  "implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc",
+  "implementation_path_count": 1323,
+  "migration_head": "20260921_0142_prose_editorial_foreign_key_indexes",
   "frontend_source_records": [
     {
       "path": "web/admin/.dockerignore",

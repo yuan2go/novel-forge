@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260921_0141_author_chapter_replacement",
+  "migration_head": "20260921_0142_prose_editorial_foreign_key_indexes",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -7855,6 +7855,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260921_0140_prose_editorial_closure.py",
           "id": "20260921_0140_prose_editorial_closure",
           "locator": "MIGRATION_ID = \"20260921_0140_prose_editorial_closure\""
+        },
+        {
+          "id": "20260921_0142_prose_editorial_foreign_key_indexes",
+          "path": "src/novel_forge/storage/migrations/versions/v20260921_0142_prose_editorial_foreign_key_indexes.py",
+          "locator": "20260921_0142_prose_editorial_foreign_key_indexes"
         }
       ],
       "external_effects": {
@@ -8196,6 +8201,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260921_0140_prose_editorial_closure.py",
           "id": "20260921_0140_prose_editorial_closure",
           "locator": "MIGRATION_ID = \"20260921_0140_prose_editorial_closure\""
+        },
+        {
+          "id": "20260921_0142_prose_editorial_foreign_key_indexes",
+          "path": "src/novel_forge/storage/migrations/versions/v20260921_0142_prose_editorial_foreign_key_indexes.py",
+          "locator": "20260921_0142_prose_editorial_foreign_key_indexes"
         }
       ],
       "external_effects": {
@@ -8967,7 +8977,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:cbd5f0f6f088e4024f0d41a0adf565c5c26f4c3e7801e82e9c33591cf7952ad7"
+    "implementation_tree_sha": "sha256:24d2cc9a584ffa5c7d0081310a1819d47e446fc54e06564876593cd9814bf8bc"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

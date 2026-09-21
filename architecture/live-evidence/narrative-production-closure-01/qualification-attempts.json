@@ -28,6 +28,41 @@
           "sha256": "f7dd56b014779b876f5f6a195e4cb153f2ce6c128545278b2ce751011757de20"
         }
       ]
+    },
+    {
+      "tested_sha": "c6f316adb7dcebcfce888804652d6252ce0e569d",
+      "status": "FAIL",
+      "repository_governance": "PASS",
+      "focused_tests": {
+        "status": "PASS",
+        "passed": 199
+      },
+      "backend_junit": {
+        "tests": 4402,
+        "passed": 4402,
+        "failures": 0,
+        "skipped": 0
+      },
+      "migration_fresh": "PASS",
+      "migration_compatibility_junit": {
+        "tests": 105,
+        "passed": 103,
+        "failures": 2,
+        "skipped": 0
+      },
+      "failure": "Five missing foreign-key indexes in migration0140 prose review and editorial tables",
+      "resolution": "Append forward migration0142; published migration0140/0141 remain immutable. Reuse existing full-chain and rollback/replay assertions, no waiver.",
+      "postgresql_complete_collection_and_compose": "NOT_RUN_DEPENDENCY_GATE_FAILED",
+      "evidence": [
+        {
+          "path": "/Volumes/DevSSD/Development/Workspace/evidence/nf-closure-0a18d60d9f85/governance-r2/pr-governance-c6f316adb7dcebcfce888804652d6252ce0e569d.json",
+          "sha256": "ebf465ce7a826381e5b3982a157eba03f71d96897bdd38f06303f37c46b51ab9"
+        },
+        {
+          "path": "/Volumes/DevSSD/Development/Workspace/evidence/nf-closure-0a18d60d9f85/governance-r2/p0-backend-qualification-c6f316adb7dcebcfce888804652d6252ce0e569d.json",
+          "sha256": "36aa4842796375508edb41496180ef88d44f6cb2a1f964765083e23658f83848"
+        }
+      ]
     }
   ],
   "current_candidate_qualification": "NOT_RUN; complete exact-SHA rerun required"
