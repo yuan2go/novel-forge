@@ -117,7 +117,7 @@ class BookAuthorityRepository:
                     ELSE status
                 END,
                 version=version+1, updated_at=NOW()
-            WHERE owner_id=%s AND status <> 'ACCEPTED'
+            WHERE owner_id=%s AND status <> 'ACCEPTED' AND superseded_at IS NULL
             """,
             [book_run_id],
         )
@@ -186,7 +186,7 @@ class BookAuthorityRepository:
         )
         return self.cursor.rowcount == 1
 
-    def create_chapter_request(self, row: dict[str, Any]) -> None:
+    def create_chapter_request(self, row: dict[str, Any], *, generation: int = 1, predecessor_request_id: str = "") -> None:
         self.cursor.execute(
             """
             INSERT INTO authority_book_chapter_request (
@@ -196,7 +196,7 @@ class BookAuthorityRepository:
                 narrative_realization_id, narrative_realization_slice_id,
                 narrative_realization_contract_digest,
                 production_profile_version, stable_idempotency_key,
-                command_payload, status_reference
+                command_payload, status_reference, generation, predecessor_request_id
             ) VALUES (
                 %(chapter_request_id)s, %(book_run_id)s, %(project_id)s,
                 %(chapter_number)s, %(chapter_plan_version)s,
@@ -205,11 +205,11 @@ class BookAuthorityRepository:
                 NULLIF(%(narrative_realization_slice_id)s, ''),
                 NULLIF(%(narrative_realization_contract_digest)s, ''),
                 %(production_profile_version)s,
-                %(stable_idempotency_key)s, %(command_payload)s, 'SUBMITTING'
+                %(stable_idempotency_key)s, %(command_payload)s, 'SUBMITTING', %(generation)s, NULLIF(%(predecessor_request_id)s, '')
             )
             ON CONFLICT (project_id, stable_idempotency_key) DO NOTHING
             """,
-            {**row, "command_payload": Jsonb(row["command_payload"])},
+            {**row, "command_payload": Jsonb(row["command_payload"]), "generation": generation, "predecessor_request_id": predecessor_request_id},
         )
 
     def reserve_chapter(
@@ -1007,7 +1007,7 @@ class BookAuthorityRepository:
                     ELSE status
                 END,
                 version=version+1, updated_at=NOW()
-            WHERE owner_id=%s AND status <> 'ACCEPTED'
+            WHERE owner_id=%s AND status <> 'ACCEPTED' AND superseded_at IS NULL
             """,
             [book_run_id],
         )

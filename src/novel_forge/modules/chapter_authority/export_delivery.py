@@ -65,6 +65,13 @@ def deliver_export(
     rendered = str(content["rendered_text"]).encode("utf-8")
     expected_hash = "sha256:" + hashlib.sha256(rendered).hexdigest()
     object_key = f"chapters/{request.project_id}/{request.chapter}/chapter.txt"
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT root.command_payload FROM authority_operation child
+            JOIN authority_operation root ON root.operation_id=child.root_operation_id
+            WHERE child.operation_id=%s AND child.project_id=%s""", [request.operation_id,request.project_id])
+        root = uow.cursor.fetchone()
+    if root is not None and (root[0].get("preparation_report") or {}).get("author_draft_adoption"):
+        object_key = f"chapters/{request.project_id}/{request.chapter}/versions/{request.asset_version_id}/chapter.txt"
     asset_context = AssetCommandContext(
         operation_id=request.operation_id,
         project_id=request.project_id,

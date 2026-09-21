@@ -141,6 +141,8 @@ from . import (
     v20260920_0137_opening_delete_fence,
     v20260920_0138_narrative_craft_origin,
     v20260920_0139_narrative_reference_sampling,
+    v20260921_0140_prose_editorial_closure,
+    v20260921_0141_author_chapter_replacement,
 )
 
 VERSION_MODULES = [
@@ -284,6 +286,8 @@ VERSION_MODULES = [
     v20260920_0137_opening_delete_fence,
     v20260920_0138_narrative_craft_origin,
     v20260920_0139_narrative_reference_sampling,
+    v20260921_0140_prose_editorial_closure,
+    v20260921_0141_author_chapter_replacement,
 ]
 
 __all__ = ["VERSION_MODULES"]

@@ -126,11 +126,38 @@ class BookProductionAuthorityTests(unittest.TestCase):
         handlers = BookFollowupHandlerRegistry().available_handler_keys
 
         self.assertEqual(
-            set(definitions), {"reader_outcome.evaluate", "longform.recap"}
+            set(definitions),
+            {"reader_outcome.evaluate", "longform.recap", "longform.prose_review"},
         )
-        self.assertEqual(len(handlers), 2)
+        self.assertEqual(len(handlers), 3)
         reader = definitions["reader_outcome.evaluate"]
         recap = definitions["longform.recap"]
+        prose = definitions["longform.prose_review"]
+        self.assertEqual(
+            prose["external_capabilities"], ["model.longform_prose_review"]
+        )
+        self.assertEqual(
+            prose["output_contract"]["asset_type"], "longform_prose_review_report"
+        )
+        self.assertEqual(
+            prose["output_contract"]["output_key"], "longform.prose_review.report"
+        )
+        self.assertFalse(prose["policy"]["body_mutation_allowed"])
+        self.assertFalse(prose["policy"]["plan_mutation_allowed"])
+        self.assertIn("author_editor", prose["projection_consumers"])
+        from novel_forge.modules.book_followup_authority.prose_handler import (
+            LongformProseReviewHandler,
+        )
+
+        class EffectPort:
+            external_effect_backed = True
+
+        registration = BookFollowupHandlerRegistry(
+            prose_model_port=EffectPort()
+        ).registration("longform.prose_review", prose["definition_version"])
+        self.assertIsInstance(registration.handler, LongformProseReviewHandler)
+        with self.assertRaises(ValueError):
+            LongformProseReviewHandler(object())
         self.assertEqual(reader["external_capabilities"], ["model.reader_outcome"])
         self.assertEqual(
             set(reader["output_contract"]["auxiliary_asset_types"]),

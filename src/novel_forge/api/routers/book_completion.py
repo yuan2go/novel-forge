@@ -30,6 +30,12 @@ class CompletionDecisionRequest(CompletionScope):
     closure_evidence_id: str = ""
 
 
+class EditorialEventRequest(CompletionScope):
+    expected_version: int = Field(ge=0)
+    kind: str = Field(pattern="^(POLICY|SIGNATURE|REVOCATION)$")
+    content: dict[str, Any]
+
+
 def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(prefix="/api/book-completion", tags=["book-completion"])
     authority = ctx.services.book_completion_authority
@@ -71,5 +77,15 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 principal=actor,
             )
         )
+
+    @router.post("/editorial-events")
+    def editorial_event(request: EditorialEventRequest) -> dict[str, Any]:
+        from novel_forge.modules.book_authority.editorial import BookEditorialWorkflow
+        return execute(lambda actor: BookEditorialWorkflow(authority).record(**request.model_dump(), principal=actor))
+
+    @router.get("/editorial-history")
+    def editorial_history(project_id: str, workspace_id: str, book_run_id: str) -> dict[str, Any]:
+        from novel_forge.modules.book_authority.editorial import BookEditorialWorkflow
+        return execute(lambda actor: BookEditorialWorkflow(authority).history(project_id=project_id, workspace_id=workspace_id, book_run_id=book_run_id, principal=actor))
 
     return router

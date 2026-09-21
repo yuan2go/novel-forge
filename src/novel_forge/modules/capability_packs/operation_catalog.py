@@ -361,6 +361,12 @@ def reader_outcome_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
 
 
+def longform_prose_review_workflow_binding_catalog() -> WorkflowBindingCatalog:
+    return WorkflowBindingCatalog("book_followup_longform_prose_review", BOOK_FOLLOWUP_DEFINITION_VERSION, (
+        WorkflowBinding(node_id="longform_prose_review", operation_name="longform.prose_review", stage="longform_prose_review", handler_key="novel_forge.book_followup_authority.longform.prose_review", capability_id="review.chapter.evaluate", depends_on=(), primary_output_asset_type="longform_prose_review_report"),
+    ))
+
+
 def narrative_evaluation_workflow_binding_catalog() -> WorkflowBindingCatalog:
     return WorkflowBindingCatalog(
         "story_design_semantic_evaluation",
@@ -404,6 +410,7 @@ def governed_workflow_binding_catalog(
         chapter_workflow_binding_catalog(),
         story_planning_workflow_binding_catalog(),
         reader_outcome_workflow_binding_catalog(),
+        longform_prose_review_workflow_binding_catalog(),
         narrative_evaluation_workflow_binding_catalog(),
         agent_session_workflow_binding_catalog(),
     )

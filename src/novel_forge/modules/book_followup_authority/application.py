@@ -55,6 +55,7 @@ class BookFollowupAuthorityApplication:
         application_build_id: str,
         commit_sha: str,
         model_port: ReaderOutcomeModelPort | None = None,
+        prose_model_port: ReaderOutcomeModelPort | None = None,
         reader_judge_resolver: ReaderJudgeRuntimeResolver | None = None,
         worker_id: str = "book-followup-authority-worker",
     ) -> None:
@@ -66,6 +67,7 @@ class BookFollowupAuthorityApplication:
         self.registry = BookFollowupHandlerRegistry(
             model_port,
             reader_judge_resolver or ReaderJudgeRuntimeResolver(database_url),
+            prose_model_port,
         )
         self.worker_id = worker_id
         self.reader_policies = PostgresReaderProxyPolicyAuthority(

@@ -73,12 +73,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             trace_id = request.trace_id.strip() or f"trace:{uuid4()}"
             correlation_id = request.correlation_id.strip() or f"correlation:{uuid4()}"
             command = preparation.command
+            preparation_report = dict(command.preparation_report)
+            if request.author_candidate_asset_version_id or request.author_decision_asset_version_id:
+                from novel_forge.modules.chapter_authority.author_draft import freeze_author_adoption
+                preparation_report["author_draft_adoption"] = freeze_author_adoption(
+                    _application(ctx).database_url, project_id=command.project_id,
+                    workspace_id=command.workspace_id, book_id=command.book_id, chapter=command.chapter,
+                    candidate_asset_version_id=request.author_candidate_asset_version_id,
+                    decision_asset_version_id=request.author_decision_asset_version_id, principal=principal,
+                )
             admission = _application(ctx).admit(
                 SingleChapterRequest(
                     project_id=command.project_id,
                     workspace_id=command.workspace_id,
                     actor_id=principal.principal_id,
                     chapter=command.chapter,
+                    book_id=command.book_id,
                     title=command.title,
                     premise=command.premise,
                     trace_id=trace_id,
@@ -90,7 +100,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     context_candidates=command.context_candidates,
                     context_version_refs=command.context_version_refs,
                     context_token_budget=command.context_token_budget,
-                    preparation_report=command.preparation_report,
+                    preparation_report=preparation_report,
                     idempotency_key=command.idempotency_key,
                 ),
                 principal=principal,

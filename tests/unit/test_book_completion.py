@@ -176,6 +176,7 @@ def test_completion_kernel_result_schema_rejects_false_qualification_and_total_s
         "case_id": "case:1",
         "book_run_id": "book-run:1",
         "case_version": 1,
+        "current_editorial_policy_status": "WAITING_POLICY_APPROVAL",
     }
     schema = completion_result_schema("assess")
     validate_completion_contract(schema, result, "result")

@@ -17,7 +17,10 @@ from novel_forge.modules.chapter_authority.contracts import (
     ChapterInputAsset,
     ChapterNode,
 )
-from novel_forge.modules.chapter_authority.definitions import chapter_definition_version
+from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION,
+    chapter_definition_version,
+)
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 
 
@@ -91,6 +94,7 @@ def execute_chapter_handler(
     command: WorkerLeaseCommand,
     node: ChapterNode,
     registry: ChapterHandlerRegistry,
+    author_input: bool = False,
     execution_probe: Callable[[], object] | None = None,
 ) -> ChapterExecutionResult:
     return execute_authority_handler(
@@ -99,8 +103,10 @@ def execute_chapter_handler(
         execution_probe=execution_probe,
         registration=AuthorityHandlerRegistration(
             definition_name=node.definition_name,
-            definition_version=chapter_definition_version(
-                registry.model_effects_required
+            definition_version=(
+                CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
+                if author_input and node is ChapterNode.DRAFT
+                else chapter_definition_version(registry.model_effects_required)
             ),
             handler_key=node.handler_key,
             handler_contract_version="chapter-authority-handler-v2",

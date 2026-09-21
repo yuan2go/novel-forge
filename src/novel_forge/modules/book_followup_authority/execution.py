@@ -32,6 +32,11 @@ class PostgresReaderOutcomeExecutionContractBinder(
         f"book_followup_reader_outcome@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
     )
     execution_binding_domain = "reader_outcome"
+    stage_name = "reader_outcome"
+    context_schema = "novelos.reader_outcome_context_bundle.v2"
+
+    def _project_context_input(self, asset_type: str, content: Mapping[str, Any]) -> dict[str, Any]:
+        return project_reader_outcome_context_input(asset_type, content)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("workflow_definition_ref", self.workflow_definition_ref)
@@ -47,9 +52,9 @@ class PostgresReaderOutcomeExecutionContractBinder(
         snapshot_fencing_token: int,
         snapshot_worker_id: str,
     ):
-        if capability != "model.reader_outcome" or str(
+        if capability != f"model.{self.stage_name}" or str(
             request_payload.get("stage") or ""
-        ) != "reader_outcome":
+        ) != self.stage_name:
             raise KernelError(
                 "READER_OUTCOME_CAPABILITY_INVALID",
                 "Reader binder accepts only Reader Outcome execution",
@@ -86,7 +91,7 @@ class PostgresReaderOutcomeExecutionContractBinder(
                     content_hash=context.content_hash,
                     schema_version=str(
                         context.content.get("schema_version")
-                        or "novelos.reader_outcome_context_bundle.v2"
+                        or self.context_schema
                     ),
                     source_eligibility="PRODUCTION_ELIGIBLE",
                 ).to_dict()
@@ -115,7 +120,7 @@ class PostgresReaderOutcomeExecutionContractBinder(
         graph: Mapping[str, str],
         route: Any,
     ):
-        if stage != "reader_outcome":
+        if stage != self.stage_name:
             raise KernelError(
                 "READER_OUTCOME_STAGE_INVALID",
                 "Reader Pack cannot bind another model stage",
@@ -129,7 +134,7 @@ class PostgresReaderOutcomeExecutionContractBinder(
                     workspace_id=workspace_id,
                     book_id=book_id,
                     workflow_definition_ref=self.workflow_definition_ref,
-                    workflow_node_id="reader_outcome",
+                    workflow_node_id=self.stage_name,
                     environment=self.pack_environment,
                     runtime_profile=self.pack_runtime_profile,
                     release_channel=self.pack_release_channel,
@@ -196,15 +201,15 @@ class PostgresReaderOutcomeExecutionContractBinder(
                     "asset_version_id": document.asset_version_id,
                     "asset_type": document.asset_type,
                     "content_hash": document.content_hash,
-                    "projection": project_reader_outcome_context_input(
+                    "projection": self._project_context_input(
                         document.asset_type, document.content
                     ),
                 }
             )
             asset_ids.append(document.asset_id)
-        logical_ref = f"reader_outcome/context_bundles/{operation_id}-{attempt_id}.json"
+        logical_ref = f"{self.stage_name}/context_bundles/{operation_id}-{attempt_id}.json"
         content = {
-            "schema_version": "novelos.reader_outcome_context_bundle.v2",
+            "schema_version": self.context_schema,
             "project_id": project_id,
             "operation_id": operation_id,
             "attempt_id": attempt_id,
@@ -246,12 +251,12 @@ class PostgresReaderOutcomeExecutionContractBinder(
             AuthorityAssetWriteCommand(
                 operation_id=operation_id,
                 project_id=project_id,
-                asset_id=f"reader-outcome-context:{attempt_id}",
+                asset_id=f"{self.stage_name}-context:{attempt_id}",
                 asset_type="context_bundle",
-                schema_version="novelos.reader_outcome_context_bundle.v2",
+                schema_version=self.context_schema,
                 logical_ref=logical_ref,
                 category="reader_outcome_context",
-                output_key="reader_outcome.context_bundle",
+                output_key=f"{self.stage_name}.context_bundle",
                 role="context_bundle",
                 content=content,
                 qualification_policy="reader-outcome-context-source-isolation-v1",
