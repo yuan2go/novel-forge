@@ -1,0 +1,24 @@
+{
+  "schema_version": "provider-calibration-publication-index.v1",
+  "status": "INCOMPLETE_WORK_PACKAGE_NO_TEST_PUBLICATION",
+  "public_report": "report.md",
+  "progress_snapshot": "progress-20260921-0843.md",
+  "previous_evidence_index": "../real-provider-campaign-20260920/index.json",
+  "artifacts": [
+    {
+      "path": "progress-20260921-0843.md",
+      "bytes": 11194,
+      "sha256": "sha256:8b4e3f0b9eeb916c29b73689b45d71a48cc9c82dc4a92d31a94d649bcf466d31"
+    },
+    {
+      "path": "publication.json",
+      "bytes": 1567,
+      "sha256": "sha256:ea24b7bef6aac498c6199b774c0f6cf8c0214dce95b4e08bd68b8c81a9fb40b0"
+    },
+    {
+      "path": "report.md",
+      "bytes": 2476,
+      "sha256": "sha256:1ca46c7995962731994758d2336f07ab3d7a8789d41ee83518b19f6428092465"
+    }
+  ]
+}
