@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260920_0139_narrative_reference_sampling",
+  "head": "20260921_0141_author_chapter_replacement",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -142,6 +142,8 @@
     "20260916_0136_provider_routing_policy",
     "20260920_0137_opening_delete_fence",
     "20260920_0138_narrative_craft_origin",
-    "20260920_0139_narrative_reference_sampling"
+    "20260920_0139_narrative_reference_sampling",
+    "20260921_0140_prose_editorial_closure",
+    "20260921_0141_author_chapter_replacement"
   ]
 }

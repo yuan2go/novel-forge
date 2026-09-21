@@ -1,0 +1,50 @@
+{
+  "contract_version": "narrative-closure-authorization-request.v1",
+  "status": "NOT_AUTHORIZATION",
+  "campaign_id": "narrative-production-closure-wp02-v1",
+  "proposed_accounting_basis": "ACCOUNT_ENTITLEMENT",
+  "proposed_total": {
+    "calls": 928,
+    "tokens": 29696000
+  },
+  "proposed_stage_caps": {
+    "PILOT": {
+      "calls": 232,
+      "tokens": 7424000
+    },
+    "EXPLORATION": {
+      "calls": 696,
+      "tokens": 22272000
+    }
+  },
+  "basis": "48 creation calls plus 8 repair calls and 2 qualification calls per isolated arm; 32000 visible tokens per planned call. Planning ceiling only, not a measured requirement, account balance or promise of completion. Existing request admission determines actual reservations without raising its limits.",
+  "includes": [
+    "native initialization and independent qualification",
+    "history preparation",
+    "Memo and Draft or author input",
+    "Review and all Quality evaluations",
+    "Revision and ReReview",
+    "Canon and Book acceptance",
+    "model evaluation if explicitly authorized",
+    "failures and native retries"
+  ],
+  "monetary_cost": "UNKNOWN",
+  "existing_grants": "INCOMPATIBLE_PROJECT_BOOK_PURPOSE",
+  "missing_fields": [
+    "new finite authorization_ref and exact evidence_hash",
+    "named authorized account_identity_ref and model/reasoning/backend versions",
+    "credential availability without disclosure",
+    "current implementation-bound Provider and Capability Pack qualification",
+    "approved project/workspace/book participants",
+    "native phase caps per participant with exploration initially zero until pilot release",
+    "expiry or explicit revocation policy",
+    "native source registrations, accepted histories, plans, author candidate and adoption IDs",
+    "trusted operator principal and independent evaluator identities"
+  ],
+  "stage_release": "Two pilot pairs first; six exploration pairs require native exact-text reading decisions and positive native stage grants; system contract failure halts.",
+  "craft": "Separate campaign and separate explicit finite grant; changing experiment_id does not authorize fresh quota.",
+  "priced_or_mixed_billing": "HOLD: native monetary phase contract and separate paid authorization required; never silently switch",
+  "publication_authorized": false,
+  "human_review": "NOT_RUN",
+  "real_provider": "NOT_RUN"
+}

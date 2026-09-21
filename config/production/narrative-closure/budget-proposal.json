@@ -1,0 +1,443 @@
+{
+  "contract_version": "creative-paired-samples-budget.v4",
+  "experiment_id": "narrative-production-closure-wp02-v1",
+  "accounting_basis": "ACCOUNT_ENTITLEMENT",
+  "shared_total": {
+    "calls": 928,
+    "tokens": 29696000
+  },
+  "arms": [
+    {
+      "sample_id": "pilot-broken-cost",
+      "stage": "PILOT",
+      "arm": "A",
+      "project_id": "closure-wp02-task01-a",
+      "book_id": "closure-wp02-task01-a-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "pilot-broken-cost",
+      "stage": "PILOT",
+      "arm": "B",
+      "project_id": "closure-wp02-task01-b",
+      "book_id": "closure-wp02-task01-b-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "pilot-changed-choice",
+      "stage": "PILOT",
+      "arm": "A",
+      "project_id": "closure-wp02-task02-a",
+      "book_id": "closure-wp02-task02-a-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "pilot-changed-choice",
+      "stage": "PILOT",
+      "arm": "B",
+      "project_id": "closure-wp02-task02-b",
+      "book_id": "closure-wp02-task02-b-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "combat-blocked-route",
+      "stage": "EXPLORATION",
+      "arm": "A",
+      "project_id": "closure-wp02-task03-a",
+      "book_id": "closure-wp02-task03-a-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "combat-blocked-route",
+      "stage": "EXPLORATION",
+      "arm": "B",
+      "project_id": "closure-wp02-task03-b",
+      "book_id": "closure-wp02-task03-b-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "combat-intentional-repeat",
+      "stage": "EXPLORATION",
+      "arm": "A",
+      "project_id": "closure-wp02-task04-a",
+      "book_id": "closure-wp02-task04-a-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "combat-intentional-repeat",
+      "stage": "EXPLORATION",
+      "arm": "B",
+      "project_id": "closure-wp02-task04-b",
+      "book_id": "closure-wp02-task04-b-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "combat-partial-observation",
+      "stage": "EXPLORATION",
+      "arm": "A",
+      "project_id": "closure-wp02-task05-a",
+      "book_id": "closure-wp02-task05-a-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "combat-partial-observation",
+      "stage": "EXPLORATION",
+      "arm": "B",
+      "project_id": "closure-wp02-task05-b",
+      "book_id": "closure-wp02-task05-b-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "dialogue-information-boundary",
+      "stage": "EXPLORATION",
+      "arm": "A",
+      "project_id": "closure-wp02-task06-a",
+      "book_id": "closure-wp02-task06-a-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "dialogue-information-boundary",
+      "stage": "EXPLORATION",
+      "arm": "B",
+      "project_id": "closure-wp02-task06-b",
+      "book_id": "closure-wp02-task06-b-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "dialogue-misunderstanding",
+      "stage": "EXPLORATION",
+      "arm": "A",
+      "project_id": "closure-wp02-task07-a",
+      "book_id": "closure-wp02-task07-a-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "dialogue-misunderstanding",
+      "stage": "EXPLORATION",
+      "arm": "B",
+      "project_id": "closure-wp02-task07-b",
+      "book_id": "closure-wp02-task07-b-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "motivation-delayed-payoff",
+      "stage": "EXPLORATION",
+      "arm": "A",
+      "project_id": "closure-wp02-task08-a",
+      "book_id": "closure-wp02-task08-a-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    },
+    {
+      "sample_id": "motivation-delayed-payoff",
+      "stage": "EXPLORATION",
+      "arm": "B",
+      "project_id": "closure-wp02-task08-b",
+      "book_id": "closure-wp02-task08-b-book",
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "qualification_allocation": {
+        "calls": 2,
+        "tokens": 64000
+      },
+      "creation_allocation": {
+        "calls": 48,
+        "tokens": 1536000
+      },
+      "repair_allocation": {
+        "calls": 8,
+        "tokens": 256000
+      },
+      "project_total": {
+        "calls": 58,
+        "tokens": 1856000
+      }
+    }
+  ]
+}

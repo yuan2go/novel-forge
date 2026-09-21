@@ -177,7 +177,13 @@ def _business_scope(cursor: Any, identity: dict[str, Any], *, project_id: str, g
                                    chapter_ranges=_arm(plan, project_id)["chapter_ranges"] if plan is not None else None)
 
 
-def _phase(identity: dict[str, Any]) -> str:
+def _phase(identity: dict[str, Any], plan: dict[str, Any] | None = None) -> str:
+    if plan is not None and plan["contract_version"] == _contract().PAIRED_SAMPLES_VERSION and identity["operation_name"] == "provider.qualification.d0":
+        config = identity["command_payload"].get("config") or {}
+        if (identity["request_payload"].get("stage") != "d0_qualification"
+            or not config.get("capability") or config["capability"] != identity["capability"]):
+            raise KernelError("CREATIVE_BUDGET_PHASE_UNKNOWN", "Qualification must bind its native admitted probe capability")
+        return "QUALIFICATION"
     try:
         return _contract().classify_phase(identity["operation_name"], identity["capability"], identity["request_payload"], identity["attempt_no"])
     except ValueError as exc:
@@ -219,7 +225,7 @@ def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reserv
         else:
             identity = _effect_identity(cursor, effect_id, owner_project)
             legacy_plan = next(reversed(lineage.values()))
-            phase = _business_scope(cursor, identity, project_id=owner_project, plan=legacy_plan)["phase"] if plan["contract_version"] in _contract().SINGLE_BOOK_VERSIONS else _phase(identity)
+            phase = _business_scope(cursor, identity, project_id=owner_project, plan=legacy_plan)["phase"] if plan["contract_version"] in _contract().SINGLE_BOOK_VERSIONS else _phase(identity, plan)
         if phase not in usage["phases"]:
             raise KernelError("CREATIVE_BUDGET_PHASE_UNKNOWN", "historical reservation has an unsupported frozen phase")
         actual = max(int(actual or 0), int(dict(evidence or {}).get("actual_tokens") or 0))
@@ -295,8 +301,8 @@ def reserve_creative_budget_in_uow(uow: AuthorityUnitOfWork, request: Any) -> di
     if request.estimated_tokens <= 0:
         raise KernelError("CREATIVE_BUDGET_TOKEN_CEILING_REQUIRED", "experiment dispatch requires a positive observable token reservation")
     identity = _effect_identity(uow.cursor, request.external_effect_id, request.project_id)
-    phase = _phase(identity)
-    if generation > 1 and phase != "SOURCE":
+    phase = _phase(identity, policy["comparison_budget"])
+    if generation > 1 and phase not in {"SOURCE", "QUALIFICATION"}:
         phase = "REPAIR"
     business_scope = None
     if policy["comparison_budget"]["contract_version"] in _contract().SINGLE_BOOK_VERSIONS:
@@ -317,7 +323,7 @@ def reserve_creative_budget_in_uow(uow: AuthorityUnitOfWork, request: Any) -> di
             raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "Source requires the curated consumption lineage for the exact authorized Book and use")
         if business_scope is not None:
             business_scope["scope_sources"].append({"path": "native_curated_consumption", "value": {"intended_use": intended["intended_use"], "target_book_id": intended["target_book_id"]}})
-    elif book_id != policy["authorization"]["book_id"]:
+    elif phase != "QUALIFICATION" and book_id != policy["authorization"]["book_id"]:
         raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "creative Effect must belong to the exact authorized Book")
     usage = _usage(uow.cursor, policy["comparison_budget"], request.project_id)
     _check_limits(current_policy, usage, phase=phase, tokens=request.estimated_tokens, calls=1)

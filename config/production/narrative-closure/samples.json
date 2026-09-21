@@ -1,0 +1,81 @@
+{
+  "contract_version": "narrative-closure-original-inputs.v1",
+  "origin": "REPOSITORY_ORIGINAL_FOR_THIS_EXPERIMENT",
+  "rights_basis": "ORIGINAL_AUTHOR_INPUT",
+  "coverage": "BOUNDED_SCENES_NOT_FULL_CHAPTER_QUALITY",
+  "runtime_input_boundary": "Register each text through Chapter author input; reference text enters only its separately accepted historical chapter. Evaluation labels are absent.",
+  "samples": [
+    {
+      "sample_id": "pilot-broken-cost",
+      "stage": "PILOT",
+      "domain": "ACTION",
+      "data_group": "broken-cost-family",
+      "brief": "沈砚要从北堤送出警讯。保留已发生的伤势与资源后果，不新增疗伤或补给。",
+      "history": "桥腹里只容一人弯腰。沈砚把最后一枚照水符按在石缝里，火光映出断裂的桥钉。他推许霜先走，自己抬起左臂挡住坠石。咔的一声后，手指便再也不听使唤。\n\n许霜拆下腰带替他固定伤臂。符火灭时，两人隔着水声点了一遍：绳索还在，干粮湿了，符袋已经空了。北堤有望楼，只要敲响铜钟，河边的人便有时间撤走。",
+      "current": "沈砚在北堤停下，用完好的左手攀住柳根。他从符袋取出一枚照水符，轻轻一弹，望楼便亮了。许霜跟在他身后，没有说话。\n\n守楼人横枪拦路。沈砚不想伤人，只问铜钟在哪。枪尖逼近时，他退到石阶旁，把身后的水道让了出来；许霜趁这一线空隙钻进楼门。"
+    },
+    {
+      "sample_id": "pilot-changed-choice",
+      "stage": "PILOT",
+      "domain": "RELATIONSHIP",
+      "data_group": "changed-choice-family",
+      "brief": "温岚重视守约，亦拒绝让无辜者替自己受罚。人物可以因新事实调整行动，不要求每次选择与旧承诺表面相同。",
+      "history": "温岚把剑放在桌上，说天亮之前绝不离开药铺。她答应替师父守住药匣，等送信人亲手来取。街上的更鼓响了两遍，她也没有向门外看。\n\n后来小徒弟推门进来，袖子上沾着血。他说送信人被带往河刑台，押人的兵已把罪名记在一个卖炭孩子头上。温岚问清孩子的姓名，重新系紧剑带。",
+      "current": "第三遍更鼓响时，温岚离开药铺。药匣交给了醒着的师父，她把送信人掉落的铜牌也留在桌边。\n\n师父没有拦她，只问今夜的约怎么办。温岚按住门框，说她会回来认罚。街口风冷，她把剑鞘压进衣下，向河刑台走去。"
+    },
+    {
+      "sample_id": "combat-blocked-route",
+      "stage": "EXPLORATION",
+      "domain": "ACTION",
+      "data_group": "blocked-route-family",
+      "brief": "方渡被困钟楼，目标是夺回门闩后从东侧离开。已知西门被巨石封死。",
+      "history": "巨石从山道滚下，把钟楼西门顶得内凹。方渡用枪杆试了试，门缝纹丝不动。东侧窗下是蓄水池，池边有一条通往茶棚的小路。他把退路告诉同伴，才回身去夺守卫手里的门闩。",
+      "current": "方渡击开守卫的手，门闩落在脚边。他拾起门闩，转身推开西门，沿小路退到茶棚。钟楼里的守卫追了两步，便被同伴拦住。"
+    },
+    {
+      "sample_id": "combat-intentional-repeat",
+      "stage": "EXPLORATION",
+      "domain": "ACTION",
+      "data_group": "intentional-repeat-family",
+      "brief": "同一个起手动作可用于试探与诱敌。保留对方观察和人物随之改变的目的，避免只按词面相同删重复。",
+      "history": "陆遥第一回抬剑刺向右肩，对手便向柱后撤了半步。第二回仍刺右肩，对手退得更快，鞋跟已经碰到台阶。陆遥看清台阶缺了一角，收剑时故意慢了一拍。",
+      "current": "陆遥第三回抬剑，仍朝右肩送去。对手果然先退，鞋跟在缺口上滑了一下。剑尖却在半途落低，压住对方护着台阶的短刃。陆遥借这半息抢到门边，手背也被划开一道口子。"
+    },
+    {
+      "sample_id": "combat-partial-observation",
+      "stage": "EXPLORATION",
+      "domain": "ACTION",
+      "data_group": "partial-observation-family",
+      "brief": "限知人物看不到雾后交锋。此前片段没有交代刀的全部去向；不得把缺失信息改成确定矛盾。",
+      "history": "雾遮住了石阶。阿穗只看见顾平把一柄短刀塞进靴筒，随后两人被人流冲散。她听见金属落水，却分不清声音来自哪一边。",
+      "current": "顾平从雾里出来，手中握着短刀。他没有解释刀从哪里来，只把刀背横在阿穗面前，让她先踩着石沿过去。阿穗看见刀尖有一道缺口，心里掠过一个疑问，却没来得及问。"
+    },
+    {
+      "sample_id": "dialogue-information-boundary",
+      "stage": "EXPLORATION",
+      "domain": "RELATIONSHIP",
+      "data_group": "information-boundary-family",
+      "brief": "宁照未读密信，只知道兄长暂未归来。密信内容是城门将于四更关闭，消息尚未公开。",
+      "history": "密信送到时，宁照正在井边。掌柜独自拆信，看见四更封城几个字，便把纸压进炭炉。宁照回来，只听他说今夜风大，早点关窗。她问兄长有没有消息，掌柜摇了摇头。",
+      "current": "宁照把包袱推给伙计，低声说：四更封城，我们得赶在那之前走。伙计问她从哪里听来，她没有回答，只催他把灯吹灭。"
+    },
+    {
+      "sample_id": "dialogue-misunderstanding",
+      "stage": "EXPLORATION",
+      "domain": "RELATIONSHIP",
+      "data_group": "misunderstanding-family",
+      "brief": "对白指控可以是人物误解。旁观者尚不知道真正的借马人，叙述不得把指控写成作者确认。",
+      "history": "许青把缰绳交给戴斗笠的人时，杜衡隔着雨帘只看见一截青袖。宗门里常穿青衣的是师兄，他便记住了那截袖子。那人的脸从头到尾没有露出来。",
+      "current": "杜衡把湿靴踩在门槛上，对师兄说：马是你借走的，别再瞒我。师兄抬起头，问是哪匹马。杜衡听见这话更恼，伸手去抓墙上的缰绳；许青却先按住了他的手。"
+    },
+    {
+      "sample_id": "motivation-delayed-payoff",
+      "stage": "EXPLORATION",
+      "domain": "RELATIONSHIP",
+      "data_group": "delayed-payoff-family",
+      "brief": "故事尚处于第二章。碧扣的来历计划在第五章揭晓，当前只推进关系与保管责任。不能要求尚未到期的铺垫立刻兑现。",
+      "history": "师父临行前把碧扣交给阿蘅，要她等钟声从北山传来再打开暗格。阿蘅答应了。临出门时，师父又折回去，把扣子上的绳结系紧，却没说明原因。",
+      "current": "师弟问起碧扣，阿蘅把它藏进袖口，说暂时不能给他看。师弟转身要走，她又叫住他，把自己的干粮分了一半。\n\n北山没有钟声。夜里她解开外层绳结，看见里头仍有一层，便重新系好，把碧扣放回枕下。"
+    }
+  ]
+}

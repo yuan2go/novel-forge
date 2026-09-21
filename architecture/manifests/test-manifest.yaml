@@ -267,6 +267,42 @@
       "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
     },
     {
+      "id": "narrative-closure-campaign-contract",
+      "patterns": [
+        "tests/unit/test_narrative_closure_campaign.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-authority",
+      "capability": "narrative-closure-campaign-contract",
+      "production_target": "scripts/narrative_closure_campaign.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "narrative-closure-blind-response",
+      "patterns": [
+        "tests/unit/test_narrative_closure_review.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "reader-calibration",
+      "capability": "narrative-closure-blind-response",
+      "production_target": "scripts/narrative_closure_review.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "narrative-closure-native-recovery",
+      "patterns": [
+        "tests/integration/test_narrative_closure_campaign_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "narrative-closure-native-recovery",
+      "production_target": "scripts/narrative_closure_campaign.py",
+      "qualification_role": "FIXTURE_CONTRACT_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
       "id": "creation-comparison-contract",
       "patterns": [
         "tests/unit/test_creation_comparison.py"

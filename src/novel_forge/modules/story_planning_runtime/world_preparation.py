@@ -32,10 +32,11 @@ class PlanningProviderStage:
     output_schema: Mapping[str, Any]
 
     def __post_init__(self) -> None:
-        if self.name not in {"world_candidates.generate", "world_candidates.evaluate"}:
+        from novel_forge.modules.worldbuilding.actor_isolation import ACTOR_STAGES
+        if self.name not in {"world_candidates.generate", "world_candidates.evaluate", *ACTOR_STAGES}:
             raise KernelError(
                 "WORLD_PROVIDER_STAGE_INVALID",
-                "only the two bounded world preparation stages are admitted",
+                "only the bounded world preparation stages are admitted",
             )
         from novel_forge.modules.chapter_authority.provider_views import (
             build_provider_task_view,
@@ -44,14 +45,15 @@ class PlanningProviderStage:
         projected = build_provider_task_view(
             self.name, {"world_preparation": self.task}
         )
+        from novel_forge.modules.chapter_quality_authority.context_views import ConservativeTokenEstimator
+        serialized = json.dumps(
+            projected, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
         estimated_tokens = (
-            len(
-                json.dumps(
-                    projected, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-                )
-            )
-            + 3
-        ) // 4
+            ConservativeTokenEstimator().estimate(serialized)
+            if self.task["policy"].get("version") == "world-production-policy.v2"
+            else (len(serialized) + 3) // 4
+        )
         if estimated_tokens > self.task["policy"]["context_token_budget"]:
             raise KernelError(
                 "WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
@@ -165,6 +167,30 @@ class PlanningWorldPreparation:
             "content_hash": source_document.content_hash,
         }
         policy = WorldProductionPolicy(**source["policy"])
+        actor_proposals = []
+        actor_refs = []
+        if source.get("actor_experiment") is not None:
+            from novel_forge.modules.worldbuilding.actor_isolation import (
+                ACTOR_STAGES, actor_task, actor_output_schema, validate_actor_output, validate_actor_policy,
+            )
+            actor_policy = validate_actor_policy(source["actor_experiment"], character_ids=source["reality"]["approved_character_ids"], policy=policy)
+            tasks = [actor_task(source, source_ref, actor_id) for actor_id in actor_policy["actor_ids"]]
+            for index, task in enumerate(tasks):
+                logical_ref = f"{prefix}/actor/{index}"
+                document = self._read(command.project_id, logical_ref)
+                if document is None:
+                    generated = execute_stage(PlanningProviderStage(ACTOR_STAGES[index], task, actor_output_schema(task)))
+                    output = validate_actor_output(generated.raw_output, task)
+                    document = self._store(command, operation_id, logical_ref, "world_actor_proposal", {
+                        "source": source_ref, "output": output, "evidence": asdict(generated.evidence),
+                        "authority": "ACTION_PROPOSAL_ONLY", "fact_mutation_allowed": False,
+                    })
+                stored = document.content["contract"]
+                raw = {key: stored["output"][key] for key in ("actor_id", "action", "basis_summary", "basis_refs")}
+                if stored["source"] != source_ref or validate_actor_output(raw, task) != stored["output"]:
+                    raise KernelError("WORLD_ACTOR_PROPOSAL_DRIFT", "retry must retain the exact actor private projection and proposal")
+                actor_proposals.append(stored["output"])
+                actor_refs.append({"asset_version_id": document.asset_version_id, "content_hash": document.content_hash})
         from novel_forge.modules.worldbuilding.continuation import (
             decide_preparation,
             apply_preparation_decisions,
@@ -187,15 +213,19 @@ class PlanningWorldPreparation:
         if generation_document is None:
             task = self._task(source, source_ref, "WORLD_REASONER")
             task["narrative_intelligence"] = knowledge_selection
+            schema = add_translation_contract(world_generation_schema(
+                policy, audience_scoped=source["contract_version"] == "world-preparation-source.v2",
+            ), knowledge_selection)
+            if actor_proposals:
+                from novel_forge.modules.worldbuilding.actor_isolation import actor_judge_schema
+                schema = actor_judge_schema(schema, actor_proposals)
+                task["actor_proposals"] = actor_proposals
+                task["actor_judgment_contract"] = "Adjudicate every exact proposal hash. Accept or reject each action and determine conflicts and consequences. Preserve actor_id and intended action verbatim in an executable transition. Do not replace intentions to satisfy the outline. No preparation branches, new actors or missing adjudications. Director may select or reorder feasible proposals but cannot change them."
             generated = execute_stage(
                 PlanningProviderStage(
                     "world_candidates.generate",
                     task,
-                    add_translation_contract(world_generation_schema(
-                        policy,
-                        audience_scoped=source["contract_version"]
-                        == "world-preparation-source.v2",
-                    ), knowledge_selection),
+                    schema,
                 )
             )
             if knowledge_selection.get("policy_version") == "knowledge-grounded-selection-v2":
@@ -218,9 +248,12 @@ class PlanningWorldPreparation:
                 "WORLD_PREPARATION_RECEIPT_DRIFT",
                 "generation belongs to another frozen source",
             )
+        if actor_proposals:
+            from novel_forge.modules.worldbuilding.actor_isolation import require_actor_judgments
+            require_actor_judgments(generation["output"], actor_proposals)
         decoded = decode_world_generation({
             key: value for key, value in generation["output"].items()
-            if key != "knowledge_translations"
+            if key not in {"knowledge_translations", "actor_adjudications"}
         })
         candidates = validate_generated_candidates(decoded, policy)
         self._validate_references(source, candidates, command)
@@ -236,6 +269,7 @@ class PlanningWorldPreparation:
                 "generation_ref": generation_ref,
                 "narrative_intelligence": knowledge_selection,
                 "knowledge_translations": generation["output"].get("knowledge_translations", []),
+                **({"actor_proposals": actor_proposals, "actor_adjudications": generation["output"]["actor_adjudications"]} if actor_proposals else {}),
             }
             evaluated = execute_stage(
                 PlanningProviderStage(
@@ -295,6 +329,8 @@ class PlanningWorldPreparation:
             "world_plan": plan,
             "preserve_accepted_history": True,
             "fact_mutation_allowed": False,
+            **({"actor_experiment": source["actor_experiment"], "actor_proposals": actor_refs,
+                "actor_intervention": "ISOLATED_ACTORS_AND_WORLD_JUDGE", "creative_benefit_proven": False} if actor_proposals else {}),
         }
         action_document = self._store(
             command,
