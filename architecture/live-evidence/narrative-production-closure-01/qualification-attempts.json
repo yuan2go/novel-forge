@@ -63,7 +63,43 @@
           "sha256": "36aa4842796375508edb41496180ef88d44f6cb2a1f964765083e23658f83848"
         }
       ]
+    },
+    {
+      "tested_sha": "b08acad151276156cbee95f0744ae5c4e8d72eab",
+      "status": "FAIL",
+      "execution_disposition": "INTERRUPTED_BY_USER",
+      "complete_matrix_status": "NOT_RUN",
+      "details": "user-directed-test-scope.json",
+      "evidence": [
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/pr-governance-b08acad151276156cbee95f0744ae5c4e8d72eab.json",
+          "sha256": "sha256:2886020daa03cc19967cd066c9b58a0cb8f2bbe4770023eaf95f7dcd4eee93f5"
+        },
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/p0-backend-qualification-b08acad151276156cbee95f0744ae5c4e8d72eab.json",
+          "sha256": "sha256:e44b0b9835e420c3e944b32a846a7d2151039de61b623feb8b0c6bba3655df0d"
+        },
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/backend-pytest.xml",
+          "sha256": "sha256:39a9b8bed29f8a49bba4b55ff30646b58d2fcb99b335569e55aedd90e04d394f"
+        },
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/migration-compatibility-pytest.xml",
+          "sha256": "sha256:af0b40d47f8c11192679b3389bdba91c3bfdb363d532f018cc85b42863ad816b"
+        },
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/postgresql-pytest.xml.gz",
+          "sha256": "sha256:3c78f1620c1f6f0ceac4e492bb06912a64b94440a6be1fff2f56ddb3d2760a8f",
+          "compression": "gzip",
+          "uncompressed_sha256": "sha256:c385e42e10cab172ff493a692ba3f185f3cb25f32b189cde3919494725aa5c67",
+          "uncompressed_bytes": 59211769
+        },
+        {
+          "path": "architecture/live-evidence/narrative-production-closure-01/qualification-r3/compose-resource-ownership-nf-p0-6f1aababfc324ef9b7417c3c530287a7.json",
+          "sha256": "sha256:cc8f9a1fc433b984163bb1011c5714367fb5a0cb8fd8f863714efc191d447307"
+        }
+      ]
     }
   ],
-  "current_candidate_qualification": "NOT_RUN; complete exact-SHA rerun required"
+  "current_candidate_qualification": "COMPLETE_MATRIX_NOT_RUN_USER_REQUEST; focused/native/browser evidence only; no full PASS claimed"
 }

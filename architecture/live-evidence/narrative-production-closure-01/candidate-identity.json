@@ -625,7 +625,7 @@
       "sha256": "89b8e14135411a3fe7292f09ca66e7658b214b0976fc848360613807914cb563"
     }
   ],
-  "qualification": "NOT_RUN_AT_FREEZE; exact-SHA pr-governance must bind the subsequent clean release candidate commit",
+  "qualification": "COMPLETE_MATRIX_NOT_RUN_USER_REQUEST; see user-directed-test-scope.json; final evidence-only delivery commit does not upgrade partial results",
   "development_artifacts": "Sourced fixtures and real-browser/API engineering journeys; individual artifacts retain their original development identity and failures. These are not final exact-SHA qualification or real model quality evidence.",
   "real_provider": "NOT_RUN",
   "human_review": "NOT_RUN",
