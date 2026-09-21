@@ -1,0 +1,444 @@
+{
+  "schema_version": "novel-forge.p0-backend-qualification-report.v2",
+  "status": "PASS",
+  "decision": "PASS",
+  "tested_sha": "bf77e0892c0bbc4cb06f13d00beae1805b7a4a05",
+  "implementation_tree_sha": "sha256:d95f0e396bc8c988e9ec32a27ef23de9c3f8e1257ad5851a8c28a07c26d057a5",
+  "source_tree": "50c53f2d738c79a7e40acc77f47cfc9a031a4a91",
+  "source_identity": {
+    "branch": "codex/real-provider-reference-kernel-20260920",
+    "commit_sha": "bf77e0892c0bbc4cb06f13d00beae1805b7a4a05",
+    "dirty": false,
+    "implementation_tree_sha": "sha256:d95f0e396bc8c988e9ec32a27ef23de9c3f8e1257ad5851a8c28a07c26d057a5",
+    "source_tree": "50c53f2d738c79a7e40acc77f47cfc9a031a4a91",
+    "workflow_sha": ""
+  },
+  "generated_at": "2026-09-20T15:05:48+00:00",
+  "run_identity": {
+    "artifact_root": "novel-forge-p0-bf77e0892c0b-8eb581c83f534c15a7dc58ae2d07f504",
+    "compose_project": "nf-p0-8eb581c83f534c15a7dc58ae2d07f504",
+    "compose_runtime_project": "nf-p0-8eb581c83f534c15a7dc58ae2d07f504-runtime",
+    "database_name": "nf_p0_8eb581c83f534c15a7dc58ae2d07f504_test",
+    "profile": "local",
+    "run_id": "p0-8eb581c83f534c15a7dc58ae2d07f504"
+  },
+  "migration": {
+    "expectation_source": "architecture/manifests/migration-manifest.yaml",
+    "expected_head": "20260920_0139_narrative_reference_sampling",
+    "observed_head": "20260920_0139_narrative_reference_sampling"
+  },
+  "proof_scope": {
+    "ceiling": "LOCAL_BACKEND_ENGINEERING",
+    "does_not_establish": [
+      "ADMIN_UI_EXECUTION",
+      "CREDENTIALED_PROVIDER_EXECUTION",
+      "HUMAN_EDITORIAL_EVIDENCE",
+      "LONGITUDINAL_NARRATIVE_STABILITY",
+      "PRODUCTION_OPERATION"
+    ],
+    "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+    "proves": [
+      "runtime-composition",
+      "project-workspace-authority",
+      "command-attempt-lease-fence",
+      "capability-pack-instruction-runtime",
+      "external-effect-provider-control",
+      "source-import-and-knowledge",
+      "book-design-and-story-formation",
+      "story-design-authority",
+      "hierarchical-planning",
+      "narrative-realization",
+      "plan-change-authority",
+      "book-opening-workflow",
+      "book-production-coordination",
+      "chapter-group-coordination",
+      "context-and-retrieval",
+      "chapter-production-saga",
+      "review-revision-quality",
+      "book-chapter-acceptance",
+      "whole-book-completion-cases",
+      "canon-and-narrative-state",
+      "reader-and-followup-evidence",
+      "agent-runtime",
+      "postgresql-persistence-and-migrations",
+      "retry-recovery-and-replay",
+      "narrative-craft-intelligence"
+    ],
+    "schema_version": "novel-forge.qualification-proof-scope.v1"
+  },
+  "qualification_manifest": {
+    "manifest_digests": {
+      "architecture/manifests/ai-instruction-manifest.yaml": "sha256:452363b2b352f181b57175eeda4717be1230852cc7e495fd4213c1ce90cda030",
+      "architecture/manifests/backend-qualification-manifest.yaml": "sha256:3abad4c4b8b03ba85ef53c907467ba02fa923521e3e82004d5b0d36abb29b95c",
+      "architecture/manifests/console-script-manifest.yaml": "sha256:578e44fbe914d3fa7eeb792bd05ef50092db855bef4beecf92027c852006a37e",
+      "architecture/manifests/fitness-policy.yaml": "sha256:b805699cd94030cb443b94aa81e6f3a8067d5072dffa77b6a07f759744355fa6",
+      "architecture/manifests/historical-reality-policy.yaml": "sha256:15db1ddb2de6bbf58ac07a17af1c1753cb1ef9ee9f4bb64a3abd7d68704b99c4",
+      "architecture/manifests/migration-manifest.yaml": "sha256:23cf072071b13787132b98288884ae4dbfecb0b4c13b7f9a82a2468999fc7b9c",
+      "architecture/manifests/migration-surface-manifest.yaml": "sha256:10cb8d490500ff2d885240790423af249f42cd0a1b096f13013a7c38b2ae94fe",
+      "architecture/manifests/module-manifest.yaml": "sha256:e57cd77eca56c251a66d817f0a818b0fd07872c0e647cdc2b665c375c7b586ea",
+      "architecture/manifests/production-entry-manifest.yaml": "sha256:a8f99f05cda08021e539ab59b8616323bcd95d029c79e6cef42db9b370402a98",
+      "architecture/manifests/test-manifest.yaml": "sha256:c84a6261b91fa9785403c85c67a77fb33284a7c5113b8a3087c60749310dd775",
+      "architecture/manifests/worker-manifest.yaml": "sha256:29bcdd78b2db97ba0c1d66939d590ca8d7b9504675fa99cfc41627aadddd0e6b"
+    },
+    "required_gates": [
+      "source-preflight",
+      "documentation-reality",
+      "static-and-manifests",
+      "pytest-backend",
+      "postgresql-start",
+      "migration-fresh",
+      "migration-compatibility",
+      "pytest-postgresql-integration",
+      "migration-head",
+      "query-plan-release",
+      "compose-runtime",
+      "resource-cleanup",
+      "evidence-finalization"
+    ],
+    "schema_version": "novel-forge.backend-qualification-manifest.v2"
+  },
+  "dependency_snapshot": {
+    "digest": "sha256:43b028d35de7cbbe683251aee0032662f99c24c3014eb826637fa1d014302be7",
+    "git_sha_alone_reproducible": false,
+    "package_count": 58,
+    "packages": [
+      "annotated-doc==0.0.5",
+      "annotated-types==0.8.0",
+      "anyio==4.15.1",
+      "argon2-cffi==25.1.0",
+      "argon2-cffi-bindings==26.1.0",
+      "beautifulsoup4==4.15.0",
+      "certifi==2026.7.22",
+      "cffi==2.1.1",
+      "click==8.5.0",
+      "defusedxml==0.7.1",
+      "distro==1.9.0",
+      "ebooklib==0.20",
+      "fastapi==0.141.1",
+      "h11==0.16.0",
+      "httpcore==1.0.9",
+      "httpcore2==2.13.0",
+      "httptools==0.8.0",
+      "httpx==0.28.1",
+      "httpx2==2.13.0",
+      "idna==3.20",
+      "ijson==3.5.1",
+      "iniconfig==2.3.0",
+      "jiter==0.17.0",
+      "lxml==6.1.3",
+      "minio==7.2.20",
+      "novel-forge==6.0.0",
+      "openai==1.109.1",
+      "opencc-python-reimplemented==0.1.7",
+      "packaging==26.3",
+      "pluggy==1.6.0",
+      "psycopg==3.3.6",
+      "psycopg-binary==3.3.6",
+      "psycopg-pool==3.3.2",
+      "pyarrow==25.0.1",
+      "pycparser==3.0",
+      "pycryptodome==3.23.0",
+      "pydantic==2.13.5",
+      "pydantic-core==2.46.5",
+      "pygments==2.21.0",
+      "pypdf==6.19.0",
+      "pytest==9.1.1",
+      "python-docx==1.2.0",
+      "python-dotenv==1.2.3",
+      "pyyaml==6.0.3",
+      "ruff==0.15.20",
+      "six==1.17.0",
+      "sniffio==1.3.1",
+      "soupsieve==2.9.2",
+      "starlette==1.6.0",
+      "tqdm==4.70.1",
+      "truststore==0.10.4",
+      "typing-extensions==4.16.0",
+      "typing-inspection==0.4.4",
+      "urllib3==2.8.0",
+      "uvicorn==0.53.0",
+      "uvloop==0.22.1",
+      "watchfiles==1.2.0",
+      "websockets==17.1"
+    ],
+    "provenance_files": [],
+    "python_implementation": "CPython",
+    "python_version": "3.12.2",
+    "reproducibility_class": "RESOLVED_SNAPSHOT",
+    "schema_version": "novel-forge.resolved-dependency-snapshot.v1"
+  },
+  "cleanup": {
+    "phases": [
+      {
+        "compose_project": "nf-p0-8eb581c83f534c15a7dc58ae2d07f504",
+        "phase": "postgresql",
+        "receipt": "compose-resource-ownership-nf-p0-8eb581c83f534c15a7dc58ae2d07f504.json",
+        "remaining_resource_count": 0,
+        "resource_count": 2,
+        "run_id": "p0-8eb581c83f534c15a7dc58ae2d07f504",
+        "status": "PASS"
+      },
+      {
+        "compose_project": "nf-p0-8eb581c83f534c15a7dc58ae2d07f504-runtime",
+        "phase": "compose-runtime",
+        "receipt": "compose-resource-ownership-nf-p0-8eb581c83f534c15a7dc58ae2d07f504-runtime.json",
+        "remaining_resource_count": 0,
+        "resource_count": 18,
+        "run_id": "p0-8eb581c83f534c15a7dc58ae2d07f504",
+        "status": "PASS"
+      }
+    ],
+    "remaining_resource_count": 0,
+    "status": "PASS"
+  },
+  "projection": "SANITIZED_ENGINEERING_REPORT_AND_ARTIFACT_HASH_INDEX",
+  "source_report_sha256": "sha256:910780341ff122a2f3ee2f88a915f29870cf78eb647efb3a7add5cc999666161",
+  "evidence_root_name": "nf-real-provider-reference-kernel-pr-v3-20260920",
+  "failure_reason": "",
+  "pr_governance": {
+    "schema_version": "novel-forge.pr-governance.v1",
+    "status": "PASS",
+    "head_sha": "bf77e0892c0bbc4cb06f13d00beae1805b7a4a05",
+    "base_sha": "feba06582b6cadf2e80f5c573cf427114cf2a926",
+    "base_implementation_tree_sha": "sha256:e1dd43acca11bcecbb7e736e65332fa8824e305e85e6fa1ab503ed103a560537",
+    "implementation_tree_sha": "sha256:d95f0e396bc8c988e9ec32a27ef23de9c3f8e1257ad5851a8c28a07c26d057a5",
+    "implementation_changed": true,
+    "focused_test_paths": [
+      "tests/integration/test_narrative_craft_migration_upgrade_postgres.py",
+      "tests/integration/test_provider_routing_postgres.py",
+      "tests/integration/test_routing_bootstrap_budget_postgres.py",
+      "tests/unit/test_cost_aware_routing.py",
+      "tests/unit/test_narrative_evaluation_replacement_gate.py",
+      "tests/unit/test_provider_task_views.py",
+      "tests/unit/test_routing_bootstrap.py"
+    ],
+    "checks": [
+      {
+        "exit_code": 0,
+        "gate": "repository-governance"
+      },
+      {
+        "exit_code": 0,
+        "gate": "focused-tests"
+      },
+      {
+        "exit_code": 0,
+        "gate": "canonical-exact-sha-p0"
+      }
+    ],
+    "qualification": "PASS_EXACT_SHA_P0",
+    "qualification_reason": "IMPLEMENTATION_CHANGED",
+    "provider_qualification": "NOT_ASSESSED_BY_PR_GATE",
+    "source_report_sha256": "sha256:91f06803ee39a04509fbaa17e0b50a7e1a45b2d0ffaa37546f9d762aac37f975"
+  },
+  "gates": [
+    {
+      "gate_id": "source-preflight",
+      "status": "PASS",
+      "duration_seconds": 0.384707
+    },
+    {
+      "gate_id": "documentation-reality",
+      "status": "PASS",
+      "duration_seconds": 12.651367
+    },
+    {
+      "gate_id": "static-and-manifests",
+      "status": "PASS",
+      "duration_seconds": 47.478089
+    },
+    {
+      "gate_id": "pytest-backend",
+      "status": "PASS",
+      "duration_seconds": 150.294268
+    },
+    {
+      "gate_id": "postgresql-start",
+      "status": "PASS",
+      "duration_seconds": 3.227315
+    },
+    {
+      "gate_id": "migration-fresh",
+      "status": "PASS",
+      "duration_seconds": 3.670935
+    },
+    {
+      "gate_id": "migration-compatibility",
+      "status": "PASS",
+      "duration_seconds": 330.132981
+    },
+    {
+      "gate_id": "pytest-postgresql-integration",
+      "status": "PASS",
+      "duration_seconds": 8116.888738
+    },
+    {
+      "gate_id": "migration-head",
+      "status": "PASS",
+      "duration_seconds": 0.039577
+    },
+    {
+      "gate_id": "query-plan-release",
+      "status": "PASS",
+      "duration_seconds": 54.686247
+    },
+    {
+      "gate_id": "compose-runtime",
+      "status": "PASS",
+      "duration_seconds": 107.233469
+    },
+    {
+      "gate_id": "resource-cleanup",
+      "status": "PASS",
+      "duration_seconds": 0.0
+    },
+    {
+      "gate_id": "evidence-finalization",
+      "status": "PASS",
+      "duration_seconds": 0.0
+    }
+  ],
+  "junit": [
+    {
+      "artifact": "backend-pytest.xml",
+      "sha256": "sha256:84db3ccbf2077840e9ab7036eb74c33a59ab7954079aefc74f101c77d9c61345",
+      "junit_records": 4281,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 148.556,
+      "failed_cases": []
+    },
+    {
+      "artifact": "migration-compatibility-pytest.xml",
+      "sha256": "sha256:ad81d14c2fcd8699068472898b4b65cdc270713804eda5976f92c933bdc5d8b8",
+      "junit_records": 105,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 329.193,
+      "failed_cases": []
+    },
+    {
+      "artifact": "postgresql-pytest.xml",
+      "sha256": "sha256:d884aaa9f87928ea2dfef400fae0f1822f6bf0016319a2e445f30e71cd771f99",
+      "junit_records": 876,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 8109.181,
+      "failed_cases": []
+    }
+  ],
+  "pytest_summaries": [
+    {
+      "artifact": "backend-pytest-process.json",
+      "summary": "2829 passed, 15 warnings, 1452 subtests passed in 149.38s (0:02:29)"
+    },
+    {
+      "artifact": "migration-compatibility-process.json",
+      "summary": "92 passed, 13 subtests passed in 329.57s (0:05:29)"
+    },
+    {
+      "artifact": "postgresql-pytest-process.json",
+      "summary": "780 passed, 85 warnings, 96 subtests passed in 8111.78s (2:15:11)"
+    }
+  ],
+  "artifacts": [
+    {
+      "artifact": "backend-pytest-collection.json",
+      "sha256": "sha256:07f77974aeeeeb56a6f66e5d9a0ed69c8412ee5339434cfa7b62b86654e6443a",
+      "bytes": 385261
+    },
+    {
+      "artifact": "backend-pytest-process.json",
+      "sha256": "sha256:bfb35302420682469243f7ee84cbd6b268f64f9f14c2b56f413e5d47991c8dc8",
+      "bytes": 6583
+    },
+    {
+      "artifact": "backend-pytest.xml",
+      "sha256": "sha256:84db3ccbf2077840e9ab7036eb74c33a59ab7954079aefc74f101c77d9c61345",
+      "bytes": 463704
+    },
+    {
+      "artifact": "compose-resource-ownership-nf-p0-8eb581c83f534c15a7dc58ae2d07f504-runtime.json",
+      "sha256": "sha256:b63407843e0ab2e3d8cb12a2477b193a1e7e65f412cf595b4733844ef45338ed",
+      "bytes": 4802
+    },
+    {
+      "artifact": "compose-resource-ownership-nf-p0-8eb581c83f534c15a7dc58ae2d07f504.json",
+      "sha256": "sha256:013897f3a2433da4487da544dd6e407ecc3d8dd552f32da27b1fa20fdb78ebd0",
+      "bytes": 695
+    },
+    {
+      "artifact": "compose-runtime-process.json",
+      "sha256": "sha256:6e7673a595f2f9cfc52f1bb2a096b9a073b3ef44ecbcd319c770aa451e96191a",
+      "bytes": 26170
+    },
+    {
+      "artifact": "compose-runtime.json",
+      "sha256": "sha256:d88ee5d1d09b5dc7d082ac396f5329588a0ffdb93262ec78a5a6dac45bc41287",
+      "bytes": 30008
+    },
+    {
+      "artifact": "documentation-reality-process.json",
+      "sha256": "sha256:14bd31d57aba2babba304610b3dd8297fbcfd5de20f617c830f015e3aa6396a3",
+      "bytes": 883
+    },
+    {
+      "artifact": "documentation-reality.json",
+      "sha256": "sha256:7e3cb445cc384304517d001d34fdf4a879205730c2e280d6a3536f896d8ae5df",
+      "bytes": 771
+    },
+    {
+      "artifact": "migration-compatibility-collection.json",
+      "sha256": "sha256:0b5d047e948560209404783c083fd6f2a7313fb4692f3045be05e9f722e64cd3",
+      "bytes": 16177
+    },
+    {
+      "artifact": "migration-compatibility-process.json",
+      "sha256": "sha256:73622add7128431f09dfbbfa8501d8ef0f081511e8f52755628f96476cf46304",
+      "bytes": 236
+    },
+    {
+      "artifact": "migration-compatibility-pytest.xml",
+      "sha256": "sha256:ad81d14c2fcd8699068472898b4b65cdc270713804eda5976f92c933bdc5d8b8",
+      "bytes": 22019
+    },
+    {
+      "artifact": "migration-fresh-process.json",
+      "sha256": "sha256:ba3653cdfc224d0b4e6569aa6d26ff782cc515e36083f84608e4f50893c41de6",
+      "bytes": 27751
+    },
+    {
+      "artifact": "postgresql-pytest-collection.json",
+      "sha256": "sha256:5817436c8f7a8905494fe89221f8adc759165e8867a7841bb94b3f07024cf8ad",
+      "bytes": 130716
+    },
+    {
+      "artifact": "postgresql-pytest-process.json",
+      "sha256": "sha256:706b3e1918f409eef70dc8cc9cbeb34cebfd48df77ee76901e278df28c39c20c",
+      "bytes": 17629
+    },
+    {
+      "artifact": "postgresql-pytest.xml",
+      "sha256": "sha256:d884aaa9f87928ea2dfef400fae0f1822f6bf0016319a2e445f30e71cd771f99",
+      "bytes": 187836815
+    },
+    {
+      "artifact": "query-plan-process.json",
+      "sha256": "sha256:5b7f8f42d69ce4003f4ef02876a0431faa086398c26218835b86d0f4c31c367b",
+      "bytes": 62814
+    },
+    {
+      "artifact": "query-plan.json",
+      "sha256": "sha256:3e2b9d68aea87595e62936165ea5a2bf32c5d7b1e86e6b8ea05cd6e2f8d027b0",
+      "bytes": 57948
+    },
+    {
+      "artifact": "static-and-manifests.json",
+      "sha256": "sha256:ee4356bb526c956fa1792d4b56b84b7db76605491521796d8c99d666a09f913f",
+      "bytes": 839862
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": "campaign-engineering-evidence-package.v1",
+  "campaign_id": "real-provider-campaign-20260920",
+  "tested_sha": "45fa74ace314735112a3447e660c685172c6f79f",
+  "implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed",
+  "archive_filename": "real-provider-campaign-engineering-raw-20260920.tar.gz",
+  "archive_sha256": "sha256:fd77cea60bef37c2c373014c9e4c8ae96c02e8a06c0c907d5f20ee056431e166",
+  "archive_bytes": 123067953,
+  "files": 155,
+  "uncompressed_bytes": 957148525,
+  "evidence_root_names": [
+    "nf-real-provider-campaign-pr-20260920",
+    "nf-real-provider-campaign-pr-v2-20260920",
+    "nf-real-provider-reference-pr-20260920",
+    "nf-real-provider-reference-kernel-pr-20260920",
+    "nf-real-provider-reference-kernel-pr-v2-20260920",
+    "nf-real-provider-reference-kernel-pr-v3-20260920",
+    "nf-real-provider-source-pr-20260920",
+    "nf-real-provider-benchmark-scope-pr-20260920",
+    "nf-real-provider-final-pr-20260920",
+    "nf-real-provider-final-pr-v2-20260920",
+    "nf-real-provider-final-pr-v3-20260920"
+  ],
+  "distribution": "OPERATOR_LOCAL_PORTABLE_ARCHIVE_NOT_COMMITTED",
+  "file_mode": "0o600",
+  "content_class": "SCRIPTED_ENGINEERING_GATES_ONLY; NO_REAL_PROVIDER_CAMPAIGN_OR_ACCEPTED_CHAPTER_EVIDENCE",
+  "raw_files_preserved": true,
+  "public_hash_index": "engineering-index.json"
+}

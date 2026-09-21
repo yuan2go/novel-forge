@@ -185,6 +185,40 @@
   "source_report_sha256": "sha256:bf4e046da58c2157e31cb5d84ff44b8072b1fa2d2fc54fa053198f922d3d4b97",
   "evidence_root_name": "nf-real-provider-campaign-pr-20260920",
   "failure_reason": "migration-compatibility failed",
+  "pr_governance": {
+    "schema_version": "novel-forge.pr-governance.v1",
+    "status": "FAIL",
+    "head_sha": "a0cdb884189b60c6d0ff0340ea2501ff9a33b17d",
+    "base_sha": "feba06582b6cadf2e80f5c573cf427114cf2a926",
+    "base_implementation_tree_sha": "sha256:e1dd43acca11bcecbb7e736e65332fa8824e305e85e6fa1ab503ed103a560537",
+    "implementation_tree_sha": "sha256:551dd0a4ce45240f36dc291c7cc3c3d1e391bcdfd1472e7cf7e5b344b29744c5",
+    "implementation_changed": true,
+    "focused_test_paths": [
+      "tests/integration/test_provider_routing_postgres.py",
+      "tests/integration/test_routing_bootstrap_budget_postgres.py",
+      "tests/unit/test_cost_aware_routing.py",
+      "tests/unit/test_provider_task_views.py",
+      "tests/unit/test_routing_bootstrap.py"
+    ],
+    "checks": [
+      {
+        "exit_code": 0,
+        "gate": "repository-governance"
+      },
+      {
+        "exit_code": 0,
+        "gate": "focused-tests"
+      },
+      {
+        "exit_code": 2,
+        "gate": "canonical-exact-sha-p0"
+      }
+    ],
+    "qualification": "REQUIRED_EXACT_SHA_P0",
+    "qualification_reason": "IMPLEMENTATION_CHANGED",
+    "provider_qualification": "NOT_ASSESSED_BY_PR_GATE",
+    "source_report_sha256": "sha256:017d1ba408f2c12afd8f5ddae8f539bfb6b9acdd60cfe204189063a8346bbd00"
+  },
   "gates": [
     {
       "gate_id": "source-preflight",
@@ -272,6 +306,16 @@
       "skipped": 0,
       "seconds": 88.575,
       "failed_cases": []
+    }
+  ],
+  "pytest_summaries": [
+    {
+      "artifact": "backend-pytest-process.json",
+      "summary": "2826 passed, 15 warnings, 1452 subtests passed in 140.47s (0:02:20)"
+    },
+    {
+      "artifact": "migration-compatibility-process.json",
+      "summary": "57 passed, 6 subtests passed in 88.58s (0:01:28)"
     }
   ],
   "artifacts": [

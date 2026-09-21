@@ -1,0 +1,11 @@
+{
+  "schema_version": "campaign-owned-fixture-cleanup.v1",
+  "evidence_class": "ENGINEERING_FIXTURE_ONLY",
+  "container": "nf-benchmark-scope-dev-20260920",
+  "verified_owner_label": "benchmark-scope-dev-20260920",
+  "status": "PASS",
+  "exit_code": 0,
+  "removed_container_and_anonymous_volumes": true,
+  "checked_at": "2026-09-20T15:56:01.819335+00:00",
+  "business_database_used": false
+}

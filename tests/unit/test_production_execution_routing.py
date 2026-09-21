@@ -99,6 +99,10 @@ class ProductionExecutionRoutingTests(unittest.TestCase):
                 quality_score=0.8,
             ),
             SimpleNamespace(
+                evidence_class="REFERENCE_EVALUATION", production_eligible=False, accepted=None,
+                priced_cost="13", quality_score=None,
+            ),
+            SimpleNamespace(
                 evidence_class="UNCLASSIFIED_REAL_PROVIDER",
                 production_eligible=False,
                 accepted=True,
@@ -120,6 +124,8 @@ class ProductionExecutionRoutingTests(unittest.TestCase):
         self.assertEqual(
             metrics["benchmark_challenger_priced_cost_per_accepted_output"], "7"
         )
+        self.assertEqual(metrics["reference_evaluation_priced_usage_cost"], "13")
+        self.assertIsNone(metrics["reference_evaluation_priced_cost_per_accepted_output"])
         self.assertEqual(metrics["unclassified_priced_usage_cost"], "11")
         self.assertIsNone(
             metrics["unclassified_calibrated_quality_per_priced_dollar"]

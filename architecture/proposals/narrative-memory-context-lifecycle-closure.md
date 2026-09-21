@@ -147,7 +147,10 @@ isolation do not implement these memory lifecycle gates. Exact cross-chapter win
 whole-manuscript coverage now consume immutable accepted prose, while actor preparation
 uses private Context projections. These are source-bound consumers and execution evidence,
 not structured Narrative Digest, retention watermarks, representation cutover or purge.
-Their new persistence records do not supply Gate B–E acceptance evidence. Gates B–E below remain proposed design,
+Native reference Review/ReReview retain exact authorized samples, effective stage
+Context, accepted frontier and approved reviewer artifacts. Reference-agreement routing
+reads immutable Quality evidence without changing memory mutation or retention owners.
+These persistence records do not supply Gate B–E acceptance evidence. Gates B–E below remain proposed design,
 not executable contracts or proven invariants; their stated bounds require qualification.
 
 ## 7. Gate B — Structured Narrative Digest

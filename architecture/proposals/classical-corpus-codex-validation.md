@@ -115,11 +115,14 @@ and Source/MKAOS mechanics are documented only in [current-system](../../docs/cu
 The completed G1/G2 implementation plans and historical review paragraphs have been
 removed. G3/G4 below specify a proposed bounded real-Provider campaign, not observed
 results. Campaign sampling quotas and independent-input counts do not execute G3/G4
-or establish calibrated judges. The native paired-sample budget v4 and author-input
+or establish calibrated judges. The native paired-sample budget v5 and author-input
 review/revision campaign reuse the same ledger and isolation boundary. Their two-plus-six
 original scenes do not replace the twenty-work ingestion/consumption cohort or the G4
 four-arm twelve-chapter experiment. A matching new grant, real corpus consumption and
-independent editorial evidence remain missing for those original acceptance conditions. The original Craft fixture corpus does not perform this campaign, establish
+independent editorial evidence remain missing for those original acceptance conditions. Native Chapter and World reference sampling
+retains frozen task/producer contracts, independent label strata and routing protocol
+identities. These isolated scripted sampling paths do not execute G3/G4 or supply real
+reference observations. The original Craft fixture corpus does not perform this campaign, establish
 classical-text consumption, authorize model spend or supply independent editorial proof.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption

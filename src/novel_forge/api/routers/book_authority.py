@@ -37,6 +37,7 @@ from novel_forge.modules.book_followup_authority.reader_policy import ReaderProx
 from novel_forge.modules.book_authority.control_policy import ControlPolicy
 from novel_forge.modules.plan_change_authority import PlanChangeProposalCommand
 from novel_forge.modules.story_planning_runtime import StoryPlanningGenerationCommand, StoryPlanningEvaluationCommand
+from novel_forge.modules.story_planning_runtime.world_sampling import WorldProviderSampleCommand
 
 
 @dataclass
@@ -194,6 +195,33 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             result = _composition(ctx).planning.require_generation(operation_id)
             _planning_scope(result, project_id=project_id, book_id=book_id)
             return {**result, "frozen_command": _composition(ctx).planning.frozen_generation_command(operation_id)}
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/world-provider-samples")
+    def sample_world(book_id: str, request: WorldProviderSampleCommand, dry_run: bool = False) -> dict[str, Any]:
+        from novel_forge.modules.story_planning_runtime.world_sampling import run_world_sample, prepare_world_sample
+
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            _planning_scope({"project_id": request.project_id, "book_id": request.book_id}, project_id=request.project_id, book_id=book_id)
+            action = prepare_world_sample if dry_run else run_world_sample
+            return action(_composition(ctx).planning, replace(request, actor_id=principal.principal_id), principal=principal)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/books/{book_id}/world-provider-samples/{operation_id}")
+    def world_sample(book_id: str, operation_id: str, project_id: str) -> dict[str, Any]:
+        from novel_forge.modules.story_planning_runtime.world_sampling import query_world_sample
+
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", project_id)
+            return query_world_sample(_composition(ctx).planning.database_url, project_id=project_id, book_id=book_id, operation_id=operation_id)
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:

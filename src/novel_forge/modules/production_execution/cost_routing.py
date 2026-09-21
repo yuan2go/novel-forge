@@ -85,7 +85,7 @@ class TaskPolicy:
             raise ValueError("ROUTING_QUALITY_POLICY_INVALID")
         if min(self.minimum_samples, self.max_escalations) < 0 or self.max_attempts < 1:
             raise ValueError("ROUTING_CHAIN_POLICY_INVALID")
-        if self.quality_metric not in {"CALIBRATED_SCORE", "DOMAIN_GATE_ACCEPTANCE"}:
+        if self.quality_metric not in {"CALIBRATED_SCORE", "DOMAIN_GATE_ACCEPTANCE", "REFERENCE_AGREEMENT"}:
             raise ValueError("ROUTING_QUALITY_METRIC_INVALID")
 
 
@@ -175,7 +175,9 @@ TASK_TAXONOMY = {
         "HIGH",
     ),
 }
-POLICY_VERSION = "quality-constrained-routing.v5"
+REFERENCE_TASKS = frozenset({"review", "rereview", "quality_structural", "quality_commercial",
+    "quality_source_originality", "quality_longform", "quality_platform", "world_candidates.evaluate", "narrative_semantic_evaluation"})
+POLICY_VERSION = "quality-constrained-routing.v9"
 
 
 def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> TaskPolicy:
@@ -194,7 +196,7 @@ def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> Tas
         policy.confidence_penalty,
         policy.max_attempts,
         policy.max_escalations,
-        "DOMAIN_GATE_ACCEPTANCE"
+        "REFERENCE_AGREEMENT" if task_type in REFERENCE_TASKS else "DOMAIN_GATE_ACCEPTANCE"
         if task_type.endswith(".generate")
         or task_type == "source.deconstruction.observe"
         else "CALIBRATED_SCORE",
@@ -319,8 +321,20 @@ class BenchmarkObservation:
     sample_identity: str = ""
     experiment_partition: str = ""
     producer_contract_hash: str = ""
+    reference_agreed: bool | None = None
+    reference_label_classes: tuple[str, ...] = ()
+    reference_protocol_hash: str = ""
+    reference_risk: str = ""
+    reference_context_tokens: int | None = None
 
     def __post_init__(self) -> None:
+        if (self.reference_agreed is not None and type(self.reference_agreed) is not bool
+            or not set(self.reference_label_classes) <= {"PASS", "FAIL"}
+            or bool(self.reference_label_classes) != (self.reference_agreed is not None)
+            or (self.reference_agreed is not None and (self.evidence_class != "REFERENCE_EVALUATION"
+                or not self.reference_protocol_hash.startswith("sha256:") or self.reference_risk not in {"LOW", "MEDIUM", "HIGH"}
+                or type(self.reference_context_tokens) is not int or self.reference_context_tokens <= 0))):
+            raise ValueError("BENCHMARK_REFERENCE_INVALID")
         for value in (self.quality_score, self.judge_score):
             if value is not None and (not math.isfinite(value) or not 0 <= value <= 1):
                 raise ValueError("BENCHMARK_SCORE_INVALID")
@@ -332,6 +346,7 @@ class BenchmarkObservation:
         if self.evidence_class not in {
             "PRODUCTION_OUTCOME",
             "BENCHMARK_CHALLENGER",
+            "REFERENCE_EVALUATION",
             "UNCLASSIFIED_REAL_PROVIDER",
         }:
             raise ValueError("BENCHMARK_EVIDENCE_CLASS_INVALID")
@@ -356,6 +371,19 @@ class BenchmarkObservation:
             raise ValueError("BENCHMARK_USAGE_INVALID")
 
 
+def reference_context_bucket(input_tokens: int) -> int:
+    return next((limit for limit in (8192, 32768, 131072, 524288) if input_tokens <= limit), 1_000_000)
+
+
+def _binary_quality_bound(values: Sequence[bool], penalty: float) -> float:
+    n = len(values)
+    if not n:
+        return 0.0
+    p, z = mean(values), 1.645
+    return max(0.0, (p + z * z / (2 * n) - z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)))
+        / (1 + z * z / n) - penalty / math.sqrt(n))
+
+
 def benchmark_snapshot(
     observations: Sequence[BenchmarkObservation],
     *,
@@ -363,6 +391,7 @@ def benchmark_snapshot(
     policy: TaskPolicy,
     window_days: int = 30,
     maximum_samples: int = 200,
+    input_tokens: int | None = None,
 ) -> dict[str, Any]:
     unique = {
         row.evidence_ref: row
@@ -380,6 +409,10 @@ def benchmark_snapshot(
          if row.experiment_partition not in {"DEVELOPMENT", "HOLDOUT"}),
         key=lambda row: (row.occurred_at, row.evidence_ref),
     )
+    if policy.quality_metric == "REFERENCE_AGREEMENT" and input_tokens is not None:
+        ordered = [row for row in ordered if row.evidence_class != "REFERENCE_EVALUATION" or (
+            row.reference_risk == policy.risk and (row.reference_context_tokens is None
+                or reference_context_bucket(row.reference_context_tokens) == reference_context_bucket(input_tokens)))]
     rows = ordered[-maximum_samples:]
     independent: dict[str, BenchmarkObservation] = {}
     for row in ordered:
@@ -391,12 +424,21 @@ def benchmark_snapshot(
     domain_outcomes = [
         row.domain_gate_accepted for row in scored_samples if row.domain_gate_accepted is not None
     ]
+    reference_rows = [row for row in scored_samples if row.reference_agreed is not None
+        and row.reference_risk == policy.risk
+        and (input_tokens is None or reference_context_bucket(row.reference_context_tokens) == reference_context_bucket(input_tokens))]
+    reference_protocols = sorted({row.reference_protocol_hash for row in reference_rows})
+    reference_contexts = sorted({reference_context_bucket(row.reference_context_tokens) for row in reference_rows})
+    reference_strata = {label: [row.reference_agreed for row in reference_rows if label in row.reference_label_classes]
+        for label in ("PASS", "FAIL")}
     n = (
-        len(domain_outcomes)
+        len(reference_rows) if policy.quality_metric == "REFERENCE_AGREEMENT" else len(domain_outcomes)
         if policy.quality_metric == "DOMAIN_GATE_ACCEPTANCE"
         else len(scores)
     )
-    uncertainty = n < policy.minimum_samples
+    uncertainty = n < policy.minimum_samples or (policy.quality_metric == "REFERENCE_AGREEMENT"
+        and (len(reference_protocols) != 1 or len(reference_contexts) != 1
+            or any(len(values) < policy.minimum_samples for values in reference_strata.values())))
     average = mean(scores) if scores else 0.0
     penalty = policy.confidence_penalty * min(
         1, math.sqrt(policy.minimum_samples / max(1, n))
@@ -406,25 +448,9 @@ def benchmark_snapshot(
         average - penalty - (pstdev(scores) / math.sqrt(len(scores)) if scores else 0),
     )
     if policy.quality_metric == "DOMAIN_GATE_ACCEPTANCE":
-        probability = mean(domain_outcomes) if domain_outcomes else 0.0
-        z = 1.645
-        quality = (
-            max(
-                0.0,
-                (
-                    probability
-                    + z * z / (2 * n)
-                    - z
-                    * math.sqrt(
-                        probability * (1 - probability) / n + z * z / (4 * n * n)
-                    )
-                )
-                / (1 + z * z / n)
-                - policy.confidence_penalty / math.sqrt(n),
-            )
-            if n
-            else 0.0
-        )
+        quality = _binary_quality_bound(domain_outcomes, policy.confidence_penalty)
+    if policy.quality_metric == "REFERENCE_AGREEMENT":
+        quality = min(_binary_quality_bound(values, policy.confidence_penalty) for values in reference_strata.values())
     decisions = [row for row in rows if row.accepted is not None]
     production_rows = [row for row in rows if row.production_eligible]
     production_decisions = [
@@ -471,6 +497,7 @@ def benchmark_snapshot(
             for evidence_class in (
                 "PRODUCTION_OUTCOME",
                 "BENCHMARK_CHALLENGER",
+                "REFERENCE_EVALUATION",
                 "UNCLASSIFIED_REAL_PROVIDER",
             )
         },
@@ -487,6 +514,15 @@ def benchmark_snapshot(
         "quality_metric": policy.quality_metric,
         "metric_sample_count": n,
         "domain_gate_sample_count": len(domain_outcomes),
+        "reference_agreement_sample_count": len(reference_rows),
+        "reference_protocol_hashes": reference_protocols,
+        "reference_context_buckets": reference_contexts,
+        "reference_risk": policy.risk if policy.quality_metric == "REFERENCE_AGREEMENT" else None,
+        "reference_agreement_rate": mean(row.reference_agreed for row in reference_rows) if reference_rows else None,
+        "reference_label_strata": {label: {"sample_count": len(values),
+            "agreement_rate": mean(values) if values else None,
+            "lower_bound": _binary_quality_bound(values, policy.confidence_penalty)}
+            for label, values in reference_strata.items()},
         "uncertain": uncertainty,
         "predicted_quality": quality,
         "conditional_content_quality": conditional_quality,
@@ -688,7 +724,7 @@ class CostAwareRouter:
         rows: list[dict[str, Any]] = []
         for candidate in candidates:
             evidence = benchmark_snapshot(
-                observations.get(candidate.candidate_id, ()), now=now, policy=policy
+                observations.get(candidate.candidate_id, ()), now=now, policy=policy, input_tokens=task.input_tokens
             )
             reasons: list[str] = []
             if len(task.history) >= policy.max_attempts:

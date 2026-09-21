@@ -58,6 +58,13 @@ def test_default_world_policy_stays_unified_and_experiment_requires_explicit_bou
             validate_actor_policy({**experiment, key: value}, character_ids=["hero", "rival"], policy=WorldProductionPolicy(**source()["policy"]))
     with pytest.raises(KernelError):
         validate_actor_policy(experiment, character_ids=["hero", "rival"], policy=WorldProductionPolicy())
+    from novel_forge.modules.story_planning_runtime.world_preparation import PlanningWorldPreparation
+    frozen = {**source(), "actor_experiment": experiment}
+    source_ref = {"asset_version_id": "source:1", "content_hash": "source-hash"}
+    with pytest.raises(KernelError, match="WORLD_ACTOR_PROPOSAL_REQUIRED"):
+        PlanningWorldPreparation.generation_stage(frozen, source_ref, {})
+    with pytest.raises(KernelError, match="WORLD_ACTOR_PROPOSAL_REQUIRED"):
+        PlanningWorldPreparation.evaluation_stage(frozen, source_ref, {"source": source_ref}, {}, {})
 
 
 def test_judge_must_disposition_all_proposals_and_cannot_replace_actor_intention():

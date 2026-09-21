@@ -264,7 +264,9 @@ listed below. The former creative assimilation proposal stays terminal, and its 
 retains the historical Git baseline `c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4`.
 Existing WP02–WP05 identities are unchanged. Runtime policy/signature support does not
 choose the independent human quorum for a publication class, grant model consumption,
-establish creative benefit or authorize retrospective accepted-history correction.
+establish creative benefit or authorize retrospective accepted-history correction. Native human adjudications for
+bounded semantic evaluator calibration remain separate from whole-book completion
+quorum, strategic approval and accepted-history mutation.
 
 ## Unresolved design decisions
 

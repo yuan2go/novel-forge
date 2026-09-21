@@ -498,3 +498,32 @@ def test_unresolved_issue_moves_to_exact_new_span_without_losing_origin():
     assert carried["target_text_hash"] == prose_hash(text)
     assert carried["origin_evidence_locator"] == review["issues"][0]["evidence_locator"]
     assert after["blocking_issue_count"] == 1
+
+
+@pytest.mark.parametrize('sampling', [False, True])
+def test_native_review_preflight_and_handler_keep_exact_incumbent_and_sample_target(sampling):
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset
+    from novel_forge.modules.chapter_authority.review_window import prepare_native_review
+
+    selected_review = {'score': 80, 'issues': [], 'selection_review_source_asset_version_id': 'kept-review:v1'}
+    incumbent = {'text': '沈舟伤臂仍然不能抬起。', 'selected_source_asset_version_id': 'kept:v1',
+                 'selected_review': selected_review, 'candidate_comparison': {
+                     'selected_asset_version_id': 'kept:v1',
+                     'previous': {'asset_version_id': 'kept:v1', 'score': 80, 'blocker_codes': [], 'review_asset_version_id': 'kept-review:v1'},
+                     'challenger': {'asset_version_id': 'rejected:v1'}}}
+    target = {'text': '沈舟用右手推开东门。'}
+    target_id = 'sample:v1' if sampling else 'revision:v1'
+    target_content = {'sampled_asset_type': 'draft_version', 'sampled_output': target, 'production_eligible': False} if sampling else target
+    command = {'chapter': 2, **({'chapter_sampling': {'generation_sample': {
+        'asset_version_id': target_id, 'content_hash': digest(target_content)}}} if sampling else {})}
+    values = [('original:v1', 'draft_chapter', {'text': TARGET}), ('review:v1', 'review_report', {'issues': []}),
+              ('context:v1', 'context_bundle', {}), ('incumbent:v1', 'best_draft_candidate', incumbent),
+              (target_id, 'chapter_provider_sample' if sampling else 'draft_version', target_content)]
+    request = ChapterHandlerRequest('operation', 'p', 'w', 'trace', 'correlation', command,
+        tuple(ChapterInputAsset(identity, kind, digest(content), content) for identity, kind, content in values))
+    _, _, _, _, payload = prepare_native_review(request, stage='rereview')
+    assert payload['original_draft_asset_version_id'] == 'kept:v1'
+    assert payload['original_draft']['text'] == incumbent['text']
+    assert payload['review'] == selected_review
+    assert payload['target_candidate_asset_version_id'] == target_id
+    assert payload['draft'] == payload['revision'] == target

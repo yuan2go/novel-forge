@@ -1,0 +1,32 @@
+{
+  "schema_version": "provider-calibration-publication.v1",
+  "recorded_at": "2026-09-21T01:04:10.662542+00:00",
+  "user_instruction": "不要测试，将修改的代码和报告都提交并推送到云端仓库，并且输出提交数量，再提交PR，合并到main分支",
+  "publication_branch": "codex/real-provider-reference-calibration-20260921",
+  "source_head_before_report_commit": "dce49a68597e302c1c6c97a8a3eb4f3e4f42d864",
+  "base_main_before_publication": "e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332",
+  "implementation_commit": "5580b4d7de74cae2478e52248b94a60c11165bb2",
+  "implementation_identity": "sha256:a7d4e0d5ff914401699e756fef0456188688316ed30d752a2587c3123b4f682a",
+  "existing_commit_count": 28,
+  "existing_commit_categories": {
+    "implementation_or_tests": 14,
+    "documentation_or_evidence": 13,
+    "merge": 1
+  },
+  "tests_for_publication": "NOT_RUN_USER_REQUEST",
+  "previous_p0": {
+    "tested_sha": "dce49a68597e302c1c6c97a8a3eb4f3e4f42d864",
+    "status": "INTERRUPTED_BY_USER",
+    "stage": "pytest-postgresql-integration",
+    "signal": "SIGINT",
+    "final_pass_report": false,
+    "log_sha256": "sha256:63576a052d752365857dbfc404b8274f37e074ae327dce37e945c3e01b8e3e18"
+  },
+  "remote_actions_enabled_at_publication": false,
+  "provider_calls": 0,
+  "accepted_chapters": 0,
+  "real_codex_escalations": 0,
+  "work_package_complete": false,
+  "publication_state_at_record": "PREPARED_FOR_COMMIT_PUSH_PR_MERGE",
+  "terminal_publication_evidence": "Git commit identity, remote branch, GitHub pull request and main merge commit"
+}

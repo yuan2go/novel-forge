@@ -601,3 +601,85 @@ def test_planning_schema_identity_preserves_independent_bindings_and_contract_sh
     different_shape = planning_provider_output_schema(PlanContractType.VOLUME, logical_key="volume:c",
         parent_version_id="parent:c", dependency_version_ids=("input:c", "input:d"))
     assert planning_schema_evidence_identity(different_shape, "volume:v1") != identity
+
+
+def test_chapter_evidence_compatibility_projects_only_unreachable_context_types():
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.execution_gateway import chapter_producer_contract_identity
+
+    artifact = {"ref": "fixture", "version": "1", "content_hash": "sha256:" + "a" * 64}
+    prompt = {"system_instruction": artifact, "prompt_template": artifact, "skill": artifact,
+              "output_schema_ref": "fixture-schema", "output_schema_hash": "sha256:" + "b" * 64,
+              "allowed_tools": ["model.provider.invoke"]}
+    materialization = {
+        "schema_version": "novelos.chapter_capability_materialization.v1", "stage": "draft",
+        "pack_artifacts": {"context_policy": {**artifact, "content": {
+            "allowed_asset_types": ["context_bundle", "chapter_plan"],
+            "forbidden_asset_types": ["raw_source_chunk"], "max_tokens": 16000,
+            "source_isolation": "ABSTRACT_ASSETS_ONLY", "reject_cross_project": True,
+        }}, "tool_policy": {**artifact, "content": {
+            "default": "DENY", "explicit_tool_refs": ["model.provider.invoke", "storage.object.put"],
+            "audit_high_and_critical": True,
+        }}},
+        "tool_permissions": {"allowed": ["model.provider.invoke"], "denied": ["storage.object.put"],
+                             "default": "DENY", "governing_policy_hash": "formal"},
+    }
+    expected = chapter_producer_contract_identity(prompt, materialization)
+    sample = deepcopy(materialization)
+    sample["pack_artifacts"]["context_policy"]["content"]["allowed_asset_types"].append("draft_chapter")
+    sample["pack_artifacts"]["context_policy"]["content_hash"] = "sha256:" + "c" * 64
+    sample["tool_permissions"]["governing_policy_hash"] = "sample"
+    sample["tool_permissions"]["denied"] = []
+    sample["pack_artifacts"]["tool_policy"]["content"]["explicit_tool_refs"] = ["model.provider.invoke"]
+    assert chapter_producer_contract_identity(prompt, sample) == expected
+    for key, value in [("max_tokens", 8000), ("source_isolation", "RAW_ALLOWED"),
+                       ("reject_cross_project", False), ("allowed_asset_types", ["chapter_plan"]),
+                       ("forbidden_asset_types", [])]:
+        changed = deepcopy(sample)
+        changed["pack_artifacts"]["context_policy"]["content"][key] = value
+        assert chapter_producer_contract_identity(prompt, changed) != expected
+    sample["tool_permissions"]["allowed"].append("storage.object.put")
+    assert chapter_producer_contract_identity(prompt, sample) != expected
+
+
+def test_reference_agreement_requires_both_label_strata_and_preserves_failed_first_attempts():
+    from novel_forge.modules.production_execution.cost_routing import benchmark_snapshot, task_policy
+
+    reference_task = task(task_type="review")
+    observations = [replace(row, quality_score=None, accepted=None, evidence_class="REFERENCE_EVALUATION",
+        production_eligible=False, reference_agreed=True, reference_label_classes=("PASS" if i % 2 else "FAIL",),
+        sample_identity=str(i), experiment_partition="CALIBRATION", reference_risk="MEDIUM", reference_context_tokens=1000,
+        reference_protocol_hash="sha256:" + "1" * 64) for i, row in enumerate(samples(n=80))]
+    for name in ("review", "rereview", "quality_structural", "quality_longform", "world_candidates.evaluate", "narrative_semantic_evaluation"):
+        result = route(replace(reference_task, task_type=name), [candidate()], {"flash":
+            [replace(row, reference_risk=task_policy(name).risk) for row in observations]})
+        assert result["status"] == "SELECTED"
+        benchmark = result["selected"]["benchmark"]
+        assert benchmark["quality_metric"] == "REFERENCE_AGREEMENT"
+        assert benchmark["metric_sample_count"] == 80
+        assert benchmark["quality_sample_count"] == 0
+        assert benchmark["production_acceptance_rate"] is None
+        assert benchmark["reference_label_strata"]["FAIL"]["sample_count"] == 40
+    for bad in (
+        [replace(row, reference_label_classes=("PASS",)) for row in observations],
+        [replace(row, reference_risk="LOW") for row in observations],
+        [replace(row, reference_context_tokens=100_000) for row in observations],
+        [replace(row, reference_protocol_hash="sha256:" + str(i % 2) * 64) for i, row in enumerate(observations)],
+        [replace(row, experiment_partition="HOLDOUT") for row in observations],
+        [replace(row, reference_agreed=i % 2 == 1) for i, row in enumerate(observations)],
+        [replace(row, sample_identity="same-prose") for row in observations],
+        [replace(row, retried=True) for row in observations],
+    ):
+        assert route(reference_task, [candidate()], {"flash": bad})["status"] == "BLOCKED"
+    other_context = [replace(row, evidence_ref=f"long:{repeat}:" + row.evidence_ref, sample_identity=f"long:{repeat}:" + row.sample_identity,
+        reference_context_tokens=100_000) for repeat in range(3) for row in observations]
+    assert route(reference_task, [candidate()], {"flash": observations + other_context})["status"] == "SELECTED"
+    failures = [replace(row, evidence_ref="failure:" + row.evidence_ref, reference_agreed=None,
+        reference_label_classes=(), sample_identity="failed:" + row.sample_identity, schema_success=False,
+        accepted=False) for row in observations]
+    result = route(reference_task, [candidate()], {"flash": observations + failures})
+    assert result["status"] == "BLOCKED"
+    assert result["candidates"][0]["benchmark"]["schema_success"] == 0.5
+    first = replace(observations[0], reference_agreed=False)
+    repaired = replace(first, evidence_ref="replacement", reference_agreed=True, retried=True)
+    assert benchmark_snapshot([first, repaired], now=NOW, policy=task_policy("review"))["reference_agreement_rate"] == 0

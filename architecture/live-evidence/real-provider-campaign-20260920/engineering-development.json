@@ -1,0 +1,174 @@
+{
+  "schema_version": "campaign-development-engineering-evidence.v1",
+  "proof_scope": "Targeted development checks, including failed attempts; not Provider calibration or production evidence",
+  "records": [
+    {
+      "artifact_name": "nf-benchmark-scope-unit-final-v2-20260920.xml",
+      "sha256": "sha256:ee5675916e5fdd8cc290014d367a13e8f34cb328943a9d2c7d8416e152a3850d",
+      "classification": "FINAL_FOCUSED_UNIT",
+      "test_count_basis": "JUNIT_RECORDS_INCLUDING_SUBTESTS_IF_EMITTED",
+      "tests": 125,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.213,
+      "failed_cases": [],
+      "evidence_class": "SCRIPTED_ENGINEERING_FIXTURE",
+      "source_identity": "WORKING_TREE_TARGETED_CHECK; EXACT_SHA_CANONICAL_GATE_IS_SEPARATE"
+    },
+    {
+      "artifact_name": "nf-benchmark-scope-pg-final-20260920.xml",
+      "sha256": "sha256:9e2cc94762bee170374f6da4e24a4a3e363f0f304b26b18d0e6d0082e7d09a0e",
+      "classification": "FINAL_FOCUSED_POSTGRES",
+      "test_count_basis": "JUNIT_RECORDS_INCLUDING_SUBTESTS_IF_EMITTED",
+      "tests": 60,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 54.396,
+      "failed_cases": [],
+      "evidence_class": "SCRIPTED_ENGINEERING_FIXTURE",
+      "source_identity": "WORKING_TREE_TARGETED_CHECK; EXACT_SHA_CANONICAL_GATE_IS_SEPARATE"
+    },
+    {
+      "artifact_name": "nf-source-recovery-unit-final-20260920.xml",
+      "sha256": "sha256:f527836d4cf11016a6f9fa3251d07580e839e1f9de44ba68d0b11a30f1307c10",
+      "classification": "FINAL_FOCUSED_UNIT",
+      "test_count_basis": "JUNIT_RECORDS_INCLUDING_SUBTESTS_IF_EMITTED",
+      "tests": 91,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.231,
+      "failed_cases": [],
+      "evidence_class": "SCRIPTED_ENGINEERING_FIXTURE",
+      "source_identity": "WORKING_TREE_TARGETED_CHECK; EXACT_SHA_CANONICAL_GATE_IS_SEPARATE"
+    },
+    {
+      "artifact_name": "nf-source-recovery-pg-final-20260920.xml",
+      "sha256": "sha256:a56e5cbcdebbd62e1d70847ef895afbad5c1fbdddc27c5ab4599497109be9e7b",
+      "classification": "WRONG_TEST_PATH_COLLECTION_FAILURE",
+      "test_count_basis": "JUNIT_RECORDS_INCLUDING_SUBTESTS_IF_EMITTED",
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.002,
+      "failed_cases": [],
+      "evidence_class": "SCRIPTED_ENGINEERING_FIXTURE",
+      "source_identity": "WORKING_TREE_TARGETED_CHECK; EXACT_SHA_CANONICAL_GATE_IS_SEPARATE"
+    },
+    {
+      "artifact_name": "nf-source-recovery-pg-final-v2-20260920.xml",
+      "sha256": "sha256:68ee231089e422085914c3b168729155397caa3dd7c877fb6ffab6f01e6b116b",
+      "classification": "TEST_SQL_AMBIGUOUS_ASSET_ID_THEN_FIXED",
+      "test_count_basis": "JUNIT_RECORDS_INCLUDING_SUBTESTS_IF_EMITTED",
+      "tests": 57,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 351.144,
+      "failed_cases": [
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_native_source_sampling_isolates_model_arms_and_domain_commits"
+      ],
+      "evidence_class": "SCRIPTED_ENGINEERING_FIXTURE",
+      "source_identity": "WORKING_TREE_TARGETED_CHECK; EXACT_SHA_CANONICAL_GATE_IS_SEPARATE"
+    },
+    {
+      "artifact_name": "nf-source-recovery-focused-20260920.xml",
+      "sha256": "sha256:ac5cc25124dc90d04e6011fda1aa5287f3c6b1d8bc9d902ee9b2dd73d1a69869",
+      "classification": "TERMINAL_PROVIDER_FAILURE_OPERATION_CLASSIFICATION_THEN_FIXED",
+      "test_count_basis": "JUNIT_RECORDS_INCLUDING_SUBTESTS_IF_EMITTED",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 25.405,
+      "failed_cases": [
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_native_source_sampling_isolates_model_arms_and_domain_commits"
+      ],
+      "evidence_class": "SCRIPTED_ENGINEERING_FIXTURE",
+      "source_identity": "WORKING_TREE_TARGETED_CHECK; EXACT_SHA_CANONICAL_GATE_IS_SEPARATE"
+    },
+    {
+      "artifact_name": "nf-source-recovery-focused-v2-20260920.xml",
+      "sha256": "sha256:7a7dc33661c6a5317d82f36a82e295409bccebe13238a156f009aa87961d48b2",
+      "classification": "SENT_FAILURE_CALL_ACCOUNTING_THEN_FIXED",
+      "test_count_basis": "JUNIT_RECORDS_INCLUDING_SUBTESTS_IF_EMITTED",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 19.013,
+      "failed_cases": [
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_native_source_sampling_isolates_model_arms_and_domain_commits"
+      ],
+      "evidence_class": "SCRIPTED_ENGINEERING_FIXTURE",
+      "source_identity": "WORKING_TREE_TARGETED_CHECK; EXACT_SHA_CANONICAL_GATE_IS_SEPARATE"
+    },
+    {
+      "artifact_name": "nf-source-recovery-focused-v3-20260920.xml",
+      "sha256": "sha256:6e7c4ab1b437059634694a5bcc73233dda8cd6b3cb7792fc19d008beb4f168e5",
+      "classification": "FIXTURE_MISSING_KNOWN_SENT_EVIDENCE_THEN_CORRECTED",
+      "test_count_basis": "JUNIT_RECORDS_INCLUDING_SUBTESTS_IF_EMITTED",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 18.276,
+      "failed_cases": [
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_native_source_sampling_isolates_model_arms_and_domain_commits"
+      ],
+      "evidence_class": "SCRIPTED_ENGINEERING_FIXTURE",
+      "source_identity": "WORKING_TREE_TARGETED_CHECK; EXACT_SHA_CANONICAL_GATE_IS_SEPARATE"
+    },
+    {
+      "artifact_name": "nf-source-recovery-focused-v4-20260920.xml",
+      "sha256": "sha256:4891714038884917ef843c9bba55a8c88168f4a3f0c0a840decaaa06c4284a67",
+      "classification": "FIXTURE_ASSERTION_DID_NOT_ACCEPT_NATIVE_WAITING_EXTERNAL_RESULT_THEN_CORRECTED",
+      "test_count_basis": "JUNIT_RECORDS_INCLUDING_SUBTESTS_IF_EMITTED",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 22.411,
+      "failed_cases": [
+        "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests::test_native_source_sampling_isolates_model_arms_and_domain_commits"
+      ],
+      "evidence_class": "SCRIPTED_ENGINEERING_FIXTURE",
+      "source_identity": "WORKING_TREE_TARGETED_CHECK; EXACT_SHA_CANONICAL_GATE_IS_SEPARATE"
+    },
+    {
+      "artifact_name": "nf-source-recovery-focused-v5-20260920.xml",
+      "sha256": "sha256:e32b056df063589ebd4590d71fa77f20d8e2f3a713cfc13289311980c74c8b21",
+      "classification": "FINAL_FOCUSED_SOURCE_RECOVERY_PASS",
+      "test_count_basis": "JUNIT_RECORDS_INCLUDING_SUBTESTS_IF_EMITTED",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 17.677,
+      "failed_cases": [],
+      "evidence_class": "SCRIPTED_ENGINEERING_FIXTURE",
+      "source_identity": "WORKING_TREE_TARGETED_CHECK; EXACT_SHA_CANONICAL_GATE_IS_SEPARATE"
+    }
+  ],
+  "final_source_scenario": {
+    "scripted_execute_count": 9,
+    "scripted_reconciliation_query_count": 1,
+    "real_provider_call_count": 0,
+    "boundaries": [
+      "Three native Source tasks sampled with two model arms",
+      "Original formal Source import progress unchanged",
+      "No-effect terminal predecessor replacement retains lineage",
+      "Known sent terminal failure counts against campaign and replacement preserves lineage",
+      "Unknown call retains HELD_UNKNOWN reservation and blocks replacement",
+      "Native query retrieves the prior result without another execute call",
+      "Old failure and later success ModelCallLogs coexist",
+      "Completed successful arm cannot be resent under a replacement grant"
+    ]
+  },
+  "canonical_exact_sha": "45fa74ace314735112a3447e660c685172c6f79f",
+  "canonical_index": "engineering-index.json",
+  "fixture_cleanup": "source-fixture-cleanup.json"
+}

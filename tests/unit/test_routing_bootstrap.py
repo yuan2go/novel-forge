@@ -28,7 +28,7 @@ def contract():
     payload = {
         "project_id": "project",
         "book_id": "book",
-        "generator_operation_name": "world_candidates.generate",
+        "generator_operation_name": "book_plan.generate",
         "logical_key": "world",
         "idempotency_key": "sample-one",
         "input_versions": {"brief": "version-one"},
@@ -39,11 +39,12 @@ def contract():
         "reason": "independent benchmark collection",
         "environment": "validation",
         "book_id": "book",
-        "task_type": "world_candidates.generate",
+        "task_type": "book_plan.generate",
         "logical_key": "world",
         "generation_idempotency_key": "sample-one",
         "input_versions_hash": authorization_hash(payload["input_versions"]),
         "command_hash": bootstrap_command_hash(payload),
+        "producer_contract_hash": authorization_hash({"fixture_prompt": "v1"}),
         "candidate_id": "flash",
         "model_revision": "revision-one",
         "expires_at": "2099-01-01T00:00:00+00:00",
@@ -63,7 +64,42 @@ def contract():
     return payload, grant, snapshot
 
 
-def ordinary_decision(**candidate_overrides):
+def test_chapter_sample_rejects_changed_source_inputs_or_book_scope():
+    from copy import deepcopy
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_chapter_sample_origin
+
+    source = {"book_id": "book", "chapter": 3, "preparation_report": {"craft": "approved"}}
+    inputs = [{"asset_version_id": "context:v1", "content_hash": "sha256:" + "a" * 64}]
+    origin = ("chapter.draft.generate", "3.4.1", source, inputs)
+    payload = {
+        **source, "project_id": "project", "generator_operation_name": "draft",
+        "logical_key": "native-draft", "idempotency_key": "sample-1",
+        "input_versions": inputs, "routing_bootstrap_authorization_id": "grant",
+        "chapter_predecessor_operation_id": "",
+        "chapter_sampling": {"source_operation_id": "native-draft", "source_command_hash": authorization_hash(source)},
+    }
+    validate_chapter_sample_origin(payload, origin, project_id="project")
+    for key, value in (("book_id", "another-book"), ("chapter", 4),
+                       ("input_versions", []), ("generator_operation_name", "memo"),
+                       ("preparation_report", {}), ("unexpected_override", True)):
+        changed = deepcopy(payload)
+        changed[key] = value
+        with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_SCOPE_MISMATCH"):
+            validate_chapter_sample_origin(changed, origin, project_id="project")
+    with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_SCOPE_MISMATCH"):
+        validate_chapter_sample_origin(payload, (origin[0], "3.3.0", source, inputs), project_id="project")
+    target = {"asset_version_id": "sample:v1", "content_hash": "sha256:" + "b" * 64}
+    reference = {**payload, "generator_operation_name": "review", "input_versions": [*inputs, target],
+        "chapter_sampling": {**payload["chapter_sampling"], "generation_sample": target},
+        "reference_evaluation": {"protocol_version": "frozen-labels", "adjudications": []}}
+    validate_chapter_sample_origin(reference, origin, project_id="project")
+    for key, value in (("generator_operation_name", "rereview"), ("input_versions", [target]),
+                       ("preparation_report", {})):
+        with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_SCOPE_MISMATCH"):
+            validate_chapter_sample_origin({**reference, key: value}, origin, project_id="project")
+
+
+def ordinary_decision(*, task_overrides=None, **candidate_overrides):
     candidate = ModelCandidate(
         "flash",
         "deepseek",
@@ -86,7 +122,7 @@ def ordinary_decision(**candidate_overrides):
         model_revision="revision-one",
     )
     task = RoutingTask(
-        "world_candidates.generate",
+        "book_plan.generate",
         "project",
         "book",
         "operation",
@@ -95,13 +131,73 @@ def ordinary_decision(**candidate_overrides):
         100,
         2000,
         ".01",
+        producer_contract={"fixture_prompt": "v1"},
+        producer_contract_hash=authorization_hash({"fixture_prompt": "v1"}),
     )
     return CostAwareRouter().explain(
-        task,
+        replace(task, **(task_overrides or {})),
         [replace(candidate, **candidate_overrides)],
         {},
         now=datetime(2026, 9, 16, tzinfo=timezone.utc),
     )
+
+
+def entitlement_grant():
+    return {**campaign_grant(), "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "cost_authorization_ref": "fixture-codex-account", "currency": "UNKNOWN", "maximum_amount": None}
+
+
+def codex_benchmark_decision(*, candidate_overrides=None, task_overrides=None, grant_overrides=None):
+    grant = {**entitlement_grant(), **(grant_overrides or {})}
+    _, _, snapshot = contract()
+    snapshot.update(authorization=grant, authorization_hash=authorization_hash(grant))
+    ordinary = ordinary_decision(
+        **{"provider": "codex-cli", "model": "fixture-codex-model", "escalation_only": True,
+           "quota_remaining": 1, "authorization_ref": "fixture-codex-account",
+           "pricing": PricingSnapshot("fixture-account-v1", "2026-01-01T00:00:00+00:00",
+               "2099-01-01T00:00:00+00:00", "0", "0", "0", currency="UNKNOWN", source="fixture-account",
+               accounting_basis="ACCOUNT_ENTITLEMENT"), **(candidate_overrides or {})},
+        task_overrides={"risk": "HIGH", "escalation_reason": "authorized high-risk calibration control", **(task_overrides or {})},
+    )
+    return ordinary, benchmark_decision(ordinary, snapshot, environment="validation").to_dict()
+
+
+def test_codex_sampling_retains_unknown_money_and_production_escalation_restrictions():
+    ordinary, sampled = codex_benchmark_decision()
+    assert ordinary.to_dict()["status"] == "BLOCKED"
+    assert sampled["status"] == "BENCHMARK_SELECTED"
+    assert sampled["production_eligible"] is False
+    assert sampled["selected"]["reservation_upper_bound"] is None
+    assert "BENCHMARK_INSUFFICIENT" in sampled["selected"]["production_rejected_reasons"]
+    _, blocked = codex_benchmark_decision(task_overrides={"escalation_reason": ""})
+    assert blocked["status"] == "BLOCKED"
+    assert "ESCALATION_THRESHOLD_NOT_MET" in blocked["candidates"][0]["rejected_reasons"]
+
+
+@pytest.mark.parametrize("changes,reason", [
+    ({"available": False}, "PROVIDER_UNAVAILABLE:"),
+    ({"quota_remaining": 0}, "ESCALATION_CAPACITY_OR_AUTHORIZATION_MISSING"),
+    ({"authorization_ref": "another-account"}, "BENCHMARK_ACCOUNTING_AUTHORIZATION_MISMATCH"),
+    ({"model_revision": "changed-model"}, "BENCHMARK_AUTHORIZED_TARGET_MISMATCH"),
+    ({"escalation_only": False}, "BENCHMARK_ACCOUNTING_AUTHORIZATION_MISMATCH"),
+])
+def test_codex_sampling_cannot_bypass_account_quota_availability_or_identity(changes, reason):
+    _, result = codex_benchmark_decision(candidate_overrides=changes)
+    assert result["status"] == "BLOCKED"
+    assert reason in result["candidates"][0]["rejected_reasons"]
+
+
+@pytest.mark.parametrize("changes", [
+    {"maximum_amount": "0"}, {"currency": "USD"}, {"cost_authorization_ref": ""},
+    {"accounting_basis": "PRICED"}, {"maximum_tokens": 0},
+])
+def test_entitlement_sampling_never_accepts_zero_usd_or_missing_authority(changes):
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_authorization
+
+    with pytest.raises(ValueError):
+        validate_bootstrap_authorization({**entitlement_grant(), **changes})
+    with pytest.raises(ValueError):
+        validate_bootstrap_authorization({key: value for key, value in entitlement_grant().items() if key != "campaign"})
 
 
 def test_benchmark_grant_preserves_unknown_quality_and_production_rejections():
@@ -119,7 +215,7 @@ def test_benchmark_grant_preserves_unknown_quality_and_production_rejections():
         "BENCHMARK_INSUFFICIENT",
         "QUALITY_FLOOR_NOT_MET",
     }
-    assert sampled["policy"]["quality_floor"] == 0.75
+    assert sampled["policy"]["quality_floor"] == ordinary.to_dict()["policy"]["quality_floor"]
     assert sampled["decision_id"] != ordinary.decision_id
     with pytest.raises(KernelError, match="validation runtime"):
         benchmark_decision(ordinary, snapshot, environment="production")
@@ -261,6 +357,24 @@ def campaign_grant():
     }}
 
 
+def test_world_sampling_requires_campaign_and_separate_reference_authority():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_authorization
+
+    grant = {**contract()[1], "task_type": "world_candidates.generate"}
+    with pytest.raises(ValueError, match="ROUTING_WORLD_CAMPAIGN_REQUIRED"):
+        validate_bootstrap_authorization(grant)
+    validate_bootstrap_authorization({**campaign_grant(), "task_type": "world_candidates.generate"})
+    with pytest.raises(ValueError, match="ROUTING_REFERENCE_AUTHORIZATION_REQUIRED"):
+        validate_bootstrap_authorization({**campaign_grant(), "task_type": "world_candidates.evaluate"})
+    reference = {**campaign_grant(), "task_type": "world_candidates.evaluate", "purpose": "REFERENCE_EVALUATION",
+        "reference_evaluation": {"protocol_version": "fixture-reference-v1",
+            "adjudications": [{"asset_version_id": "fixture-label", "content_hash": "sha256:" + "a" * 64}]}}
+    validate_bootstrap_authorization(reference)
+    from novel_forge.modules.production_execution.routing_policy import validate_routing_policy
+    validate_routing_policy({"policy_version": "fixture-world-v1", "reason": "fixture", "task_overrides": [],
+                             "bootstrap_authorizations": [reference]})
+
+
 def test_campaign_grants_share_frozen_identity_across_policy_versions():
     from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history
     grant = campaign_grant()
@@ -276,6 +390,20 @@ def test_campaign_grants_share_frozen_identity_across_policy_versions():
     with pytest.raises(KernelError, match="PROJECT_REBIND_FORBIDDEN"):
         validate_bootstrap_history([{**other, "campaign": {
             **other["campaign"], "campaign_id": "reset-attempt"}}], [grant])
+
+
+def test_reference_model_arms_cannot_relabel_the_same_frozen_sample():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history
+
+    first = {**campaign_grant(), "task_type": "narrative_semantic_evaluation", "purpose": "REFERENCE_EVALUATION",
+             "reference_evaluation": {"asset_version_id": "reference-one", "content_hash": "sha256:" + "a" * 64,
+                                      "protocol_version": "blind-reference-v1"}}
+    second = {**first, "authorization_id": "evaluator-two", "candidate_id": "pro"}
+    validate_bootstrap_history([second], [first])
+    for changed in ({"asset_version_id": "relabeled-reference"}, {"content_hash": "sha256:" + "b" * 64},
+                    {"protocol_version": "revised-reference-v2"}):
+        with pytest.raises(KernelError, match="ROUTING_CAMPAIGN_SAMPLE_REDEFINED"):
+            validate_bootstrap_history([{**second, "reference_evaluation": {**first["reference_evaluation"], **changed}}], [first])
 
 
 @pytest.mark.parametrize("rename", [False, True])
@@ -356,6 +484,32 @@ def test_reference_grant_requires_exact_labels_and_campaign_isolation():
                                     {**grant, "purpose": "BENCHMARK_CHALLENGER"}]})
 
 
+def test_adjudicated_reference_binding_requires_exact_scoped_native_labels():
+    from copy import deepcopy
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_reference_evaluation_binding
+
+    binding = {"asset_version_id": "proxy:v1", "content_hash": "sha256:" + "a" * 64, "protocol_version": "labels-v2",
+        "adjudicated_reference": {"adjudications": [{"asset_version_id": "adjudication:v1", "content_hash": "sha256:" + "b" * 64}],
+            "scope": {"scope_type": "ARC", "chapter_start": 1, "chapter_end": 12}}}
+    validate_reference_evaluation_binding(binding)
+    for change in ("empty", "duplicate", "hash", "scope", "extra", "proxy-missing"):
+        bad = deepcopy(binding)
+        if change == "empty":
+            bad["adjudicated_reference"]["adjudications"] = []
+        elif change == "duplicate":
+            bad["adjudicated_reference"]["adjudications"] *= 2
+        elif change == "hash":
+            bad["adjudicated_reference"]["adjudications"][0]["content_hash"] = "unbound"
+        elif change == "scope":
+            bad["adjudicated_reference"]["scope"]["scope_type"] = "CHAPTER"
+        elif change == "extra":
+            bad["adjudicated_reference"]["human_verified"] = True
+        else:
+            del bad["asset_version_id"]
+        with pytest.raises(ValueError):
+            validate_reference_evaluation_binding(bad)
+
+
 def test_reference_agreement_counts_disagreement_without_production_or_human_claims():
     from copy import deepcopy
     from novel_forge.modules.story_design_authority import scripted_qualification
@@ -377,3 +531,44 @@ def test_reference_agreement_counts_disagreement_without_production_or_human_cla
     assert report["production_qualification_eligible"] is False
     assert report["ground_truth_claimed"] is False
     assert report["human_preference_evidence"] is False
+
+
+@pytest.mark.parametrize("change", [
+    {}, {"prompt_template": {"version": 2}}, {"context_policy": {"version": 2}},
+    {"output_schema": {"content_hash": "sha256:" + "f" * 64}},
+    {"judge_protocol": "changed"},
+])
+def test_sampling_rejects_unbound_or_changed_producer_before_selection(change):
+    from novel_forge.modules.production_execution.cost_routing import RoutingDecision
+    import json
+
+    _, grant, snapshot = contract()
+    ordinary = ordinary_decision().to_dict()
+    if change:
+        ordinary["task"]["producer_contract"] = {**ordinary["task"]["producer_contract"], **change}
+        ordinary["task"]["producer_contract_hash"] = authorization_hash(ordinary["task"]["producer_contract"])
+    else:
+        grant.pop("producer_contract_hash")
+        snapshot["authorization_hash"] = authorization_hash(grant)
+    with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_PRODUCER_DRIFT"):
+        benchmark_decision(RoutingDecision(json.dumps(ordinary)), snapshot, environment="validation")
+
+
+def test_legacy_grant_can_be_reconciled_but_cannot_authorize_new_dispatch():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_producer
+
+    _, grant, _ = contract()
+    grant.pop("producer_contract_hash")
+    validate_bootstrap_producer(grant, {}, require_bound=False)
+    with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_PRODUCER_DRIFT"):
+        validate_bootstrap_producer(grant, {})
+
+
+def test_campaign_arms_cannot_compare_different_producer_versions():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_history
+
+    original = campaign_grant()
+    changed = {**original, "authorization_id": "new-model-arm", "candidate_id": "pro",
+               "producer_contract_hash": authorization_hash({"fixture_prompt": "v2"})}
+    with pytest.raises(KernelError, match="ROUTING_CAMPAIGN_SAMPLE_REDEFINED"):
+        validate_bootstrap_history([changed], [original])

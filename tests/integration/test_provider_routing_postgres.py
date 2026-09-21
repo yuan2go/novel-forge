@@ -1232,6 +1232,75 @@ def feedback_effect(scope, payload=None):
     return effect
 
 
+def test_formal_quality_reference_calibration_binds_native_receipt_decision_and_target(scope):
+    # WHY: Synthetic rows exercise receipt projection only, never real Provider qualification.
+    from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
+    from novel_forge.modules.chapter_authority.model_effects import ModelProviderResult
+    from novel_forge.modules.chapter_quality_authority.reference_sampling import admitted_reference_calibration
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+    from tests.unit.test_cost_aware_routing import NOW, candidate, samples, task
+
+    register_validation_runtime_definitions(DATABASE_URL, application_build_id="reference-receipt-fixture", commit_sha="a" * 40)
+    project, operation = scope[0], identifier("reference-quality-operation")
+    attempt, effect, target = identifier("reference-attempt"), identifier("reference-effect"), identifier("reference-target")
+    stage = "quality_structural"
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute("""INSERT INTO authority_operation(operation_id,definition_name,definition_version,project_id,
+            workspace_id,status,root_operation_id,idempotency_scope,idempotency_key,request_digest,command_payload,
+            definition_snapshot,completion_contract_snapshot,policy_snapshot)
+            SELECT %s,name,definition_version,%s,'legacy-unknown','EXECUTING',%s,%s,%s,%s,'{}'::jsonb,to_jsonb(definition),
+            '{}'::jsonb,'{}'::jsonb FROM authority_operation_definition definition
+            WHERE name='chapter.quality.structural.evaluate' AND definition_version='3.4.1'""",
+            [operation, project, operation, "project:" + project, operation, "digest:" + operation])
+        cursor.execute("INSERT INTO authority_attempt(attempt_id,operation_id,attempt_number,status) VALUES(%s,%s,1,'SUCCEEDED')",
+            [attempt, operation])
+    model = candidate(model_revision="reference-fixture-revision")
+    producer = {"fixture": "reference-receipt-producer"}
+    current = task(task_type=stage, project_id=project, operation_id=operation, attempt_id=attempt,
+        producer_contract=producer, producer_contract_hash=snapshot_hash(producer))
+    observations = [replace(row, evidence_class="REFERENCE_EVALUATION", production_eligible=False, quality_score=None,
+        accepted=None, reference_agreed=True, reference_label_classes=("PASS" if i % 2 else "FAIL",),
+        reference_risk="MEDIUM", reference_context_tokens=1000, reference_protocol_hash="sha256:" + "d" * 64,
+        served_model_identity_hash="sha256:" + "e" * 64, outcome_refs=("asset-version:synthetic-reference:" + str(i),))
+        for i, row in enumerate(samples(n=80))]
+    decision = PostgresRoutingRegistry(DATABASE_URL).save(
+        CostAwareRouter().explain(current, [model], {"flash": observations}, now=NOW),
+        logical_ref="fixture/reference-receipt/" + operation, trace_id="fixture", correlation_id="fixture")
+    assert decision["status"] == "SELECTED"
+    payload = {"input": {"quality_context": {"target_revision_asset_version_id": target}},
+        "_production_execution": {"capability_runtime": {"routing_decision": decision}}}
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute("""INSERT INTO authority_external_effect(external_effect_id,operation_id,project_id,effect_type,
+            stable_idempotency_key,status,request_hash,request_payload,model_id,capability,provider_capability_profile)
+            VALUES(%s,%s,%s,'model.invoke',%s,'SUCCEEDED',%s,%s,%s,%s,%s)""",
+            [effect, operation, project, effect, snapshot_hash(payload), Jsonb(payload), model.model, "model." + stage,
+             Jsonb({"real_provider_validation_eligible": True})])
+    result = ModelProviderResult({"dimensions": [{"fixture": True}]}, model.provider, model.model, "fixture-v1", "fixture-v1",
+        1000, 100, ".001", "USD", True, execution_evidence={
+            "execution_request": {"project_id": project, "operation_id": operation, "attempt_id": attempt,
+                "stage": stage, "external_effect_id": effect},
+            "execution_result": {"outcome": "SUCCEEDED"}, "route_snapshot": {"reasoning_effort": model.reasoning},
+            "process_evidence": {"model_revision": model.model_revision, "served_model_identity_hash": "sha256:" + "e" * 64}})
+    model_asset = AuthorityAssetWriter(DATABASE_URL).materialize_output(AuthorityAssetWriteCommand(
+        operation, project, identifier("model-call"), "model_call_log", "fixture.v1", "fixture/model/" + operation,
+        "test", "model-call", "model_evidence", {"stage": stage, "attempt_id": attempt, "provider_evidence": result.to_evidence()},
+        "fixture", "fixture", "fixture"))
+    request = ChapterHandlerRequest(operation, project, "legacy-unknown", "fixture", "fixture", {}, (),
+        attempt_id=attempt, database_url=DATABASE_URL)
+    receipt = admitted_reference_calibration(request, result, stage=stage, target_asset_version_id=target)
+    assert receipt["model_call"]["asset_version_id"] == model_asset.asset_version_id
+    assert receipt["routing_decision"]["asset_version_id"] == decision["asset_version_id"]
+    assert receipt["external_effect_id"] == effect and receipt["target_asset_version_id"] == target
+    assert not any(receipt[key] for key in ("human_verified", "reader_preference_proven", "production_verified"))
+    for changed_result, changed_target in ((result, "wrong-target"), (replace(result, model_id="changed-model"), target)):
+        with pytest.raises(KernelError, match="QUALITY_REFERENCE_ADMISSION_INVALID"):
+            admitted_reference_calibration(request, changed_result, stage=stage, target_asset_version_id=changed_target)
+    assert admitted_reference_calibration(replace(request, command={"chapter_sampling": True}), result,
+        stage=stage, target_asset_version_id=target) is None
+    assert admitted_reference_calibration(request, replace(result, real_model_call=False), stage=stage, target_asset_version_id=target) is None
+
+
 def fixture_planning_feedback(
     scope,
     defect="",

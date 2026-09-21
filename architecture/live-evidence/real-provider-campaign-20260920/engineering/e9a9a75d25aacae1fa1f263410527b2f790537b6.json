@@ -185,6 +185,41 @@
   "source_report_sha256": "sha256:a0ee480853e57e1b8c11f9ac4d191b030edfd5d65c44667ec23c25151b0757c4",
   "evidence_root_name": "nf-real-provider-reference-kernel-pr-v2-20260920",
   "failure_reason": "migration-compatibility failed",
+  "pr_governance": {
+    "schema_version": "novel-forge.pr-governance.v1",
+    "status": "FAIL",
+    "head_sha": "e9a9a75d25aacae1fa1f263410527b2f790537b6",
+    "base_sha": "feba06582b6cadf2e80f5c573cf427114cf2a926",
+    "base_implementation_tree_sha": "sha256:e1dd43acca11bcecbb7e736e65332fa8824e305e85e6fa1ab503ed103a560537",
+    "implementation_tree_sha": "sha256:2aff81f0ca056a83e8ce372cbe0ab71699ad9f37f4cf0af7ace0c5a6ed88b0df",
+    "implementation_changed": true,
+    "focused_test_paths": [
+      "tests/integration/test_provider_routing_postgres.py",
+      "tests/integration/test_routing_bootstrap_budget_postgres.py",
+      "tests/unit/test_cost_aware_routing.py",
+      "tests/unit/test_narrative_evaluation_replacement_gate.py",
+      "tests/unit/test_provider_task_views.py",
+      "tests/unit/test_routing_bootstrap.py"
+    ],
+    "checks": [
+      {
+        "exit_code": 0,
+        "gate": "repository-governance"
+      },
+      {
+        "exit_code": 0,
+        "gate": "focused-tests"
+      },
+      {
+        "exit_code": 2,
+        "gate": "canonical-exact-sha-p0"
+      }
+    ],
+    "qualification": "REQUIRED_EXACT_SHA_P0",
+    "qualification_reason": "IMPLEMENTATION_CHANGED",
+    "provider_qualification": "NOT_ASSESSED_BY_PR_GATE",
+    "source_report_sha256": "sha256:1ecbf867165c6dc3961b3332c19ad8fc80ee2b931aab1413573acea21c50a7ae"
+  },
   "gates": [
     {
       "gate_id": "source-preflight",
@@ -275,6 +310,16 @@
         "tests.integration.test_narrative_craft_migration_upgrade_postgres::test_craft_origin_upgrade_preserves_legacy_source_candidates_and_enforces_new_origin",
         "tests.integration.test_narrative_craft_migration_upgrade_postgres::test_craft_origin_fresh_migration_and_rerun_install_validated_constraints"
       ]
+    }
+  ],
+  "pytest_summaries": [
+    {
+      "artifact": "backend-pytest-process.json",
+      "summary": "2829 passed, 15 warnings, 1452 subtests passed in 152.34s (0:02:32)"
+    },
+    {
+      "artifact": "migration-compatibility-process.json",
+      "summary": "2 failed, 90 passed, 13 subtests passed in 340.46s (0:05:40)"
     }
   ],
   "artifacts": [

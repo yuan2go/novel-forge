@@ -1809,16 +1809,50 @@ def _resolve_reconciled_budget(
                    COALESCE(
                        NULLIF(to_jsonb(reservation)->>'accounting_basis',''),
                        'PRICED'
-                   )
+                   ), effect.effect_type,effect.provider_capability_profile
             FROM authority_budget_reservation AS reservation
-            WHERE external_effect_id=%s AND project_id=%s
-              AND status IN ('RESERVED','HELD_UNKNOWN')
-            ORDER BY created_at DESC LIMIT 1
+            JOIN authority_external_effect AS effect USING(external_effect_id)
+            WHERE reservation.external_effect_id=%s AND reservation.project_id=%s
+              AND reservation.status IN ('RESERVED','HELD_UNKNOWN')
+            ORDER BY reservation.created_at DESC LIMIT 1
             """,
             [effect_id, project_id],
         )
         row = uow.cursor.fetchone()
     if row is None:
+        return
+    if row[4] == "model.invoke":
+        from .provider_failure_accounting import failed_provider_budget_decision, successful_provider_budget_settlement
+
+        basis = str(row[3] or "PRICED").upper()
+        reserved_amount = None if basis == "ACCOUNT_ENTITLEMENT" else str(row[1])
+        if outcome == "success":
+            usage = evidence.get("usage") or {}
+            cost = {**(evidence.get("cost") or {}), "accounting_basis": basis}
+            amount, tokens, settlement = successful_provider_budget_settlement(
+                real_model_call=evidence.get("real_model_call") is not False,
+                usage_tokens=int(usage.get("input_tokens") or 0) + int(usage.get("output_tokens") or 0),
+                cost_amount=str(cost.get("amount") or "0"), cost=cost,
+                reserved_amount=reserved_amount, reserved_tokens=int(row[2]),
+                frozen_capability_profile=dict(row[5] or {}),
+            )
+            settle_provider_budget(database_url, reservation_id=str(row[0]), project_id=project_id,
+                                   actual_amount=amount, actual_tokens=tokens,
+                                   evidence={**evidence, **settlement, "reconciled": True})
+        elif outcome in {"not_found", "failed_final", "cancelled"}:
+            decision = failed_provider_budget_decision(
+                dispatched={"outcome": outcome, "provider_evidence": evidence,
+                            **({"request_sent": False} if outcome == "not_found" else {})},
+                reserved_amount=reserved_amount, reserved_tokens=int(row[2]),
+                frozen_capability_profile=dict(row[5] or {}),
+            )
+            if decision["disposition"] == "SETTLE":
+                settle_provider_budget(database_url, reservation_id=str(row[0]), project_id=project_id,
+                    actual_amount=decision["actual_amount"], actual_tokens=decision["actual_tokens"],
+                    evidence={**evidence, **decision, "reconciled": True})
+            else:
+                resolve_provider_budget_failure(database_url, reservation_id=str(row[0]), project_id=project_id,
+                    external_state_unknown=decision["disposition"] == "HOLD_UNKNOWN")
         return
     if outcome == "success":
         normalized = dict(evidence)
@@ -1841,9 +1875,9 @@ def _resolve_reconciled_budget(
             actual_amount=(
                 None
                 if accounting_basis == "ACCOUNT_ENTITLEMENT"
-                else str(normalized.get("actual_cost") or row[1])
+                else str(normalized.get("actual_cost", row[1]))
             ),
-            actual_tokens=int(normalized.get("actual_tokens") or row[2]),
+            actual_tokens=int(normalized.get("actual_tokens", row[2])),
             evidence={
                 **normalized,
                 "reconciled": True,

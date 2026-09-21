@@ -376,6 +376,14 @@ class StoryPlanningGenerationHandlerRegistry:
         self.items = {
             STORY_PLANNING_GENERATION_DEFINITION: generation,
         }
+        from .world_sampling import WORLD_SAMPLE_STAGES, WORLD_SAMPLE_VERSION, WorldSampleHandler
+
+        for stage in WORLD_SAMPLE_STAGES:
+            name = "world.provider.sample." + stage.rsplit(".", 1)[1]
+            self.items[name] = AuthorityHandlerRegistration(definition_name=name, definition_version=WORLD_SAMPLE_VERSION,
+                handler_key="novel_forge." + name, handler_contract_version="world-provider-sample.v1",
+                output_asset_type="world_provider_sample", output_key="world.sample.output", role="primary",
+                completion_topic="world.sample.materialized", handler=WorldSampleHandler(binder, database_url))
 
     @property
     def available_handler_keys(self) -> frozenset[str]:
@@ -389,6 +397,15 @@ class StoryPlanningGenerationHandlerRegistry:
         self, definition_name: str, definition_version: str
     ) -> AuthorityHandlerRegistration:
         item = self.items.get(definition_name)
+        if item is not None and definition_name.startswith("world.provider.sample."):
+            from .world_sampling import WORLD_REFERENCE_SAMPLE_VERSION
+
+            supported = {item.definition_version}
+            if definition_name == "world.provider.sample.evaluate":
+                supported.add(WORLD_REFERENCE_SAMPLE_VERSION)
+            if definition_version not in supported:
+                raise KeyError((definition_name, definition_version))
+            return replace(item, definition_version=definition_version)
         if item is None or definition_version not in {
             STORY_PLANNING_GENERATION_VERSION,
             "1.11.0",

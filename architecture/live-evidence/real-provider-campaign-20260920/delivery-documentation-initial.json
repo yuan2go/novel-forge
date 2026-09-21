@@ -1,0 +1,25 @@
+{
+  "canonical_document_count": 5,
+  "capability_count": 25,
+  "comment_ratchet": {
+    "base_script_comment_count": 13,
+    "base_sha": "2be11a564f376d064d89b58e23c5e147f7db82b3",
+    "base_source_comment_count": 505,
+    "base_source_docstring_count": 122,
+    "base_web_comment_count": 5,
+    "status": "PASS"
+  },
+  "errors": [
+    "qualification_runs[16].qualification_evidence symbol does not exist: tests/integration/test_source_import_runtime_postgres.py:test_native_source_sampling_isolates_model_arms_and_domain_commits"
+  ],
+  "evidence_class": "reality_inventory",
+  "inventory_sha256": "sha256:4a9577718b1818ad849d66ce6db4f3c5ee177c259cb532db5e9a54b88eb97339",
+  "module_docstring_count": 35,
+  "schema_version": "novel-forge.documentation-reality-check.v1",
+  "script_comment_count": 13,
+  "source_comment_count": 505,
+  "source_docstring_count": 122,
+  "status": "FAIL",
+  "tested_sha": "45fa74ace314735112a3447e660c685172c6f79f",
+  "web_comment_count": 5
+}

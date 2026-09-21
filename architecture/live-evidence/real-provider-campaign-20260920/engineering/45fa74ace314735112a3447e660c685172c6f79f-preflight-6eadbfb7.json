@@ -1,0 +1,34 @@
+{
+  "schema_version": "campaign-pr-preflight-projection.v1",
+  "evidence_root_name": "nf-real-provider-final-pr-20260920",
+  "tested_sha": "45fa74ace314735112a3447e660c685172c6f79f",
+  "status": "FAIL",
+  "source_report_sha256": "sha256:7630b7a22237dbbeb6da3654f3cf3e7665b29c2cdb04273a809adf9cc7790a3a",
+  "p0_status": "NOT_RUN",
+  "cleanup": {
+    "status": "NOT_APPLICABLE_NO_P0_RESOURCES"
+  },
+  "classification": "ENVIRONMENT_BASE_REF_MISSING",
+  "pr_governance": {
+    "schema_version": "novel-forge.pr-governance.v1",
+    "status": "FAIL",
+    "head_sha": "45fa74ace314735112a3447e660c685172c6f79f",
+    "base_sha": "9da714973c90140ee108455a022717c8d9bbe77b",
+    "base_implementation_tree_sha": "sha256:a6d47465d6d471ca1175ac2cc43bc4cf9685bc92def95abe34f54e73ee4d2a72",
+    "implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed",
+    "implementation_changed": true,
+    "focused_test_paths": [
+      "tests/integration/test_source_import_runtime_postgres.py"
+    ],
+    "checks": [
+      {
+        "exit_code": 2,
+        "gate": "repository-governance"
+      }
+    ],
+    "qualification": "REQUIRED_EXACT_SHA_P0",
+    "qualification_reason": "IMPLEMENTATION_CHANGED",
+    "provider_qualification": "NOT_ASSESSED_BY_PR_GATE",
+    "error": "repository governance failed; qualification cannot PASS"
+  }
+}

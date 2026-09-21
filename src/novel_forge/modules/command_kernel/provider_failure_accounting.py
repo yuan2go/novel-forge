@@ -203,3 +203,87 @@ def failed_provider_measurement(
     if not measured_amount.is_finite() or measured_amount < 0:
         return None
     return {**dict(usage), "total_tokens": measured_tokens}, cost
+
+
+def successful_provider_budget_settlement(
+    *, real_model_call: bool, usage_tokens: int, cost_amount: str,
+    cost: Mapping[str, Any], reserved_amount: str | None, reserved_tokens: int,
+    frozen_capability_profile: Mapping[str, Any],
+) -> tuple[str | None, int, dict[str, Any]]:
+    """INVARIANT: Synchronous and reconciled model receipts use the same conservative settlement."""
+    from .errors import KernelError
+
+    cost = dict(cost)
+    accounting_basis = str(cost.get("accounting_basis") or "PRICED").upper()
+    if accounting_basis == "ACCOUNT_ENTITLEMENT":
+        return (
+            None,
+            usage_tokens if usage_tokens > 0 else reserved_tokens,
+            {
+                "token_settlement_basis": (
+                    "PROVIDER_USAGE_RECEIPT"
+                    if usage_tokens > 0
+                    else "RESERVATION_CEILING"
+                ),
+                "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+                "accounting_basis": accounting_basis,
+                "cost_status": "UNKNOWN",
+            },
+        )
+    if reserved_amount is None:
+        raise KernelError(
+            "MODEL_EFFECT_COST_ACCOUNTING_CONFLICT",
+            "priced Provider result has no monetary reservation",
+        )
+    if not real_model_call:
+        return (
+            cost_amount,
+            usage_tokens,
+            {
+                "token_settlement_basis": "FIXTURE_RECEIPT",
+                "cost_settlement_basis": "FIXTURE_RECEIPT",
+            },
+        )
+    supports_usage = bool(frozen_capability_profile.get("supports_usage_receipt"))
+    supports_cost = bool(frozen_capability_profile.get("supports_cost_receipt"))
+    actual_tokens = (
+        usage_tokens if supports_usage and usage_tokens > 0 else reserved_tokens
+    )
+    cost_available = (
+        supports_cost
+        and str(cost.get("availability") or "").upper() == "AVAILABLE"
+        and str(cost.get("source") or "").lower() != "not_provided"
+        and cost.get("measurement") != "ESTIMATED_UPPER_BOUND"
+        and cost.get("source") not in {"usage_pricing", "usage_pricing_upper_bound"}
+        and cost.get("provider_billed") is True
+    )
+    usage_pricing = (
+        supports_usage and bool(frozen_capability_profile.get("supports_usage_pricing"))
+        and cost.get("source") in {"usage_pricing_upper_bound", "usage_pricing"}
+        and cost.get("measurement") in {"ESTIMATED_UPPER_BOUND", "PRICED_FROM_PROVIDER_USAGE"}
+        and bool(cost.get("pricing_version")) and bool(cost.get("pricing_snapshot"))
+    )
+    legacy_pricing = bool(
+        supports_cost and cost.get("measurement") == "ESTIMATED"
+        and cost.get("pricing_ref") and cost.get("pricing_snapshot_hash")
+        and cost.get("calculation_basis")
+    )
+    actual_amount = cost_amount if cost_available or usage_pricing or legacy_pricing else reserved_amount
+    return (
+        actual_amount,
+        actual_tokens,
+        {
+            "token_settlement_basis": (
+                "PROVIDER_USAGE_RECEIPT"
+                if actual_tokens == usage_tokens and supports_usage
+                else "RESERVATION_CEILING"
+            ),
+            "cost_settlement_basis": (
+                "PROVIDER_COST_RECEIPT" if cost_available
+                else "LEGACY_PRICING_ESTIMATE" if legacy_pricing
+                else "FROZEN_USAGE_PRICING" if usage_pricing and cost.get("measurement") == "PRICED_FROM_PROVIDER_USAGE"
+                else "FROZEN_USAGE_PRICING_UPPER_BOUND" if usage_pricing
+                else "RESERVATION_CEILING"
+            ),
+        },
+    )

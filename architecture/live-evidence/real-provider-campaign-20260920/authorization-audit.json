@@ -93,5 +93,55 @@
     }
   ],
   "new_scope_grant": null,
-  "development_assistant_accounting": "UNKNOWN"
+  "development_assistant_accounting": "UNKNOWN",
+  "runtime_inspection": {
+    "scope": "current Docker container status and two existing operator route-environment configuration key sets",
+    "checked_at": "2026-09-20T14:04:53.169632+00:00",
+    "running_containers": "TWO_CAMPAIGN_P0_FIXTURE_POSTGRESQL_ONLY",
+    "existing_novel_data_container": "STOPPED",
+    "existing_novel_objects_container": "STOPPED",
+    "existing_operator_routes": "CODEX_ENTITLEMENT_CONFIGURATIONS",
+    "new_deepseek_configuration_in_checked_operator_routes": false,
+    "business_database_started": false,
+    "business_database_native_policy_live_query": "NOT_RUN_DATABASE_STOPPED",
+    "codex_remote_entitlement_remaining": "NOT_LIVE_VERIFIED",
+    "credentials_printed": false,
+    "running_container_names": [
+      "nf-p0-bcc92f1b307641b995c317c596cc5c9c-authority-postgres-test-1",
+      "nf-p0-8eb581c83f534c15a7dc58ae2d07f504-authority-postgres-test-1"
+    ]
+  },
+  "authorization_recheck": {
+    "checked_at": "2026-09-20T17:22:59.205421+00:00",
+    "operator_authorization_files": [
+      {
+        "resource_ref": "operator-authorization:yu-xian-zhi-wai",
+        "content_hash": "sha256:dfe5c91b4c1ec2a1c5f3ab2b6e18066dbb41abbf87bc73a687c3fcc408361d8e",
+        "unchanged": true
+      },
+      {
+        "resource_ref": "operator-authorization:guofeng-xuanhuan-01",
+        "content_hash": "sha256:69b3aee7dcd7c90a30df2e81d4703cdeea563b6de676a413f0563d84bed05fa5",
+        "unchanged": true
+      }
+    ],
+    "current_operator_grant_count": 2,
+    "new_campaign_manifest_found_in_runtime_inventory": false,
+    "deepseek_api_key_present_in_current_process": false,
+    "secret_values_read_or_printed": false,
+    "remaining_entitlement": "NOT_LIVE_VERIFIED"
+  },
+  "current_request_authority": {
+    "source": "Current user WP",
+    "authorized_business_actions": [
+      "Source analysis and governed knowledge use with permitted material",
+      "reference evaluation",
+      "original validation work if no compatible existing work",
+      "governed Codex escalation",
+      "implementation and local verification"
+    ],
+    "repeat_business_intent_confirmation_required": false,
+    "remaining_paid_scope_gap": "Finite DeepSeek paid budget and reusable remaining Codex entitlement are not established for this campaign; existing caps cannot be summed, reset or treated as unused",
+    "durable_campaign_policy_binding": "NOT_REGISTERED"
+  }
 }

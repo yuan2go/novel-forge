@@ -1,10 +1,10 @@
 {
   "status": "CONFIGURATION_VALIDATED_NO_PROVIDER_CALL",
-  "source_sha": "bbca0e7a4a0ed61381d0175272e9fe1763d7137a",
-  "implementation_identity": "sha256:2a0f369f4e29d34f5d56bbf9dcd9d0401c568c0188050d3a389640d95bbfb408",
+  "source_sha": "45fa74ace314735112a3447e660c685172c6f79f",
+  "implementation_identity": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed",
   "project_id": "first-novel-pilot-20260912",
   "book_id": "guofeng-xuanhuan-01",
-  "run_key": "campaign-configuration-inspection-v3-20260920",
+  "run_key": "campaign-configuration-inspection-final-20260920",
   "stage": "CONFIGURATION",
   "real_provider": "NOT_RUN",
   "human_editorial": "NOT_RUN",
@@ -25,7 +25,7 @@
   "execute_flag": false,
   "provider_calls": 0,
   "business_database_writes": 0,
-  "source_report_sha256": "sha256:6b103a1c94f3e0a65d21d0168e592b51e8a7e6d162acbde3f1e26679255e8d21",
+  "source_report_sha256": "sha256:17e2e8514a50e970e88f7ba25e668e2eb8f1e0a4bca9dc3d8231d1261d5b88b2",
   "restricted_runtime_relative_path": "guofeng-xuanhuan-01/frozen-production-v1",
   "wp_scope_compatible": false,
   "scope_gaps": [
@@ -43,5 +43,5 @@
     "freeze.json": "sha256:6df11f8c5b977fb213056f26b906fea6fb412583ca79fb611395608138b1239f",
     "formation.json": "sha256:b33ee6104e9e17af71d095a87e9343b5513f37b17b79645f5f54292952dfa92a"
   },
-  "prior_preflight": "native-config-preflight-bf77e0892c0b.json"
+  "prior_preflight": "native-config-preflight-bbca0e7a4a0e.json"
 }
