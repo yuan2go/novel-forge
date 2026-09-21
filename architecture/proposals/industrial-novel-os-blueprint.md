@@ -229,3 +229,40 @@ required before changing the affected current contract.
 Unresolved decision count: **7**. Foundation ownership is resolved by the implemented
 single Story Design owner and Book Design's immutable binding; a physical service split
 is not a prerequisite for one-fact/one-Authority semantics.
+
+
+## WP-NARRATIVE-PRODUCTION-CLOSURE-01 execution checklist
+
+PROPOSAL / NOT_RUNTIME_AUTHORITY. This native follow-up uses baseline
+`e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332`, implementation identity
+`sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed`,
+and migration head `20260920_0139_narrative_reference_sampling`.
+The former creative assimilation proposal was removed by `adf3cd97` after projection;
+its WP01 audit remains fixed at `c2ff5775f9b636ad983f8b1c77425f3bd0f9aaf4`
+in Git. This checklist neither restores that terminal proposal nor renumbers WP02–WP05.
+Current Craft delivery is reused; catalog expansion is outside this batch.
+
+| Priority / item | Verified gap and native owner | Deliverable / dependency | Acceptance |
+| --- | --- | --- | --- |
+| P0 WP02 contracts | Review window subtracts UTF-8 bytes from token allocation; ReReview provider view drops original prose; generic judgment enum admits invalid category combinations | Review/Chapter/Production Execution meter, versioned schema, exact comparison and edit scopes; preserve old frozen contracts | Chinese boundary and overflow; schema-normalization-domain combinations; materialized request contains before/after; exact Unicode edits and scene consistency |
+| P0 Cross-Chapter × Craft | ordinary and Quality repair use different payloads | Chapter handlers retain adopted strategy, source window and diagnosis lineage through corrective paths and selection | combined provider-input, old-candidate retention and unresolved multi-round tests; PostgreSQL receipt/commit-loss replay |
+| P0 bounded experiment | previous campaign has no grant for this scope; no independent editorial evidence | extend native campaign/Book/Chapter commands with original six-task controls, freeze/resume/export and stage caps; no new ledger | two-case admission before six-case expansion; failures and unknown effects retained; real calls require matching grant and qualification |
+| P1 WP05 exact author edit | EditorPage edits only local state and sends disk-path requests; no actual text submission | Chapter-owned exact-version candidate command/query, trusted permissions, CAS/idempotency; editor before/after, save and accept/reject | cross-Book and stale-base rejection, duplicate/retry recovery; real browser edit-save-review-decision journey |
+| P1 long manuscript review | accepted observations/recaps cannot establish prose coverage | existing Book Follow-up/Review frozen manifest, bounded windows, evidence aggregation and native action consumers | exact coverage/exclusions, drift, incremental resume and findings-to-revision/Plan Change/editorial pending item |
+| P1 Craft effect | delivery controls do not prove literary benefit | separate frozen Craft intervention and blinded human evaluation input with disagreements | adoption/implementation/model/human evidence separated; no synthetic reader certification |
+| P2 private actors | optional comparison has no benefit evidence | bounded private-observation action proposals and world adjudication inside World Preparation | no private leakage, partial failure does not advance world; disabled path unchanged |
+| P2 semantic impact | exact dependencies do not prove semantic effects | evidence-located impact candidates and explicit confirmation in Plan Change/workbench | inferred impacts cannot authorize invalidation; approved future scope only |
+| P2 completion | native case records only BLOCKED/REJECTED without an authorized human policy | versioned policy, exact manuscript/coverage signatures and revocation within Book completion | missing authority/evidence blocks; drift invalidates current signature while retaining history |
+
+Implementation proceeds in the order above with independent consumers developed in
+parallel, then integrated against one release identity. Run focused tests during changes,
+then complete exact-SHA PR governance, Web checks and browser acceptance. A new migration
+is allowed only for a demonstrated persistence invariant. Engineering, real Provider,
+human, longitudinal and production evidence remain separate. Each unexecuted experiment
+retains its exact missing grant/credential/qualification fields and executable resume path.
+
+Market observations remain HOLD pending a rights-backed source, comparable cohort and
+missing/time semantics consumed by topic proposals. A generic graph remains HOLD pending
+a concrete query not served by native accepted/inferred indexes. New content formats
+remain HOLD pending a version-bound accepted-manuscript consumer and separate resource
+or publication authorization. These do not block P0/P1 and add no platform in this batch.
