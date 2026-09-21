@@ -3,9 +3,9 @@
   "baseline_sha": "e41a2c22e4f24fdb89e6bb2db8a3e00039e7e332",
   "baseline_implementation_tree_sha": "sha256:adf61a4234405b63f0edcfbd2ab942156bd98e0e544e3ad19b97fafd95778eed",
   "baseline_migration_head": "20260920_0139_narrative_reference_sampling",
-  "implementation_commit_sha": "25375164b8dd364ae03153dc4dca971f16f63769",
-  "implementation_tree_sha": "sha256:ec8d7d361b84aa39eb6f06b50bcc62cbf1015a4865725164c5f2c711d703ef2c",
-  "implementation_path_count": 1316,
+  "implementation_commit_sha": "da7533c6eae818e41d4811b0691160e41c77441b",
+  "implementation_tree_sha": "sha256:7e9227225e6f3270c206eb13ebe91874f931701176981dd74f977f4127d46391",
+  "implementation_path_count": 1322,
   "migration_head": "20260921_0141_author_chapter_replacement",
   "frontend_source_records": [
     {
@@ -636,7 +636,7 @@
   "new_real_provider_cost": 0,
   "existing_account_balance_and_unknown_usage": "NOT_VERIFIED; applicable native grant read failed OperationalError; no permission inferred from historical grants",
   "full_governance_evidence_root": "/Volumes/DevSSD/Development/Workspace/evidence/nf-closure-0a18d60d9f85",
-  "ci_artifact": "repository-pr-governance-${GITHUB_SHA}; retained by core-os-ci workflow",
+  "ci_artifact": "NOT_RUN: GitHub Actions permissions.enabled=false confirmed 2026-09-21; workflow artifact template is repository-pr-governance-${GITHUB_SHA} if enabled by repository owner",
   "retained_development_failures": [
     {
       "run": "unit-r1",
@@ -651,5 +651,12 @@
       "resolution": "Register migration0141 and concrete new tests/instructions; bind projection to committed implementation; final exact-SHA rerun required"
     }
   ],
-  "expansion_decision": "HOLD until compatible finite grant, current Provider qualification, two original pilot pairs, independent review and stage release; no literary quality claim from fixture scores"
+  "expansion_decision": "HOLD until compatible finite grant, current Provider qualification, two original pilot pairs, independent review and stage release; no literary quality claim from fixture scores",
+  "previous_freeze": {
+    "implementation_commit_sha": "25375164b8dd364ae03153dc4dca971f16f63769",
+    "implementation_tree_sha": "sha256:ec8d7d361b84aa39eb6f06b50bcc62cbf1015a4865725164c5f2c711d703ef2c",
+    "implementation_path_count": 1316
+  },
+  "integrated_origin_main_sha": "84035e3c57ce263fb4b52b427f41d4f89e6a7ac2",
+  "governance_base_sha": "84035e3c57ce263fb4b52b427f41d4f89e6a7ac2"
 }

@@ -1,0 +1,83 @@
+{
+  "schema_version": "narrative-closure-world-merge-validation.v1",
+  "evidence_state": "EXECUTABLE",
+  "evidence_kind": "SCRIPTED_POSTGRESQL",
+  "observed_implementation_commit": "3cb4d1f704e59b8c9291c5f676bf7cec37f5eae6",
+  "exact_sha_qualification": "NOT_CLAIMED; tests ran before commit; subsequent full gate required",
+  "reports": [
+    {
+      "artifact": "merge-actor-longform-junit.xml",
+      "sha256": "5f62db6d68c035d3456eda877df0b448515a0bbb6a1ddf0047929caac6aef61f",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "2",
+          "time": "155.266",
+          "timestamp": "2026-09-21T09:28:13.444023+08:00",
+          "hostname": "chenjiangfengdeMac-mini.local"
+        }
+      ],
+      "failures": [
+        {
+          "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[True]",
+          "failures": [
+            {
+              "message": "psycopg_pool.PoolTimeout: pool initialization incomplete after 5.0 sec"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "artifact": "merge-world-sampling-longform-junit.xml",
+      "sha256": "1e1a6b721504d25269c308b173593fd01d471dd8e3b1a68a7ea5ac12b549d385",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "5",
+          "time": "115.544",
+          "timestamp": "2026-09-21T09:31:57.859435+08:00",
+          "hostname": "chenjiangfengdeMac-mini.local"
+        }
+      ],
+      "failures": []
+    },
+    {
+      "artifact": "merge-world-sampling-final-junit.xml",
+      "sha256": "7125babcbacf0c230c8edab0c344cb0814fe7d18ff0ab4f05570936eb30a14ac",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "1",
+          "time": "78.721",
+          "timestamp": "2026-09-21T09:34:19.472654+08:00",
+          "hostname": "chenjiangfengdeMac-mini.local"
+        }
+      ],
+      "failures": []
+    }
+  ],
+  "final_world_recovery_test": [
+    "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[True]"
+  ],
+  "resolution": "World reference projection reuses its current cursor and AuthorityAssetDocumentRepository. Final regression forbids constructing a second World sampling UoW; password-stripped DSN is no longer used. Original hash/source/permission/lineage checks retained. Intermediate DSN workaround replaced before final source freeze.",
+  "source_hashes": {
+    "src/novel_forge/modules/story_planning_runtime/world_sampling.py": "be6894452a1e38dfb7c4a52355f9c8927f06611c09cb3cf63d3d164204dbeba8",
+    "src/novel_forge/modules/story_planning_runtime/world_preparation.py": "38e482e507b8a8760d374ea5f0b5bf277380c151f3a1299cba45d01a178039bf",
+    "src/novel_forge/modules/capability_packs/validation_deployment.py": "703872e117eb7fc9342aa0b381203777b1d1d81f2a6960bbc88d2c4153ec17be",
+    "tests/integration/world_provider_sampling_support.py": "7d4ce111acd9a338752ea14be447a013749455aa8e17b9a0dd02401766552b79",
+    "tests/integration/test_quality_validation_pack_deployment_postgres.py": "36115e3845c475bcd4cfc1c5c9e1447ac3bd60c915e8179fb6deb0ee71d4ba56"
+  },
+  "real_provider": "NOT_RUN",
+  "human": "NOT_RUN",
+  "production": "NOT_PROVEN"
+}
