@@ -163,7 +163,7 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
     if policy["schema_version"] == "narrative-craft-budget.v2":
         budget_assessment.update(cadence_class=cadence_class, policy_version=policy["schema_version"], temporal_budget_applied=temporal_budget_applied, classification="CONFIGURABLE_POLICY", creative_benefit="NOT_PROVEN")
     if usage_spec:
-        budget_assessment.update(accepted_usage_history=[accepted_history[key] for key in sorted(accepted_history)], usage_type=type_id, usage_type_policy=dict(usage_spec), manifestation_count=len(matching),
+        budget_assessment.update(accepted_usage_history=[accepted_history[key] for key in sorted(accepted_history) if accepted_history[key].get("mechanism_id") == identity], usage_type=type_id, usage_type_policy=dict(usage_spec), manifestation_count=len(matching),
             realized_phase_count=len({(item.get("usage", {}).get("instance_id", item["use_id"]), item.get("usage", {}).get("phase", "LEGACY")) for item in matching}),
             temporal_budget_applied=temporal_budget_applied, policy_version=policy["schema_version"])
     return {

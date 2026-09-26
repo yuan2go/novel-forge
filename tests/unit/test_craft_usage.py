@@ -141,3 +141,30 @@ def test_scope_cannot_alias_another_book_arc_or_chapter():
     first['usage']['scope_binding']['book_id'] = 'other-book'
     with pytest.raises(KernelError, match='CRAFT_PHASE_PREDECESSOR_UNAVAILABLE'):
         strategy(selection(history=(first,)), previous=first)
+
+
+def test_history_retains_old_open_instances_and_uncertainty_without_reviving_payoffs():
+    from novel_forge.modules.mkaos_authority.runtime_usage import _continuing_usage
+
+    setup = accepted(strategy(selection('staged'), phase='SETUP'), chapter=4)
+    development = accepted(strategy(selection('staged', history=(setup,)), phase='DEVELOPMENT', previous=setup), chapter=5)
+    payoff = accepted(strategy(selection('staged', history=(setup, development)), phase='PAYOFF', previous=development), chapter=6)
+    assert _continuing_usage([development, setup], set()) == [development]
+    assert _continuing_usage([payoff, development, setup], set()) == []
+    uncertain = {**development, 'effect_status': 'UNCERTAIN'}
+    retained = _continuing_usage([uncertain, setup], set())
+    assert retained == [uncertain, setup]
+    with pytest.raises(KernelError, match='CRAFT_PHASE_PREDECESSOR_UNAVAILABLE'):
+        strategy(selection('staged', history=retained), phase='DEVELOPMENT', previous=setup)
+    assert _continuing_usage([payoff], {payoff['acceptance_id']}) == [payoff]
+
+
+def test_continuing_neighbor_does_not_resurrect_an_already_completed_old_instance():
+    from novel_forge.modules.mkaos_authority.runtime_usage import _continuing_usage
+
+    staged = accepted(strategy(selection('staged'), phase='SETUP'), chapter=4)
+    neighbor = accepted(strategy(selection()), chapter=4)
+    neighbor['use_id'] = 'persistent-neighbor'
+    neighbor['usage']['instance_id'] = 'neighbor-instance'
+    identities = {(neighbor['acceptance_id'], neighbor['use_id'])}
+    assert _continuing_usage([staged, neighbor], set(), identities) == [neighbor]

@@ -408,9 +408,13 @@ problem/choice/order/effect/interference/preservation/abstention rationales. A c
 requires the latest successful exact Card/instance/policy/accepted-prose proof. A failed
 manifestation remains evidence without advancing or stranding the phase; unresolved later
 uncertainty blocks progression. A completed instance cannot bypass temporal limits, and all
-new instances in the same plan jointly consume remaining frequency. The bounded accepted
-history query currently reads at most 100 accepted chapters; absent older predecessors
-cannot authorize continuation. Long-range open-instance retrieval remains incomplete.
+new instances in the same plan jointly consume remaining frequency. Legacy history keeps
+its recent 100-acceptance window. Explicit v3 selection also retrieves the latest successful
+and unresolved uncertain uses of older Book/Arc instances from the same acceptance ledger.
+Exact use identities prevent a neighboring persistent use from reviving a completed phase.
+The configurable retrieval budget defaults to 4,096 acceptance records; exhaustion stops
+selection with an explicit evidence-budget error, never a claim of no legal continuation.
+Only the matching mechanism history is copied into each candidate's phase evidence.
 Plan/Intent/Memo retain complete immutable strategies. A typed Memo's Context projection
 may replace an identical strategy with its exact protected ExecutionIntent reference; it
 cannot omit the only copy or change the existing Context maximum.

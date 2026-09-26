@@ -263,6 +263,27 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
                 assert len({row["usage"]["instance_id"] for row in final_usage}) == 1
                 assert final_usage[0]["usage"]["accepted_predecessor"]["acceptance_id"] == first_usage[0]["acceptance_id"]
                 state["native_proof"]["accepted_phase_usage"] = final_usage
+                historical = list_accepted_craft_usage(DATABASE_URL, project_id=snapshot.project_id, book_id=snapshot.book_id, limit=0, include_continuing=True)
+                assert historical == [final_usage[0]]
+                assert list_accepted_craft_usage(DATABASE_URL, project_id=snapshot.project_id, book_id=snapshot.book_id, limit=0) == []
+                with pytest.raises(KernelError, match="CRAFT_CONTINUATION_HISTORY_BUDGET_EXHAUSTED"):
+                    list_accepted_craft_usage(DATABASE_URL, project_id=snapshot.project_id, book_id=snapshot.book_id, limit=100, include_continuing=True, continuation_acceptance_limit=1)
+                from types import SimpleNamespace
+                from tests.integration.test_longform_prose_editorial_postgres import _automatic_review
+                coordinator, scope, model, review_id = _automatic_review(
+                    {"project_id": snapshot.project_id, "workspace_id": snapshot.workspace_id, "principal": composition.principal, "book": SimpleNamespace(book_run_id=admitted.book_run_id)},
+                    relation_window_limit=2, relation_retrieval_version="accepted-state-relations.v2",
+                )
+                for _ in range(20):
+                    progress = coordinator.automatic_tick(**scope, run_id=review_id)
+                    if progress.get("review_complete"):
+                        break
+                assert progress["review_complete"]
+                relations = [window for window in progress["manifest"]["windows"] if window.get("relation_hypothesis")]
+                assert relations and all(window["relation_hypothesis"]["basis"] == "ACCEPTED_STATE_IDENTITIES_AND_CAUSES" for window in relations)
+                assert {span["chapter_number"] for window in relations for span in window["spans"]} == {1, 2}
+                assert all(row["indexed"] > 0 for row in progress["manifest"]["relation_retrieval"]["source_coverage"])
+                state["native_proof"]["accepted_state_review"] = {"run_id": review_id, "manifest_digest": progress["manifest"]["manifest_digest"], "relation_windows": len(relations), "real_model_call": False}
             else:
                 cooled = next(row for row in later["rejected"] if row["knowledge_card_asset_version_id"] == strategy["uses"][0]["knowledge_card_asset_version_id"])
                 assert cooled["reason"] == "CRAFT_COOLDOWN"

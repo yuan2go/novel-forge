@@ -5030,8 +5030,10 @@ class PostgresPlanningExecutionPreparer:
             return frozen_context, tuple(documents)
         recent_craft_usage = []
         if hasattr(self.mkaos, "list_accepted_craft_usage"):
+            history_options = {"include_continuing": True} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") == "narrative-craft-budget.v3" else {}
             recent_craft_usage = self.mkaos.list_accepted_craft_usage(
                 project_id=command.project_id, book_id=command.book_id, limit=100,
+                **history_options,
             )
         need = _planning_narrative_intelligence_need(
             command=command,

@@ -272,6 +272,7 @@ def list_runtime_selections(
 
 def list_accepted_craft_usage(
     database_url: str, *, project_id: str, book_id: str, limit: int = 100,
+    include_continuing: bool = False, continuation_acceptance_limit: int = 4096,
 ) -> list[dict[str, Any]]:
     from novel_forge.modules.review.craft import craft_review_targets
     from novel_forge.modules.review.diagnostics import prose_hash, validate_location
@@ -279,6 +280,65 @@ def list_accepted_craft_usage(
     from .craft_selection import craft_pattern_signature
 
     with AuthorityUnitOfWork(database_url) as uow:
+        recent_ids = None
+        if include_continuing:
+            from novel_forge.modules.command_kernel.errors import KernelError
+            if type(continuation_acceptance_limit) is not int or continuation_acceptance_limit < 1:
+                raise KernelError("CRAFT_HISTORY_BUDGET_INVALID", "Continuation retrieval requires a positive acceptance budget")
+            uow.cursor.execute(
+                """WITH accepted AS (
+                    SELECT acceptance.acceptance_id, acceptance.chapter_number, draft.content AS draft,
+                           review.content AS review
+                    FROM authority_book_chapter_acceptance acceptance
+                    JOIN authority_asset_version outcome
+                      ON outcome.asset_version_id=acceptance.chapter_outcome_asset_version_id
+                    JOIN authority_asset_version draft
+                      ON draft.asset_version_id=outcome.content->>'accepted_draft_asset_version_id'
+                    JOIN authority_asset_version quality
+                      ON quality.asset_version_id=outcome.content->>'quality_aggregate_asset_version_id'
+                    JOIN authority_asset_version review
+                      ON review.asset_version_id=quality.content->>'review_asset_version_id'
+                    WHERE acceptance.project_id=%s AND acceptance.status='COMMITTED'
+                      AND outcome.content->>'book_id'=%s
+                ), recent AS (
+                    SELECT acceptance_id FROM accepted
+                    ORDER BY chapter_number DESC, acceptance_id LIMIT %s
+                ), latest AS (
+                    SELECT DISTINCT ON (use.value #>> '{usage,instance_id}', check_row.value->>'effect_status')
+                           acceptance_id, chapter_number, use.value->'usage' AS usage, use.value->>'use_id' AS use_id,
+                           check_row.value->>'effect_status' AS effect_status
+                    FROM accepted
+                    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(draft #> '{realization_contract,craft_strategy,uses}', '[]'::jsonb)) use(value)
+                    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(review->'craft_checks', '[]'::jsonb)) check_row(value)
+                    WHERE use.value->>'use_id'=check_row.value->>'use_id'
+                      AND use.value #>> '{usage,type_policy,mode}' IN ('PERSISTENT','PHASED')
+                      AND use.value #>> '{usage,type_policy,scope}' IN ('BOOK','ARC')
+                      AND use.value #>> '{usage,instance_id}' IS NOT NULL
+                      AND check_row.value->>'effect_status' IN ('ACHIEVED','UNCERTAIN')
+                    ORDER BY use.value #>> '{usage,instance_id}', check_row.value->>'effect_status',
+                             chapter_number DESC, use.value->>'use_id' DESC, acceptance_id
+                ), continuing AS (
+                    SELECT acceptance_id, use_id FROM latest observation
+                    WHERE (effect_status='ACHIEVED' AND (
+                        usage #>> '{type_policy,mode}'='PERSISTENT'
+                        OR usage->>'phase' <> usage #>> ARRAY['type_policy','phases',
+                            (jsonb_array_length(usage #> '{type_policy,phases}')-1)::text]))
+                       OR (effect_status='UNCERTAIN' AND NOT EXISTS (
+                           SELECT 1 FROM latest achieved WHERE achieved.effect_status='ACHIEVED'
+                             AND achieved.usage->>'instance_id'=observation.usage->>'instance_id'
+                             AND achieved.chapter_number > observation.chapter_number))
+                ) SELECT acceptance_id, bool_or(is_recent), array_agg(use_id) FILTER (WHERE use_id IS NOT NULL) FROM (
+                    SELECT acceptance_id, TRUE AS is_recent, NULL::text AS use_id FROM recent
+                    UNION ALL SELECT acceptance_id, FALSE AS is_recent, use_id FROM continuing
+                ) identities GROUP BY acceptance_id ORDER BY acceptance_id LIMIT %s""",
+                [project_id, book_id, limit, continuation_acceptance_limit + 1],
+            )
+            identities = uow.cursor.fetchall()
+            if len(identities) > continuation_acceptance_limit:
+                raise KernelError("CRAFT_CONTINUATION_HISTORY_BUDGET_EXHAUSTED", "Accepted continuation retrieval exceeded its evidence budget; incomplete history cannot authorize a new or continuing instance")
+            recent_ids = {identity for identity, recent, _ in identities if recent}
+            continuing_ids = {(identity, use_id) for identity, _, uses in identities for use_id in uses or []}
+            accepted_ids = [identity for identity, _, _ in identities]
         uow.cursor.execute(
             """SELECT acceptance.acceptance_id, acceptance.chapter_number,
                       draft.asset_version_id, draft.content_hash, draft.content,
@@ -294,8 +354,8 @@ def list_accepted_craft_usage(
                  ON review.asset_version_id=quality.content->>'review_asset_version_id'
                WHERE acceptance.project_id=%s AND acceptance.status='COMMITTED'
                  AND outcome.content->>'book_id'=%s
-               ORDER BY acceptance.chapter_number DESC, acceptance.acceptance_id LIMIT %s""",
-            [project_id, book_id, limit],
+               """ + ("AND acceptance.acceptance_id=ANY(%s) ORDER BY acceptance.chapter_number DESC, acceptance.acceptance_id" if include_continuing else "ORDER BY acceptance.chapter_number DESC, acceptance.acceptance_id LIMIT %s"),
+            [project_id, book_id, accepted_ids if include_continuing else limit],
         )
         rows = uow.cursor.fetchall()
     result, seen = [], set()
@@ -330,4 +390,26 @@ def list_accepted_craft_usage(
                 "evidence_class": check["evidence_class"],
                 "usage_basis": "ACCEPTED_PROSE_REVIEW", "reader_effect_proven": False,
             })
-    return result
+    return _continuing_usage(result, recent_ids, continuing_ids) if recent_ids is not None else result
+
+
+def _continuing_usage(rows: list[dict[str, Any]], recent_ids: set[str], continuing_ids: set[tuple[str, str]] | None = None) -> list[dict[str, Any]]:
+    if continuing_ids is not None:
+        rows = [row for row in rows if row["acceptance_id"] in recent_ids or (row["acceptance_id"], row["use_id"]) in continuing_ids]
+    groups = {}
+    selected = {(row["acceptance_id"], row["use_id"]) for row in rows if row["acceptance_id"] in recent_ids}
+    for row in rows:
+        usage = row.get("usage") or {}
+        spec = usage.get("type_policy") or {}
+        if spec.get("mode") in {"PERSISTENT", "PHASED"} and spec.get("scope") in {"BOOK", "ARC"}:
+            groups.setdefault(usage["instance_id"], []).append(row)
+    for group in groups.values():
+        achieved = max((row for row in group if row["effect_status"] == "ACHIEVED"), key=lambda row: (row["chapter"], row["use_id"]), default=None)
+        uncertain = max((row for row in group if row["effect_status"] == "UNCERTAIN"), key=lambda row: (row["chapter"], row["use_id"]), default=None)
+        if achieved is not None:
+            usage = achieved["usage"]
+            if usage["type_policy"]["mode"] == "PERSISTENT" or usage["phase"] != usage["type_policy"]["phases"][-1]:
+                selected.add((achieved["acceptance_id"], achieved["use_id"]))
+        if uncertain is not None and (achieved is None or uncertain["chapter"] >= achieved["chapter"]):
+            selected.add((uncertain["acceptance_id"], uncertain["use_id"]))
+    return [row for row in rows if (row["acceptance_id"], row["use_id"]) in selected]

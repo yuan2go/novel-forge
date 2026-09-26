@@ -659,12 +659,14 @@ class MkaosAuthorityQuery:
 
     def list_accepted_craft_usage(
         self, *, project_id: str, book_id: str, limit: int = 100,
+        include_continuing: bool = False,
     ) -> list[dict[str, Any]]:
         from .runtime_usage import list_accepted_craft_usage
 
         _validate(project_id, limit)
         return list_accepted_craft_usage(
             self.database_url, project_id=project_id, book_id=book_id, limit=limit,
+            include_continuing=include_continuing,
         )
 
     def list_runtime_selections(
