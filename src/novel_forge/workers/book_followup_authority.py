@@ -150,6 +150,11 @@ def main() -> int:
         query=query,
         principal=principal,
     )
+    from novel_forge.modules.book_followup_authority.prose_coordinator import (
+        BookProseReviewCoordinator,
+    )
+
+    prose = BookProseReviewCoordinator(book.followup)
     runtime_jobs = RuntimeJobAuthority(settings.database_url)
     lease_seconds = max(
         5, int(os.environ.get("NOVEL_FORGE_AUTHORITY_LEASE_SECONDS") or "120")
@@ -163,9 +168,7 @@ def main() -> int:
     poll_seconds = max(
         0.05, float(os.environ.get("NOVEL_FORGE_AUTHORITY_POLL_SECONDS") or "1")
     )
-    batch_size = max(
-        1, int(os.environ.get("NOVEL_FORGE_AUTHORITY_BATCH_SIZE") or "10")
-    )
+    batch_size = max(1, int(os.environ.get("NOVEL_FORGE_AUTHORITY_BATCH_SIZE") or "10"))
     stopping = False
     project_ids = (
         () if "*" in principal.project_scope else tuple(sorted(principal.project_scope))
@@ -190,9 +193,7 @@ def main() -> int:
                 actor_id=principal.principal_id,
                 limit=batch_size,
             )
-            coordinator.reconcile_completed_arc_checkpoint_followups(
-                limit=batch_size
-            )
+            coordinator.reconcile_completed_arc_checkpoint_followups(limit=batch_size)
             schedule_book_followup_admission_jobs(
                 coordinator,
                 runtime_jobs,
@@ -228,9 +229,35 @@ def main() -> int:
                 except WorkerProgrammingError as error:
                     supervisor.fatal(error)
                     return WorkerSupervisor.FATAL_EXIT_CODE
+            automatic = prose.automatic_candidates(
+                principal=principal, limit=batch_size
+            )
+            if automatic:
+                supervisor.polled(idle=False)
+                try:
+                    failures = boundary.execute_batch(
+                        automatic,
+                        identity=lambda item: (item["project_id"], item["run_id"]),
+                        execute=lambda item: prose.automatic_tick(
+                            principal=principal, **item
+                        ),
+                        on_task_start=supervisor.operation_started,
+                        on_task_finish=lambda operation_id, succeeded: (
+                            supervisor.operation_finished(
+                                operation_id, succeeded=succeeded
+                            )
+                        ),
+                    )
+                    supervisor.batch_completed(failures)
+                except WorkerProgrammingError as error:
+                    supervisor.fatal(error)
+                    return WorkerSupervisor.FATAL_EXIT_CODE
             pending = scheduler.pending_operations(
                 limit=batch_size,
                 project_ids=project_ids,
+                excluded_operation_ids=prose.blocked_dispatch_operations(
+                    project_ids=project_ids
+                ),
             )
             if pending:
                 supervisor.polled(idle=False)
@@ -261,7 +288,7 @@ def main() -> int:
                 except WorkerProgrammingError as error:
                     supervisor.fatal(error)
                     return WorkerSupervisor.FATAL_EXIT_CODE
-            if admission_claim is None and not pending:
+            if admission_claim is None and not pending and not automatic:
                 supervisor.polled(idle=True)
                 time.sleep(poll_seconds)
         supervisor.draining()

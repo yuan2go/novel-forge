@@ -447,6 +447,33 @@ def build_longform_prose_review_pack_profile(
     )
 
 
+def build_longform_prose_review_sample_pack_profile(
+    source: LongformCapabilityPackProfile, *, operation_definition_hash: str,
+) -> LongformCapabilityPackProfile:
+    from novel_forge.modules.book_followup_authority.prose_sampling import (
+        PROSE_SAMPLE_DEFINITION, PROSE_SAMPLE_VERSION, PROSE_SAMPLE_WORKFLOW, PROSE_SAMPLE_TYPE,
+    )
+
+    _require_hash(operation_definition_hash)
+    manifest = deepcopy(source.manifest)
+    node = manifest["workflow_template"]["nodes"][0]
+    if node["operation_name"] != "longform.prose_review" or len(manifest["workflow_template"]["nodes"]) != 1:
+        raise ValueError("prose sampling must retain the formal prose review producer")
+    node.update(operation_name=PROSE_SAMPLE_DEFINITION,
+        operation_definition_ref=PROSE_SAMPLE_DEFINITION + "@" + PROSE_SAMPLE_VERSION,
+        operation_definition_hash=operation_definition_hash,
+        handler_key="novel_forge.book_followup_authority." + PROSE_SAMPLE_DEFINITION,
+        output_asset_types=[PROSE_SAMPLE_TYPE])
+    pack_id = source.pack_id + ".samples"
+    manifest["identity"].update(pack_id=pack_id, version=PROSE_SAMPLE_VERSION,
+        name="Longform Prose Reviewer Sample Pack", description="Independent reviewer benchmark samples remain ineligible for production findings.")
+    manifest["workflow_template"].update(workflow_id=PROSE_SAMPLE_WORKFLOW.split("@")[0], workflow_version=PROSE_SAMPLE_VERSION)
+    manifest["workflow_template"]["completion"]["required_output_asset_types"] = [PROSE_SAMPLE_TYPE]
+    for gate in manifest["evaluation"]["required_gates"]:
+        gate["required_evidence"] = [PROSE_SAMPLE_TYPE if kind == "longform_prose_review_report" else kind for kind in gate["required_evidence"]]
+    return LongformCapabilityPackProfile(pack_id, PROSE_SAMPLE_WORKFLOW, manifest, deepcopy(source.artifact_catalog), source.agent_skill_ref)
+
+
 def build_narrative_evaluation_pack_profile(
     repository_root: str | Path,
     *,

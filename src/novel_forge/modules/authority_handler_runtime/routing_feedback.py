@@ -431,8 +431,14 @@ def domain_gate_outcomes(
             **failure,
             "evidence_refs": evidence_refs,
         }
+    from .generator_feedback import generator_sample_outcomes
+    from novel_forge.modules.story_planning_runtime.world_sampling import actor_sample_outcomes
+    from novel_forge.modules.book_followup_authority.prose_sample_feedback import prose_sample_outcomes
     return {
         **planning,
+        **generator_sample_outcomes(cursor, project_id=project_id, effect_ids=effect_ids),
+        **actor_sample_outcomes(cursor, project_id=project_id, effect_ids=list(effect_ids)),
+        **prose_sample_outcomes(cursor, project_id=project_id, effect_ids=effect_ids),
         **source_gate_outcomes(cursor, project_id=project_id, effect_ids=effect_ids),
         **chapter_reference_outcomes(cursor, project_id=project_id, effect_ids=list(effect_ids)),
         **world_reference_outcomes(cursor, project_id=project_id, effect_ids=list(effect_ids)),

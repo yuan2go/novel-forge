@@ -2235,6 +2235,45 @@ def planning_schema_evidence_identity(
     }
 
 
+
+def world_schema_evidence_identity(
+    schema: Mapping[str, Any], schema_ref: str
+) -> dict[str, Any]:
+    root = Path(__file__).resolve().parents[1]
+    sources = sorted((root / "worldbuilding").glob("*.py")) + [
+        Path(__file__),
+        root / "story_planning_runtime" / "world_preparation.py",
+        root / "chapter_authority" / "provider_views.py",
+    ]
+    bound_paths = {
+        ("properties", "actor_id", "enum"),
+        ("properties", "basis_refs", "items", "enum"),
+        ("properties", "actor_adjudications", "items", "properties", "actor_id", "enum"),
+        ("properties", "actor_adjudications", "items", "properties", "proposal_hash", "enum"),
+        ("properties", "evaluations", "items", "properties", "transition_id", "enum"),
+    }
+
+    def shape(value: Any, path: tuple[str, ...] = ()) -> Any:
+        if path in bound_paths and isinstance(value, list):
+            return {"binding_types": [type(part).__name__ for part in value]}
+        if isinstance(value, dict):
+            return {key: shape(item, (*path, key)) for key, item in value.items()}
+        if isinstance(value, list):
+            return [shape(item, (*path, str(index))) for index, item in enumerate(value)]
+        return value
+
+    return {
+        "ref": schema_ref,
+        "identity_version": "world-schema-factory-and-bound-id-shape.v1",
+        "factory_hash": canonical_hash({
+            str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sources
+        }),
+        "shape_hash": canonical_hash(shape(dict(schema))),
+        "binding_policy": "EXACT_WORLD_INSTANCE_ID_ENUM_VALUES_ARE_FROZEN_PER_REQUEST;_SEMANTICS_TYPES_CARDINALITY_AND_FACTORY_ARE_SHARED",
+    }
+
+
 def planning_provider_output_schema(
     contract_type: PlanContractType,
     *,
@@ -3859,9 +3898,7 @@ class PostgresPlanningExecutionPreparer:
             output_schema_ref = f"schema:foundation-provider-output:{FOUNDATION_GENERATORS[command.generator_operation_name].value.lower()}:v1"
         if provider_stage is not None:
             output_schema = dict(provider_stage.output_schema)
-            output_schema_ref = f"schema:{stage_name}:v1"
-            if provider_stage.task.get("actor_proposals"):
-                output_schema_ref += ":actor-isolation-v1"
+            output_schema_ref = provider_stage.output_schema_ref
         else:
             from .knowledge_translation import add_translation_contract
 
@@ -4196,7 +4233,7 @@ class PostgresPlanningExecutionPreparer:
                     producer_contract=producer_contract_identity(
                         prompt_evidence, materialization,
                         schema_identity=(planning_schema_evidence_identity(output_schema, output_schema_ref)
-                                         if provider_stage is None else None),
+                                         if provider_stage is None else world_schema_evidence_identity(output_schema, output_schema_ref)),
                     ),
                     request_input=stable_request_payload["input"],
                     input_hash="sha256:"
@@ -4984,9 +5021,10 @@ class PostgresPlanningExecutionPreparer:
             )
             return frozen_context, tuple(documents)
         recent_craft_usage = []
-        if hasattr(self.mkaos, "list_runtime_usage"):
-            for usage in self.mkaos.list_runtime_usage(project_id=command.project_id, book_id=command.book_id, target_capability_id="prose.chapter.draft", limit=100):
-                recent_craft_usage.extend(usage.get("craft_usage") or [])
+        if hasattr(self.mkaos, "list_accepted_craft_usage"):
+            recent_craft_usage = self.mkaos.list_accepted_craft_usage(
+                project_id=command.project_id, book_id=command.book_id, limit=100,
+            )
         need = _planning_narrative_intelligence_need(
             command=command,
             selected_inputs=selected,

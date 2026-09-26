@@ -373,7 +373,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         return _task(stage, world_preparation=deepcopy(dict(task)))
     if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
         task = inputs.get("world_preparation")
-        if not isinstance(task, Mapping) or task.get("contract_version") != "world-provider-task.v1" or task.get("fact_mutation_allowed") is not False:
+        if not isinstance(task, Mapping) or task.get("contract_version") not in {"world-provider-task.v1", "world-provider-task.v2"} or task.get("fact_mutation_allowed") is not False:
             raise KernelError("WORLD_PROVIDER_TASK_INVALID", "world stages require their exact frozen role projection")
         expected_role = "WORLD_REASONER" if stage == "world_candidates.generate" else "DIRECTOR"
         if task.get("role") != expected_role:
@@ -392,6 +392,34 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
                 "audit_hash": _projection_hash(audit),
                 "loss_record_count": len(audit["loss_records"]),
             }
+        if projected_task["contract_version"] == "world-provider-task.v2":
+            projection = projected_task["context_projection"]
+            audit = {key: projection.pop(key) for key in ("policy", "rejections", "estimated_tokens", "token_accounting", "provider_admission") if key in projection}
+            state_provenance = {}
+            for index, item in enumerate(projection.get("selection", [])):
+                state = item.get("state")
+                if not isinstance(state, dict):
+                    continue
+                provenance = {key: state.pop(key) for key in (
+                    "model_id", "provider_id", "extractor_type", "prompt_version",
+                    "approval_resolution", "approval_requirement", "lifecycle_migration",
+                ) if key in state}
+                if provenance:
+                    state_provenance[str(index)] = provenance
+            if state_provenance:
+                projection["state_provenance_receipt"] = {
+                    "frozen_source_pointer": "/contract/context_projection/selection",
+                    "audit_hash": _projection_hash(state_provenance),
+                    "omitted_fields_by_index": {index: sorted(values) for index, values in state_provenance.items()},
+                }
+            if audit:
+                projection["governance_receipt"] = {
+                    "contract_version": "world-role-governance-receipt.v1",
+                    "source_ref": projected_task["source_ref"], "audit_hash": _projection_hash(audit),
+                    "context_digest": projected_task["projection_identity"],
+                    "omitted_fields": sorted(audit),
+                    "rejected_source_count": len(audit.get("rejections", [])),
+                }
         if "narrative_intelligence" in projected_task:
             projected_task["narrative_intelligence"] = _project_empty_world_selection(projected_task["narrative_intelligence"])
         return _task(stage, world_preparation=_compact(projected_task))
@@ -2513,4 +2541,4 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
     inputs = context_bundle.get("selected_inputs") or []
     if len(inputs) != 1 or inputs[0].get("asset_type") != "longform_prose_review_window":
         raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "exactly one bounded prose window is required")
-    return {"contract_version": "provider-context-view-v2", "stage": "longform_prose_review", "frozen_prose": inputs[0]["projection"], "instruction": "审读实际提供的中文玄幻/武侠正文。逐项检查结构与冲突模式重复、人物目标和关系停滞、铺垫推进兑现、声线表达、弧级节奏、动机与代价。合理变化、有意重复、未到兑现期和证据不足必须区分。只引用给定原文 Unicode code-point 坐标和精确 quote；不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。所有结论只是待确认审稿意见。不得修改正文、Canon 或计划。"}
+    return {"contract_version": "provider-context-view-v2", "stage": "longform_prose_review", "frozen_prose": inputs[0]["projection"], "instruction": "审读实际提供的中文玄幻/武侠正文。逐项检查结构与冲突模式重复、人物目标和关系停滞、铺垫推进兑现、声线表达、弧级节奏、动机与代价。合理变化、有意重复、未到兑现期和证据不足必须区分。只引用给定原文 Unicode code-point 坐标和精确 quote；不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。若窗口含 relation_hypothesis，它只是文本锚点检索得到的未核验关系假设；ISSUE 或 INTENTIONAL 关系判断必须分别引用两个给定片段，区分因果、人物认知、承诺、伏笔与偶然重词，无法核验时输出 INSUFFICIENT_EVIDENCE。所有结论只是待确认审稿意见。不得修改正文、Canon 或计划。"}

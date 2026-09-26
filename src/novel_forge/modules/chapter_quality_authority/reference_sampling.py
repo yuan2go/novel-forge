@@ -264,6 +264,9 @@ def chapter_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list
         agreed = all(item["status_agrees"] and (stage in {"review", "rereview"} or item["score_in_range"] is True)
             for item in agreement["comparisons"])
         outcomes[effect_id] = {"accepted": None, "metric": "REFERENCE_AGREEMENT.v1", "reference_agreed": agreed,
+            "generator_assessment": {"target_asset_version_id": reference["target_asset_version_id"],
+                "target_content_hash": reference["target_content_hash"], "labels": reference["labels"],
+                "protocol_version": reference["binding"]["protocol_version"]},
             "reference_label_classes": classes,
             "reference_protocol_hash": authorization_hash({"protocol_version": reference["binding"]["protocol_version"],
                 "evaluation_versions": sorted({item["evaluation_version"] for item in reference["labels"]}),

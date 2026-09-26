@@ -1451,6 +1451,8 @@ def _bind_narrative_entity_versions(
     historical_state: dict[str, list[dict[str, Any]]],
 ) -> None:
 
+    from novel_forge.modules.narrative_state.contracts import _LEGACY_OBLIGATION_IDENTITY_FIELDS
+
     for state_kind, items in changes.items():
         accepted = historical_state.get(
             _HISTORICAL_STATE_KIND.get(state_kind, state_kind), []
@@ -1465,6 +1467,14 @@ def _bind_narrative_entity_versions(
                 ),
                 None,
             )
+            identity_fields = ("obligation_id",) if state_kind == "narrative_obligation" else _LEGACY_OBLIGATION_IDENTITY_FIELDS.get(state_kind, ())
+            if identity_fields:
+                keys = ("obligation_id", *identity_fields)
+                identity = _identity_component(item, keys)
+                existing = next((
+                    prior for prior in [*historical_state.get("narrative_obligation", []), *accepted]
+                    if identity and _identity_component(prior, keys) == identity
+                ), None)
             item["entity_version"] = (
                 int((existing or {}).get("entity_version") or 0) + 1
             )
@@ -1477,7 +1487,8 @@ def _bind_narrative_entity_versions(
         for kind, item in tagged:
             identity = _identity_for(NarrativeStateKind(kind), item, ordinal=0, source="canon_patch")
             prior = next((value for value in historical_state.get(kind, []) if value.get("entity_key") == identity.entity_key), {})
-            item["entity_version"] = int(prior.get("entity_version") or 0) + 1
+            if kind not in _LEGACY_OBLIGATION_IDENTITY_FIELDS and kind != "narrative_obligation":
+                item["entity_version"] = int(prior.get("entity_version") or 0) + 1
             nodes.append({"event_id": "pending:" + item["causal_batch"]["local_id"], "state_kind": kind, "identity": identity.to_dict(), "story_time": item.get("story_time"), "mutation": {"payload": item}})
         accepted_refs = frozenset(ref for _, item in tagged for ref in item["causal_batch"]["depends_on"] if not ref.startswith("local:"))
         batch = compile_causal_batch(nodes, accepted_ids=accepted_refs)

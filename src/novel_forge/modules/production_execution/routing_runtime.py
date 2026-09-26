@@ -103,12 +103,61 @@ class PostgresRoutingRegistry:
                                   = effect.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,chain_id}')
                             ELSE NULL END,
                           effect.request_payload #> '{_production_execution,capability_runtime,routing_decision}',
-                          quality.asset_version_id
+                          quality.asset_version_id,
+                          EXISTS(SELECT 1 FROM authority_external_effect_dispatch failed
+                            JOIN authority_external_effect_dispatch repeated
+                              ON repeated.external_effect_id=failed.external_effect_id
+                                AND repeated.generation>failed.generation
+                            WHERE failed.external_effect_id=effect.external_effect_id
+                              AND failed.status IN ('FAILED_RETRYABLE','FAILED_FINAL','DEAD_LETTER')
+                              AND COALESCE(failed.evidence->>'real_model_call',failed.evidence->>'real_provider_proven')='true'
+                              AND COALESCE(repeated.evidence->>'real_model_call',repeated.evidence->>'real_provider_proven')='true'
+                              AND COALESCE(failed.evidence->>'fixture_protocol_only','false')<>'true'
+                              AND COALESCE(repeated.evidence->>'fixture_protocol_only','false')<>'true'),
+                          EXISTS(SELECT 1 FROM authority_external_effect previous
+                            JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
+                            CROSS JOIN LATERAL (SELECT previous.request_payload
+                              #> '{_production_execution,capability_runtime,routing_decision}' AS route) prior
+                            WHERE previous.project_id=effect.project_id
+                              AND (previous.created_at,previous.external_effect_id)<(effect.created_at,effect.external_effect_id)
+                              AND (dispatch.created_at >= NOW() - INTERVAL '30 days'
+                                OR prior.route #>> '{bootstrap_authorization,authorization,campaign,partition}' IN ('DEVELOPMENT','HOLDOUT'))
+                              AND previous.request_payload->>'stage'=effect.request_payload->>'stage'
+                              AND current_route.route->>'status'='BENCHMARK_SELECTED'
+                              AND current_route.route->>'mode'='BENCHMARK_CHALLENGER'
+                              AND current_route.route->>'production_eligible'='false'
+                              AND prior.route->>'status'='BENCHMARK_SELECTED'
+                              AND prior.route->>'mode'='BENCHMARK_CHALLENGER'
+                              AND prior.route->>'production_eligible'='false'
+                              AND prior.route #>> '{bootstrap_authorization,authorization,purpose}'
+                                =current_route.route #>> '{bootstrap_authorization,authorization,purpose}'
+                              AND prior.route #>> '{bootstrap_authorization,authorization,purpose}'
+                                IN ('BENCHMARK_CHALLENGER','REFERENCE_EVALUATION')
+                              AND NULLIF(current_route.route #>> '{task,input_hash}','') IS NOT NULL
+                              AND NULLIF(current_route.route #>> '{task,producer_contract_hash}','') IS NOT NULL
+                              AND prior.route #>> '{task,input_hash}'=current_route.route #>> '{task,input_hash}'
+                              AND prior.route #>> '{task,producer_contract_hash}'=current_route.route #>> '{task,producer_contract_hash}'
+                              AND COALESCE(prior.route #>> '{selected,candidate,model_revision}','')
+                                =COALESCE(current_route.route #>> '{selected,candidate,model_revision}','')
+                              AND COALESCE(dispatch.evidence->>'real_model_call',dispatch.evidence->>'real_provider_proven')='true'
+                              AND COALESCE(dispatch.evidence->>'fixture_protocol_only','false')<>'true'
+                              AND dispatch.evidence->>'provider_id'=model.evidence->>'provider_id'
+                              AND dispatch.evidence->>'model_id'=model.evidence->>'model_id'
+                              AND dispatch.evidence #>> '{production_execution,route_snapshot,reasoning_effort}'
+                                =model.evidence #>> '{production_execution,route_snapshot,reasoning_effort}'
+                              AND (COALESCE(dispatch.evidence #>> '{production_execution,process_evidence,served_model_identity_hash}',
+                                    dispatch.evidence->>'served_model_identity_hash','')=''
+                                OR COALESCE(dispatch.evidence #>> '{production_execution,process_evidence,served_model_identity_hash}',
+                                    dispatch.evidence->>'served_model_identity_hash')
+                                  =COALESCE(model.evidence #>> '{production_execution,process_evidence,served_model_identity_hash}',
+                                    model.evidence->>'served_model_identity_hash')))
                    FROM authority_asset_version version
                    JOIN authority_asset asset ON asset.asset_id=version.asset_id
                    CROSS JOIN LATERAL (SELECT COALESCE(version.content->'provider_evidence',version.content) AS evidence) model
                    LEFT JOIN authority_external_effect effect ON effect.external_effect_id=model.evidence #>> '{production_execution,execution_request,external_effect_id}'
                      AND effect.project_id=asset.project_id
+                   LEFT JOIN LATERAL (SELECT effect.request_payload
+                     #> '{_production_execution,capability_runtime,routing_decision}' AS route) current_route ON true
                    LEFT JOIN LATERAL (
                        SELECT v.asset_version_id,v.content,v.eligibility
                        FROM authority_asset_version v
@@ -183,6 +232,8 @@ class PostgresRoutingRegistry:
             retried,
             decision,
             quality_ref,
+            same_effect_provider_retry,
+            repeated_experiment_input,
         ) in rows:
             evidence = content.get("provider_evidence", content)
             if evidence.get("fixture_protocol_only") or content.get(
@@ -277,6 +328,10 @@ class PostgresRoutingRegistry:
             )
             if gate.get("reference_sample_identity"):
                 sample_identity = gate["reference_sample_identity"]
+            if gate.get("generator_sample_identity"):
+                sample_identity = gate["generator_sample_identity"]
+            if gate.get("independent_sample_identity"):
+                sample_identity = gate["independent_sample_identity"]
             observations.append(
                 BenchmarkObservation(
                     evidence_ref="asset-version:" + reference,
@@ -288,11 +343,11 @@ class PostgresRoutingRegistry:
                     else False
                     if rejected
                     else gate.get("accepted"),
-                    schema_success=result.get("outcome") == "SUCCEEDED",
+                    schema_success=result.get("outcome") == "SUCCEEDED" and not same_effect_provider_retry,
                     canon_conflict=True
                     if failure == "CANON_CONFLICT"
                     else canon_conflict,
-                    retried=retried,
+                    retried=True if same_effect_provider_retry or repeated_experiment_input else retried,
                     repaired=True if task_type == "revision" else None,
                     escalated=candidate.escalation_only,
                     latency_seconds=float(process["latency_seconds"])
@@ -305,6 +360,14 @@ class PostgresRoutingRegistry:
                     if cost.get("provider_billed") is True
                     else None,
                     domain_gate_accepted=gate.get("accepted") if sample_identity else None,
+                    independent_quality_score=gate.get("independent_quality_score") if campaign.get("partition") == "CALIBRATION" else None,
+                    independent_protocol_hash=gate.get("independent_protocol_hash", ""),
+                    independent_risk=gate.get("independent_risk", (decision or {}).get("policy", {}).get("risk", "")),
+                    independent_context_tokens=gate.get("independent_context_tokens", (decision or {}).get("task", {}).get("input_tokens")),
+                    generator_quality_score=gate.get("generator_quality_score") if campaign.get("partition") == "CALIBRATION" else None,
+                    generator_protocol_hash=gate.get("generator_protocol_hash", ""),
+                    generator_risk=gate.get("generator_risk", (decision or {}).get("policy", {}).get("risk", "")),
+                    generator_context_tokens=gate.get("generator_context_tokens", (decision or {}).get("task", {}).get("input_tokens")),
                     reference_agreed=gate.get("reference_agreed") if sample_identity else None,
                     reference_label_classes=tuple(gate.get("reference_label_classes", ())) if sample_identity else (),
                     reference_protocol_hash=gate.get("reference_protocol_hash", ""),
@@ -323,6 +386,8 @@ class PostgresRoutingRegistry:
                     evidence_class=evidence_class,
                     production_eligible=production_eligible,
                     sample_identity=sample_identity,
+                    independence_group=snapshot_hash({"task_type": task_type, "input_hash": decision["task"]["input_hash"]})
+                    if (decision or {}).get("task", {}).get("input_hash") else "",
                     experiment_partition=campaign.get("partition", ""),
                     producer_contract_hash=str((decision or {}).get("task", {}).get("producer_contract_hash") or ""),
                 )

@@ -1,5 +1,7 @@
 from copy import deepcopy
 import json
+import os
+from pathlib import Path
 
 import pytest
 
@@ -143,6 +145,16 @@ class CraftTransport:
                 "realization_excerpt": content["scene_plan"][0]["goal"],
                 "expected_application": "把既定代价落实为一次物件处置",
             }
+            if self.mechanism_id == "meaningful-callback":
+                site.update(intended_reader_effect="通过同一称呼的语气和承担变化看到人物关系推进",
+                    preservation_requirements=["保留过桥费旧称呼、交出木牌的选择与被划掉名字的代价"],
+                    verification_checks=["回调改变说话权和承担关系，不靠作者宣布好笑"],
+                    expected_application="在既有选择后让旧称呼承载共同承担，幽默不冲淡代价")
+            if self.mechanism_id == "exchange-response-cost":
+                site.update(intended_reader_effect="看清防守救下证人与失去退路之间的动作因果",
+                    preservation_requirements=["保留来刀、证人避险与木牌损坏的既定结果"],
+                    verification_checks=["攻势引发针对性回应，回应具有可定位损耗"],
+                    expected_application="用一次抬剑偏转写清救人与木牌损失的同一因果链")
             if self.mechanism_id == "spatial-anchor":
                 site.update(intended_reader_effect="追踪双方距离、桥头出口和阻挡",
                     verification_checks=["既定通路与移动后位置可定位"],
@@ -283,7 +295,7 @@ class CraftTransport:
                 ],
             }
         elif stage == "rereview":
-            check = self.check(inputs["revision"], "ACHIEVED")
+            check = self.check(inputs["revision"], getattr(self, "final_effect_status", "ACHIEVED"))
             evidence = check["evidence"]
             result.update(
                 score=95,
@@ -322,11 +334,22 @@ class CraftTransport:
         return result
 
 
-@pytest.mark.parametrize("receipt_loss", [False, True])
+@pytest.mark.parametrize("receipt_loss,mechanism,final_status", [(False, "choice-exposes-value", "ACHIEVED"), (True, "choice-exposes-value", "ACHIEVED"),
+    (False, "meaningful-callback", "ACHIEVED"), (False, "exchange-response-cost", "ACHIEVED"),
+    (False, "meaningful-callback", "UNCERTAIN")])
 def test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_receipt_replay(
-    tmp_path, receipt_loss
+    tmp_path, receipt_loss, mechanism, final_status
 ):
     transport = CraftTransport(receipt_loss)
+    transport.final_effect_status = final_status
+    transport.mechanism_id = mechanism
+    if mechanism == "meaningful-callback":
+        transport.broken = "先前证人叫他铁算盘，是讥他舍不得过桥费。如今他交出返程木牌，守门人划掉他的名字。证人很感动，两人关系更近了，这个称呼也变得好笑。"
+        transport.repaired = "先前证人叫他铁算盘，是讥他舍不得过桥费。他把仅有的返程木牌推过去，守门人在名册上划掉他的名字。证人把行囊挪到他身边，又叫了一声铁算盘：回城的账先欠着，我认。"
+    elif mechanism == "exchange-response-cost":
+        transport.broken = "桥头来刀，他与守门人过了几招，证人躲开了，返程木牌也坏了。"
+        transport.repaired = "守门人的刀越过桥柱劈向证人，他抬剑压住刀脊，给证人让出半步；刀锋顺剑滑落，削断他腰间唯一的返程木牌。"
+
     project, authority, chapter, principal, worker, book, candidates, plans, restart = (
         make_book(tmp_path, transport, prepare_plans=transport.prepare)
     )
@@ -381,7 +404,21 @@ def test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_recei
             break
     assert tick.saga_status == "SUCCEEDED"
     authority.reconcile_chapter(dispatched["chapter_request_id"])
+    from novel_forge.modules.mkaos_authority.runtime_usage import list_accepted_craft_usage
+    assert list_accepted_craft_usage(DATABASE_URL, project_id=project, book_id=f"book:{project}") == []
     authority.accept_chapter(dispatched["chapter_request_id"], principal=principal)
+    usage = list_accepted_craft_usage(DATABASE_URL, project_id=project, book_id=f"book:{project}")
+    assert len(usage) == 1 and usage[0]["effect_status"] == final_status
+    assert usage[0]["evidence"]["quote"] == transport.repaired
+    assert list_accepted_craft_usage(DATABASE_URL, project_id=project, book_id=f"book:{project}") == usage
+    if final_status == "UNCERTAIN":
+        next_selection = craft_candidate_assessment(transport.strategy["uses"][0]["mechanism"],
+            context={"chapter_number": 2, "scene_goal": transport.strategy["uses"][0]["mechanism"]["narrative_problem"]},
+            recent_usage=usage, policy=DEFAULT_CRAFT_POLICY)
+        assert next_selection["rejection_reason"] == ""
+        assert next_selection["budget_assessment"]["frequency"] == 0
+        assert next_selection["budget_assessment"]["realization_cautions"] == usage
+        assert "CRAFT_VARIATION_BONUS" not in next_selection["match_reasons"]
     workspace = chapter.query.require_workspace(
         project_id=project, root_operation_id=dispatched["chapter_root_operation_id"]
     )
@@ -393,13 +430,13 @@ def test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_recei
         if asset["asset_type"] == "best_draft_candidate"
     )
     assert (
-        REPAIRED in accepted["content"]["text"]
-        and BROKEN not in accepted["content"]["text"]
+        transport.repaired in accepted["content"]["text"]
+        and transport.broken not in accepted["content"]["text"]
     )
     checks = workspace["craft_trace"]["effect_observations"]
     assert any(check["effect_status"] == "FAILED" for check in checks)
     assert any(
-        check["effect_status"] == "ACHIEVED" and check["accepted_lineage"]
+        check["effect_status"] == final_status and check["accepted_lineage"]
         for check in checks
     )
     assert all(not check["reader_effect_proven"] for check in checks)
@@ -469,6 +506,21 @@ def test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_recei
         )
         assert uow.cursor.fetchone() == (1,)
     assert "SOURCE_ABSTRACTION" not in json.dumps(transport.strategy)
+    if evidence_dir := os.environ.get("NOVEL_FORGE_CRAFT_TEST_EVIDENCE_DIR"):
+        Path(evidence_dir).mkdir(parents=True, exist_ok=True)
+        Path(evidence_dir, f"craft-{mechanism}-{final_status}-receipt-loss-{receipt_loss}.json").write_text(json.dumps({
+            "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL_INTEGRATION",
+            "actual_real_model_calls": 0, "actual_human_evaluations": 0,
+            "reader_effect_proven": False, "project_id": project,
+            "planned_strategy": transport.strategy, "chapter_plan": plan,
+            "original_span": transport.broken, "revised_accepted_span": transport.repaired,
+            "accepted_manuscript": workspace["accepted_manuscript"],
+            "acceptance": workspace["acceptance"], "accepted_draft": accepted,
+            "craft_trace": workspace["craft_trace"], "accepted_usage": usage,
+            "replayed_review_effect_unchanged": bool(interrupted),
+            "review_effect_id": effect[0], "review_receipt_id": effect[2],
+            "review_dispatch_count": 1, "review_settled_reservation_count": 1,
+        }, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
 
 
 class JointCraftTransport(CraftTransport):
@@ -524,12 +576,13 @@ def test_same_chapter_combines_accepted_history_and_adopted_craft_through_book_a
         tmp_path, transport, prepare_plans=transport.prepare)
     for number in (1, 2):
         if number == 2 and continuous_spatial:
-            from novel_forge.modules.mkaos_authority.runtime_usage import list_runtime_usage
+            from novel_forge.modules.mkaos_authority.runtime_usage import list_accepted_craft_usage
             from novel_forge.modules.mkaos_authority.domain import NarrativeIntelligenceNeed, select_narrative_intelligence
 
-            delivered = list_runtime_usage(DATABASE_URL, project_id=project, book_id=f"book:{project}", target_capability_id="prose.chapter.draft")
-            recent = tuple(use for row in delivered for use in row.get("craft_usage", []))
-            assert recent and all(use["external_receipt_ids"] and use["chapter"] == 1 for use in recent)
+            recent = tuple(list_accepted_craft_usage(DATABASE_URL, project_id=project, book_id=f"book:{project}"))
+            assert len(recent) == 1 and recent[0]["usage_basis"] == "ACCEPTED_PROSE_REVIEW"
+            assert recent[0]["evidence"]["quote"] == transport.repaired
+            assert recent and all(use["acceptance_id"] and use["review_content_hash"] and use["chapter"] == 1 for use in recent)
             context = {"chapter_number": 2, "scene_goal": ["交战位置与通路难以想象，连续战斗仍须交代距离和出口"]}
             mechanism = transport.card.content["abstract_content"]["craft_mechanism"]
             assert craft_candidate_assessment(mechanism, context=context, recent_usage=recent,

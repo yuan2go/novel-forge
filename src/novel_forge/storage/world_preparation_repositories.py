@@ -71,7 +71,7 @@ class WorldPreparationRepository:
                     "world output requires a confirmed governed Provider effect",
                 )
         if source.get("actor_experiment"):
-            from novel_forge.modules.worldbuilding.actor_isolation import actor_task, validate_actor_output, require_actor_judgments
+            from novel_forge.modules.worldbuilding.actor_isolation import actor_task, actor_output_payload, validate_actor_output, require_actor_judgments
             actors = source["actor_experiment"]["actor_ids"]
             refs = action.get("actor_proposals", [])
             if action.get("actor_experiment") != source["actor_experiment"] or len(refs) != len(actors):
@@ -79,8 +79,9 @@ class WorldPreparationRepository:
             proposals = []
             for actor_id, ref in zip(actors, refs, strict=True):
                 output = contract(ref)["output"]
-                raw = {key: output[key] for key in ("actor_id", "action", "basis_summary", "basis_refs")}
-                if validate_actor_output(raw, actor_task(source, action["source"], actor_id)) != output:
+                task = actor_task(source, action["source"], actor_id)
+                raw = actor_output_payload(output, task)
+                if validate_actor_output(raw, task) != output:
                     raise KernelError("WORLD_ACTOR_PROPOSAL_DRIFT", "actor receipt differs from its private frozen projection")
                 proposals.append(output)
             require_actor_judgments(contract(action["generation"])["output"], proposals)
@@ -362,6 +363,7 @@ class WorldPreparationRepository:
         book_id: str,
         request: Mapping[str, Any],
         contract_version: str = "world-preparation-source.v2",
+        provider_projection_version: str = "world-role-delivery.v2",
     ) -> dict[str, Any]:
         self.cursor.execute(
             """
@@ -595,6 +597,8 @@ class WorldPreparationRepository:
         )
         return {
             "contract_version": contract_version,
+            **({"provider_projection_version": provider_projection_version}
+                if provider_projection_version == "world-role-delivery.v2" else {}),
             **(
                 {"preparation_sources": continuations}
                 if contract_version == "world-preparation-source.v2"
@@ -716,6 +720,7 @@ class WorldPreparationRepository:
             book_id=book_id,
             request=frozen["request"],
             contract_version=frozen["contract_version"],
+            provider_projection_version=frozen.get("provider_projection_version", "world-role-delivery.v1"),
         )
         if narrative_hash(current) != narrative_hash(frozen):
             raise KernelError(

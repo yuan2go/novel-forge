@@ -3,7 +3,7 @@ import json
 from typing import Any, Callable, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.context_builder.reality_projection import project_role_context
+from novel_forge.modules.context_builder.reality_projection import ROLE_STATE_KINDS, project_role_context
 from novel_forge.modules.narrative_state.contracts import NarrativeStateKind
 from novel_forge.modules.worldbuilding.dynamics import (
     RequirementOperator,
@@ -30,6 +30,12 @@ class PlanningProviderStage:
     name: str
     task: Mapping[str, Any]
     output_schema: Mapping[str, Any]
+
+    @property
+    def output_schema_ref(self) -> str:
+        version = "v2" if self.task.get("contract_version") == "world-actor-task.v2" else "v1"
+        suffix = ":actor-isolation-v1" if self.task.get("actor_proposals") else ""
+        return f"schema:{self.name}:{version}{suffix}"
 
     def __post_init__(self) -> None:
         from novel_forge.modules.worldbuilding.actor_isolation import ACTOR_STAGES
@@ -171,7 +177,7 @@ class PlanningWorldPreparation:
         actor_refs = []
         if source.get("actor_experiment") is not None:
             from novel_forge.modules.worldbuilding.actor_isolation import (
-                ACTOR_STAGES, actor_task, actor_output_schema, validate_actor_output, validate_actor_policy,
+                ACTOR_STAGES, actor_task, actor_output_schema, actor_output_payload, validate_actor_output, validate_actor_policy,
             )
             actor_policy = validate_actor_policy(source["actor_experiment"], character_ids=source["reality"]["approved_character_ids"], policy=policy)
             tasks = [actor_task(source, source_ref, actor_id) for actor_id in actor_policy["actor_ids"]]
@@ -186,7 +192,7 @@ class PlanningWorldPreparation:
                         "authority": "ACTION_PROPOSAL_ONLY", "fact_mutation_allowed": False,
                     })
                 stored = document.content["contract"]
-                raw = {key: stored["output"][key] for key in ("actor_id", "action", "basis_summary", "basis_refs")}
+                raw = actor_output_payload(stored["output"], task)
                 if stored["source"] != source_ref or validate_actor_output(raw, task) != stored["output"]:
                     raise KernelError("WORLD_ACTOR_PROPOSAL_DRIFT", "retry must retain the exact actor private projection and proposal")
                 actor_proposals.append(stored["output"])
@@ -338,6 +344,8 @@ class PlanningWorldPreparation:
             schema = actor_judge_schema(schema, actor_proposals)
             task["actor_proposals"] = actor_proposals
             task["actor_judgment_contract"] = "Adjudicate every exact proposal hash. Accept or reject each action and determine conflicts and consequences. Preserve actor_id and intended action verbatim in an executable transition. Do not replace intentions to satisfy the outline. No preparation branches, new actors or missing adjudications. Director may select or reorder feasible proposals but cannot change them."
+            if source.get("provider_projection_version") == "world-role-delivery.v2":
+                task["actor_judgment_contract"] += " For every CONTINUE commitment disposition, retain source_event_id in transition cause_refs and obligation_id in candidate obligation_refs. DEFER preserves the accepted commitment; it cannot cancel or fulfill it."
         return PlanningProviderStage(
             "world_candidates.generate",
             task,
@@ -371,9 +379,15 @@ class PlanningWorldPreparation:
             reality=source["reality"],
             role=role,
             token_budget=source["policy"]["context_token_budget"],
+            required_event_ids=tuple(sorted({
+                entry["source_event_id"]
+                for kind, entries in source["reality"]["current_state"].items()
+                if kind in ROLE_STATE_KINDS.get(role, ())
+                for entry in entries
+            })) if source.get("provider_projection_version") == "world-role-delivery.v2" else (),
         )
         return {
-            "contract_version": "world-provider-task.v1",
+            "contract_version": "world-provider-task.v2" if source.get("provider_projection_version") == "world-role-delivery.v2" else "world-provider-task.v1",
             "role": role,
             "source_ref": dict(source_ref),
             "baseline_id": source["reality"]["revision_id"],

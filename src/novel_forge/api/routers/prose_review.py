@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
 from novel_forge.modules.book_followup_authority.prose_coordinator import (
@@ -49,6 +49,15 @@ class ProsePlanChange(ProseAdvance):
     rationale: str = Field(min_length=1)
 
 
+class ProseProviderSample(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1)
+    source_operation_id: str = Field(min_length=1)
+    authorization_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1)
+    predecessor_operation_id: str = ""
+
+
 def create_router(ctx: Any) -> APIRouter:
     router = APIRouter(
         prefix="/product/production/book-authority/runs/{book_run_id}/prose-reviews",
@@ -69,6 +78,20 @@ def create_router(ctx: Any) -> APIRouter:
             ) from exc
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @router.post("/provider-samples", status_code=202)
+    def provider_sample(book_run_id: str, request: ProseProviderSample, dry_run: bool = False) -> Any:
+        from novel_forge.modules.book_followup_authority.prose_sampling import ProseReviewSampleCommand
+
+        def sample(actor: Any) -> Any:
+            app = ctx.services.book_production.followup
+            command = ProseReviewSampleCommand(actor_id=actor.principal_id, **request.model_dump())
+            prepared = app.prepare_prose_sample(command, principal=actor)
+            if prepared["command_payload"]["book_run_id"] != book_run_id:
+                raise KernelError("PROSE_SAMPLE_ORIGIN_INVALID", "sample source belongs to another Book run")
+            return prepared if dry_run else app.admit_prose_sample(command, principal=actor)
+
+        return execute(sample)
 
     @router.post("")
     def start(book_run_id: str, request: ProseStart) -> Any:

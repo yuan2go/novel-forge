@@ -341,18 +341,20 @@ def _load_request(
                 raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "World reference sampling requires its frozen evaluation grant")
             reference_sample_id = payload["world_sampling"]["generation_sample"]["asset_version_id"]
         if policy.get("reference_sample_annotation_input_allowed") is True:
+            from novel_forge.modules.book_followup_authority.prose_sample_feedback import PROSE_ANNOTATION_VERSION
             from novel_forge.modules.chapter_quality_authority.reference_subject import (
                 REFERENCE_ANNOTATION_VERSION, WORLD_REFERENCE_ANNOTATION_VERSION, PLANNING_REFERENCE_ANNOTATION_VERSION, require_reference_annotation,
             )
             world_sample = policy.get("world_reference_sample_annotation") is True
             planning_sample = policy.get("planning_reference_sample_annotation") is True
-            expected_version = PLANNING_REFERENCE_ANNOTATION_VERSION if planning_sample else (
+            prose_sample = policy.get("prose_reference_sample_annotation") is True
+            expected_version = PROSE_ANNOTATION_VERSION if prose_sample else PLANNING_REFERENCE_ANNOTATION_VERSION if planning_sample else (
                 WORLD_REFERENCE_ANNOTATION_VERSION if world_sample else REFERENCE_ANNOTATION_VERSION)
-            if operation["definition_version"] != expected_version or (world_sample and planning_sample):
+            if operation["definition_version"] != expected_version or sum((world_sample, planning_sample, prose_sample)) > 1:
                 raise KernelError("QUALITY_REFERENCE_ANNOTATION_INVALID", "sample annotation requires its versioned native definition")
             reference_sample_id = require_reference_annotation(uow.cursor, project_id=operation["project_id"],
                 definition_name=operation["definition_name"], payload=payload, actor_id=operation["actor_id"],
-                allowed_types=frozenset({"planning_generation_candidate"} if planning_sample else
+                allowed_types=frozenset({"longform_prose_review_sample"} if prose_sample else {"planning_generation_candidate"} if planning_sample else
                     {"world_provider_sample"} if world_sample else {"chapter_provider_sample"}))
             if planning_sample:
                 evaluation_candidate_id, reference_sample_id = reference_sample_id, ""

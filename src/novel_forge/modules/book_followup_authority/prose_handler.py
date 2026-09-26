@@ -40,14 +40,14 @@ class LongformProseReviewHandler:
                 "operation must bind exact accepted window",
             )
 
-        def assert_current() -> None:
+        def assert_current(*, dispatch: bool = False) -> None:
             from novel_forge.storage.authority_uow import AuthorityUnitOfWork
             from .prose_coordinator import load_accepted_sources
             from .prose_review import freeze_manifest
 
             with AuthorityUnitOfWork(self.model_port.database_url) as uow:
                 uow.cursor.execute(
-                    "SELECT manifest FROM authority_book_prose_review_run WHERE project_id=%s AND workspace_id=%s AND book_run_id=%s AND manifest_digest=%s",
+                    "SELECT run_id,manifest FROM authority_book_prose_review_run WHERE project_id=%s AND workspace_id=%s AND book_run_id=%s AND manifest_digest=%s",
                     [
                         request.project_id,
                         request.workspace_id,
@@ -55,13 +55,16 @@ class LongformProseReviewHandler:
                         content["manifest_digest"],
                     ],
                 )
-                rows = uow.cursor.fetchall()
-                if not rows or not any(
-                    window.get("input_asset", {}).get("asset_version_id")
-                    == source.asset_version_id
-                    for row in rows
-                    for window in row[0]["windows"]
-                ):
+                rows = [
+                    row
+                    for row in uow.cursor.fetchall()
+                    if any(
+                        window.get("input_asset", {}).get("asset_version_id")
+                        == source.asset_version_id
+                        for window in row[1]["windows"]
+                    )
+                ]
+                if len(rows) != 1:
                     raise KernelError(
                         "LONGFORM_PROSE_INPUT_DRIFT",
                         "window must be registered in its exact Book-owned manifest",
@@ -75,11 +78,35 @@ class LongformProseReviewHandler:
                     ),
                     policy=content["policy"],
                 )
-                if any(row[0]["sources"] != current["sources"] for row in rows):
+                run_id, manifest = rows[0]
+                if (
+                    manifest["sources"]
+                    != current["sources"][: len(manifest["sources"])]
+                ):
                     raise KernelError(
                         "LONGFORM_PROSE_SOURCE_STALE",
-                        "accepted manuscript changed before Provider dispatch",
+                        "frozen accepted manuscript changed before Provider dispatch",
                     )
+                uow.cursor.execute(
+                    "SELECT 1 FROM authority_book_prose_review_event WHERE run_id=%s AND kind='WINDOW_ADMITTED' AND content->>'operation_id'=%s AND content->>'window_id'=%s",
+                    [run_id, request.operation_id, content["window"]["window_id"]],
+                )
+                if not uow.cursor.fetchone():
+                    raise KernelError(
+                        "LONGFORM_PROSE_ADMISSION_UNLINKED",
+                        "review requires its durable Book admission before dispatch",
+                    )
+                if dispatch:
+                    uow.cursor.execute(
+                        "SELECT kind FROM authority_book_prose_review_event WHERE run_id=%s AND kind IN ('PAUSED','RESUMED') ORDER BY event_version DESC LIMIT 1",
+                        [run_id],
+                    )
+                    control = uow.cursor.fetchone()
+                    if control and control[0] == "PAUSED":
+                        raise KernelError(
+                            "LONGFORM_PROSE_PAUSED",
+                            "resume the frozen review before Provider dispatch",
+                        )
 
         assert_current()
         result = self.model_port.invoke(
@@ -90,7 +117,7 @@ class LongformProseReviewHandler:
                 "window_id": content["window"]["window_id"],
             },
             reservation_tokens=content["policy"]["context_token_budget"],
-            pre_send_assertion=assert_current,
+            pre_send_assertion=lambda: assert_current(dispatch=True),
         )
         report = validate_window_report(
             result.output, manifest=content, window=content["window"]

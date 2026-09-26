@@ -17,11 +17,16 @@ def content_operation_definitions(
     reference_annotations: bool = False,
     world_reference_annotations: bool = False,
     planning_reference_annotations: bool = False,
+    prose_reference_annotations: bool = False,
 ) -> tuple[dict[str, Any], ...]:
     from novel_forge.modules.chapter_quality_authority.reference_subject import (
         REFERENCE_ANNOTATION_DEFINITIONS, REFERENCE_ANNOTATION_VERSION, WORLD_REFERENCE_ANNOTATION_VERSION,
         PLANNING_REFERENCE_ANNOTATION_VERSION,
     )
+    from novel_forge.modules.book_followup_authority.prose_sample_feedback import PROSE_ANNOTATION_VERSION
+
+    if prose_reference_annotations and (not reference_annotations or world_reference_annotations or planning_reference_annotations):
+        raise ValueError("Prose sample annotations require their own reference annotation contract")
     if world_reference_annotations and not reference_annotations:
         raise ValueError("World sample annotations require the native reference annotation contract")
     if planning_reference_annotations and (not reference_annotations or world_reference_annotations):
@@ -63,7 +68,7 @@ def content_operation_definitions(
         definitions.append(
             {
                 "name": name,
-                "definition_version": PLANNING_REFERENCE_ANNOTATION_VERSION if planning_reference_annotations else
+                "definition_version": PROSE_ANNOTATION_VERSION if prose_reference_annotations else PLANNING_REFERENCE_ANNOTATION_VERSION if planning_reference_annotations else
                     WORLD_REFERENCE_ANNOTATION_VERSION if world_reference_annotations else
                     REFERENCE_ANNOTATION_VERSION if reference_annotations else CONTENT_DEFINITION_VERSION,
                 "family": name.split(".")[0],
@@ -98,6 +103,7 @@ def content_operation_definitions(
                     **({"reference_sample_annotation_input_allowed": True} if reference_annotations else {}),
                     **({"world_reference_sample_annotation": True} if world_reference_annotations else {}),
                     **({"planning_reference_sample_annotation": True} if planning_reference_annotations else {}),
+                    **({"prose_reference_sample_annotation": True} if prose_reference_annotations else {}),
                     **({"evaluation_candidate_asset_input_allowed": True}
                        if name == "story_design.review.author" else {}),
                     "project_scope_required": True,

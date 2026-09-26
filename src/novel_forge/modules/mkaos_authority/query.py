@@ -657,6 +657,16 @@ class MkaosAuthorityQuery:
             knowledge_card_asset_version_id=knowledge_card_asset_version_id, limit=limit,
         )
 
+    def list_accepted_craft_usage(
+        self, *, project_id: str, book_id: str, limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        from .runtime_usage import list_accepted_craft_usage
+
+        _validate(project_id, limit)
+        return list_accepted_craft_usage(
+            self.database_url, project_id=project_id, book_id=book_id, limit=limit,
+        )
+
     def list_runtime_selections(
         self, *, project_id: str, book_id: str = "",
         target_capability_id: str = "", knowledge_card_asset_version_id: str = "",

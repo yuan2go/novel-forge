@@ -3236,6 +3236,7 @@ def test_current_book_plan_portfolio_binds_six_production_effect_receipts() -> N
     ),
 )
 def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
+    request: pytest.FixtureRequest,
     runtime_path: str,
     monkeypatch: pytest.MonkeyPatch,
     pre_workflow_migration_database: str,
@@ -3249,7 +3250,13 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     approved_world = compiled_world_fixture()
     for rule in approved_world["rules"]:
         rule.update(enforcement="SOFT_CAUSAL", predicate=None)
-    generic = _seed_inputs(project_id, book_id, target_chapter_count=6, world_foundation=approved_world)
+    generic = _seed_inputs(
+        project_id,
+        book_id,
+        target_chapter_count=6,
+        world_foundation=approved_world,
+        world_production_policy={"context_token_budget": 16000},
+    )
     from tests.integration.test_postgresql_only_chapter_slice import (
         PostgreSQLOnlyChapterSliceTests,
     )
@@ -4367,6 +4374,66 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert book_authority.require(book.book_run_id)["state"] == (
         BookProductionState.READY.value
     )
+    before_replan_reality = composition.query.narrative_reality(
+        book_run_id=book.book_run_id, chapter_number=3
+    )
+
+    def preserved_replan_inputs():
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT acceptance.chapter_number, acceptance.acceptance_id,
+                       acceptance.chapter_outcome_asset_version_id,
+                       acceptance.story_state_asset_version_id,
+                       acceptance.canon_snapshot_asset_version_id,
+                       request.chapter_request_id, request.command_payload,
+                       operation.operation_id, operation.input_asset_snapshot
+                FROM authority_book_chapter_acceptance acceptance
+                JOIN authority_book_chapter_request request
+                  ON request.chapter_request_id=acceptance.chapter_request_id
+                JOIN authority_operation operation
+                  ON operation.operation_id=request.chapter_root_operation_id
+                WHERE acceptance.book_run_id=%s AND acceptance.chapter_number<=3
+                ORDER BY acceptance.chapter_number
+                """,
+                [book.book_run_id],
+            )
+            history = uow.cursor.fetchall()
+            uow.cursor.execute(
+                """
+                SELECT binding_id, asset_version_id, parent_version_id,
+                       execution_scope, freshness, version
+                FROM story_plan_binding
+                WHERE project_id=%s AND book_id=%s
+                  AND (contract_type IN ('BOOK','VOLUME','ARC')
+                       OR execution_scope='EXECUTED')
+                ORDER BY binding_id
+                """,
+                [project_id, book_id],
+            )
+            plans = uow.cursor.fetchall()
+            uow.cursor.execute(
+                """
+                SELECT effect.external_effect_id, effect.status,
+                       dispatch.dispatch_id, receipt.external_receipt_id
+                FROM authority_external_effect effect
+                JOIN authority_operation operation USING(operation_id)
+                LEFT JOIN authority_external_effect_dispatch dispatch
+                  USING(external_effect_id)
+                LEFT JOIN authority_external_receipt receipt USING(dispatch_id)
+                WHERE operation.root_operation_id=ANY(%s)
+                   OR operation.operation_id=ANY(%s)
+                ORDER BY effect.external_effect_id, dispatch.dispatch_id,
+                         receipt.external_receipt_id
+                """,
+                [[row[7] for row in history], [row[7] for row in history]],
+            )
+            return history, plans, uow.cursor.fetchall()
+
+    preserved_history, preserved_plans, preserved_effects = preserved_replan_inputs()
+    assert len(preserved_history) == 3
+    assert preserved_effects and all(row[1] == "SUCCEEDED" for row in preserved_effects)
+    assert all(row[6]["context_version_refs"]["book_production_input_snapshot_id"] == snapshot.snapshot_id for row in preserved_history)
     pending = coordinator.start(
         CoordinateBookReplanCommand(
             project_id=project_id,
@@ -4492,6 +4559,8 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         binding_count = int(uow.cursor.fetchone()[0])
     assert old_group_freshness == "STALE"
     assert binding_count == 2
+    assert preserved_replan_inputs() == (preserved_history, preserved_plans, preserved_effects)
+    assert composition.query.narrative_reality(book_run_id=book.book_run_id, chapter_number=3) == before_replan_reality
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
@@ -4560,6 +4629,13 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert SupervisorAction.ACCEPT_CHAPTER.value in after_replan_actions
     assert book_authority.require(book.book_run_id)["accepted_through_chapter"] == 4
 
+    run_chapter(restarted_after_pause_chapter, str(preserved_history[0][7]))
+    final_history, final_plans, final_effects = preserved_replan_inputs()
+    assert final_history == preserved_history
+    assert final_effects == preserved_effects
+    assert all(row in final_plans for row in preserved_plans)
+    assert composition.query.narrative_reality(book_run_id=book.book_run_id, chapter_number=3) == before_replan_reality
+
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
@@ -4585,6 +4661,20 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     chapter_four_snapshot = composition.query.require_accepted_followup_snapshot(
         chapter_request_id=chapter_four_request_id
     )
+    fourth_request = book_authority.require_chapter_request(chapter_four_request_id)
+    fourth_payload = fourth_request["command_payload"]
+    fourth_refs = fourth_payload["context_version_refs"]
+    assert fourth_refs["book_production_input_snapshot_id"] == resumed_snapshot.snapshot_id
+    assert fourth_refs["chapter_group_plan_version"] == resumed_snapshot.current_chapter_group_plan_version
+    assert fourth_refs["chapter_group_plan_version"] != replan_target_group_version
+    assert chapter_four_snapshot["book_production_input_snapshot_id"] == resumed_snapshot.snapshot_id
+    predecessor_inputs = {row["asset_type"]: row for row in fourth_payload["context_candidates"] if row["asset_type"] in {"story_state_snapshot", "canon_snapshot"}}
+    assert set(predecessor_inputs) == {"story_state_snapshot", "canon_snapshot"}
+    assert predecessor_inputs["story_state_snapshot"]["asset_version_id"] == preserved_history[-1][3]
+    assert predecessor_inputs["canon_snapshot"]["asset_version_id"] == preserved_history[-1][4]
+    assert all(row["accepted_boundary"]["accepted_through_chapter"] == 3 for row in predecessor_inputs.values())
+    fourth_reality = composition.query.narrative_reality(book_run_id=book.book_run_id, chapter_number=4)
+    assert fourth_reality["parent_revision_id"] == before_replan_reality["revision_id"]
     reader = _followup_output(
         project_id=project_id,
         chapter_request_id=chapter_four_request_id,
@@ -4743,6 +4833,30 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         corrective[0]["evaluation_operation_id"]
         == (reevaluated["evaluation_operation_id"])
     )
+    active_change = coordinator.plan_change.require(pending["plan_change_proposal_id"])
+    request.node.user_properties.append(("book_replan_native", json.dumps({
+        "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+        "project_id": project_id, "book_run_id": book.book_run_id,
+        "accepted_before": 3, "accepted_after": 4,
+        "accepted_reality_before": before_replan_reality["revision_id"],
+        "accepted_reality_after": fourth_reality["revision_id"],
+        "recap_version": controlled_recap["recap"]["asset_version_id"],
+        "replan_id": pending["replan_id"], "replan_status": resumed["status"],
+        "plan_change_proposal_id": active_change["proposal_id"],
+        "activation_operation_id": active_change["activation_operation_id"],
+        "prior_snapshot_id": snapshot.snapshot_id,
+        "new_snapshot_id": resumed_snapshot.snapshot_id,
+        "replaced_group_version": replan_target_group_version,
+        "new_group_version": fourth_refs["chapter_group_plan_version"],
+        "preserved_history_digest": canonical_hash(preserved_history),
+        "preserved_plan_binding_ids": [row[0] for row in preserved_plans],
+        "preserved_effect_count": len(preserved_effects),
+        "next_request_id": chapter_four_request_id,
+        "next_context_state_versions": {key: value["asset_version_id"] for key, value in predecessor_inputs.items()},
+        "next_context_accepted_through": 3,
+        "reevaluation_id": reevaluated["reevaluation_id"],
+        "reevaluation_resolution": reevaluated["resolution"],
+    }, sort_keys=True)))
     production_execution.close()
     for worker_execution in worker_production_executions:
         worker_execution.close()

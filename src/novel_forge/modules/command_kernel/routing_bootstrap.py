@@ -33,7 +33,7 @@ CHAPTER_BOOTSTRAP_TASKS = {**CHAPTER_GENERATOR_TASKS, **CHAPTER_REFERENCE_TASKS}
 CHAPTER_SAMPLE_DEFINITION_VERSION = "1.0.0"
 CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE = "book:chapter-provider-sample"
 CHAPTER_SAMPLE_SOURCE_VERSION = "3.4.1"
-WORLD_SAMPLE_TASKS = {"world_candidates.generate", "world_candidates.evaluate"}
+WORLD_SAMPLE_TASKS = {"world_candidates.generate", "world_candidates.evaluate", *("world_candidates.actor_" + str(index) for index in range(3))}
 WORLD_SAMPLE_IDEMPOTENCY_SCOPE = "book:world-provider-sample"
 WORLD_SAMPLE_DEFINITION_VERSION = "1.0.0"
 CHAPTER_REFERENCE_SAMPLE_VERSION = "1.1.0"
@@ -127,12 +127,12 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         raise ValueError("ROUTING_BOOTSTRAP_ACCOUNTING_INVALID")
     reference = grant.get("reference_evaluation")
     if grant["purpose"] == "REFERENCE_EVALUATION":
-        if grant["task_type"] not in {"narrative_semantic_evaluation", "world_candidates.evaluate", *CHAPTER_REFERENCE_TASKS.values()} or "campaign" not in grant:
+        if grant["task_type"] not in {"narrative_semantic_evaluation", "world_candidates.evaluate", "longform_prose_review", *CHAPTER_REFERENCE_TASKS.values()} or "campaign" not in grant:
             raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
         validate_reference_evaluation_binding(reference)
         if (grant["task_type"] in {*CHAPTER_REFERENCE_TASKS.values(), "world_candidates.evaluate"}) != ("adjudications" in reference):
             raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
-    elif reference is not None or grant["task_type"] in {"narrative_semantic_evaluation", "world_candidates.evaluate", *CHAPTER_REFERENCE_TASKS.values()}:
+    elif reference is not None or grant["task_type"] in {"narrative_semantic_evaluation", "world_candidates.evaluate", "longform_prose_review", *CHAPTER_REFERENCE_TASKS.values()}:
         raise ValueError("ROUTING_REFERENCE_AUTHORIZATION_REQUIRED")
     if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and "campaign" not in grant:
         raise ValueError("ROUTING_SOURCE_CAMPAIGN_REQUIRED")
@@ -359,7 +359,7 @@ def validate_bootstrap_scope(
         expected = {
             "authorization_id": payload.get("routing_bootstrap_authorization_id"),
             "book_id": payload.get("book_id"),
-            "task_type": "narrative_semantic_evaluation" if payload.get("reference_evaluation") and not (payload.get("chapter_sampling") or payload.get("world_sampling")) else payload.get("generator_operation_name"),
+            "task_type": "narrative_semantic_evaluation" if payload.get("reference_evaluation") and not (payload.get("chapter_sampling") or payload.get("world_sampling") or payload.get("prose_sampling")) else payload.get("generator_operation_name"),
             "logical_key": payload.get("logical_key"),
             "generation_idempotency_key": payload.get("idempotency_key"),
             "input_versions_hash": authorization_hash(payload.get("input_versions")),
@@ -533,12 +533,26 @@ def load_bootstrap_authorization(
             raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "only a reference evaluator may read a World generator sample")
         contract = ("world.provider.sample." + stage.rsplit(".", 1)[1], "1.1.0" if reference_sample else WORLD_SAMPLE_DEFINITION_VERSION,
                     WORLD_SAMPLE_IDEMPOTENCY_SCOPE)
+    if payload.get("prose_sampling"):
+        from novel_forge.modules.book_followup_authority.prose_sampling import PROSE_SAMPLE_DEFINITION, PROSE_SAMPLE_VERSION, PROSE_SAMPLE_SCOPE
+
+        contract = (PROSE_SAMPLE_DEFINITION, PROSE_SAMPLE_VERSION, PROSE_SAMPLE_SCOPE)
     if tuple(row[1:4]) != contract or row[4] != payload.get("idempotency_key"):
         raise KernelError(
             "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
             "benchmark authorization requires its exact admitted native operation contract",
         )
     grant = validate_bootstrap_scope(snapshot, payload, check_expiry=check_expiry)
+    if grant["task_type"] == "longform_prose_review" or payload.get("prose_sampling"):
+        from novel_forge.modules.book_followup_authority.prose_sampling import validate_prose_sample_origin
+
+        if grant["task_type"] != "longform_prose_review" or not payload.get("prose_sampling"):
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "prose reviewer grant requires its native sampling operation")
+        validate_prose_sample_origin(cursor, project_id=project_id, payload=payload)
+        cursor.execute("SELECT input_asset_snapshot FROM authority_operation WHERE project_id=%s AND operation_id=%s", [project_id, operation_id])
+        inputs = cursor.fetchone()
+        if not inputs or inputs[0] != payload["input_versions"]:
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "prose sample input bindings differ from the grant")
     if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and not payload.get("source_sampling"):
         raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Source grant requires a Source sampling operation")
     if grant["task_type"] in CHAPTER_BOOTSTRAP_TASKS.values() and not payload.get("chapter_sampling"):

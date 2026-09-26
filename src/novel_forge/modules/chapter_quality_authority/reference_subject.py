@@ -24,12 +24,16 @@ def require_reference_subject(
     if (not isinstance(binding, Mapping) or set(binding) != {"asset_version_id", "content_hash"}
         or any(not isinstance(value, str) or not value for value in binding.values())):
         raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "reference annotation requires one exact sample version")
-    if "planning_generation_candidate" in allowed_types:
+    if {"planning_generation_candidate", "longform_prose_review_sample"}.intersection(allowed_types):
         cursor.execute("SELECT asset_type FROM authority_asset JOIN authority_asset_version USING(asset_id) WHERE project_id=%s AND asset_version_id=%s",
             [project_id, binding["asset_version_id"]])
         kind = cursor.fetchone()
-        if kind and kind[0] == "planning_generation_candidate":
+        if kind and kind[0] == "planning_generation_candidate" and kind[0] in allowed_types:
             return require_planning_reference_subject(cursor, project_id=project_id, binding=binding)
+        if kind and kind[0] == "longform_prose_review_sample" and kind[0] in allowed_types:
+            from novel_forge.modules.book_followup_authority.prose_sample_feedback import require_prose_reference_subject
+
+            return require_prose_reference_subject(cursor, project_id=project_id, binding=binding)
     cursor.execute("""SELECT asset.asset_type,version.content,version.content_hash,operation.operation_id,operation.actor_id
         FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
         JOIN authority_operation_output_asset output ON output.asset_version_id=version.asset_version_id
@@ -44,7 +48,7 @@ def require_reference_subject(
         raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "reference subject must be a completed native sample")
     kind, content, digest, operation_id, actor_id = rows[0]
     stages = {"chapter_provider_sample": set(CHAPTER_GENERATOR_TASKS.values()),
-              "world_provider_sample": {"world_candidates.generate"}}
+              "world_provider_sample": {"world_candidates.generate", *("world_candidates.actor_" + str(index) for index in range(3))}}
     if (kind not in allowed_types or content.get("stage") not in stages.get(kind, set())
         or digest != binding["content_hash"] or digest != authorization_hash(content)
         or content.get("routing_eligibility") != "BENCHMARK_ONLY" or content.get("production_eligible") is not False):
@@ -99,6 +103,10 @@ def require_reference_annotation(
     author_field = "evaluator_id" if key == "evaluation" else "adjudicator_id"
     if annotation.get("subject_asset_version_id") != subject["asset_version_id"] or annotation.get(author_field) != actor_id:
         raise KernelError("QUALITY_REFERENCE_ANNOTATION_INVALID", "reference annotation must retain the exact target and authenticated author")
+    if subject["asset_type"] == "longform_prose_review_sample":
+        from novel_forge.modules.book_followup_authority.prose_sample_feedback import validate_prose_annotation
+
+        validate_prose_annotation(subject=subject, annotation=annotation, human=key == "evaluation")
     return subject["asset_version_id"]
 
 

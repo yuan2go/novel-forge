@@ -97,15 +97,26 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
         (item.get("chapter"), item.get("use_id")): dict(item)
         for item in recent_usage
         if current_chapter - policy["recent_chapter_window"] <= int(item.get("chapter") or 0) < current_chapter
-        and int(item.get("chapter") or 0) > 0 and item.get("use_id") and item.get("external_effect_id") and item.get("external_receipt_ids")
+        and int(item.get("chapter") or 0) > 0 and item.get("use_id")
+        and item.get("usage_basis") == "ACCEPTED_PROSE_REVIEW"
+        and item.get("acceptance_id") and item.get("accepted_draft_asset_version_id")
+        and item.get("review_asset_version_id") and item.get("target_text_hash")
+        and item.get("evidence") and item.get("effect_status") in {"ACHIEVED", "FAILED", "UNCERTAIN"}
     }
     observations = [unique[key] for key in sorted(unique)]
-    matching = [item for item in observations if item.get("mechanism_id") == identity]
+    realized = [item for item in observations if item["effect_status"] == "ACHIEVED"]
+    matching = [item for item in realized if item.get("mechanism_id") == identity]
+    feedback = [item for item in observations if item.get("mechanism_id") == identity
+        and (item["effect_status"] != "ACHIEVED" or any(side.get("status") in {"PRESENT", "UNCERTAIN"}
+            for side in item.get("side_effects", [])))]
+    feedback_penalty = len(feedback) * policy["repetition_penalty"]
+    if feedback:
+        reasons.append(f"CRAFT_ACCEPTED_REALIZATION_CAUTION:{len(feedback)}")
     frequency = len(matching)
     repetition_penalty = frequency * policy["repetition_penalty"]
     signature = set(craft_pattern_signature(mechanism))
     similarities = []
-    for item in observations:
+    for item in realized:
         other = set(item.get("pattern_signature") or [])
         if other and item.get("mechanism_id") != identity:
             similarity = len(signature & other) * 100 // len(signature | other)
@@ -113,20 +124,20 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
     pattern_penalty = sum(item["similarity_percent"] >= policy["pattern_similarity_threshold_percent"] for item in similarities) * policy["pattern_similarity_penalty"]
     salience_penalty = sum(item.get("role") == "PRIMARY" for item in matching) * policy["salience_penalty"]
     if matching:
-        reasons.append(f"CRAFT_RECENT_DELIVERY_FREQUENCY:{frequency}")
-    elif score:
+        reasons.append(f"CRAFT_RECENT_ACCEPTED_FREQUENCY:{frequency}")
+    elif score and not feedback:
         score += policy["variation_bonus"]
         reasons.append("CRAFT_VARIATION_BONUS")
     in_cooldown = any(0 < current_chapter - int(item["chapter"]) <= policy["cooldown_chapters"] for item in matching)
     cadence_class = policy.get("mechanism_cadence", {}).get(identity, "EXPRESSIVE")
     temporal_budget_applied = cadence_class != "CONTINUOUS"
     rejection = "CRAFT_COOLDOWN" if temporal_budget_applied and in_cooldown else "CRAFT_FREQUENCY_BUDGET" if temporal_budget_applied and frequency >= policy["max_frequency_in_window"] else "" if score else "CRAFT_NO_CONTEXT_MATCH"
-    budget_assessment = {"frequency": frequency, "repetition_penalty": repetition_penalty, "pattern_similarity_penalty": pattern_penalty, "salience_penalty": salience_penalty, "in_cooldown": in_cooldown, "pattern_signature": sorted(signature), "pattern_comparisons": similarities, "recent_usage": observations, "evidence_ceiling": "DELIVERY_OBSERVATION_NOT_READER_EFFECT"}
+    budget_assessment = {"frequency": frequency, "repetition_penalty": repetition_penalty, "pattern_similarity_penalty": pattern_penalty, "salience_penalty": salience_penalty, "feedback_penalty": feedback_penalty, "realization_cautions": feedback, "feedback_policy": "SOFT_REPETITION_WEIGHT_WITHOUT_QUALIFICATION_OR_REJECTION", "in_cooldown": in_cooldown, "pattern_signature": sorted(signature), "pattern_comparisons": similarities, "recent_usage": observations, "evidence_ceiling": "ACCEPTED_PROSE_OBSERVATION_NOT_READER_EFFECT"}
     if policy["schema_version"] == "narrative-craft-budget.v2":
         budget_assessment.update(cadence_class=cadence_class, policy_version=policy["schema_version"], temporal_budget_applied=temporal_budget_applied, classification="CONFIGURABLE_POLICY", creative_benefit="NOT_PROVEN")
     return {
         "rejection_reason": rejection,
-        "score": max(1, score - repetition_penalty - pattern_penalty - salience_penalty) if score else 0,
+        "score": max(1, score - repetition_penalty - pattern_penalty - salience_penalty - feedback_penalty) if score else 0,
         "match_reasons": reasons,
         "budget_assessment": budget_assessment,
         "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED",
