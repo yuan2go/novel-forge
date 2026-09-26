@@ -263,6 +263,15 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
                 assert len({row["usage"]["instance_id"] for row in final_usage}) == 1
                 assert final_usage[0]["usage"]["accepted_predecessor"]["acceptance_id"] == first_usage[0]["acceptance_id"]
                 state["native_proof"]["accepted_phase_usage"] = final_usage
+                manuscripts = []
+                for use in sorted(final_usage, key=lambda row: row["chapter"]):
+                    draft = assets.require(project_id=snapshot.project_id, asset_version_id=use["accepted_draft_asset_version_id"])
+                    assert draft.content_hash == use["accepted_draft_content_hash"]
+                    manuscripts.append({"chapter": use["chapter"], "acceptance_id": use["acceptance_id"],
+                        "asset_version_id": draft.asset_version_id, "source_content_hash": draft.content_hash,
+                        "text": draft.content["text"], "text_hash": use["target_text_hash"],
+                        "projection": "EXACT_ACCEPTED_TEXT_ONLY", "real_model_call": False})
+                state["native_proof"]["accepted_manuscripts"] = manuscripts
                 historical = list_accepted_craft_usage(DATABASE_URL, project_id=snapshot.project_id, book_id=snapshot.book_id, limit=0, include_continuing=True)
                 assert historical == [final_usage[0]]
                 assert list_accepted_craft_usage(DATABASE_URL, project_id=snapshot.project_id, book_id=snapshot.book_id, limit=0) == []
