@@ -2,19 +2,299 @@
   "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
   "overall_status": "INCOMPLETE",
   "baseline_sha": "6c501c8148c705a1e3466867fdcc4ff15d3ffdd6",
-  "implementation_tree_sha": "sha256:b338289ee59c1c011ba1cb9ccd3c9f23cba5fe959d0494a94e6a2e7e48304c6c",
-  "engineering_evidence": "FOCUSED_CHECKS_PENDING_FINAL_CAPTURE",
+  "origin_main_rechecked_sha": "6c501c8148c705a1e3466867fdcc4ff15d3ffdd6",
+  "final_implementation_sha": "5bb9d91dcb64260956c901a50316badca560094e",
+  "implementation_tree_sha": "sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc",
+  "branch": "codex/narrative-closure-02-continuation",
+  "source_changes_after_full_focused_matrix": [
+    "tests/integration/test_craft_planning_postgres.py: retain exact accepted text before fixture cleanup; production code unchanged"
+  ],
+  "tests": [
+    {
+      "artifact": "unit.xml",
+      "status": "PASS",
+      "tests": 137,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 10.19,
+      "implementation_sha": "e0e1175838bcc44e63a1627c6ee322926863b440",
+      "implementation_tree_sha": "sha256:d8a6d29f4886b1e5fddfa04919f38f66220aab37af3d3634505857ada4f61241",
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_craft_solver.py tests/unit/test_craft_usage.py tests/unit/test_craft_selection.py tests/unit/test_craft_execution.py tests/unit/test_narrative_craft_review.py tests/unit/test_prose_semantic_relations.py tests/unit/test_longform_prose_editorial.py tests/unit/test_plan_change_authority.py tests/unit/test_chapter_authority_domain_handlers.py tests/unit/test_chapter_execution_artifacts.py tests/unit/test_knowledge_translation.py tests/unit/test_instruction_surface.py -q --tb=short --junitxml=architecture/live-evidence/narrative-capability-admission-closure-02/20260927-composition-runtime/unit.xml"
+    },
+    {
+      "artifact": "postgres.xml",
+      "status": "PASS",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 371.755,
+      "implementation_sha": "e0e1175838bcc44e63a1627c6ee322926863b440",
+      "implementation_tree_sha": "sha256:d8a6d29f4886b1e5fddfa04919f38f66220aab37af3d3634505857ada4f61241",
+      "command": "NOVEL_FORGE_DATABASE_URL=\"$ISOLATED_TEST_DATABASE_URL\" NARRATIVE_CRAFT_NATIVE_EVIDENCE_PATH=/tmp/nf-closure-02-native-craft-final.json PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_craft_planning_postgres.py tests/integration/test_plan_change_authority_postgres.py tests/integration/test_runtime_inspection_postgres.py tests/integration/test_longform_prose_editorial_postgres.py -q --tb=short --junitxml=architecture/live-evidence/narrative-capability-admission-closure-02/20260927-composition-runtime/postgres.xml",
+      "connection_redaction": "ISOLATED_TEST_DATABASE_URL stands for the separately owned nf_closure_02_test database; it must never point to the recovered historical ledger."
+    }
+  ],
+  "artifact_retention_recheck": {
+    "status": "PASS",
+    "artifact": "native-artifacts.xml",
+    "tests": 1,
+    "seconds": 156.931,
+    "implementation_sha": "5bb9d91dcb64260956c901a50316badca560094e",
+    "implementation_tree_sha": "sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc",
+    "accepted_manuscript_texts": 2,
+    "sample_independence": "RERUN_OF_THE_SAME_TEST_NOT_AN_INDEPENDENT_CREATIVE_SAMPLE",
+    "command": "NOVEL_FORGE_DATABASE_URL=\"$ISOLATED_TEST_DATABASE_URL\" NARRATIVE_CRAFT_NATIVE_EVIDENCE_PATH=/tmp/nf-closure-02-native-craft-retained.json PYTHONPATH=src .venv/bin/python -m pytest \"tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-True]\" -q --tb=short --junitxml=architecture/live-evidence/narrative-capability-admission-closure-02/20260927-composition-runtime/native-artifacts.xml"
+  },
+  "static_checks": "static-checks.json",
+  "evidence": {
+    "runtime": "runtime.json",
+    "same_book_native_craft_and_review": "native-craft-and-review.json"
+  },
   "real_provider_calls": 0,
   "qualification": "NOT_PROVEN",
   "production": "NOT_PROVEN",
   "literary_benefit": "NOT_PROVEN",
+  "engineering_evidence_ceiling": "EXECUTABLE_FOCUSED_SCRIPTED_AND_READ_ONLY_RUNTIME_EVIDENCE",
+  "capabilities": [
+    {
+      "name": "P0-1 persistent runtime and ledger",
+      "progress": "PARTIAL",
+      "evidence_state": "EXECUTABLE",
+      "entry": "authority-runtime-inspect --project-id first-novel-pilot-20260912 --expected-database novel_forge_first_novel_pilot_test",
+      "consumer": "Existing Authority tables and object blobs; existing private operator launchers",
+      "completed": [
+        "Recovered original Docker PostgreSQL and MinIO volumes and actual historical DSN source",
+        "Backup, clone restore/upgrade, original upgrade, unchanged authoritative-row fingerprint comparison",
+        "143 applied migrations; 359 available blobs verified; same ledger after service restart",
+        "Volume-bound dynamic-port loading in existing private launchers; read-only inspector does not dispatch"
+      ],
+      "remaining": [
+        "Unknown timeout Effect and entitlement costs retained; external outcome not reconciled",
+        "Production workers remain stopped pending valid finite authorization and task admission",
+        "New application implementation has not replaced older production release launchers"
+      ]
+    },
+    {
+      "name": "Craft composition, usage types and accepted feedback",
+      "progress": "PARTIAL",
+      "evidence_state": "EXECUTABLE",
+      "entry": "MkaosAuthorityQuery.resolve_narrative_intelligence -> native Planning Context",
+      "consumer": "Planning translation -> active ChapterPlan -> ExecutionIntent/Memo -> scene generation -> located review -> Book acceptance -> next Planning selection",
+      "completed": [
+        "Deterministic bounded combination search with transitive/shared dependency scene-instance occupancy, scene/chapter capacity, mutual exclusion, precedence and frequency allowances",
+        "240 small exhaustive oracle cases and targeted invalid-candidate removal/refill, shared dependency, required-candidate, cycle and budget checks",
+        "Explicit v3 usage registry and v2 frozen strategy: event, persistent, staged, scopes, combination rationale, exact accepted predecessor and per-plan frequency",
+        "Continued instances outside recent acceptance window; exact use whitelist prevents terminal-phase resurrection by a neighboring persistent use",
+        "Same Book native approved mechanism selection and SETUP -> DEVELOPMENT after final acceptance; no strategy or accepted-history injection",
+        "Identical typed Memo strategy deduplicated by protected ExecutionIntent reference within unchanged 16000-token Context limit"
+      ],
+      "remaining": [
+        "Provider translation rejection does not yet trigger automatic alternative generation/reselection",
+        "Applicability and role constraints at concrete scene level still require Provider adaptation and deterministic rejection; complete alternative-scene search is not established",
+        "Real mechanism benefits, interference and long-stage reader effects unproven"
+      ]
+    },
+    {
+      "name": "Semantic global review and implicit impact",
+      "progress": "PARTIAL",
+      "evidence_state": "EXECUTABLE",
+      "entry": "BookProseReviewCoordinator.start with accepted-state-relations.v2; existing Plan Change semantic impact preparation",
+      "consumer": "Bounded located review windows and native finding dispositions; Plan Change impact confirmation/false-positive/defer and future invalidation",
+      "completed": [
+        "Exact accepted-state identities/causes retrieve 2-4 manuscript passages without shared surface words",
+        "Invalid, unlocated, truncated and unindexed evidence classes are explicit; every retrieved passage must be cited by relation findings",
+        "Same accepted Book manuscripts consumed by native automatic semantic review",
+        "Structured before/after numeric, capability, knowledge and obligation candidates retain JSON-pointer/hash evidence; no automatic hard edges",
+        "Native changed-resource hypothesis confirmation reaches IMPACTED future binding and append-only invalidation"
+      ],
+      "remaining": [
+        "Unindexed paraphrases and unextracted relations are not covered",
+        "No empirical real-model precision/recall, false-positive or over-editing result",
+        "Whole-manuscript edition disposition consumer is not implemented"
+      ]
+    },
+    {
+      "name": "Continuing multistep Actor",
+      "progress": "MISSING_IMPLEMENTATION",
+      "evidence_state": null,
+      "entry": "Existing isolated Actor/world preparation path remains unchanged",
+      "consumer": "Existing one-action judge/Director and accepted own commitments",
+      "remaining": [
+        "Bounded multistep private intent plans, accepted cross-round re-evaluation and continued intent identity",
+        "Evidence-backed renegotiation and abandonment through domain decisions",
+        "Real naturalness and knowledge-leakage evaluation"
+      ]
+    },
+    {
+      "name": "Whole-manuscript editions and multiple textual forms",
+      "progress": "MISSING_IMPLEMENTATION",
+      "evidence_state": null,
+      "entry": "Existing Chapter Author Editor and Book editorial signature workflows",
+      "consumer": "No new edition or scene-screenplay production consumer delivered",
+      "required_scope": [
+        "Book-owned exact-base immutable editions, chapter/scene split/merge/reorder mappings",
+        "Version-isolated Canon/Narrative State reconstruction, concurrency, pause/recovery, review and atomic switch with in-flight Effect handling",
+        "Native novel and scene-screenplay adaptation contracts, distinct generation/review/export and exact-source invalidation"
+      ],
+      "publication_authority_granted": false
+    },
+    {
+      "name": "P0-2 same-Book joint validation",
+      "progress": "PARTIAL",
+      "evidence_state": "EXECUTABLE",
+      "completed": [
+        "Original scripted native Book chain with approved automatic Craft selection, accepted feedback, older-instance retrieval and accepted-state global review"
+      ],
+      "remaining": [
+        "Combined Chinese xuanhuan/wuxia chain including multistep Actor, confirmed cross-volume impact, future replanning, whole-manuscript edition and derived form",
+        "Current retained scripted story is an institutional mystery fixture, not the requested complete Chinese original validation work"
+      ],
+      "strategy_injected": false,
+      "real_model_call": false
+    },
+    {
+      "name": "P0-3 freeze and real task admission",
+      "progress": "INCOMPLETE_ENGINEERING_AND_EXTERNAL_INPUT",
+      "evidence_state": null,
+      "completed": [
+        "Registered changed knowledge-translation instruction surface",
+        "Read actual historical policy/admission/reference ledger; no invented references or new campaign"
+      ],
+      "remaining": [
+        "Close the required enabled implementation path before freezing its complete task/producer/context/evaluation contracts",
+        "Calculate exact bounded sampling calls/tokens/cost/entitlement and human workload after closure",
+        "Matching finite unexpired account authorization and independent native reference labels",
+        "Real generator and evaluator sampling/admission and subsequent Router consumption"
+      ],
+      "historical_ledger": {
+        "provider_admission_manifests": 28,
+        "model_call_logs": 28,
+        "routing_decision_assets": 0,
+        "human_evaluations": 0,
+        "adjudicated_evaluations": 0,
+        "native_reference_evaluation_operations": 0
+      }
+    },
+    {
+      "name": "P0-4 real production and controlled effects",
+      "progress": "NOT_RUN",
+      "evidence_state": null,
+      "remaining": [
+        "Same-work native real-model production, acceptance, feedback, replanning, edition and derived form after P0-2/P0-3",
+        "Prespecified representative persistent/event/staged/dependency Craft comparisons",
+        "Independent human/reader evidence with explicit denominators, failures, over-revision, latency, usage and unknown-cost accounting",
+        "Stage-transition/commitment-payoff reading evidence; no million-word extrapolation"
+      ]
+    }
+  ],
+  "external_conditions": {
+    "authorization": "Two historical BOOK_OPENING budget scopes expired on 2026-09-14; no replacement grant created",
+    "effect": "ff4d2c74-67d4-4627-8a05-9e47052fb3f8 retains PROCESS_TIMEOUT without remote provider_request_id; no resend, release or deletion",
+    "historical_entitlement_cost": "28 SETTLED reservations, 1174027 tokens, UNKNOWN amount; subscription is not recorded as free",
+    "independent_reference": "No human/adjudicated labels in the recovered project; identities and workload must follow frozen protocol, not fabricated model votes",
+    "bounded_request": "A monetary/call authorization request is not ready until remaining mandatory implementations and task closure are frozen; historical limits are not reused"
+  },
+  "retained_failures_and_fixes": [
+    {
+      "failure": "Wrong unit-test filename collected no tests",
+      "fix": "Ran the existing knowledge_translation test file; no completion inferred from empty collection"
+    },
+    {
+      "failure": "POSTGRES_TEST_DSN did not configure the native fixture; four connection setup errors",
+      "fix": "Used the actual NOVEL_FORGE_DATABASE_URL on the separately owned isolated database"
+    },
+    {
+      "failure": "Typed Craft duplicated in Memo and protected ExecutionIntent exhausted Context (knowledge card requires 3123 tokens; 2036 available)",
+      "fix": "Replace only identical typed Memo strategy projection with an exact protected ExecutionIntent reference; full immutable assets retained"
+    },
+    {
+      "failure": "Exploratory 24000-token Context configuration rejected by profile maximum",
+      "fix": "Reverted that test configuration; production and final tests retain the 16000 maximum"
+    },
+    {
+      "failure": "Plan Change test expected STALE; actual existing confirmed-impact contract is IMPACTED",
+      "fix": "Assert IMPACTED plus open invalidation, unchanged unrelated binding and no invented hard edge"
+    },
+    {
+      "failure": "New instruction source was not discoverable by the instruction scanner",
+      "fix": "Named the existing instruction string before schema binding and kept materialized instruction text unchanged"
+    },
+    {
+      "failure": "Three proposal scope baselines were stale after implementation changes",
+      "fix": "Rechecked effective scope and bound proposals to the exact current implementation; historical experiments retained"
+    },
+    {
+      "failure": "Native semantic-review helper fabricated workspace prefix for the new Book fixture",
+      "fix": "Pass the exact native snapshot workspace_id; scope guard remains unchanged"
+    },
+    {
+      "failure": "Review found a completed old Craft phase could return through another continuing use in the same acceptance",
+      "fix": "Filter historical rows by globally selected exact acceptance/use identity before compaction; neighbor regression and read-only follow-up review confirm closure"
+    },
+    {
+      "failure": "Post-test manuscript export found the isolated Book already removed by fixture cleanup",
+      "fix": "Retain exact accepted text inside the native callback before cleanup; separately rerun that modified chain"
+    }
+  ],
+  "constraints": [
+    {
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "claim": "Only exact formally accepted prose/review evidence advances typed Craft history; planned and failed/uncertain observations remain distinct",
+      "evidence": "unit.xml and postgres.xml"
+    },
+    {
+      "classification": "CONFIGURABLE_POLICY",
+      "claim": "Craft capacity, cooldown, frequency, usage types/phases, search/evidence budgets and Context limits are policies, not universal literary laws"
+    },
+    {
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "claim": "Frozen v1/v2 usage defaults and legacy recent-history behavior remain unchanged"
+    },
+    {
+      "classification": "CURRENT_RUNTIME_FACT",
+      "claim": "Recovered historical ledger has no Book production record, expired grants and one retained timeout Effect",
+      "evidence": "runtime.json"
+    }
+  ],
+  "not_run": [
+    "Full P0 qualification",
+    "Full backend or all PostgreSQL suite",
+    "Compose application/worker startup",
+    "Web UI/browser suite",
+    "Remote CI",
+    "Real Provider sampling/production",
+    "Independent human/editor/reader comparison"
+  ],
+  "repository_actions": {
+    "local_commits_only": true,
+    "pushed": false,
+    "pull_request_created": false,
+    "merged": false,
+    "user_original_checkout_modified": false,
+    "new_migration_files": 0
+  },
   "remaining_required": [
-    "Provider rejection reselection and long-range open Craft instance retrieval",
-    "Continuing multi-step Actor",
-    "Whole-manuscript versioned editions and fact isolation",
+    "Provider rejection and full scene alternative reselection",
+    "Continuing multistep Actor",
+    "Whole-manuscript editions and isolated fact revalidation",
     "Novel plus scene-screenplay native adaptation",
-    "Combined same-Book joint validation",
-    "Frozen task closure and real independent reference admission",
+    "Complete same-Book joint chain",
+    "Frozen enabled task closure and real independent reference admission",
     "Authorized real production and controlled reader/cost comparison"
-  ]
+  ],
+  "isolated_test_cleanup": {
+    "container": "nf-closure-02-20260926",
+    "container_id": "f09d4bfbd45f5ca46e5d474ffc116502658cf3ab25c4892971661cd9aa4d08c4",
+    "scope_label": "narrative-closure-02-20260926",
+    "anonymous_volume": "acb3d65b639a52fa1d6d251d859c3e48f2b761534e56204296d6c5fd9e359af2",
+    "action": "docker rm -f -v after exact ownership inspection",
+    "status": "PASS",
+    "historical_services": "BOTH_RUNNING_UNLESS_STOPPED"
+  },
+  "artifact_security_check": {
+    "credential_url_or_api_key_patterns": 0,
+    "credentials_committed": false
+  }
 }

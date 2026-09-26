@@ -9,20 +9,20 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `7f1510d40d0ed2dd3ede575806222fce17cbc8bd`
+Reality baseline: `5bb9d91dcb64260956c901a50316badca560094e`
 Baseline implementation identity:
-`sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3`
+`sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-26",
-  "review_due": "2026-10-08",
+  "reviewed_on": "2026-09-27",
+  "review_due": "2026-10-11",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "7f1510d40d0ed2dd3ede575806222fce17cbc8bd",
-    "implementation_tree_sha": "sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3"
+    "sha": "5bb9d91dcb64260956c901a50316badca560094e",
+    "implementation_tree_sha": "sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -129,6 +129,10 @@ repairs supply no real corpus consumption or independent generator evaluation. T
 classical-text consumption, authorize model spend or supply independent editorial proof.
 
 Current scope review (2026-09-26): Native generator, Actor and longform reviewer feedback now uses independent adjudications and task-scoped routing; accepted Craft realization influences later selection. This is engineering wiring, not G3 corpus coverage or G4 controlled creative evidence. Original campaign failures, finite authorization and independent editorial requirements remain unchanged.
+
+Current scope review: WP02 typed Craft and structured review/impact inputs change the
+Planning/Context contracts. G3/G4 must bind their exact versions; recovered historical
+account costs and expired grants do not supply fresh campaign authorization.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption
 

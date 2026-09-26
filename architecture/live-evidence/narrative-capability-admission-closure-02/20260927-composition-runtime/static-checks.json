@@ -1,0 +1,66 @@
+{
+  "implementation_commit": "e0e1175838bcc44e63a1627c6ee322926863b440",
+  "implementation_tree_sha": "sha256:d8a6d29f4886b1e5fddfa04919f38f66220aab37af3d3634505857ada4f61241",
+  "checks": [
+    {
+      "command": "make lint-ratchet",
+      "exit_code": 0,
+      "status": "PASS",
+      "log_sha256": "sha256:12544107193743df4d2010fe9bb80c90fbdc9a303f841a2c0770072b22fc74ca"
+    },
+    {
+      "command": "make architecture-manifests-check",
+      "exit_code": 0,
+      "status": "PASS",
+      "log_sha256": "sha256:5d161bcf95766e568e6f28596e494f3ae310cecbfef514f5d7c13b8ec5fc805d"
+    },
+    {
+      "command": "make architecture-fitness-check",
+      "exit_code": 0,
+      "status": "PASS",
+      "log_sha256": "sha256:fb105c585e8802f6d2beb5284312d00514d3ca6fe88f43d25634ed2f27e0a3f9"
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.documentation_reality --repo-root .",
+      "exit_code": 0,
+      "status": "PASS",
+      "log_sha256": "sha256:e562106a9935da1a648b7b1a916e07d7b7a0506b7559e4b01eac6d3f3135ba3c"
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.instruction_surface --repo-root .",
+      "exit_code": 0,
+      "status": "PASS",
+      "log_sha256": "sha256:431dff41e9c2f4ec8befdbd34a11838de4ab5be6016dcd5c6d93acf42151a6ab"
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.test_reality --repo-root .",
+      "exit_code": 0,
+      "status": "PASS",
+      "log_sha256": "sha256:b01a9545ab43fba194708d0efc0c50c1a1e38b83a4d2720e59c43ebdb28d82a0"
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.proposal_lifecycle --repo-root .",
+      "exit_code": 0,
+      "status": "PASS",
+      "log_sha256": "sha256:7c4a73f62e59c180650c1ad72aa512fb208792ebb8923b0cfbdfd1b6319efcc0"
+    }
+  ],
+  "artifact_retention_followup_checks": [
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.documentation_reality --repo-root .",
+      "implementation_sha": "5bb9d91dcb64260956c901a50316badca560094e",
+      "implementation_tree_sha": "sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc",
+      "status": "PASS",
+      "exit_code": 0,
+      "log_sha256": "sha256:139e8547d90db09b85abb086174ddfa25624844a9129dd888d4c1b282f25ab07"
+    },
+    {
+      "command": "PYTHONPATH=src .venv/bin/python -m novel_forge.tools.proposal_lifecycle --repo-root .",
+      "implementation_sha": "5bb9d91dcb64260956c901a50316badca560094e",
+      "implementation_tree_sha": "sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc",
+      "status": "PASS",
+      "exit_code": 0,
+      "log_sha256": "sha256:2152a199a28b625598467c03f204a5aedbed4b6c0b6aa6a1ca0e13ff3a79b1b9"
+    }
+  ]
+}

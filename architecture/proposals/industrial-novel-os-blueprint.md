@@ -8,18 +8,18 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `7f1510d40d0ed2dd3ede575806222fce17cbc8bd`
-Baseline implementation identity: `sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3`
+Current-reality baseline: `5bb9d91dcb64260956c901a50316badca560094e`
+Baseline implementation identity: `sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-26",
-  "review_due": "2026-10-08",
+  "reviewed_on": "2026-09-27",
+  "review_due": "2026-10-11",
   "reality_baseline": {
-    "sha": "7f1510d40d0ed2dd3ede575806222fce17cbc8bd",
-    "implementation_tree_sha": "sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3"
+    "sha": "5bb9d91dcb64260956c901a50316badca560094e",
+    "implementation_tree_sha": "sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -169,7 +169,7 @@ Baseline implementation identity: `sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00
     },
     {
       "id": "segment-boundaries",
-      "description": "DESIGN_REVIEW_REQUIRED: segment identity and boundary changes across accepted chapters.",
+      "description": "Implementation contract required: immutable Book-owned editions preserve accepted originals, bind exact base manifests and revalidate affected facts before controlled switching; this is authorized WP02 scope, not a request for another approval.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
@@ -220,7 +220,7 @@ Baseline implementation identity: `sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00
     },
     {
       "id": "retrospective-correction",
-      "description": "DESIGN_REVIEW_REQUIRED: erratum, compensating fact or edition boundaries for accepted factual errors.",
+      "description": "Implementation contract required: immutable Book-owned editions preserve accepted originals, bind exact base manifests and revalidate affected facts before controlled switching; this is authorized WP02 scope, not a request for another approval.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/storage/book_authority_repositories.py"
@@ -431,7 +431,7 @@ The expanded WP02 scope and current implementation boundary are tracked in the
 | Work | Current category | Remaining required behavior |
 | --- | --- | --- |
 | P0-1 persistent environment | Implemented, partially verified | Original PostgreSQL/MinIO volumes recovered and forward-upgraded with backup/restore comparison; one historical timeout and unknown costs remain retained. No authorized production worker has restarted |
-| Craft composition and usage | Implemented, focused verification | Deterministic dependency/scene/frequency search, explicit typed phases and accepted feedback; Provider-rejection reselection, arbitrary supported scene applicability and older open-instance retrieval remain incomplete |
+| Craft composition and usage | Implemented, focused verification | Deterministic dependency/scene/frequency search, explicit typed phases, older open-instance retrieval and accepted feedback; Provider-rejection reselection and arbitrary supported scene applicability remain incomplete |
 | Semantic prose/impact retrieval | Implemented, focused verification | Exact accepted-state multi-passage retrieval and typed changed-state hypotheses consume native review/Plan Change; unindexed semantics and empirical precision/recall remain unproven |
 | Continuing multi-step Actor | Missing implementation | Existing one-action private projection and commitment dispositions must be extended through judged plans and accepted cross-round state |
 | Whole-manuscript editions | Missing implementation | Book-owned base manifests, mapped structural edits, isolated fact revalidation, concurrent/recoverable admission, controlled switch and Editor/CLI/API consumers |
