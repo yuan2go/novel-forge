@@ -116,6 +116,7 @@ def _rows(cursor) -> list[dict[str, Any]]:
                     row["craft_usage"] = [{
                         "mechanism_id": use["mechanism_id"], "mechanism_version": use["mechanism_version"],
                         "pattern_signature": craft_pattern_signature(use["mechanism"]),
+                        **({"usage": use["usage"]} if "usage" in use else {}),
                         "family": use["mechanism"]["family"], "use_id": use["use_id"], "scene_id": use["scene_id"], "role": use["role"],
                         "chapter": chapter, "knowledge_card_asset_version_id": row["knowledge_card_asset_version_id"],
                         "content_hash": row["knowledge_card_content_hash"], "external_effect_id": row["external_effect_id"],
@@ -318,6 +319,7 @@ def list_accepted_craft_usage(
             seen.add(identity)
             result.append({
                 **{key: use[key] for key in ("mechanism_id", "mechanism_version", "use_id", "scene_id", "role", "knowledge_card_asset_version_id", "content_hash")},
+                **({"usage": use["usage"]} if "usage" in use else {}),
                 "family": use["mechanism"]["family"],
                 "pattern_signature": craft_pattern_signature(use["mechanism"]),
                 "chapter": chapter, "acceptance_id": acceptance,

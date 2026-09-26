@@ -775,7 +775,8 @@ def select_context_candidates(
                     else "CONTEXT_REQUIRED_BUDGET_UNSATISFIABLE"
                 )
                 raise ValueError(
-                    f"{code}: {candidate.asset_version_id} exceeds {budget_reason}"
+                    f"{code}: {candidate.asset_version_id} exceeds {budget_reason}; "
+                    f"requires={candidate.estimated_tokens}, available={available}, used={used}, total={token_budget}"
                 )
             selected_candidate, receipt = _truncate_candidate(
                 candidate,

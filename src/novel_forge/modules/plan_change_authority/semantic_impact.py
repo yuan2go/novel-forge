@@ -8,7 +8,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 DISCOVERY_POLICY = {
-    "version": "bounded-plan-impact.v1",
+    "version": "bounded-plan-impact.v2",
     "plan_limit": 128,
     "prose_limit": 32,
     "hypothesis_limit": 32,
@@ -51,11 +51,14 @@ def discover_semantic_impacts(
     accepted_prose: Sequence[dict[str, Any]],
     coverage: dict[str, Any],
 ) -> dict[str, Any]:
+    from .structured_retrieval import IDENTITY_FIELDS, changed_records, retrieve_structured_matches
+    structured_changes, omitted_changes = changed_records(list(changes))
+    structured_coverage = {}
     terms = []
     for change in changes:
         for side in ("before", "after"):
             for pointer, value in _leaves(change[side], "/" + change["field"]):
-                if 4 <= len(value.strip()) <= 256:
+                if pointer.rsplit("/", 1)[-1] not in IDENTITY_FIELDS and 4 <= len(value.strip()) <= 256:
                     terms.append(
                         {"side": side, "json_pointer": pointer, "value": value}
                     )
@@ -67,8 +70,11 @@ def discover_semantic_impacts(
             proposed_asset_version_id,
         }:
             continue
-        matches = []
+        matches, structured_coverage[plan["asset_version_id"]] = retrieve_structured_matches(
+            plan, structured_changes, evidence_limit=DISCOVERY_POLICY["evidence_limit"], digest=_digest)
         for pointer, value in _leaves(plan["content"]):
+            if len(matches) >= DISCOVERY_POLICY["evidence_limit"]:
+                break
             for term in terms:
                 if term["value"] in value:
                     matches.append(
@@ -94,7 +100,7 @@ def discover_semantic_impacts(
             continue
         prose_evidence = []
         for prose in accepted_prose:
-            for term in {item["source_position"]["value"] for item in matches}:
+            for term in {item["source_position"]["value"] for item in matches if isinstance(item["source_position"]["value"], str)}:
                 start = prose["text"].find(term)
                 if (
                     start >= 0
@@ -127,15 +133,16 @@ def discover_semantic_impacts(
             {
                 "hypothesis_id": "semantic-impact:" + _digest(identity),
                 "candidate": snapshot,
-                "relation": "SHARED_CHANGED_COMMITMENT",
+                "relation": "SHARED_TYPED_STATE_CHANGE" if any(item.get("retrieval_kind") == "TYPED_STATE_CHANGE" for item in matches) else "SHARED_CHANGED_COMMITMENT",
                 "relation_status": "UNVERIFIED",
-                "confidence": 0.4,
-                "confidence_basis": "DETERMINISTIC_LEXICAL_RETRIEVAL_NOT_CAUSAL_PROOF",
+                "confidence": None,
+                "confidence_basis": "TYPED_AND_LEXICAL_RETRIEVAL_NOT_CALIBRATED_CAUSAL_PROOF",
                 "plan_evidence": matches,
                 "accepted_prose_evidence": prose_evidence,
                 "uncertainty": [
                     "shared wording may be incidental",
                     "causal direction and relevance require Authority review",
+                    "identity overlap does not establish a dependency or entail a contradiction",
                 ],
                 "default_disposition": "PRESERVE_HISTORY"
                 if plan["execution_scope"] == "EXECUTED"
@@ -158,6 +165,9 @@ def discover_semantic_impacts(
             "matched_plan_count": matched_count,
             "hypotheses_omitted": max(0, matched_count - len(hypotheses)),
             "semantic_exhaustiveness": "NOT_PROVEN",
+            "structured_changes_omitted": omitted_changes,
+            "structured_plan_coverage": structured_coverage,
+            "uncovered": ["UNIDENTIFIED_PARAPHRASE", "UNEXTRACTED_STATE", "UNPROVIDED_CORPUS", "RETRIEVAL_TRUNCATION"],
         },
         "hypotheses": hypotheses,
         "hard_dependency_created": False,

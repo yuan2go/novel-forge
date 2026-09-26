@@ -333,6 +333,16 @@ def build_context_bundle(
             if asset_type == "retrieval_result"
             else {key: value for key, value in content.items() if key != "execution_evidence"}
         )
+        if asset_type == "chapter_memo" and (content.get("craft_strategy") or {}).get("schema_version") == "narrative-craft-strategy.v2":
+            strategy = content["craft_strategy"]
+            if not execution_intent_asset_version_id or strategy != (execution_intent or {}).get("craft_strategy"):
+                raise KernelError("CRAFT_STRATEGY_DRIFT", "Memo may reference only the identical protected execution-intent strategy")
+            rendered_content.pop("craft_strategy")
+            rendered_content["craft_strategy_reference"] = {
+                "asset_version_id": execution_intent_asset_version_id,
+                "json_pointer": "/craft_strategy", "strategy_digest": strategy["strategy_digest"],
+                "projection": "EXACT_DUPLICATE_REPLACED_BY_PROTECTED_CONTEXT_REFERENCE",
+            }
         if asset_type == "chapter_execution_intent":
             rendered_content["active_obligations"] = [
                 disclosed_fact_projection(item)

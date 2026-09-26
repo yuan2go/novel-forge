@@ -81,7 +81,8 @@ def test_pg_frozen_selection_production_planning_handler_derives_exact_scene_str
         handler.execute(request)
 
 
-def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(request, monkeypatch):
+@pytest.mark.parametrize("continue_after_acceptance,typed_usage", [(False, False), (True, False), (True, True)])
+def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(request, monkeypatch, continue_after_acceptance, typed_usage):
     from copy import deepcopy
 
     from novel_forge.modules.runtime_job import RuntimeJobAuthority
@@ -93,6 +94,9 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
     original_seed = core._seed_inputs
 
     def seed_with_approved_craft(project_id, book_id, **kwargs):
+        kwargs["world_production_policy"] = {**(kwargs.get("world_production_policy") or {}), "context_token_budget": 16000}
+        if typed_usage:
+            kwargs["craft_budget_policy"] = {"schema_version": "narrative-craft-budget.v3", "mechanism_usage_types": {"choice-exposes-value": "staged"}}
         generic = original_seed(project_id, book_id, **kwargs)
         principal = _principal(project_id)
         principal = replace(principal, permissions=principal.permissions | {"mkaos.authority.execute", "mkaos.authority.approve", "mkaos.authority.query"})
@@ -112,6 +116,17 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
             self.rejected_scene = True
             self.chapter_inputs = []
 
+        def __call__(self, stage, inputs):
+            result = super().__call__(stage, inputs)
+            if stage in {"review", "rereview"}:
+                for check in result.get("craft_checks", []):
+                    check.update(effect_status="ACHIEVED", reason="Scripted located realization for native feedback protocol; no reader-effect claim.")
+                    for side in check["side_effects"]:
+                        side.update(status="CLEAR", reason="Scripted negative side-effect control.")
+                for check in result.get("craft_preservation_checks", []):
+                    check.update(status="PRESERVED", reason="Scripted exact unchanged realization control.")
+            return result
+
         def planning(self, stage, inputs):
             result = super().planning(stage, inputs)
             if stage == "world_candidates.evaluate":
@@ -126,6 +141,16 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
                     scene = result["scene_plan"][0]
                     field = next(key for key, value in scene.items() if isinstance(value, str) and len(value.strip()) >= 8 and not key.endswith(("_id", "_ref")))
                     translation.update(decision="ADAPT", rationale="Expose the established protagonist priority through the planned choice and its existing cost.", prerequisite_resolution="The frozen realization includes a consequential protagonist choice. Preserve the established outcome and visible knowledge; avoid inventing an additional option or private motive.", use_sites=[{"target_pointer": f"/scene_plan/0/{field}", "realization_excerpt": scene[field], "expected_application": "Render the planned choice as an observable action with the existing cost instead of explaining a trait.", "preservation_requirements": ["Preserve the accepted choice, its consequence, current POV, character voice and knowledge boundary."], "verification_checks": ["Locate the choice action and its existing cost without added narrative facts."], "craft_role": "PRIMARY", "craft_sequence": 1, "intended_reader_effect": "The reader infers the protagonist priority from the consequential choice."}])
+                if typed_usage and stage == "chapter_plan.generate":
+                    history = card["craft_assessment"]["budget_assessment"]["accepted_usage_history"]
+                    previous = next((row for row in history if row["effect_status"] == "ACHIEVED"), None)
+                    translation["use_sites"][0]["craft_combination"] = dict(narrative_problem="Make the established choice legible.", selection_reason="The scene already contains a consequential decision.", role_and_order_reason="Show the choice before its cost.", combined_effect="The reader infers priority from action.", interference_risk="Explanatory commentary would dilute the choice.", preservation_constraint="Retain outcome, voice and knowledge boundaries.", abstain_condition="Do not add a choice to a scene without one.")
+                    translation["use_sites"][0]["craft_usage"] = {
+                        "instance_id": previous["usage"]["instance_id"] if previous else "",
+                        "predecessor_use_id": previous["use_id"] if previous else "",
+                        "phase": "DEVELOPMENT" if previous else "SETUP",
+                        "scope_id": selection["need"]["craft_context"]["usage_scope_context"]["arc_plan_version_ids"][0],
+                    }
                 result["knowledge_translations"].append(translation)
             if stage == "chapter_plan.generate":
                 self.chapter_inputs.append(deepcopy(inputs))
@@ -197,10 +222,65 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
             uow.cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s AND request_payload->>'stage'='chapter_plan.generate'", [generation_operation])
             assert uow.cursor.fetchall() == [(effect_id,)]
         state["native_proof"] = {"book_run_id": admitted.book_run_id, "generation_operation_id": generation_operation, "candidate_asset_version_id": candidate_version, "selection_digest": delivered["selection_digest"], "strategy_digest": strategy["strategy_digest"], "external_effect_id": effect_id, "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY"}
+        if continue_after_acceptance:
+            from novel_forge.modules.chapter_authority.contracts import ChapterNode
+            from novel_forge.modules.mkaos_authority.runtime_usage import list_accepted_craft_usage
+            from novel_forge.modules.authority_security import Principal, PrincipalType
+            worker = Principal(principal_id="native-craft-worker", principal_type=PrincipalType.WORKER,
+                permissions=composition.principal.permissions - {"book.authority.approve_replan"},
+                project_scope=composition.principal.project_scope, authentication_source="scripted-native-worker")
+            first_usage = None
+            for _ in range(60):
+                schedule_book_coordination_jobs(composition.query, jobs, limit=1, book_run_id=admitted.book_run_id)
+                claim = jobs.claim(runtime_group="book", worker_id="native-craft-planning-worker", lease_seconds=30,
+                    job_kinds=("BOOK_COORDINATION_TICK",), subject_kind="BOOK_RUN", subject_id=admitted.book_run_id)
+                assert claim is not None
+                tick = execute_book_coordination_claim(jobs, composition, claim)
+                if tick["action"] == "DISPATCH_CHAPTER":
+                    scheduler = chapter_application.scheduler(principal=worker)
+                    for _ in range(len(ChapterNode) * 2 + 4):
+                        chapter_tick = scheduler.tick(project_id=snapshot.project_id, root_operation_id=tick["operation_id"])
+                        if chapter_tick.saga_status == "SUCCEEDED":
+                            break
+                    else:
+                        raise AssertionError("Native Craft Chapter failed before acceptance: " + str(chapter_tick))
+                accepted_through = composition.authority.require(admitted.book_run_id)["accepted_through_chapter"]
+                if accepted_through >= 1 and first_usage is None:
+                    first_usage = list_accepted_craft_usage(DATABASE_URL, project_id=snapshot.project_id, book_id=snapshot.book_id)
+                    assert first_usage and all(row["usage_basis"] == "ACCEPTED_PROSE_REVIEW" for row in first_usage)
+                if accepted_through >= 2:
+                    break
+            else:
+                raise AssertionError("Native Craft chain did not reach a second acceptance")
+            assert len(transport.chapter_inputs) == 2
+            later = transport.chapter_inputs[-1]["narrative_intelligence"]
+            if typed_usage:
+                continued = later["selected"][0]
+                assert continued["craft_assessment"]["budget_assessment"]["frequency"] == 1
+                assert continued["craft_assessment"]["budget_assessment"]["temporal_budget_applied"] is False
+                final_usage = list_accepted_craft_usage(DATABASE_URL, project_id=snapshot.project_id, book_id=snapshot.book_id)
+                assert {row["usage"]["phase"] for row in final_usage} == {"SETUP", "DEVELOPMENT"}
+                assert len({row["usage"]["instance_id"] for row in final_usage}) == 1
+                assert final_usage[0]["usage"]["accepted_predecessor"]["acceptance_id"] == first_usage[0]["acceptance_id"]
+                state["native_proof"]["accepted_phase_usage"] = final_usage
+            else:
+                cooled = next(row for row in later["rejected"] if row["knowledge_card_asset_version_id"] == strategy["uses"][0]["knowledge_card_asset_version_id"])
+                assert cooled["reason"] == "CRAFT_COOLDOWN"
+                assert cooled["craft_assessment"]["budget_assessment"]["recent_usage"] == first_usage
+                assert cooled["craft_assessment"]["budget_assessment"]["frequency"] == 1
+            assert later["need"]["craft_context"]["chapter_number"] == 2
+            assert first_usage[0]["effect_status"] == "ACHIEVED"
+            state["native_proof"].update(accepted_through_chapter=accepted_through,
+                accepted_usage=first_usage, next_selection_digest=later["selection_digest"])
+            import json
+            import os
+            from pathlib import Path
+            if os.environ.get("NARRATIVE_CRAFT_NATIVE_EVIDENCE_PATH"):
+                Path(os.environ["NARRATIVE_CRAFT_NATIVE_EVIDENCE_PATH"]).write_text(json.dumps(state["native_proof"], ensure_ascii=False, indent=2))
         return state["native_proof"]
 
     monkeypatch.setattr(core, "_seed_inputs", seed_with_approved_craft)
     monkeypatch.setattr(native, "NativeRealityTransportFixture", CraftPlanningTransport)
     monkeypatch.setattr(native, "execute_native_reality_vertical", drive_native_planning)
-    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False)
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy={"schema_version": "narrative-craft-budget.v3", "mechanism_usage_types": {"choice-exposes-value": "staged"}} if typed_usage else None)
     assert state["native_proof"]["candidate_asset_version_id"]

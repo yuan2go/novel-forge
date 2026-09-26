@@ -103,6 +103,7 @@ class CapabilityPackPostgresHarness:
         label: str,
         *,
         book_count: int = 1,
+        production_profile: dict | None = None,
         application_build_id: str = APP_BUILD_ID,
         release_sha: str = RELEASE_SHA,
     ) -> None:
@@ -121,6 +122,7 @@ class CapabilityPackPostgresHarness:
             project_id=self.project_id,
             workspace_id=self.workspace_id,
             book_id=self.book_ids[0],
+            production_profile=production_profile,
         )
         if len(self.book_ids) > 1:
             self._seed_additional_books(self.book_ids[1:])

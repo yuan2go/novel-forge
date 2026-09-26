@@ -491,8 +491,9 @@ def select_narrative_intelligence(
             craft_assessment = craft_candidate_assessment(
                 normalized["craft_mechanism"], context=need.craft_context,
                 recent_usage=need.recent_craft_usage, policy=craft_policy,
+                card_identity=(asset_version_id, content_hash),
             )
-            if craft_assessment["rejection_reason"] and (asset_version_id not in required_ids or craft_assessment["rejection_reason"] != "CRAFT_NO_CONTEXT_MATCH"):
+            if craft_assessment["rejection_reason"] not in {"", "CRAFT_NO_CONTEXT_MATCH"}:
                 rejected.append({"knowledge_card_asset_version_id": asset_version_id, "content_hash": content_hash, "reason": craft_assessment["rejection_reason"], "applicability_assessment": assessment, "craft_assessment": craft_assessment})
                 continue
             assessment = {**assessment, "status": "UNKNOWN" if assessment["status"] == "UNKNOWN" else "CONDITIONAL", "craft_applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"}
@@ -542,7 +543,7 @@ def select_narrative_intelligence(
         if score == 0 and not explicit_family:
             score = 1
             reasons.append("LEGACY_ABSTRACT_CARD_FALLBACK")
-        if score == 0:
+        if score == 0 and not (craft_assessment and craft_assessment["rejection_reason"] == "CRAFT_NO_CONTEXT_MATCH"):
             rejected.append(
                 {
                     "knowledge_card_asset_version_id": asset_version_id,

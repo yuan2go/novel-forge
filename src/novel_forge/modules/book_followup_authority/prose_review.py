@@ -142,7 +142,7 @@ def freeze_manifest(
         "context_token_budget",
         "maximum_windows",
     }
-    optional = {"execution_mode", "relation_window_limit", "follow_acceptance"}
+    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version"}
     if (
         not required <= set(policy)
         or set(policy) - required - optional
@@ -181,6 +181,8 @@ def freeze_manifest(
             "LONGFORM_PROSE_POLICY_INVALID",
             "automatic review and bounded relation retrieval require explicit policy",
         )
+    if policy.get("relation_retrieval_version", "lexical.v1") not in {"lexical.v1", "accepted-state-relations.v2"}:
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown explicit relation retrieval version")
     records, windows = [], []
     previous_tail = None
     for source in sources:
@@ -200,6 +202,8 @@ def freeze_manifest(
             )
         }
         record.update(text_hash=text_digest(text), codepoints=len(text))
+        if policy.get("relation_retrieval_version") == "accepted-state-relations.v2":
+            record["relation_evidence_digest"] = completion_digest(source.get("relation_evidence", []))
         records.append(record)
         start = 0
         while start < len(text):
@@ -248,7 +252,11 @@ def freeze_manifest(
     if policy.get("relation_window_limit"):
         from .prose_relations import relation_windows
 
-        relations, coverage = relation_windows(sources, records, policy)
+        if policy.get("relation_retrieval_version") == "accepted-state-relations.v2":
+            from .prose_semantic_relations import structured_relation_windows
+            relations, coverage = structured_relation_windows(sources, records, policy)
+        else:
+            relations, coverage = relation_windows(sources, records, policy)
         body["windows"].extend(relations)
         body["relation_retrieval"] = coverage
     return {**body, "manifest_digest": completion_digest(body)}

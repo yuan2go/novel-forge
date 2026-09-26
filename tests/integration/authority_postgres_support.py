@@ -123,6 +123,7 @@ def seed_authority_project_book(
     project_id: str,
     book_id: str,
     workspace_id: str | None = None,
+    production_profile: dict | None = None,
 ) -> None:
     """Create the minimum authoritative Project/Workspace/Book scope fixture."""
     workspace_id = workspace_id or f"workspace:{project_id}"
@@ -204,7 +205,7 @@ def seed_authority_project_book(
                 status, current_book_asset_version_id,
                 created_by_operation_id, last_operation_id
             ) VALUES (%s, %s, %s, 'integration-operator', 'integration-service',
-                      %s, '{}'::jsonb, '{}'::jsonb, 'integration-release',
+                      %s, %s, '{}'::jsonb, 'integration-release',
                       'DESIGN_PENDING', %s, %s, %s)
             """,
             [
@@ -212,6 +213,7 @@ def seed_authority_project_book(
                 project_id,
                 workspace_id,
                 Jsonb({"book_id": book_id}),
+                Jsonb(production_profile or {}),
                 f"{book_asset_id}:v1",
                 operation_id,
                 operation_id,

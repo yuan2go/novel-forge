@@ -47,8 +47,12 @@ def load_accepted_sources(
                 "LONGFORM_PROSE_SOURCE_INVALID",
                 "accepted outcome must bind its exact eligible manuscript",
             )
+        from .prose_semantic_relations import accepted_relation_evidence
+        relation_evidence, relation_coverage = accepted_relation_evidence(outcome.content, draft.content, draft.asset_version_id)
         sources.append(
             {
+                "relation_evidence": relation_evidence,
+                "relation_evidence_coverage": relation_coverage,
                 "acceptance_id": acceptance_id,
                 "chapter_number": number,
                 "asset_version_id": draft.asset_version_id,

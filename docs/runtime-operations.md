@@ -40,6 +40,26 @@ make authority-down
 
 Volume deletion is not part of normal reset or test cleanup.
 
+Before starting Provider-capable processes against an existing installation, resolve the
+actual launcher/private configuration, container or service, persistent volume, database
+name and object bucket. A missing default database is not evidence that historical data
+is absent. The read-only CLI can inspect the intended ledger without building Provider
+routes or bootstrapping a replacement:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-runtime-inspect \
+  --project-id "$PROJECT_ID" --expected-database "$EXPECTED_DATABASE" > ledger-inspection.json
+```
+
+Use the existing trusted principal with `book.authority.query`. The output includes
+server/database identity, registered migration head, Book/cursor state, unresolved Effects,
+expired scopes and null/unknown cost totals. It neither proves production authorization nor
+resends/reconciles Effects. Keep expired grants and unknown account-entitlement costs;
+inspect exact owner-specific receipts before using existing recovery commands. Back up
+persistent data, exercise upgrades against a restore, verify object references and compare
+ledger identity before/after service restart. Dynamically published container ports must be
+resolved from the same verified volume; never substitute a fresh database at the old port.
+
 ## Migrations
 
 Inspect or apply the registered chain with:

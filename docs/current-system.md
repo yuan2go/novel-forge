@@ -384,11 +384,36 @@ Canon, world-rule, character-knowledge or story-event changes.
 `narrative-craft-budget.v1` is `CONFIGURABLE_POLICY`, not a literary invariant. Its frozen
 defaults bound six Craft candidates, three uses per scene, eight per chapter, a five-chapter
 history window, one-chapter cooldown and three recent uses, with repetition/salience and
-abstract-pattern Jaccard penalties plus a variation bonus. Successful Draft delivery
-receipts supply recent usage; duplicate receipts, Review/Revision calls and future chapters
-do not inflate frequency. Abstract term similarity is only a retrieval heuristic, not a
+abstract-pattern Jaccard penalties plus a variation bonus. New selections use exact final
+accepted-prose observations; operational delivery receipts remain separate. Duplicate receipts,
+Review/Revision calls and future chapters do not inflate frequency. Abstract term similarity is only a retrieval heuristic, not a
 creative-effect score. Retry validates the complete frozen policy rather than filling it
 from current defaults.
+
+Candidate composition uses deterministic bounded search over exact Card alternatives and
+transitive dependencies. Shared dependencies occupy one Card slot; realization in different
+scenes occupies each scene and chapter use. The search checks conflicts, scene density,
+precedence cycles, chapter density and typed frequency allowances before selecting a set,
+then removes orphan dependencies and fills from remaining candidates. Exhausted search and
+an oversized eligible pool are distinct from proved infeasibility. Concrete Provider use
+sites still require normal validation; a Provider rejection does not yet trigger automatic
+alternative generation/reselection.
+
+Explicit `narrative-craft-budget.v3` declares bounded usage types, scopes, frequency units,
+mechanism assignments and ordered phases. EVENT counts manifestations; PERSISTENT and
+PHASED count stable instances. A new type or assignment does not alter frozen v1/v2 policy.
+`narrative-craft-strategy.v2` binds typed uses to the actual Book and Chapter/frozen Arc
+scope, records planned phases separately from accepted observations, and freezes short
+problem/choice/order/effect/interference/preservation/abstention rationales. A continuation
+requires the latest successful exact Card/instance/policy/accepted-prose proof. A failed
+manifestation remains evidence without advancing or stranding the phase; unresolved later
+uncertainty blocks progression. A completed instance cannot bypass temporal limits, and all
+new instances in the same plan jointly consume remaining frequency. The bounded accepted
+history query currently reads at most 100 accepted chapters; absent older predecessors
+cannot authorize continuation. Long-range open-instance retrieval remains incomplete.
+Plan/Intent/Memo retain complete immutable strategies. A typed Memo's Context projection
+may replace an identical strategy with its exact protected ExecutionIntent reference; it
+cannot omit the only copy or change the existing Context maximum.
 
 The canonical consumer chain is:
 
@@ -625,11 +650,14 @@ an appended manifest. New manifests may reuse exact unchanged windows; old Opera
 retain their original accepted prefix and never silently acquire newer input. Worker
 exclusions are applied before the dispatch batch limit.
 
-Bounded remote windows pair nonadjacent accepted passages sharing a rare term or identifier.
-These are unverified relation hypotheses, not dependency edges. A model relation verdict
-must locate evidence in both passages; omitted pairs, unscanned text, lexical retrieval
-limits and unresolved relations remain explicit. Neither scanned windows nor matching
-anchors prove global causal, character or payoff correctness.
+Legacy `lexical.v1` remote windows pair nonadjacent passages sharing a rare term or
+identifier. Explicit `accepted-state-relations.v2` instead retrieves two to four passages
+through accepted entity, knowledge, relationship, obligation and cause identities bound to
+exact accepted draft spans. Natural-language wording need not overlap. Invalid or missing
+locations, oversized spans, common-identity truncation and unindexed paraphrases remain
+coverage gaps. Both versions produce unverified hypotheses; a model relation verdict must
+cite every retrieved passage. Neither scanned windows nor identity overlap proves global
+causal, character or payoff correctness. Old window identities and policies remain frozen.
 
 Review progress, pause/resume and dispositions append events. Identical windows may be
 reused only under the same source bytes, policy and implementation; source drift blocks
@@ -646,7 +674,13 @@ bind finding/manifest/review versions; policy drift invalidates exception author
 
 Native Plan Change now freezes a bounded same-Book corpus of active plan commitments and
 accepted prose locations when proposing a semantic diff. Hypotheses retain exact versions,
-hashes, source locations, retrieval confidence basis and uncertainty. Decisions may confirm
+hashes, source locations, retrieval basis and uncertainty. `bounded-plan-impact.v2` also
+retrieves changed structured entity/knowledge/relationship/obligation/resource records,
+including numeric and boolean values, through typed identities in future prerequisites.
+JSON-value locations are distinguished from prose spans; identity overlap is not a calibrated
+confidence or causal assertion. Unchanged records and typed namespace collisions do not
+create structured-change candidates. Bounded record/corpus omissions remain explicit.
+Decisions may confirm
 an impact, reject a false positive or defer it with cited frozen evidence; omission defaults
 to deferral. Confirmed impacts use existing future-plan invalidation and revalidation,
 without creating hard dependency edges. Activation rechecks current versions and execution
