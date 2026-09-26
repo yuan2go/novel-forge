@@ -137,7 +137,7 @@ only with the matching successful native Effect, Attempt, ModelCallLog, target, 
 and served model identity. Its group report retains these references and marks those
 dimensions `REFERENCE_CALIBRATED`; Context and Provider JSON cannot assert this status.
 Missing or changed receipts fail closed. Sampling cannot acquire that status or activate
-a global Quality profile. Generator feedback admission remains unimplemented; Narrative
+a global Quality profile. Generator feedback now projects independent adjudications of native samples into task-scoped `GENERATOR_SCORE`; Narrative
 operator proxy labels alone cannot qualify a semantic evaluator.
 For a Planning benchmark candidate, native Content annotation version `2.4.0` binds
 HumanEvaluation and AdjudicatedEvaluation to the exact ineligible generation and its
@@ -177,7 +177,7 @@ dimension names and the frozen World policy define protocol scope; per-candidate
 do not define a new evaluation protocol. Fixture calls or labels supply no qualifying
 reference evidence. Sufficient compatible positive and negative strata can admit a new
 World evaluator call; this does not qualify its generator or activate sample outputs.
-World generator feedback admission remains a gap. Both World tasks are required by the
+World generator feedback requires the current native generator-quality protocol, exact producer identity and an independently sampled evaluator. Both World tasks are required by the
 continuous Book chain and must remain in its calibration coverage matrix.
 
 Planning sampling grants may bind a frozen campaign identity, manifest hash, sample/data
@@ -417,6 +417,15 @@ all other prose unchanged. ReReview checks Canon, voice, knowledge, POV, causali
 plan and previously satisfied Craft; unresolved or regressed preservation cannot be erased
 by a higher score. Quality, Canon and Book acceptance still make their own decisions.
 
+New planning selections read `list_accepted_craft_usage`, which joins committed Book
+Acceptance to the exact accepted draft, final review and located Craft check. The query
+separates accepted-prose use from operational delivery statistics, deduplicates by acceptance
+and use identity, and retains model judgment and side effects without claiming reader
+benefit. Failed or uncertain final realization and present/uncertain side effects retain
+located cautions, suppress novelty bonuses and reduce soft ranking with the frozen repetition
+weight; they do not create hard rejection or count as successful use. Unaccepted or discarded
+candidates and duplicate delivery receipts cannot impose reuse budgets on later planning. Existing frozen Context replay remains unchanged.
+
 The Chapter workspace's `craft_trace` projects frozen strategies, prose candidates,
 review spans, repair edits, resolution/preservation checks, comparison and accepted lineage.
 Each effect observation identifies exact mechanism/use/scene, candidate/text hash,
@@ -609,6 +618,19 @@ cover structural repetition, character/relationship movement, setup/progression/
 voice/expression, arc pacing and motivated/costly turns. Located model claims remain
 observations; matching text coordinates do not prove their semantic correctness.
 
+Review policy can explicitly select `AUTOMATIC` execution and follow newly accepted
+chapters. The existing Book Follow-up worker advances eligible runs, pauses without new
+dispatch, stops on exhausted allowance, and resumes unresolved old Effects before freezing
+an appended manifest. New manifests may reuse exact unchanged windows; old Operations
+retain their original accepted prefix and never silently acquire newer input. Worker
+exclusions are applied before the dispatch batch limit.
+
+Bounded remote windows pair nonadjacent accepted passages sharing a rare term or identifier.
+These are unverified relation hypotheses, not dependency edges. A model relation verdict
+must locate evidence in both passages; omitted pairs, unscanned text, lexical retrieval
+limits and unresolved relations remain explicit. Neither scanned windows nor matching
+anchors prove global causal, character or payoff correctness.
+
 Review progress, pause/resume and dispositions append events. Identical windows may be
 reused only under the same source bytes, policy and implementation; source drift blocks
 currentness. Cross-window aggregation requires lineage and overlapping evidence, with
@@ -621,6 +643,16 @@ minor finding. `DISMISSED_WITH_EVIDENCE` requires a successful current review re
 located intentional/counter evidence covering the challenged finding. A rationale alone,
 a future proposal or a saved author candidate does not resolve the finding. Dispositions
 bind finding/manifest/review versions; policy drift invalidates exception authority.
+
+Native Plan Change now freezes a bounded same-Book corpus of active plan commitments and
+accepted prose locations when proposing a semantic diff. Hypotheses retain exact versions,
+hashes, source locations, retrieval confidence basis and uncertainty. Decisions may confirm
+an impact, reject a false positive or defer it with cited frozen evidence; omission defaults
+to deferral. Confirmed impacts use existing future-plan invalidation and revalidation,
+without creating hard dependency edges. Activation rechecks current versions and execution
+boundaries; cycles and excessive scope are bounded. Revalidation alone does not activate an
+asset: normal Hierarchical Planning binding and qualification still apply. Lost proposal or
+activation receipts and duplicate revalidation preserve original evidence and event identity.
 
 Separate WP02 and Craft campaigns use the existing Book/Chapter commands and native
 creative-experiment budget ledger under `creative-paired-samples-budget.v5`. This contract
@@ -648,6 +680,14 @@ has a stable native effect/receipt and a concise action-basis summary. The judge
 adjudicate every exact proposal and preserve its action text; no preparation branches or
 partial world action are committed when an actor fails. Existing Planning selects feasible
 proposals; accepted reality changes only through the existing acceptance boundary.
+New `world-actor-task.v2` projections also retain accepted own action state, explicitly owned
+knowledge/beliefs, directional relationships and open obligations. Each pending commitment
+requires an exact identity/source disposition (`CONTINUE` or `DEFER`); continuation must
+survive judge cause references and typed obligation links before Planning can consume it.
+Generic narrator summaries do not grant character knowledge. Actor actions remain proposals;
+Canon and Narrative State advance only at Book Acceptance. Older frozen v1 tasks keep their
+original contract and schema. The supported Context budget is a configurable policy; an
+insufficient complete role scope blocks instead of silently discarding accepted causes.
 This is an experimental mode with no demonstrated literary or cost advantage.
 
 ## Production topology

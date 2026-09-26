@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "owned_container_id": "428557a027cc297ce9572d7ae6c6ec0cc7b96dc347010b3fa292b97fc29f7802",
+  "owned_container": "nf-narrative-feedback-20260926",
+  "label": {
+    "novel-forge.task": "narrative-feedback-closure"
+  },
+  "removed": true,
+  "remaining_labeled_containers": [],
+  "local_database_cleanup": "local-test-cleanup.json",
+  "cached_image_removed": false,
+  "user_services_modified": false
+}

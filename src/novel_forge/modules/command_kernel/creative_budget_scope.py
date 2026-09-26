@@ -97,6 +97,15 @@ def classify_business_scope(identity: dict[str, Any], *, dispatch_generation: in
                         add_chapter(projected_realization.get("chapter_number"), "request.planning_command.narrative_realization.chapter_number")
             else:
                 origin_phase = "DESIGN"
+        elif operation == "longform.prose_review":
+            scope = identity.get("native_prose_scope")
+            if not isinstance(scope, dict) or not scope.get("spans") or not scope.get("manifest_digest"):
+                raise _unknown("longform review requires its verified frozen native window")
+            first, last = (_number(scope.get(key), minimum=1) for key in ("chapter_start", "chapter_end"))
+            if first > last or type(metadata.get("chapter")) is not int or metadata["chapter"] not in {0, last}:
+                raise _unknown("review chapter metadata differs from its frozen range")
+            add_chapter(last, "native_prose_window.chapter_end")
+            sources.append({"path": "native_prose_window", "value": deepcopy(scope)})
         else:
             for key in ("chapter_number", "chapter"):
                 if key in command:

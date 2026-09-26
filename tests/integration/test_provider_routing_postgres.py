@@ -208,7 +208,8 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
     decision = CostAwareRouter().explain(
         task, [candidate], {candidate.candidate_id: observations}
     )
-    assert decision.to_dict()["status"] == ("SELECTED" if input_identity == "unique" else "BLOCKED")
+    assert decision.to_dict()["status"] == "BLOCKED"
+    assert decision.to_dict()["candidates"][0]["benchmark"]["quality_metric"] == "GENERATOR_SCORE"
     saved = registry.save(
         decision,
         logical_ref="routing-test/frozen",
@@ -223,7 +224,8 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
     assert benchmark["benchmark_challenger_sample_count"] == 10
     assert benchmark["production_eligible_sample_count"] == 0
     assert benchmark["production_acceptance_rate"] is None
-    assert benchmark["metric_sample_count"] == {"unique": 10, "repeated": 1, "missing": 0, "renamed_sample": 1}[input_identity]
+    assert benchmark["metric_sample_count"] == 0
+    assert benchmark["generator_score_basis"] is None
 
 
 def test_cold_start_persists_block_and_never_dispatches(scope):
@@ -634,6 +636,12 @@ def test_planning_repair_lineage_accumulates_semantic_failures_for_bounded_escal
             cache_hit_tokens=0,
             actual_cost=None,
             domain_gate_accepted=True,
+            evidence_class="BENCHMARK_CHALLENGER", production_eligible=False,
+            sample_identity=f"sample:{number}", independence_group=f"native-input:{number}",
+            experiment_partition="CALIBRATION", producer_contract_hash="sha256:fixture-producer",
+            generator_quality_score=.99, generator_protocol_hash="sha256:independent-fixture-protocol",
+            generator_risk="HIGH", generator_context_tokens=100,
+            outcome_refs=(f"synthetic-independent-label:{number}",),
         )
         for candidate in (flash, codex)
         for number in range(100)

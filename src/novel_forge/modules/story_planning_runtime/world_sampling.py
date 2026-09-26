@@ -5,7 +5,7 @@ from typing import Any
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.command_kernel.routing_bootstrap import authorization_hash, bootstrap_command_hash
+from novel_forge.modules.command_kernel.routing_bootstrap import WORLD_SAMPLE_TASKS, authorization_hash, bootstrap_command_hash
 from novel_forge.storage.authority_asset_store import AuthorityAssetDocument, AuthorityAssetDocumentRepository
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -17,7 +17,8 @@ WORLD_SAMPLE_VERSION = "1.0.0"
 WORLD_REFERENCE_SAMPLE_VERSION = "1.1.0"
 WORLD_SAMPLE_WORKFLOW = "world_provider_sampling@1.0.0"
 WORLD_SAMPLE_SCOPE = "book:world-provider-sample"
-WORLD_SAMPLE_STAGES = {"world_candidates.generate", "world_candidates.evaluate"}
+WORLD_ACTOR_SAMPLE_STAGES = frozenset(stage for stage in WORLD_SAMPLE_TASKS if stage.startswith("world_candidates.actor_"))
+WORLD_SAMPLE_STAGES = frozenset(WORLD_SAMPLE_TASKS)
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,10 +107,34 @@ def _require_world_sample_source(cursor: Any, *, project_id: str, book_id: str,
     if source_contract.get("request") != source_payload["world_preparation_request"]:
         raise KernelError("WORLD_SAMPLE_SOURCE_DRIFT", "World Context must retain its original Book frontier")
     native_documents = [context, source]
+    actor_proposals = None
+    if source_contract.get("actor_experiment") and stage not in WORLD_ACTOR_SAMPLE_STAGES:
+        from novel_forge.modules.worldbuilding.actor_isolation import actor_task, actor_output_payload, validate_actor_output
+
+        actor_proposals = []
+        for index, actor_id in enumerate(source_contract["actor_experiment"]["actor_ids"]):
+            document = query.require(project_id=project_id, logical_ref=f"world_preparation/{source_operation_id}/actor/{index}")
+            stored = document.content["contract"]
+            task = actor_task(source_contract, source_ref, actor_id)
+            if stored.get("source") != source_ref or validate_actor_output(actor_output_payload(stored["output"], task), task) != stored["output"]:
+                raise KernelError("WORLD_SAMPLE_SOURCE_DRIFT", "World judge sample requires original native actor proposals, never experimental actor samples")
+            native_documents.append(document)
+            actor_proposals.append(stored["output"])
     subject = None
     derived_context = None
-    if stage == "world_candidates.generate":
-        provider_stage = PlanningWorldPreparation.generation_stage(source_contract, source_ref, selection)
+    if stage in WORLD_ACTOR_SAMPLE_STAGES:
+        from novel_forge.modules.worldbuilding.actor_isolation import actor_task, actor_output_schema, validate_actor_policy
+        from novel_forge.modules.worldbuilding.production_planning import WorldProductionPolicy
+
+        actor_policy = validate_actor_policy(source_contract.get("actor_experiment") or {},
+            character_ids=source_contract["reality"]["approved_character_ids"], policy=WorldProductionPolicy(**source_contract["policy"]))
+        index = int(stage.rsplit("_", 1)[1])
+        if index >= len(actor_policy["actor_ids"]):
+            raise KernelError("WORLD_SAMPLE_TASK_UNSUPPORTED", "Actor sample stage must exist in the original frozen actor policy")
+        task = actor_task(source_contract, source_ref, actor_policy["actor_ids"][index])
+        provider_stage = PlanningProviderStage(stage, task, actor_output_schema(task))
+    elif stage == "world_candidates.generate":
+        provider_stage = PlanningWorldPreparation.generation_stage(source_contract, source_ref, selection, actor_proposals=actor_proposals)
     elif generation_sample is not None:
         from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
         from .application import _command_from_payload
@@ -122,15 +147,15 @@ def _require_world_sample_source(cursor: Any, *, project_id: str, book_id: str,
             or subject["content"].get("source") != source_ref):
             raise KernelError("WORLD_SAMPLE_SOURCE_DRIFT", "reference sample must retain the original generator Context and source")
         provider_stage = PlanningWorldPreparation.evaluation_stage(source_contract, source_ref,
-            {"source": source_ref, "output": subject["content"]["sampled_output"]}, generation_sample, selection)
+            {"source": source_ref, "output": subject["content"]["sampled_output"]}, generation_sample, selection, actor_proposals=actor_proposals)
         derived_context = PostgresPlanningExecutionPreparer._world_context_content(
             command=_command_from_payload(source_payload), base=context, stage=provider_stage, source=source)
     else:
         generation = query.require(project_id=project_id, logical_ref=f"world_preparation/{source_operation_id}/generation")
         native_documents.append(generation)
         provider_stage = PlanningWorldPreparation.evaluation_stage(source_contract, source_ref,
-            generation.content["contract"], _binding(generation), selection)
-    context_task = PlanningWorldPreparation.generation_stage(source_contract, source_ref, selection).task if subject else provider_stage.task
+            generation.content["contract"], _binding(generation), selection, actor_proposals=actor_proposals)
+    context_task = PlanningWorldPreparation.generation_stage(source_contract, source_ref, selection, actor_proposals=actor_proposals).task if subject else provider_stage.task
     if context.content.get("world_preparation") != context_task:
         raise KernelError("WORLD_SAMPLE_CONTEXT_DRIFT", "World task differs from the frozen production role Context")
     for document in native_documents:
@@ -184,12 +209,16 @@ def prepare_world_sample(app: Any, command: WorldProviderSampleCommand, *, princ
     elif command.reference_evaluation is not None:
         raise KernelError("QUALITY_REFERENCE_TASK_UNSUPPORTED", "World generator samples cannot consume reviewer labels")
     producer = world_sample_producer_identity(app.database_url, frozen=frozen, source_operation_id=command.source_operation_id)
+    from novel_forge.modules.chapter_quality_authority.generator_reference import generator_reference_contract
+
     return {"status": "PREPARED_NO_PROVIDER_CALL", "provider_calls": 0,
         "definition_name": "world.provider.sample." + command.stage.rsplit(".", 1)[1],
         "definition_version": frozen.definition_version, "workspace_id": frozen.command_payload["workspace_id"],
         "book_id": command.book_id, "command_payload": payload, "input_assets": inputs,
         "command_hash": bootstrap_command_hash(payload), "input_versions_hash": authorization_hash(inputs),
         "producer_contract": producer, "producer_contract_hash": authorization_hash(producer),
+        **({"generator_evaluation_contract": generator_reference_contract(command.stage, authorization_hash(producer))}
+           if command.stage in WORLD_ACTOR_SAMPLE_STAGES else {}),
         "required_workflow_ref": frozen.workflow_ref, "production_eligible": False}
 
 
@@ -198,6 +227,7 @@ def world_sample_producer_identity(database_url: str, *, frozen: FrozenWorldSamp
     from novel_forge.modules.production_execution import TargetScope
     from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
     from .application import _command_from_payload
+    from .execution import world_schema_evidence_identity
 
     command = frozen.command_payload
     scope_kind = _command_from_payload(command).planning_scope.value.lower()
@@ -210,7 +240,7 @@ def world_sample_producer_identity(database_url: str, *, frozen: FrozenWorldSamp
         rows = uow.cursor.fetchall()
     producers = {}
     source_schema = PlanningWorldPreparation.generation_stage(frozen.source.content["contract"], _binding(frozen.source),
-        frozen.context.content.get("narrative_intelligence") or {}).output_schema if frozen.generation_sample else frozen.stage.output_schema
+        frozen.context.content.get("narrative_intelligence") or {}, actor_proposals=frozen.context.content["world_preparation"].get("actor_proposals")).output_schema if frozen.generation_sample else frozen.stage.output_schema
     for content, digest in rows:
         materialization = content.get("contract") or {}
         selected = materialization.get("context_selection") or []
@@ -226,12 +256,13 @@ def world_sample_producer_identity(database_url: str, *, frozen: FrozenWorldSamp
             materialization["stage"] = frozen.stage.name
             materialization["context_selection"][0].update(content=frozen.derived_context,
                 content_hash=authorization_hash(frozen.derived_context))
-            materialization["output_schema"] = {"ref": f"schema:{frozen.stage.name}:v1",
+            materialization["output_schema"] = {"ref": frozen.stage.output_schema_ref,
                 "content_hash": authorization_hash(dict(frozen.stage.output_schema)), "content": dict(frozen.stage.output_schema)}
         _, prompt_evidence = _materialize_production_codex_prompt(target_scope=TargetScope(
             scope_kind=scope_kind, scope_id=command["logical_key"], project_id=command["project_id"], book_id=command["book_id"]).to_dict(),
             stage=frozen.stage.name, inputs={"world_preparation": dict(frozen.stage.task)}, materialization=materialization)
-        producer = producer_contract_identity(prompt_evidence, materialization)
+        producer = producer_contract_identity(prompt_evidence, materialization,
+            schema_identity=world_schema_evidence_identity(frozen.stage.output_schema, frozen.stage.output_schema_ref))
         producers[authorization_hash(producer)] = producer
     if len(producers) != 1:
         raise KernelError("WORLD_SAMPLE_PRODUCER_REQUIRED", "World sampling requires one compatible native producer materialization")
@@ -272,8 +303,16 @@ def world_sample_result_review(frozen: FrozenWorldSample, result: dict[str, Any]
     source = frozen.source.content["contract"]
     try:
         policy = WorldProductionPolicy(**source["policy"])
-        if frozen.stage.name == "world_candidates.generate":
-            decoded = decode_world_generation({key: value for key, value in result.items() if key != "knowledge_translations"})
+        if frozen.stage.name in WORLD_ACTOR_SAMPLE_STAGES:
+            from novel_forge.modules.worldbuilding.actor_isolation import validate_actor_output
+
+            validate_actor_output(result, frozen.stage.task)
+        elif frozen.stage.name == "world_candidates.generate":
+            if frozen.stage.task.get("actor_proposals"):
+                from novel_forge.modules.worldbuilding.actor_isolation import require_actor_judgments
+
+                require_actor_judgments(result, frozen.stage.task["actor_proposals"])
+            decoded = decode_world_generation({key: value for key, value in result.items() if key not in {"knowledge_translations", "actor_adjudications"}})
             validate_generated_candidates(decoded, policy)
             from .knowledge_translation import validate_knowledge_translations
             selection = frozen.context.content.get("narrative_intelligence") or {}
@@ -381,6 +420,9 @@ def world_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list[s
         agreed = reviewed["rule_validation"]["status"] == "PASSED" and reviewed["reference_evaluation"] is not None and all(
             item["score_in_range"] for item in reviewed["reference_evaluation"]["comparisons"])
         outcomes[effect_id] = {"accepted": None, "metric": "REFERENCE_AGREEMENT.v1", "reference_agreed": agreed,
+            "generator_assessment": {"target_asset_version_id": reference["target_asset_version_id"],
+                "target_content_hash": reference["target_content_hash"], "labels": reference["labels"],
+                "protocol_version": reference["binding"]["protocol_version"]},
             "reference_label_classes": classes,
             "reference_protocol_hash": authorization_hash({"protocol_version": reference["binding"]["protocol_version"],
                 "evaluation_versions": sorted({item["evaluation_version"] for item in reference["labels"]}),
@@ -390,6 +432,97 @@ def world_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list[s
             "failure_class": "" if agreed else "QUALITY_FAILURE",
             "evidence_refs": ["asset-version:" + asset_id, "asset-version:" + provider["model_call_asset_version_id"],
                 *("asset-version:" + item["adjudication_asset_version_id"] for item in reference["labels"])]}
+    return outcomes
+
+
+def actor_sample_outcomes(cursor: Any, *, project_id: str, effect_ids: list[str]) -> dict[str, dict[str, Any]]:
+    from novel_forge.modules.authority_handler_runtime.generator_feedback import adjudicated_generator_score
+    from novel_forge.modules.chapter_quality_authority.generator_reference import DIRECT_GENERATOR_DIMENSIONS, generator_reference_contract
+    from novel_forge.modules.chapter_quality_authority.reference_sampling import (
+        reference_label_classes, reference_provider_result, require_adjudicated_reference,
+    )
+    from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
+
+    if not effect_ids:
+        return {}
+    cursor.execute("""SELECT effect.external_effect_id,effect.operation_id,effect.request_payload,
+        attempt.attempt_id,version.asset_version_id,version.content_hash,operation.command_payload->'payload'
+        FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id)
+        JOIN authority_attempt attempt ON attempt.operation_id=operation.operation_id AND attempt.status='SUCCEEDED'
+        JOIN authority_operation_output_asset output ON output.operation_id=operation.operation_id AND output.role='primary'
+        JOIN authority_asset_version version ON version.asset_version_id=output.asset_version_id AND version.content_hash=output.content_hash
+        JOIN authority_asset asset ON asset.asset_id=version.asset_id AND asset.project_id=effect.project_id
+        WHERE effect.project_id=%s AND effect.external_effect_id=ANY(%s) AND effect.status='SUCCEEDED'
+          AND operation.status='SUCCEEDED' AND asset.asset_type='world_provider_sample'
+          AND version.content->>'stage'=ANY(%s)
+          AND version.content #>> '{execution_evidence,external_receipt_ref}'=effect.external_effect_id
+        ORDER BY version.created_at,version.asset_version_id""", [project_id, effect_ids, sorted(WORLD_ACTOR_SAMPLE_STAGES)])
+    outcomes = {}
+    for effect_id, operation_id, request, attempt_id, target_id, digest, payload in cursor.fetchall():
+        decision = request.get("_production_execution", {}).get("capability_runtime", {}).get("routing_decision", {})
+        routed = decision.get("task") or {}
+        producer = routed.get("producer_contract_hash")
+        if not producer or producer != authorization_hash(routed.get("producer_contract")):
+            continue
+        try:
+            subject = require_reference_subject(cursor, project_id=project_id,
+                binding={"asset_version_id": target_id, "content_hash": digest}, allowed_types=frozenset({"world_provider_sample"}))
+            content = subject["content"]
+            stage = content["stage"]
+            if (subject["generation_operation_id"] != operation_id or routed.get("task_type") != stage
+                or stage not in WORLD_ACTOR_SAMPLE_STAGES or payload.get("generator_operation_name") != stage):
+                continue
+            provider = reference_provider_result(cursor, project_id=project_id,
+                operation_id=operation_id, attempt_id=attempt_id, stage=stage)
+            if not provider["real_model_call"] or provider["result"] != content.get("sampled_output"):
+                continue
+            metadata = payload["world_sampling"]
+            frozen = _require_world_sample_source(cursor, project_id=project_id, book_id=payload["book_id"],
+                source_operation_id=metadata["source_operation_id"], stage=stage)
+            if (content.get("source_operation_id") != metadata["source_operation_id"]
+                or content.get("source") != _binding(frozen.source) or content.get("context") != _binding(frozen.context)
+                or metadata.get("stage_hash") != authorization_hash(dict(frozen.stage.task))
+                or metadata.get("schema_hash") != authorization_hash(dict(frozen.stage.output_schema))
+                or world_sample_result_review(frozen, provider["result"], None)["rule_validation"] != content.get("rule_validation")):
+                continue
+            contract = generator_reference_contract(stage, producer)
+            cursor.execute("""SELECT version.asset_version_id,version.content_hash
+                FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
+                WHERE asset.project_id=%s AND asset.asset_type='adjudicated_evaluation'
+                  AND version.lifecycle='ACTIVE' AND version.governance='CLEAR'
+                  AND version.content->>'subject_asset_version_id'=%s
+                  AND version.content->>'protocol_version'=%s AND version.content->>'evaluation_version'=%s
+                ORDER BY version.created_at,version.asset_version_id""",
+                [project_id, target_id, contract["protocol_version"], contract["evaluation_version"]])
+            labels = [{"asset_version_id": row[0], "content_hash": row[1]} for row in cursor.fetchall()]
+            reference = require_adjudicated_reference(cursor, project_id=project_id,
+                binding={"protocol_version": contract["protocol_version"], "adjudications": labels},
+                target_id=target_id, target_hash=digest, generators=[subject["generation_actor_id"]],
+                evaluator_actor_id=subject["generation_actor_id"], chapter=int(frozen.stage.task["accepted_through_chapter"]) + 1,
+                expected_dimensions=DIRECT_GENERATOR_DIMENSIONS[stage],
+                allowed_statuses={"PASSED", "PASSED_WITH_WARNINGS", "FAILED", "BLOCKED", "NEEDS_REVISION"})
+            if not reference_label_classes(cursor, project_id=project_id, reference=reference, stage=stage):
+                continue
+            score = adjudicated_generator_score(reference["labels"])
+        except (KernelError, ValueError, TypeError, KeyError):
+            continue
+        if score is None:
+            continue
+        if content["rule_validation"]["status"] != "PASSED":
+            score = 0.0
+        normalized_output = {key: " ".join(value.split()) if isinstance(value, str) else value
+            for key, value in provider["result"].items()}
+        outcomes[effect_id] = {
+            "metric": "INDEPENDENT_GENERATOR_ADJUDICATION.v1", "accepted": None,
+            "generator_quality_score": score, "generator_protocol_hash": authorization_hash(contract),
+            "generator_risk": decision["policy"]["risk"], "generator_context_tokens": routed["input_tokens"],
+            "generator_sample_identity": authorization_hash({"task_type": stage, "output": normalized_output}),
+            "generator_assessment": {"target_asset_version_id": target_id, "target_content_hash": digest,
+                "labels": reference["labels"], "protocol_version": contract["protocol_version"]},
+            "evidence_refs": ["asset-version:" + target_id, "asset-version:" + provider["model_call_asset_version_id"],
+                *("asset-version:" + item["asset_version_id"] for item in labels)],
+            "assessment_basis": "INDEPENDENT_HUMAN_ADJUDICATION", "sample_promoted": False,
+        }
     return outcomes
 
 
@@ -511,7 +644,7 @@ def query_world_sample(database_url: str, *, project_id: str, book_id: str, oper
         uow.cursor.execute("""SELECT status,command_payload->'payload',causation_operation_id,trace_id FROM authority_operation
             WHERE project_id=%s AND operation_id=%s AND definition_version=ANY(%s)
               AND definition_name=ANY(%s) AND command_payload#>>'{payload,book_id}'=%s""",
-            [project_id, operation_id, [WORLD_SAMPLE_VERSION, WORLD_REFERENCE_SAMPLE_VERSION], ["world.provider.sample.generate", "world.provider.sample.evaluate"], book_id])
+            [project_id, operation_id, [WORLD_SAMPLE_VERSION, WORLD_REFERENCE_SAMPLE_VERSION], ["world.provider.sample." + stage.rsplit(".", 1)[1] for stage in sorted(WORLD_SAMPLE_STAGES)], book_id])
         row = uow.cursor.fetchone()
         if row is None:
             raise KernelError("WORLD_SAMPLE_NOT_FOUND", "World sample is absent from the authorized Project and Book")

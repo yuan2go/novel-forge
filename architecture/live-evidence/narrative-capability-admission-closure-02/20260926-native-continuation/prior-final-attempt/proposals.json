@@ -1,0 +1,34 @@
+{
+  "errors": [
+    "architecture/proposals/classical-corpus-codex-validation.md: stale lifecycle: implementation scope changed since review",
+    "architecture/proposals/industrial-novel-os-blueprint.md: stale lifecycle: implementation scope changed since review",
+    "architecture/proposals/narrative-memory-context-lifecycle-closure.md: stale lifecycle: implementation scope changed since review"
+  ],
+  "proposal_count": 3,
+  "proposals": [
+    {
+      "baseline_sha": "f0dca5e313128fe281c90585b140d60f630ce840",
+      "path": "architecture/proposals/classical-corpus-codex-validation.md",
+      "remaining_decisions": 0,
+      "remaining_work": 2,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "f0dca5e313128fe281c90585b140d60f630ce840",
+      "path": "architecture/proposals/industrial-novel-os-blueprint.md",
+      "remaining_decisions": 7,
+      "remaining_work": 9,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "f0dca5e313128fe281c90585b140d60f630ce840",
+      "path": "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+      "remaining_decisions": 3,
+      "remaining_work": 4,
+      "status": "PARTIALLY_IMPLEMENTED"
+    }
+  ],
+  "retained_terminal_count": 0,
+  "schema_version": "novel-forge.proposal-lifecycle.v1",
+  "status": "FAIL"
+}

@@ -3,8 +3,10 @@ from __future__ import annotations
 import hashlib
 import json
 import unittest
+from dataclasses import replace
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.artifact_lineage import (
     ArtifactLineageEdge,
     InvalidationPolicy,
@@ -388,6 +390,346 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(state["approval"], "APPROVED")
         self.assertEqual(state["lifecycle"], "MATERIALIZED")
         return version_id
+
+    def test_implicit_cross_volume_discovery_disposition_activation_and_revalidation(
+        self,
+    ):
+        authority, command, old = self._implicit_change()
+        future = self._implicit_binding(
+            old, "chapter:volume-2:rescue", "PLANNED", "promise:river-rescue"
+        )
+        coincidental = self._implicit_binding(
+            old, "chapter:volume-3:homonym", "PLANNED", "promise:river-rescue"
+        )
+        history = self._implicit_binding(
+            old, "chapter:volume-1:accepted", "EXECUTED", "promise:river-rescue"
+        )
+        unrelated = self._implicit_binding(
+            old, "chapter:volume-3:market", "PLANNED", "joke:broken-kettle"
+        )
+        derived = self._dependent_binding(
+            future, logical_key="chapter:future-derived", execution_scope="PLANNED"
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT created_by_operation_id FROM story_plan_binding WHERE asset_version_id=%s",
+                [future],
+            )
+            operation = uow.cursor.fetchone()[0]
+            uow.cursor.execute(
+                """INSERT INTO asset_dependency_edge(dependency_edge_id,project_id,book_id,source_asset_version_id,dependent_asset_version_id,dependency_type,invalidation_policy,created_by_operation_id)
+                   VALUES(%s,%s,%s,%s,%s,'PLAN_IMPACT','MARK_STALE',%s)""",
+                [
+                    f"cycle:{self.project_id}",
+                    self.project_id,
+                    self.book_id,
+                    derived,
+                    future,
+                    operation,
+                ],
+            )
+            uow.commit()
+        lost_receipt = {"pending": True}
+
+        def lose_receipt(point):
+            if (
+                point == "after_proposal_execution_before_projection"
+                and lost_receipt["pending"]
+            ):
+                lost_receipt["pending"] = False
+                raise RuntimeError("proposal projection receipt lost")
+
+        authority.failure_injector = lose_receipt
+        with self.assertRaisesRegex(RuntimeError, "proposal projection receipt lost"):
+            authority.propose(command, principal=self.principal)
+        later = self._implicit_binding(
+            old, "chapter:volume-4:late", "PLANNED", "promise:river-rescue"
+        )
+        proposal = authority.propose(command, principal=self.principal)
+        discovery = proposal["semantic_impact_discovery"]
+        hypotheses = {
+            item["candidate"]["asset_version_id"]: item
+            for item in discovery["hypotheses"]
+        }
+        self.assertEqual(set(hypotheses), {future, coincidental, history})
+        self.assertEqual(
+            [
+                item["asset_version_id"]
+                for item in hypotheses[future]["declared_dependents"]
+            ],
+            [derived],
+        )
+        replay = authority.propose(command, principal=self.principal)
+        self.assertEqual(replay["semantic_impact_discovery"], discovery)
+        with self.assertRaisesRegex(KernelError, "IDEMPOTENCY_CONFLICT"):
+            authority.propose(
+                replace(command, source_evidence_version_id=later),
+                principal=self.principal,
+            )
+        dispositions = [
+            {
+                "hypothesis_id": hypotheses[version]["hypothesis_id"],
+                "disposition": outcome,
+                "rationale": reason,
+                "evidence": hypotheses[version]["plan_evidence"],
+            }
+            for version, outcome, reason in (
+                (
+                    future,
+                    "CONFIRMED",
+                    "second-volume rescue relies on the promise removed from the active trajectory",
+                ),
+                (
+                    coincidental,
+                    "FALSE_POSITIVE",
+                    "third-volume phrase is a named festival; it does not require the removed rescue",
+                ),
+            )
+        ]
+        authority.decide(
+            proposal["proposal_id"],
+            approved=True,
+            authority_type="BOOK_DESIGN_AUTHORITY",
+            authority_version="fixture-review.v1",
+            evidence={
+                "fixture_protocol_only": True,
+                "semantic_impact_dispositions": dispositions,
+            },
+            principal=self.principal,
+        )
+        interrupted_once = {"pending": True}
+
+        def interrupt(point):
+            if (
+                point == "after_plan_activation_before_binding"
+                and interrupted_once["pending"]
+            ):
+                interrupted_once["pending"] = False
+                raise RuntimeError("inferred activation interrupted")
+
+        authority.failure_injector = interrupt
+        with self.assertRaisesRegex(RuntimeError, "inferred activation interrupted"):
+            authority.activate(proposal["proposal_id"], principal=self.principal)
+        self.assertEqual(
+            authority.require(proposal["proposal_id"])["status"], "ACTIVATION_PENDING"
+        )
+        activated = authority.activate(
+            proposal["proposal_id"], principal=self.principal
+        )
+        self.assertEqual(activated["status"], "ACTIVE")
+        self.assertEqual(
+            authority.activate(proposal["proposal_id"], principal=self.principal)[
+                "version"
+            ],
+            activated["version"],
+        )
+        self.assertEqual(
+            authority.propose(command, principal=self.principal)[
+                "semantic_impact_discovery"
+            ],
+            discovery,
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT asset_version_id,freshness FROM story_plan_binding WHERE asset_version_id=ANY(%s)",
+                [[future, derived, coincidental, history, unrelated, later]],
+            )
+            self.assertEqual(
+                dict(uow.cursor.fetchall()),
+                {
+                    future: "IMPACTED",
+                    derived: "IMPACTED",
+                    coincidental: "CURRENT",
+                    history: "CURRENT",
+                    unrelated: "CURRENT",
+                    later: "CURRENT",
+                },
+            )
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM asset_dependency_edge WHERE source_asset_version_id=%s AND dependent_asset_version_id=%s",
+                [old, future],
+            )
+            self.assertEqual(uow.cursor.fetchone()[0], 0)
+            uow.cursor.execute(
+                "SELECT invalidation_id FROM authority_artifact_invalidation WHERE project_id=%s AND target_asset_version_id=%s AND status='OPEN'",
+                [self.project_id, future],
+            )
+            invalidations = [row[0] for row in uow.cursor.fetchall()]
+        self.assertTrue(invalidations)
+        evidence = self._seed_asset(
+            "inferred-requalification",
+            "plan_requalification_evidence",
+            {
+                "target_asset_version_id": future,
+                "resolution_status": "QUALIFIED",
+                "invalidation_ids": invalidations,
+            },
+        )
+        self.assertEqual(
+            authority.revalidate(
+                project_id=self.project_id,
+                asset_version_id=future,
+                evidence_version_id=evidence,
+                principal=self.principal,
+            )["freshness"],
+            "CURRENT",
+        )
+        self.assertEqual(
+            authority.revalidate(
+                project_id=self.project_id,
+                asset_version_id=future,
+                evidence_version_id=evidence,
+                principal=self.principal,
+            )["freshness"],
+            "CURRENT",
+        )
+
+    def test_inferred_approval_and_activation_reject_stale_execution_boundary(self):
+        authority, command, old = self._implicit_change()
+        future = self._implicit_binding(
+            old, "chapter:future", "PLANNED", "promise:river-rescue"
+        )
+        proposal = authority.propose(command, principal=self.principal)
+        hypothesis = proposal["semantic_impact_discovery"]["hypotheses"][0]
+        evidence = {
+            "semantic_impact_dispositions": [
+                {
+                    "hypothesis_id": hypothesis["hypothesis_id"],
+                    "disposition": "CONFIRMED",
+                    "rationale": "future rescue requires the changed promise",
+                    "evidence": hypothesis["plan_evidence"],
+                }
+            ]
+        }
+        authority.decide(
+            proposal["proposal_id"],
+            approved=True,
+            authority_type="BOOK_DESIGN_AUTHORITY",
+            authority_version="fixture.v1",
+            evidence=evidence,
+            principal=self.principal,
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "UPDATE story_plan_binding SET execution_scope='EXECUTED',version=version+1 WHERE asset_version_id=%s",
+                [future],
+            )
+            uow.commit()
+        replay = authority.decide(
+            proposal["proposal_id"],
+            approved=True,
+            authority_type="BOOK_DESIGN_AUTHORITY",
+            authority_version="fixture.v1",
+            evidence=evidence,
+            principal=self.principal,
+        )
+        self.assertEqual(replay["status"], "APPROVED")
+        with self.assertRaisesRegex(KernelError, "PLAN_CHANGE_DECISION_CONFLICT"):
+            authority.decide(
+                proposal["proposal_id"],
+                approved=False,
+                authority_type="BOOK_DESIGN_AUTHORITY",
+                authority_version="fixture.v1",
+                evidence=evidence,
+                principal=self.principal,
+            )
+        with self.assertRaisesRegex(KernelError, "PLAN_IMPACT_EVIDENCE_STALE"):
+            authority.activate(proposal["proposal_id"], principal=self.principal)
+        self.assertEqual(
+            authority.require(proposal["proposal_id"])["status"], "APPROVED"
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT asset_version_id FROM active_story_plan_version WHERE project_id=%s AND logical_key='book:main'",
+                [self.project_id],
+            )
+            self.assertEqual(uow.cursor.fetchone()[0], old)
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM authority_plan_change_impact WHERE proposal_id=%s",
+                [proposal["proposal_id"]],
+            )
+            self.assertEqual(uow.cursor.fetchone()[0], 0)
+
+    def _implicit_change(self):
+        old = self.planning_fixture._activate_and_bind(
+            self._book_type(),
+            "book:main",
+            execution_scope=self._frozen_scope(),
+            extra={"required_events": ["promise:river-rescue"]},
+        )
+        proposed = self._approved_candidate(
+            logical_key="book:main",
+            extra={"required_events": ["promise:river-crossing"]},
+        )
+        source = self._seed_asset(
+            "impact-recap",
+            "longform_recap",
+            {"deviations": ["accepted rescue made the river promise impossible"]},
+        )
+        authority = PostgresPlanChangeAuthority(
+            DATABASE_URL,
+            story_design=self.story_design,
+            planning=self.planning,
+            application_build_id="plan-change-integration",
+            commit_sha="d" * 40,
+        )
+        command = PlanChangeProposalCommand(
+            project_id=self.project_id,
+            workspace_id=f"workspace:{self.project_id}",
+            book_id=self.book_id,
+            actor_id=self.principal.principal_id,
+            trace_id=f"trace:{self.project_id}",
+            correlation_id=f"book:{self.book_id}",
+            stable_idempotency_key=f"{self.project_id}:implicit-change",
+            source_type=PlanChangeSource.LONGFORM_RECAP,
+            source_evidence_version_id=source,
+            target_asset_version_id=old["asset_version_id"],
+            proposed_asset_version_id=proposed,
+        )
+        return authority, command, old["asset_version_id"]
+
+    def _implicit_binding(self, source, logical_key, execution_scope, commitment):
+        version = self._seed_asset(
+            logical_key.replace(":", "-"),
+            "chapter_plan_candidate",
+            {"required_payoffs": [commitment], "chapter_number": 99},
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT created_by_operation_id FROM story_plan_binding WHERE asset_version_id=%s",
+                [source],
+            )
+            operation = uow.cursor.fetchone()[0]
+            binding = f"binding:{self.project_id}:{logical_key}"
+            uow.cursor.execute(
+                """INSERT INTO story_plan_binding(binding_id,project_id,book_id,contract_type,logical_key,asset_version_id,parent_version_id,execution_scope,freshness,created_by_operation_id)
+                                  VALUES(%s,%s,%s,'CHAPTER',%s,%s,%s,%s,'CURRENT',%s)""",
+                [
+                    binding,
+                    self.project_id,
+                    self.book_id,
+                    logical_key,
+                    version,
+                    source,
+                    execution_scope,
+                    operation,
+                ],
+            )
+            if execution_scope != "EXECUTED":
+                uow.cursor.execute(
+                    """INSERT INTO active_story_plan_version(project_id,book_id,logical_key,binding_id,asset_version_id,activated_by_operation_id)
+                                      VALUES(%s,%s,%s,%s,%s,%s)""",
+                    [
+                        self.project_id,
+                        self.book_id,
+                        logical_key,
+                        binding,
+                        version,
+                        operation,
+                    ],
+                )
+            uow.commit()
+        return version
 
     def _dependent_binding(
         self,

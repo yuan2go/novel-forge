@@ -521,8 +521,9 @@ its predecessor, actor, input and campaign identity. Failure model-call evidence
 separately from later successful recovery evidence. Kernel receipt recovery and Chapter
 synchronous completion use the same settlement policy: missing real receipts retain
 conservative usage, explicit fixture receipts remain fixtures, and subscription charges
-remain unknown rather than zero. Samples do not grant calibrated reviewer admission or
-publish generator quality observations; those remain separate required steps.
+remain unknown rather than zero. A successful sample alone supplies no quality score.
+Current independent adjudications are projected separately into Router observations as
+described below; the sample itself remains ineligible.
 
 World sampling uses `POST /product/production/book-authority/books/{book_id}/world-provider-samples?dry_run=true`.
 Supply `project_id`, `book_id`, the authenticated `actor_id`, `source_operation_id`,
@@ -664,6 +665,49 @@ reference object. Successful outputs use `narrative-reference-agreement.v2`; sub
 native routing reads that outcome through the same `REFERENCE_AGREEMENT` metric with
 separate positive/negative coverage, producer/protocol/risk/context scope and fixture
 exclusion. This does not promote a sample or establish literary quality or reader preference.
+
+Generator feedback uses `native-generator-quality.v1`, not business acceptance or the
+reviewer's own score. Chapter sampling preflight returns `generator_evaluation_contract`
+when its original frozen producer identity is available. Its evaluation version binds
+the task and producer hash; all labels for that score must use that exact version. Draft
+and Revision use independently sampled Review/Rereview references; World and Planning use
+their existing independent reference evaluation paths. Generator and model evaluator must
+have different model identities. Memo and Canon use native sample annotations with the
+contract's required semantic dimensions. At least two independent evidenced human records
+and an independent adjudicator are required; never manufacture these records in a runner.
+
+`GENERATOR_SCORE` uses the conservative minimum adjudicated lower endpoint. Broad or
+unknown protocols remain unscored, and an unadjudicated calibration sample prevents
+qualification of a selectively labeled positive subset. Failures and retries remain in
+native evidence. The Registry groups frozen Provider inputs independently of campaign
+names and also deduplicates observed content. A group or content used in development or
+holdout is excluded from calibration. Current producer, model, risk and context scope must
+match; replay of an older frozen decision does not confer new qualification. Inspect
+`unadjudicated_generator_sample_count`, `generator_protocol_hashes`,
+`partition_conflicted_sample_identities` and the frozen RoutingDecision before dispatch.
+No sampling output becomes an active plan, Canon mutation, accepted draft or reader proof.
+
+World sample preparation also supports `actor_0`, `actor_1` and `actor_2` with the frozen
+original Actor contract and its private input. Use the returned generator evaluation
+contract to annotate the exact sample through Content Authority; all four dimensions
+(goal consistency, epistemic isolation, commitment continuity and action causality) are
+required. Sample Actor proposals cannot enter formal World/Director preparation. Formal
+World/Actor producer identity binds the schema factory and semantic shape, retaining
+instance identifier type/cardinality while excluding only enumerated instance IDs.
+Old incompatible schema identities do not acquire current qualification.
+
+Longform reviewer sampling uses the Book prose-review `provider-samples` endpoint,
+first with `dry_run=true`, against an existing exact frozen review Operation/window.
+Install the separately approved reference sampling Pack, then register a matching
+`REFERENCE_EVALUATION` grant with the returned command/input/producer hashes and full
+reference binding. Native Content annotations require two blind humans and an independent
+adjudicator across finding precision, missed relationships, evidence fidelity and disposition
+fit. The resulting `INDEPENDENT_REVIEWER_SCORE` is distinct from generator score and
+reviewer agreement. Sampling writes an ineligible report without official findings or
+source mutation. Query the native operation output and routing registry; existing Effect
+reconciliation and cumulative reference-budget accounting apply. Historical longform
+`chapter=0` metadata derives scope only from the verified immutable accepted window,
+never from a caller-supplied chapter number.
 
 Use the existing `POST /product/production/book-authority/books/{book_id}/planning-evaluations?dry_run=true`
 with the ordinary evaluation command plus `routing_bootstrap_authorization_id` and
@@ -1100,9 +1144,17 @@ not authorize replacement or erase pending reconciliation.
 The Editor's manuscript review panel consumes
 `/product/production/book-authority/runs/{book_run_id}/prose-reviews`. Start freezes an
 explicit `policy_version`, `window_codepoints`, `overlap_codepoints`,
-`context_token_budget` and `maximum_windows`. Advance dispatches at most the next native
-window, using expected progress version; the Book Follow-up worker executes it. Query the
-report for covered/excluded ranges, errors, effects and dispositions. Use `/control` to
+`context_token_budget` and `maximum_windows`. Set `execution_mode=AUTOMATIC` for the Book
+Follow-up worker to admit and execute the next bounded window for active runs; omitted
+mode remains `MANUAL`, and the versioned Advance API remains available. Pause excludes
+dispatch, resume continues the same frozen run,
+and pending or unknown Effects reconcile before a newer accepted manifest is appended.
+Incremental child runs retain valid old window evidence and freeze the new exact prefix.
+Optional `relation_window_limit` adds bounded nonadjacent passage pairs retrieved by shared
+text anchors. A hypothesis is unverified until the model report cites both exact passages;
+missing evidence stays explicit. Query the report for covered/excluded ranges, unreviewed
+pairs, unsupported relation classes, errors, Effects and dispositions. Text coverage never
+means that all global relationships are verified. Use `/control` to
 pause/resume and `/findings/{lineage_id}/disposition` for a version-bound author decision.
 The Plan Change action requires exact target/proposed plan versions, current evidence
 and a rationale. It creates a proposal, retaining the existing approval and future-only

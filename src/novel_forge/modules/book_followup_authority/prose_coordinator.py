@@ -347,6 +347,168 @@ class BookProseReviewCoordinator:
                 == self.commit_sha,
             }
 
+    def automatic_candidates(
+        self, *, principal: Principal, limit: int
+    ) -> list[dict[str, Any]]:
+        if type(limit) is not int or limit <= 0:
+            raise ValueError("automatic review limit must be positive")
+        projects = (
+            [] if "*" in principal.project_scope else sorted(principal.project_scope)
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT run.run_id,run.project_id,run.workspace_id,run.book_run_id
+                   FROM authority_book_prose_review_run run
+                   WHERE run.exact_release_sha=%s AND run.manifest #>> '{policy,execution_mode}'='AUTOMATIC'
+                     AND (%s OR run.project_id=ANY(%s))
+                     AND NOT EXISTS (SELECT 1 FROM authority_book_prose_review_run newer
+                         WHERE newer.book_run_id=run.book_run_id
+                         AND (newer.created_at,newer.run_id)>(run.created_at,run.run_id))
+                     AND COALESCE((SELECT event.kind FROM authority_book_prose_review_event event
+                         WHERE event.run_id=run.run_id AND event.kind IN ('PAUSED','RESUMED')
+                         ORDER BY event.event_version DESC LIMIT 1),'RESUMED')<>'PAUSED'
+                     AND NOT EXISTS (SELECT 1 FROM authority_book_prose_review_event event
+                         JOIN authority_operation operation ON operation.operation_id=event.content->>'operation_id'
+                         WHERE event.run_id=run.run_id AND event.kind IN ('WINDOW_ADMITTED','WINDOW_REUSED')
+                           AND (operation.status IN ('FAILED_FINAL','DEAD_LETTER','CANCELLED','WAITING_APPROVAL','RECONCILIATION_REQUIRED','WAITING_EXTERNAL_RESULT')
+                             OR EXISTS (SELECT 1 FROM authority_external_effect effect WHERE effect.operation_id=operation.operation_id
+                                 AND effect.status IN ('UNKNOWN','RECONCILIATION_REQUIRED','CANCEL_REQUESTED'))
+                             OR EXISTS (SELECT 1 FROM authority_budget_reservation reservation WHERE reservation.operation_id=operation.operation_id
+                                 AND reservation.status='HELD_UNKNOWN')
+                             OR EXISTS (SELECT 1 FROM authority_attempt attempt JOIN authority_lease_acquisition lease USING(attempt_id)
+                                 WHERE attempt.operation_id=operation.operation_id AND lease.status='HELD' AND lease.expires_at>NOW())))
+                     AND ((SELECT COUNT(*) FROM authority_book_prose_review_event event
+                             WHERE event.run_id=run.run_id AND event.kind='WINDOW_ADMITTED') < (run.manifest #>> '{policy,maximum_windows}')::integer
+                         OR EXISTS (SELECT 1 FROM authority_book_prose_review_event event
+                             JOIN authority_operation operation ON operation.operation_id=event.content->>'operation_id'
+                             WHERE event.run_id=run.run_id AND event.kind='WINDOW_ADMITTED' AND operation.status<>'SUCCEEDED')
+                         OR (run.manifest #>> '{policy,follow_acceptance}'='true' AND EXISTS (
+                             SELECT 1 FROM authority_book_chapter_acceptance acceptance WHERE acceptance.book_run_id=run.book_run_id
+                             AND acceptance.status='COMMITTED' AND NOT EXISTS (
+                                 SELECT 1 FROM jsonb_array_elements(run.manifest->'sources') source WHERE source->>'acceptance_id'=acceptance.acceptance_id))))
+                     AND (EXISTS (SELECT 1 FROM jsonb_array_elements(run.manifest->'windows') candidate_window
+                         WHERE NOT EXISTS (SELECT 1 FROM authority_book_prose_review_event event
+                             JOIN authority_operation operation ON operation.operation_id=event.content->>'operation_id'
+                             WHERE event.run_id=run.run_id AND event.kind IN ('WINDOW_ADMITTED','WINDOW_REUSED')
+                             AND event.content->>'window_id'=candidate_window->>'window_id' AND operation.status='SUCCEEDED'))
+                         OR (run.manifest #>> '{policy,follow_acceptance}'='true'
+                             AND EXISTS (SELECT 1 FROM authority_book_chapter_acceptance acceptance
+                                 WHERE acceptance.book_run_id=run.book_run_id AND acceptance.status='COMMITTED'
+                                 AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(run.manifest->'sources') source
+                                     WHERE source->>'acceptance_id'=acceptance.acceptance_id))))
+                   ORDER BY run.created_at,run.run_id LIMIT %s""",
+                [self.commit_sha, "*" in principal.project_scope, projects, limit],
+            )
+            return _rows(uow.cursor)
+
+    def blocked_dispatch_operations(
+        self, *, project_ids: tuple[str, ...] = ()
+    ) -> tuple[str, ...]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT operation.operation_id FROM authority_operation operation
+                   WHERE operation.definition_name=%s
+                     AND (%s::text[]='{}'::text[] OR operation.project_id=ANY(%s))
+                     AND operation.status IN ('READY','FAILED_RETRYABLE','EXECUTING')
+                     AND NOT EXISTS (
+                         SELECT 1 FROM authority_book_prose_review_event admission
+                         WHERE admission.kind='WINDOW_ADMITTED'
+                           AND admission.content->>'operation_id'=operation.operation_id
+                           AND COALESCE((SELECT control.kind FROM authority_book_prose_review_event control
+                               WHERE control.run_id=admission.run_id AND control.kind IN ('PAUSED','RESUMED')
+                               ORDER BY control.event_version DESC LIMIT 1),'RESUMED')<>'PAUSED')""",
+                [PROSE_REVIEW_DEFINITION, list(project_ids), list(project_ids)],
+            )
+            return tuple(row[0] for row in uow.cursor.fetchall())
+
+    def automatic_tick(self, *, principal: Principal, **scope: Any) -> dict[str, Any]:
+        principal.require("book.authority.execute", scope["project_id"])
+        progress = self.report(**scope, principal=principal)
+        policy = progress["manifest"]["policy"]
+        if progress["paused"] or policy.get("execution_mode") != "AUTOMATIC":
+            return {"status": "PAUSED", "run_id": scope["run_id"]}
+        if not progress["implementation_current"]:
+            return {"status": "STALE_IMPLEMENTATION", "run_id": scope["run_id"]}
+        blocked = [
+            item
+            for item in progress["operations"]
+            if item["status"]
+            in {
+                "FAILED_FINAL",
+                "DEAD_LETTER",
+                "CANCELLED",
+                "WAITING_APPROVAL",
+                "RECONCILIATION_REQUIRED",
+                "WAITING_EXTERNAL_RESULT",
+            }
+            or any(
+                effect["status"]
+                in {"UNKNOWN", "RECONCILIATION_REQUIRED", "CANCEL_REQUESTED"}
+                for effect in item.get("external_effects", [])
+            )
+            or any(
+                receipt["status"] == "HELD_UNKNOWN"
+                for receipt in item.get("budget_receipts", [])
+            )
+        ]
+        if blocked:
+            return {"status": "BLOCKED", "operation_id": blocked[0]["operation_id"]}
+        outstanding = next(
+            (item for item in progress["operations"] if item["status"] != "SUCCEEDED"),
+            None,
+        )
+        if outstanding:
+            self.followup.run_or_recover(
+                BookFollowupAdmission(
+                    outstanding["operation_id"], scope["project_id"], True
+                )
+            )
+            return self.report(**scope, principal=principal)
+        if not progress["source_current"]:
+            if not policy.get("follow_acceptance"):
+                return {"status": "STALE_MANUSCRIPT", "run_id": scope["run_id"]}
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                sources = load_accepted_sources(
+                    uow, scope["book_run_id"], scope["project_id"]
+                )
+            current = freeze_manifest(
+                **{
+                    key: scope[key]
+                    for key in ("project_id", "workspace_id", "book_run_id")
+                },
+                sources=sources,
+                policy=policy,
+            )
+            previous = progress["manifest"]["sources"]
+            if current["sources"][: len(previous)] != previous:
+                return {"status": "HISTORICAL_SOURCE_DRIFT", "run_id": scope["run_id"]}
+            return self.start(
+                **{
+                    key: scope[key]
+                    for key in ("project_id", "workspace_id", "book_run_id")
+                },
+                principal=principal,
+                policy=policy,
+                idempotency_key="prose-auto-manifest:" + current["manifest_digest"],
+                trace_id="prose-auto:" + scope["run_id"],
+                correlation_id=scope["run_id"],
+            )
+        if progress["review_complete"]:
+            return {"status": "COMPLETE", "run_id": scope["run_id"]}
+        if (
+            sum(not item.get("source_run_id") for item in progress["operations"])
+            >= policy["maximum_windows"]
+        ):
+            return {"status": "BUDGET_PAUSED", "run_id": scope["run_id"]}
+        return self.advance(
+            **scope,
+            principal=principal,
+            expected_version=progress["expected_version"],
+            idempotency_key=f"prose-auto:{scope['run_id']}:{progress['expected_version']}",
+            trace_id="prose-auto:" + scope["run_id"],
+            correlation_id=scope["run_id"],
+        )
+
     def advance(
         self,
         *,
@@ -435,19 +597,16 @@ class BookProseReviewCoordinator:
                 "context_token_budget"
             ],
         }
-        admission = self.followup.admit(
-            BookFollowupCommand(
-                definition_name=PROSE_REVIEW_DEFINITION,
-                project_id=project_id,
-                workspace_id=workspace_id,
-                actor_id=principal.principal_id,
-                trace_id=metadata["trace_id"],
-                correlation_id=metadata["correlation_id"],
-                idempotency_key=f"prose-review:{run_id}:{window['window_id']}",
-                payload=payload,
-                input_assets=(window["input_asset"],),
-            ),
-            principal=principal,
+        request = BookFollowupCommand(
+            definition_name=PROSE_REVIEW_DEFINITION,
+            project_id=project_id,
+            workspace_id=workspace_id,
+            actor_id=principal.principal_id,
+            trace_id=metadata["trace_id"],
+            correlation_id=metadata["correlation_id"],
+            idempotency_key=f"prose-review:{run_id}:{window['window_id']}",
+            payload=payload,
+            input_assets=(window["input_asset"],),
         )
 
         def handler(
@@ -455,19 +614,16 @@ class BookProseReviewCoordinator:
         ) -> dict[str, Any]:
             run = load_review_run(uow, **scope)
             state = review_progress(uow, run)
-            if any(
-                item["operation_id"] == admission.operation_id
-                for item in state["operations"]
-            ):
-                return {"operation_id": admission.operation_id, "replayed": True}
             if (
                 state["expected_version"] != expected_version
                 or not state["source_current"]
+                or state["paused"]
             ):
                 raise KernelError(
                     "LONGFORM_PROSE_VERSION_CONFLICT",
                     "review progress changed before linking admission",
                 )
+            admission = self.followup.admit(request, principal=principal)
             self._event(
                 uow,
                 run_id,
@@ -481,14 +637,18 @@ class BookProseReviewCoordinator:
             )
             return {"operation_id": admission.operation_id, "replayed": False}
 
-        self._command(
+        linked = self._command(
             "book.prose_review.advance",
             {**scope, "expected_version": expected_version},
             principal,
             handler,
             **metadata,
         )
-        self.followup.run_or_recover(admission)
+        self.followup.run_or_recover(
+            BookFollowupAdmission(
+                linked["operation_id"], project_id, linked["replayed"]
+            )
+        )
         return self.report(**scope, principal=principal)
 
     def _book_id(self, book_run_id: str, project_id: str) -> str:
@@ -787,10 +947,25 @@ class BookProseReviewCoordinator:
                 not state["source_current"]
                 or state["exact_release_sha"] != self.commit_sha
             ):
-                raise KernelError(
-                    "LONGFORM_PROSE_SOURCE_STALE",
-                    "freeze a new run before resuming changed manuscript or implementation",
+                policy = state["manifest"]["policy"]
+                current = freeze_manifest(
+                    project_id=project_id,
+                    workspace_id=workspace_id,
+                    book_run_id=book_run_id,
+                    sources=load_accepted_sources(uow, book_run_id, project_id),
+                    policy=policy,
                 )
+                previous = state["manifest"]["sources"]
+                if not (
+                    policy.get("execution_mode") == "AUTOMATIC"
+                    and policy.get("follow_acceptance")
+                    and state["exact_release_sha"] == self.commit_sha
+                    and current["sources"][: len(previous)] == previous
+                ):
+                    raise KernelError(
+                        "LONGFORM_PROSE_SOURCE_STALE",
+                        "freeze a new run before resuming changed manuscript or implementation",
+                    )
             event_id = self._event(
                 uow,
                 run_id,

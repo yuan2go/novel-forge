@@ -85,7 +85,7 @@ class TaskPolicy:
             raise ValueError("ROUTING_QUALITY_POLICY_INVALID")
         if min(self.minimum_samples, self.max_escalations) < 0 or self.max_attempts < 1:
             raise ValueError("ROUTING_CHAIN_POLICY_INVALID")
-        if self.quality_metric not in {"CALIBRATED_SCORE", "DOMAIN_GATE_ACCEPTANCE", "REFERENCE_AGREEMENT"}:
+        if self.quality_metric not in {"CALIBRATED_SCORE", "DOMAIN_GATE_ACCEPTANCE", "REFERENCE_AGREEMENT", "GENERATOR_SCORE", "INDEPENDENT_REVIEWER_SCORE"}:
             raise ValueError("ROUTING_QUALITY_METRIC_INVALID")
 
 
@@ -177,7 +177,8 @@ TASK_TAXONOMY = {
 }
 REFERENCE_TASKS = frozenset({"review", "rereview", "quality_structural", "quality_commercial",
     "quality_source_originality", "quality_longform", "quality_platform", "world_candidates.evaluate", "narrative_semantic_evaluation"})
-POLICY_VERSION = "quality-constrained-routing.v9"
+GENERATOR_TASKS = frozenset({name for name in TASK_TAXONOMY if name.endswith(".generate")} | {"memo", "draft", "revision", "canon_extraction", *{f"world_candidates.actor_{index}" for index in range(3)}})
+POLICY_VERSION = "quality-constrained-routing.v10"
 
 
 def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> TaskPolicy:
@@ -196,7 +197,7 @@ def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> Tas
         policy.confidence_penalty,
         policy.max_attempts,
         policy.max_escalations,
-        "REFERENCE_AGREEMENT" if task_type in REFERENCE_TASKS else "DOMAIN_GATE_ACCEPTANCE"
+        "INDEPENDENT_REVIEWER_SCORE" if task_type == "longform_prose_review" else "REFERENCE_AGREEMENT" if task_type in REFERENCE_TASKS else "GENERATOR_SCORE" if task_type in GENERATOR_TASKS else "DOMAIN_GATE_ACCEPTANCE"
         if task_type.endswith(".generate")
         or task_type == "source.deconstruction.observe"
         else "CALIBRATED_SCORE",
@@ -321,11 +322,20 @@ class BenchmarkObservation:
     sample_identity: str = ""
     experiment_partition: str = ""
     producer_contract_hash: str = ""
+    independence_group: str = ""
     reference_agreed: bool | None = None
     reference_label_classes: tuple[str, ...] = ()
     reference_protocol_hash: str = ""
     reference_risk: str = ""
     reference_context_tokens: int | None = None
+    generator_quality_score: float | None = None
+    generator_protocol_hash: str = ""
+    generator_risk: str = ""
+    generator_context_tokens: int | None = None
+    independent_quality_score: float | None = None
+    independent_protocol_hash: str = ""
+    independent_risk: str = ""
+    independent_context_tokens: int | None = None
 
     def __post_init__(self) -> None:
         if (self.reference_agreed is not None and type(self.reference_agreed) is not bool
@@ -335,7 +345,19 @@ class BenchmarkObservation:
                 or not self.reference_protocol_hash.startswith("sha256:") or self.reference_risk not in {"LOW", "MEDIUM", "HIGH"}
                 or type(self.reference_context_tokens) is not int or self.reference_context_tokens <= 0))):
             raise ValueError("BENCHMARK_REFERENCE_INVALID")
-        for value in (self.quality_score, self.judge_score):
+        if self.generator_quality_score is not None and (
+            self.evidence_class != "BENCHMARK_CHALLENGER" or self.experiment_partition != "CALIBRATION"
+            or not self.generator_protocol_hash.startswith("sha256:") or self.generator_risk not in {"LOW", "MEDIUM", "HIGH"}
+            or type(self.generator_context_tokens) is not int or self.generator_context_tokens <= 0
+            or not self.producer_contract_hash or not self.outcome_refs or not self.independence_group):
+            raise ValueError("BENCHMARK_GENERATOR_INVALID")
+        if self.independent_quality_score is not None and (
+            self.evidence_class != "REFERENCE_EVALUATION" or self.experiment_partition != "CALIBRATION"
+            or not self.independent_protocol_hash.startswith("sha256:") or self.independent_risk not in {"LOW", "MEDIUM", "HIGH"}
+            or type(self.independent_context_tokens) is not int or self.independent_context_tokens <= 0
+            or not self.producer_contract_hash or not self.outcome_refs or not self.independence_group):
+            raise ValueError("BENCHMARK_INDEPENDENT_REVIEWER_INVALID")
+        for value in (self.quality_score, self.judge_score, self.generator_quality_score, self.independent_quality_score):
             if value is not None and (not math.isfinite(value) or not 0 <= value <= 1):
                 raise ValueError("BENCHMARK_SCORE_INVALID")
         if (
@@ -404,9 +426,18 @@ def benchmark_snapshot(
     excluded_partition_count = sum(
         row.experiment_partition in {"DEVELOPMENT", "HOLDOUT"} for row in unique.values()
     )
+    isolation_evidence = [row for row in observations if row.evidence_kind == "REAL_PROVIDER"
+        and datetime.fromisoformat(row.occurred_at) <= now]
+    isolated_identities = {row.sample_identity for row in isolation_evidence
+        if row.sample_identity and row.experiment_partition in {"DEVELOPMENT", "HOLDOUT"}}
+    partition_conflicts = {row.sample_identity for row in unique.values()
+        if row.experiment_partition == "CALIBRATION" and row.sample_identity in isolated_identities}
+    isolated_groups = {row.independence_group for row in isolation_evidence
+        if row.independence_group and row.experiment_partition in {"DEVELOPMENT", "HOLDOUT"}}
     ordered = sorted(
         (row for row in unique.values()
-         if row.experiment_partition not in {"DEVELOPMENT", "HOLDOUT"}),
+         if row.experiment_partition not in {"DEVELOPMENT", "HOLDOUT"} and row.sample_identity not in isolated_identities
+         and (not row.independence_group or row.independence_group not in isolated_groups)),
         key=lambda row: (row.occurred_at, row.evidence_ref),
     )
     if policy.quality_metric == "REFERENCE_AGREEMENT" and input_tokens is not None:
@@ -415,12 +446,27 @@ def benchmark_snapshot(
                 or reference_context_bucket(row.reference_context_tokens) == reference_context_bucket(input_tokens)))]
     rows = ordered[-maximum_samples:]
     independent: dict[str, BenchmarkObservation] = {}
+    input_groups: set[str] = set()
     for row in ordered:
+        if row.independence_group and row.independence_group in input_groups:
+            continue
+        if row.independence_group:
+            input_groups.add(row.independence_group)
         independent.setdefault(row.sample_identity or row.evidence_ref, row)
     represented = {row.sample_identity or row.evidence_ref for row in rows}
     samples = [row for identity, row in independent.items() if identity in represented]
     scored_samples = [row for row in samples if row.retried is not True]
-    scores = [row.quality_score for row in scored_samples if row.quality_score is not None]
+    generator_rows = [row for row in scored_samples if row.generator_quality_score is not None and row.generator_risk == policy.risk
+        and (input_tokens is None or reference_context_bucket(row.generator_context_tokens) == reference_context_bucket(input_tokens))]
+    generator_protocols = sorted({row.generator_protocol_hash for row in generator_rows})
+    generator_contexts = sorted({reference_context_bucket(row.generator_context_tokens) for row in generator_rows})
+    independent_rows = [row for row in scored_samples if row.independent_quality_score is not None and row.independent_risk == policy.risk
+        and (input_tokens is None or reference_context_bucket(row.independent_context_tokens) == reference_context_bucket(input_tokens))]
+    independent_protocols = sorted({row.independent_protocol_hash for row in independent_rows})
+    independent_contexts = sorted({reference_context_bucket(row.independent_context_tokens) for row in independent_rows})
+    scores = ([row.independent_quality_score for row in independent_rows] if policy.quality_metric == "INDEPENDENT_REVIEWER_SCORE"
+        else [row.generator_quality_score for row in generator_rows] if policy.quality_metric == "GENERATOR_SCORE"
+        else [row.quality_score for row in scored_samples if row.quality_score is not None])
     domain_outcomes = [
         row.domain_gate_accepted for row in scored_samples if row.domain_gate_accepted is not None
     ]
@@ -439,6 +485,16 @@ def benchmark_snapshot(
     uncertainty = n < policy.minimum_samples or (policy.quality_metric == "REFERENCE_AGREEMENT"
         and (len(reference_protocols) != 1 or len(reference_contexts) != 1
             or any(len(values) < policy.minimum_samples for values in reference_strata.values())))
+    unadjudicated_generators = sum(row.evidence_class == "BENCHMARK_CHALLENGER" and row.experiment_partition == "CALIBRATION"
+        and row.generator_risk == policy.risk and row.generator_quality_score is None
+        and (input_tokens is None or reference_context_bucket(row.generator_context_tokens) == reference_context_bucket(input_tokens)) for row in scored_samples)
+    unadjudicated_reviewers = sum(row.evidence_class == "REFERENCE_EVALUATION" and row.experiment_partition == "CALIBRATION"
+        and row.independent_risk == policy.risk and row.independent_quality_score is None
+        and (input_tokens is None or reference_context_bucket(row.independent_context_tokens) == reference_context_bucket(input_tokens)) for row in scored_samples)
+    if policy.quality_metric == "GENERATOR_SCORE":
+        uncertainty = uncertainty or len(generator_protocols) != 1 or len(generator_contexts) != 1 or bool(unadjudicated_generators)
+    if policy.quality_metric == "INDEPENDENT_REVIEWER_SCORE":
+        uncertainty = uncertainty or len(independent_protocols) != 1 or len(independent_contexts) != 1 or bool(unadjudicated_reviewers)
     average = mean(scores) if scores else 0.0
     penalty = policy.confidence_penalty * min(
         1, math.sqrt(policy.minimum_samples / max(1, n))
@@ -510,6 +566,15 @@ def benchmark_snapshot(
                 if row.served_model_identity_hash
             }
         ),
+        "unadjudicated_generator_sample_count": unadjudicated_generators,
+        "unadjudicated_reviewer_sample_count": unadjudicated_reviewers,
+        "independent_reviewer_protocol_hashes": independent_protocols,
+        "independent_reviewer_context_buckets": independent_contexts,
+        "independent_reviewer_score_basis": "INDEPENDENT_HUMAN_ADJUDICATION" if independent_rows else None,
+        "partition_conflicted_sample_identities": sorted(partition_conflicts),
+        "generator_protocol_hashes": generator_protocols,
+        "generator_context_buckets": generator_contexts,
+        "generator_score_basis": "INDEPENDENT_ADJUDICATION_NOT_BUSINESS_ACCEPTANCE" if generator_rows else None,
         "quality_sample_count": len(scores),
         "quality_metric": policy.quality_metric,
         "metric_sample_count": n,

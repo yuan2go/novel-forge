@@ -157,6 +157,10 @@ def _effect_identity(cursor: Any, effect_id: str, project_id: str) -> dict[str, 
 def _business_scope(cursor: Any, identity: dict[str, Any], *, project_id: str, generation: int = 1,
                     plan: dict[str, Any] | None = None) -> dict[str, Any]:
     from novel_forge.modules.command_kernel.creative_budget_scope import classify_business_scope
+    if identity["operation_name"] == "longform.prose_review":
+        from novel_forge.modules.book_followup_authority.prose_budget import frozen_prose_budget_scope
+
+        identity = {**identity, "native_prose_scope": frozen_prose_budget_scope(cursor, identity, project_id=project_id)}
     if identity["operation_name"] == "story_design.semantic_evaluate":
         request = identity["request_payload"]
         target = (request.get("input") or {}).get("evaluation_target") or {}
@@ -215,16 +219,16 @@ def _campaign_scope(cursor: Any, identity: dict[str, Any], *, plan: dict[str, An
         operation_id=identity["operation_id"], check_expiry=False)
     command = identity["command_payload"].get("payload", identity["command_payload"])
     source_operation_id = identity["operation_id"]
-    if command.get("chapter_sampling") or command.get("world_sampling"):
+    if command.get("chapter_sampling") or command.get("world_sampling") or command.get("prose_sampling"):
         if snapshot is None:
             raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "sample budget classification requires its native bootstrap authorization")
-        source_operation_id = (command.get("chapter_sampling") or command["world_sampling"])["source_operation_id"]
+        source_operation_id = (command.get("chapter_sampling") or command.get("world_sampling") or command["prose_sampling"])["source_operation_id"]
         cursor.execute("SELECT definition_name,command_payload FROM authority_operation WHERE project_id=%s AND operation_id=%s",
                        [project_id, source_operation_id])
         origin = cursor.fetchone()
         if not origin:
             raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "sample has no original native task")
-        identity = {**identity, "operation_name": origin[0], "command_payload": origin[1]}
+        identity = {**identity, "operation_name": origin[0], "command_payload": origin[1], "source_operation_id": source_operation_id}
         if (command.get("chapter_sampling") or {}).get("generation_sample") is not None:
             from .routing_bootstrap import CHAPTER_REFERENCE_TASKS
 

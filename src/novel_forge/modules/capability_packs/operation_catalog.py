@@ -369,7 +369,7 @@ def world_sampling_workflow_binding_catalog(*, reference_samples: bool = False) 
         WorkflowBinding(node_id="world_candidates." + action, operation_name="world.provider.sample." + action,
             stage="world_candidates." + action, handler_key="novel_forge.world.provider.sample." + action,
             capability_id="planning.story_chapter.generate", depends_on=(), primary_output_asset_type="world_provider_sample")
-        for action in (("evaluate",) if reference_samples else ("generate", "evaluate"))))
+        for action in (("evaluate",) if reference_samples else ("generate", "evaluate", "actor_0", "actor_1", "actor_2"))))
 
 
 def reader_outcome_workflow_binding_catalog() -> WorkflowBindingCatalog:
@@ -392,9 +392,12 @@ def reader_outcome_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
 
 
-def longform_prose_review_workflow_binding_catalog() -> WorkflowBindingCatalog:
-    return WorkflowBindingCatalog("book_followup_longform_prose_review", BOOK_FOLLOWUP_DEFINITION_VERSION, (
-        WorkflowBinding(node_id="longform_prose_review", operation_name="longform.prose_review", stage="longform_prose_review", handler_key="novel_forge.book_followup_authority.longform.prose_review", capability_id="review.chapter.evaluate", depends_on=(), primary_output_asset_type="longform_prose_review_report"),
+def longform_prose_review_workflow_binding_catalog(*, provider_sampling: bool = False) -> WorkflowBindingCatalog:
+    from novel_forge.modules.book_followup_authority.prose_sampling import PROSE_SAMPLE_DEFINITION, PROSE_SAMPLE_TYPE, PROSE_SAMPLE_VERSION
+
+    name = PROSE_SAMPLE_DEFINITION if provider_sampling else "longform.prose_review"
+    return WorkflowBindingCatalog("book_followup_prose_sampling" if provider_sampling else "book_followup_longform_prose_review", PROSE_SAMPLE_VERSION if provider_sampling else BOOK_FOLLOWUP_DEFINITION_VERSION, (
+        WorkflowBinding(node_id="longform_prose_review", operation_name=name, stage="longform_prose_review", handler_key="novel_forge.book_followup_authority." + name, capability_id="review.chapter.evaluate", depends_on=(), primary_output_asset_type=PROSE_SAMPLE_TYPE if provider_sampling else "longform_prose_review_report"),
     ))
 
 
@@ -447,6 +450,7 @@ def governed_workflow_binding_catalog(
         world_sampling_workflow_binding_catalog(reference_samples=True),
         reader_outcome_workflow_binding_catalog(),
         longform_prose_review_workflow_binding_catalog(),
+        longform_prose_review_workflow_binding_catalog(provider_sampling=True),
         narrative_evaluation_workflow_binding_catalog(),
         agent_session_workflow_binding_catalog(),
     )

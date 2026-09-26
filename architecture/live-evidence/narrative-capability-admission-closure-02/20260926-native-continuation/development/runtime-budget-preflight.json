@@ -1,0 +1,279 @@
+{
+  "status": "BLOCKED_BEFORE_REAL_DISPATCH",
+  "authorized_calls_this_run": 0,
+  "authorized_tokens_this_run": 0,
+  "real_provider_calls_this_run": 0,
+  "real_provider_tokens_this_run": 0,
+  "new_provider_effects_this_run": [],
+  "monetary_cost_this_run": "0 new dispatch; existing outstanding production cost UNKNOWN",
+  "runtime_budget_status": "Cannot calculate a dispatchable per-Effect upper bound without a reachable production ledger, frozen native source manifest, matching account grant and current Pack/model/reference qualifications. No historical campaign allowance is reused.",
+  "required_path": "Formation/Opening -> approved design -> Book/Volume/Arc/window/Chapter planning + semantic evaluation -> World + optional Actor -> Memo/Draft/Review/Revision/Rereview/Quality/Canon -> Book Acceptance -> rolling window/future-only Plan Change -> bounded global prose review",
+  "conditions": [
+    "Formation calls are unnecessary when valid approved design versions already exist; live state unavailable.",
+    "Actor list follows explicitly enabled actors; actor_2 uses same contract when a third actor is enabled.",
+    "Additional review/revision/retrieval/repair calls depend on frozen native policy and outcomes; no blanket bypass or authorization.",
+    "Native semantic evaluation expands each generator through its exact required profile set, not one guessed evaluation."
+  ],
+  "ideal_admission_demands_per_model_and_compatible_scope": [
+    {
+      "task": "creative.candidates.generate",
+      "risk": "HIGH",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.85,
+      "ideal_minimum_independent_scored_inputs": 36,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 1
+    },
+    {
+      "task": "theme.candidates.generate",
+      "risk": "HIGH",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.85,
+      "ideal_minimum_independent_scored_inputs": 36,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 1
+    },
+    {
+      "task": "ending.intent.generate",
+      "risk": "HIGH",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.85,
+      "ideal_minimum_independent_scored_inputs": 36,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 1
+    },
+    {
+      "task": "reader.promise.generate",
+      "risk": "HIGH",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.85,
+      "ideal_minimum_independent_scored_inputs": 36,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 1
+    },
+    {
+      "task": "world.design.generate",
+      "risk": "HIGH",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.85,
+      "ideal_minimum_independent_scored_inputs": 36,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 1
+    },
+    {
+      "task": "character.cast.generate",
+      "risk": "HIGH",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.85,
+      "ideal_minimum_independent_scored_inputs": 36,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 1
+    },
+    {
+      "task": "book_plan.generate",
+      "risk": "HIGH",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.85,
+      "ideal_minimum_independent_scored_inputs": 36,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 3
+    },
+    {
+      "task": "volume_plan.generate",
+      "risk": "HIGH",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.85,
+      "ideal_minimum_independent_scored_inputs": 36,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 1
+    },
+    {
+      "task": "arc_plan.generate",
+      "risk": "HIGH",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.85,
+      "ideal_minimum_independent_scored_inputs": 36,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 1
+    },
+    {
+      "task": "chapter_group_plan.generate",
+      "risk": "MEDIUM",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 8,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 2
+    },
+    {
+      "task": "chapter_plan.generate",
+      "risk": "MEDIUM",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 8,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 2
+    },
+    {
+      "task": "narrative_semantic_evaluation",
+      "risk": "HIGH",
+      "quality_metric": "REFERENCE_AGREEMENT",
+      "quality_floor": 0.85,
+      "ideal_minimum_independent_scored_inputs": 46,
+      "basis": "Two independent positive/negative strata at perfect reference agreement; generation/reference annotation prerequisites excluded.",
+      "profile_count": 0
+    },
+    {
+      "task": "world_candidates.generate",
+      "risk": "MEDIUM",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 8,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 0
+    },
+    {
+      "task": "world_candidates.evaluate",
+      "risk": "MEDIUM",
+      "quality_metric": "REFERENCE_AGREEMENT",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 22,
+      "basis": "Two independent positive/negative strata at perfect reference agreement; generation/reference annotation prerequisites excluded.",
+      "profile_count": 0
+    },
+    {
+      "task": "world_candidates.actor_0",
+      "risk": "MEDIUM",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 8,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 0
+    },
+    {
+      "task": "world_candidates.actor_1",
+      "risk": "MEDIUM",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 8,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 0
+    },
+    {
+      "task": "memo",
+      "risk": "MEDIUM",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 8,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 0
+    },
+    {
+      "task": "draft",
+      "risk": "MEDIUM",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 8,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 0
+    },
+    {
+      "task": "review",
+      "risk": "MEDIUM",
+      "quality_metric": "REFERENCE_AGREEMENT",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 22,
+      "basis": "Two independent positive/negative strata at perfect reference agreement; generation/reference annotation prerequisites excluded.",
+      "profile_count": 0
+    },
+    {
+      "task": "revision",
+      "risk": "MEDIUM",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 8,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 0
+    },
+    {
+      "task": "rereview",
+      "risk": "MEDIUM",
+      "quality_metric": "REFERENCE_AGREEMENT",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 22,
+      "basis": "Two independent positive/negative strata at perfect reference agreement; generation/reference annotation prerequisites excluded.",
+      "profile_count": 0
+    },
+    {
+      "task": "canon_extraction",
+      "risk": "MEDIUM",
+      "quality_metric": "GENERATOR_SCORE",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 8,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 0
+    },
+    {
+      "task": "quality_structural",
+      "risk": "MEDIUM",
+      "quality_metric": "REFERENCE_AGREEMENT",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 22,
+      "basis": "Two independent positive/negative strata at perfect reference agreement; generation/reference annotation prerequisites excluded.",
+      "profile_count": 0
+    },
+    {
+      "task": "quality_commercial",
+      "risk": "MEDIUM",
+      "quality_metric": "REFERENCE_AGREEMENT",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 22,
+      "basis": "Two independent positive/negative strata at perfect reference agreement; generation/reference annotation prerequisites excluded.",
+      "profile_count": 0
+    },
+    {
+      "task": "quality_source_originality",
+      "risk": "MEDIUM",
+      "quality_metric": "REFERENCE_AGREEMENT",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 22,
+      "basis": "Two independent positive/negative strata at perfect reference agreement; generation/reference annotation prerequisites excluded.",
+      "profile_count": 0
+    },
+    {
+      "task": "quality_longform",
+      "risk": "HIGH",
+      "quality_metric": "REFERENCE_AGREEMENT",
+      "quality_floor": 0.85,
+      "ideal_minimum_independent_scored_inputs": 46,
+      "basis": "Two independent positive/negative strata at perfect reference agreement; generation/reference annotation prerequisites excluded.",
+      "profile_count": 0
+    },
+    {
+      "task": "quality_platform",
+      "risk": "MEDIUM",
+      "quality_metric": "REFERENCE_AGREEMENT",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 22,
+      "basis": "Two independent positive/negative strata at perfect reference agreement; generation/reference annotation prerequisites excluded.",
+      "profile_count": 0
+    },
+    {
+      "task": "longform_prose_review",
+      "risk": "MEDIUM",
+      "quality_metric": "INDEPENDENT_REVIEWER_SCORE",
+      "quality_floor": 0.75,
+      "ideal_minimum_independent_scored_inputs": 8,
+      "basis": "Perfect independently adjudicated lower score; not an expectation or permitted paid-call budget.",
+      "profile_count": 0
+    }
+  ],
+  "stop_conditions": [
+    "Missing or incompatible native grant / Pack approval / task producer qualification",
+    "Any unknown Effect or commit outcome; reconcile without releasing its reservation",
+    "Cumulative calls/tokens/entitlement/monetary cap unavailable or exhausted",
+    "Current task/input/model/producer/reference scope drift",
+    "Missing independent labels or holdout contamination",
+    "Native domain or acceptance gate failure requires its bounded repair path"
+  ]
+}

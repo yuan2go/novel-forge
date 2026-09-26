@@ -1,0 +1,893 @@
+{
+  "evidence_class": "SCRIPTED_POSTGRES_NATIVE_TEST",
+  "real_provider_call": false,
+  "independent_human_review": "NOT_RUN",
+  "implementation_identity": "UNCOMMITTED_WORKTREE_AT_EXPORT",
+  "project_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0",
+  "acceptances": [
+    {
+      "acceptance_id": "chapter-acceptance:8925b3f7923a08f43061c627e28d71673f8ed50303bbb54efa77a31388a0c012",
+      "chapter_number": 1,
+      "chapter_outcome_asset_version_id": "authority-output:13453336-63e0-40f3-8b65-557729e78d1a:chapter.outcome:v1",
+      "status": "COMMITTED"
+    },
+    {
+      "acceptance_id": "chapter-acceptance:5fd51dfab400534541579285230903dfe889c62708d10f8eea1523195ca46497",
+      "chapter_number": 2,
+      "chapter_outcome_asset_version_id": "authority-output:4a359f42-f301-4f8d-82ec-5f3151b58e59:chapter.outcome:v1",
+      "status": "COMMITTED"
+    },
+    {
+      "acceptance_id": "chapter-acceptance:c0357fb78a1a0f369e6d0a8e1940e08cdd5fab63b4ea02b230079306e97fe29a",
+      "chapter_number": 3,
+      "chapter_outcome_asset_version_id": "authority-output:a73969ce-e873-4665-bcd2-47d2c09ba8a5:chapter.outcome:v1",
+      "status": "COMMITTED"
+    }
+  ],
+  "plan_proposals": [
+    {
+      "proposal_id": "plan-change:ba38a348-4ad8-46ad-8e3f-1ef6be790baf",
+      "status": "PENDING_APPROVAL",
+      "target_asset_version_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0:book:book:main:1:v1",
+      "proposed_asset_version_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0:proposed-book-plan:v1"
+    }
+  ],
+  "reviews": [
+    {
+      "manifest_digest": "sha256:d3bb719240aa7be38b55e3ab9eefb126b5f8e8b16fb9876a4fe9d6dde7ffdb3e",
+      "completed_window_ids": [
+        "sha256:25ecbec2ddc252366d2c88ae7d0247f4cf237d998c8c4bf6065b1877b2b86a79",
+        "sha256:4444753c691f30a0e00b6ca96fe8032b36ccc88185f460667d8e1c32b9531d8c",
+        "sha256:7ad83b14292564a76256b75c65c7a755e6cb1012f81cc72a9b33e69ef1244b51",
+        "sha256:aee61836fe515db15b5360ef468f5ebd4fa96da0a1a4b390f0a3367054457afc"
+      ],
+      "total_windows": 4,
+      "uncovered_ranges": [],
+      "coverage_complete": true,
+      "review_complete": true,
+      "findings": [
+        {
+          "lineage_id": "fixture-motive",
+          "status": "OPEN",
+          "members": [
+            {
+              "claim": "测试需核对未来动机安排",
+              "evidence": [
+                {
+                  "end": 2,
+                  "quote": "Th",
+                  "start": 0,
+                  "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                  "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+                },
+                {
+                  "end": 2,
+                  "quote": "Th",
+                  "start": 0,
+                  "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                  "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+                }
+              ],
+              "judgment": "ISSUE",
+              "severity": "MAJOR",
+              "dimension": "motivation_cost",
+              "rationale": "局部证据不能批准计划修改",
+              "confidence": 0.6,
+              "lineage_id": "fixture-motive",
+              "window_id": "sha256:4444753c691f30a0e00b6ca96fe8032b36ccc88185f460667d8e1c32b9531d8c"
+            }
+          ],
+          "required_consumer": "VERSION_BOUND_EDITORIAL_PENDING",
+          "finding_digest": "sha256:a1b5616528e24e3eb593bc34b5ac830088d0f09da4deeea0db9791bc07422842",
+          "disposition": {
+            "status": "DISPOSITION_RECORDED",
+            "decision": "FUTURE_PLAN_PROPOSAL",
+            "rationale": "测试确认仅形成提案；不代表真实作者批准",
+            "lineage_id": "fixture-motive",
+            "review_digest": "sha256:5925403c4695a4109c5fdbac083f108969d368cabe5ef7e00d6a732c650fccd2",
+            "finding_digest": "sha256:a1b5616528e24e3eb593bc34b5ac830088d0f09da4deeea0db9791bc07422842",
+            "manifest_digest": "sha256:d3bb719240aa7be38b55e3ab9eefb126b5f8e8b16fb9876a4fe9d6dde7ffdb3e",
+            "semantic_impact": {
+              "unknown": [],
+              "preserve": [
+                {
+                  "basis": "ACCEPTED_HISTORY_READ_ONLY",
+                  "status": "PRESERVE",
+                  "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                  "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+                },
+                {
+                  "basis": "ACCEPTED_HISTORY_READ_ONLY",
+                  "status": "PRESERVE",
+                  "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                  "asset_version_id": "authority-output:65c6d183-cd06-416c-a21c-4f87c25448da:chapter.best_candidate:v1"
+                },
+                {
+                  "basis": "ACCEPTED_HISTORY_READ_ONLY",
+                  "status": "PRESERVE",
+                  "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                  "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+                }
+              ],
+              "required": [],
+              "needs_review": [
+                {
+                  "basis": "INFERRED_SEMANTIC_IMPACT",
+                  "reason": "测试确认仅形成提案；不代表真实作者批准",
+                  "status": "NEEDS_REVIEW",
+                  "confidence": 0.6,
+                  "plan_positions": [
+                    {
+                      "after": "动机待核对后推进城门救援",
+                      "before": "objective for book:main",
+                      "json_pointer": "/objective",
+                      "target_asset_version_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0:book:book:main:1:v1",
+                      "proposed_asset_version_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0:proposed-book-plan:v1"
+                    }
+                  ],
+                  "prose_evidence": [
+                    {
+                      "end": 2,
+                      "quote": "Th",
+                      "start": 0,
+                      "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                      "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+                    },
+                    {
+                      "end": 2,
+                      "quote": "Th",
+                      "start": 0,
+                      "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                      "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+                    }
+                  ],
+                  "asset_version_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0:book:book:main:1:v1",
+                  "proposed_asset_version_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0:proposed-book-plan:v1",
+                  "human_confirmation_required": true
+                }
+              ],
+              "classification": "INFERRED_REQUIRES_AUTHORITY_APPROVAL",
+              "schema_version": "plan-semantic-impact-projection.v1",
+              "semantic_candidates": [
+                {
+                  "basis": "INFERRED_SEMANTIC_IMPACT",
+                  "reason": "测试确认仅形成提案；不代表真实作者批准",
+                  "status": "NEEDS_REVIEW",
+                  "confidence": 0.6,
+                  "plan_positions": [
+                    {
+                      "after": "动机待核对后推进城门救援",
+                      "before": "objective for book:main",
+                      "json_pointer": "/objective",
+                      "target_asset_version_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0:book:book:main:1:v1",
+                      "proposed_asset_version_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0:proposed-book-plan:v1"
+                    }
+                  ],
+                  "prose_evidence": [
+                    {
+                      "end": 2,
+                      "quote": "Th",
+                      "start": 0,
+                      "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                      "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+                    },
+                    {
+                      "end": 2,
+                      "quote": "Th",
+                      "start": 0,
+                      "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                      "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+                    }
+                  ],
+                  "asset_version_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0:book:book:main:1:v1",
+                  "proposed_asset_version_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0:proposed-book-plan:v1",
+                  "human_confirmation_required": true
+                }
+              ],
+              "hard_dependency_created": false,
+              "exact_dependency_closure": [],
+              "plan_activation_performed": false
+            },
+            "resolution_evidence": {
+              "authority": "PROPOSAL_OR_HISTORY_ONLY",
+              "resolution": "UNRESOLVED"
+            },
+            "consumer_asset_version_id": "authority-output:ba38a348-4ad8-46ad-8e3f-1ef6be790baf:plan_change.proposal:v1",
+            "event_id": "f4f2afad-64b0-4eae-bca0-d1c3b91284ae"
+          }
+        }
+      ],
+      "relation_verification": {
+        "retrieval": {
+          "status": "BOUNDED_ANCHOR_RETRIEVAL",
+          "selected_pairs": 1,
+          "candidate_pairs": 1,
+          "excluded_frequent_anchors": 0,
+          "uncovered_relation_classes": [
+            "NO_SHARED_TEXT_ANCHOR",
+            "SYNONYM_ONLY",
+            "MORE_THAN_TWO_PASSAGES",
+            "EXCLUDED_FREQUENT_ANCHORS"
+          ],
+          "unreviewed_candidate_pairs": 0,
+          "global_relationships_verified": false
+        },
+        "completed_hypothesis_ids": [
+          "sha256:88db7bf6822251859db432479eacd06af3e42342ebd978d2aeecd8426eba4ad7"
+        ],
+        "paired_evidence_hypothesis_ids": [
+          "sha256:88db7bf6822251859db432479eacd06af3e42342ebd978d2aeecd8426eba4ad7"
+        ],
+        "global_relationships_verified": false
+      },
+      "quality_absence_proven": false,
+      "independent_human_review": "NOT_RUN",
+      "run_id": "a26586ee-9f88-4d96-93b6-3a082bca9d39",
+      "source_current": true,
+      "paused": false,
+      "operations": [
+        {
+          "window_id": "sha256:aee61836fe515db15b5360ef468f5ebd4fa96da0a1a4b390f0a3367054457afc",
+          "operation_id": "686af42e-2a88-4322-9e80-c3340f4a8a03",
+          "status": "SUCCEEDED",
+          "external_effects": [],
+          "budget_receipts": [],
+          "execution_evidence": [],
+          "report_asset_version_id": "authority-output:686af42e-2a88-4322-9e80-c3340f4a8a03:longform.prose_review.report:v1"
+        },
+        {
+          "window_id": "sha256:7ad83b14292564a76256b75c65c7a755e6cb1012f81cc72a9b33e69ef1244b51",
+          "operation_id": "b5c7e25b-8e2e-42e6-9648-8c569fffa291",
+          "status": "SUCCEEDED",
+          "external_effects": [],
+          "budget_receipts": [],
+          "execution_evidence": [],
+          "report_asset_version_id": "authority-output:b5c7e25b-8e2e-42e6-9648-8c569fffa291:longform.prose_review.report:v1"
+        },
+        {
+          "window_id": "sha256:25ecbec2ddc252366d2c88ae7d0247f4cf237d998c8c4bf6065b1877b2b86a79",
+          "operation_id": "2274949f-8d8b-4b34-aa1b-fecaa23db3e1",
+          "status": "SUCCEEDED",
+          "external_effects": [],
+          "budget_receipts": [],
+          "execution_evidence": [],
+          "report_asset_version_id": "authority-output:2274949f-8d8b-4b34-aa1b-fecaa23db3e1:longform.prose_review.report:v1"
+        },
+        {
+          "window_id": "sha256:4444753c691f30a0e00b6ca96fe8032b36ccc88185f460667d8e1c32b9531d8c",
+          "operation_id": "a248f13e-66b8-469f-b4d8-356db93f89a6",
+          "status": "SUCCEEDED",
+          "external_effects": [],
+          "budget_receipts": [],
+          "execution_evidence": [],
+          "report_asset_version_id": "authority-output:a248f13e-66b8-469f-b4d8-356db93f89a6:longform.prose_review.report:v1"
+        }
+      ],
+      "expected_version": 5,
+      "manifest": {
+        "policy": {
+          "execution_mode": "AUTOMATIC",
+          "policy_version": "automatic-v1",
+          "maximum_windows": 20,
+          "follow_acceptance": true,
+          "window_codepoints": 512,
+          "overlap_codepoints": 32,
+          "context_token_budget": 4000,
+          "relation_window_limit": 1
+        },
+        "sources": [
+          {
+            "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+            "asset_hash": "sha256:03264d50a7b45f545fc61c1cdbdb342ef61917d632aa2ca21f5858a2792604ce",
+            "codepoints": 198,
+            "acceptance_id": "chapter-acceptance:8925b3f7923a08f43061c627e28d71673f8ed50303bbb54efa77a31388a0c012",
+            "chapter_number": 1,
+            "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+          },
+          {
+            "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+            "asset_hash": "sha256:4c7b2d80d89d828ffc80337d6930b6d6b4b112db9f05063bc391170cf9ed5716",
+            "codepoints": 198,
+            "acceptance_id": "chapter-acceptance:5fd51dfab400534541579285230903dfe889c62708d10f8eea1523195ca46497",
+            "chapter_number": 2,
+            "asset_version_id": "authority-output:65c6d183-cd06-416c-a21c-4f87c25448da:chapter.best_candidate:v1"
+          },
+          {
+            "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+            "asset_hash": "sha256:732b6f4ca8daee68e76c1fd5d3caf4a01263962942efed5762ab0a7e12b90c70",
+            "codepoints": 198,
+            "acceptance_id": "chapter-acceptance:c0357fb78a1a0f369e6d0a8e1940e08cdd5fab63b4ea02b230079306e97fe29a",
+            "chapter_number": 3,
+            "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+          }
+        ],
+        "windows": [
+          {
+            "spans": [
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:03264d50a7b45f545fc61c1cdbdb342ef61917d632aa2ca21f5858a2792604ce",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:8925b3f7923a08f43061c627e28d71673f8ed50303bbb54efa77a31388a0c012",
+                "chapter_number": 1,
+                "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+              }
+            ],
+            "window_id": "sha256:aee61836fe515db15b5360ef468f5ebd4fa96da0a1a4b390f0a3367054457afc",
+            "input_asset": {
+              "content_hash": "sha256:fbaa87d983d5cfef24307e73133328118380cd32df41a77ef724807e41d10e42",
+              "asset_version_id": "0afee15b-ce6d-4463-b9f8-ed1f93a5216e"
+            }
+          },
+          {
+            "spans": [
+              {
+                "end": 198,
+                "text": "home before the witnesses leave.",
+                "start": 166,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:03264d50a7b45f545fc61c1cdbdb342ef61917d632aa2ca21f5858a2792604ce",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:8925b3f7923a08f43061c627e28d71673f8ed50303bbb54efa77a31388a0c012",
+                "chapter_number": 1,
+                "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+              },
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:4c7b2d80d89d828ffc80337d6930b6d6b4b112db9f05063bc391170cf9ed5716",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:5fd51dfab400534541579285230903dfe889c62708d10f8eea1523195ca46497",
+                "chapter_number": 2,
+                "asset_version_id": "authority-output:65c6d183-cd06-416c-a21c-4f87c25448da:chapter.best_candidate:v1"
+              }
+            ],
+            "window_id": "sha256:7ad83b14292564a76256b75c65c7a755e6cb1012f81cc72a9b33e69ef1244b51",
+            "input_asset": {
+              "content_hash": "sha256:77013bd3416731b5d5276858e3cc2384e0b295f2f0c18292052163a2e164dab3",
+              "asset_version_id": "8217002b-90b4-439d-bdda-403fa643796b"
+            }
+          },
+          {
+            "spans": [
+              {
+                "end": 198,
+                "text": "home before the witnesses leave.",
+                "start": 166,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:4c7b2d80d89d828ffc80337d6930b6d6b4b112db9f05063bc391170cf9ed5716",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:5fd51dfab400534541579285230903dfe889c62708d10f8eea1523195ca46497",
+                "chapter_number": 2,
+                "asset_version_id": "authority-output:65c6d183-cd06-416c-a21c-4f87c25448da:chapter.best_candidate:v1"
+              },
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:732b6f4ca8daee68e76c1fd5d3caf4a01263962942efed5762ab0a7e12b90c70",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:c0357fb78a1a0f369e6d0a8e1940e08cdd5fab63b4ea02b230079306e97fe29a",
+                "chapter_number": 3,
+                "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+              }
+            ],
+            "window_id": "sha256:25ecbec2ddc252366d2c88ae7d0247f4cf237d998c8c4bf6065b1877b2b86a79",
+            "input_asset": {
+              "content_hash": "sha256:212f34ca544740a7a7857d5ba4ca2ab9ee4c780875eeab1dd4d5ccf128dbed7b",
+              "asset_version_id": "f733e590-9407-4036-aad5-5d03bb87a591"
+            }
+          },
+          {
+            "spans": [
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:03264d50a7b45f545fc61c1cdbdb342ef61917d632aa2ca21f5858a2792604ce",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:8925b3f7923a08f43061c627e28d71673f8ed50303bbb54efa77a31388a0c012",
+                "chapter_number": 1,
+                "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+              },
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:732b6f4ca8daee68e76c1fd5d3caf4a01263962942efed5762ab0a7e12b90c70",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:c0357fb78a1a0f369e6d0a8e1940e08cdd5fab63b4ea02b230079306e97fe29a",
+                "chapter_number": 3,
+                "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+              }
+            ],
+            "window_id": "sha256:4444753c691f30a0e00b6ca96fe8032b36ccc88185f460667d8e1c32b9531d8c",
+            "input_asset": {
+              "content_hash": "sha256:cd40a89c598001e947f5051a69b655c219be5b9f41583acc136d86890838b53f",
+              "asset_version_id": "205bb788-2599-439a-a082-aa2d85c560c7"
+            },
+            "relation_hypothesis": {
+              "basis": "SHARED_TEXT_ANCHORS",
+              "status": "UNVERIFIED",
+              "anchors": [
+                "before",
+                "choice",
+                "cost",
+                "gives",
+                "home",
+                "irreversible",
+                "keep",
+                "leave",
+                "must",
+                "only",
+                "promise",
+                "protagonist",
+                "public",
+                "route",
+                "safe",
+                "visible"
+              ],
+              "confidence": null,
+              "uncertainty": "Lexical recurrence may be intentional, incidental, or unrelated; assess both exact passages.",
+              "hypothesis_id": "sha256:88db7bf6822251859db432479eacd06af3e42342ebd978d2aeecd8426eba4ad7",
+              "schema_version": "prose-relation-hypothesis.v1",
+              "hard_dependency_created": false
+            }
+          }
+        ],
+        "project_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0",
+        "book_run_id": "book-run:2678cdf1-e2c8-43f8-bf62-ba20560ab177",
+        "workspace_id": "workspace:book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0",
+        "schema_version": "longform-prose-manifest.v1",
+        "manifest_digest": "sha256:d3bb719240aa7be38b55e3ab9eefb126b5f8e8b16fb9876a4fe9d6dde7ffdb3e",
+        "relation_retrieval": {
+          "status": "BOUNDED_ANCHOR_RETRIEVAL",
+          "selected_pairs": 1,
+          "candidate_pairs": 1,
+          "excluded_frequent_anchors": 0,
+          "uncovered_relation_classes": [
+            "NO_SHARED_TEXT_ANCHOR",
+            "SYNONYM_ONLY",
+            "MORE_THAN_TWO_PASSAGES",
+            "EXCLUDED_FREQUENT_ANCHORS"
+          ],
+          "unreviewed_candidate_pairs": 0,
+          "global_relationships_verified": false
+        }
+      },
+      "exact_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "review_digest": "sha256:ef6167d79971c0034248332176c0fcf4b4d1b57b9269e4af85c12a8fd92b2d3b",
+      "implementation_current": true
+    },
+    {
+      "manifest_digest": "sha256:a284591457d90c882d88935ac129584e2b1fb80948c7509c8ba0b8e1eaa283e7",
+      "completed_window_ids": [
+        "sha256:25ecbec2ddc252366d2c88ae7d0247f4cf237d998c8c4bf6065b1877b2b86a79",
+        "sha256:4444753c691f30a0e00b6ca96fe8032b36ccc88185f460667d8e1c32b9531d8c",
+        "sha256:7ad83b14292564a76256b75c65c7a755e6cb1012f81cc72a9b33e69ef1244b51",
+        "sha256:a945a6f2168a2f176316a7032aae38d5d92ffcf84c2d6ea5da7ba3f05032a5c9",
+        "sha256:aee61836fe515db15b5360ef468f5ebd4fa96da0a1a4b390f0a3367054457afc"
+      ],
+      "total_windows": 5,
+      "uncovered_ranges": [],
+      "coverage_complete": true,
+      "review_complete": true,
+      "findings": [
+        {
+          "lineage_id": "fixture-motive",
+          "status": "CONFLICT_REQUIRES_REVIEW",
+          "members": [
+            {
+              "claim": "测试需核对未来动机安排",
+              "evidence": [
+                {
+                  "end": 2,
+                  "quote": "Th",
+                  "start": 0,
+                  "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                  "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+                },
+                {
+                  "end": 2,
+                  "quote": "Th",
+                  "start": 0,
+                  "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                  "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+                }
+              ],
+              "judgment": "ISSUE",
+              "severity": "MAJOR",
+              "dimension": "motivation_cost",
+              "rationale": "局部证据不能批准计划修改",
+              "confidence": 0.6,
+              "lineage_id": "fixture-motive",
+              "window_id": "sha256:4444753c691f30a0e00b6ca96fe8032b36ccc88185f460667d8e1c32b9531d8c"
+            },
+            {
+              "claim": "测试需核对未来动机安排",
+              "evidence": [
+                {
+                  "end": 2,
+                  "quote": "Th",
+                  "start": 0,
+                  "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                  "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+                },
+                {
+                  "end": 2,
+                  "quote": "Th",
+                  "start": 0,
+                  "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                  "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+                }
+              ],
+              "judgment": "INTENTIONAL",
+              "severity": "NONE",
+              "dimension": "motivation_cost",
+              "rationale": "局部证据不能批准计划修改",
+              "confidence": 0.6,
+              "lineage_id": "fixture-motive",
+              "window_id": "sha256:a945a6f2168a2f176316a7032aae38d5d92ffcf84c2d6ea5da7ba3f05032a5c9"
+            }
+          ],
+          "required_consumer": "VERSION_BOUND_EDITORIAL_PENDING",
+          "finding_digest": "sha256:863638e7c226c6fd0c250464d4ef112197ed587234097cc721f1adc32ce940c2",
+          "disposition": {
+            "status": "DISPOSITION_RECORDED",
+            "decision": "DISMISSED_WITH_EVIDENCE",
+            "rationale": "fixture counterevidence covers both original locations",
+            "lineage_id": "fixture-motive",
+            "review_digest": "sha256:ea11cb60567be16c52b67f8410749f010ced5fa97364b1e3bd77c6677ca1d5bc",
+            "finding_digest": "sha256:863638e7c226c6fd0c250464d4ef112197ed587234097cc721f1adc32ce940c2",
+            "manifest_digest": "sha256:a284591457d90c882d88935ac129584e2b1fb80948c7509c8ba0b8e1eaa283e7",
+            "resolution_evidence": {
+              "policy": {
+                "enabled": true,
+                "policy_version": "recheck-v1",
+                "minimum_signatures": 1,
+                "authorized_reviewers": [
+                  "book-authority-operator"
+                ],
+                "allow_minor_exceptions": false
+              },
+              "resolution": "DISMISSED_BY_AUTHORIZED_REVIEWER",
+              "reviewer_id": "book-authority-operator",
+              "policy_event_id": "c1afbbca-ce39-48e4-861e-78f1504c77b7"
+            },
+            "consumer_asset_version_id": "authority-output:2b86a892-72af-4d88-b391-5684c70a0229:longform.prose_review.report:v1",
+            "event_id": "238306bf-7aa2-48ee-bf76-20c7fe6ccab0"
+          }
+        }
+      ],
+      "relation_verification": {
+        "retrieval": {
+          "status": "BOUNDED_ANCHOR_RETRIEVAL",
+          "selected_pairs": 1,
+          "candidate_pairs": 1,
+          "excluded_frequent_anchors": 0,
+          "uncovered_relation_classes": [
+            "NO_SHARED_TEXT_ANCHOR",
+            "SYNONYM_ONLY",
+            "MORE_THAN_TWO_PASSAGES",
+            "EXCLUDED_FREQUENT_ANCHORS"
+          ],
+          "unreviewed_candidate_pairs": 0,
+          "global_relationships_verified": false
+        },
+        "completed_hypothesis_ids": [
+          "sha256:88db7bf6822251859db432479eacd06af3e42342ebd978d2aeecd8426eba4ad7"
+        ],
+        "paired_evidence_hypothesis_ids": [
+          "sha256:88db7bf6822251859db432479eacd06af3e42342ebd978d2aeecd8426eba4ad7"
+        ],
+        "global_relationships_verified": false
+      },
+      "quality_absence_proven": false,
+      "independent_human_review": "NOT_RUN",
+      "run_id": "71c296cc-4d16-4492-b1dd-83d9217beb6f",
+      "source_current": true,
+      "paused": false,
+      "operations": [
+        {
+          "window_id": "sha256:aee61836fe515db15b5360ef468f5ebd4fa96da0a1a4b390f0a3367054457afc",
+          "reuse_basis": "IDENTICAL_WINDOW_POLICY_AND_IMPLEMENTATION",
+          "operation_id": "686af42e-2a88-4322-9e80-c3340f4a8a03",
+          "source_run_id": "a26586ee-9f88-4d96-93b6-3a082bca9d39",
+          "source_manifest_digest": "sha256:d3bb719240aa7be38b55e3ab9eefb126b5f8e8b16fb9876a4fe9d6dde7ffdb3e",
+          "status": "SUCCEEDED",
+          "external_effects": [],
+          "budget_receipts": [],
+          "execution_evidence": [],
+          "report_asset_version_id": "authority-output:686af42e-2a88-4322-9e80-c3340f4a8a03:longform.prose_review.report:v1"
+        },
+        {
+          "window_id": "sha256:7ad83b14292564a76256b75c65c7a755e6cb1012f81cc72a9b33e69ef1244b51",
+          "reuse_basis": "IDENTICAL_WINDOW_POLICY_AND_IMPLEMENTATION",
+          "operation_id": "b5c7e25b-8e2e-42e6-9648-8c569fffa291",
+          "source_run_id": "a26586ee-9f88-4d96-93b6-3a082bca9d39",
+          "source_manifest_digest": "sha256:d3bb719240aa7be38b55e3ab9eefb126b5f8e8b16fb9876a4fe9d6dde7ffdb3e",
+          "status": "SUCCEEDED",
+          "external_effects": [],
+          "budget_receipts": [],
+          "execution_evidence": [],
+          "report_asset_version_id": "authority-output:b5c7e25b-8e2e-42e6-9648-8c569fffa291:longform.prose_review.report:v1"
+        },
+        {
+          "window_id": "sha256:25ecbec2ddc252366d2c88ae7d0247f4cf237d998c8c4bf6065b1877b2b86a79",
+          "reuse_basis": "IDENTICAL_WINDOW_POLICY_AND_IMPLEMENTATION",
+          "operation_id": "2274949f-8d8b-4b34-aa1b-fecaa23db3e1",
+          "source_run_id": "a26586ee-9f88-4d96-93b6-3a082bca9d39",
+          "source_manifest_digest": "sha256:d3bb719240aa7be38b55e3ab9eefb126b5f8e8b16fb9876a4fe9d6dde7ffdb3e",
+          "status": "SUCCEEDED",
+          "external_effects": [],
+          "budget_receipts": [],
+          "execution_evidence": [],
+          "report_asset_version_id": "authority-output:2274949f-8d8b-4b34-aa1b-fecaa23db3e1:longform.prose_review.report:v1"
+        },
+        {
+          "window_id": "sha256:4444753c691f30a0e00b6ca96fe8032b36ccc88185f460667d8e1c32b9531d8c",
+          "reuse_basis": "IDENTICAL_WINDOW_POLICY_AND_IMPLEMENTATION",
+          "operation_id": "a248f13e-66b8-469f-b4d8-356db93f89a6",
+          "source_run_id": "a26586ee-9f88-4d96-93b6-3a082bca9d39",
+          "source_manifest_digest": "sha256:d3bb719240aa7be38b55e3ab9eefb126b5f8e8b16fb9876a4fe9d6dde7ffdb3e",
+          "status": "SUCCEEDED",
+          "external_effects": [],
+          "budget_receipts": [],
+          "execution_evidence": [],
+          "report_asset_version_id": "authority-output:a248f13e-66b8-469f-b4d8-356db93f89a6:longform.prose_review.report:v1"
+        },
+        {
+          "window_id": "sha256:a945a6f2168a2f176316a7032aae38d5d92ffcf84c2d6ea5da7ba3f05032a5c9",
+          "operation_id": "2b86a892-72af-4d88-b391-5684c70a0229",
+          "status": "SUCCEEDED",
+          "external_effects": [],
+          "budget_receipts": [],
+          "execution_evidence": [],
+          "report_asset_version_id": "authority-output:2b86a892-72af-4d88-b391-5684c70a0229:longform.prose_review.report:v1"
+        }
+      ],
+      "expected_version": 6,
+      "manifest": {
+        "policy": {
+          "execution_mode": "AUTOMATIC",
+          "policy_version": "automatic-v1",
+          "maximum_windows": 20,
+          "follow_acceptance": true,
+          "window_codepoints": 512,
+          "overlap_codepoints": 32,
+          "context_token_budget": 4000,
+          "relation_window_limit": 1
+        },
+        "sources": [
+          {
+            "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+            "asset_hash": "sha256:03264d50a7b45f545fc61c1cdbdb342ef61917d632aa2ca21f5858a2792604ce",
+            "codepoints": 198,
+            "acceptance_id": "chapter-acceptance:8925b3f7923a08f43061c627e28d71673f8ed50303bbb54efa77a31388a0c012",
+            "chapter_number": 1,
+            "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+          },
+          {
+            "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+            "asset_hash": "sha256:4c7b2d80d89d828ffc80337d6930b6d6b4b112db9f05063bc391170cf9ed5716",
+            "codepoints": 198,
+            "acceptance_id": "chapter-acceptance:5fd51dfab400534541579285230903dfe889c62708d10f8eea1523195ca46497",
+            "chapter_number": 2,
+            "asset_version_id": "authority-output:65c6d183-cd06-416c-a21c-4f87c25448da:chapter.best_candidate:v1"
+          },
+          {
+            "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+            "asset_hash": "sha256:732b6f4ca8daee68e76c1fd5d3caf4a01263962942efed5762ab0a7e12b90c70",
+            "codepoints": 198,
+            "acceptance_id": "chapter-acceptance:c0357fb78a1a0f369e6d0a8e1940e08cdd5fab63b4ea02b230079306e97fe29a",
+            "chapter_number": 3,
+            "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+          }
+        ],
+        "windows": [
+          {
+            "spans": [
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:03264d50a7b45f545fc61c1cdbdb342ef61917d632aa2ca21f5858a2792604ce",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:8925b3f7923a08f43061c627e28d71673f8ed50303bbb54efa77a31388a0c012",
+                "chapter_number": 1,
+                "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+              }
+            ],
+            "window_id": "sha256:aee61836fe515db15b5360ef468f5ebd4fa96da0a1a4b390f0a3367054457afc",
+            "input_asset": {
+              "content_hash": "sha256:84253044cc5139418146044f2dfcf689c144e14c6032c876cb99e36a4655eef6",
+              "asset_version_id": "16998a01-bac4-4b27-9904-404980494463"
+            }
+          },
+          {
+            "spans": [
+              {
+                "end": 198,
+                "text": "home before the witnesses leave.",
+                "start": 166,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:03264d50a7b45f545fc61c1cdbdb342ef61917d632aa2ca21f5858a2792604ce",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:8925b3f7923a08f43061c627e28d71673f8ed50303bbb54efa77a31388a0c012",
+                "chapter_number": 1,
+                "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+              },
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:4c7b2d80d89d828ffc80337d6930b6d6b4b112db9f05063bc391170cf9ed5716",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:5fd51dfab400534541579285230903dfe889c62708d10f8eea1523195ca46497",
+                "chapter_number": 2,
+                "asset_version_id": "authority-output:65c6d183-cd06-416c-a21c-4f87c25448da:chapter.best_candidate:v1"
+              }
+            ],
+            "window_id": "sha256:7ad83b14292564a76256b75c65c7a755e6cb1012f81cc72a9b33e69ef1244b51",
+            "input_asset": {
+              "content_hash": "sha256:2ad2080f9bc9ae25588701a4c1b42ab497475a47819a071cc54948e2c4fc08af",
+              "asset_version_id": "4dd6f670-3ed1-4d6b-bf51-243f2739e7ee"
+            }
+          },
+          {
+            "spans": [
+              {
+                "end": 198,
+                "text": "home before the witnesses leave.",
+                "start": 166,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:4c7b2d80d89d828ffc80337d6930b6d6b4b112db9f05063bc391170cf9ed5716",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:5fd51dfab400534541579285230903dfe889c62708d10f8eea1523195ca46497",
+                "chapter_number": 2,
+                "asset_version_id": "authority-output:65c6d183-cd06-416c-a21c-4f87c25448da:chapter.best_candidate:v1"
+              },
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:732b6f4ca8daee68e76c1fd5d3caf4a01263962942efed5762ab0a7e12b90c70",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:c0357fb78a1a0f369e6d0a8e1940e08cdd5fab63b4ea02b230079306e97fe29a",
+                "chapter_number": 3,
+                "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+              }
+            ],
+            "window_id": "sha256:25ecbec2ddc252366d2c88ae7d0247f4cf237d998c8c4bf6065b1877b2b86a79",
+            "input_asset": {
+              "content_hash": "sha256:5e1e36c22a18d2ac3ce446713b0ef5c2fa3e65ac2d4c588b75ae01dd6509a183",
+              "asset_version_id": "9341f5c2-eeb5-459e-a055-87373c07382c"
+            }
+          },
+          {
+            "spans": [
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:03264d50a7b45f545fc61c1cdbdb342ef61917d632aa2ca21f5858a2792604ce",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:8925b3f7923a08f43061c627e28d71673f8ed50303bbb54efa77a31388a0c012",
+                "chapter_number": 1,
+                "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+              },
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:732b6f4ca8daee68e76c1fd5d3caf4a01263962942efed5762ab0a7e12b90c70",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:c0357fb78a1a0f369e6d0a8e1940e08cdd5fab63b4ea02b230079306e97fe29a",
+                "chapter_number": 3,
+                "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+              }
+            ],
+            "window_id": "sha256:4444753c691f30a0e00b6ca96fe8032b36ccc88185f460667d8e1c32b9531d8c",
+            "input_asset": {
+              "content_hash": "sha256:b13b7fa6f12ddc87ea9684d625b41aed09e4221bdffcbb22b043586d384d5e04",
+              "asset_version_id": "8d7cfa05-00d3-491e-806b-45211831fa7c"
+            },
+            "relation_hypothesis": {
+              "basis": "SHARED_TEXT_ANCHORS",
+              "status": "UNVERIFIED",
+              "anchors": [
+                "before",
+                "choice",
+                "cost",
+                "gives",
+                "home",
+                "irreversible",
+                "keep",
+                "leave",
+                "must",
+                "only",
+                "promise",
+                "protagonist",
+                "public",
+                "route",
+                "safe",
+                "visible"
+              ],
+              "confidence": null,
+              "uncertainty": "Lexical recurrence may be intentional, incidental, or unrelated; assess both exact passages.",
+              "hypothesis_id": "sha256:88db7bf6822251859db432479eacd06af3e42342ebd978d2aeecd8426eba4ad7",
+              "schema_version": "prose-relation-hypothesis.v1",
+              "hard_dependency_created": false
+            }
+          },
+          {
+            "spans": [
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:03264d50a7b45f545fc61c1cdbdb342ef61917d632aa2ca21f5858a2792604ce",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:8925b3f7923a08f43061c627e28d71673f8ed50303bbb54efa77a31388a0c012",
+                "chapter_number": 1,
+                "asset_version_id": "authority-output:bfc81c76-4484-4856-957f-4f7f3a2523df:chapter.best_candidate:v1"
+              },
+              {
+                "end": 198,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "start": 0,
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d",
+                "asset_hash": "sha256:732b6f4ca8daee68e76c1fd5d3caf4a01263962942efed5762ab0a7e12b90c70",
+                "codepoints": 198,
+                "acceptance_id": "chapter-acceptance:c0357fb78a1a0f369e6d0a8e1940e08cdd5fab63b4ea02b230079306e97fe29a",
+                "chapter_number": 3,
+                "asset_version_id": "authority-output:95edd2c6-3486-4cfa-9d42-11f020bc795f:chapter.best_candidate:v1"
+              }
+            ],
+            "window_id": "sha256:a945a6f2168a2f176316a7032aae38d5d92ffcf84c2d6ea5da7ba3f05032a5c9",
+            "input_asset": {
+              "content_hash": "sha256:ee603d3d27d9360a42b9caf37d0220d68acfea57c86072798ed4a78bf7be67d7",
+              "asset_version_id": "6ab8cd55-db37-4476-b6f3-e1b408ff0f97"
+            }
+          }
+        ],
+        "project_id": "book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0",
+        "book_run_id": "book-run:2678cdf1-e2c8-43f8-bf62-ba20560ab177",
+        "workspace_id": "workspace:book-authority-control-77f6588d-dcaf-4db8-9251-d9b152bee3c0",
+        "schema_version": "longform-prose-manifest.v1",
+        "manifest_digest": "sha256:a284591457d90c882d88935ac129584e2b1fb80948c7509c8ba0b8e1eaa283e7",
+        "relation_retrieval": {
+          "status": "BOUNDED_ANCHOR_RETRIEVAL",
+          "selected_pairs": 1,
+          "candidate_pairs": 1,
+          "excluded_frequent_anchors": 0,
+          "uncovered_relation_classes": [
+            "NO_SHARED_TEXT_ANCHOR",
+            "SYNONYM_ONLY",
+            "MORE_THAN_TWO_PASSAGES",
+            "EXCLUDED_FREQUENT_ANCHORS"
+          ],
+          "unreviewed_candidate_pairs": 0,
+          "global_relationships_verified": false
+        }
+      },
+      "exact_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "review_digest": "sha256:f8f1a051c0d10dfb2d49fde86e862d4840712fe5f3cee3748f7992f49ccf5f44",
+      "implementation_current": true
+    }
+  ]
+}

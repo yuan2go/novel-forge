@@ -1542,3 +1542,27 @@ def test_benchmark_authorization_and_model_cost_do_not_leak_to_semantic_judge():
         assert private not in encoded
     assert view["selected_inputs"][0]["candidate"]["objective"] == frozen["objective"]
     assert frozen["routing_eligibility"] == "BENCHMARK_ONLY"
+
+
+
+def test_world_v2_operational_receipts_preserve_semantics_and_legacy_replay():
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    task = {"contract_version": "world-provider-task.v2", "role": "WORLD_REASONER", "fact_mutation_allowed": False,
+        "source_ref": {"asset_version_id": "source:1", "content_hash": "sha256:source"},
+        "projection_identity": "sha256:projection", "context_projection": {"policy": {"token_budget": 8192},
+            "selection": [{"source_event_id": "event:1", "state": {"model_id": "producer", "provider_id": "provider",
+                "prompt_version": "prompt:1", "approval_resolution": {"decision": "APPROVE"},
+                "fact_origin": {"kind": "GOVERNED_BACKGROUND"}, "status": "OPEN", "summary": "The witness promise remains open.",
+                "claim_kind": "OBJECTIVE_EVENT", "evidence_quote": "The witness promise remains open.",
+                "evidence_start": 2, "evidence_end": 40, "reader_visibility": "HIDDEN"}}], "rejections": []}}
+    before = deepcopy(task)
+    current = build_provider_task_view("world_candidates.generate", {"world_preparation": task})["world_preparation"]
+    state = current["context_projection"]["selection"][0]["state"]
+    assert state == {key: value for key, value in before["context_projection"]["selection"][0]["state"].items()
+                     if key not in {"model_id", "provider_id", "prompt_version", "approval_resolution"}}
+    assert current["context_projection"]["state_provenance_receipt"]["omitted_fields_by_index"] == {"0": ["approval_resolution", "model_id", "prompt_version", "provider_id"]}
+    assert task == before
+    assert build_provider_task_view("world_candidates.generate", {"world_preparation": current})["world_preparation"] == current
+    legacy = {**before, "contract_version": "world-provider-task.v1"}
+    assert build_provider_task_view("world_candidates.generate", {"world_preparation": legacy})["world_preparation"] == legacy

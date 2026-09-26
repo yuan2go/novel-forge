@@ -11,6 +11,7 @@ from .contracts import (
 from .handlers import LongformRecapHandler, ReaderOutcomeHandler
 from .prose_handler import LongformProseReviewHandler
 from .prose_review import PROSE_REVIEW_DEFINITION
+from .prose_sampling import PROSE_SAMPLE_DEFINITION, PROSE_SAMPLE_TYPE, PROSE_SAMPLE_OUTPUT, ProseReviewSampleHandler
 from novel_forge.modules.reader_judge_authority import ReaderJudgeRuntimeResolver
 
 
@@ -30,6 +31,8 @@ class BookFollowupHandlerRegistry:
         prose_model_port: ReaderOutcomeModelPort | None = None,
     ) -> None:
         self._handlers = {
+            PROSE_SAMPLE_DEFINITION: ProseReviewSampleHandler(prose_model_port)
+            if prose_model_port is not None else _UnavailableReaderOutcomeHandler(),
             PROSE_REVIEW_DEFINITION: LongformProseReviewHandler(prose_model_port)
             if prose_model_port is not None
             else _UnavailableReaderOutcomeHandler(),
@@ -48,6 +51,7 @@ class BookFollowupHandlerRegistry:
         if handler is None:
             raise KernelError("BOOK_FOLLOWUP_HANDLER_NOT_REGISTERED", definition_name)
         asset_type, output_key = {
+            PROSE_SAMPLE_DEFINITION: (PROSE_SAMPLE_TYPE, PROSE_SAMPLE_OUTPUT),
             PROSE_REVIEW_DEFINITION: (
                 "longform_prose_review_report",
                 "longform.prose_review.report",

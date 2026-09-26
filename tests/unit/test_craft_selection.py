@@ -58,10 +58,11 @@ def test_governed_catalog_retrieval_is_bounded_replay_stable_and_retains_exact_c
     assert selection["craft_policy"]["classification"] == "CONFIGURABLE_POLICY"
 
 
-def test_actual_receipts_have_numeric_window_deduplication_and_explicit_pattern_evidence():
+def test_accepted_uses_have_numeric_window_deduplication_and_explicit_pattern_evidence():
     mechanism = core_catalog()[0]
     row = {"chapter": 6, "use_id": "u1", "scene_id": "scene-1", "mechanism_id": mechanism["mechanism_id"], "family": mechanism["family"], "role": "PRIMARY", "external_effect_id": "effect-1", "external_receipt_ids": ["receipt-1"], "pattern_signature": craft_pattern_signature(mechanism)}
-    recent = [row, {**row, "external_effect_id": "effect-2"}, {**row, "use_id": "u2", "chapter": 2}, {**row, "use_id": "u3", "chapter": 9}, {**row, "use_id": "u4", "chapter": 5, "external_receipt_ids": []}, {**row, "use_id": "u5", "chapter": 5, "mechanism_id": "similar-pattern"}]
+    row.update(_accepted_usage_binding())
+    recent = [row, {**row, "external_effect_id": "effect-2"}, {**row, "use_id": "u2", "chapter": 2}, {**row, "use_id": "u3", "chapter": 9}, {**row, "use_id": "u4", "chapter": 5, "acceptance_id": ""}, {**row, "use_id": "u5", "chapter": 5, "mechanism_id": "similar-pattern"}]
     policy = validate_craft_policy({"recent_chapter_window": 2})
     assessment = craft_candidate_assessment(mechanism, context={"scene_goal": [mechanism["narrative_problem"]], "chapter_number": 7}, recent_usage=recent, policy=policy)
     budget = assessment["budget_assessment"]
@@ -217,7 +218,7 @@ def test_frozen_craft_budget_does_not_fill_from_changed_runtime_defaults(monkeyp
 
 
 def _previous_craft_delivery(mechanism, *, chapter=6, use_id='previous-use'):
-    return {'chapter': chapter, 'use_id': use_id, 'scene_id': 'previous-scene',
+    return {**_accepted_usage_binding(), 'chapter': chapter, 'use_id': use_id, 'scene_id': 'previous-scene',
         'mechanism_id': mechanism['mechanism_id'], 'family': mechanism['family'], 'role': 'PRIMARY',
         'external_effect_id': 'fixture-effect:' + use_id, 'external_receipt_ids': ['fixture-receipt:' + use_id],
         'pattern_signature': craft_pattern_signature(mechanism)}
@@ -236,7 +237,7 @@ def test_opt_in_v2_continuous_spatial_need_survives_consecutive_chapter_cooldown
     assert v2['budget_assessment']['policy_version'] == 'narrative-craft-budget.v2'
     assert v2['budget_assessment']['in_cooldown'] is True
     assert v2['budget_assessment']['temporal_budget_applied'] is False
-    assert v2['budget_assessment']['evidence_ceiling'] == 'DELIVERY_OBSERVATION_NOT_READER_EFFECT'
+    assert v2['budget_assessment']['evidence_ceiling'] == 'ACCEPTED_PROSE_OBSERVATION_NOT_READER_EFFECT'
     assert validate_craft_policy()['schema_version'] == 'narrative-craft-budget.v1'
 
 
@@ -273,3 +274,35 @@ def test_v2_keeps_expressive_cooldown_frequency_context_and_strategy_guards():
     crowded['uses'].append({**deepcopy(crowded['uses'][0]), 'use_id': 'second-same-mechanism', 'role': 'SECONDARY', 'sequence': 2})
     with pytest.raises(KernelError):
         validate_craft_strategy(_rehash(crowded))
+
+
+def _accepted_usage_binding():
+    return {"usage_basis": "ACCEPTED_PROSE_REVIEW", "acceptance_id": "acceptance:1",
+        "accepted_draft_asset_version_id": "accepted:1", "review_asset_version_id": "review:1",
+        "target_text_hash": "sha256:prose", "evidence": {"start": 0, "end": 2, "quote": "正文"}, "effect_status": "ACHIEVED"}
+
+
+def test_delivered_discarded_and_uncertain_candidates_do_not_consume_accepted_budget():
+    mechanism = core_catalog()[0]
+    accepted = _previous_craft_delivery(mechanism)
+    rows = [{**accepted, "usage_basis": "DELIVERY"}, {**accepted, "effect_status": "UNCERTAIN"},
+            {**accepted, "acceptance_id": ""}, {**accepted, "review_asset_version_id": ""}]
+    result = craft_candidate_assessment(mechanism, context={"scene_goal": [mechanism["narrative_problem"]], "chapter_number": 7}, recent_usage=rows, policy=validate_craft_policy())
+    assert result["budget_assessment"]["frequency"] == 0
+    assert result["rejection_reason"] == ""
+
+
+@pytest.mark.parametrize("status,sides", [("FAILED", []), ("UNCERTAIN", []), ("ACHIEVED", [{"status": "PRESENT", "reason": "Repetition weakens the callback."}])])
+def test_final_accepted_negative_craft_feedback_changes_soft_ranking_not_hard_constraints(status, sides):
+    mechanism = core_catalog()[0]
+    context = {"scene_goal": [mechanism["narrative_problem"]], "reader_effect": mechanism["desired_reader_effect"], "chapter_number": 7}
+    policy = validate_craft_policy({"cooldown_chapters": 0})
+    baseline = craft_candidate_assessment(mechanism, context=context, recent_usage=[], policy=policy)
+    row = {**_previous_craft_delivery(mechanism), "effect_status": status, "side_effects": sides}
+    result = craft_candidate_assessment(mechanism, context=context, recent_usage=[row, row], policy=policy)
+    assert result["rejection_reason"] == ""
+    assert result["score"] < baseline["score"]
+    assert "CRAFT_VARIATION_BONUS" not in result["match_reasons"]
+    assert result["budget_assessment"]["frequency"] == int(status == "ACHIEVED")
+    assert result["budget_assessment"]["realization_cautions"] == [row]
+    assert result["budget_assessment"]["feedback_penalty"] == policy["repetition_penalty"]

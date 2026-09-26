@@ -267,3 +267,65 @@ def list_runtime_selections(
              "limit": limit},
         )
         return _rows(uow.cursor)
+
+
+def list_accepted_craft_usage(
+    database_url: str, *, project_id: str, book_id: str, limit: int = 100,
+) -> list[dict[str, Any]]:
+    from novel_forge.modules.review.craft import craft_review_targets
+    from novel_forge.modules.review.diagnostics import prose_hash, validate_location
+    from .craft import craft_hash
+    from .craft_selection import craft_pattern_signature
+
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """SELECT acceptance.acceptance_id, acceptance.chapter_number,
+                      draft.asset_version_id, draft.content_hash, draft.content,
+                      review.asset_version_id, review.content_hash, review.content
+               FROM authority_book_chapter_acceptance acceptance
+               JOIN authority_asset_version outcome
+                 ON outcome.asset_version_id=acceptance.chapter_outcome_asset_version_id
+               JOIN authority_asset_version draft
+                 ON draft.asset_version_id=outcome.content->>'accepted_draft_asset_version_id'
+               JOIN authority_asset_version quality
+                 ON quality.asset_version_id=outcome.content->>'quality_aggregate_asset_version_id'
+               JOIN authority_asset_version review
+                 ON review.asset_version_id=quality.content->>'review_asset_version_id'
+               WHERE acceptance.project_id=%s AND acceptance.status='COMMITTED'
+                 AND outcome.content->>'book_id'=%s
+               ORDER BY acceptance.chapter_number DESC, acceptance.acceptance_id LIMIT %s""",
+            [project_id, book_id, limit],
+        )
+        rows = uow.cursor.fetchall()
+    result, seen = [], set()
+    for acceptance, chapter, draft_id, draft_hash, draft, review_id, review_hash, review in rows:
+        if draft_hash != craft_hash(draft) or review_hash != craft_hash(review):
+            from novel_forge.modules.command_kernel.errors import KernelError
+            raise KernelError("CRAFT_ACCEPTED_EVIDENCE_DRIFT", "accepted prose and review must retain their exact hashes")
+        text = draft["text"]
+        source_id = draft.get("selected_source_asset_version_id")
+        if review.get("revision_version_id") != source_id or review.get("target_text_hash") != prose_hash(text):
+            continue
+        targets = {item["use_id"]: item for item in craft_review_targets(draft)}
+        for check in review.get("craft_checks", []):
+            use = targets.get(check["use_id"])
+            identity = (acceptance, check["use_id"])
+            if (not use or identity in seen or check.get("target_asset_version_id") != source_id
+                or check.get("target_text_hash") != prose_hash(text)
+                or check.get("content_hash") != use["content_hash"]):
+                continue
+            evidence = validate_location(dict(check["evidence"]), text)
+            seen.add(identity)
+            result.append({
+                **{key: use[key] for key in ("mechanism_id", "mechanism_version", "use_id", "scene_id", "role", "knowledge_card_asset_version_id", "content_hash")},
+                "family": use["mechanism"]["family"],
+                "pattern_signature": craft_pattern_signature(use["mechanism"]),
+                "chapter": chapter, "acceptance_id": acceptance,
+                "accepted_draft_asset_version_id": draft_id, "accepted_draft_content_hash": draft_hash,
+                "review_asset_version_id": review_id, "review_content_hash": review_hash,
+                "target_text_hash": check["target_text_hash"], "evidence": evidence,
+                "effect_status": check["effect_status"], "side_effects": check["side_effects"],
+                "evidence_class": check["evidence_class"],
+                "usage_basis": "ACCEPTED_PROSE_REVIEW", "reader_effect_proven": False,
+            })
+    return result

@@ -132,6 +132,16 @@ def prepare_provider_sample(
                 input_versions=inputs, binding=command.reference_evaluation,
                 evaluator_actor_id=command.actor_id, chapter=source[2]["chapter"], generation_sample=subject)
     producer = reference_sample_producer_identity(app, payload=payload, workspace_id=source[4]) if command.generation_sample else None
+    generator_evaluation = None
+    if not reference:
+        from novel_forge.modules.chapter_quality_authority.generator_reference import generator_reference_contract
+        with AuthorityUnitOfWork(app.database_url) as uow:
+            uow.cursor.execute("""SELECT request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,producer_contract_hash}'
+                FROM authority_external_effect WHERE project_id=%s AND operation_id=%s
+                ORDER BY created_at DESC LIMIT 1""", [command.project_id, command.source_operation_id])
+            original_contract = uow.cursor.fetchone()
+        if original_contract and original_contract[0]:
+            generator_evaluation = generator_reference_contract(stage, original_contract[0])
     return {
         "status": "PREPARED_NO_PROVIDER_CALL",
         "provider_calls": 0,
@@ -147,6 +157,7 @@ def prepare_provider_sample(
         "required_workflow_ref": "chapter_reference_sampling@" + CHAPTER_REFERENCE_SAMPLE_VERSION if command.generation_sample else
             CHAPTER_REFERENCE_WORKFLOW_REF if reference else CHAPTER_SAMPLE_WORKFLOW_REF,
         "production_eligible": False,
+        **({"generator_evaluation_contract": generator_evaluation} if generator_evaluation else {}),
     }
 
 

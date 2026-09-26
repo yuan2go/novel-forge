@@ -65,6 +65,7 @@ class ContentAuthorityScheduler:
         *,
         limit: int = 50,
         project_ids: Iterable[str] = (),
+        excluded_operation_ids: Iterable[str] = (),
     ) -> tuple[tuple[str, str], ...]:
         if limit <= 0:
             raise ValueError("limit must be positive")
@@ -88,6 +89,7 @@ class ContentAuthorityScheduler:
                 ) AS active_lease ON TRUE
                 WHERE operation.definition_name = ANY(%s)
                   AND (%s::text[]='{}'::text[] OR operation.project_id=ANY(%s))
+                  AND NOT (operation.operation_id=ANY(%s))
                   AND operation.status IN ('READY', 'FAILED_RETRYABLE', 'EXECUTING')
                   AND (active_lease.expires_at IS NULL OR active_lease.expires_at <= NOW())
                 ORDER BY operation.created_at, operation.operation_id
@@ -97,6 +99,7 @@ class ContentAuthorityScheduler:
                     list(self.registry.definition_names),
                     list(projects),
                     list(projects),
+                    list(excluded_operation_ids),
                     limit,
                 ],
             )

@@ -283,6 +283,9 @@ def narrative_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: li
             continue
         agreed = all(item["agrees"] for item in agreement["criterion_agreement"])
         outcomes[effect_id] = {"accepted": None, "metric": "REFERENCE_AGREEMENT.v1", "reference_agreed": agreed,
+            "generator_assessment": {"target_asset_version_id": adjudicated["target_asset_version_id"],
+                "target_content_hash": adjudicated["target_content_hash"], "labels": adjudicated["labels"],
+                "protocol_version": payload["reference_evaluation"]["protocol_version"]},
             "reference_label_classes": classes,
             "reference_protocol_hash": authorization_hash({"protocol_version": payload["reference_evaluation"]["protocol_version"],
                 "generator_operation_name": payload["generator_operation_name"], "scope_type": adjudicated["scope"]["scope_type"],

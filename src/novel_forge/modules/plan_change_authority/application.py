@@ -48,6 +48,10 @@ from .domain import (
     require_approvable_scope,
     semantic_plan_diff,
 )
+from .semantic_impact import (
+    load_semantic_impact_discovery,
+    resolve_semantic_dispositions,
+)
 
 
 VERSION = "1.0.4"
@@ -178,24 +182,42 @@ class PostgresPlanChangeAuthority:
         self, command: PlanChangeProposalCommand, *, principal: Principal
     ) -> dict[str, Any]:
         principal.require("book.authority.execute", command.project_id)
+        frozen = self._frozen_proposal(command)
+        if frozen is not None:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute(
+                    "SELECT proposal_id FROM authority_plan_change_proposal WHERE proposal_operation_id=%s",
+                    [frozen["operation_id"]],
+                )
+                existing = uow.cursor.fetchone()
+            if existing is not None:
+                return self.require(str(existing[0]))
         if command.source_type is PlanChangeSource.HUMAN_FEEDBACK:
             from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
             source = AuthorityAssetQuery(self.database_url).require(
-                project_id=command.project_id, asset_version_id=command.source_evidence_version_id,
+                project_id=command.project_id,
+                asset_version_id=command.source_evidence_version_id,
             )
             if (
                 source.asset_type != "replan_request"
-                or source.content.get("contract_version") != "operator-planning-change-request.v1"
-                or source.content.get("authority_boundary") != "FUTURE_PLAN_PROPOSAL_ONLY"
+                or source.content.get("contract_version")
+                != "operator-planning-change-request.v1"
+                or source.content.get("authority_boundary")
+                != "FUTURE_PLAN_PROPOSAL_ONLY"
                 or source.content.get("book_id") != command.book_id
-                or source.content.get("target_plan_version_id") != command.target_asset_version_id
+                or source.content.get("target_plan_version_id")
+                != command.target_asset_version_id
             ):
-                raise KernelError("PLAN_CHANGE_FEEDBACK_SCOPE_INVALID", "operator change evidence must bind this Book and target plan")
+                raise KernelError(
+                    "PLAN_CHANGE_FEEDBACK_SCOPE_INVALID",
+                    "operator change evidence must bind this Book and target plan",
+                )
         target = self._target_binding(
             command.project_id,
             command.book_id,
             command.target_asset_version_id,
+            require_active=frozen is None,
         )
         proposed = self._proposed_design(
             command.project_id, command.proposed_asset_version_id
@@ -220,6 +242,28 @@ class PostgresPlanChangeAuthority:
             target_execution_scope=str(target["execution_scope"]),
         )
         diff = [asdict(change) for change in changes]
+        if frozen is None:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                discovery = load_semantic_impact_discovery(
+                    uow.cursor,
+                    project_id=command.project_id,
+                    book_id=command.book_id,
+                    target_asset_version_id=command.target_asset_version_id,
+                    proposed_asset_version_id=command.proposed_asset_version_id,
+                    changes=diff,
+                )
+            payload = {
+                "book_id": command.book_id,
+                "source_type": command.source_type.value,
+                "target_asset_version_id": command.target_asset_version_id,
+                "proposed_asset_version_id": command.proposed_asset_version_id,
+                "semantic_diff": diff,
+                "risk": risk.value,
+                "authority_decision_required": True,
+                "semantic_impact_discovery": discovery,
+            }
+        else:
+            payload = frozen["payload"]
         operation_id = self._execute(
             definition="plan_change.propose",
             project_id=command.project_id,
@@ -228,15 +272,7 @@ class PostgresPlanChangeAuthority:
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
             idempotency_key=command.stable_idempotency_key,
-            payload={
-                "book_id": command.book_id,
-                "source_type": command.source_type.value,
-                "target_asset_version_id": command.target_asset_version_id,
-                "proposed_asset_version_id": (command.proposed_asset_version_id),
-                "semantic_diff": diff,
-                "risk": risk.value,
-                "authority_decision_required": True,
-            },
+            payload=payload,
             input_assets=self._resolve(
                 command.project_id,
                 (
@@ -248,6 +284,7 @@ class PostgresPlanChangeAuthority:
             principal=principal,
         )
         proposal_id = f"plan-change:{operation_id}"
+        self._probe("after_proposal_execution_before_projection")
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.plan_change.create_proposal(
                 {
@@ -284,6 +321,37 @@ class PostgresPlanChangeAuthority:
         principal.require("book.authority.execute", proposal["project_id"])
         workspace_id = self._workspace_id(proposal["project_id"], proposal["book_id"])
         decision = "APPROVED" if approved else "REJECTED"
+        dispositions = resolve_semantic_dispositions(
+            proposal["semantic_impact_discovery"],
+            evidence.get("semantic_impact_dispositions", []),
+        )
+        evidence = {**evidence, "semantic_impact_dispositions": dispositions}
+        if proposal["approval_operation_id"]:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute(
+                    "SELECT decision,authority_type,authority_version,evidence FROM authority_plan_change_decision WHERE proposal_id=%s",
+                    [proposal_id],
+                )
+                recorded = uow.cursor.fetchone()
+            if recorded is None or tuple(recorded) != (
+                decision,
+                authority_type,
+                authority_version,
+                evidence,
+            ):
+                raise KernelError(
+                    "PLAN_CHANGE_DECISION_CONFLICT",
+                    "a recorded decision cannot be rewritten by a retry",
+                )
+            return proposal
+        if approved:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.repositories.plan_change.require_current_inferred_impacts(
+                    project_id=proposal["project_id"],
+                    book_id=proposal["book_id"],
+                    discovery=proposal["semantic_impact_discovery"],
+                    dispositions=dispositions,
+                )
         proposal_output = self._operation_output(
             proposal["proposal_operation_id"], "plan_change.proposal"
         )
@@ -334,6 +402,13 @@ class PostgresPlanChangeAuthority:
             )
         if proposal["status"] == "ACTIVE":
             return proposal
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.plan_change.require_current_inferred_impacts(
+                project_id=proposal["project_id"],
+                book_id=proposal["book_id"],
+                discovery=proposal["semantic_impact_discovery"],
+                dispositions=proposal["semantic_impact_dispositions"],
+            )
         proposed_state = self.story_design.require(
             project_id=proposal["project_id"],
             asset_version_id=proposal["proposed_asset_version_id"],
@@ -457,11 +532,26 @@ class PostgresPlanChangeAuthority:
         )
         self._probe("after_plan_activation_before_outbox")
         with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.plan_change.require_current_inferred_impacts(
+                project_id=proposal["project_id"],
+                book_id=proposal["book_id"],
+                discovery=proposal["semantic_impact_discovery"],
+                dispositions=proposal["semantic_impact_dispositions"],
+            )
             uow.repositories.plan_change.record_impacts(
                 proposal_id=proposal_id,
                 project_id=proposal["project_id"],
                 source_asset_version_id=proposal["target_asset_version_id"],
                 operation_id=operation_id,
+            )
+            inferred_impacts = uow.repositories.plan_change.record_inferred_impacts(
+                proposal_id=proposal_id,
+                project_id=proposal["project_id"],
+                book_id=proposal["book_id"],
+                source_asset_version_id=proposal["target_asset_version_id"],
+                operation_id=operation_id,
+                discovery=proposal["semantic_impact_discovery"],
+                dispositions=proposal["semantic_impact_dispositions"],
             )
             invalidated_realization_ids = NarrativeRealizationRepository(
                 uow.cursor
@@ -487,6 +577,7 @@ class PostgresPlanChangeAuthority:
                     "payload": {
                         "proposal_id": proposal_id,
                         "new_plan_version_id": proposal["proposed_asset_version_id"],
+                        "inferred_impact_asset_version_ids": inferred_impacts,
                         "invalidated_narrative_realization_ids": list(
                             invalidated_realization_ids
                         ),
@@ -526,12 +617,23 @@ class PostgresPlanChangeAuthority:
             principal=principal,
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.repositories.plan_change.revalidate(
+            applied = uow.repositories.plan_change.revalidate(
                 project_id=project_id,
                 asset_version_id=asset_version_id,
                 evidence_version_id=evidence_version_id,
                 operation_id=operation_id,
             )
+            uow.cursor.execute(
+                "SELECT freshness FROM story_plan_binding WHERE project_id=%s AND asset_version_id=%s",
+                [project_id, asset_version_id],
+            )
+            freshness = str(uow.cursor.fetchone()[0])
+            if not applied:
+                return {
+                    "asset_version_id": asset_version_id,
+                    "freshness": freshness,
+                    "operation_id": operation_id,
+                }
             event_id = str(uuid4())
             uow.repositories.operation_graph.record_event(
                 {
@@ -554,13 +656,64 @@ class PostgresPlanChangeAuthority:
             uow.commit()
         return {
             "asset_version_id": asset_version_id,
-            "freshness": "CURRENT",
+            "freshness": freshness,
             "operation_id": operation_id,
         }
 
     def require(self, proposal_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
-            return uow.repositories.plan_change.require(proposal_id)
+            proposal = uow.repositories.plan_change.require(proposal_id)
+            uow.cursor.execute(
+                """SELECT version.content FROM authority_operation_output_asset output
+                   JOIN authority_asset_version version USING(asset_version_id)
+                   WHERE output.operation_id=%s AND output.output_key='plan_change.proposal'""",
+                [proposal["proposal_operation_id"]],
+            )
+            content = uow.cursor.fetchone()
+            proposal["semantic_impact_discovery"] = (content[0] if content else {}).get(
+                "semantic_impact_discovery", {}
+            )
+            uow.cursor.execute(
+                "SELECT evidence FROM authority_plan_change_decision WHERE proposal_id=%s",
+                [proposal_id],
+            )
+            decision = uow.cursor.fetchone()
+            proposal["semantic_impact_dispositions"] = (
+                decision[0] if decision else {}
+            ).get("semantic_impact_dispositions", [])
+            return proposal
+
+    def _frozen_proposal(
+        self, command: PlanChangeProposalCommand
+    ) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT operation_id,project_id,workspace_id,command_payload
+                   FROM authority_operation WHERE idempotency_scope='project:plan-change'
+                     AND idempotency_key=%s""",
+                [command.stable_idempotency_key],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        payload = row[3].get("payload", {})
+        if (
+            row[1] != command.project_id
+            or row[2] != command.workspace_id
+            or row[3].get("input_asset_version_ids")
+            != [
+                command.source_evidence_version_id,
+                command.target_asset_version_id,
+                command.proposed_asset_version_id,
+            ]
+            or payload.get("book_id") != command.book_id
+            or payload.get("source_type") != command.source_type.value
+        ):
+            raise KernelError(
+                "IDEMPOTENCY_CONFLICT",
+                "Plan Change retry must retain its original scope and source versions",
+            )
+        return {"operation_id": row[0], "payload": payload}
 
     def _execute(
         self,

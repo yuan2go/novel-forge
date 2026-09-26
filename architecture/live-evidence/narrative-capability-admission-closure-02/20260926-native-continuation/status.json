@@ -1,0 +1,204 @@
+{
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "package_status": "INCOMPLETE_REAL_QUALIFICATION_AND_AUTHORIZED_PRODUCTION_PENDING",
+  "baseline_sha": "742c228dd8b806241f3299e491ab0bf2bade1007",
+  "origin_main_rechecked_sha": "742c228dd8b806241f3299e491ab0bf2bade1007",
+  "implementation_commit_sha": "7f1510d40d0ed2dd3ede575806222fce17cbc8bd",
+  "implementation_tree_sha": "sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3",
+  "implementation_identity_unchanged_during_final_matrix": true,
+  "final_publication_binding": "The enclosing documentation/evidence commit preserves this tested implementation-tree identity; final Git SHA is reported with delivery.",
+  "branch": "codex/narrative-feedback-closure",
+  "push_pr_merge": "NOT_AUTHORIZED_NOT_PERFORMED",
+  "scopes": [
+    {
+      "capability": "task-scoped model feedback admission",
+      "state": "EXECUTABLE",
+      "entry": "Chapter / World / Planning native provider samples; Book prose-reviews/provider-samples API",
+      "consumer": "domain_gate_outcomes -> PostgresRoutingRegistry.observations -> ProductionProviderRouter.select -> native ExternalEffect",
+      "transitions": "INELIGIBLE samples + separately authenticated human adjudication -> compatible generator/reviewer benchmark; missing/incompatible/repeated/held-out/failed evidence cannot confer qualification",
+      "artifacts": [
+        "final/actor-sampling-native.json",
+        "final/prose-recovery-native.json",
+        "final/routing.xml.gz"
+      ],
+      "recovery": "Frozen source/producer/Pack, original Effect and cumulative budget; receipt replay never creates an independent sample; same input and old holdout are checked beyond the 200-log window",
+      "symbols": [
+        "src/novel_forge/modules/authority_handler_runtime/generator_feedback.py:generator_sample_outcomes",
+        "src/novel_forge/modules/production_execution/routing_runtime.py:PostgresRoutingRegistry",
+        "src/novel_forge/modules/book_followup_authority/prose_sample_feedback.py:prose_sample_outcomes"
+      ]
+    },
+    {
+      "capability": "native hierarchy, acceptance and future-only replanning",
+      "state": "EXECUTABLE",
+      "entry": "Formation / Opening / Book Supervisor / ChapterGroup",
+      "consumer": "Hierarchical Planning -> Mission/Scene/Realization -> Chapter -> Review/Revision/Quality/Canon -> Book Acceptance -> native BookReplan/PlanChange",
+      "transitions": "accepted deviation -> explicit approval -> Supervisor activation -> replacement snapshot/window -> next accepted chapter -> RESOLVED counter-review; accepted history, frozen old requests and 39 prior Effects unchanged",
+      "artifacts": [
+        "final/hierarchy-native.json",
+        "final/hierarchy.xml.gz"
+      ],
+      "recovery": "Supervisor restart and idempotent old Chapter replay; active new inputs bind exact predecessor acceptance; cross-volume Arc and executed/unaffected plans protected",
+      "symbols": [
+        "src/novel_forge/modules/book_replan/coordinator.py",
+        "src/novel_forge/modules/book_authority/supervisor.py",
+        "src/novel_forge/modules/plan_change_authority/application.py:PostgresPlanChangeAuthority"
+      ]
+    },
+    {
+      "capability": "accepted Craft realization feedback",
+      "state": "EXECUTABLE",
+      "entry": "Approved MKAOS KnowledgeCard -> planning selection and frozen Craft strategy",
+      "consumer": "Memo/Draft/Review/Revision/Rereview -> Book acceptance -> list_accepted_craft_usage -> next planning selection",
+      "transitions": "planned use -> located failed candidate -> precise repair/preservation -> exact final accepted observation; replay and discarded candidate cannot count as accepted use",
+      "artifacts": [
+        "final/craft-native",
+        "final/craft-impact.xml.gz"
+      ],
+      "recovery": "Immutable draft/review hashes, one acceptance/use identity, receipt-loss replay; failed/uncertain final effect and present/uncertain side effects lower soft ranking without hard rejection or false use count",
+      "symbols": [
+        "src/novel_forge/modules/mkaos_authority/runtime_usage.py:list_accepted_craft_usage",
+        "src/novel_forge/modules/mkaos_authority/craft_selection.py:craft_candidate_assessment",
+        "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer"
+      ]
+    },
+    {
+      "capability": "automatic bounded global prose review",
+      "state": "EXECUTABLE",
+      "entry": "Book prose-review start/control API and Book Follow-up worker automatic tick",
+      "consumer": "frozen accepted manifest -> bounded local and remote-pair windows -> native disposition / Plan Change / located counter-review",
+      "transitions": "active -> paused -> resumed; settle old window before incremental accepted-prefix append; nonadjacent paired findings resolve via native consumers without rewriting accepted history",
+      "artifacts": [
+        "final/prose-recovery-native.json",
+        "final/prose-recovery.xml.gz",
+        "development/prose-auto-native-evidence.json"
+      ],
+      "recovery": "Paused/unlinked operations excluded before scheduling LIMIT; admission/progress locked; frozen old prefix remains valid after new acceptance; UNKNOWN and budget holds block expansion",
+      "coverage_limit": "Lexical shared-anchor pairs only; synonym-only/no-shared-anchor/more-than-two-passage/frequent-anchor relationships remain explicitly uncovered; complete text coverage is not global correctness",
+      "symbols": [
+        "src/novel_forge/modules/book_followup_authority/prose_coordinator.py:BookProseReviewCoordinator.automatic_tick",
+        "src/novel_forge/modules/book_followup_authority/prose_relations.py:relation_windows",
+        "src/novel_forge/workers/book_followup_authority.py"
+      ]
+    },
+    {
+      "capability": "implicit dependency hypotheses and native impact",
+      "state": "EXECUTABLE",
+      "entry": "PostgresPlanChangeAuthority.propose / decide / activate / revalidate",
+      "consumer": "bounded frozen plan and accepted-prose corpus -> exact evidence dispositions -> existing future-only invalidation and native planning rebind",
+      "transitions": "UNVERIFIED hypothesis -> CONFIRMED / FALSE_POSITIVE / DEFER; no preapproval fact or hard-edge mutation; stale source/target blocks; executed/accepted/unrelated/later-added scopes preserved",
+      "artifacts": [
+        "development/implicit-plan-change-native-evidence.json",
+        "final/craft-impact.xml.gz",
+        "final/hierarchy-native.json"
+      ],
+      "recovery": "Frozen proposal corpus, repeat decision/activation/revalidation identity; cycles bounded; revalidation alone does not activate a replacement plan",
+      "symbols": [
+        "src/novel_forge/modules/plan_change_authority/semantic_impact.py",
+        "src/novel_forge/modules/plan_change_authority/application.py",
+        "src/novel_forge/storage/plan_change_repositories.py"
+      ]
+    },
+    {
+      "capability": "persistent character behavior across acceptance",
+      "state": "EXECUTABLE",
+      "entry": "World Preparation actor_task v2 within native planning",
+      "consumer": "own accepted private state and explicitly owned promise/character commitment -> Actor proposal -> World/Director -> Plan/Prose observation -> Book Acceptance",
+      "transitions": "same unfinished obligation/source event continues via legal CONTINUE/DEFER; obligation entity version 1 -> 2 across native acceptance and separate-process rebuild",
+      "artifacts": [
+        "final/actor-sampling-native.json",
+        "final/actors.xml.gz",
+        "final/hierarchy-native.json"
+      ],
+      "recovery": "Same frozen Actor receipt/dispatch on restart; private Actor data excludes objective/reader/other-character knowledge and same-character foreshadowing; complete World/Director role input must fit explicit budget",
+      "symbols": [
+        "src/novel_forge/modules/worldbuilding/actor_isolation.py:actor_task",
+        "src/novel_forge/modules/story_planning_runtime/world_preparation.py:PlanningWorldPreparation.prepare",
+        "src/novel_forge/modules/canon_graph/domain.py:_bind_narrative_entity_versions"
+      ]
+    }
+  ],
+  "verification": {
+    "final_matrix": "final/results.json",
+    "unit_tests": 579,
+    "unit_subtests": 1296,
+    "postgresql_tests": 127,
+    "postgresql_subtests": 2,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "static": [
+      "final/documentation.json",
+      "final/instructions.json",
+      "final/architecture.json",
+      "final/proposals.json",
+      "final/ruff.json"
+    ],
+    "database_identity": "final/database-identity.json",
+    "migration_head": "20260921_0142_prose_editorial_foreign_key_indexes",
+    "new_migrations": [],
+    "migration_fresh": "Existing chain initialized sequentially in isolated disposable PostgreSQL databases; PASS",
+    "migration_upgrade": "NOT_RUN: no migration changes",
+    "not_run": [
+      "FULL_P0",
+      "FULL_BACKEND",
+      "FULL_POSTGRESQL",
+      "FULL_COMPOSE",
+      "WEB_UI",
+      "REMOTE_CI",
+      "REAL_PROVIDER_NATIVE_PRODUCTION",
+      "REAL_HUMAN_OR_READER_EVALUATION"
+    ],
+    "resource_cleanup": "final/resource-cleanup.json",
+    "dependency_snapshot": "final/dependency-snapshot.json",
+    "junit_archives": "junit-archive-manifest.json"
+  },
+  "native_real_execution": {
+    "status": "BLOCKED_BEFORE_DISPATCH",
+    "new_model_calls": 0,
+    "new_model_tokens": 0,
+    "new_native_monetary_cost": 0,
+    "new_unresolved_external_effects": [],
+    "historical_production_unresolved_effects": "UNKNOWN: production ledger unavailable; not asserted empty",
+    "host_account": "final/host-account-preflight.json",
+    "required_task_closure_and_budget_preflight": "development/runtime-budget-preflight.json",
+    "blocks": [
+      "Configured production PostgreSQL was unavailable; local Unix-socket inventory confirmed that default novel_forge production database is absent. No production grant/qualification/outstanding-Effect ledger was read.",
+      "Existing Codex account availability is not a matching native project/account, Pack, task, scope and stage authorization. Historical 460-call grants and the separate 928-call proposal were not reused.",
+      "Current producer-specific independent generator/reviewer/Actor references and sufficient independent positive/negative samples remain unproven. No synthetic annotation was registered as real human evidence."
+    ],
+    "budget": "Dispatchable per-Effect calls/tokens/money cannot be frozen without current native inputs/ledger/grant. Established new native-call allowance for this execution is zero; ideal policy sample lower bounds are clearly labeled as estimates, not authorization."
+  },
+  "evidence_boundaries": {
+    "engineering": "EXECUTABLE within listed native unit/PostgreSQL scenarios; full qualification not run",
+    "narrative_correctness": "Bounded scripted original action-causality/choice/relationship/humor-callback, acceptance, knowledge and replan assertions; not independent literary quality",
+    "human_editorial_and_reader_preference": "NOT_RUN",
+    "longitudinal_stability": "NOT_PROVEN",
+    "production": "NOT_PROVEN"
+  },
+  "remaining_behaviors": [
+    {
+      "behavior": "Qualified real-model native hierarchy and feedback-driven subsequent dispatch",
+      "reason": "Missing reachable authoritative runtime ledger, matching finite grant and current independent model qualification",
+      "next_condition": "Connect the intended production ledger, freeze approved native inputs and scoped calls/tokens/cost cap, register actual independent references, then dispatch through existing sampling/Router/Opening/Book entries."
+    },
+    {
+      "behavior": "Measured Craft/Actor benefit, global relation recall and longitudinal narrative stability",
+      "reason": "Only scripted engineering evidence; no actual independent editorial/reader judgments or long-range real cohort",
+      "next_condition": "Separately supplied human/reader observations and bounded authorized native runs; do not reinterpret fixture or window coverage as proof."
+    }
+  ],
+  "retained_failures": [
+    {
+      "artifact": "prior-final-attempt",
+      "cause": "Parallel fresh schemas exhausted shared PostgreSQL lock capacity; two Actor fixtures omitted required promise type; hierarchy deliberately interrupted during repair",
+      "resolution": "Sequential schema initialization; explicit PROMISE fixture type; complete focused matrix rerun with no assertion weakening."
+    },
+    {
+      "artifact": "development",
+      "cause": "Includes early database name/pgvector/env setup failures, native contract/annotation fixture failures, Actor complete-role budget and Canon obligation version failures, same-Effect/input retry attribution findings, and static stale/comment-ratchet failures",
+      "resolution": "Native fixes or explicit valid fixture/scope corrections; original logs retained compressed; incomplete early Actor logs are labeled in actor-sampling-failures.json."
+    }
+  ],
+  "artifact_provenance": "final contains the common implementation matrix and its exported native fixture records. development snapshots were captured during implementation and reproduced by the final targeted cases; they are not new real-Provider runs or current qualification."
+}

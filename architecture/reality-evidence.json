@@ -5310,6 +5310,18 @@
         {
           "path": "src/novel_forge/modules/story_design_authority/evaluation_reference.py",
           "symbol": "narrative_reference_outcomes"
+        },
+        {
+          "path": "src/novel_forge/modules/authority_handler_runtime/generator_feedback.py",
+          "symbol": "generator_sample_outcomes"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/world_sampling.py",
+          "symbol": "actor_sample_outcomes"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_sample_feedback.py",
+          "symbol": "prose_sample_outcomes"
         }
       ],
       "commands_operations": [
@@ -6500,7 +6512,7 @@
         },
         {
           "path": "tests/integration/test_world_actor_isolation_postgres.py",
-          "symbol": "test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director"
+          "symbol": "test_actor_receipt_recovery_continues_through_native_acceptances"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -6650,6 +6662,10 @@
         {
           "path": "src/novel_forge/modules/plan_change_authority/domain.py",
           "symbol": "semantic_plan_diff"
+        },
+        {
+          "path": "src/novel_forge/modules/plan_change_authority/semantic_impact.py",
+          "symbol": "semantic_impact_projection"
         }
       ],
       "commands_operations": [
@@ -8160,6 +8176,10 @@
         {
           "path": "src/novel_forge/modules/book_followup_authority/prose_review.py",
           "symbol": "aggregate_reports"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_relations.py",
+          "symbol": "relation_windows"
         }
       ],
       "commands_operations": [
@@ -8734,6 +8754,10 @@
         {
           "path": "src/novel_forge/modules/review/craft.py",
           "symbol": "validate_craft_checks"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/runtime_usage.py",
+          "symbol": "list_accepted_craft_usage"
         }
       ],
       "commands_operations": [
@@ -9009,7 +9033,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71"
+    "implementation_tree_sha": "sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -9382,6 +9406,78 @@
         {
           "path": "src/novel_forge/modules/story_design_authority/evaluation_reference.py",
           "symbol": "require_reference_review"
+        }
+      ]
+    },
+    {
+      "id": "native-independent-generator-feedback",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "Generator quality uses native independently adjudicated sample outcomes with exact producer/model/risk/context binding. Model evaluator admission remains separate. Frozen input/content deduplication and holdout exclusions apply across campaign names; missing independent labels do not qualify a positive subset. Unknown or incompatible historical evidence cannot grant current qualification.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/authority_handler_runtime/generator_feedback.py",
+          "symbol": "generator_sample_outcomes"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/world_sampling.py",
+          "symbol": "actor_sample_outcomes"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_sample_feedback.py",
+          "symbol": "prose_sample_outcomes"
+        }
+      ]
+    },
+    {
+      "id": "accepted-craft-feedback",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "Current planning selection consumes only exact committed Book acceptance, final prose and located rereview Craft evidence. Delivery receipts remain operational counts; discarded candidates and duplicate receipt projection cannot increment accepted use. AI realization checks do not prove human or reader effect.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/runtime_usage.py",
+          "symbol": "list_accepted_craft_usage"
+        }
+      ]
+    },
+    {
+      "id": "automatic-prose-relation-review",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "Active Book Follow-up prose review progresses automatically, pauses dispatch, resumes frozen windows and appends incremental accepted manifests after old effects settle. Bounded shared-anchor pairs require located paired evidence; excluded and unsupported relations remain explicit. Disposition and counter-review use existing native consumers and never rewrite accepted history.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_relations.py",
+          "symbol": "relation_windows"
+        }
+      ]
+    },
+    {
+      "id": "confirmed-inferred-future-impact",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "Plan Change freezes bounded exact plan/accepted-prose hypotheses. Explicit confirmation, counterexample or defer evidence precedes native future-only invalidation; correlation alone adds no hard dependency. Stale source/target versions block activation and revalidation does not itself activate a replacement plan.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/plan_change_authority/semantic_impact.py",
+          "symbol": "semantic_impact_projection"
+        }
+      ]
+    },
+    {
+      "id": "accepted-character-continuity",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "World Actor v2 reads only explicitly owned accepted private knowledge, beliefs, relationships and promise/character commitment state. Open actions require exact source and legal continuation; only Book acceptance advances facts. Current World/Director role scope must fit the configured budget in full; old frozen v1 inputs replay unchanged.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py",
+          "symbol": "actor_task"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+          "symbol": "PlanningWorldPreparation.prepare"
         }
       ]
     }

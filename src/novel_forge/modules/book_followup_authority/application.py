@@ -64,6 +64,7 @@ class BookFollowupAuthorityApplication:
         self.database_url = database_url
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
+        self.prose_model_port = prose_model_port
         self.registry = BookFollowupHandlerRegistry(
             model_port,
             reader_judge_resolver or ReaderJudgeRuntimeResolver(database_url),
@@ -79,6 +80,12 @@ class BookFollowupAuthorityApplication:
     def admit(
         self, request: BookFollowupCommand, *, principal: Principal
     ) -> BookFollowupAdmission:
+        from .prose_sampling import PROSE_SAMPLE_DEFINITION
+
+        if request.definition_name == PROSE_SAMPLE_DEFINITION:
+            from novel_forge.modules.command_kernel.errors import KernelError
+
+            raise KernelError("PROSE_SAMPLE_COMMAND_REQUIRED", "use the native authorized prose sampling command")
         permission = f"book.followup:{request.definition_name}"
         principal.require("book.authority.execute", request.project_id)
         principal.require(permission, request.project_id)
@@ -183,6 +190,16 @@ class BookFollowupAuthorityApplication:
             operation_id=admission.operation_id,
             project_id=admission.project_id,
         )
+
+    def prepare_prose_sample(self, command: Any, *, principal: Principal) -> dict[str, Any]:
+        from .prose_sampling import prepare_prose_sample
+
+        return prepare_prose_sample(self, command, principal=principal)
+
+    def admit_prose_sample(self, command: Any, *, principal: Principal) -> dict[str, Any]:
+        from .prose_sampling import admit_prose_sample
+
+        return admit_prose_sample(self, command, principal=principal)
 
 
 __all__ = [

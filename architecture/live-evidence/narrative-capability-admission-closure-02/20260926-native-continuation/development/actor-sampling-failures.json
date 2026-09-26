@@ -1,0 +1,10 @@
+{
+  "evidence_kind": "observed_failure_summaries_recovered_from_tool_outputs",
+  "raw_log_limitation": "Early iterative output redirection reused actor-sampling-postgres.log; complete initial raw logs were overwritten. These exact error summaries preserve the known failures and are not replacement raw logs.",
+  "failures": [
+    {"phase": "two-acceptance native source setup", "code": "NARRATIVE_ENTITY_VERSION_CONFLICT", "entity": "mara:protect-witnesses", "cause": "Legacy Canon reader_promise binder failed to resolve accepted narrative_obligation version", "resolution": "Actor agent corrected legacy kind lookup to stable unified obligation identity; subsequent two-acceptance runs passed"},
+    {"phase": "Actor sample routing grant configuration", "code": "ROUTING_POLICY_SCHEMA_INVALID", "duration_seconds": 173.42, "cause": "validate_routing_policy supported bootstrap task list lacked actor stages", "resolution": "Reused Kernel WORLD_SAMPLE_TASKS in routing policy"},
+    {"phase": "Actor sample creative budget reservation", "code": "CREATIVE_BUDGET_SCOPE_MISMATCH", "duration_seconds": 78.38, "message": "sampling grant differs from the frozen campaign", "cause": "Test grant campaign ID and manifest hash differed from native comparison budget", "resolution": "Test grant now consumes exact budget campaign identity; native blocking assertion was preserved"}
+  ],
+  "subsequent_pass": {"node": "test_native_actor_sample_independent_feedback_does_not_advance_accepted_state", "result": "1 passed", "duration_seconds": 106.38, "evidence_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY"}
+}

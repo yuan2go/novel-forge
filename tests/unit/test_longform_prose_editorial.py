@@ -88,6 +88,104 @@ def test_exact_chinese_coverage_and_exclusions():
     assert whole["quality_absence_proven"] is False
 
 
+@pytest.mark.parametrize("operation", [
+    {"operation_id": "pending", "status": "RECONCILIATION_REQUIRED"},
+    {"operation_id": "pending", "status": "SUCCEEDED", "external_effects": [{"status": "UNKNOWN"}]},
+    {"operation_id": "pending", "status": "SUCCEEDED", "budget_receipts": [{"status": "HELD_UNKNOWN"}]},
+])
+def test_automatic_review_reconciles_old_work_before_following_acceptance(operation):
+    from types import SimpleNamespace
+    from novel_forge.modules.book_followup_authority.prose_coordinator import (
+        BookProseReviewCoordinator,
+    )
+
+    coordinator = BookProseReviewCoordinator(
+        SimpleNamespace(
+            database_url="unused", application_build_id="test", commit_sha="e" * 40
+        )
+    )
+    coordinator.report = lambda **_: {
+        "manifest": {
+            "policy": {"execution_mode": "AUTOMATIC", "follow_acceptance": True}
+        },
+        "paused": False,
+        "implementation_current": True,
+        "source_current": False,
+        "operations": [operation],
+    }
+    principal = Principal(
+        "worker",
+        PrincipalType.WORKER,
+        frozenset({"*"}),
+        frozenset({"*"}),
+        "server_configuration",
+    )
+    assert coordinator.automatic_tick(
+        principal=principal,
+        run_id="run",
+        project_id="project",
+        workspace_id="workspace",
+        book_run_id="book",
+    ) == {"status": "BLOCKED", "operation_id": "pending"}
+
+
+def test_automatic_relation_retrieval_requires_paired_evidence_and_reports_exclusions():
+    frozen = freeze_manifest(
+        project_id="p",
+        workspace_id="w",
+        book_run_id="b",
+        sources=[
+            {
+                "acceptance_id": str(number),
+                "chapter_number": number,
+                "asset_version_id": str(number),
+                "asset_hash": str(number),
+                "text": text,
+            }
+            for number, text in (
+                (1, "青铜旧印留在桥下。她答应回来救人。"),
+                (2, "城门的守军已经撤离。"),
+                (8, "青铜旧印仍在桥下。孩子还记得那个承诺。"),
+            )
+        ],
+        policy={
+            **manifest()["policy"],
+            "window_codepoints": 64,
+            "maximum_windows": 10,
+            "relation_window_limit": 1,
+            "execution_mode": "AUTOMATIC",
+            "follow_acceptance": True,
+        },
+    )
+    window = frozen["windows"][-1]
+    assert window["relation_hypothesis"]["status"] == "UNVERIFIED"
+    assert [span["chapter_number"] for span in window["spans"]] == [1, 8]
+    assert sum(len(span["text"]) for span in window["spans"]) <= 64
+    evidence = []
+    for span in window["spans"]:
+        evidence.append(
+            {
+                "asset_version_id": span["asset_version_id"],
+                "text_hash": span["text_hash"],
+                "start": span["start"],
+                "end": span["start"] + 4,
+                "quote": span["text"][:4],
+            }
+        )
+    reviewed = report(frozen, window)
+    reviewed["findings"][0]["evidence"] = evidence[:1]
+    with pytest.raises(KernelError, match="both retrieved passages"):
+        validate_window_report(reviewed, manifest=frozen, window=window)
+    reviewed["findings"][0]["evidence"] = evidence
+    result = aggregate_reports(frozen, [reviewed])
+    assert result["relation_verification"]["paired_evidence_hypothesis_ids"] == [
+        window["relation_hypothesis"]["hypothesis_id"]
+    ]
+    assert result["relation_verification"]["global_relationships_verified"] is False
+    assert result["relation_verification"]["retrieval"]["uncovered_relation_classes"]
+    assert not result["coverage_complete"]
+
+
 def test_citations_do_not_accept_bytes_or_changed_text():
     frozen = manifest()
     window = frozen["windows"][0]

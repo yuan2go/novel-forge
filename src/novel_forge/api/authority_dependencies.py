@@ -20,6 +20,7 @@ from novel_forge.infrastructure.production_execution_composition import (
     ProductionExecutionComposition,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
+from novel_forge.modules.command_kernel.routing_bootstrap import WORLD_SAMPLE_TASKS
 from novel_forge.modules.chapter_authority.application import (
     ChapterAuthorityApplication,
 )
@@ -1032,8 +1033,7 @@ def build_production_execution_composition(
             "chapter_group_plan.generate",
             "chapter_plan.generate",
             "narrative_semantic_evaluation",
-            "world_candidates.generate",
-            "world_candidates.evaluate",
+            *WORLD_SAMPLE_TASKS,
         }:
             return validated
         semantic = validate_chapter_provider_output_semantics(stage, validated)
@@ -1056,7 +1056,7 @@ def build_production_execution_composition(
         }:
             fixture = planning_fixture_factory or planning_fixture_response
             return fixture(stage, inputs)
-        if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
+        if stage in WORLD_SAMPLE_TASKS:
             if planning_fixture_factory is None:
                 raise ValueError(
                     "world preparation requires an explicit fixture transport"

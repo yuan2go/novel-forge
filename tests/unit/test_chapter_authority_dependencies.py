@@ -163,6 +163,10 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             execution.gateway.capability_profile.control_level.value,
             "FIXTURE_CONTROLLED",
         )
+        fixture = execution.gateway.session_factory("project:actor-fixture").gateway.backends.resolve("scripted-fixture").payload_resolver.fixture_response_factory
+        for stage in ("world_candidates.actor_0", "world_candidates.actor_1", "world_candidates.actor_2"):
+            with self.assertRaisesRegex(ValueError, "explicit fixture transport"):
+                fixture(stage, {})
         self.assertFalse(hasattr(application, "model_port"))
         self.assertFalse(hasattr(application, "object_store_adapter"))
 
@@ -292,6 +296,22 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             execution.gateway.routes["retrieval"].model_profile.model_id,
             "text-embedding-test",
         )
+        from novel_forge.modules.worldbuilding.actor_isolation import actor_task, actor_output_schema
+        from novel_forge.modules.command_kernel.errors import KernelError
+        from tests.unit.test_world_actor_isolation import source
+
+        actor_source = source()
+        actor_source["provider_projection_version"] = "world-role-delivery.v2"
+        task = actor_task(actor_source, {"asset_version_id": "source:v2", "content_hash": "hash"}, "hero")
+        output_schema = actor_output_schema(task)
+        output = {"actor_id": "hero", "action": "护住同门", "basis_summary": "东门已封", "basis_refs": ["seen"], "commitment_dispositions": []}
+        session = execution.gateway.session_factory("project:actor-validator")
+        backend = session.gateway.backends.resolve(execution.gateway.routes["draft"].model_profile.backend_id)
+        for stage in ("world_candidates.actor_0", "world_candidates.actor_1", "world_candidates.actor_2"):
+            self.assertEqual(backend.structured_result_validator(stage, output_schema, output), output)
+            for invalid in ({key: value for key, value in output.items() if key != "commitment_dispositions"}, {**output, "basis_refs": ["rival-seen"]}):
+                with self.assertRaises(KernelError):
+                    backend.structured_result_validator(stage, output_schema, invalid)
         self.assertIsNotNone(application.embedding_projection_runtime)
         self.assertIn("retrieval_projection", execution.gateway.execution_binders)
 

@@ -5,9 +5,6 @@ from psycopg.types.json import Jsonb
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_planning_runtime import canonical_hash
-from novel_forge.modules.story_planning_runtime.world_preparation import (
-    PlanningProviderStage,
-)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import DATABASE_URL
 from tests.integration import test_core_functional_loops_postgres as core
@@ -15,76 +12,12 @@ from tests.integration import world_causal_production_support as world
 from tests.integration import hierarchy_closure_postgres_support as hierarchy
 
 
-def test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director(
+def test_actor_receipt_recovery_continues_through_native_acceptances(
     request, monkeypatch
 ):
     state = {}
     seed_inputs = core._seed_inputs
     foundation = hierarchy._payload
-    execute_vertical = world.execute_autonomous_world_vertical
-    initialize_stage = PlanningProviderStage.__post_init__
-
-    def capture_rejected_stage(stage):
-        try:
-            return initialize_stage(stage)
-        except KernelError as exc:
-            state["rejected_stage"] = stage.name
-            state["rejected_policy"] = dict(stage.task["policy"])
-            raise exc
-
-    def bounded_actor_vertical(**kwargs):
-        try:
-            return execute_vertical(**kwargs)
-        except KernelError as exc:
-            assert exc.code == "WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
-            assert state["rejected_stage"] == "world_candidates.evaluate"
-            assert state["rejected_policy"]["context_token_budget"] == 8192
-            composition = kwargs["composition"]
-            with AuthorityUnitOfWork(DATABASE_URL) as uow:
-                uow.cursor.execute(
-                    "SELECT book_run_id,accepted_through_chapter FROM authority_book_production WHERE project_id=%s",
-                    [state["project_id"]],
-                )
-                book_run_id, accepted = uow.cursor.fetchone()
-                assert accepted == 1
-                uow.cursor.execute(
-                    "SELECT count(*) FROM authority_narrative_reality_revision WHERE project_id=%s",
-                    [state["project_id"]],
-                )
-                assert uow.cursor.fetchone()[0] == 1
-            calls = state["transport"].calls
-            assert (
-                len(
-                    [
-                        call
-                        for call in calls
-                        if call["stage"] == "world_candidates.generate"
-                    ]
-                )
-                == 2
-            )
-            assert (
-                len(
-                    [
-                        call
-                        for call in calls
-                        if call["stage"] == "world_candidates.evaluate"
-                    ]
-                )
-                == 1
-            )
-            return {
-                "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
-                "book_run_id": book_run_id,
-                "scenario": "isolated_actors_first_window_then_budget_boundary",
-                "accepted_through_chapter": accepted,
-                "budget_boundary": exc.code,
-                "rejected_stage": state["rejected_stage"],
-                "frozen_context_token_budget": 8192,
-                "final_provider_requests": world.capture_final_provider_requests(
-                    composition=composition, project_id=state["project_id"]
-                ),
-            }
 
     def actor_foundation(role, **kwargs):
         result = foundation(role, **kwargs)
@@ -110,6 +43,7 @@ def test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director(
             "max_paths_per_candidate": 1,
             "max_preparation_steps": 1,
             "planning_window_chapters": 1,
+            "context_token_budget": 16000,
         }
         kwargs["initial_current_state"] = {
             "character_knowledge": [
@@ -167,7 +101,38 @@ def test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director(
         def __call__(self, stage, inputs):
             if stage.startswith("world_candidates.actor_"):
                 return self.planning(stage, inputs)
-            return super().__call__(stage, inputs)
+            result = super().__call__(stage, inputs)
+            if stage in {"draft", "revision", "canon_extraction"}:
+                chapter = int(inputs[{"draft": "plan", "revision": "draft", "canon_extraction": "revision"}[stage]]["chapter"])
+                promise = "Mara promises to protect the witnesses until they reach sanctuary."
+                continued = "Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage."
+                statement = promise if chapter == 1 else continued
+                attitudes = {"mara": "Mara trusts Ilya to guard the witnesses.", "ilya": "Ilya privately still doubts Mara's caution."}
+                if stage in {"draft", "revision"} and statement not in result["text"]:
+                    result["scene_artifacts"][-1]["text"] += " " + " ".join((statement, *attitudes.values()))
+                    result["text"] = "\n\n".join(item["text"] for item in result["scene_artifacts"])
+                if stage == "canon_extraction":
+                    text = inputs["revision"]["text"]
+                    start = text.index(statement)
+                    evidence = {"summary": statement, "evidence_start": start,
+                                "evidence_end": start + len(statement), "confidence": 1.0}
+                    result["promise_changes"].append({**evidence, "character_id": "mara",
+                        "promise_id": "mara:protect-witnesses", "status": "OPEN",
+                        **({"from_status": "OPEN"} if chapter > 1 else {})})
+                    result["character_state_changes"].append({**evidence, "character_id": "mara",
+                        "action_state": "PRESERVING_TESTIMONY" if chapter == 1 else "DELIVERING_TESTIMONY"})
+                    result["relationship_changes"].extend([
+                        {"source_id": actor, "target_id": "ilya" if actor == "mara" else "mara",
+                         "status": "TRUSTING" if actor == "mara" else "DOUBTFUL",
+                         "summary": f"{actor.upper()}_PRIVATE_ATTITUDE " + attitude,
+                         "evidence_start": text.index(attitude), "evidence_end": text.index(attitude) + len(attitude),
+                         "confidence": 1.0}
+                        for actor, attitude in attitudes.items()
+                    ])
+                    from tests.integration.narrative_reality_vertical_support import scripted_claim_evidence
+                    result = scripted_claim_evidence(stage, inputs, result)
+                self.calls[-1]["output"] = result
+            return result
 
         def planning(self, stage, inputs):
             if stage.startswith("world_candidates.actor_"):
@@ -194,16 +159,34 @@ def test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director(
                     for row in private["observations"]
                 )
                 assert len(private["observations"]) == 1
+                own_state = private["accepted_self_state"]
+                assert task["contract_version"] == "world-actor-task.v2"
+                if task["accepted_through_chapter"]:
+                    assert "ILYA_PRIVATE_ATTITUDE" not in encoded and "MARA_PRIVATE_ATTITUDE" not in encoded
+                    relationships = [row["content"] for row in own_state if row["kind"] == "relationship_state"]
+                    assert len(relationships) == 1
+                    assert relationships[0]["source_id"] == private["actor_id"]
+                    assert relationships[0]["status"] == ("TRUSTING" if private["actor_id"] == "mara" else "DOUBTFUL")
+                    if private["actor_id"] == "mara":
+                        assert any(row["content"].get("action_state") == "PRESERVING_TESTIMONY" for row in own_state)
+                        assert any(row["content"].get("obligation_id") == "mara:protect-witnesses" for row in own_state)
+                commitments = [row for row in own_state if row["kind"] == "narrative_obligation" and row["content"].get("status") in {"OPEN", "DEVELOPING", "DUE"}]
                 self.calls.append({"stage": stage, "input": deepcopy(inputs)})
                 return {
                     "actor_id": private["actor_id"],
                     "action": "protect the witnesses"
                     if private["actor_id"] == "ilya"
-                    else "act on the approved faction pressure",
+                    else "deliver the preserved witness testimony" if commitments else "preserve the witness testimony",
                     "basis_summary": "Own frozen observation and personal desire motivate this candidate action.",
                     "basis_refs": [
                         "APPROVED_SELF_TRAITS",
                         private["observations"][0]["source_event_id"],
+                        *[row["source_event_id"] for row in commitments],
+                    ],
+                    "commitment_dispositions": [
+                        {"obligation_id": row["content"]["obligation_id"], "source_event_id": row["source_event_id"],
+                         "decision": "CONTINUE", "reason": "Continue the accepted promise through the same witness testimony."}
+                        for row in commitments
                     ],
                 }
             result = super().planning(stage, inputs)
@@ -226,10 +209,13 @@ def test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director(
                             "value": "KNOWN",
                         }
                     ]
-                    transition["cause_refs"].append(proposals[0]["basis_refs"][-1])
+                    transition["cause_refs"].extend(proposals[0]["basis_refs"][1:])
                     result["candidates"][0]["transition"]["payload_json"] = json.dumps(
                         transition
                     )
+                    result["candidates"][0]["obligation_refs"] = [
+                        row["obligation_id"] for row in proposals[0]["commitment_dispositions"] if row["decision"] == "CONTINUE"
+                    ]
                 result["actor_adjudications"] = [
                     {
                         "actor_id": proposal["actor_id"],
@@ -271,6 +257,17 @@ def test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director(
                     [state["project_id"]],
                 )
                 assert uow.cursor.fetchone()[0] == 0
+                uow.cursor.execute(
+                    """SELECT e.external_effect_id,d.dispatch_id,r.external_receipt_id,e.request_payload
+                    FROM authority_external_effect e
+                    JOIN authority_external_effect_dispatch d USING(external_effect_id)
+                    JOIN authority_external_receipt r USING(dispatch_id)
+                    WHERE e.project_id=%s AND e.request_payload->>'stage'='world_candidates.actor_1'""",
+                    [state["project_id"]],
+                )
+                receipts = uow.cursor.fetchall()
+                assert len(receipts) == 1
+                state["recovered_actor_receipt"] = receipts[0]
             raise KernelError(
                 "MODEL_EFFECT_RETRYABLE_WORLD_PROOF",
                 "fixture process loss after second Actor receipt",
@@ -279,10 +276,6 @@ def test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director(
     monkeypatch.setattr(hierarchy, "_payload", actor_foundation)
     monkeypatch.setattr(core, "_seed_inputs", seed_actor_inputs)
     monkeypatch.setattr(world, "AutonomousWorldTransport", ActorTransport)
-    monkeypatch.setattr(PlanningProviderStage, "__post_init__", capture_rejected_stage)
-    monkeypatch.setattr(
-        world, "execute_autonomous_world_vertical", bounded_actor_vertical
-    )
     core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
         request, "provider_recovery"
     )
@@ -294,8 +287,6 @@ def test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director(
             if key == "narrative_reality_vertical"
         )
     )
-    assert final["accepted_through_chapter"] == 1
-    assert final["budget_boundary"] == "WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
     actor_requests = [
         row
         for row in final["final_provider_requests"]
@@ -311,6 +302,8 @@ def test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director(
         assert "PRIVATE_MARA_SECRET_MARKER" not in row["input_text"]
         assert "PRIVATE_ILYA_SECRET_MARKER" not in row["input_text"]
         assert "FUTURE_ILYA_ARC_MARKER" not in row["input_text"]
+        assert "MARA_PRIVATE_ATTITUDE" not in row["input_text"]
+        assert "ILYA_PRIVATE_ATTITUDE" not in row["input_text"]
     assert {
         call["input"]["world_preparation"]["baseline_kind"]
         for call in calls
@@ -320,6 +313,33 @@ def test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director(
     for stage in ("world_candidates.actor_0", "world_candidates.actor_1"):
         assert len([call for call in calls if call["stage"] == stage]) == 2
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
+        from novel_forge.modules.worldbuilding.actor_isolation import accepted_self_state
+
+        uow.cursor.execute("SELECT accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s", [final["book_run_id"]])
+        assert uow.cursor.fetchone()[0] == 2
+        first = NarrativeRealityRepository(uow.cursor).require(book_run_id=final["book_run_id"], chapter_number=1)
+        second = NarrativeRealityRepository(uow.cursor).require(book_run_id=final["book_run_id"], chapter_number=2)
+        own = [accepted_self_state({"reality": reality}, "mara") for reality in (first, second)]
+        promises = [[row for row in rows if row["kind"] == "narrative_obligation" and row["content"]["obligation_id"] == "mara:protect-witnesses"] for rows in own]
+        assert all(len(rows) == 1 and rows[0]["content"]["status"] == "OPEN" for rows in promises)
+        assert promises[0][0]["source_event_id"] != promises[1][0]["source_event_id"]
+        assert [next(row["entity_version"] for row in reality["current_state"]["narrative_obligation"] if row["state"]["obligation_id"] == "mara:protect-witnesses") for reality in (first, second)] == [1, 2]
+        uow.cursor.execute("SELECT count(*) FROM authority_narrative_reality_revision WHERE book_run_id=%s", [final["book_run_id"]])
+        assert uow.cursor.fetchone()[0] == 2
+        assert "same promise" in promises[1][0]["content"]["current_development"]
+        subsequent_actor = next(call["input"]["world_preparation"] for call in calls if call["stage"] == "world_candidates.actor_0" and call["input"]["world_preparation"]["accepted_through_chapter"] == 1)
+        assert subsequent_actor["private_observation"]["accepted_self_state"] == own[0]
+        assert subsequent_actor["baseline_id"] == first["revision_id"]
+        uow.cursor.execute(
+            """SELECT e.external_effect_id,d.dispatch_id,r.external_receipt_id,e.request_payload
+            FROM authority_external_effect e
+            JOIN authority_external_effect_dispatch d USING(external_effect_id)
+            JOIN authority_external_receipt r USING(dispatch_id)
+            WHERE e.external_effect_id=%s AND e.status='SUCCEEDED'""",
+            [state["recovered_actor_receipt"][0]],
+        )
+        assert uow.cursor.fetchall() == [state["recovered_actor_receipt"]]
         uow.cursor.execute(
             """SELECT request_payload->>'stage', count(*), bool_and(status='SUCCEEDED')
             FROM authority_external_effect WHERE project_id=%s AND request_payload->>'stage' LIKE 'world_candidates.actor_%%'
@@ -349,6 +369,21 @@ def test_actor_receipt_recovery_accepts_first_window_and_bounds_second_director(
             [state["project_id"]],
         )
         assert sorted(uow.cursor.fetchall()) == [
-            ("world_candidates.evaluate", 1, True, 1, 1),
+            ("world_candidates.evaluate", 2, True, 2, 2),
             ("world_candidates.generate", 2, True, 2, 2),
         ]
+
+    import subprocess
+    import sys
+
+    recovered = subprocess.run(
+        [sys.executable, "-c", """
+import json, sys
+from novel_forge.modules.narrative_state import NarrativeStateRebuildService
+from novel_forge.modules.worldbuilding.actor_isolation import accepted_self_state
+rebuilt = NarrativeStateRebuildService(sys.argv[1]).rebuild(project_id=sys.argv[2], book_id=sys.argv[3])
+print(json.dumps(accepted_self_state({"reality": rebuilt.projection}, "mara")))
+""", DATABASE_URL, state["project_id"], state["book_id"]],
+        check=True, capture_output=True, text=True, timeout=30,
+    )
+    assert json.loads(recovered.stdout) == own[1]

@@ -8,18 +8,18 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `f0dca5e313128fe281c90585b140d60f630ce840`
-Baseline implementation identity: `sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71`
+Current-reality baseline: `7f1510d40d0ed2dd3ede575806222fce17cbc8bd`
+Baseline implementation identity: `sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-21",
+  "reviewed_on": "2026-09-26",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "f0dca5e313128fe281c90585b140d60f630ce840",
-    "implementation_tree_sha": "sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71"
+    "sha": "7f1510d40d0ed2dd3ede575806222fce17cbc8bd",
+    "implementation_tree_sha": "sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -273,7 +273,7 @@ Baseline implementation identity: `sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1
     },
     {
       "id": "closure02-global-editor",
-      "description": "Extend Book Follow-up into bounded remote-evidence hypothesis discovery, joint review, incremental invalidation and distinct coverage/relationship/arc decisions; prove nonadjacent positive and negative cases through existing disposition consumers.",
+      "description": "Automatic Follow-up, bounded remote-anchor pair discovery, incremental manifests, native dispositions and counter-review now have focused native PostgreSQL evidence. Remaining: qualified real reviewer execution and independent assessment of missed relations beyond the declared lexical retrieval coverage.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py"
@@ -282,7 +282,7 @@ Baseline implementation identity: `sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1
     },
     {
       "id": "closure02-inferred-impact",
-      "description": "Discover inferred consequences from exact Plan Change diffs, independently of hard dependency closure; prove evidence, counterexamples, no preapproval mutations and precise future-only native activation.",
+      "description": "Frozen plan/prose impact hypotheses, explicit confirmation/false-positive/defer decisions and precise future-only native invalidation/revalidation now have focused PostgreSQL evidence. Remaining: real accepted-manuscript impact decisions and long-range false-positive/coverage assessment; hypotheses never become hard dependency edges.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/plan_change_authority/semantic_impact.py"
@@ -291,7 +291,7 @@ Baseline implementation identity: `sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1
     },
     {
       "id": "closure02-continuous-actors",
-      "description": "Extend experimental World Preparation decisions across accepted Reality boundaries with private causal activation and accepted goals/resources/beliefs; reduce duplicate Director context before bounded multi-boundary comparison.",
+      "description": "Accepted private state and owned commitments now continue across native acceptances and process rebuild; immutable receipt replay, exact obligation versions and complete role input have focused evidence. Remaining: qualified real Actor execution and separately authorized comparative benefit/leakage assessment; one bounded action round per preparation remains policy.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py"
@@ -300,7 +300,7 @@ Baseline implementation identity: `sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1
     },
     {
       "id": "closure02-generator-admission",
-      "description": "Connect frozen native samples and independently qualified evaluation to task-scoped native benchmark feedback, explicit decisions and dispatch-time contract/revocation checks; retain distinct engineering, judge and generator evidence.",
+      "description": "Generator, Actor and prose-reviewer native samples now feed separate task/producer/risk/context-scoped Router metrics with independent human adjudication, frozen-input/content deduplication and holdout exclusion. Remaining: actual current-model independent calibration references, sufficient positive/negative evidence and live native grant/ledger checks; fixture passage is not model qualification.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/production_execution/routing_runtime.py",
@@ -385,6 +385,21 @@ coverage and issue dispositions. Public release is separately authorized.
 
 ## WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02
 
+The continuation was checked against fetched `origin/main`
+`742c228dd8b806241f3299e491ab0bf2bade1007`; the historical reference and current baseline
+were identical. This bounded capability map distinguishes the baseline gaps from the
+native consumers that must demonstrate closure. It is not another architecture source.
+
+| Capability | Existing implementation and actual consumer | Baseline gap | Required observable evidence |
+| --- | --- | --- | --- |
+| Task admission | Native Chapter/World/Planning samples, adjudicated references, `PostgresRoutingRegistry` and `ProductionProviderRouter.select` | Generator feedback was not connected; Actor and global prose reviewer sample paths were missing | Independent task/producer/risk/context-bound scores change routing; native Effects retain decisions; samples remain ineligible |
+| Hierarchy and acceptance | Formation/Opening, Book Supervisor, Hierarchical Planning, ChapterGroup, Chapter, Book Acceptance | Existing implementation needed current execution evidence; no replacement tree is needed | Frozen lower tasks, accepted-only facts, rolling windows, cross-volume Arc and preserved executed plans |
+| Craft feedback | KnowledgeCard translation, Chapter strategy, located review/repair and acceptance | Operational delivery receipts were consumed as recent use | Exact final accepted prose/review locations feed the next selection; discarded versions and replayed receipts do not count |
+| Automatic global review | Book Follow-up manifest/window review and native dispositions | Automatic continuation and bounded remote-pair discovery were missing | Pause/resume, incremental append, paired evidence, native disposition and located counter-review; coverage remains separate from relationship correctness |
+| Implicit impact | Plan Change semantic diff and explicit dependency invalidation | Bounded hypothesis discovery, evidence confirmation and native inferred impact activation were missing | Frozen plan/prose corpus, positive/false-positive/deferred decisions, future-only activation and recoverable revalidation |
+| Persistent characters | World Preparation actor isolation and accepted Narrative State | Accepted commitments were not required continuations; later rounds lacked execution proof | Stable obligation identity, exact accepted source/version, private knowledge projection, multi-acceptance and receipt/rebuild recovery |
+
+
 Implementation order follows the six remaining-work entries above. Existing sampling,
 reference calibration, cross-chapter token accounting, Craft preservation and accepted
 state reducers are dependencies to reuse, not replacement Authorities. The earlier
@@ -403,3 +418,5 @@ backend/PostgreSQL/Compose collections and Web/UI tests are NOT_RUN; this restri
 cannot confer QUALIFIED or replace the existing full gate. Paid model execution and
 independent human evidence require matching existing authorization and identities.
 All historical fixed-SHA failures, campaign counters and unknown Effects are retained.
+
+The current native continuation is checked in the [versioned evidence record](../live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/status.json). It separates final focused execution, inspectable native artifacts, retained failures and still-blocked real qualification; the earlier backend and campaign records remain unchanged.

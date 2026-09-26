@@ -206,8 +206,7 @@ class PlanChangeRepository:
                 previous
                 if scope == "EXECUTED"
                 else "STALE"
-                if bool(must_mark_stale)
-                and scope in {"PLANNED", "SPECULATIVE"}
+                if bool(must_mark_stale) and scope in {"PLANNED", "SPECULATIVE"}
                 else "IMPACTED"
             )
             automatic = scope == "SPECULATIVE"
@@ -311,6 +310,166 @@ class PlanChangeRepository:
                 "PlanChange activation checkpoint is inconsistent",
             )
 
+    @staticmethod
+    def _confirmed_impacts(
+        discovery: dict[str, Any],
+        dispositions: list[dict[str, Any]],
+    ) -> dict[str, tuple[dict[str, Any], dict[str, Any]]]:
+        confirmed = {
+            item["hypothesis_id"]
+            for item in dispositions
+            if item["disposition"] == "CONFIRMED"
+        }
+        return {
+            item["asset_version_id"]: (item, hypothesis)
+            for hypothesis in discovery.get("hypotheses", [])
+            if hypothesis["hypothesis_id"] in confirmed
+            for item in [
+                hypothesis["candidate"],
+                *hypothesis.get("declared_dependents", []),
+            ]
+        }
+
+    def require_current_inferred_impacts(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        discovery: dict[str, Any],
+        dispositions: list[dict[str, Any]],
+    ) -> None:
+        for version_id, (snapshot, _) in sorted(
+            self._confirmed_impacts(discovery, dispositions).items()
+        ):
+            self.cursor.execute(
+                """SELECT asset_version_id FROM active_story_plan_version
+                   WHERE project_id=%s AND book_id=%s AND logical_key=%s FOR UPDATE""",
+                [project_id, book_id, snapshot["logical_key"]],
+            )
+            self.cursor.execute(
+                """SELECT binding.execution_scope,binding.version,binding.freshness,version.content_hash,
+                          (SELECT active.asset_version_id FROM active_story_plan_version active
+                           WHERE active.project_id=binding.project_id AND active.book_id=binding.book_id
+                             AND active.logical_key=binding.logical_key)
+                   FROM story_plan_binding binding JOIN authority_asset_version version USING(asset_version_id)
+                   WHERE binding.project_id=%s AND binding.book_id=%s AND binding.asset_version_id=%s
+                   FOR UPDATE OF binding""",
+                [project_id, book_id, version_id],
+            )
+            row = self.cursor.fetchone()
+            if row is None or tuple(row) != (
+                snapshot["execution_scope"],
+                snapshot["binding_version"],
+                snapshot["freshness"],
+                snapshot["content_hash"],
+                snapshot.get("active_asset_version_id"),
+            ):
+                raise KernelError(
+                    "PLAN_IMPACT_EVIDENCE_STALE",
+                    "confirmed impact no longer matches its frozen plan version and execution boundary",
+                )
+            if row[0] == "FROZEN":
+                raise KernelError(
+                    "PLAN_IMPACT_FUTURE_ONLY",
+                    "inferred changes require settlement of frozen execution before future revalidation",
+                )
+
+    def record_inferred_impacts(
+        self,
+        *,
+        proposal_id: str,
+        project_id: str,
+        book_id: str,
+        source_asset_version_id: str,
+        operation_id: str,
+        discovery: dict[str, Any],
+        dispositions: list[dict[str, Any]],
+    ) -> list[str]:
+        impacts = self._confirmed_impacts(discovery, dispositions)
+        for version_id, (snapshot, hypothesis) in sorted(impacts.items()):
+            scope = snapshot["execution_scope"]
+            preserved = scope == "EXECUTED"
+            target = snapshot["freshness"] if preserved else "IMPACTED"
+            self.cursor.execute(
+                """INSERT INTO authority_plan_change_impact(
+                     impact_id,proposal_id,project_id,source_asset_version_id,impacted_asset_version_id,
+                     dependency_path,execution_scope,previous_freshness,target_freshness,
+                     automatic_mutation_allowed,recorded_by_operation_id)
+                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,FALSE,%s)
+                   ON CONFLICT(proposal_id,impacted_asset_version_id) DO NOTHING""",
+                [
+                    f"plan-impact:{proposal_id}:{version_id}",
+                    proposal_id,
+                    project_id,
+                    source_asset_version_id,
+                    version_id,
+                    Jsonb([source_asset_version_id, version_id]),
+                    scope,
+                    snapshot["freshness"],
+                    target,
+                    operation_id,
+                ],
+            )
+            if preserved:
+                continue
+            self.cursor.execute(
+                """UPDATE story_plan_binding SET freshness='IMPACTED',version=version+1
+                   WHERE project_id=%s AND book_id=%s AND asset_version_id=%s
+                     AND execution_scope IN ('PLANNED','SPECULATIVE') AND freshness='CURRENT'""",
+                [project_id, book_id, version_id],
+            )
+            self.cursor.execute(
+                """DELETE FROM active_story_plan_version active USING story_plan_binding binding
+                   WHERE active.binding_id=binding.binding_id AND binding.project_id=%s
+                     AND binding.asset_version_id=%s AND binding.freshness IN ('IMPACTED','STALE')""",
+                [project_id, version_id],
+            )
+            self.cursor.execute(
+                """INSERT INTO authority_artifact_invalidation(
+                     invalidation_id,project_id,book_id,target_asset_version_id,source_asset_version_id,
+                     semantic_diff,status,reason,created_by_operation_id)
+                   VALUES(%s,%s,%s,%s,%s,%s,'OPEN',%s,%s)
+                   ON CONFLICT(project_id,target_asset_version_id,source_asset_version_id,status) DO NOTHING""",
+                [
+                    f"inferred-plan-impact:{proposal_id}:{version_id}",
+                    project_id,
+                    book_id,
+                    version_id,
+                    source_asset_version_id,
+                    Jsonb(
+                        {
+                            "source_asset_version_id": source_asset_version_id,
+                            "dimensions": ["planning"],
+                            "summary": "Authority-confirmed inferred impact requires revalidation",
+                            "evidence": {
+                                "proposal_id": proposal_id,
+                                "hypothesis_id": hypothesis["hypothesis_id"],
+                                "corpus_digest": discovery["corpus_digest"],
+                                "plan_evidence": hypothesis["plan_evidence"],
+                            },
+                        }
+                    ),
+                    f"approved inferred PlanChange {proposal_id}",
+                    operation_id,
+                ],
+            )
+            PostgresArtifactLineageRepository(self.cursor).invalidate_downstream(
+                project_id=project_id,
+                book_id=book_id,
+                semantic_diff=SemanticDiff(
+                    source_asset_version_id=version_id,
+                    dimensions=semantic_dimensions_for(("planning",)),
+                    summary="derived artifacts of an Authority-confirmed inferred plan impact",
+                    evidence={
+                        "proposal_id": proposal_id,
+                        "hypothesis_id": hypothesis["hypothesis_id"],
+                    },
+                ),
+                reason=f"approved inferred PlanChange {proposal_id}",
+                created_by_operation_id=operation_id,
+            )
+        return sorted(impacts)
+
     def revalidate(
         self,
         *,
@@ -318,7 +477,15 @@ class PlanChangeRepository:
         asset_version_id: str,
         evidence_version_id: str,
         operation_id: str,
-    ) -> None:
+    ) -> bool:
+        self.cursor.execute(
+            """SELECT 1 FROM authority_artifact_invalidation
+               WHERE project_id=%s AND target_asset_version_id=%s
+                 AND resolved_by_operation_id=%s AND status='REQUALIFIED' LIMIT 1""",
+            [project_id, asset_version_id, operation_id],
+        )
+        if self.cursor.fetchone() is not None:
+            return False
         self.cursor.execute(
             """
             SELECT evidence.content, evidence.eligibility, evidence.governance,
@@ -336,8 +503,7 @@ class PlanChangeRepository:
             or str(evidence[3]) != "plan_requalification_evidence"
             or str(evidence[1]) != "ELIGIBLE"
             or str(evidence[2]) != "CLEAR"
-            or str(content.get("target_asset_version_id") or "")
-            != asset_version_id
+            or str(content.get("target_asset_version_id") or "") != asset_version_id
             or str(content.get("resolution_status") or "") != "QUALIFIED"
         ):
             raise KernelError(
@@ -388,6 +554,7 @@ class PlanChangeRepository:
                 "PLAN_REVALIDATION_NOT_REQUIRED",
                 "plan is not stale or impacted",
             )
+        return True
 
     def require(self, proposal_id: str) -> dict[str, Any]:
         self.cursor.execute(

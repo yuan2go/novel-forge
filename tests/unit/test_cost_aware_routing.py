@@ -1,5 +1,5 @@
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -251,7 +251,10 @@ def test_domain_acceptance_is_a_distinct_measured_metric_not_a_literary_score():
         )
         for row in samples(n=50)
     ]
-    policy = task_policy("book_plan.generate")
+    planning = benchmark_snapshot(observations, now=NOW, policy=task_policy("book_plan.generate"))
+    assert planning["quality_metric"] == "GENERATOR_SCORE"
+    assert planning["predicted_quality"] == 0 and planning["uncertain"]
+    policy = task_policy("source.deconstruction.observe")
     benchmark = benchmark_snapshot(observations, now=NOW, policy=policy)
     assert benchmark["quality_metric"] == "DOMAIN_GATE_ACCEPTANCE"
     assert benchmark["quality_distribution"] == []
@@ -683,3 +686,131 @@ def test_reference_agreement_requires_both_label_strata_and_preserves_failed_fir
     first = replace(observations[0], reference_agreed=False)
     repaired = replace(first, evidence_ref="replacement", reference_agreed=True, retried=True)
     assert benchmark_snapshot([first, repaired], now=NOW, policy=task_policy("review"))["reference_agreement_rate"] == 0
+
+
+def generator_samples(n=80):
+    return [replace(row, quality_score=None, accepted=None, domain_gate_accepted=None,
+        evidence_class="BENCHMARK_CHALLENGER", production_eligible=False,
+        sample_identity="content:" + str(index), independence_group="frozen-input:" + str(index), experiment_partition="CALIBRATION",
+        producer_contract_hash="sha256:producer", generator_quality_score=0.98,
+        generator_protocol_hash="sha256:protocol", generator_risk="MEDIUM", generator_context_tokens=1000,
+        outcome_refs=("native-independent-adjudication:" + str(index),))
+        for index, row in enumerate(samples(n=n))]
+
+
+def test_generator_admission_uses_independent_scores_without_promoting_samples():
+    from novel_forge.modules.production_execution.cost_routing import benchmark_snapshot, task_policy
+    rows = generator_samples()
+    policy = task_policy("draft")
+    evidence = benchmark_snapshot(rows, now=NOW, policy=policy, input_tokens=1000)
+    assert policy.quality_metric == "GENERATOR_SCORE"
+    assert evidence["predicted_quality"] >= policy.quality_floor and not evidence["uncertain"]
+    assert evidence["production_acceptance_sample_count"] == 0
+    assert evidence["generator_protocol_hashes"] == ["sha256:protocol"]
+    assert not any(row.production_eligible for row in rows)
+    routed = CostAwareRouter().explain(task(task_type="draft"), [candidate()], {"flash": rows}, now=NOW).to_dict()
+    assert routed["status"] == "SELECTED"
+    assert routed["selected"]["benchmark"]["quality_metric"] == "GENERATOR_SCORE"
+    negative = [replace(row, generator_quality_score=0) for row in rows[:30]] + rows[30:]
+    assert CostAwareRouter().explain(task(task_type="draft"), [candidate()], {"flash": negative}, now=NOW).to_dict()["status"] == "BLOCKED"
+
+
+@pytest.mark.parametrize("change", [
+    {"sample_identity": "same-normalized-content"}, {"independence_group": "same-frozen-input"}, {"retried": True},
+    {"generator_risk": "LOW"}, {"generator_context_tokens": 50000},
+    {"generator_quality_score": None, "quality_score": 1, "domain_gate_accepted": True},
+])
+def test_generator_feedback_isolated_from_retries_scope_and_business_success(change):
+    from novel_forge.modules.production_execution.cost_routing import benchmark_snapshot, task_policy
+    rows = [replace(row, **change) for row in generator_samples()]
+    result = benchmark_snapshot(rows, now=NOW, policy=task_policy("draft"), input_tokens=1000)
+    assert result["uncertain"] or result["predicted_quality"] < 0.85
+
+
+def test_generator_unknown_protocol_and_partition_cannot_gain_current_qualification():
+    from novel_forge.modules.production_execution.cost_routing import benchmark_snapshot, task_policy
+    rows = generator_samples()
+    mixed = rows[:40] + [replace(row, generator_protocol_hash="sha256:different-protocol") for row in rows[40:]]
+    assert benchmark_snapshot(mixed, now=NOW, policy=task_policy("draft"))["uncertain"]
+    for partition in ("DEVELOPMENT", "HOLDOUT", ""):
+        with pytest.raises(ValueError, match="BENCHMARK_GENERATOR_INVALID"):
+            replace(rows[0], experiment_partition=partition)
+    with pytest.raises(ValueError, match="BENCHMARK_GENERATOR_INVALID"):
+        replace(rows[0], generator_protocol_hash="")
+
+
+def test_generator_attribution_is_conservative_and_keeps_negative_evaluation():
+    from novel_forge.modules.authority_handler_runtime.generator_feedback import adjudicated_generator_score
+    label = {"dimension": "review_decision", "status": "PASSED", "score_range": [88, 96]}
+    assert adjudicated_generator_score([label]) == 0.88
+    assert adjudicated_generator_score([{**label, "status": "NEEDS_REVISION"}]) == 0
+    assert adjudicated_generator_score([{**label, "score_range": [0, 100]}]) is None
+    assert adjudicated_generator_score([{**label, "score_range": [float("nan"), 100]}]) is None
+    assert adjudicated_generator_score([label, label]) is None
+
+
+
+def test_independent_global_reviewer_qualification_is_separate_from_generation_and_coverage():
+    from novel_forge.modules.production_execution.cost_routing import benchmark_snapshot, task_policy
+    policy = task_policy("longform_prose_review")
+    assert policy.quality_metric == "INDEPENDENT_REVIEWER_SCORE"
+    assert benchmark_snapshot(generator_samples(), now=NOW, policy=policy)["uncertain"]
+    rows = [replace(row, evidence_class="REFERENCE_EVALUATION", generator_quality_score=None,
+        independent_quality_score=.98, independent_protocol_hash="sha256:review-protocol",
+        independent_risk="MEDIUM", independent_context_tokens=1000) for row in generator_samples()]
+    positive = benchmark_snapshot(rows, now=NOW, policy=policy, input_tokens=1000)
+    assert not positive["uncertain"] and positive["predicted_quality"] >= policy.quality_floor
+    negative = [replace(row, independent_quality_score=0) for row in rows[:30]] + rows[30:]
+    assert benchmark_snapshot(negative, now=NOW, policy=policy, input_tokens=1000)["predicted_quality"] < policy.quality_floor
+    for changed in (
+        [replace(row, independent_protocol_hash="sha256:other") for row in rows[:40]] + rows[40:],
+        [replace(row, independent_risk="HIGH") for row in rows],
+        [replace(row, sample_identity="same-window") for row in rows],
+        [replace(row, independent_quality_score=None, quality_score=1, accepted=True) for row in rows],
+    ):
+        assert benchmark_snapshot(changed, now=NOW, policy=policy, input_tokens=1000)["uncertain"]
+    with pytest.raises(ValueError, match="BENCHMARK_INDEPENDENT_REVIEWER_INVALID"):
+        replace(rows[0], experiment_partition="HOLDOUT")
+
+
+
+@pytest.mark.parametrize("age_days", [0, 31])
+def test_campaign_renaming_cannot_reclassify_held_out_generator_content(age_days):
+    from novel_forge.modules.production_execution.cost_routing import benchmark_snapshot, task_policy
+    calibrated = generator_samples()
+    heldout = [replace(row, evidence_ref="other-campaign:" + row.evidence_ref,
+        experiment_partition="HOLDOUT", generator_quality_score=None,
+        occurred_at=(NOW - timedelta(days=age_days)).isoformat()) for row in calibrated]
+    result = benchmark_snapshot(calibrated + heldout, now=NOW, policy=task_policy("draft"), input_tokens=1000)
+    assert result["uncertain"] and result["quality_sample_count"] == 0
+    assert len(result["partition_conflicted_sample_identities"]) == len(calibrated)
+
+
+
+def test_unadjudicated_or_uninformative_generator_outcomes_cannot_hide_behind_positive_subset():
+    from novel_forge.modules.production_execution.cost_routing import benchmark_snapshot, task_policy
+    rows = generator_samples()
+    unadjudicated = replace(rows[0], evidence_ref="not-yet-labeled", sample_identity="new-output",
+        independence_group="new-input", generator_quality_score=None)
+    result = benchmark_snapshot(rows + [unadjudicated], now=NOW, policy=task_policy("draft"), input_tokens=1000)
+    assert result["uncertain"] and result["unadjudicated_generator_sample_count"] == 1
+
+
+@pytest.mark.parametrize("scenario", ["distinct", "same_model_other_transport", "same_revision", "same_served_model", "unknown_alias", "missing_revision"])
+def test_generator_judge_requires_independent_concrete_model_identity(scenario):
+    from novel_forge.modules.authority_handler_runtime.generator_feedback import independent_model_identities
+    generator = {"provider": "codex-cli", "model": "gpt-6-astra", "model_revision": "approved-contract-A"}
+    evaluator = {"provider": "codex-cli", "model": "gpt-6-sol", "model_revision": "approved-contract-B"}
+    if scenario == "same_model_other_transport":
+        evaluator.update(provider="openai", model=generator["model"])
+    elif scenario == "same_revision":
+        evaluator["model_revision"] = generator["model_revision"]
+    elif scenario == "unknown_alias":
+        evaluator["model"] = "gpt-latest"
+    elif scenario == "missing_revision":
+        evaluator["model_revision"] = ""
+    def receipt(candidate, served):
+        return {"provider_id": candidate["provider"], "model_id": candidate["model"], "real_model_call": True,
+            "production_execution": {"process_evidence": {"served_model_identity_hash": served}}}
+    assert independent_model_identities(generator, evaluator, receipt(generator, "served-A"),
+        receipt(evaluator, "served-A" if scenario == "same_served_model" else "served-B")) is (scenario == "distinct")

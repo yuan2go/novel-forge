@@ -91,6 +91,417 @@ def metadata(prefix):
     }
 
 
+def _accept_chapter(helper, fixture, number):
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+    command = helper._chapter_command(fixture, chapter_number=number)
+    if number > 1:
+        plan = AuthorityAssetQuery(DATABASE_URL).require(
+            project_id=fixture["project_id"],
+            asset_version_id=f"{fixture['project_id']}:chapter-plan-v{number}",
+        )
+        command = replace(
+            command,
+            chapter_plan_asset_version_id=plan.asset_version_id,
+            chapter_plan_content_hash=plan.content_hash,
+            context_candidates=tuple(
+                {
+                    **item,
+                    "asset_version_id": plan.asset_version_id,
+                    "content_hash": plan.content_hash,
+                    "content": plan.content,
+                }
+                if item["asset_type"] == "chapter_plan"
+                else item
+                for item in fixture["candidates"]
+            ),
+        )
+    delegated = fixture["authority"].submit_chapter(
+        command, principal=fixture["principal"]
+    )
+    helper._run_child(fixture, delegated["chapter_root_operation_id"])
+    fixture["authority"].reconcile_chapter(delegated["chapter_request_id"])
+    fixture["authority"].accept_chapter(
+        delegated["chapter_request_id"], principal=fixture["principal"]
+    )
+
+
+def _automatic_review(
+    fixture, *, maximum_windows=20, model=None, relation_window_limit=0,
+    window_codepoints=512,
+):
+    principal = replace(
+        fixture["principal"],
+        authentication_source="server_configuration",
+        permissions=frozenset(
+            {"book.authority.execute", "book.authority.query", "book.followup:*"}
+        ),
+    )
+    scope = dict(
+        project_id=fixture["project_id"],
+        workspace_id="workspace:" + fixture["project_id"],
+        book_run_id=fixture["book"].book_run_id,
+        principal=principal,
+    )
+    model = model or ProseFixturePort()
+    followup = BookFollowupAuthorityApplication(
+        DATABASE_URL,
+        application_build_id="prose-test",
+        commit_sha="e" * 40,
+        prose_model_port=model,
+    )
+    coordinator = BookProseReviewCoordinator(followup)
+    run = coordinator.start(
+        **scope,
+        **metadata("auto-prose"),
+        policy={
+            "policy_version": "automatic-v1",
+            "window_codepoints": window_codepoints,
+            "overlap_codepoints": 32,
+            "context_token_budget": 4000,
+            "maximum_windows": maximum_windows,
+            "execution_mode": "AUTOMATIC",
+            "follow_acceptance": True,
+            "relation_window_limit": relation_window_limit,
+        },
+    )
+    return coordinator, scope, model, run["run_id"]
+
+
+def test_automatic_review_pause_append_resume_and_incremental_reuse():
+    ensure_migrated()
+    helper = scripted_book.BookToChapterAuthorityVerticalPostgresTests()
+    try:
+        fixture = helper._new_book_fixture(target_chapter_count=2)
+        _accept_chapter(helper, fixture, 1)
+        coordinator, scope, model, run_id = _automatic_review(fixture)
+        candidates = coordinator.automatic_candidates(
+            principal=scope["principal"], limit=1
+        )
+        assert [item["run_id"] for item in candidates] == [run_id]
+        for _ in range(20):
+            coordinator.automatic_tick(**scope, run_id=run_id)
+            progress = coordinator.report(**scope, run_id=run_id)
+            if progress["review_complete"]:
+                break
+        assert progress["review_complete"]
+        assert (
+            coordinator.automatic_candidates(principal=scope["principal"], limit=1)
+            == []
+        )
+        calls = model.calls
+        control = coordinator.control(
+            **scope,
+            run_id=run_id,
+            expected_version=progress["expected_version"],
+            paused=True,
+            reason="wait for next acceptance",
+            **metadata("auto-pause"),
+        )
+        _accept_chapter(helper, fixture, 2)
+        assert (
+            coordinator.automatic_candidates(principal=scope["principal"], limit=1)
+            == []
+        )
+        assert coordinator.automatic_tick(**scope, run_id=run_id)["status"] == "PAUSED"
+        assert model.calls == calls
+        coordinator.control(
+            **scope,
+            run_id=run_id,
+            expected_version=control["expected_version"],
+            paused=False,
+            reason="resume bounded incremental review",
+            **metadata("auto-resume"),
+        )
+        incremental = coordinator.automatic_tick(**scope, run_id=run_id)
+        assert incremental["run_id"] != run_id
+        new_id = incremental["run_id"]
+        assert coordinator.automatic_tick(**scope, run_id=run_id)["run_id"] == new_id
+        new_progress = coordinator.report(**scope, run_id=new_id)
+        assert len(new_progress["operations"]) == len(progress["operations"])
+        assert all(
+            item["source_run_id"] == run_id for item in new_progress["operations"]
+        )
+        for _ in range(20):
+            coordinator.automatic_tick(**scope, run_id=new_id)
+            new_progress = coordinator.report(**scope, run_id=new_id)
+            if new_progress["review_complete"]:
+                break
+        assert new_progress["review_complete"] and new_progress["source_current"]
+        assert model.calls == new_progress["total_windows"]
+        assert (
+            coordinator.automatic_candidates(principal=scope["principal"], limit=1)
+            == []
+        )
+        assert not new_progress["relation_verification"][
+            "global_relationships_verified"
+        ]
+        assert (
+            coordinator.report(**scope, run_id=run_id)["manifest"]
+            == progress["manifest"]
+        )
+    finally:
+        helper.doCleanups()
+
+
+def test_pause_wins_admission_race_without_orphan_ready_review(monkeypatch):
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    ensure_migrated()
+    helper = scripted_book.BookToChapterAuthorityVerticalPostgresTests()
+    try:
+        fixture = helper._new_book_fixture(target_chapter_count=1)
+        _accept_chapter(helper, fixture, 1)
+        coordinator, scope, model, run_id = _automatic_review(fixture)
+        original = coordinator._command
+
+        def pause_before_advance(name, *args, **kwargs):
+            if name == "book.prose_review.advance":
+                coordinator.control(
+                    **scope,
+                    run_id=run_id,
+                    expected_version=0,
+                    paused=True,
+                    reason="concurrent editorial pause",
+                    **metadata("concurrent-pause"),
+                )
+            return original(name, *args, **kwargs)
+
+        monkeypatch.setattr(coordinator, "_command", pause_before_advance)
+        with pytest.raises(KernelError, match="progress changed"):
+            coordinator.automatic_tick(**scope, run_id=run_id)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM authority_operation WHERE project_id=%s AND definition_name='longform.prose_review'",
+                [scope["project_id"]],
+            )
+            assert uow.cursor.fetchone()[0] == 0
+        assert model.calls == 0
+    finally:
+        helper.doCleanups()
+
+
+def test_paused_prose_is_filtered_before_worker_batch_limit(monkeypatch):
+    from novel_forge.modules.content_authority.scheduler import (
+        ContentAuthorityScheduler,
+    )
+
+    ensure_migrated()
+    helper = scripted_book.BookToChapterAuthorityVerticalPostgresTests()
+    try:
+        fixture = helper._new_book_fixture(target_chapter_count=1)
+        _accept_chapter(helper, fixture, 1)
+        coordinator, scope, model, run_id = _automatic_review(fixture)
+        monkeypatch.setattr(coordinator.followup, "run_or_recover", lambda _: None)
+        first = coordinator.automatic_tick(**scope, run_id=run_id)
+        first_id = first["operations"][0]["operation_id"]
+        coordinator.control(
+            **scope,
+            run_id=run_id,
+            expected_version=first["expected_version"],
+            paused=True,
+            reason="editorial pause",
+            **metadata("fair-pause"),
+        )
+        second = coordinator.start(
+            **scope,
+            **metadata("fair-new"),
+            policy={
+                **first["manifest"]["policy"],
+                "policy_version": "separate-review-v2",
+            },
+        )
+        pending = coordinator.automatic_tick(**scope, run_id=second["run_id"])
+        second_id = pending["operations"][0]["operation_id"]
+        scheduler = ContentAuthorityScheduler(
+            DATABASE_URL, registry=coordinator.followup.registry
+        )
+        blocked = coordinator.blocked_dispatch_operations(
+            project_ids=(scope["project_id"],)
+        )
+        assert first_id in blocked and second_id not in blocked
+        ready = scheduler.pending_operations(
+            limit=1, project_ids=(scope["project_id"],), excluded_operation_ids=blocked
+        )
+        assert ready == ((second_id, scope["project_id"]),)
+        assert model.calls == 0
+    finally:
+        helper.doCleanups()
+
+
+def test_automatic_review_exhausted_window_allowance_stops_scheduling():
+    ensure_migrated()
+    helper = scripted_book.BookToChapterAuthorityVerticalPostgresTests()
+    try:
+        fixture = helper._new_book_fixture(target_chapter_count=1)
+        _accept_chapter(helper, fixture, 1)
+        coordinator, scope, model, run_id = _automatic_review(
+            fixture, maximum_windows=1, window_codepoints=64
+        )
+        progress = coordinator.automatic_tick(**scope, run_id=run_id)
+        assert not progress["review_complete"]
+        calls = model.calls
+        assert (
+            coordinator.automatic_tick(**scope, run_id=run_id)["status"]
+            == "BUDGET_PAUSED"
+        )
+        assert (
+            coordinator.automatic_candidates(principal=scope["principal"], limit=1)
+            == []
+        )
+        assert model.calls == calls
+    finally:
+        helper.doCleanups()
+
+
+def test_automatic_remote_pair_enters_native_plan_disposition_and_located_recheck():
+    from psycopg.types.json import Jsonb
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+    from novel_forge.modules.book_followup_authority.prose_review import (
+        completion_digest,
+    )
+
+    class PairedReviewPort(ProseFixturePort):
+        include_finding = True
+        recheck = False
+
+        def invoke(self, request, **kwargs):
+            result = super().invoke(request, **kwargs)
+            window = request.require_input("longform_prose_review_window").content[
+                "window"
+            ]
+            if not window.get("relation_hypothesis") and not self.recheck:
+                result.output["findings"] = []
+            else:
+                finding = result.output["findings"][0]
+                finding.update(
+                    judgment="INTENTIONAL" if self.recheck else "ISSUE",
+                    severity="NONE" if self.recheck else "MAJOR",
+                )
+                finding["evidence"] = [
+                    {
+                        "asset_version_id": span["asset_version_id"],
+                        "text_hash": span["text_hash"],
+                        "start": span["start"],
+                        "end": span["start"] + 2,
+                        "quote": span["text"][:2],
+                    }
+                    for span in window["spans"]
+                ]
+            return result
+
+    ensure_migrated()
+    helper = scripted_book.BookToChapterAuthorityVerticalPostgresTests()
+    try:
+        fixture = helper._new_book_fixture(target_chapter_count=3)
+        project = fixture["project_id"]
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            template = uow.repositories.asset_documents.require(
+                project_id=project, asset_version_id=f"{project}:chapter-plan-v2"
+            )
+            content = {**template.content, "chapter": 3, "title": "The Promise Returns"}
+            uow.cursor.execute(
+                "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'chapter_plan')",
+                [f"{project}:chapter-plan-3", project],
+            )
+            uow.cursor.execute(
+                "INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'integration-fixture.v1')",
+                [
+                    f"{project}:chapter-plan-v3",
+                    f"{project}:chapter-plan-3",
+                    Jsonb(content),
+                    completion_digest(content),
+                ],
+            )
+            uow.commit()
+        for number in (1, 2, 3):
+            _accept_chapter(helper, fixture, number)
+        model = PairedReviewPort()
+        coordinator, scope, model, run_id = _automatic_review(
+            fixture, model=model, relation_window_limit=1
+        )
+        for _ in range(20):
+            progress = coordinator.automatic_tick(**scope, run_id=run_id)
+            if progress.get("review_complete"):
+                break
+        assert progress["review_complete"]
+        remote = [
+            window
+            for window in progress["manifest"]["windows"]
+            if window.get("relation_hypothesis")
+        ]
+        assert len(remote) == 1
+        assert [span["chapter_number"] for span in remote[0]["spans"]] == [1, 3]
+        assert progress["findings"][0]["status"] == "OPEN"
+        _assert_native_plan_consumer(coordinator, scope, run_id)
+        original = coordinator.report(**scope, run_id=run_id)
+        assert (
+            original["findings"][0]["disposition"]["decision"] == "FUTURE_PLAN_PROPOSAL"
+        )
+        assert (
+            original["findings"][0]["disposition"]["resolution_evidence"]["resolution"]
+            == "UNRESOLVED"
+        )
+        model.recheck = True
+        recheck = coordinator.start(
+            **scope,
+            **metadata("remote-recheck"),
+            policy=progress["manifest"]["policy"],
+            evidence_ranges=[
+                {key: span[key] for key in ("asset_version_id", "start", "end")}
+                for span in remote[0]["spans"]
+            ],
+        )
+        checked = coordinator.automatic_tick(**scope, run_id=recheck["run_id"])
+        assert checked["review_complete"]
+        assert checked["findings"][0]["status"] == "CONFLICT_REQUIRES_REVIEW"
+        completion = PostgresBookCompletionAuthority(
+            DATABASE_URL, application_build_id="prose-test", commit_sha="e" * 40
+        )
+        BookEditorialWorkflow(completion).record(
+            **scope,
+            **metadata("remote-policy"),
+            expected_version=0,
+            kind="POLICY",
+            content={
+                "policy": {
+                    "policy_version": "recheck-v1",
+                    "enabled": True,
+                    "authorized_reviewers": [scope["principal"].principal_id],
+                    "minimum_signatures": 1,
+                    "allow_minor_exceptions": False,
+                },
+                "approval_rationale": "scripted named-reviewer boundary test",
+            },
+        )
+        finding = checked["findings"][0]
+        counter = next(
+            item for item in checked["operations"] if not item.get("source_run_id")
+        )
+        disposition = coordinator.disposition(
+            **scope,
+            **metadata("remote-dismiss"),
+            run_id=recheck["run_id"],
+            expected_version=checked["expected_version"],
+            lineage_id=finding["lineage_id"],
+            finding_digest=finding["finding_digest"],
+            decision="DISMISSED_WITH_EVIDENCE",
+            rationale="fixture counterevidence covers both original locations",
+            consumer_asset_version_id=counter["report_asset_version_id"],
+        )
+        assert (
+            disposition["resolution_evidence"]["resolution"]
+            == "DISMISSED_BY_AUTHORIZED_REVIEWER"
+        )
+        assert (
+            coordinator.report(**scope, run_id=run_id)["manifest"]
+            == original["manifest"]
+        )
+        assert checked["independent_human_review"] == "NOT_RUN"
+    finally:
+        helper.doCleanups()
+
+
 def test_native_prose_review_durable_resume_and_editorial_policy():
     ensure_migrated()
     helper = scripted_book.BookToChapterAuthorityVerticalPostgresTests()
@@ -476,7 +887,7 @@ def test_prose_window_uses_real_external_effect_and_materialized_provider_inputs
     ensure_migrated()
     helper = scripted_book.BookToChapterAuthorityVerticalPostgresTests()
     try:
-        fixture = helper._new_book_fixture(target_chapter_count=1)
+        fixture = helper._new_book_fixture(target_chapter_count=2)
         delegated = fixture["authority"].submit_chapter(
             helper._chapter_command(fixture, chapter_number=1),
             principal=fixture["principal"],
@@ -531,6 +942,8 @@ def test_prose_window_uses_real_external_effect_and_materialized_provider_inputs
                 "overlap_codepoints": 64,
                 "context_token_budget": 16000,
                 "maximum_windows": 3,
+                "execution_mode": "AUTOMATIC",
+                "follow_acceptance": True,
             },
         )
 
@@ -565,14 +978,11 @@ def test_prose_window_uses_real_external_effect_and_materialized_provider_inputs
                 [operation_id],
             )
             uow.commit()
-        recovery_metadata = metadata("effect-recover")
-        progress = coordinator.advance(
-            **scope,
-            run_id=run["run_id"],
-            expected_version=interrupted["expected_version"],
-            **recovery_metadata,
-        )
+        _accept_chapter(helper, fixture, 2)
+        progress = coordinator.automatic_tick(**scope, run_id=run["run_id"])
         assert progress["operations"][0]["status"] == "SUCCEEDED"
+        assert not progress["source_current"]
+        assert progress["manifest"] == interrupted["manifest"]
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 "SELECT status,request_payload FROM authority_external_effect WHERE operation_id=%s",
@@ -590,5 +1000,13 @@ def test_prose_window_uses_real_external_effect_and_materialized_provider_inputs
                 request_payload["_production_execution"]["execution_binding_domain"]
                 == "longform_prose_review"
             )
+        following = coordinator.automatic_tick(**scope, run_id=run["run_id"])
+        assert following["run_id"] != run["run_id"]
+        assert (
+            coordinator.report(**scope, run_id=following["run_id"])["operations"][0][
+                "operation_id"
+            ]
+            == operation_id
+        )
     finally:
         helper.doCleanups()
