@@ -1,0 +1,969 @@
+{
+  "evidence_kind": "POSTGRESQL_INTEGRATION_FIXTURE_NOT_REAL_PROVIDER",
+  "proposal": {
+    "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+    "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+    "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+    "source_type": "LONGFORM_RECAP",
+    "source_evidence_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:impact-recap:v1",
+    "target_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+    "proposed_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:proposed-book-plan:v1",
+    "target_contract_type": "BOOK",
+    "target_logical_key": "book:main",
+    "target_execution_scope": "FROZEN",
+    "semantic_diff": [
+      {
+        "after": [
+          "promise:river-crossing"
+        ],
+        "field": "required_events",
+        "before": [
+          "promise:river-rescue"
+        ],
+        "change_type": "REQUIRED_EVENT_CHANGED"
+      }
+    ],
+    "risk": "HIGH",
+    "status": "ACTIVE",
+    "proposal_operation_id": "5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+    "approval_operation_id": "84bed67f-32d8-481e-9454-59d4e98fbe7a",
+    "activation_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+    "stable_idempotency_key": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:implicit-change",
+    "failure_reason": "",
+    "version": 4,
+    "created_at": "2026-09-26 12:56:15.770972+00:00",
+    "updated_at": "2026-09-26 12:56:16.323137+00:00"
+  },
+  "immutable_proposal": {
+    "risk": "HIGH",
+    "type": "PlanChangeProposal",
+    "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+    "source_type": "LONGFORM_RECAP",
+    "semantic_diff": [
+      {
+        "after": [
+          "promise:river-crossing"
+        ],
+        "field": "required_events",
+        "before": [
+          "promise:river-rescue"
+        ],
+        "change_type": "REQUIRED_EVENT_CHANGED"
+      }
+    ],
+    "contract_version": "plan_change-propose-v1",
+    "source_asset_versions": [
+      "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:impact-recap:v1",
+      "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:proposed-book-plan:v1"
+    ],
+    "target_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+    "proposed_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:proposed-book-plan:v1",
+    "semantic_impact_discovery": {
+      "policy": {
+        "version": "bounded-plan-impact.v1",
+        "plan_limit": 128,
+        "prose_limit": 32,
+        "impact_limit": 64,
+        "evidence_limit": 8,
+        "hypothesis_limit": 32,
+        "prose_character_limit": 100000
+      },
+      "coverage": {
+        "prose_order": "LATEST_ACCEPTED_FIRST",
+        "plan_scan_count": 5,
+        "prose_scan_count": 0,
+        "hypotheses_omitted": 0,
+        "matched_plan_count": 3,
+        "plan_scan_truncated": false,
+        "prose_scan_truncated": false,
+        "semantic_exhaustiveness": "NOT_PROVEN",
+        "prose_character_truncated_versions": []
+      },
+      "hypotheses": [
+        {
+          "relation": "SHARED_CHANGED_COMMITMENT",
+          "candidate": {
+            "freshness": "CURRENT",
+            "logical_key": "chapter:volume-2:rescue",
+            "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+            "contract_type": "CHAPTER",
+            "binding_version": 0,
+            "execution_scope": "PLANNED",
+            "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1",
+            "active_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1"
+          },
+          "confidence": 0.4,
+          "uncertainty": [
+            "shared wording may be incidental",
+            "causal direction and relevance require Authority review"
+          ],
+          "hypothesis_id": "semantic-impact:cc0573265e36169b2ead780f4b439befa5a4c5308a9e9098c1051a9597f6d3d0",
+          "plan_evidence": [
+            {
+              "end": 20,
+              "quote": "promise:river-rescue",
+              "start": 0,
+              "value_hash": "1fe40f05455436266a0507c759715a1e9dffb0fa6b71e0c3005f483e1c6f1942",
+              "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+              "json_pointer": "/required_payoffs/0",
+              "source_position": {
+                "side": "before",
+                "value": "promise:river-rescue",
+                "json_pointer": "/required_events/0"
+              },
+              "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1"
+            }
+          ],
+          "relation_status": "UNVERIFIED",
+          "confidence_basis": "DETERMINISTIC_LEXICAL_RETRIEVAL_NOT_CAUSAL_PROOF",
+          "declared_dependents": [
+            {
+              "freshness": "CURRENT",
+              "logical_key": "chapter:future-derived",
+              "content_hash": "sha256:73e81d9dabc0a196bbfcdff549f3b0899db863aa3999abf4e62848de511cbc8e",
+              "contract_type": "CHAPTER",
+              "binding_version": 0,
+              "execution_scope": "PLANNED",
+              "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-future-derived:v1",
+              "active_asset_version_id": null
+            }
+          ],
+          "default_disposition": "DEFER",
+          "accepted_prose_evidence": [],
+          "dependency_scope_truncated": false
+        },
+        {
+          "relation": "SHARED_CHANGED_COMMITMENT",
+          "candidate": {
+            "freshness": "CURRENT",
+            "logical_key": "chapter:volume-3:homonym",
+            "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+            "contract_type": "CHAPTER",
+            "binding_version": 0,
+            "execution_scope": "PLANNED",
+            "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-3-homonym:v1",
+            "active_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-3-homonym:v1"
+          },
+          "confidence": 0.4,
+          "uncertainty": [
+            "shared wording may be incidental",
+            "causal direction and relevance require Authority review"
+          ],
+          "hypothesis_id": "semantic-impact:4e2c74da429233cd107e49856b87927b93d5de1057f8983175dae8099ac00348",
+          "plan_evidence": [
+            {
+              "end": 20,
+              "quote": "promise:river-rescue",
+              "start": 0,
+              "value_hash": "1fe40f05455436266a0507c759715a1e9dffb0fa6b71e0c3005f483e1c6f1942",
+              "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+              "json_pointer": "/required_payoffs/0",
+              "source_position": {
+                "side": "before",
+                "value": "promise:river-rescue",
+                "json_pointer": "/required_events/0"
+              },
+              "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-3-homonym:v1"
+            }
+          ],
+          "relation_status": "UNVERIFIED",
+          "confidence_basis": "DETERMINISTIC_LEXICAL_RETRIEVAL_NOT_CAUSAL_PROOF",
+          "declared_dependents": [],
+          "default_disposition": "DEFER",
+          "accepted_prose_evidence": [],
+          "dependency_scope_truncated": false
+        },
+        {
+          "relation": "SHARED_CHANGED_COMMITMENT",
+          "candidate": {
+            "freshness": "CURRENT",
+            "logical_key": "chapter:volume-1:accepted",
+            "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+            "contract_type": "CHAPTER",
+            "binding_version": 0,
+            "execution_scope": "EXECUTED",
+            "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-1-accepted:v1",
+            "active_asset_version_id": null
+          },
+          "confidence": 0.4,
+          "uncertainty": [
+            "shared wording may be incidental",
+            "causal direction and relevance require Authority review"
+          ],
+          "hypothesis_id": "semantic-impact:a17439b8426162753377e559bce7b478e2246b89a82c7c7d77c9a842f0e8f9fa",
+          "plan_evidence": [
+            {
+              "end": 20,
+              "quote": "promise:river-rescue",
+              "start": 0,
+              "value_hash": "1fe40f05455436266a0507c759715a1e9dffb0fa6b71e0c3005f483e1c6f1942",
+              "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+              "json_pointer": "/required_payoffs/0",
+              "source_position": {
+                "side": "before",
+                "value": "promise:river-rescue",
+                "json_pointer": "/required_events/0"
+              },
+              "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-1-accepted:v1"
+            }
+          ],
+          "relation_status": "UNVERIFIED",
+          "confidence_basis": "DETERMINISTIC_LEXICAL_RETRIEVAL_NOT_CAUSAL_PROOF",
+          "declared_dependents": [],
+          "default_disposition": "PRESERVE_HISTORY",
+          "accepted_prose_evidence": [],
+          "dependency_scope_truncated": false
+        }
+      ],
+      "corpus_digest": "f5fe901df821fb6330f00f5563305a867a5712c884a0dfe6770b600271f27c44",
+      "schema_version": "inferred-plan-impact.v1",
+      "corpus_manifest": [
+        {
+          "freshness": "CURRENT",
+          "logical_key": "book:main",
+          "content_hash": "sha256:560e0e665639bccd1907d3b2251f2d5a68c962c161e4579a22e741da50b02b90",
+          "contract_type": "BOOK",
+          "binding_version": 0,
+          "execution_scope": "FROZEN",
+          "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+          "active_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+        },
+        {
+          "freshness": "CURRENT",
+          "logical_key": "chapter:volume-2:rescue",
+          "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+          "contract_type": "CHAPTER",
+          "binding_version": 0,
+          "execution_scope": "PLANNED",
+          "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1",
+          "active_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1"
+        },
+        {
+          "freshness": "CURRENT",
+          "logical_key": "chapter:volume-3:homonym",
+          "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+          "contract_type": "CHAPTER",
+          "binding_version": 0,
+          "execution_scope": "PLANNED",
+          "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-3-homonym:v1",
+          "active_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-3-homonym:v1"
+        },
+        {
+          "freshness": "CURRENT",
+          "logical_key": "chapter:volume-3:market",
+          "content_hash": "sha256:7b7f3c4117e14b567d8583a15d973aa518c946b26eef9d1087dcccac8f454c74",
+          "contract_type": "CHAPTER",
+          "binding_version": 0,
+          "execution_scope": "PLANNED",
+          "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-3-market:v1",
+          "active_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-3-market:v1"
+        },
+        {
+          "freshness": "CURRENT",
+          "logical_key": "chapter:volume-1:accepted",
+          "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+          "contract_type": "CHAPTER",
+          "binding_version": 0,
+          "execution_scope": "EXECUTED",
+          "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-1-accepted:v1",
+          "active_asset_version_id": null
+        }
+      ],
+      "hard_dependency_created": false,
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "proposed_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:proposed-book-plan:v1"
+    },
+    "authority_decision_required": true,
+    "direct_plan_mutation_allowed": false
+  },
+  "decision": {
+    "decision_id": "plan-change-decision:plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+    "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+    "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+    "decision": "APPROVED",
+    "authority_type": "BOOK_DESIGN_AUTHORITY",
+    "authority_version": "fixture-review.v1",
+    "decision_operation_id": "84bed67f-32d8-481e-9454-59d4e98fbe7a",
+    "evidence": {
+      "fixture_protocol_only": true,
+      "semantic_impact_dispositions": [
+        {
+          "evidence": [
+            {
+              "end": 20,
+              "quote": "promise:river-rescue",
+              "start": 0,
+              "value_hash": "1fe40f05455436266a0507c759715a1e9dffb0fa6b71e0c3005f483e1c6f1942",
+              "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+              "json_pointer": "/required_payoffs/0",
+              "source_position": {
+                "side": "before",
+                "value": "promise:river-rescue",
+                "json_pointer": "/required_events/0"
+              },
+              "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1"
+            }
+          ],
+          "rationale": "second-volume rescue relies on the promise removed from the active trajectory",
+          "disposition": "CONFIRMED",
+          "hypothesis_id": "semantic-impact:cc0573265e36169b2ead780f4b439befa5a4c5308a9e9098c1051a9597f6d3d0",
+          "relation_status": "AUTHORITY_CONFIRMED"
+        },
+        {
+          "evidence": [
+            {
+              "end": 20,
+              "quote": "promise:river-rescue",
+              "start": 0,
+              "value_hash": "1fe40f05455436266a0507c759715a1e9dffb0fa6b71e0c3005f483e1c6f1942",
+              "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+              "json_pointer": "/required_payoffs/0",
+              "source_position": {
+                "side": "before",
+                "value": "promise:river-rescue",
+                "json_pointer": "/required_events/0"
+              },
+              "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-3-homonym:v1"
+            }
+          ],
+          "rationale": "third-volume phrase is a named festival; it does not require the removed rescue",
+          "disposition": "FALSE_POSITIVE",
+          "hypothesis_id": "semantic-impact:4e2c74da429233cd107e49856b87927b93d5de1057f8983175dae8099ac00348",
+          "relation_status": "DISPROVEN"
+        },
+        {
+          "rationale": "no Authority confirmation; no inferred mutation",
+          "disposition": "PRESERVE_HISTORY",
+          "hypothesis_id": "semantic-impact:a17439b8426162753377e559bce7b478e2246b89a82c7c7d77c9a842f0e8f9fa",
+          "relation_status": "UNVERIFIED"
+        }
+      ]
+    },
+    "decided_by": "plan-change-authority",
+    "decided_at": "2026-09-26 12:56:15.936692+00:00"
+  },
+  "impacts": [
+    {
+      "impact_id": "plan-impact:plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2:hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-future-derived:v1",
+      "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "impacted_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-future-derived:v1",
+      "dependency_path": [
+        "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+        "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-future-derived:v1"
+      ],
+      "execution_scope": "PLANNED",
+      "previous_freshness": "CURRENT",
+      "target_freshness": "IMPACTED",
+      "automatic_mutation_allowed": false,
+      "recorded_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "created_at": "2026-09-26 12:56:16.323137+00:00"
+    },
+    {
+      "impact_id": "plan-impact:plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2:hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1",
+      "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "impacted_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1",
+      "dependency_path": [
+        "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+        "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1"
+      ],
+      "execution_scope": "PLANNED",
+      "previous_freshness": "CURRENT",
+      "target_freshness": "IMPACTED",
+      "automatic_mutation_allowed": false,
+      "recorded_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "created_at": "2026-09-26 12:56:16.323137+00:00"
+    }
+  ],
+  "bindings_after_activation_and_revalidation": [
+    {
+      "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "logical_key": "book:main",
+      "execution_scope": "FROZEN",
+      "freshness": "STALE",
+      "version": 1
+    },
+    {
+      "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-future-derived:v1",
+      "logical_key": "chapter:future-derived",
+      "execution_scope": "PLANNED",
+      "freshness": "IMPACTED",
+      "version": 1
+    },
+    {
+      "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-1-accepted:v1",
+      "logical_key": "chapter:volume-1:accepted",
+      "execution_scope": "EXECUTED",
+      "freshness": "CURRENT",
+      "version": 0
+    },
+    {
+      "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1",
+      "logical_key": "chapter:volume-2:rescue",
+      "execution_scope": "PLANNED",
+      "freshness": "CURRENT",
+      "version": 2
+    },
+    {
+      "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-3-homonym:v1",
+      "logical_key": "chapter:volume-3:homonym",
+      "execution_scope": "PLANNED",
+      "freshness": "CURRENT",
+      "version": 0
+    },
+    {
+      "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-3-market:v1",
+      "logical_key": "chapter:volume-3:market",
+      "execution_scope": "PLANNED",
+      "freshness": "CURRENT",
+      "version": 0
+    },
+    {
+      "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-4-late:v1",
+      "logical_key": "chapter:volume-4:late",
+      "execution_scope": "PLANNED",
+      "freshness": "CURRENT",
+      "version": 0
+    },
+    {
+      "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:proposed-book-plan:v1",
+      "logical_key": "book:main",
+      "execution_scope": "FROZEN",
+      "freshness": "CURRENT",
+      "version": 0
+    }
+  ],
+  "invalidations": [
+    {
+      "invalidation_id": "361b9808-ad7d-5ef5-805b-6572f7e7fc1b",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "authority-output:c8d89765-2d8c-45bb-894f-4d4a94e661ba:story_design.transition.receipt:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "approved PlanChange semantic impact",
+        "evidence": {
+          "changes": [
+            {
+              "after": [
+                "promise:river-crossing"
+              ],
+              "field": "required_events",
+              "before": [
+                "promise:river-rescue"
+              ],
+              "change_type": "REQUIRED_EVENT_CHANGED"
+            }
+          ],
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning",
+          "required_events"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "5a204645-000c-57c2-92c5-3ee0012f98ec",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "authority-output:f80f963a-5bf3-41ac-b13a-3fdf57d155d6:story_design.transition.receipt:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "approved PlanChange semantic impact",
+        "evidence": {
+          "changes": [
+            {
+              "after": [
+                "promise:river-crossing"
+              ],
+              "field": "required_events",
+              "before": [
+                "promise:river-rescue"
+              ],
+              "change_type": "REQUIRED_EVENT_CHANGED"
+            }
+          ],
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning",
+          "required_events"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "62cc7461-4085-5301-a776-c6fb4f32a9d0",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "authority-output:5d1fbb80-0e34-4363-930a-ad08aa3b54e2:plan_change.proposal:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "approved PlanChange semantic impact",
+        "evidence": {
+          "changes": [
+            {
+              "after": [
+                "promise:river-crossing"
+              ],
+              "field": "required_events",
+              "before": [
+                "promise:river-rescue"
+              ],
+              "change_type": "REQUIRED_EVENT_CHANGED"
+            }
+          ],
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning",
+          "required_events"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "722beaef-a7f4-5769-803f-bac5a9434d4c",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "authority-output:4372f6a9-2a11-463f-9685-d3db4eddc2b4:story_design.transition.receipt:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "approved PlanChange semantic impact",
+        "evidence": {
+          "changes": [
+            {
+              "after": [
+                "promise:river-crossing"
+              ],
+              "field": "required_events",
+              "before": [
+                "promise:river-rescue"
+              ],
+              "change_type": "REQUIRED_EVENT_CHANGED"
+            }
+          ],
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning",
+          "required_events"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "75afcb1e-571e-5724-a33b-67a2d3ac5f87",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "authority-output:05b4b754-6472-4ce0-aa50-a0774d8c069e:story_design.transition.receipt:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "approved PlanChange semantic impact",
+        "evidence": {
+          "changes": [
+            {
+              "after": [
+                "promise:river-crossing"
+              ],
+              "field": "required_events",
+              "before": [
+                "promise:river-rescue"
+              ],
+              "change_type": "REQUIRED_EVENT_CHANGED"
+            }
+          ],
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning",
+          "required_events"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "75bc03f2-6958-5b42-ba60-b96ccf1f8f21",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "authority-output:846acc28-3457-4e8d-9a00-26e5967a3c94:story_design.transition.receipt:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "approved PlanChange semantic impact",
+        "evidence": {
+          "changes": [
+            {
+              "after": [
+                "promise:river-crossing"
+              ],
+              "field": "required_events",
+              "before": [
+                "promise:river-rescue"
+              ],
+              "change_type": "REQUIRED_EVENT_CHANGED"
+            }
+          ],
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning",
+          "required_events"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "7e498a34-2a4a-5019-a2ba-8017f2988d02",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "authority-output:84bed67f-32d8-481e-9454-59d4e98fbe7a:plan_change.decision:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "approved PlanChange semantic impact",
+        "evidence": {
+          "changes": [
+            {
+              "after": [
+                "promise:river-crossing"
+              ],
+              "field": "required_events",
+              "before": [
+                "promise:river-rescue"
+              ],
+              "change_type": "REQUIRED_EVENT_CHANGED"
+            }
+          ],
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning",
+          "required_events"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "87c29fe0-7aa7-5d0a-aa13-7c9693c7d665",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "authority-output:3f5668c9-2371-4342-993a-d9a06901e659:story_design.transition.receipt:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "approved PlanChange semantic impact",
+        "evidence": {
+          "changes": [
+            {
+              "after": [
+                "promise:river-crossing"
+              ],
+              "field": "required_events",
+              "before": [
+                "promise:river-rescue"
+              ],
+              "change_type": "REQUIRED_EVENT_CHANGED"
+            }
+          ],
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning",
+          "required_events"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "8c1e6a33-507a-5be7-bd3b-674cef125bf1",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "authority-output:43d962be-3023-460f-90b7-c5b524006e30:plan_change.activation:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "approved PlanChange semantic impact",
+        "evidence": {
+          "changes": [
+            {
+              "after": [
+                "promise:river-crossing"
+              ],
+              "field": "required_events",
+              "before": [
+                "promise:river-rescue"
+              ],
+              "change_type": "REQUIRED_EVENT_CHANGED"
+            }
+          ],
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning",
+          "required_events"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "cc9b2e03-71e4-57bb-8b85-234c7bf80a04",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "authority-output:2864770e-67fc-4280-bf2c-ed41700da869:story_design.transition.receipt:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "approved PlanChange semantic impact",
+        "evidence": {
+          "changes": [
+            {
+              "after": [
+                "promise:river-crossing"
+              ],
+              "field": "required_events",
+              "before": [
+                "promise:river-rescue"
+              ],
+              "change_type": "REQUIRED_EVENT_CHANGED"
+            }
+          ],
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning",
+          "required_events"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "e23bbccd-d91b-58f9-9b9a-fc07fea43b36",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "authority-output:4cc5a47a-445c-4958-a395-f3e06d4e67bb:story_design.transition.receipt:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "approved PlanChange semantic impact",
+        "evidence": {
+          "changes": [
+            {
+              "after": [
+                "promise:river-crossing"
+              ],
+              "field": "required_events",
+              "before": [
+                "promise:river-rescue"
+              ],
+              "change_type": "REQUIRED_EVENT_CHANGED"
+            }
+          ],
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning",
+          "required_events"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "e3436be4-4a83-5215-a7f7-805f6c3be87d",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-future-derived:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1",
+      "semantic_diff": {
+        "summary": "derived artifacts of an Authority-confirmed inferred plan impact",
+        "evidence": {
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+          "hypothesis_id": "semantic-impact:cc0573265e36169b2ead780f4b439befa5a4c5308a9e9098c1051a9597f6d3d0"
+        },
+        "dimensions": [
+          "narrative",
+          "plan",
+          "planning"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved inferred PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "inferred-plan-impact:plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2:hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-future-derived:v1",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-future-derived:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "Authority-confirmed inferred impact requires revalidation",
+        "evidence": {
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+          "corpus_digest": "f5fe901df821fb6330f00f5563305a867a5712c884a0dfe6770b600271f27c44",
+          "hypothesis_id": "semantic-impact:cc0573265e36169b2ead780f4b439befa5a4c5308a9e9098c1051a9597f6d3d0",
+          "plan_evidence": [
+            {
+              "end": 20,
+              "quote": "promise:river-rescue",
+              "start": 0,
+              "value_hash": "1fe40f05455436266a0507c759715a1e9dffb0fa6b71e0c3005f483e1c6f1942",
+              "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+              "json_pointer": "/required_payoffs/0",
+              "source_position": {
+                "side": "before",
+                "value": "promise:river-rescue",
+                "json_pointer": "/required_events/0"
+              },
+              "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1"
+            }
+          ]
+        },
+        "dimensions": [
+          "planning"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1"
+      },
+      "status": "OPEN",
+      "reason": "approved inferred PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": null,
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": null
+    },
+    {
+      "invalidation_id": "inferred-plan-impact:plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2:hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1",
+      "project_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629",
+      "book_id": "book-18aed894-6c3a-40bb-ba13-5c1eafe63c23",
+      "target_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1",
+      "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+      "semantic_diff": {
+        "summary": "Authority-confirmed inferred impact requires revalidation",
+        "evidence": {
+          "proposal_id": "plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+          "corpus_digest": "f5fe901df821fb6330f00f5563305a867a5712c884a0dfe6770b600271f27c44",
+          "hypothesis_id": "semantic-impact:cc0573265e36169b2ead780f4b439befa5a4c5308a9e9098c1051a9597f6d3d0",
+          "plan_evidence": [
+            {
+              "end": 20,
+              "quote": "promise:river-rescue",
+              "start": 0,
+              "value_hash": "1fe40f05455436266a0507c759715a1e9dffb0fa6b71e0c3005f483e1c6f1942",
+              "content_hash": "sha256:4a47febc0cd6e5d27340941ac7485be5b01a92bdf0a6269eea58e59e5cd977b7",
+              "json_pointer": "/required_payoffs/0",
+              "source_position": {
+                "side": "before",
+                "value": "promise:river-rescue",
+                "json_pointer": "/required_events/0"
+              },
+              "asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1"
+            }
+          ]
+        },
+        "dimensions": [
+          "planning"
+        ],
+        "source_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:book:book:main:1:v1",
+        "replacement_asset_version_id": "hierarchical-plan-0782716b-06a9-4004-80cb-193f4677c629:chapter-volume-2-rescue:v1"
+      },
+      "status": "REQUALIFIED",
+      "reason": "approved inferred PlanChange plan-change:5d1fbb80-0e34-4363-930a-ad08aa3b54e2",
+      "created_by_operation_id": "43d962be-3023-460f-90b7-c5b524006e30",
+      "resolved_by_operation_id": "d6b20f05-822f-4ae6-8109-c93b5e0bd758",
+      "created_at": "2026-09-26 12:56:16.323137+00:00",
+      "resolved_at": "2026-09-26 12:56:16.557412+00:00"
+    }
+  ]
+}

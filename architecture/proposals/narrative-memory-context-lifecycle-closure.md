@@ -9,19 +9,19 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `f0dca5e313128fe281c90585b140d60f630ce840`
+Reality baseline: `7f1510d40d0ed2dd3ede575806222fce17cbc8bd`
 Baseline implementation identity:
-`sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71`
+`sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-21",
+  "reviewed_on": "2026-09-26",
   "review_due": "2026-10-08",
   "reality_baseline": {
-    "sha": "f0dca5e313128fe281c90585b140d60f630ce840",
-    "implementation_tree_sha": "sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71"
+    "sha": "7f1510d40d0ed2dd3ede575806222fce17cbc8bd",
+    "implementation_tree_sha": "sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -155,6 +155,8 @@ repeated edits and Revision; Craft locates the same Unicode text without trimmin
 changes constrain existing Context/prose consumers and do not introduce a Digest or
 retention owner. These persistence records do not supply Gate B–E acceptance evidence. Gates B–E below remain proposed design,
 not executable contracts or proven invariants; their stated bounds require qualification.
+
+Current scope review (2026-09-26): Actor v2 reads owned accepted commitments and private state across acceptance boundaries; complete World/Director role input is required within the configured budget. Automatic incremental prose review and inferred future-plan impacts reuse existing accepted sources, projections and native Authorities. None implements the proposed Digest, retention, representation-generation or purge gates below.
 
 ## 7. Gate B — Structured Narrative Digest
 

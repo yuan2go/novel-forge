@@ -1,0 +1,28 @@
+{
+  "database_identity": [
+    "nf_final_closure_routing_test",
+    "172.17.0.2/32",
+    5432,
+    "16.15 (Debian 16.15-1.pgdg12+2)",
+    "64"
+  ],
+  "extensions": [
+    [
+      "pgcrypto",
+      "1.3"
+    ],
+    [
+      "plpgsql",
+      "1.0"
+    ],
+    [
+      "vector",
+      "0.8.6"
+    ]
+  ],
+  "host_endpoint": "127.0.0.1:59270",
+  "container": "nf-narrative-feedback-20260926",
+  "storage": "owned disposable tmpfs, not production",
+  "matrix_databases_separate": true,
+  "schema_change_in_this_work": false
+}

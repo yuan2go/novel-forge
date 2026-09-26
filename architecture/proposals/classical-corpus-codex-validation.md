@@ -9,20 +9,20 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `f0dca5e313128fe281c90585b140d60f630ce840`
+Reality baseline: `7f1510d40d0ed2dd3ede575806222fce17cbc8bd`
 Baseline implementation identity:
-`sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71`
+`sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-21",
+  "reviewed_on": "2026-09-26",
   "review_due": "2026-10-08",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "f0dca5e313128fe281c90585b140d60f630ce840",
-    "implementation_tree_sha": "sha256:701355774a24fcc91c51874f4d4b3fcee2a2b1ea361444f7e269c3d4d95aca71"
+    "sha": "7f1510d40d0ed2dd3ede575806222fce17cbc8bd",
+    "implementation_tree_sha": "sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -127,6 +127,8 @@ preservation change the existing review/revision consumer contract; G4 must bind
 implementation identity and cannot reuse the older contract's qualification. These backend
 repairs supply no real corpus consumption or independent generator evaluation. The original Craft fixture corpus does not perform this campaign, establish
 classical-text consumption, authorize model spend or supply independent editorial proof.
+
+Current scope review (2026-09-26): Native generator, Actor and longform reviewer feedback now uses independent adjudications and task-scoped routing; accepted Craft realization influences later selection. This is engineering wiring, not G3 corpus coverage or G4 controlled creative evidence. Original campaign failures, finite authorization and independent editorial requirements remain unchanged.
 
 ## 5. G3 — bounded analysis, governance, retrieval, and consumption
 

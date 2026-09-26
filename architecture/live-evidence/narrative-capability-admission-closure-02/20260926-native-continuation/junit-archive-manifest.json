@@ -1,0 +1,62 @@
+{
+  "final/craft-impact.xml": {
+    "archive": "final/craft-impact.xml.gz",
+    "uncompressed_sha256": "1e18575e2e40a246598eabdd685a699c8a60f75ffacfcb3942ab28f8a8a9d97e",
+    "uncompressed_bytes": 2572
+  },
+  "final/prose-recovery.xml": {
+    "archive": "final/prose-recovery.xml.gz",
+    "uncompressed_sha256": "8b237367f468408caa217acc118e31c9a854b384058191a9195f0c8d680e006d",
+    "uncompressed_bytes": 15529
+  },
+  "final/actors.xml": {
+    "archive": "final/actors.xml.gz",
+    "uncompressed_sha256": "54acf9bc17209c396c1feb8e76a7c48bf8a770ac24a3fc9a0e1f9598921caaa2",
+    "uncompressed_bytes": 14487097
+  },
+  "final/unit.xml": {
+    "archive": "final/unit.xml.gz",
+    "uncompressed_sha256": "6b519bdac032be2a3c8165c5d6d89f1a1ae77714fcaec3e5550812c3d6f9d760",
+    "uncompressed_bytes": 94194
+  },
+  "final/routing.xml": {
+    "archive": "final/routing.xml.gz",
+    "uncompressed_sha256": "482272ee4cf38d5257e21123aa7e261f0b413035191fac21ff5f003fe17a63c2",
+    "uncompressed_bytes": 15789
+  },
+  "final/hierarchy.xml": {
+    "archive": "final/hierarchy.xml.gz",
+    "uncompressed_sha256": "527ae4a5f0cdd1f0de38b7496dd0b2170292a0270d39aee92bce575fc62cbe16",
+    "uncompressed_bytes": 6003054
+  },
+  "prior-final-attempt/craft-impact.xml": {
+    "archive": "prior-final-attempt/craft-impact.xml.gz",
+    "uncompressed_sha256": "84a7a0abda92f6f171adb66ed04e33765773f4ca4572ed79a0f6bc769c72bb96",
+    "uncompressed_bytes": 26148
+  },
+  "prior-final-attempt/prose-recovery.xml": {
+    "archive": "prior-final-attempt/prose-recovery.xml.gz",
+    "uncompressed_sha256": "37c8f448d929e063018d25765fc2532ebb29cd000d2a965aba2bb280d0a00e2f",
+    "uncompressed_bytes": 39949
+  },
+  "prior-final-attempt/actors.xml": {
+    "archive": "prior-final-attempt/actors.xml.gz",
+    "uncompressed_sha256": "c7de3d8ed81ab86e948edd84d8599ccbe013df178ad9c4c8407375bf49c33b35",
+    "uncompressed_bytes": 4887
+  },
+  "prior-final-attempt/unit.xml": {
+    "archive": "prior-final-attempt/unit.xml.gz",
+    "uncompressed_sha256": "a03e201ffb180aa21313fa16d40bbb411cf366f7e429bfd150cd5f5b792fa029",
+    "uncompressed_bytes": 100518
+  },
+  "prior-final-attempt/routing.xml": {
+    "archive": "prior-final-attempt/routing.xml.gz",
+    "uncompressed_sha256": "31d4ed871b700b1f7f835ebb81af8712b3d7d006475f27add80d204f69f6f6a8",
+    "uncompressed_bytes": 200925
+  },
+  "prior-final-attempt/hierarchy.xml": {
+    "archive": "prior-final-attempt/hierarchy.xml.gz",
+    "uncompressed_sha256": "8613f351507304ad4abc6a56cb7341acc1d03df673ab92c2c67a473bef6b2838",
+    "uncompressed_bytes": 291
+  }
+}

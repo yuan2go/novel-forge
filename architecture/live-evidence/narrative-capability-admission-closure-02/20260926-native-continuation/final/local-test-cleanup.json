@@ -1,0 +1,7 @@
+{
+  "owned_local_disposable_database": "nf_narrative_feedback_20260926_test",
+  "transport": "local Unix socket /tmp/.s.PGSQL.5432",
+  "status": "REMOVED",
+  "active_connections_before": 0,
+  "reason": "Initial migration attempt lacked pgvector; original production database and services untouched."
+}

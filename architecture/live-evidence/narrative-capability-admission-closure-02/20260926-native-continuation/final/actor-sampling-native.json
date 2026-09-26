@@ -1,0 +1,976 @@
+{
+  "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+  "synthetic_provider_and_human_fixture": true,
+  "actual_real_model_calls": 0,
+  "actual_human_evaluations": 0,
+  "project_id": "project-6789d87cb2b4445cbc4e85ef90dbac74",
+  "book_id": "book:project-6789d87cb2b4445cbc4e85ef90dbac74",
+  "book_run_id": "book-run:322dd6bb-2d48-46c1-8f0d-165d806f7a84",
+  "source_operation_id": "58f9c836-8ccd-4533-8bfe-c833aa08da81",
+  "sample_operation_id": "65772648-8084-4cdc-8dc2-c93998062567",
+  "formal_acceptances": [
+    {
+      "chapter": 1,
+      "revision_id": "reality:sha256:c684bbf3601be16949f94c5599861246c696167059027b212875f1578730d9ec",
+      "obligation": {
+        "state": {
+          "stale": false,
+          "status": "OPEN",
+          "overdue": false,
+          "summary": "Mara promises to protect the witnesses until they reach sanctuary.",
+          "urgency": "MEDIUM",
+          "model_id": "scripted_provider_v2-canon_extraction",
+          "priority": "MEDIUM",
+          "claim_kind": "OBJECTIVE_EVENT",
+          "provider_id": "scripted_provider_v2",
+          "character_id": "mara",
+          "dependencies": [],
+          "evidence_end": 349,
+          "actual_payoff": {},
+          "introduced_at": {
+            "chapter": 1
+          },
+          "obligation_id": "mara:protect-witnesses",
+          "target_window": {
+            "status": "UNSCHEDULED",
+            "to_chapter": 0,
+            "from_chapter": 0
+          },
+          "evidence_quote": "Mara promises to protect the witnesses until they reach sanctuary.",
+          "evidence_start": 283,
+          "extractor_type": "provider_semantic_extractor",
+          "linked_arc_ids": [],
+          "opened_chapter": 1,
+          "prompt_version": "prompt-system:chapter-generation-pack@v1",
+          "expected_payoff": {},
+          "obligation_type": "PROMISE",
+          "payoff_evidence": {},
+          "linked_event_ids": [],
+          "grounded_claim_id": "sha256:96ce839cdbe4f85961bb1c9504ac3383fbae9d3652c8064ad75827fc543a0d07",
+          "linked_volume_ids": [],
+          "reader_visibility": "PARTIAL",
+          "approval_resolution": {
+            "decision": "APPROVE",
+            "change_id": "canon-change:4f5b4d0db22e6bcb70257bf0ad0cd33f5e077dd786baff11785134455ec8d25e",
+            "approval_decision_asset_version_id": ""
+          },
+          "current_development": "Mara promises to protect the witnesses until they reach sanctuary.",
+          "development_history": [
+            {
+              "status": "OPEN",
+              "chapter": 1,
+              "development": "Mara promises to protect the witnesses until they reach sanctuary."
+            }
+          ],
+          "lifecycle_migration": {
+            "source_status": "OPEN",
+            "legacy_adapter": true,
+            "source_from_status": "",
+            "target_window_inferred": false
+          },
+          "resolution_evidence": [],
+          "approval_requirement": "NONE",
+          "linked_character_ids": [],
+          "source_revision_asset_version_id": "authority-output:851c15a4-9d59-489d-a73d-24e732414531:chapter.best_candidate:v1"
+        },
+        "coverage": "UNSPECIFIED",
+        "evidence": {
+          "span": {
+            "end": 349,
+            "start": 283
+          },
+          "quote": "Mara promises to protect the witnesses until they reach sanctuary.",
+          "model_id": "scripted_provider_v2-canon_extraction",
+          "text_hash": "sha256:6026a05e044e2d4b19e9609df7789e6e0e61f6a946c84b79e2017b74c8a1be21",
+          "project_id": "project-6789d87cb2b4445cbc4e85ef90dbac74",
+          "offset_unit": "UNICODE_CODE_POINT",
+          "provider_id": "scripted_provider_v2",
+          "excerpt_digest": "sha256:249d02a58b8f56573c62ce913c13ffdfba90fa1d4df2a1e981502c0d48eab674",
+          "prompt_version": "prompt-system:chapter-generation-pack@v1",
+          "previous_state_reference": "",
+          "source_revision_asset_version_id": "authority-output:851c15a4-9d59-489d-a73d-24e732414531:chapter.best_candidate:v1"
+        },
+        "identity": {
+          "components": {
+            "obligation_id": "mara:protect-witnesses"
+          },
+          "entity_key": "obligation_id=mara:protect-witnesses",
+          "identity_kind": "narrative_obligation"
+        },
+        "confidence": 1.0,
+        "entity_key": "obligation_id=mara:protect-witnesses",
+        "provenance": {
+          "trace_id": "5b9ad938-77be-4b86-b155-34051f91e4f9:accept",
+          "source_field": "canon_patch",
+          "source_ordinal": 0,
+          "chapter_outcome_id": "chapter-outcome:book:project-6789d87cb2b4445cbc4e85ef90dbac74:1:authority-output:9d57f768-72bf-4651-be7f-08402b0659c2:chapter.plan:v1",
+          "source_operation_id": "f7205e34-98e5-408e-a4a6-1d379377f43c",
+          "source_asset_version_id": "authority-output:8b683097-f532-4ace-aeb7-5b4ffe98cc8f:chapter.canon:v1",
+          "accepted_draft_asset_version_id": "authority-output:851c15a4-9d59-489d-a73d-24e732414531:chapter.best_candidate:v1"
+        },
+        "canon_status": "APPROVED_CANON_PATCH",
+        "entity_version": 1,
+        "source_chapter": 1,
+        "source_event_id": "narrative-event:sha256:7fc0983815de1104e33d99eb387cbceb76fbe36d6d3b3bb01b8f15b8bb4c5bc4",
+        "narrative_position": {
+          "chapter": 1
+        },
+        "supersedes_event_id": "",
+        "effective_to_chapter": 0,
+        "effective_from_chapter": 1
+      }
+    },
+    {
+      "chapter": 2,
+      "revision_id": "reality:sha256:a41099b35e2b7bdc0728ce91c0abd01e54d13da3327759adc44f1450b7018c28",
+      "obligation": {
+        "state": {
+          "stale": false,
+          "status": "OPEN",
+          "overdue": false,
+          "summary": "Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage.",
+          "urgency": "MEDIUM",
+          "model_id": "scripted_provider_v2-canon_extraction",
+          "priority": "MEDIUM",
+          "claim_kind": "OBJECTIVE_EVENT",
+          "provider_id": "scripted_provider_v2",
+          "character_id": "mara",
+          "dependencies": [],
+          "evidence_end": 462,
+          "actual_payoff": {},
+          "introduced_at": {
+            "chapter": 2
+          },
+          "obligation_id": "mara:protect-witnesses",
+          "target_window": {
+            "status": "UNSCHEDULED",
+            "to_chapter": 0,
+            "from_chapter": 0
+          },
+          "evidence_quote": "Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage.",
+          "evidence_start": 352,
+          "extractor_type": "provider_semantic_extractor",
+          "linked_arc_ids": [],
+          "opened_chapter": 2,
+          "prompt_version": "prompt-system:chapter-generation-pack@v1",
+          "expected_payoff": {},
+          "obligation_type": "PROMISE",
+          "payoff_evidence": {},
+          "linked_event_ids": [],
+          "grounded_claim_id": "sha256:9b11492a87fa0980ba7a88b5b729b559d53cb9ee83129150acac5cf778a0f6a3",
+          "linked_volume_ids": [],
+          "reader_visibility": "PARTIAL",
+          "approval_resolution": {
+            "decision": "APPROVE",
+            "change_id": "canon-change:b02f4898e7a6a4ec40baa3247357d14298a40afb4f4f3c76841532d8248b8f00",
+            "approval_decision_asset_version_id": ""
+          },
+          "current_development": "Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage.",
+          "development_history": [
+            {
+              "status": "OPEN",
+              "chapter": 1,
+              "development": "Mara promises to protect the witnesses until they reach sanctuary."
+            },
+            {
+              "status": "OPEN",
+              "chapter": 2,
+              "development": "Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage."
+            }
+          ],
+          "lifecycle_migration": {
+            "source_status": "OPEN",
+            "legacy_adapter": true,
+            "source_from_status": "OPEN",
+            "target_window_inferred": false
+          },
+          "resolution_evidence": [],
+          "approval_requirement": "NONE",
+          "linked_character_ids": [],
+          "source_revision_asset_version_id": "authority-output:d0c0b33f-49a8-4519-97bb-91720bc3c847:chapter.best_candidate:v1"
+        },
+        "coverage": "UNSPECIFIED",
+        "evidence": {
+          "span": {
+            "end": 462,
+            "start": 352
+          },
+          "quote": "Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage.",
+          "model_id": "scripted_provider_v2-canon_extraction",
+          "text_hash": "sha256:7a5665f7e2bd62ef123863efb775ece0bbfd2ec0754795a9dbfe1ff69a244e3f",
+          "project_id": "project-6789d87cb2b4445cbc4e85ef90dbac74",
+          "offset_unit": "UNICODE_CODE_POINT",
+          "provider_id": "scripted_provider_v2",
+          "excerpt_digest": "sha256:2bf8a2788f93ef8dd6b12d000303937bc2c9eec00ba7cce1f99461839dd55886",
+          "prompt_version": "prompt-system:chapter-generation-pack@v1",
+          "previous_state_reference": "",
+          "source_revision_asset_version_id": "authority-output:d0c0b33f-49a8-4519-97bb-91720bc3c847:chapter.best_candidate:v1"
+        },
+        "identity": {
+          "components": {
+            "obligation_id": "mara:protect-witnesses"
+          },
+          "entity_key": "obligation_id=mara:protect-witnesses",
+          "identity_kind": "narrative_obligation"
+        },
+        "confidence": 1.0,
+        "entity_key": "obligation_id=mara:protect-witnesses",
+        "provenance": {
+          "trace_id": "96514bec-15d3-4582-9240-952e06b17bb2:accept",
+          "source_field": "canon_patch",
+          "source_ordinal": 0,
+          "chapter_outcome_id": "chapter-outcome:book:project-6789d87cb2b4445cbc4e85ef90dbac74:2:authority-output:97517a98-f005-4d47-98bd-5c6884d22734:chapter.plan:v1",
+          "source_operation_id": "850269c2-2aec-49cc-b529-5a7cd73c784d",
+          "source_asset_version_id": "authority-output:fd5dde10-0703-43bd-a787-4602f786601f:chapter.canon:v1",
+          "accepted_draft_asset_version_id": "authority-output:d0c0b33f-49a8-4519-97bb-91720bc3c847:chapter.best_candidate:v1"
+        },
+        "canon_status": "APPROVED_CANON_PATCH",
+        "entity_version": 2,
+        "source_chapter": 2,
+        "source_event_id": "narrative-event:sha256:9a89fbf2113de4895f60198e117a7a497ae77aef651979dad3ee4b4018fb0204",
+        "narrative_position": {
+          "chapter": 2
+        },
+        "supersedes_event_id": "",
+        "effective_to_chapter": 0,
+        "effective_from_chapter": 2
+      }
+    }
+  ],
+  "before_frontier_story_state_canon": [
+    [
+      2,
+      "authority-output:850269c2-2aec-49cc-b529-5a7cd73c784d:chapter.story_state:v1",
+      "authority-output:850269c2-2aec-49cc-b529-5a7cd73c784d:chapter.canon.current:v1"
+    ]
+  ],
+  "after_frontier_story_state_canon": [
+    [
+      2,
+      "authority-output:850269c2-2aec-49cc-b529-5a7cd73c784d:chapter.story_state:v1",
+      "authority-output:850269c2-2aec-49cc-b529-5a7cd73c784d:chapter.canon.current:v1"
+    ]
+  ],
+  "production_asset_count_before_and_after": 8,
+  "prepared_producer_contract": {
+    "schema_version": "routing-producer-contract.v1",
+    "materialization_schema": "novelos.planning_capability_materialization.v1",
+    "stage": "world_candidates.actor_0",
+    "output_schema": {
+      "ref": "schema:world_candidates.actor_0:v2",
+      "identity_version": "world-schema-factory-and-bound-id-shape.v1",
+      "factory_hash": "sha256:c36e07d17d2378a4fe71d6feba53ef679c97e580f2315484b4fd388ab21c5ae4",
+      "shape_hash": "sha256:c32b5f00601b1ef84be0c46b68dee73a886cd3ac1db10b7bd673cfc05209428a",
+      "binding_policy": "EXACT_WORLD_INSTANCE_ID_ENUM_VALUES_ARE_FROZEN_PER_REQUEST;_SEMANTICS_TYPES_CARDINALITY_AND_FACTORY_ARE_SHARED"
+    },
+    "allowed_tools": [
+      "model.provider.invoke"
+    ],
+    "provider_prompt_projection_version": "authority-projection-task-provider-v1",
+    "required_reader_facing_language": null,
+    "provider_view_versions": {
+      "task_contract_version": "provider-task-view-v1",
+      "context_contract_version": "provider-context-view-v2"
+    },
+    "source_isolation": {
+      "policy": "world-actor-private-projection.v1",
+      "unscoped_knowledge": "EXCLUDED"
+    },
+    "system_instruction": {
+      "ref": "prompt-system:story-planning-pack",
+      "version": "v7",
+      "content_hash": "sha256:f91f8afd14743544f35690e45f079accd7eecfd3516ac16107b8aaf357c8cd5a"
+    },
+    "prompt_template": {
+      "ref": "prompt-template:story-planning-pack",
+      "version": "v1",
+      "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+    },
+    "skill": {
+      "ref": "chapter-outline",
+      "version": "chapter-outline-qualification-v1",
+      "content_hash": "sha256:6434e396a96a6d29f9a839bdbfade605a57bbc129bfbef350434a2f9911744ed"
+    },
+    "context_policy": {
+      "ref": "context-policy:chapter-generation-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:1c1a6cc99437a21bec381c514ca7483ae9ce12a37bb996df7b86676811133810"
+    },
+    "tool_policy": {
+      "ref": "tools:chapter-generation-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:c020231fac59435d00b3bd2094f4642d79434994cb85f56aaccaa7ce2a5fc1f1"
+    },
+    "input_schema": {
+      "ref": "schema:execution-input:planning-story_chapter-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+    },
+    "pack_output_schema": {
+      "ref": "schema:execution-output:planning-story_chapter-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+    }
+  },
+  "producer_contract_hash": "sha256:c85df38a7715b7a4a712cf7e63e5c2f486577a0ea80a34efe6140170663dd69e",
+  "human_protocol": {
+    "protocol_version": "native-generator-quality.v1",
+    "evaluation_version": "native-generator-quality.v1:world_candidates.actor_0:sha256:c85df38a7715b7a4a712cf7e63e5c2f486577a0ea80a34efe6140170663dd69e",
+    "task_type": "world_candidates.actor_0",
+    "producer_contract_hash": "sha256:c85df38a7715b7a4a712cf7e63e5c2f486577a0ea80a34efe6140170663dd69e",
+    "dimensions": [
+      "goal_consistency",
+      "epistemic_isolation",
+      "commitment_continuity",
+      "action_causality"
+    ],
+    "score_basis": "MINIMUM_ADJUDICATED_LOWER_ENDPOINT",
+    "maximum_score_interval_width": 20,
+    "independent_humans_required": 2,
+    "independent_adjudicator_required": true,
+    "sample_promotion_allowed": false
+  },
+  "sample": {
+    "asset_version_id": "authority-output:65772648-8084-4cdc-8dc2-c93998062567:world.sample.output:v1",
+    "content_hash": "sha256:a494f71d396017d752eb7134b24f3862b22a2d553fbfdd8badced17b3874f2f1",
+    "output_key": "world.sample.output",
+    "role": "primary",
+    "asset_type": "world_provider_sample",
+    "eligibility": "INELIGIBLE",
+    "sample": {
+      "stage": "world_candidates.actor_0",
+      "source": {
+        "content_hash": "sha256:20205c1546a8c2c0204bc7ce61b0dfe634d9558df54968db5e1e948c124bd7d1",
+        "asset_version_id": "a136f045-c65c-4a26-b4de-793b18ebc206"
+      },
+      "context": {
+        "content_hash": "sha256:aceb7e984e7195a7314dbb1d6b5d5cfcafa5a55054d636cc9f9549010f41558a",
+        "asset_version_id": "c8975e3a-e1a8-4c62-80ca-8f2b426f6a1c"
+      },
+      "campaign": {
+        "group_id": "58f9c836-8ccd-4533-8bfe-c833aa08da81",
+        "partition": "CALIBRATION",
+        "sample_id": "actor-sample",
+        "expires_at": "2026-09-26T14:49:38.713145+00:00",
+        "campaign_id": "project-6789d87cb2b4445cbc4e85ef90dbac74",
+        "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "maximum_calls": 1,
+        "maximum_amount": "1",
+        "maximum_tokens": 200000
+      },
+      "sampled_output": {
+        "action": "deliver the preserved witness testimony",
+        "actor_id": "mara",
+        "basis_refs": [
+          "APPROVED_SELF_TRAITS",
+          "fixture-initial:mara:observed",
+          "narrative-event:sha256:7fc0983815de1104e33d99eb387cbceb76fbe36d6d3b3bb01b8f15b8bb4c5bc4"
+        ],
+        "basis_summary": "Own frozen observation and personal desire motivate this candidate action.",
+        "commitment_dispositions": [
+          {
+            "reason": "Continue the accepted promise through the same witness testimony.",
+            "decision": "CONTINUE",
+            "obligation_id": "mara:protect-witnesses",
+            "source_event_id": "narrative-event:sha256:7fc0983815de1104e33d99eb387cbceb76fbe36d6d3b3bb01b8f15b8bb4c5bc4"
+          }
+        ]
+      },
+      "schema_version": "world-provider-sample.v1",
+      "rule_validation": {
+        "status": "PASSED"
+      },
+      "authorization_id": "fixture-actor-grant",
+      "execution_evidence": {
+        "model_id": "deepseek-flash",
+        "attempt_id": "ce39f5f5-da3c-437e-8cf2-8ce2c0c6cefb",
+        "backend_id": "scripted-fixture",
+        "capability": "planning.story_chapter.generate",
+        "provider_id": "deepseek",
+        "execution_id": "planning-execution:871db9bc-b9e7-42a8-ac04-69a4080aca4f:ce39f5f5-da3c-437e-8cf2-8ce2c0c6cefb",
+        "operation_id": "65772648-8084-4cdc-8dc2-c93998062567",
+        "fencing_token": 1,
+        "real_model_call": true,
+        "cost_receipt_ref": "authority-asset-version:c335fe36-2e6c-4896-9959-3fe4931ff53b",
+        "route_snapshot_id": "production_execution/routes/c8088c4d1b6470d3da44",
+        "usage_receipt_ref": "authority-asset-version:6a5c148f-2ac8-4b21-b957-f5685157afcf",
+        "input_manifest_ref": "production_execution/inputs/c8088c4d1b6470d3da44",
+        "output_manifest_ref": "authority-asset-version:bed84eca-2af3-433d-9feb-ecf9298fb3ab",
+        "production_verified": false,
+        "provider_request_id": "",
+        "external_receipt_ref": "871db9bc-b9e7-42a8-ac04-69a4080aca4f",
+        "fixture_protocol_only": false,
+        "validation_manifest_ref": "authority-asset-version:373a7d84-1ce6-47b7-8c00-1478390b4c7e"
+      },
+      "production_eligible": false,
+      "routing_eligibility": "BENCHMARK_ONLY",
+      "source_operation_id": "58f9c836-8ccd-4533-8bfe-c833aa08da81",
+      "reference_evaluation": null
+    }
+  },
+  "feedback": {
+    "metric": "INDEPENDENT_GENERATOR_ADJUDICATION.v1",
+    "accepted": null,
+    "generator_quality_score": 0.84,
+    "generator_protocol_hash": "sha256:bd732fbece9a8581bd463800a131ce2c10cb18dda9048f3f7b6dc2022e31cf54",
+    "generator_risk": "MEDIUM",
+    "generator_context_tokens": 16305,
+    "generator_sample_identity": "sha256:02f817549dd58483cbce434c8daef322dd7d2ad08dc847bdcd4ca8b7dd8ecbc4",
+    "generator_assessment": {
+      "target_asset_version_id": "authority-output:65772648-8084-4cdc-8dc2-c93998062567:world.sample.output:v1",
+      "target_content_hash": "sha256:a494f71d396017d752eb7134b24f3862b22a2d553fbfdd8badced17b3874f2f1",
+      "labels": [
+        {
+          "dimension": "goal_consistency",
+          "status": "PASSED",
+          "score_range": [
+            84,
+            86
+          ],
+          "adjudication_asset_version_id": "authority-output:becd1f57-21fe-4118-a742-65ac7cad4b90:quality.adjudication:v1",
+          "adjudication_operation_id": "becd1f57-21fe-4118-a742-65ac7cad4b90",
+          "evaluation_version": "native-generator-quality.v1:world_candidates.actor_0:sha256:c85df38a7715b7a4a712cf7e63e5c2f486577a0ea80a34efe6140170663dd69e"
+        },
+        {
+          "dimension": "epistemic_isolation",
+          "status": "PASSED",
+          "score_range": [
+            84,
+            86
+          ],
+          "adjudication_asset_version_id": "authority-output:3a0294ac-8902-451a-88ea-c7c05bafaed8:quality.adjudication:v1",
+          "adjudication_operation_id": "3a0294ac-8902-451a-88ea-c7c05bafaed8",
+          "evaluation_version": "native-generator-quality.v1:world_candidates.actor_0:sha256:c85df38a7715b7a4a712cf7e63e5c2f486577a0ea80a34efe6140170663dd69e"
+        },
+        {
+          "dimension": "commitment_continuity",
+          "status": "PASSED",
+          "score_range": [
+            84,
+            86
+          ],
+          "adjudication_asset_version_id": "authority-output:bb50205e-c3bb-46b8-84ce-0c1ab9a87c58:quality.adjudication:v1",
+          "adjudication_operation_id": "bb50205e-c3bb-46b8-84ce-0c1ab9a87c58",
+          "evaluation_version": "native-generator-quality.v1:world_candidates.actor_0:sha256:c85df38a7715b7a4a712cf7e63e5c2f486577a0ea80a34efe6140170663dd69e"
+        },
+        {
+          "dimension": "action_causality",
+          "status": "PASSED",
+          "score_range": [
+            84,
+            86
+          ],
+          "adjudication_asset_version_id": "authority-output:4a3c9ea5-970c-4ba7-b974-108202b7106c:quality.adjudication:v1",
+          "adjudication_operation_id": "4a3c9ea5-970c-4ba7-b974-108202b7106c",
+          "evaluation_version": "native-generator-quality.v1:world_candidates.actor_0:sha256:c85df38a7715b7a4a712cf7e63e5c2f486577a0ea80a34efe6140170663dd69e"
+        }
+      ],
+      "protocol_version": "native-generator-quality.v1"
+    },
+    "evidence_refs": [
+      "asset-version:authority-output:65772648-8084-4cdc-8dc2-c93998062567:world.sample.output:v1",
+      "asset-version:57244aca-cfa0-4ef3-9c51-665c537a1d5d",
+      "asset-version:authority-output:becd1f57-21fe-4118-a742-65ac7cad4b90:quality.adjudication:v1",
+      "asset-version:authority-output:3a0294ac-8902-451a-88ea-c7c05bafaed8:quality.adjudication:v1",
+      "asset-version:authority-output:bb50205e-c3bb-46b8-84ce-0c1ab9a87c58:quality.adjudication:v1",
+      "asset-version:authority-output:4a3c9ea5-970c-4ba7-b974-108202b7106c:quality.adjudication:v1"
+    ],
+    "assessment_basis": "INDEPENDENT_HUMAN_ADJUDICATION",
+    "sample_promoted": false
+  },
+  "effects": [
+    {
+      "effect_id": "871db9bc-b9e7-42a8-ac04-69a4080aca4f",
+      "status": "SUCCEEDED",
+      "routing_decision": {
+        "mode": "BENCHMARK_CHALLENGER",
+        "task": {
+          "risk": "",
+          "history": [],
+          "work_id": "book:project-6789d87cb2b4445cbc4e85ef90dbac74",
+          "chain_id": "sha256:0aea21d745b7a4c49f4a5e7c34a542780083a8403bc09abeb08917568d5a1b08",
+          "task_type": "world_candidates.actor_0",
+          "attempt_id": "ce39f5f5-da3c-437e-8cf2-8ce2c0c6cefb",
+          "input_hash": "sha256:b56acacdac11c10927b23d4e49bd9fe2a34806b42a56e9ac3eed54a767b431f7",
+          "project_id": "project-6789d87cb2b4445cbc4e85ef90dbac74",
+          "stable_key": "65772648-8084-4cdc-8dc2-c93998062567:planning.story_chapter.generate:world_candidates.actor_0:v1",
+          "input_tokens": 16305,
+          "operation_id": "65772648-8084-4cdc-8dc2-c93998062567",
+          "request_hash": "sha256:6d61e7fa8fd12de0eb95ff4a62940342e6f1a56656242300d1a4ae03977bd23f",
+          "output_tokens": 16000,
+          "quality_floor": 0,
+          "cache_eligible": true,
+          "budget_snapshot": {
+            "scope": "execution_chain",
+            "candidates": {
+              "deepseek:deepseek-flash:low": {
+                "scopes": {},
+                "remaining_calls": null,
+                "remaining_money": "1",
+                "remaining_tokens": 200000
+              }
+            },
+            "task_money_limit": "1",
+            "task_token_limit": 200000,
+            "money_used_or_reserved": "0",
+            "tokens_used_or_reserved": 0,
+            "admission_recheck_required": true
+          },
+          "policy_snapshot": {
+            "policy": {
+              "reason": "fixture-only",
+              "policy_version": "actor-fixture-v1",
+              "task_overrides": [],
+              "bootstrap_authorizations": [
+                {
+                  "reason": "synthetic actor sample boundary regression",
+                  "book_id": "book:project-6789d87cb2b4445cbc4e85ef90dbac74",
+                  "purpose": "BENCHMARK_CHALLENGER",
+                  "campaign": {
+                    "group_id": "58f9c836-8ccd-4533-8bfe-c833aa08da81",
+                    "partition": "CALIBRATION",
+                    "sample_id": "actor-sample",
+                    "expires_at": "2026-09-26T14:49:38.713145+00:00",
+                    "campaign_id": "project-6789d87cb2b4445cbc4e85ef90dbac74",
+                    "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                    "maximum_calls": 1,
+                    "maximum_amount": "1",
+                    "maximum_tokens": 200000
+                  },
+                  "currency": "USD",
+                  "task_type": "world_candidates.actor_0",
+                  "expires_at": "2026-09-26T14:49:38.713145+00:00",
+                  "environment": "validation",
+                  "logical_key": "58f9c836-8ccd-4533-8bfe-c833aa08da81",
+                  "candidate_id": "deepseek:deepseek-flash:low",
+                  "command_hash": "sha256:d53c82ec1ac6381c3bee088f7e94bd0257e704c6cbeb3a9b2377ab55550167bd",
+                  "maximum_calls": 1,
+                  "maximum_amount": "1",
+                  "maximum_tokens": 200000,
+                  "model_revision": "DeepSeek-V4.1-Flash",
+                  "authorization_id": "fixture-actor-grant",
+                  "input_versions_hash": "sha256:c6e6d667be230ed5eda8f820fddf96326a680ab4a730d4e76dfc0fd4e47aadc7",
+                  "production_eligible": false,
+                  "producer_contract_hash": "sha256:c85df38a7715b7a4a712cf7e63e5c2f486577a0ea80a34efe6140170663dd69e",
+                  "generation_idempotency_key": "project-6789d87cb2b4445cbc4e85ef90dbac74:actor-sample"
+                }
+              ]
+            },
+            "actor_id": "actor-sample-operator:project-6789d87cb2b4445cbc4e85ef90dbac74",
+            "policy_hash": "99f5d476ff66ec6259478320c828bd77e9eba300ba5684415165486ea5fb9f3b",
+            "operation_id": "09e536b3-7449-4385-ab03-2c111c13e768"
+          },
+          "remaining_money": "1",
+          "remaining_tokens": 200000,
+          "soft_money_limit": null,
+          "cache_prefix_hash": "sha256:90a38fe6494ee9b412784ee12e7cf914853c56cd5244cc38f3ec1223e2c60f19",
+          "escalation_reason": "",
+          "producer_contract": {
+            "skill": {
+              "ref": "chapter-outline",
+              "version": "chapter-outline-qualification-v1",
+              "content_hash": "sha256:6434e396a96a6d29f9a839bdbfade605a57bbc129bfbef350434a2f9911744ed"
+            },
+            "stage": "world_candidates.actor_0",
+            "tool_policy": {
+              "ref": "tools:chapter-generation-pack:v1",
+              "version": "v1",
+              "content_hash": "sha256:c020231fac59435d00b3bd2094f4642d79434994cb85f56aaccaa7ce2a5fc1f1"
+            },
+            "input_schema": {
+              "ref": "schema:execution-input:planning-story_chapter-generate:v1",
+              "version": "v1",
+              "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+            },
+            "allowed_tools": [
+              "model.provider.invoke"
+            ],
+            "output_schema": {
+              "ref": "schema:world_candidates.actor_0:v2",
+              "shape_hash": "sha256:c32b5f00601b1ef84be0c46b68dee73a886cd3ac1db10b7bd673cfc05209428a",
+              "factory_hash": "sha256:c36e07d17d2378a4fe71d6feba53ef679c97e580f2315484b4fd388ab21c5ae4",
+              "binding_policy": "EXACT_WORLD_INSTANCE_ID_ENUM_VALUES_ARE_FROZEN_PER_REQUEST;_SEMANTICS_TYPES_CARDINALITY_AND_FACTORY_ARE_SHARED",
+              "identity_version": "world-schema-factory-and-bound-id-shape.v1"
+            },
+            "context_policy": {
+              "ref": "context-policy:chapter-generation-pack:v1",
+              "version": "v1",
+              "content_hash": "sha256:1c1a6cc99437a21bec381c514ca7483ae9ce12a37bb996df7b86676811133810"
+            },
+            "schema_version": "routing-producer-contract.v1",
+            "prompt_template": {
+              "ref": "prompt-template:story-planning-pack",
+              "version": "v1",
+              "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+            },
+            "source_isolation": {
+              "policy": "world-actor-private-projection.v1",
+              "unscoped_knowledge": "EXCLUDED"
+            },
+            "pack_output_schema": {
+              "ref": "schema:execution-output:planning-story_chapter-generate:v1",
+              "version": "v1",
+              "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+            },
+            "system_instruction": {
+              "ref": "prompt-system:story-planning-pack",
+              "version": "v7",
+              "content_hash": "sha256:f91f8afd14743544f35690e45f079accd7eecfd3516ac16107b8aaf357c8cd5a"
+            },
+            "materialization_schema": "novelos.planning_capability_materialization.v1",
+            "provider_view_versions": {
+              "task_contract_version": "provider-task-view-v1",
+              "context_contract_version": "provider-context-view-v2"
+            },
+            "required_reader_facing_language": null,
+            "provider_prompt_projection_version": "authority-projection-task-provider-v1"
+          },
+          "latency_sla_seconds": 0,
+          "declared_requirements": {
+            "risk": "",
+            "chapter": 0,
+            "quality_floor": 0
+          },
+          "lineage_operation_ids": [
+            "65772648-8084-4cdc-8dc2-c93998062567"
+          ],
+          "required_capabilities": [
+            "structured_output"
+          ],
+          "producer_contract_hash": "sha256:c85df38a7715b7a4a712cf7e63e5c2f486577a0ea80a34efe6140170663dd69e",
+          "reusable_prefix_tokens": 2452,
+          "latency_cost_per_second": "0"
+        },
+        "policy": {
+          "risk": "MEDIUM",
+          "max_attempts": 4,
+          "quality_floor": 0.75,
+          "quality_metric": "GENERATOR_SCORE",
+          "max_escalations": 1,
+          "minimum_samples": 8,
+          "confidence_penalty": 0.15
+        },
+        "status": "BENCHMARK_SELECTED",
+        "selected": {
+          "benchmark": {
+            "as_of": "2026-09-26T13:49:39.443776+00:00",
+            "version": "sha256:d22758f387770ddc7c26e20a5ccd887b7c5ec9f0e474829500bb6a2553fea7fd",
+            "uncertain": true,
+            "retry_rate": null,
+            "actual_cost": "0",
+            "judge_score": null,
+            "repair_rate": null,
+            "window_days": 30,
+            "input_tokens": 0,
+            "outcome_refs": [],
+            "quality_mean": 0.0,
+            "sample_count": 0,
+            "evidence_refs": [],
+            "output_tokens": 0,
+            "quality_metric": "GENERATOR_SCORE",
+            "reference_risk": null,
+            "schema_success": 0.0,
+            "acceptance_rate": null,
+            "cache_hit_ratio": 0.0,
+            "escalation_rate": null,
+            "latency_seconds": null,
+            "maximum_samples": 200,
+            "predicted_quality": 0.0,
+            "priced_usage_cost": "0",
+            "confidence_penalty": 0.15,
+            "mean_output_tokens": null,
+            "canon_conflict_rate": null,
+            "metric_sample_count": 0,
+            "cost_unknown_samples": 0,
+            "latency_sample_count": 0,
+            "quality_distribution": [],
+            "quality_sample_count": 0,
+            "evidence_class_counts": {
+              "PRODUCTION_OUTCOME": 0,
+              "BENCHMARK_CHALLENGER": 0,
+              "REFERENCE_EVALUATION": 0,
+              "UNCLASSIFIED_REAL_PROVIDER": 0
+            },
+            "generator_score_basis": null,
+            "mean_cache_hit_tokens": 0,
+            "reference_label_strata": {
+              "FAIL": {
+                "lower_bound": 0.0,
+                "sample_count": 0,
+                "agreement_rate": null
+              },
+              "PASS": {
+                "lower_bound": 0.0,
+                "sample_count": 0,
+                "agreement_rate": null
+              }
+            },
+            "acceptance_sample_count": 0,
+            "domain_gate_sample_count": 0,
+            "independent_sample_count": 0,
+            "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
+            "reference_agreement_rate": null,
+            "benchmark_acceptance_rate": null,
+            "generator_context_buckets": [],
+            "generator_protocol_hashes": [],
+            "reference_context_buckets": [],
+            "reference_protocol_hashes": [],
+            "production_acceptance_rate": null,
+            "conditional_content_quality": 0.0,
+            "served_model_identity_hashes": [],
+            "qualification_acceptance_rate": null,
+            "repeated_sample_attempt_count": 0,
+            "independent_reviewer_score_basis": null,
+            "production_eligible_sample_count": 0,
+            "reference_agreement_sample_count": 0,
+            "benchmark_acceptance_sample_count": 0,
+            "benchmark_challenger_sample_count": 0,
+            "production_acceptance_sample_count": 0,
+            "excluded_experiment_partition_count": 0,
+            "unadjudicated_reviewer_sample_count": 0,
+            "independent_reviewer_context_buckets": [],
+            "independent_reviewer_protocol_hashes": [],
+            "unadjudicated_generator_sample_count": 0,
+            "partition_conflicted_sample_identities": []
+          },
+          "candidate": {
+            "tier": "flash",
+            "model": "deepseek-flash",
+            "pricing": {
+              "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+              "version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+              "currency": "USD",
+              "effective_from": "2026-09-10T04:00:00+00:00",
+              "effective_until": "9999-12-31T23:59:59+00:00",
+              "accounting_basis": "PRICED",
+              "output_per_million": "1.2",
+              "input_hit_per_million": ".006",
+              "input_miss_per_million": ".3"
+            },
+            "provider": "deepseek",
+            "available": true,
+            "reasoning": "low",
+            "candidate_id": "deepseek:deepseek-flash:low",
+            "capabilities": [
+              "structured_output",
+              "text"
+            ],
+            "output_limit": 384000,
+            "context_limit": 1000000,
+            "model_revision": "DeepSeek-V4.1-Flash",
+            "escalation_only": false,
+            "quota_remaining": 0,
+            "authorization_ref": "",
+            "capability_version": "deepseek-official-2026-09-16",
+            "availability_reason": "",
+            "estimated_price_multiplier": "0.5"
+          },
+          "expected_quality": 0.0,
+          "rejected_reasons": [],
+          "cache_evidence_refs": [],
+          "soft_limit_pressure": false,
+          "cache_tokens_estimate": 0,
+          "estimated_total_tokens": 32305,
+          "estimated_monetary_cost": "0.01204575",
+          "expected_effective_cost": "4.818300",
+          "reservation_upper_bound": "0.0240915",
+          "production_rejected_reasons": [
+            "QUALITY_FLOOR_NOT_MET",
+            "BENCHMARK_INSUFFICIENT"
+          ]
+        },
+        "candidates": [
+          {
+            "benchmark": {
+              "as_of": "2026-09-26T13:49:39.443776+00:00",
+              "version": "sha256:d22758f387770ddc7c26e20a5ccd887b7c5ec9f0e474829500bb6a2553fea7fd",
+              "uncertain": true,
+              "retry_rate": null,
+              "actual_cost": "0",
+              "judge_score": null,
+              "repair_rate": null,
+              "window_days": 30,
+              "input_tokens": 0,
+              "outcome_refs": [],
+              "quality_mean": 0.0,
+              "sample_count": 0,
+              "evidence_refs": [],
+              "output_tokens": 0,
+              "quality_metric": "GENERATOR_SCORE",
+              "reference_risk": null,
+              "schema_success": 0.0,
+              "acceptance_rate": null,
+              "cache_hit_ratio": 0.0,
+              "escalation_rate": null,
+              "latency_seconds": null,
+              "maximum_samples": 200,
+              "predicted_quality": 0.0,
+              "priced_usage_cost": "0",
+              "confidence_penalty": 0.15,
+              "mean_output_tokens": null,
+              "canon_conflict_rate": null,
+              "metric_sample_count": 0,
+              "cost_unknown_samples": 0,
+              "latency_sample_count": 0,
+              "quality_distribution": [],
+              "quality_sample_count": 0,
+              "evidence_class_counts": {
+                "PRODUCTION_OUTCOME": 0,
+                "BENCHMARK_CHALLENGER": 0,
+                "REFERENCE_EVALUATION": 0,
+                "UNCLASSIFIED_REAL_PROVIDER": 0
+              },
+              "generator_score_basis": null,
+              "mean_cache_hit_tokens": 0,
+              "reference_label_strata": {
+                "FAIL": {
+                  "lower_bound": 0.0,
+                  "sample_count": 0,
+                  "agreement_rate": null
+                },
+                "PASS": {
+                  "lower_bound": 0.0,
+                  "sample_count": 0,
+                  "agreement_rate": null
+                }
+              },
+              "acceptance_sample_count": 0,
+              "domain_gate_sample_count": 0,
+              "independent_sample_count": 0,
+              "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
+              "reference_agreement_rate": null,
+              "benchmark_acceptance_rate": null,
+              "generator_context_buckets": [],
+              "generator_protocol_hashes": [],
+              "reference_context_buckets": [],
+              "reference_protocol_hashes": [],
+              "production_acceptance_rate": null,
+              "conditional_content_quality": 0.0,
+              "served_model_identity_hashes": [],
+              "qualification_acceptance_rate": null,
+              "repeated_sample_attempt_count": 0,
+              "independent_reviewer_score_basis": null,
+              "production_eligible_sample_count": 0,
+              "reference_agreement_sample_count": 0,
+              "benchmark_acceptance_sample_count": 0,
+              "benchmark_challenger_sample_count": 0,
+              "production_acceptance_sample_count": 0,
+              "excluded_experiment_partition_count": 0,
+              "unadjudicated_reviewer_sample_count": 0,
+              "independent_reviewer_context_buckets": [],
+              "independent_reviewer_protocol_hashes": [],
+              "unadjudicated_generator_sample_count": 0,
+              "partition_conflicted_sample_identities": []
+            },
+            "candidate": {
+              "tier": "flash",
+              "model": "deepseek-flash",
+              "pricing": {
+                "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+                "version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+                "currency": "USD",
+                "effective_from": "2026-09-10T04:00:00+00:00",
+                "effective_until": "9999-12-31T23:59:59+00:00",
+                "accounting_basis": "PRICED",
+                "output_per_million": "1.2",
+                "input_hit_per_million": ".006",
+                "input_miss_per_million": ".3"
+              },
+              "provider": "deepseek",
+              "available": true,
+              "reasoning": "low",
+              "candidate_id": "deepseek:deepseek-flash:low",
+              "capabilities": [
+                "structured_output",
+                "text"
+              ],
+              "output_limit": 384000,
+              "context_limit": 1000000,
+              "model_revision": "DeepSeek-V4.1-Flash",
+              "escalation_only": false,
+              "quota_remaining": 0,
+              "authorization_ref": "",
+              "capability_version": "deepseek-official-2026-09-16",
+              "availability_reason": "",
+              "estimated_price_multiplier": "0.5"
+            },
+            "expected_quality": 0.0,
+            "rejected_reasons": [],
+            "cache_evidence_refs": [],
+            "soft_limit_pressure": false,
+            "cache_tokens_estimate": 0,
+            "estimated_total_tokens": 32305,
+            "estimated_monetary_cost": "0.01204575",
+            "expected_effective_cost": "4.818300",
+            "reservation_upper_bound": "0.0240915",
+            "production_rejected_reasons": [
+              "QUALITY_FLOOR_NOT_MET",
+              "BENCHMARK_INSUFFICIENT"
+            ]
+          }
+        ],
+        "created_at": "2026-09-26T13:49:39.443776+00:00",
+        "decision_id": "routing-decision:30fabb12b374fd5d114831fdd160ef297ff6540fb4f2231d56480124e2b73d58",
+        "policy_version": "quality-constrained-routing.v10",
+        "schema_version": "quality-constrained-routing.v10",
+        "asset_version_id": "b18cd70f-6ee1-41c6-aa53-28f5d33d331c",
+        "escalation_policy": {
+          "reason": "",
+          "history": [],
+          "max_attempts": 4,
+          "max_escalations": 1,
+          "unavailable_action": "BLOCK",
+          "semantic_failure_threshold": 2
+        },
+        "production_eligible": false,
+        "bootstrap_authorization": {
+          "project_id": "project-6789d87cb2b4445cbc4e85ef90dbac74",
+          "environment": "validation",
+          "policy_hash": "99f5d476ff66ec6259478320c828bd77e9eba300ba5684415165486ea5fb9f3b",
+          "authorization": {
+            "reason": "synthetic actor sample boundary regression",
+            "book_id": "book:project-6789d87cb2b4445cbc4e85ef90dbac74",
+            "purpose": "BENCHMARK_CHALLENGER",
+            "campaign": {
+              "group_id": "58f9c836-8ccd-4533-8bfe-c833aa08da81",
+              "partition": "CALIBRATION",
+              "sample_id": "actor-sample",
+              "expires_at": "2026-09-26T14:49:38.713145+00:00",
+              "campaign_id": "project-6789d87cb2b4445cbc4e85ef90dbac74",
+              "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "maximum_calls": 1,
+              "maximum_amount": "1",
+              "maximum_tokens": 200000
+            },
+            "currency": "USD",
+            "task_type": "world_candidates.actor_0",
+            "expires_at": "2026-09-26T14:49:38.713145+00:00",
+            "environment": "validation",
+            "logical_key": "58f9c836-8ccd-4533-8bfe-c833aa08da81",
+            "candidate_id": "deepseek:deepseek-flash:low",
+            "command_hash": "sha256:d53c82ec1ac6381c3bee088f7e94bd0257e704c6cbeb3a9b2377ab55550167bd",
+            "maximum_calls": 1,
+            "maximum_amount": "1",
+            "maximum_tokens": 200000,
+            "model_revision": "DeepSeek-V4.1-Flash",
+            "authorization_id": "fixture-actor-grant",
+            "input_versions_hash": "sha256:c6e6d667be230ed5eda8f820fddf96326a680ab4a730d4e76dfc0fd4e47aadc7",
+            "production_eligible": false,
+            "producer_contract_hash": "sha256:c85df38a7715b7a4a712cf7e63e5c2f486577a0ea80a34efe6140170663dd69e",
+            "generation_idempotency_key": "project-6789d87cb2b4445cbc4e85ef90dbac74:actor-sample"
+          },
+          "policy_version": "actor-fixture-v1",
+          "policy_actor_id": "actor-sample-operator:project-6789d87cb2b4445cbc4e85ef90dbac74",
+          "authorization_hash": "sha256:5847ad50373ec7a6b6113b47bcbbf4e948d42c3de7aadd0fadeeccff5a122bf9",
+          "policy_operation_id": "09e536b3-7449-4385-ab03-2c111c13e768"
+        }
+      },
+      "dispatch_id": "6f0bfc83-c811-485d-80f3-acda6b9ab4f6",
+      "dispatch_status": "SUCCEEDED",
+      "receipt_id": 52
+    }
+  ],
+  "provider_dispatches": 1,
+  "unresolved_effects": [],
+  "ineligible_production_consumer_rejected": true
+}

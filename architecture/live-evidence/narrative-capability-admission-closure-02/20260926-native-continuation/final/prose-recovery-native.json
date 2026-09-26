@@ -1,0 +1,263 @@
+[
+  {
+    "test": "test_native_prose_reviewer_sample_isolated_from_formal_findings_and_human_feedback",
+    "kind": "prose_reviewer_native",
+    "native_evidence": {
+      "actual_human_evaluations": 0,
+      "actual_real_model_calls": 0,
+      "effect_id": "103de07b-1f11-455a-bddb-d9123dc7a728",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL_INTEGRATION",
+      "formal_review_digest_unchanged": "sha256:1c6e861322e3702138c5d361b2789257189c0dcd3223ae70eee310badbcd5078",
+      "independent_quality_projection": {},
+      "project_id": "book-authority-control-86f5708b-6f19-4b45-9a42-fefa4c03f1e4",
+      "provider_calls": 1,
+      "sample": {
+        "asset_version_id": "authority-output:bf2969db-d9bf-456f-bd5f-bc7ff90ee8e5:longform.prose_review.sample:v1",
+        "content_hash": "sha256:c6b61f2180b2d79fac4e3264c2acbe88f8bc9853e63a321496ea1ea23aef21ff"
+      },
+      "sample_eligibility": "INELIGIBLE",
+      "sample_operation_id": "bf2969db-d9bf-456f-bd5f-bc7ff90ee8e5",
+      "scope": {
+        "campaign_sample": {
+          "campaign_id": "book-authority-control-86f5708b-6f19-4b45-9a42-fefa4c03f1e4",
+          "expires_at": "2026-09-26T14:49:15.953160+00:00",
+          "group_id": "64f4b1ec-d8fc-4ad7-9283-fb1f8f6cd012",
+          "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "maximum_amount": "2",
+          "maximum_calls": 2,
+          "maximum_tokens": 400000,
+          "partition": "CALIBRATION",
+          "sample_id": "reviewer-window"
+        },
+        "capability": "model.longform_prose_review",
+        "chapter_number": 1,
+        "dispatch_generation": 1,
+        "generator_operation_name": "",
+        "operation_name": "longform.prose_review",
+        "origin_phase": "PRODUCTION",
+        "phase": "REFERENCE",
+        "provider_request_hash": "sha256:2e60370f00baef128145b031acba8aa61610f5a70b0cfbb54c49178b8d370573",
+        "scope_sources": [
+          {
+            "path": "native_prose_window.chapter_end",
+            "value": 1
+          },
+          {
+            "path": "native_prose_window",
+            "value": {
+              "chapter_end": 1,
+              "chapter_start": 1,
+              "manifest_digest": "sha256:ec5d8dfa8614164ccbc65cd23fae75b20bcd0914566f90379b29394b1e328544",
+              "spans": [
+                {
+                  "acceptance_id": "chapter-acceptance:49d7691cfe73db20281b64b699224902d5ffb3d783f211555fbbc3610e4139cf",
+                  "asset_hash": "sha256:ad7f3a0990929c90e63dbfd853ce5dbd18228f18c42d06cb43d046d59b87dc0d",
+                  "asset_version_id": "authority-output:22ba4d1a-0bf2-491a-ac53-ac852b8cbf6c:chapter.best_candidate:v1",
+                  "chapter_number": 1,
+                  "end": 198,
+                  "start": 0,
+                  "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d"
+                }
+              ],
+              "window": {
+                "asset_version_id": "58e54e4f-a0ef-4d87-8933-e296bc366e57",
+                "content_hash": "sha256:c0ca36ee210389c88be0e3bfee634a44775f3de68ac74cf1f50133015eb12b38"
+              },
+              "window_id": "sha256:a846cc6b47906a9df40d02b49a28f7a032c12b8b67497c96c335dff5dbb96b60"
+            }
+          }
+        ],
+        "source_operation_id": "64f4b1ec-d8fc-4ad7-9283-fb1f8f6cd012",
+        "stage": "longform_prose_review"
+      },
+      "source_operation_id": "64f4b1ec-d8fc-4ad7-9283-fb1f8f6cd012",
+      "subject": {
+        "asset_type": "longform_prose_review_sample",
+        "asset_version_id": "authority-output:bf2969db-d9bf-456f-bd5f-bc7ff90ee8e5:longform.prose_review.sample:v1",
+        "content": {
+          "authorization_id": "prose-grant",
+          "campaign": {
+            "campaign_id": "book-authority-control-86f5708b-6f19-4b45-9a42-fefa4c03f1e4",
+            "expires_at": "2026-09-26T14:49:15.953160+00:00",
+            "group_id": "64f4b1ec-d8fc-4ad7-9283-fb1f8f6cd012",
+            "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "maximum_amount": "2",
+            "maximum_calls": 2,
+            "maximum_tokens": 400000,
+            "partition": "CALIBRATION",
+            "sample_id": "reviewer-window"
+          },
+          "production_eligible": false,
+          "project_id": "book-authority-control-86f5708b-6f19-4b45-9a42-fefa4c03f1e4",
+          "routing_eligibility": "BENCHMARK_ONLY",
+          "sampled_output": {
+            "findings": [],
+            "manifest_digest": "sha256:ec5d8dfa8614164ccbc65cd23fae75b20bcd0914566f90379b29394b1e328544",
+            "reviewed_dimensions": [
+              "structure_conflict_repetition",
+              "goals_relationships",
+              "setup_progress_payoff",
+              "voice_expression",
+              "arc_pacing",
+              "motivation_cost"
+            ],
+            "schema_version": "longform-prose-review.v1",
+            "window_id": "sha256:a846cc6b47906a9df40d02b49a28f7a032c12b8b67497c96c335dff5dbb96b60"
+          },
+          "schema_version": "longform-prose-review-sample.v1",
+          "source_operation_id": "64f4b1ec-d8fc-4ad7-9283-fb1f8f6cd012",
+          "source_window": {
+            "asset_version_id": "58e54e4f-a0ef-4d87-8933-e296bc366e57",
+            "content_hash": "sha256:c0ca36ee210389c88be0e3bfee634a44775f3de68ac74cf1f50133015eb12b38",
+            "project_id": "book-authority-control-86f5708b-6f19-4b45-9a42-fefa4c03f1e4"
+          },
+          "stage": "longform_prose_review"
+        },
+        "content_hash": "sha256:c6b61f2180b2d79fac4e3264c2acbe88f8bc9853e63a321496ea1ea23aef21ff",
+        "generation_actor_id": "prose-sample-operator",
+        "generation_operation_id": "bf2969db-d9bf-456f-bd5f-bc7ff90ee8e5",
+        "producer_contract_hash": "sha256:f877f0488b2a025ba47ffc429ba89cb280cd07b2c947268098489e7dbf0ce80f",
+        "source_actor_id": "prose-sample-operator",
+        "window": {
+          "book_run_id": "book-run:4498cca0-20d6-4e0e-8a25-28493d90abfe",
+          "manifest_digest": "sha256:ec5d8dfa8614164ccbc65cd23fae75b20bcd0914566f90379b29394b1e328544",
+          "policy": {
+            "context_token_budget": 16000,
+            "maximum_windows": 1,
+            "overlap_codepoints": 32,
+            "policy_version": "v1",
+            "window_codepoints": 2048
+          },
+          "project_id": "book-authority-control-86f5708b-6f19-4b45-9a42-fefa4c03f1e4",
+          "schema_version": "longform-prose-window.v1",
+          "source_isolation": "ACCEPTED_PROSE_ONLY",
+          "window": {
+            "spans": [
+              {
+                "acceptance_id": "chapter-acceptance:49d7691cfe73db20281b64b699224902d5ffb3d783f211555fbbc3610e4139cf",
+                "asset_hash": "sha256:ad7f3a0990929c90e63dbfd853ce5dbd18228f18c42d06cb43d046d59b87dc0d",
+                "asset_version_id": "authority-output:22ba4d1a-0bf2-491a-ac53-ac852b8cbf6c:chapter.best_candidate:v1",
+                "chapter_number": 1,
+                "codepoints": 198,
+                "end": 198,
+                "start": 0,
+                "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. The protagonist gives up the only safe route home before the witnesses leave.",
+                "text_hash": "sha256:18ec01b26f030123fd536243b8b4abfbf10d12e38b65cf6cf61d6c5a4e60c53d"
+              }
+            ],
+            "window_id": "sha256:a846cc6b47906a9df40d02b49a28f7a032c12b8b67497c96c335dff5dbb96b60"
+          },
+          "workspace_id": "workspace:book-authority-control-86f5708b-6f19-4b45-9a42-fefa4c03f1e4"
+        }
+      },
+      "usage": {
+        "book_id": "book:book-authority-control-86f5708b-6f19-4b45-9a42-fefa4c03f1e4",
+        "contract_hash": "sha256:4f73e8dba15e5227bdd8c7cb711f598222b8747fe5d778e223057762e39858f4",
+        "creation_opportunity": null,
+        "entitlement_usd": null,
+        "entitlements": [],
+        "evidence_class": "POSTGRESQL_BUDGET_LEDGER",
+        "invoice_status": "NOT_VERIFIED",
+        "phases": {
+          "CALIBRATION": {
+            "calls_used_or_reserved": 0,
+            "conservative_tokens": 0,
+            "priced_usd": "0",
+            "recorded_actual_tokens": 0,
+            "unmeasured_reserved_tokens": 0,
+            "unpriced_calls": 0
+          },
+          "DESIGN": {
+            "calls_used_or_reserved": 0,
+            "conservative_tokens": 0,
+            "priced_usd": "0",
+            "recorded_actual_tokens": 0,
+            "unmeasured_reserved_tokens": 0,
+            "unpriced_calls": 0
+          },
+          "HOLDOUT": {
+            "calls_used_or_reserved": 0,
+            "conservative_tokens": 0,
+            "priced_usd": "0",
+            "recorded_actual_tokens": 0,
+            "unmeasured_reserved_tokens": 0,
+            "unpriced_calls": 0
+          },
+          "PRODUCTION": {
+            "calls_used_or_reserved": 11,
+            "conservative_tokens": 0,
+            "priced_usd": "0E-8",
+            "recorded_actual_tokens": 0,
+            "unmeasured_reserved_tokens": 0,
+            "unpriced_calls": 0
+          },
+          "REFERENCE": {
+            "calls_used_or_reserved": 1,
+            "conservative_tokens": 0,
+            "priced_usd": "0E-8",
+            "recorded_actual_tokens": 0,
+            "unmeasured_reserved_tokens": 0,
+            "unpriced_calls": 0
+          },
+          "REPAIR": {
+            "calls_used_or_reserved": 2,
+            "conservative_tokens": 0,
+            "priced_usd": "0E-8",
+            "recorded_actual_tokens": 0,
+            "unmeasured_reserved_tokens": 0,
+            "unpriced_calls": 0
+          },
+          "SCREENING": {
+            "calls_used_or_reserved": 0,
+            "conservative_tokens": 0,
+            "priced_usd": "0",
+            "recorded_actual_tokens": 0,
+            "unmeasured_reserved_tokens": 0,
+            "unpriced_calls": 0
+          },
+          "SOURCE": {
+            "calls_used_or_reserved": 0,
+            "conservative_tokens": 0,
+            "priced_usd": "0",
+            "recorded_actual_tokens": 0,
+            "unmeasured_reserved_tokens": 0,
+            "unpriced_calls": 0
+          }
+        },
+        "project_id": "book-authority-control-86f5708b-6f19-4b45-9a42-fefa4c03f1e4",
+        "project_total": {
+          "calls_used_or_reserved": 14,
+          "conservative_tokens": 0,
+          "priced_usd": "0E-8",
+          "recorded_actual_tokens": 0,
+          "unmeasured_reserved_tokens": 0,
+          "unpriced_calls": 0
+        },
+        "reservation_ids": [
+          "20b8169f-f2f6-4bec-947f-11f34b15800b",
+          "8faefad0-0421-4d90-b02c-44868da10dc8",
+          "5ef85cac-93f1-4a33-a2d4-b19333815e64",
+          "802651a7-b170-413d-80e1-b8c229dbc564",
+          "638328d4-58fc-4d97-bbda-5b6d155c61d6",
+          "37d8927d-7d8b-44ea-8c22-32dac4ccaba9",
+          "bb3e564d-1185-479d-904d-dbb46864d668",
+          "d7fd9ea2-aa39-44a2-9cbf-a438ad54a7a6",
+          "96f2f882-5e06-4cb3-a659-8356034f73b7",
+          "849f4e80-c43d-4aaa-ab44-c70f1e0c121b",
+          "f73674ca-8bb5-4024-9933-d57054c15881",
+          "454a9fbe-c66a-4ec0-a6ae-b20ccfd5ca6d",
+          "80df6ff6-e506-43d0-8cb2-12fd64792bb9",
+          "0f995274-c6c2-481f-b2b0-fa8678afce79"
+        ],
+        "shared_total": {
+          "calls_used_or_reserved": 14,
+          "conservative_tokens": 0,
+          "priced_usd": "0E-8",
+          "recorded_actual_tokens": 0,
+          "unmeasured_reserved_tokens": 0,
+          "unpriced_calls": 0
+        }
+      }
+    }
+  }
+]

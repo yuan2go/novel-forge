@@ -1,0 +1,12 @@
+{
+  "source": "read-only Codex desktop usage snapshot",
+  "ordinaryUsageAllowed": true,
+  "plan": "pro",
+  "weeklyUsedPercent": 16,
+  "weeklyResetsAt": 1791028666,
+  "creditsAvailable": false,
+  "creditBalance": "0",
+  "resetCreditsConsumed": 0,
+  "scope": "Host account availability only; does not establish native project/account grant, task qualification, frozen manifests or unresolved Effect state.",
+  "nativeProductionCallsThisTask": 0
+}

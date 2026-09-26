@@ -1,0 +1,189 @@
+{
+  "started_at_utc": "2026-09-26T13:45:05.705872+00:00",
+  "implementation_tree_sha": "sha256:073f4dc9f1565e0ee359381ee6474e343fd550852e87bd63ab00d99d8a6da640",
+  "identity_unchanged": false,
+  "groups": [
+    {
+      "name": "craft-impact",
+      "command_argv": [
+        "/Users/yuan/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_narrative_craft_chapter_postgres.py",
+        "tests/integration/test_plan_change_authority_postgres.py",
+        "--junitxml=/Users/yuan/.codex/tmp/narrative-feedback-closure/final/craft-impact.xml"
+      ],
+      "database": "nf_final_closure_craft_impact_test",
+      "exit_code": 1,
+      "duration_seconds": 5.243,
+      "log": "craft-impact.log.gz",
+      "junit": "craft-impact.xml.gz",
+      "junit_totals": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 11,
+        "skipped": 0
+      },
+      "junit_uncompressed_sha256": "84a7a0abda92f6f171adb66ed04e33765773f4ca4572ed79a0f6bc769c72bb96"
+    },
+    {
+      "name": "actors",
+      "command_argv": [
+        "/Users/yuan/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_world_actor_isolation_postgres.py",
+        "tests/integration/test_world_actor_sampling_postgres.py",
+        "--junitxml=/Users/yuan/.codex/tmp/narrative-feedback-closure/final/actors.xml"
+      ],
+      "database": "nf_final_closure_actors_test",
+      "exit_code": 1,
+      "duration_seconds": 4.5,
+      "log": "actors.log.gz",
+      "junit": "actors.xml.gz",
+      "junit_totals": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 2,
+        "skipped": 0
+      },
+      "junit_uncompressed_sha256": "c7de3d8ed81ab86e948edd84d8599ccbe013df178ad9c4c8407375bf49c33b35"
+    },
+    {
+      "name": "routing",
+      "command_argv": [
+        "/Users/yuan/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_provider_routing_postgres.py",
+        "tests/integration/test_routing_bootstrap_budget_postgres.py",
+        "tests/integration/test_chapter_provider_sampling_postgres.py",
+        "tests/integration/test_provider_retry_observations_postgres.py",
+        "--junitxml=/Users/yuan/.codex/tmp/narrative-feedback-closure/final/routing.xml"
+      ],
+      "database": "nf_final_closure_routing_test",
+      "exit_code": 1,
+      "duration_seconds": 9.819,
+      "log": "routing.log.gz",
+      "junit": "routing.xml.gz",
+      "junit_totals": {
+        "tests": 87,
+        "failures": 0,
+        "errors": 87,
+        "skipped": 0
+      },
+      "junit_uncompressed_sha256": "31d4ed871b700b1f7f835ebb81af8712b3d7d006475f27add80d204f69f6f6a8"
+    },
+    {
+      "name": "unit",
+      "command_argv": [
+        "/Users/yuan/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit/test_cost_aware_routing.py",
+        "tests/unit/test_production_execution_routing.py",
+        "tests/unit/test_routing_bootstrap.py",
+        "tests/unit/test_planning_routing_bootstrap.py",
+        "tests/unit/test_quality_calibration_v2.py",
+        "tests/unit/test_creative_budget_contract.py",
+        "tests/unit/test_craft_selection.py",
+        "tests/unit/test_craft_execution.py",
+        "tests/unit/test_narrative_craft_review.py",
+        "tests/unit/test_provider_task_views.py",
+        "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_world_actor_isolation.py",
+        "tests/unit/test_world_actor_sampling.py",
+        "tests/unit/test_narrative_reality_causality.py",
+        "tests/unit/test_stateful_canon_domain.py",
+        "tests/unit/test_narrative_state_semantics_v2.py",
+        "tests/unit/test_narrative_state_contract_v2.py",
+        "tests/unit/test_plan_change_authority.py",
+        "tests/unit/test_longform_prose_editorial.py",
+        "tests/unit/test_prose_reviewer_sampling.py",
+        "tests/unit/test_longform_capability_pack_profiles.py",
+        "tests/unit/test_capability_pack_validator.py",
+        "tests/unit/test_capability_pack_runtime_binding.py",
+        "tests/unit/test_cross_chapter_prose_review.py",
+        "tests/unit/test_author_editor.py",
+        "--junitxml=/Users/yuan/.codex/tmp/narrative-feedback-closure/final/unit.xml"
+      ],
+      "database": null,
+      "exit_code": 1,
+      "duration_seconds": 26.928,
+      "log": "unit.log.gz",
+      "junit": "unit.xml.gz",
+      "junit_totals": {
+        "tests": 1875,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "junit_uncompressed_sha256": "a03e201ffb180aa21313fa16d40bbb411cf366f7e429bfd150cd5f5b792fa029"
+    },
+    {
+      "name": "prose-recovery",
+      "command_argv": [
+        "/Users/yuan/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_longform_prose_editorial_postgres.py",
+        "tests/integration/test_prose_reviewer_sampling_postgres.py",
+        "tests/integration/test_cross_chapter_prose_review_postgres.py",
+        "tests/integration/test_external_effect_runtime_postgres.py::ExternalEffectRuntimePostgresTests::test_expired_post_request_lease_requires_query_without_duplicate_execute",
+        "tests/integration/test_external_effect_runtime_postgres.py::ExternalEffectRuntimePostgresTests::test_two_dispatchers_compete_and_expired_lease_takeover_fences_old",
+        "tests/integration/test_external_effect_runtime_postgres.py::ExternalEffectRuntimePostgresTests::test_reconciliation_not_found_allows_retry_and_ambiguous_stays_blocked",
+        "tests/integration/test_external_effect_runtime_postgres.py::ExternalEffectRuntimePostgresTests::test_receipt_inbox_replay_conflict_and_generation_binding",
+        "tests/integration/test_external_effect_runtime_postgres.py::ExternalEffectRuntimePostgresTests::test_cancel_before_dispatch_and_after_dispatch_have_distinct_outcomes",
+        "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_cancel_preserves_successful_unaccepted_child",
+        "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_cancel_preserves_accepted_chapter_history",
+        "--junitxml=/Users/yuan/.codex/tmp/narrative-feedback-closure/final/prose-recovery.xml"
+      ],
+      "database": "nf_final_closure_prose_recovery_test",
+      "exit_code": 1,
+      "duration_seconds": 38.012,
+      "log": "prose-recovery.log.gz",
+      "junit": "prose-recovery.xml.gz",
+      "junit_totals": {
+        "tests": 19,
+        "failures": 0,
+        "errors": 17,
+        "skipped": 0
+      },
+      "junit_uncompressed_sha256": "37c8f448d929e063018d25765fc2532ebb29cd000d2a965aba2bb280d0a00e2f"
+    },
+    {
+      "name": "hierarchy",
+      "command_argv": [
+        "/Users/yuan/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_core_functional_loops_postgres.py::test_book_input_resolver_freezes_active_authorities_and_planning_pack",
+        "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[True]",
+        "tests/integration/test_chapter_group_authority_postgres.py::ChapterGroupAuthorityPostgresTests::test_one_chapter_execution_window_freezes_policy_across_restart_and_replay",
+        "tests/integration/test_chapter_group_authority_postgres.py::ChapterGroupAuthorityPostgresTests::test_chapter_group_three_chapter_vertical_and_rolling_horizon",
+        "tests/integration/test_hierarchical_planning_postgres.py::HierarchicalPlanningPostgresTests::test_arc_crosses_volumes_and_relations_form_closure",
+        "tests/integration/test_hierarchical_planning_postgres.py::HierarchicalPlanningPostgresTests::test_executed_plan_is_not_overwritten",
+        "--junitxml=/Users/yuan/.codex/tmp/narrative-feedback-closure/final/hierarchy.xml"
+      ],
+      "database": "nf_final_closure_hierarchy_test",
+      "exit_code": 2,
+      "duration_seconds": 72.122,
+      "log": "hierarchy.log.gz",
+      "junit": "hierarchy.xml.gz",
+      "junit_totals": {
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "junit_uncompressed_sha256": "8613f351507304ad4abc6a56cb7341acc1d03df673ab92c2c67a473bef6b2838"
+    }
+  ],
+  "all_passed": false
+}

@@ -1,0 +1,32 @@
+{
+  "prior-final-attempt/actors.log": {
+    "archive": "prior-final-attempt/actors.log.gz",
+    "uncompressed_sha256": "0e0ca3ed27a56daa0362ec667c47c9094c4a4bce3cf2266e5f22612fa1955be0",
+    "uncompressed_bytes": 4615
+  },
+  "prior-final-attempt/craft-impact.log": {
+    "archive": "prior-final-attempt/craft-impact.log.gz",
+    "uncompressed_sha256": "d77705bf9c60cd6c89f6f062545c7b4b63622e40bdf7e2ce20760dd7dd4274e8",
+    "uncompressed_bytes": 25067
+  },
+  "prior-final-attempt/hierarchy.log": {
+    "archive": "prior-final-attempt/hierarchy.log.gz",
+    "uncompressed_sha256": "c49bc27a5fb9a6b99a2daedb3b10d6ce416bfa3460ff9e28ff90b26afe0eaa9e",
+    "uncompressed_bytes": 319
+  },
+  "prior-final-attempt/prose-recovery.log": {
+    "archive": "prior-final-attempt/prose-recovery.log.gz",
+    "uncompressed_sha256": "75a93eefd8c621dbd55a3b7245741ff3fc4af64a035d6c50efc5bc0ac18e6c3b",
+    "uncompressed_bytes": 37420
+  },
+  "prior-final-attempt/routing.log": {
+    "archive": "prior-final-attempt/routing.log.gz",
+    "uncompressed_sha256": "a390535dedda5e02cacede0247a59e2ee790f115214903b194d710a8518f37ba",
+    "uncompressed_bytes": 190347
+  },
+  "prior-final-attempt/unit.log": {
+    "archive": "prior-final-attempt/unit.log.gz",
+    "uncompressed_sha256": "aa9c224a283dd2b0258315013d43616c569c7ad76ff63058f77c2488a6c45aae",
+    "uncompressed_bytes": 6027
+  }
+}

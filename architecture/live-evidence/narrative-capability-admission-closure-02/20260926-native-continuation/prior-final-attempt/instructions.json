@@ -1,0 +1,599 @@
+{
+  "errors": [],
+  "instruction_identity_sha256": "sha256:e6260dbe36048aae367f767ae20e48765696838c47cb80863e5ccb0f6f59a4f2",
+  "schema_version": "novel-forge.ai-instruction-reality.v1",
+  "source_count": 59,
+  "sources": [
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_POLICY",
+      "owner": "repository-governance",
+      "path": "AGENTS.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:8643058c044cd7dfb8baf907d9e7e6d7c43456a9d210648a9b301e908bc3b863",
+      "size": 4640,
+      "source_id": "coding-agent-policy"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_POLICY",
+      "owner": "repository-governance",
+      "path": "CLAUDE.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:c6def1b6fa44f3e4b88199afda516899a4b1390a235b0b9a5e0363c552187c77",
+      "size": 194,
+      "source_id": "coding-agent-policy"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "INSTRUCTION_BINDING",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/agent_session_pack.json",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ff35c98625c130aa7ba371f1e9ef37de218f153246a123f910d6388f892fee6c",
+      "size": 10657,
+      "source_id": "capability-pack-instruction-bindings"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/agent_session_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:dc7af7138384d1ad9fb5636122655c48e47f6815f53cac9403a93fa52e894d3d",
+      "size": 405,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/agent_session_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:6770272dedd724622365c33414f05851d1c19c1c7d3741dd1140e2056550e8b6",
+      "size": 376,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:c36ae6a6b64ba27aaab0b7ffd42b7cf05be4410ac25cdb2d667ee5c9cfa5ad45",
+      "size": 296,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a69eebbacb169071e28ec4133fda95a11e5dbc426ac7a05f8c4e51298f84cbbe",
+      "size": 241,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/longform_prose_review_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:3433df978a0cc93f2975566cf27da28f1573293bf62f9877f2b521497552533a",
+      "size": 766,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/longform_prose_review_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:51f69fbc0d7d0a5dc4a036127a9a2110edcf4257fc8d1eec99c90f0a88590995",
+      "size": 148,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/narrative_evaluation_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:cf69cace3ae3dcf856c05b9fd413e954b0d5215240444624e4ca7dfec52ad7b2",
+      "size": 1992,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/narrative_evaluation_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:29162621cb468e41f3fa070fe0501f4cdd6531dc4c1528d520562dbcaee0941c",
+      "size": 184,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/reader_outcome_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:935fb24505dec2130ddcf3c494ce2afb415161f969ff678d5ba2817418356238",
+      "size": 286,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/reader_outcome_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:cda7e283fa1a7c294932c2d45071815d02dddb803ac5daf897bdb76ff7995313",
+      "size": 333,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+      "size": 5867,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:144021c742309f09756debe21e8f5441de22f812cab4325ff555b6d394aedc44",
+      "size": 321,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "INSTRUCTION_BINDING",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/chapter_generation_pack.json",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:fb38baea2b26cedb823fc2f3bf045a9d1c657446a17d56946c8062a1b927c9c0",
+      "size": 34575,
+      "source_id": "capability-pack-instruction-bindings"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/agent-loop-governance/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:d35583efb62fb6b7cca223af3e7506a991a0d51690323ee4cf4f847a1452436b",
+      "size": 5005,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/analysis-to-asset-conversion/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:831a6b877cd6dba22b98f86d211a80c3c6f6ac4923903e78729ac5b8016c7883",
+      "size": 2320,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/anti-copy-abstraction/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:574222188fe361af4530d1b50b3ab71cd00dfe788c852e05419fc9ccc7893515",
+      "size": 3971,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/canon-continuity-graph/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:47cc7b18ffb04bd3e754a0f274d0a63b77dac4aca250602dc3e0a642a8114065",
+      "size": 5392,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/chapter-outline/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:fd8d3e02c7cc428eb96037d9d7d8036b59b26252f76388ba7f44e3338fe5bf76",
+      "size": 3864,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/character-design/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4eb820e8f541067ad5f3277b860596a095dd8f2f67c5d80bec44e95333f02cea",
+      "size": 2847,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/classic-literary-depth-analysis/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:55a22fd03ae6410f8d0e8148a6feccf424d24fcb50ce7dc5305d1a008b6733b2",
+      "size": 2209,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/context-builder-source-isolation/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:16071b45e41ec6c55f835653ef137e19bace61d904b434024196112307d1d513",
+      "size": 3477,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/evidence-fact-verification/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:906df71ccfee72274cf6d926597637469427aa1574a41ceabd1c8eed6918e6c0",
+      "size": 3649,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/hot-novel-business-deconstruction/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7feaaf6da55d30956f953f4b12228729dacb18bf4d4ebdf505727b625f77dcdf",
+      "size": 2421,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/hot-novel-deconstruction/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:3844f7152f4d1bd1c2b5a8b95c916abb5d44d8a26e0c84800bdf6a7e38270cdb",
+      "size": 5405,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/long-outline/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4e4a9f2183602bc506d5daba09e446df9bbd849532b02b72e22b4ae6b7e6219b",
+      "size": 3871,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/longform-temporal-query/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ea6805f1b44acfaaf0b01e04939864930336eb7f516cd9328a9f6c3eded80f8f",
+      "size": 3635,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/material-curation/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:588efc5a4fc9cb15196fdea17565dfdcffc589e800dc13a754a02c9ba9189060",
+      "size": 3072,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/mkaos-knowledge-asset-os/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:6f26df621b32a5776e1d32aeb47966b39af577e45013cc8b99c196485002d559",
+      "size": 5155,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/multi-scale-pacing/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:5819439651a7e7ac69640b4a834550f67b80091cdaa3e345850de25423d48bc7",
+      "size": 3885,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/multidisciplinary-knowledge/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ef27e852557903648f86d5a7bd11b595bce4ab859690d9b60597183350f983ef",
+      "size": 3615,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/narrative-beat-design/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:943fcd71f29a854463357e44267a1631c8e76e3f4b0a1bb46792fe2d31c05e06",
+      "size": 4666,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/novel-os-engineering-audit/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:8e69cda7879199be989385abeb28763f84da2cfa4f224efd01116100ad61de24",
+      "size": 2962,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/platform-strategy-os/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:5aff23f16416c66dc03dea781aac7922f35752e9e8e7e54003627b8fa1e61a43",
+      "size": 3103,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/project-planning/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:18904fc154876d5f427bafae96213f5d2e20192c96e7d1c52302d65892dcd41e",
+      "size": 3667,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/prose-generation/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4e5ca7a08841ae4384585f1385851406fb08a92972eba0c035b985bed7c7616c",
+      "size": 2912,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/provider-runtime-policy/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:09ad47387807d718628ae952364a6acd95738c0dc071db5f73675c8024e8997f",
+      "size": 3268,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/publish-release-gate-os/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:f0a59f6399b9f0d1b0dd08dba220d8479c3797b6b21e6adc32245b457d2d9c1f",
+      "size": 3410,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/published-fiction-craft-analysis/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ffcbead275b93bff7942dd72bf1c142f37ab94d88dc13b4865822a64f2dafdae",
+      "size": 2226,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/quality-review/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:d8ada86b028cbc5e921d0aed88cd691884cc89fd0799b36d86e1c3b24d868496",
+      "size": 3964,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/reader-feedback/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4e050589d442a819970144f6b699aaf65bb306022851b840e1ac07a4594530bc",
+      "size": 2904,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/review-issue-gate/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:2a1a0efd8c72f2fb5478e793c6517b95af2973078e30f06c14a03c6f528140f2",
+      "size": 2783,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/skill-governance/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ffecfa91592be04f911e007be7764dfda1153bdbcbe1bfdfa23db3053c939980",
+      "size": 3680,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/topic-development/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:34d9235996a0b45808e3183204954a13db0601ef8d7eac7eeb12c7be01f1261e",
+      "size": 3118,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/training-exercise/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:930e8d89a62ad90717344d2236f750202e708f6369ac1304565adf688641cd8d",
+      "size": 2961,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/world-consequence-modeling/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0a88ff4679894cd4e90273821057f25e84811652d64d3de5deb987fb94b8d6c5",
+      "size": 3431,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/worldbuilding/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:8c987220d8aaa4cd5fb8fbe92780d5559c527e35cd17913e6e1a5c6595274cbe",
+      "size": 3180,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/chapter_authority/provider_views.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e59251281acd3c53bf834db71854b07cd14af40527aa9d46d40a9d177914653f",
+      "size": 121963,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/provider_qualification/runner.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:04b3c8ba8294f9d2c95850f53bfedabe5ae1548559669f200bd0eaf6213cebe2",
+      "size": 7004,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/review/craft.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:054b9c764fa41e6fcb97d989be9e5d3d038c31cbe6f5fb55f6c517b03f63d7b7",
+      "size": 31495,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/revision/domain.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:066fd8f9247d44a2eb0b474e7a7b09ce9dd7437683f83117eef950e684bdbd5e",
+      "size": 15756,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/source_authority/deconstruction.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7ea1a9ae649274047dfd158072bc84c254f970e27209b00963f68c2d04f36506",
+      "size": 19904,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/source_import/corpus_ingestion/narrative_contracts.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:dae6473b981a41577d1aeda69d7927be8d46ce658923c0efbdeca274f5b17dcc",
+      "size": 17611,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/source_import/execution.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:5cbab9be5a433ec0faabd1a26e4073373b5009845d31c3d289179b56f1acc5cd",
+      "size": 108947,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:9b3e089fbe0231104c633f71eb7256d0b88ecac74f64549d44d7c4f4a49b4b40",
+      "size": 254605,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ca4e89a68d809d6d626616d877fb14c3062e2d8e7298d199e16fe99000066d73",
+      "size": 14874,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "admin-runtime",
+      "path": "web/admin/app/features/evaluation/api.ts",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4710cea0d08a0a8ac31a5367b858226ff7d92c6e3b650d1c601643ab30dc1fda",
+      "size": 3214,
+      "source_id": "admin-embedded-instructions"
+    }
+  ],
+  "status": "PASS"
+}
