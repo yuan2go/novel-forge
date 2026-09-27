@@ -49,9 +49,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     "content_hash": resolved.content_hash,
                 }
                 for resolved in (
-                    (review_query.require if request.definition_name == "story_design.review.author"
-                     and asset_version_id == request.payload.get("candidate_asset_version_id")
-                     else resolver.resolve_override)(
+                    (review_query.require if (
+                        request.definition_name == "story_design.review.author"
+                        and asset_version_id == request.payload.get("candidate_asset_version_id")
+                    ) or (
+                        request.definition_name in {"quality.human_evaluation.record", "quality.adjudication.record"}
+                        and isinstance(request.payload.get("reference_sample"), dict)
+                        and asset_version_id == request.payload["reference_sample"].get("asset_version_id")
+                    ) else resolver.resolve_override)(
                         project_id=request.project_id,
                         asset_version_id=asset_version_id,
                     )
