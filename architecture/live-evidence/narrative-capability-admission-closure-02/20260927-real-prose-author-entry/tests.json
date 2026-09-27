@@ -50,8 +50,8 @@
       "log": "api-route-check.json"
     },
     {
-      "command": "ruff check affected Python files; git diff --check",
-      "result": "PASS"
+      "command": "ruff check affected Python files; git diff --check before evidence logs were added",
+      "result": "PASS for implementation source; full evidence diff reports trailing whitespace in verbatim captured failure logs, retained unchanged"
     }
   ]
 }
