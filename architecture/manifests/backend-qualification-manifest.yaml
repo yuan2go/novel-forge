@@ -163,7 +163,9 @@
       "tests/integration/test_narrative_craft_catalog_replay_postgres.py",
       "tests/integration/test_craft_planning_postgres.py",
       "tests/integration/test_narrative_craft_chapter_postgres.py",
-      "tests/integration/test_craft_discovery_postgres.py"
+      "tests/integration/test_craft_discovery_postgres.py",
+      "tests/unit/test_craft_solver.py",
+      "tests/unit/test_craft_usage.py"
     ]
   },
   "proof_scope": {

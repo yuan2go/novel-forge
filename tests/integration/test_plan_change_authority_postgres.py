@@ -650,16 +650,42 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             )
             self.assertEqual(uow.cursor.fetchone()[0], 0)
 
-    def _implicit_change(self):
+    def test_structured_change_uses_native_discovery_decision_and_invalidation(self):
+        before = {"resource_id": "qi", "minimum": 9}
+        after = {"resource_id": "qi", "minimum": 2}
+        authority, command, old = self._implicit_change(before=before, after=after)
+        future = self._implicit_binding(old, "chapter:volume-2:gate", "PLANNED", {"resource_id": "qi", "minimum": 8})
+        unrelated = self._implicit_binding(old, "chapter:volume-3:inn", "PLANNED", {"resource_id": "silver", "minimum": 8})
+        proposal = authority.propose(command, principal=self.principal)
+        hypotheses = {row["candidate"]["asset_version_id"]: row for row in proposal["semantic_impact_discovery"]["hypotheses"]}
+        self.assertIn(future, hypotheses)
+        self.assertNotIn(unrelated, hypotheses)
+        hypothesis = hypotheses[future]
+        self.assertEqual(hypothesis["relation"], "SHARED_TYPED_STATE_CHANGE")
+        authority.decide(proposal["proposal_id"], approved=True, authority_type="BOOK_DESIGN_AUTHORITY", authority_version="fixture.v1",
+            evidence={"fixture_protocol_only": True, "semantic_impact_dispositions": [{"hypothesis_id": hypothesis["hypothesis_id"], "disposition": "CONFIRMED", "rationale": "Insufficient qi cannot satisfy the frozen gate prerequisite", "evidence": hypothesis["plan_evidence"]}]}, principal=self.principal)
+        authority = PostgresPlanChangeAuthority(DATABASE_URL, story_design=self.story_design, planning=self.planning, application_build_id="plan-change-integration", commit_sha="d" * 40)
+        activated = authority.activate(proposal["proposal_id"], principal=self.principal)
+        self.assertEqual(activated["status"], "ACTIVE")
+        self.assertEqual(self.planning.require_binding(project_id=self.project_id, asset_version_id=future)["freshness"], "IMPACTED")
+        self.assertEqual(self.planning.require_binding(project_id=self.project_id, asset_version_id=unrelated)["freshness"], "CURRENT")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT COUNT(*) FROM authority_artifact_invalidation WHERE project_id=%s AND target_asset_version_id=%s AND status='OPEN'", [self.project_id, future])
+            self.assertGreater(uow.cursor.fetchone()[0], 0)
+            uow.cursor.execute("SELECT COUNT(*) FROM asset_dependency_edge WHERE source_asset_version_id=%s AND dependent_asset_version_id=%s", [old, future])
+            self.assertEqual(uow.cursor.fetchone()[0], 0)
+        self.assertEqual(authority.propose(command, principal=self.principal)["semantic_impact_discovery"], proposal["semantic_impact_discovery"])
+
+    def _implicit_change(self, *, before="promise:river-rescue", after="promise:river-crossing"):
         old = self.planning_fixture._activate_and_bind(
             self._book_type(),
             "book:main",
             execution_scope=self._frozen_scope(),
-            extra={"required_events": ["promise:river-rescue"]},
+            extra={"required_events": [before]},
         )
         proposed = self._approved_candidate(
             logical_key="book:main",
-            extra={"required_events": ["promise:river-crossing"]},
+            extra={"required_events": [after]},
         )
         source = self._seed_asset(
             "impact-recap",

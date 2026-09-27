@@ -620,6 +620,7 @@ def _seed_inputs(
     world_foundation: dict[str, Any] | None = None,
     world_production_policy: dict[str, Any] | None = None,
     initial_current_state: dict[str, Any] | None = None,
+    craft_budget_policy: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     roles = sorted(
         {role for values in GENERATOR_INPUT_ROLES.values() for role in values}
@@ -655,6 +656,8 @@ def _seed_inputs(
                 content["profile_id"] = "controlled-planning-fixture"
                 if world_production_policy is not None:
                     content["world_production_policy"] = dict(world_production_policy)
+                if craft_budget_policy is not None:
+                    content["craft_budget_policy"] = dict(craft_budget_policy)
                 content["target_chapter_count"] = target_chapter_count
                 if governance_action is not None:
                     content["narrative_load_policy"] = {
@@ -1410,10 +1413,10 @@ def _activate_plan_chain(
     ],
 )
 def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
-    request: pytest.FixtureRequest, autonomous_world: bool | str
+    request: pytest.FixtureRequest, autonomous_world: bool | str, craft_budget_policy: dict | None = None
 ) -> None:
     test_case = request.node
-    harness = CapabilityPackPostgresHarness("narrative-evolution-opening")
+    harness = CapabilityPackPostgresHarness("narrative-evolution-opening", production_profile={"craft_budget_policy": craft_budget_policy} if craft_budget_policy else None)
     chapter_pack_id = ""
     if autonomous_world:
         from copy import copy

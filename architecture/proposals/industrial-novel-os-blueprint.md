@@ -8,18 +8,18 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `7f1510d40d0ed2dd3ede575806222fce17cbc8bd`
-Baseline implementation identity: `sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3`
+Current-reality baseline: `5bb9d91dcb64260956c901a50316badca560094e`
+Baseline implementation identity: `sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-26",
-  "review_due": "2026-10-08",
+  "reviewed_on": "2026-09-27",
+  "review_due": "2026-10-11",
   "reality_baseline": {
-    "sha": "7f1510d40d0ed2dd3ede575806222fce17cbc8bd",
-    "implementation_tree_sha": "sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3"
+    "sha": "5bb9d91dcb64260956c901a50316badca560094e",
+    "implementation_tree_sha": "sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -169,7 +169,7 @@ Baseline implementation identity: `sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00
     },
     {
       "id": "segment-boundaries",
-      "description": "DESIGN_REVIEW_REQUIRED: segment identity and boundary changes across accepted chapters.",
+      "description": "Implementation contract required: immutable Book-owned editions preserve accepted originals, bind exact base manifests and revalidate affected facts before controlled switching; this is authorized WP02 scope, not a request for another approval.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
@@ -220,7 +220,7 @@ Baseline implementation identity: `sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00
     },
     {
       "id": "retrospective-correction",
-      "description": "DESIGN_REVIEW_REQUIRED: erratum, compensating fact or edition boundaries for accepted factual errors.",
+      "description": "Implementation contract required: immutable Book-owned editions preserve accepted originals, bind exact base manifests and revalidate affected facts before controlled switching; this is authorized WP02 scope, not a request for another approval.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/storage/book_authority_repositories.py"
@@ -352,10 +352,12 @@ required before changing the affected current contract.
    Whole-book Completion at each publication class.
 6. `DESIGN_REVIEW_REQUIRED`: reader-data privacy, consent, cohort retention, and causal
    attribution policy before real behavior can drive adaptation proposals.
-7. `DESIGN_REVIEW_REQUIRED`: correction semantics when an accepted factual error cannot
-   be repaired prospectively—erratum, compensating canon fact, or new edition boundary.
+7. `IN_SCOPE_IMPLEMENTATION_REQUIRED`: retrospective correction creates an immutable edition
+   bound to an exact base manifest under Book/Editor ownership. Revalidate affected facts
+   and projections from the earliest changed boundary; atomic switching must preserve the
+   old edition and settle in-flight work. Future-only Plan Change keeps its current meaning.
 
-Unresolved decision count: **7**. Foundation ownership is resolved by the implemented
+Unresolved design decision count: **6**; the edition direction is decided and its implementation remains required. Foundation ownership is resolved by the implemented
 single Story Design owner and Book Design's immutable binding; a physical service split
 is not a prerequisite for one-fact/one-Authority semantics.
 
@@ -381,14 +383,14 @@ coverage and issue dispositions. Public release is separately authorized.
 | --- | --- | --- |
 | Market observations | Topic proposal; one rights-backed source, comparable cohort, observation time and missing-value semantics | HOLD until source authorization and a testable topic-quality hypothesis exist; then one bounded input adapter |
 | General association graph | A concrete query unmet by existing accepted/inferred indexes; exact source and relation provenance | HOLD until that query and measured improvement are specified; never merge inferred relations into accepted truth |
-| Short form, scripts or multimedia | Explicit version of accepted prose and an identified downstream adapter; source/output rights | HOLD until the consumer and useful output are approved; model/resource generation and publication need separate authorization |
+| Textual novel and scene screenplay adaptation | Exact accepted source edition; distinct chapter/scene-dialogue contracts and review rules; source/output rights | REQUIRED IN WP02: implement through existing Editor and Authorities. Image, audio and video production are outside this scope; publication remains separately authorized |
 
 ## WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02
 
-The continuation was checked against fetched `origin/main`
-`742c228dd8b806241f3299e491ab0bf2bade1007`; the historical reference and current baseline
-were identical. This bounded capability map distinguishes the baseline gaps from the
-native consumers that must demonstrate closure. It is not another architecture source.
+The active continuation is based on fetched `origin/main`
+`6c501c8148c705a1e3466867fdcc4ff15d3ffdd6`, identical to the requested historical
+reference. Existing historical experiments and failures retain their original implementation
+identities. The table distinguishes current gaps rather than re-opening closed baseline work.
 
 | Capability | Existing implementation and actual consumer | Baseline gap | Required observable evidence |
 | --- | --- | --- | --- |
@@ -410,7 +412,9 @@ Acceptance requires backend commands and exact native consumers for every stage,
 independent positive/negative evidence and recoverable Effect receipts. In particular,
 coverage cannot imply a global verdict, a proposed revision cannot imply resolution,
 reference agreement cannot qualify a generator, and samples never become formal assets.
-The completion quorum and retrospective edition decisions above remain unresolved.
+The completion quorum remains a policy decision. Retrospective editions and textual
+adaptation are explicitly in this work package; lack of implementation is not an approval
+blocker or a reason to move them to another package.
 
 Verification is restricted by the execution request to focused backend unit, native
 PostgreSQL vertical/recovery, applicable migration and static manifest checks. Full P0,
@@ -420,3 +424,26 @@ independent human evidence require matching existing authorization and identitie
 All historical fixed-SHA failures, campaign counters and unknown Effects are retained.
 
 The current native continuation is checked in the [versioned evidence record](../live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/status.json). It separates final focused execution, inspectable native artifacts, retained failures and still-blocked real qualification; the earlier backend and campaign records remain unchanged.
+
+The expanded WP02 scope and current implementation boundary are tracked in the
+[continuation evidence](../live-evidence/narrative-capability-admission-closure-02/20260927-composition-runtime/status.json).
+
+| Work | Current category | Remaining required behavior |
+| --- | --- | --- |
+| P0-1 persistent environment | Implemented, partially verified | Original PostgreSQL/MinIO volumes recovered and forward-upgraded with backup/restore comparison; one historical timeout and unknown costs remain retained. No authorized production worker has restarted |
+| Craft composition and usage | Implemented, focused verification | Deterministic dependency/scene/frequency search, explicit typed phases, older open-instance retrieval and accepted feedback; Provider-rejection reselection and arbitrary supported scene applicability remain incomplete |
+| Semantic prose/impact retrieval | Implemented, focused verification | Exact accepted-state multi-passage retrieval and typed changed-state hypotheses consume native review/Plan Change; unindexed semantics and empirical precision/recall remain unproven |
+| Continuing multi-step Actor | Missing implementation | Existing one-action private projection and commitment dispositions must be extended through judged plans and accepted cross-round state |
+| Whole-manuscript editions | Missing implementation | Book-owned base manifests, mapped structural edits, isolated fact revalidation, concurrent/recoverable admission, controlled switch and Editor/CLI/API consumers |
+| Multiple textual forms | Missing implementation | Novel plus scene screenplay adaptation; distinct input/structure/generation/review/export contracts and exact source-version invalidation |
+| P0-2 same-Book joint validation | Missing wiring/verification | Native Craft continuity is demonstrated with scripted transport; the combined Actor/global review/impact/edition/adaptation chain is not complete |
+| P0-3 real sampling/admission | Implementation and external conditions missing | Freeze the complete enabled task closure after required engineering; existing grants have expired and independent human references are missing |
+| P0-4 real production/effect controls | External conditions and upstream implementation missing | Current task admissions, finite account authorization, human/reader references, same-Book production and representative controlled comparisons |
+
+The supported output matrix for this package is textual novel (Book/Volume/Arc/Chapter/Scene)
+and a scene screenplay adaptation (Scene/action/dialogue, source fidelity and actor-knowledge
+review). Source editions, analysis, plans and review reports remain input or intermediate
+assets; file extensions do not constitute output forms. Neither form is newly declared
+complete by this scope decision. These gaps are mandatory work within WP02, not optional
+future recommendations. No engineering result here grants publishing authority or proves
+literary, reader, long-form or cost benefit.

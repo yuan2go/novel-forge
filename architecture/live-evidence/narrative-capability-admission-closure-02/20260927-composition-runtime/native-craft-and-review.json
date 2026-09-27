@@ -1,0 +1,745 @@
+{
+  "book_run_id": "book-run:134566bb-7b7f-427e-b6a5-eeebf1a25c87",
+  "generation_operation_id": "f9456701-61ea-4e29-97fb-e8ad96b712b4",
+  "candidate_asset_version_id": "authority-output:f9456701-61ea-4e29-97fb-e8ad96b712b4:story_planning.candidate:v1",
+  "selection_digest": "sha256:f5318dae8b5290727ac9c0b8db7f59fd8c8a989ca0edac0800ee4f9ace528539",
+  "strategy_digest": "sha256:2a6c83274121339f23572f797a5f145875887fff0882c0dcd0b8dea2d38210b2",
+  "external_effect_id": "0b47952b-ebf0-4069-b774-5fa7260c5960",
+  "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+  "accepted_phase_usage": [
+    {
+      "mechanism_id": "choice-exposes-value",
+      "mechanism_version": 1,
+      "use_id": "craft-use:f50e898dc8b6411d30235532",
+      "scene_id": "chapter:2:scene:1",
+      "role": "PRIMARY",
+      "knowledge_card_asset_version_id": "knowledge-card:project-b6a3335a2aea452485f3e4092bc8b1fd:de2d246b6a46499b4989b8799f65c30f54813a5958e58da6cb5c4c80af1cebf3:v1",
+      "content_hash": "sha256:0142a7135c8ec1ce8b04a8f619e044af01a3761a8d1a098c6c5446467ea139b3",
+      "usage": {
+        "phase": "DEVELOPMENT",
+        "status": "PLANNED",
+        "type_id": "staged",
+        "scope_id": "authority-output:4829f858-cbf9-4166-94d8-7037e1eac4b8:story_planning.candidate:v1",
+        "instance_id": "craft-instance:a84611f67e656f75c18fbc85",
+        "type_policy": {
+          "mode": "PHASED",
+          "scope": "ARC",
+          "phases": [
+            "SETUP",
+            "DEVELOPMENT",
+            "PAYOFF"
+          ],
+          "frequency_unit": "INSTANCE"
+        },
+        "scope_binding": {
+          "scope": "ARC",
+          "book_id": "book:project-b6a3335a2aea452485f3e4092bc8b1fd",
+          "scope_id": "authority-output:4829f858-cbf9-4166-94d8-7037e1eac4b8:story_planning.candidate:v1",
+          "project_id": "project-b6a3335a2aea452485f3e4092bc8b1fd"
+        },
+        "scope_context": {
+          "book_id": "book:project-b6a3335a2aea452485f3e4092bc8b1fd",
+          "project_id": "project-b6a3335a2aea452485f3e4092bc8b1fd",
+          "chapter_number": 2,
+          "arc_plan_version_ids": [
+            "authority-output:4829f858-cbf9-4166-94d8-7037e1eac4b8:story_planning.candidate:v1",
+            "authority-output:d88bacaf-753d-4f3a-8d58-cd55ffbf88d8:story_planning.candidate:v1"
+          ]
+        },
+        "budget_snapshot": {
+          "frequency": 1,
+          "in_cooldown": true
+        },
+        "accepted_predecessor": {
+          "usage": {
+            "phase": "SETUP",
+            "type_id": "staged",
+            "scope_id": "authority-output:4829f858-cbf9-4166-94d8-7037e1eac4b8:story_planning.candidate:v1",
+            "instance_id": "craft-instance:a84611f67e656f75c18fbc85",
+            "type_policy": {
+              "mode": "PHASED",
+              "scope": "ARC",
+              "phases": [
+                "SETUP",
+                "DEVELOPMENT",
+                "PAYOFF"
+              ],
+              "frequency_unit": "INSTANCE"
+            },
+            "scope_binding": {
+              "scope": "ARC",
+              "book_id": "book:project-b6a3335a2aea452485f3e4092bc8b1fd",
+              "scope_id": "authority-output:4829f858-cbf9-4166-94d8-7037e1eac4b8:story_planning.candidate:v1",
+              "project_id": "project-b6a3335a2aea452485f3e4092bc8b1fd"
+            }
+          },
+          "use_id": "craft-use:a84611f67e656f75c18fbc85",
+          "chapter": 1,
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "usage_basis": "ACCEPTED_PROSE_REVIEW",
+          "content_hash": "sha256:0142a7135c8ec1ce8b04a8f619e044af01a3761a8d1a098c6c5446467ea139b3",
+          "acceptance_id": "chapter-acceptance:585dd4eff529461643f575e64391212150497600676a64b334c0801da9f151d9",
+          "effect_status": "ACHIEVED",
+          "target_text_hash": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96",
+          "review_asset_version_id": "authority-output:e8d3fbf4-6539-4933-bb89-fdde734547e3:chapter.best_candidate.selected_review:v1",
+          "accepted_draft_asset_version_id": "authority-output:e8d3fbf4-6539-4933-bb89-fdde734547e3:chapter.best_candidate:v1",
+          "knowledge_card_asset_version_id": "knowledge-card:project-b6a3335a2aea452485f3e4092bc8b1fd:de2d246b6a46499b4989b8799f65c30f54813a5958e58da6cb5c4c80af1cebf3:v1"
+        }
+      },
+      "family": "CHARACTERIZATION",
+      "pattern_signature": [
+        "abstract_mechanism",
+        "affinity",
+        "chinese_serial",
+        "choice",
+        "dialogue",
+        "first_person",
+        "genre",
+        "limited",
+        "pacing",
+        "pov",
+        "scene_type",
+        "variable",
+        "wuxia",
+        "xuanhuan",
+        "互斥",
+        "人物",
+        "其放",
+        "出人",
+        "利益",
+        "及其",
+        "在既",
+        "在既定互斥利益间突出人物选择及其放弃项",
+        "定互",
+        "弃项",
+        "择及",
+        "放弃",
+        "斥利",
+        "既定",
+        "物选",
+        "益间",
+        "突出",
+        "选择",
+        "间突"
+      ],
+      "chapter": 2,
+      "acceptance_id": "chapter-acceptance:1439d71434bd62ec8bc953b0fc97ed21274843ed2eaa990fba4fee983cf77fa2",
+      "accepted_draft_asset_version_id": "authority-output:eb08149c-70ef-4d90-acfa-6330435f45ee:chapter.best_candidate:v1",
+      "accepted_draft_content_hash": "sha256:12f32fac8aa88cd42aef4a3419a4a733c298c827fa6ba46a73df201eb362c2f1",
+      "review_asset_version_id": "authority-output:eb08149c-70ef-4d90-acfa-6330435f45ee:chapter.best_candidate.selected_review:v1",
+      "review_content_hash": "sha256:2b20343240e3d88bfe62a8a826603ade2a3572b8b21b4b324041f20dd559ea35",
+      "target_text_hash": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a",
+      "evidence": {
+        "end": 360,
+        "quote": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+        "start": 0,
+        "offset_unit": "UNICODE_CODE_POINT",
+        "excerpt_digest": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a"
+      },
+      "effect_status": "ACHIEVED",
+      "side_effects": [
+        {
+          "kind": "MISUSE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "OVERUSE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "ARTIFICIALITY",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "PACING_DAMAGE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "VOICE_CONFLICT",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "POV_VIOLATION",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "NEARBY_REPETITION",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "UNINTENDED_EXPOSITION",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "PRESERVATION_DAMAGE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a"
+          },
+          "issue_codes": []
+        }
+      ],
+      "evidence_class": "FIXTURE_SEMANTIC_REVIEW",
+      "usage_basis": "ACCEPTED_PROSE_REVIEW",
+      "reader_effect_proven": false
+    },
+    {
+      "mechanism_id": "choice-exposes-value",
+      "mechanism_version": 1,
+      "use_id": "craft-use:a84611f67e656f75c18fbc85",
+      "scene_id": "chapter:1:scene:1",
+      "role": "PRIMARY",
+      "knowledge_card_asset_version_id": "knowledge-card:project-b6a3335a2aea452485f3e4092bc8b1fd:de2d246b6a46499b4989b8799f65c30f54813a5958e58da6cb5c4c80af1cebf3:v1",
+      "content_hash": "sha256:0142a7135c8ec1ce8b04a8f619e044af01a3761a8d1a098c6c5446467ea139b3",
+      "usage": {
+        "phase": "SETUP",
+        "status": "PLANNED",
+        "type_id": "staged",
+        "scope_id": "authority-output:4829f858-cbf9-4166-94d8-7037e1eac4b8:story_planning.candidate:v1",
+        "instance_id": "craft-instance:a84611f67e656f75c18fbc85",
+        "type_policy": {
+          "mode": "PHASED",
+          "scope": "ARC",
+          "phases": [
+            "SETUP",
+            "DEVELOPMENT",
+            "PAYOFF"
+          ],
+          "frequency_unit": "INSTANCE"
+        },
+        "scope_binding": {
+          "scope": "ARC",
+          "book_id": "book:project-b6a3335a2aea452485f3e4092bc8b1fd",
+          "scope_id": "authority-output:4829f858-cbf9-4166-94d8-7037e1eac4b8:story_planning.candidate:v1",
+          "project_id": "project-b6a3335a2aea452485f3e4092bc8b1fd"
+        },
+        "scope_context": {
+          "book_id": "book:project-b6a3335a2aea452485f3e4092bc8b1fd",
+          "project_id": "project-b6a3335a2aea452485f3e4092bc8b1fd",
+          "chapter_number": 1,
+          "arc_plan_version_ids": [
+            "authority-output:4829f858-cbf9-4166-94d8-7037e1eac4b8:story_planning.candidate:v1",
+            "authority-output:d88bacaf-753d-4f3a-8d58-cd55ffbf88d8:story_planning.candidate:v1"
+          ]
+        },
+        "budget_snapshot": {
+          "frequency": 0,
+          "in_cooldown": false
+        },
+        "accepted_predecessor": null
+      },
+      "family": "CHARACTERIZATION",
+      "pattern_signature": [
+        "abstract_mechanism",
+        "affinity",
+        "chinese_serial",
+        "choice",
+        "dialogue",
+        "first_person",
+        "genre",
+        "limited",
+        "pacing",
+        "pov",
+        "scene_type",
+        "variable",
+        "wuxia",
+        "xuanhuan",
+        "互斥",
+        "人物",
+        "其放",
+        "出人",
+        "利益",
+        "及其",
+        "在既",
+        "在既定互斥利益间突出人物选择及其放弃项",
+        "定互",
+        "弃项",
+        "择及",
+        "放弃",
+        "斥利",
+        "既定",
+        "物选",
+        "益间",
+        "突出",
+        "选择",
+        "间突"
+      ],
+      "chapter": 1,
+      "acceptance_id": "chapter-acceptance:585dd4eff529461643f575e64391212150497600676a64b334c0801da9f151d9",
+      "accepted_draft_asset_version_id": "authority-output:e8d3fbf4-6539-4933-bb89-fdde734547e3:chapter.best_candidate:v1",
+      "accepted_draft_content_hash": "sha256:0bbba13b73d5a1234d845941c088c688fff7cdd22d10d589ca5b3ab9bf2b2dc5",
+      "review_asset_version_id": "authority-output:e8d3fbf4-6539-4933-bb89-fdde734547e3:chapter.best_candidate.selected_review:v1",
+      "review_content_hash": "sha256:c6e9ceb9900e8c9722dbbdb8df8349c7ecff5b3e224fd4e953648a2da0c01c9c",
+      "target_text_hash": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96",
+      "evidence": {
+        "end": 360,
+        "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+        "start": 0,
+        "offset_unit": "UNICODE_CODE_POINT",
+        "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+      },
+      "effect_status": "ACHIEVED",
+      "side_effects": [
+        {
+          "kind": "MISUSE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "OVERUSE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "ARTIFICIALITY",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "PACING_DAMAGE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "VOICE_CONFLICT",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "POV_VIOLATION",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "NEARBY_REPETITION",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "UNINTENDED_EXPOSITION",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "PRESERVATION_DAMAGE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        }
+      ],
+      "evidence_class": "FIXTURE_SEMANTIC_REVIEW",
+      "usage_basis": "ACCEPTED_PROSE_REVIEW",
+      "reader_effect_proven": false
+    }
+  ],
+  "accepted_manuscripts": [
+    {
+      "chapter": 1,
+      "acceptance_id": "chapter-acceptance:585dd4eff529461643f575e64391212150497600676a64b334c0801da9f151d9",
+      "asset_version_id": "authority-output:e8d3fbf4-6539-4933-bb89-fdde734547e3:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:0bbba13b73d5a1234d845941c088c688fff7cdd22d10d589ca5b3ab9bf2b2dc5",
+      "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+      "text_hash": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96",
+      "projection": "EXACT_ACCEPTED_TEXT_ONLY",
+      "real_model_call": false
+    },
+    {
+      "chapter": 2,
+      "acceptance_id": "chapter-acceptance:1439d71434bd62ec8bc953b0fc97ed21274843ed2eaa990fba4fee983cf77fa2",
+      "asset_version_id": "authority-output:eb08149c-70ef-4d90-acfa-6330435f45ee:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:12f32fac8aa88cd42aef4a3419a4a733c298c827fa6ba46a73df201eb362c2f1",
+      "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+      "text_hash": "sha256:e03f201436fbb32472a3e2ccde8ae7b85858c1236876910c89f71eccb05e7b0a",
+      "projection": "EXACT_ACCEPTED_TEXT_ONLY",
+      "real_model_call": false
+    }
+  ],
+  "accepted_state_review": {
+    "run_id": "eb165da2-1684-46db-8aa5-e03cbccf7b5a",
+    "manifest_digest": "sha256:12cfc9a9320f0e34af85881ccef3b584ad70a61aa5d3cdbd7bbade5031112267",
+    "relation_windows": 1,
+    "real_model_call": false
+  },
+  "accepted_through_chapter": 2,
+  "accepted_usage": [
+    {
+      "mechanism_id": "choice-exposes-value",
+      "mechanism_version": 1,
+      "use_id": "craft-use:a84611f67e656f75c18fbc85",
+      "scene_id": "chapter:1:scene:1",
+      "role": "PRIMARY",
+      "knowledge_card_asset_version_id": "knowledge-card:project-b6a3335a2aea452485f3e4092bc8b1fd:de2d246b6a46499b4989b8799f65c30f54813a5958e58da6cb5c4c80af1cebf3:v1",
+      "content_hash": "sha256:0142a7135c8ec1ce8b04a8f619e044af01a3761a8d1a098c6c5446467ea139b3",
+      "usage": {
+        "phase": "SETUP",
+        "status": "PLANNED",
+        "type_id": "staged",
+        "scope_id": "authority-output:4829f858-cbf9-4166-94d8-7037e1eac4b8:story_planning.candidate:v1",
+        "instance_id": "craft-instance:a84611f67e656f75c18fbc85",
+        "type_policy": {
+          "mode": "PHASED",
+          "scope": "ARC",
+          "phases": [
+            "SETUP",
+            "DEVELOPMENT",
+            "PAYOFF"
+          ],
+          "frequency_unit": "INSTANCE"
+        },
+        "scope_binding": {
+          "scope": "ARC",
+          "book_id": "book:project-b6a3335a2aea452485f3e4092bc8b1fd",
+          "scope_id": "authority-output:4829f858-cbf9-4166-94d8-7037e1eac4b8:story_planning.candidate:v1",
+          "project_id": "project-b6a3335a2aea452485f3e4092bc8b1fd"
+        },
+        "scope_context": {
+          "book_id": "book:project-b6a3335a2aea452485f3e4092bc8b1fd",
+          "project_id": "project-b6a3335a2aea452485f3e4092bc8b1fd",
+          "chapter_number": 1,
+          "arc_plan_version_ids": [
+            "authority-output:4829f858-cbf9-4166-94d8-7037e1eac4b8:story_planning.candidate:v1",
+            "authority-output:d88bacaf-753d-4f3a-8d58-cd55ffbf88d8:story_planning.candidate:v1"
+          ]
+        },
+        "budget_snapshot": {
+          "frequency": 0,
+          "in_cooldown": false
+        },
+        "accepted_predecessor": null
+      },
+      "family": "CHARACTERIZATION",
+      "pattern_signature": [
+        "abstract_mechanism",
+        "affinity",
+        "chinese_serial",
+        "choice",
+        "dialogue",
+        "first_person",
+        "genre",
+        "limited",
+        "pacing",
+        "pov",
+        "scene_type",
+        "variable",
+        "wuxia",
+        "xuanhuan",
+        "互斥",
+        "人物",
+        "其放",
+        "出人",
+        "利益",
+        "及其",
+        "在既",
+        "在既定互斥利益间突出人物选择及其放弃项",
+        "定互",
+        "弃项",
+        "择及",
+        "放弃",
+        "斥利",
+        "既定",
+        "物选",
+        "益间",
+        "突出",
+        "选择",
+        "间突"
+      ],
+      "chapter": 1,
+      "acceptance_id": "chapter-acceptance:585dd4eff529461643f575e64391212150497600676a64b334c0801da9f151d9",
+      "accepted_draft_asset_version_id": "authority-output:e8d3fbf4-6539-4933-bb89-fdde734547e3:chapter.best_candidate:v1",
+      "accepted_draft_content_hash": "sha256:0bbba13b73d5a1234d845941c088c688fff7cdd22d10d589ca5b3ab9bf2b2dc5",
+      "review_asset_version_id": "authority-output:e8d3fbf4-6539-4933-bb89-fdde734547e3:chapter.best_candidate.selected_review:v1",
+      "review_content_hash": "sha256:c6e9ceb9900e8c9722dbbdb8df8349c7ecff5b3e224fd4e953648a2da0c01c9c",
+      "target_text_hash": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96",
+      "evidence": {
+        "end": 360,
+        "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+        "start": 0,
+        "offset_unit": "UNICODE_CODE_POINT",
+        "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+      },
+      "effect_status": "ACHIEVED",
+      "side_effects": [
+        {
+          "kind": "MISUSE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "OVERUSE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "ARTIFICIALITY",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "PACING_DAMAGE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "VOICE_CONFLICT",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "POV_VIOLATION",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "NEARBY_REPETITION",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "UNINTENDED_EXPOSITION",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        },
+        {
+          "kind": "PRESERVATION_DAMAGE",
+          "reason": "Scripted negative side-effect control.",
+          "status": "CLEAR",
+          "evidence": {
+            "end": 360,
+            "quote": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. The protagonist gives up the only safe route home before the witnesses leave.",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "issue_codes": []
+        }
+      ],
+      "evidence_class": "FIXTURE_SEMANTIC_REVIEW",
+      "usage_basis": "ACCEPTED_PROSE_REVIEW",
+      "reader_effect_proven": false
+    }
+  ],
+  "next_selection_digest": "sha256:a355c9d1bfca87a28d0532032e9510583b3d5a20c8e8d7ec4883a0bf54f5f07d",
+  "implementation_commit": "5bb9d91dcb64260956c901a50316badca560094e",
+  "implementation_tree_sha": "sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc",
+  "test": "test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-True]",
+  "real_provider_calls": 0,
+  "same_book_joint_closure": "PARTIAL_CRAFT_AND_SEMANTIC_REVIEW_ONLY"
+}

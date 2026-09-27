@@ -93,6 +93,8 @@ def _authority_parser() -> argparse.ArgumentParser:
     add_creative_budget_parser(subparsers)
     from novel_forge.cli.provider_routing import add_provider_routing_parser
     add_provider_routing_parser(subparsers)
+    from novel_forge.cli.runtime_inspection import add_runtime_inspection_parser
+    add_runtime_inspection_parser(subparsers)
     return parser
 
 
@@ -102,6 +104,10 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
     try:
         if not settings.database_url:
             raise RuntimeError("PostgreSQL database is required for authority CLI")
+        if args.command == "authority-runtime-inspect":
+            from novel_forge.cli.runtime_inspection import run_runtime_inspection
+            print(json.dumps(run_runtime_inspection(settings, args), ensure_ascii=False, indent=2, default=str))
+            return 0
         if args.command == "authority-craft":
             from novel_forge.cli.craft import run_craft_command
             print(json.dumps(run_craft_command(settings, args), ensure_ascii=False, indent=2, default=str))

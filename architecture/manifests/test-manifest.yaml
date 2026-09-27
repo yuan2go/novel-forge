@@ -8,6 +8,18 @@
   ],
   "classification_rules": [
     {
+      "id": "runtime-inspection-postgres",
+      "patterns": [
+        "tests/integration/test_runtime_inspection_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "operations",
+      "capability": "runtime-inspection-postgres",
+      "production_target": "src/novel_forge/cli/runtime_inspection.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
       "id": "author-editor-contract",
       "patterns": [
         "tests/unit/test_author_editor.py"
@@ -46,7 +58,8 @@
     {
       "id": "prose-editorial-contract",
       "patterns": [
-        "tests/unit/test_longform_prose_editorial.py"
+        "tests/unit/test_longform_prose_editorial.py",
+        "tests/unit/test_prose_semantic_relations.py"
       ],
       "classification": "FIXTURE_PROTOCOL",
       "owner": "book-authority",
@@ -96,7 +109,9 @@
       "patterns": [
         "tests/unit/test_craft_selection.py",
         "tests/unit/test_craft_execution.py",
-        "tests/unit/test_narrative_craft_catalog.py"
+        "tests/unit/test_narrative_craft_catalog.py",
+        "tests/unit/test_craft_solver.py",
+        "tests/unit/test_craft_usage.py"
       ],
       "classification": "CURRENT_DOMAIN_INVARIANT",
       "owner": "native-narrative-craft",

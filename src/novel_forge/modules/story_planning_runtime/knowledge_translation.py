@@ -65,11 +65,12 @@ def add_translation_contract(
             "additionalProperties": False,
         }
 
+    instructions = "Account for every selected exact KnowledgeCard. ADOPT, ADAPT or REJECT it. A non-rejection must locate actual text in this candidate and preserve prerequisites/exception checks; uncertain mechanisms require ADAPT with explicit prerequisite resolution. Card IDs alone are insufficient. This is a planning claim, not prose or Canon proof."
     contract = {
         "type": "array",
         "minItems": len(selected),
         "maxItems": len(selected),
-        "description": "Account for every selected exact KnowledgeCard. ADOPT, ADAPT or REJECT it. A non-rejection must locate actual text in this candidate and preserve prerequisites/exception checks; uncertain mechanisms require ADAPT with explicit prerequisite resolution. Card IDs alone are insufficient. This is a planning claim, not prose or Canon proof.",
+        "description": instructions,
         "items": obj(
             {
                 "knowledge_card_asset_version_id": {
@@ -109,6 +110,14 @@ def add_translation_contract(
             "intended_reader_effect": text,
         })
         site["required"].extend(["craft_role", "craft_sequence", "intended_reader_effect"])
+        if selection.get("craft_policy", {}).get("schema_version") == "narrative-craft-budget.v3":
+            site["properties"]["craft_usage"] = obj({"instance_id": {"type": "string", "maxLength": 256}, "phase": text, "predecessor_use_id": {"type": "string", "maxLength": 256}, "scope_id": text})
+            site["required"].append("craft_usage")
+            site["properties"]["craft_combination"] = obj({key: {"type": "string", "minLength": 1, "maxLength": 512} for key in (
+                "narrative_problem", "selection_reason", "role_and_order_reason", "combined_effect", "interference_risk", "preservation_constraint", "abstain_condition")})
+            site["required"].append("craft_combination")
+            contract["description"] += " Typed Craft usage must follow the frozen usage type and ordered phases. A new instance uses empty instance_id and predecessor_use_id and the first phase. A continuation cites its latest successful accepted use and instance; planned or failed uses are not predecessors, and later uncertainty blocks continuation. Read need.craft_context.usage_scope_context: scope_id must be the exact scene ID, chapter:<chapter_number>, a frozen arc_plan_version_id, or book_id according to the usage type. All new instances jointly consume the remaining frequency allowance."
+
         contract["description"] += " Craft mechanisms require concrete /scene_plan/<index>/<field> locations, one primary per scene, distinct sequence positions, contextual prerequisite/contraindication judgment, and the frozen Craft density/composition policy. Reject any Craft that cannot be realized within current Canon, POV, voice, knowledge, scene causality and active planning constraints. Never supply replacement mechanisms."
     result = dict(schema)
     result["properties"] = {

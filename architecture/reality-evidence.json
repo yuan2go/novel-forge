@@ -8180,6 +8180,14 @@
         {
           "path": "src/novel_forge/modules/book_followup_authority/prose_relations.py",
           "symbol": "relation_windows"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_semantic_relations.py",
+          "symbol": "accepted_relation_evidence"
+        },
+        {
+          "path": "src/novel_forge/modules/plan_change_authority/structured_retrieval.py",
+          "symbol": "retrieve_structured_matches"
         }
       ],
       "commands_operations": [
@@ -8758,6 +8766,14 @@
         {
           "path": "src/novel_forge/modules/mkaos_authority/runtime_usage.py",
           "symbol": "list_accepted_craft_usage"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_solver.py",
+          "symbol": "solve_candidates"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_usage.py",
+          "symbol": "bind_usage"
         }
       ],
       "commands_operations": [
@@ -9033,7 +9049,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:1eb4122fb3579af8ae188fb471c6ddeb25ea00da9a189b00f465bdd1d1e0f6b3"
+    "implementation_tree_sha": "sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

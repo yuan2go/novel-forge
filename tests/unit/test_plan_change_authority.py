@@ -140,6 +140,37 @@ class PlanChangeAuthorityDomainTests(unittest.TestCase):
                 ],
             )
 
+    def test_structured_numeric_and_knowledge_changes_retrieve_exact_evidence(self):
+        changes = [{"field": "required_state_delta", "before": {"character_id": "lin", "resource_id": "qi", "minimum": 9, "knowledge": {"fact_id": "seal", "status": "KNOWN"}},
+                    "after": {"character_id": "lin", "resource_id": "qi", "minimum": 2, "knowledge": {"fact_id": "seal", "status": "UNKNOWN"}}}]
+        plans = [{"asset_version_id": "future", "content_hash": "hash", "execution_scope": "PLANNED", "content": {
+            "preconditions": [{"resource_id": "qi", "minimum": 8}, {"proposition_id": "seal", "description": "须辨出掌门留下的暗记。"}]}}]
+        discovery = discover_semantic_impacts(target_asset_version_id="old", proposed_asset_version_id="new", changes=changes, plans=plans, accepted_prose=[], coverage={})
+        hypothesis = discovery["hypotheses"][0]
+        self.assertEqual(hypothesis["relation"], "SHARED_TYPED_STATE_CHANGE")
+        self.assertIsNone(hypothesis["confidence"])
+        self.assertTrue(all(row["retrieval_kind"] == "TYPED_STATE_CHANGE" for row in hypothesis["plan_evidence"]))
+        self.assertTrue(any(row["json_pointer"] == "/preconditions/0" for row in hypothesis["plan_evidence"]))
+        self.assertTrue(any("proposition:seal" in row["shared_typed_references"] for row in hypothesis["plan_evidence"]))
+        self.assertFalse(discovery["hard_dependency_created"])
+        for decision in ("CONFIRMED", "FALSE_POSITIVE", "DEFER"):
+            result = resolve_semantic_dispositions(discovery, [{"hypothesis_id": hypothesis["hypothesis_id"], "disposition": decision, "rationale": "Exact source and future prerequisites inspected", "evidence": hypothesis["plan_evidence"]}])
+            self.assertEqual(result[0]["disposition"], decision)
+
+    def test_structured_identity_namespaces_unchanged_rows_and_coverage(self):
+        from novel_forge.modules.plan_change_authority.structured_retrieval import changed_records, retrieve_structured_matches
+        from hashlib import sha256
+        stable = {"character_id": "same", "value": 8}
+        records, omitted = changed_records([{"field": "required_events", "before": [stable, {"fact_id": "f", "value": 2}], "after": [{"fact_id": "f", "value": 3}, stable]}])
+        self.assertEqual(omitted, 0)
+        self.assertTrue(all(record["references"] == ["proposition:f"] for record in records))
+        plan = {"asset_version_id": "future", "content_hash": "hash", "content": {"character_id": "f", "goal": "unrelated"}}
+        matches, _ = retrieve_structured_matches(plan, records, evidence_limit=8, digest=lambda value: sha256(str(value).encode()).hexdigest())
+        self.assertEqual(matches, [])
+        records, omitted = changed_records([{"field": "required_events", "before": {}, "after": {"fact_id": "f", "description": "x" * 4096}}])
+        self.assertEqual(records, [])
+        self.assertEqual(omitted, 1)
+
     def test_semantic_diff_detects_field_changes(self) -> None:
         changes = semantic_plan_diff(
             {

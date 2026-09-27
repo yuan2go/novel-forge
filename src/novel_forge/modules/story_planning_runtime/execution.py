@@ -466,6 +466,14 @@ def _planning_narrative_intelligence_need(
             "obligations": list(_selection_terms(craft_sources, {"active_obligations", "obligation_actions", "required_arc_contributions", "setups", "payoffs"})),
             "style": list(_selection_terms(craft_sources, {"style_constraints", "style_policy", "style_profile", "voice"})),
             "chapter_number": int((command.narrative_realization or {}).get("chapter_number") or 0),
+            **({"usage_scope_context": {
+                "project_id": command.project_id, "book_id": command.book_id,
+                "chapter_number": int((command.narrative_realization or {}).get("chapter_number") or 0),
+                "arc_plan_version_ids": list(dict.fromkeys([
+                    *([str(command.input_versions["arc_plans"])] if command.input_versions.get("arc_plans") else []),
+                    *command.related_arc_plan_version_ids,
+                ])),
+            }} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") == "narrative-craft-budget.v3" else {}),
         },
         craft_policy=dict(production_profile.get("craft_budget_policy") or {}),
         recent_craft_usage=recent_craft_usage,
@@ -5022,8 +5030,10 @@ class PostgresPlanningExecutionPreparer:
             return frozen_context, tuple(documents)
         recent_craft_usage = []
         if hasattr(self.mkaos, "list_accepted_craft_usage"):
+            history_options = {"include_continuing": True} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") == "narrative-craft-budget.v3" else {}
             recent_craft_usage = self.mkaos.list_accepted_craft_usage(
                 project_id=command.project_id, book_id=command.book_id, limit=100,
+                **history_options,
             )
         need = _planning_narrative_intelligence_need(
             command=command,

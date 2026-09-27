@@ -128,7 +128,7 @@ def _accept_chapter(helper, fixture, number):
 
 def _automatic_review(
     fixture, *, maximum_windows=20, model=None, relation_window_limit=0,
-    window_codepoints=512,
+    window_codepoints=512, relation_retrieval_version=None,
 ):
     principal = replace(
         fixture["principal"],
@@ -139,7 +139,7 @@ def _automatic_review(
     )
     scope = dict(
         project_id=fixture["project_id"],
-        workspace_id="workspace:" + fixture["project_id"],
+        workspace_id=fixture.get("workspace_id", "workspace:" + fixture["project_id"]),
         book_run_id=fixture["book"].book_run_id,
         principal=principal,
     )
@@ -163,6 +163,7 @@ def _automatic_review(
             "execution_mode": "AUTOMATIC",
             "follow_acceptance": True,
             "relation_window_limit": relation_window_limit,
+            **({"relation_retrieval_version": relation_retrieval_version} if relation_retrieval_version else {}),
         },
     )
     return coordinator, scope, model, run["run_id"]
