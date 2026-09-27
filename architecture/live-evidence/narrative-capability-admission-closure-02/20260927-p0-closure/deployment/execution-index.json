@@ -79,7 +79,6 @@
   "all_native_regressions_database_scope": "isolated restored historical clone or disposable fresh DB, never original",
   "real_model_calls": 0,
   "not_run": [
-    "original upgrade",
     "final common SHA release activation",
     "final API web worker launch and restart verification"
   ],
@@ -92,5 +91,19 @@
   "diagnostic_preparation": "foundation-diagnostic-preparation.json",
   "task_input_readiness": "diagnostic-task-input-readiness.json",
   "shared_router_configuration": "router-configuration-preflight.json",
-  "shared_router_preflight_failures": "router-configuration-preflight-failures.json"
+  "shared_router_preflight_failures": "router-configuration-preflight-failures.json",
+  "original_upgrade": {
+    "status": "PASS",
+    "implementation_sha": "b2fcbd20a9ee4681ed755c2c12a44da7523adb8e",
+    "head": "20260927_0147_runtime_job_dispatch_pause",
+    "evidence": "original-upgrade-b2fcbd20.json",
+    "business_history_fingerprints_unchanged": true,
+    "new_model_dispatches": 0,
+    "release_services_started": false
+  },
+  "deployment_preparation_failure_retained": {
+    "reason": "Preparation comparator initially omitted Book acceptance fingerprint key; native table fingerprints themselves matched. No launcher installation occurred. Subsequent old launcher migration command reported no missing old migrations and retained extra newer migrations without changes.",
+    "receipt": "private deployment-b2fcbd20/original-migrate.log",
+    "resolution": "Explicit exact candidate code migration; all five native fingerprints equal original backup before and after"
+  }
 }

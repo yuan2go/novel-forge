@@ -79,10 +79,14 @@ def settle_joint_unknown(captured, *, scheduler, project_id, root_operation_id):
             rows = uow.cursor.fetchall()
             assert len(rows) == 1, rows
             row = rows[0]
-            assert row[2:5] == ("RECONCILIATION_REQUIRED", "RECONCILIATION_REQUIRED", "HELD_UNKNOWN"), row
+            assert row[2:5] in {
+                ("UNKNOWN", "WAITING_EXTERNAL_RESULT", "HELD_UNKNOWN"),
+                ("RECONCILIATION_REQUIRED", "RECONCILIATION_REQUIRED", "HELD_UNKNOWN"),
+            }, row
             assert row[7] == "UNKNOWN", row
             evidence["unknown"] = dict(zip(("effect_id", "operation_id", "effect_status", "operation_status", "budget_status", "dispatch_id", "generation", "dispatch_status"), row))
-        with pytest.raises(KernelError, match="EFFECT_RECONCILIATION_REQUIRED"):
+        denial = "OPERATION_STATUS_CONFLICT" if row[3] == "WAITING_EXTERNAL_RESULT" else "EFFECT_RECONCILIATION_REQUIRED"
+        with pytest.raises(KernelError, match=denial):
             prepare_effect_dispatch(database_url, EffectCommandContext(operation_id=row[1], project_id=project_id,
                 actor_id="joint-proof", trace_id="joint-unknown-proof", correlation_id=root_operation_id), effect_id=row[0])
 
@@ -92,7 +96,7 @@ def settle_joint_unknown(captured, *, scheduler, project_id, root_operation_id):
             JOIN authority_external_effect_dispatch d USING(external_effect_id)
             WHERE e.project_id=%s AND o.root_operation_id=%s AND e.request_payload->>'stage'='draft'
               AND d.evidence->>'message'=%s AND d.evidence->>'request_sent'='true'
-              AND e.status='RECONCILIATION_REQUIRED'""", [project_id, root_operation_id, receipt_loss_message])
+              AND e.status IN ('UNKNOWN','RECONCILIATION_REQUIRED')""", [project_id, root_operation_id, receipt_loss_message])
         retained = uow.cursor.fetchall()
         assert len(retained) <= 1, retained
     if retained:

@@ -747,6 +747,13 @@ boundaries; cycles and excessive scope are bounded. Revalidation alone does not 
 asset: normal Hierarchical Planning binding and qualification still apply. Lost proposal or
 activation receipts and duplicate revalidation preserve original evidence and event identity.
 
+When an activated replacement ChapterPlan has no typed execution projection, the normal
+Book Supervisor asks Planning to materialize it. Planning locks the Book before checking
+the exact current eligible candidate and any existing projection history. Concurrent
+requests reuse the original successful result; revoked, isolated or ambiguous projections
+remain failures. An already frozen Chapter request must recover its original projection.
+This recovery does not grant activation, change accepted history or extend task deadlines.
+
 Separate WP02 and Craft campaigns use the existing Book/Chapter commands and native
 creative-experiment budget ledger under `creative-paired-samples-budget.v5`. This contract
 is separate from the existing Provider-calibration campaign v4. The versioned runner freezes paired conditions, gates

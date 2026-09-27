@@ -54,5 +54,27 @@
     "branch-concurrent-selection-and-reserved-recovery.json": "sha256:780b1fe6bb48135dd1632294be629755d3e4bcd57da94418f1c88a5cfae6f455",
     "failure-edition-dispatch-boundaries-second.log": "sha256:350d842a1d3c61ee1b2e98af4a6815ba3fdd174bd76c97edf80c427646437fdf",
     "pass-edition-rejected-reservation-recovery.log": "sha256:50a0c758e0b73f473b9c1ba0caafe62d8a93b2645e643251db69b44b567c6573"
+  },
+  "joint14_partial_checkpoint": {
+    "status": "PARTIAL_CHAIN_OLD_CHAPTER_TIMEOUT",
+    "implementation": "debug e*40 / changing tree, not final common-SHA proof",
+    "source_chapters": 2,
+    "selected_edition_chapters": 3,
+    "unknown": "original single dispatch reconciled SUCCEEDED / budget SETTLED; chapter business deadline remains expired",
+    "unmodified_complete_test_result": "FAIL at strict original source chapters [1,2,3] check; original source remains [1,2]",
+    "files": [
+      "joint14-partial-native.json",
+      "joint14-partial-original-manuscript.txt",
+      "joint14-partial-edition-manuscript.txt",
+      "unknown-after-deadline.json",
+      "projection-concurrent-reuse.json",
+      "projection-concurrent-reuse-second.log",
+      "projection-concurrent-reuse.log",
+      "edition-tail-sixth.log",
+      "edition-tail-seventh.log"
+    ],
+    "real_model_calls": 0,
+    "human_evaluations": 0,
+    "reader_effect_proven": false
   }
 }

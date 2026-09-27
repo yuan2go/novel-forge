@@ -70,7 +70,9 @@ def deliver_export(
             JOIN authority_operation root ON root.operation_id=child.root_operation_id
             WHERE child.operation_id=%s AND child.project_id=%s""", [request.operation_id,request.project_id])
         root = uow.cursor.fetchone()
-    if root is not None and (root[0].get("preparation_report") or {}).get("author_draft_adoption"):
+    preparation = (root[0].get("preparation_report") or {}) if root is not None else {}
+    versioned = bool(preparation.get("author_draft_adoption") or preparation.get("book_edition"))
+    if versioned:
         object_key = f"chapters/{request.project_id}/{request.chapter}/versions/{request.asset_version_id}/chapter.txt"
     asset_context = AssetCommandContext(
         operation_id=request.operation_id,
@@ -80,15 +82,21 @@ def deliver_export(
         correlation_id=request.correlation_id,
         causation_id=request.operation_id,
     )
-    blob_id = reserve_blob(
-        database_url,
-        asset_context,
-        provider=adapter.provider,
-        object_key=object_key,
-        expected_hash=expected_hash,
-        expected_size=len(rendered),
-        media_type="text/plain",
-    )
+    retained = _retained_export_blob(database_url, request, provider=adapter.provider,
+                                     expected_hash=expected_hash, expected_size=len(rendered))
+    if retained is not None:
+        blob_id, object_key = retained
+    else:
+        blob_id = reserve_blob(
+            database_url,
+            asset_context,
+            provider=adapter.provider,
+            object_key=object_key,
+            expected_hash=expected_hash,
+            expected_size=len(rendered),
+            media_type="text/plain",
+            stable_identity=f"chapter-export:{request.operation_id}:{request.asset_version_id}" if versioned else "",
+        )
     effect_id = request_blob_upload(
         database_url,
         asset_context,
@@ -137,6 +145,25 @@ def deliver_export(
             ordinal=0,
         )
     return evidence
+
+
+def _retained_export_blob(database_url: str, request: ExportDeliveryRequest, *, provider: str,
+                          expected_hash: str, expected_size: int) -> tuple[str, str] | None:
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT DISTINCT b.blob_id,b.object_key,b.provider,b.expected_hash,b.expected_size,
+                   effect.request_payload->>'source_asset_version_id'
+            FROM authority_blob b JOIN state_event event ON event.aggregate_id=b.blob_id
+             AND event.aggregate_type='authority_blob' AND event.event_type='blob.reserved'
+             AND event.project_id=b.project_id
+            LEFT JOIN authority_external_effect effect ON effect.external_effect_id=b.upload_effect_id
+            WHERE b.project_id=%s AND event.payload->>'operation_id'=%s""",
+            [request.project_id, request.operation_id])
+        rows = uow.cursor.fetchall()
+    if not rows:
+        return None
+    if len(rows) != 1 or tuple(rows[0][2:5]) != (provider, expected_hash, expected_size) or rows[0][5] not in (None, "", request.asset_version_id):
+        raise KernelError("CHAPTER_EXPORT_RESERVATION_DRIFT", "Export recovery differs from its original Blob reservation")
+    return str(rows[0][0]), str(rows[0][1])
 
 
 def _deliver_synchronously(

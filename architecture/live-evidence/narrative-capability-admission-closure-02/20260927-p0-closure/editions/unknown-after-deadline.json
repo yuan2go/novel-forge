@@ -1,0 +1,19 @@
+{
+  "actual_ledger_rows": [
+    [
+      "e52db776-d5c7-46a4-aca3-5a9bd988d56a",
+      "bd507539-6023-47f3-9fff-78193fe0cd91",
+      "SUCCEEDED",
+      "FAILED_RETRYABLE",
+      "SETTLED",
+      "185fad56-c3e4-4180-b657-3a34248182f0",
+      "SUCCEEDED",
+      "2026-09-27 07:07:51.466684+00:00",
+      "bd507539-6023-47f3-9fff-78193fe0cd91:a3d4c926-21c0-4e9c-a7df-539bb214062c:draft:attempt-v1",
+      1
+    ]
+  ],
+  "effect_reconciled_via_normal_scheduler": true,
+  "chapter_completion": "BLOCKED_FROZEN_BUSINESS_DEADLINE",
+  "actual_real_model_calls": 0
+}
