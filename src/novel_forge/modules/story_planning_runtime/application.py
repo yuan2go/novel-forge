@@ -101,6 +101,12 @@ CHAPTER_PLAN_PROJECTION_DEFINITION = "story_planning.chapter_plan.materialize"
 CHAPTER_PLAN_PROJECTION_HANDLER = "novel_forge.story_planning.chapter_plan.materialize"
 
 
+class _ChapterProjectionAlreadyMaterialized(Exception):
+    def __init__(self, result: dict[str, Any]) -> None:
+        super().__init__("exact Chapter projection already materialized")
+        self.result = result
+
+
 _PLAN_INPUT_CONTRACTS = {
     "book_plan": PlanContractType.BOOK,
     "volume_plan": PlanContractType.VOLUME,
@@ -1377,7 +1383,7 @@ class StoryPlanningGenerationApplication:
                 content_hash=candidate["content_hash"],
             )
             if existing is not None:
-                return existing
+                raise _ChapterProjectionAlreadyMaterialized(existing)
             self._require_frozen_realization_slice(generation_command)
             binding = (candidate["content"].get("constraint_envelope") or {}).get(
                 "world_preparation"
@@ -1477,44 +1483,47 @@ class StoryPlanningGenerationApplication:
                 ),
             }
 
-        return dict(
-            execute_transaction_command(
-                self.database_url,
-                {
-                    "definition_name": CHAPTER_PLAN_PROJECTION_DEFINITION,
-                    "definition_version": "1.0.0",
-                    "project_id": generation["project_id"],
-                    "workspace_id": generation["workspace_id"],
-                    "book_id": generation["book_id"],
-                    "actor_id": principal.principal_id,
-                    "idempotency_scope": "book:activated-chapter-plan",
-                    "idempotency_key": idempotency_key,
-                    "trace_id": trace_id,
-                    "span_id": str(uuid4()),
-                    "correlation_id": correlation_id,
-                    "causation_id": generation["generation_operation_id"],
-                    "causation_operation_id": generation["generation_operation_id"],
-                    "input": {
+        try:
+            return dict(
+                execute_transaction_command(
+                    self.database_url,
+                    {
+                        "definition_name": CHAPTER_PLAN_PROJECTION_DEFINITION,
+                        "definition_version": "1.0.0",
                         "project_id": generation["project_id"],
-                        "candidate_asset_version_id": candidate_asset_version_id,
+                        "workspace_id": generation["workspace_id"],
+                        "book_id": generation["book_id"],
+                        "actor_id": principal.principal_id,
+                        "idempotency_scope": "book:activated-chapter-plan",
+                        "idempotency_key": idempotency_key,
+                        "trace_id": trace_id,
+                        "span_id": str(uuid4()),
+                        "correlation_id": correlation_id,
+                        "causation_id": generation["generation_operation_id"],
+                        "causation_operation_id": generation["generation_operation_id"],
+                        "input": {
+                            "project_id": generation["project_id"],
+                            "candidate_asset_version_id": candidate_asset_version_id,
+                        },
+                        "input_assets": [
+                            {
+                                "asset_version_id": candidate_asset_version_id,
+                                "content_hash": candidate["content_hash"],
+                            }
+                        ],
                     },
-                    "input_assets": [
-                        {
-                            "asset_version_id": candidate_asset_version_id,
-                            "content_hash": candidate["content_hash"],
-                        }
-                    ],
-                },
-                context=AdmissionContext(
-                    actor_id=principal.principal_id,
-                    permissions=frozenset({"story_planning.authority.activate"}),
-                    available_handlers=frozenset({CHAPTER_PLAN_PROJECTION_HANDLER}),
-                    application_build_id=self.application_build_id,
-                    commit_sha=self.commit_sha,
-                ),
-                handler=materialize,
+                    context=AdmissionContext(
+                        actor_id=principal.principal_id,
+                        permissions=frozenset({"story_planning.authority.activate"}),
+                        available_handlers=frozenset({CHAPTER_PLAN_PROJECTION_HANDLER}),
+                        application_build_id=self.application_build_id,
+                        commit_sha=self.commit_sha,
+                    ),
+                    handler=materialize,
+                )
             )
-        )
+        except _ChapterProjectionAlreadyMaterialized as existing:
+            return existing.result
 
     @staticmethod
     def _lock_chapter_projection_source(
@@ -1524,7 +1533,6 @@ class StoryPlanningGenerationApplication:
         candidate_asset_version_id: str,
         content_hash: str,
     ) -> dict[str, Any] | None:
-        # INVARIANT: Match plan activation's Book-first lock order, including distinct command keys.
         uow.cursor.execute(
             "SELECT book_id FROM authority_book WHERE project_id=%s AND book_id=%s FOR UPDATE",
             [generation["project_id"], generation["book_id"]],
@@ -1562,7 +1570,8 @@ class StoryPlanningGenerationApplication:
             SELECT projection.asset_version_id, projection.content_hash,
                    projection.lifecycle, projection.eligibility, projection.governance,
                    operation.status, operation.project_id,
-                   projection.content->>'source_planning_generation_operation_id'
+                   projection.content->>'source_planning_generation_operation_id',
+                   operation.operation_id
             FROM authority_operation_output_asset AS output
             JOIN authority_operation AS operation ON operation.operation_id=output.operation_id
             JOIN authority_asset_version AS projection
@@ -1577,7 +1586,7 @@ class StoryPlanningGenerationApplication:
         rows = tuple(uow.cursor.fetchall())
         if not rows:
             return None
-        if len(rows) != 1 or tuple(rows[0][2:]) != (
+        if len(rows) != 1 or tuple(rows[0][2:8]) != (
             "ACTIVE", "ELIGIBLE", "CLEAR", "SUCCEEDED", generation["project_id"],
             generation["generation_operation_id"],
         ):
@@ -1586,9 +1595,12 @@ class StoryPlanningGenerationApplication:
                 "Existing Chapter projection history cannot be replaced or reactivated",
             )
         return {
+            "operation_id": str(rows[0][8]),
+            "status": "SUCCEEDED",
             "asset_version_id": str(rows[0][0]),
             "content_hash": str(rows[0][1]),
             "source_planning_candidate_asset_version_id": candidate_asset_version_id,
+            "replayed": True,
         }
 
     def materialize_activated_chapter_plan_projection(

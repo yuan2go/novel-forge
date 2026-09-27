@@ -92,9 +92,9 @@ def test_projection_query_only_recovers_a_legal_candidate_without_any_output(mon
 
 @pytest.mark.parametrize("history,expected", [
     ([], None),
-    ([("projection", "hash", "ACTIVE", "ELIGIBLE", "CLEAR", "SUCCEEDED", "project", "generation")], "projection"),
-    ([("projection", "hash", "ACTIVE", "ELIGIBLE", "QUARANTINED", "SUCCEEDED", "project", "generation")], "INVALID"),
-    ([("projection", "hash", "ACTIVE", "ELIGIBLE", "CLEAR", "SUCCEEDED", "project", "generation")] * 2, "INVALID"),
+    ([("projection", "hash", "ACTIVE", "ELIGIBLE", "CLEAR", "SUCCEEDED", "project", "generation", "original-operation")], "projection"),
+    ([("projection", "hash", "ACTIVE", "ELIGIBLE", "QUARANTINED", "SUCCEEDED", "project", "generation", "original-operation")], "INVALID"),
+    ([("projection", "hash", "ACTIVE", "ELIGIBLE", "CLEAR", "SUCCEEDED", "project", "generation", "original-operation")] * 2, "INVALID"),
 ])
 def test_materialization_reuses_exact_projection_and_keeps_disposition(history, expected):
     from novel_forge.modules.story_planning_runtime.application import StoryPlanningGenerationApplication
