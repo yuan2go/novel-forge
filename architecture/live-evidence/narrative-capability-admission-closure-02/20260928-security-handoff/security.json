@@ -1,0 +1,65 @@
+{
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "baseline_sha": "e9e6e2980f744ff69ac608d4ccce0ea6122441d3",
+  "status": "ROTATED_SHARED_EVIDENCE_SANITIZED_HISTORY_RETAINED",
+  "finding": "libpq keyword DSN was parsed as a URL and exported as a database name; pytest failure repr also exported its password",
+  "rotation": {
+    "at": "2026-09-27T16:42:34.488465+00:00",
+    "type": "postgres-role-password",
+    "role": "novel_forge",
+    "old_fingerprint": "29121bee2cbb",
+    "new_fingerprint": "cb93d32bbdaf",
+    "new_connection_database": "novel_forge_first_novel_pilot_test",
+    "new_connection_role": "novel_forge",
+    "new_password_verifier_matches": true,
+    "old_password_verifier_matches": false,
+    "container_init_metadata_contains_revoked_password": true,
+    "shared_git_history_rewritten": false,
+    "backup_deleted": false,
+    "updated_consumer_count": 12
+  },
+  "redactions": [
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/deployment.json",
+      "original_sha256": "9060e41357c7e28ef78e055731a496ac76719bd65e29123f12033b3652358781",
+      "redacted_sha256": "b73d07dc6a66ff94ba44c8d1d4caa5bf29a333de4527e41006ac8aa4d37bd796",
+      "reason": "Exposed PostgreSQL role password revoked; shared representation sanitized; original retained privately"
+    },
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/logs/export-final.log",
+      "original_sha256": "e1b7330cb9df6ddcae8fed4a3746e6244227195549a28aa3d9c9e515f8771908",
+      "redacted_sha256": "6d9b4a40f02d8e1ad5bde0c47082fdd81cceda256c2ca0bc2905b6659f81a949",
+      "reason": "Exposed PostgreSQL role password revoked; shared representation sanitized; original retained privately"
+    }
+  ],
+  "history_scan": {
+    "scope": "all locally reachable Git refs, all blob types",
+    "blobs_scanned": 16188,
+    "revoked_password_blobs": [
+      {
+        "blob": "cace3d8b5f558dc8d2f355d129e5853ccaf011d7",
+        "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/deployment.json",
+        "sha256": "9060e41357c7e28ef78e055731a496ac76719bd65e29123f12033b3652358781",
+        "occurrences": 2
+      },
+      {
+        "blob": "01e66eee2ead333833b9206837bba33e8445413c",
+        "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/logs/export-final.log",
+        "sha256": "e1b7330cb9df6ddcae8fed4a3746e6244227195549a28aa3d9c9e515f8771908",
+        "occurrences": 1
+      }
+    ],
+    "history_rewritten": false
+  },
+  "source_copies": "Original main and historical worktrees/commits retain revoked credential until normal forward integration. No force push, shared-history rewrite or backup deletion performed.",
+  "object_store": "Configured MinIO secret did not match any tracked file. Access identifier occurrences in database names/backup metadata are identifiers, not proof of secret-key disclosure. No MinIO secret rotation claimed.",
+  "private_evidence_root": "/tmp/novel-forge-s0-20260928",
+  "private_originals_mode": "directories 0700 and files 0600",
+  "open_boundary": "Remote caches, forks and recipients cannot be erased locally. The exposed password is revoked; optional shared-history cleanup requires separate explicit authorization.",
+  "tests": {
+    "command": "PYTHONPATH=src python -m pytest tests/architecture/test_production_execution_security_boundaries.py -q",
+    "passed": 8,
+    "subtests": 10
+  },
+  "model_calls": 0
+}

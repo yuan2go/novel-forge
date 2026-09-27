@@ -37,7 +37,7 @@ src/novel_forge/modules/chapter_authority/export_delivery.py:180: in _deliver_sy
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-database_url = 'user=novel_forge password=CDMb3wg1azFQEWtYYeSMcgpEWX6HcdN5 dbname=nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test host=127.0.0.1 port=61959'
+database_url = 'user=novel_forge password=[REVOKED_POSTGRES_PASSWORD] dbname=nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test host=127.0.0.1 port=61959'
 context = EffectCommandContext(operation_id='export-6fe2e065-6d07-4a67-bb30-d4866af8eab0', project_id='project-35d62ed3-f1b7-44f...tion_id='correlation-ea1b89de-199d-4c8e-947a-721e3bdd8ce4', causation_id='export-6fe2e065-6d07-4a67-bb30-d4866af8eab0')
 effect_id = '6cba7fd8-124e-4d84-965f-3d7e3e2688bf'
 

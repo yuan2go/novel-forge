@@ -387,6 +387,27 @@ coverage and issue dispositions. Public release is separately authorized.
 
 ## WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02
 
+### Security and native handoff continuation (2026-09-28)
+
+Baseline `e9e6e2980f744ff69ac608d4ccce0ea6122441d3`; isolated branch
+`codex/real-prose-security-handoff`. Original main and the reused worktree were clean.
+The package remains INCOMPLETE. Current work follows the original A1–A9 acceptance,
+with S0 first; no new production or literary evidence is inferred from compilation.
+
+| Issue | Current evidence / trigger | Owner | Action | Acceptance / remaining condition |
+| --- | --- | --- | --- | --- |
+| S0 | Keyword DSN and a pytest repr exposed the live PostgreSQL role password; previous no-credentials statement was incorrect | Private deployment and existing execution security filter | Rotated through trusted local admin, updated 12 private consumers, sanitized shared evidence with hashes; reject/redact keyword DSNs | New connection succeeds; new SCRAM matches and old does not; no old-secret login attempted. Reachable Git history retains revoked bytes; no history rewrite authorized |
+| A2 | Existing local operator has Pack approval permission but historical project scope differs; old compiled Pack binds release 45c95af1 | Capability Pack / trusted principal / Router / Kernel | Verify genuine scope delegation, immutable release and native approval/activation; required providers only | In progress; compilation is not approval or admission |
+| A3 | Export isolation/recovery implementation merged unchanged | Chapter / Kernel Blob | Reuse compatible evidence, focused increment regression | Prior isolated proof; final increment check pending |
+| A4 / A8 | REVIEW_PLAN exposes only resume; frozen selection returns to first candidate | Formation / Planning / existing author page | Persist author candidate decision and bind downstream selection | In progress |
+| A5 | Profile policies partly consumed; Context still comes from process defaults | Content profile / Book supervisor / author page | Explicit versioned strategy choices and frozen Context consumption | In progress |
+| A1 / A6 / A7 | No complete same-book prose/edit/acceptance/edition/successor pair | Existing native production/editorial chain | Advance eligible diagnostics and real production; retain all versions | NOT_PROVEN; missing text is not an engineering PASS |
+| A9 | No sufficient real long-form input corpus | Context / qualification compatibility | Inspect actual task views as produced; repair demonstrated gaps only | Long-range effect NOT_PROVEN |
+
+[S0 evidence](../live-evidence/narrative-capability-admission-closure-02/20260928-security-handoff/security.json)
+records the original/redacted hashes and rotation verification. Original private evidence is
+protected; business history, UNKNOWN Effects and occupied budgets are retained.
+
 ### Same-Book real prose and author entry continuation (2026-09-27)
 
 Execution baseline: fetched `origin/main` `c616bc7a1d249a6cada0106414d1b679bd1f4a12`.
@@ -403,7 +424,7 @@ are leads; current conclusions require the implementation and live ledger below.
 | Real prose and editorial benefit absent | No new manuscript, acceptance, edition or successor Provider input; diagnostic briefs and Pack compilation are not chapters | Formation; Book/Chapter; Review; Edition | Resume only after applicable Pack approval and exact diagnostic grants; retain actual text and exact-version finding/revision evidence | NOT_PROVEN: package INCOMPLETE. No literary benefit denominator, human labels or causal Craft/Actor gain claimed |
 
 The [continuation evidence](../live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/status.json)
-binds the implementation SHA, private deployment identities without credentials, scoped tests,
+binds the implementation SHA, deployment identities, scoped tests,
 real compilation record, failure lineage, actual zero runtime usage and remaining engineering
 and external inputs. The [compiled Pack](../live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/reviewable-pack.json)
 is reviewable; compilation does not authorize activation or model calls. Historical Book records,
