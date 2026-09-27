@@ -348,7 +348,13 @@ def request_blob_upload(
                 "compensates_effect_id": None,
             }
         )
-        repository.attach_upload_effect(blob_id, result["external_effect_id"])
+        # WHY: a lost caller response may replay after verification or UNKNOWN.
+        # The planner checked the payload; recovery must retain the current state.
+        if not (
+            result["replayed"]
+            and blob["upload_effect_id"] == result["external_effect_id"]
+        ):
+            repository.attach_upload_effect(blob_id, result["external_effect_id"])
         if not result["replayed"]:
             _record(
                 repository,

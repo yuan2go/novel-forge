@@ -40,6 +40,18 @@ def _request(key: str = "stable-key") -> ProviderInvocationRequest:
 
 
 class ProviderAdapterV2Tests(unittest.TestCase):
+    def test_router_templates_register_their_backend_before_api_composition(self) -> None:
+        for environment, values in (
+            ('validation', {'NOVEL_FORGE_PROVIDER_ROUTER': 'quality-cost-v1'}),
+            ('production', {}),
+        ):
+            with self.subTest(environment=environment):
+                registry = build_provider_adapter_registry(
+                    environment=environment, provider_ids={'codex-cli'},
+                    env={**values, 'DEEPSEEK_API_KEY': 'test-not-a-real-credential'},
+                )
+                self.assertEqual(registry.resolve('deepseek').provider, 'deepseek')
+
     def test_provider_composition_is_fixture_only_in_local_environments(self) -> None:
         registry = build_provider_adapter_registry(
             environment="test",
