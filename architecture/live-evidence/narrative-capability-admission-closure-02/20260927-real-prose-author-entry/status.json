@@ -1,0 +1,148 @@
+{
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "continuation": "real prose, author entry and editorial benefit",
+  "status": "INCOMPLETE",
+  "observed_at": "2026-09-27T15:49:50.700703+00:00",
+  "baseline_sha": "c616bc7a1d249a6cada0106414d1b679bd1f4a12",
+  "implementation_sha": "45c95af102d16241a4329c39ae1f3e56b744d35d",
+  "branch": "codex/real-prose-author-entry",
+  "worktree": "/Users/yuan/.codex/worktrees/real-prose-author-entry/novel-forge",
+  "delivery_commit": "the commit containing this evidence; code frozen at implementation_sha",
+  "pushed": false,
+  "pull_request_created": false,
+  "merged": false,
+  "evidence_states": {
+    "export_isolation": {
+      "state": "EXECUTABLE",
+      "scope": "isolated PostgreSQL/MinIO only"
+    },
+    "provider_registration": {
+      "state": "EXECUTABLE",
+      "scope": "braked API composition; not Provider admission"
+    },
+    "author_entry": {
+      "state": "EXECUTABLE",
+      "scope": "Book/workspace create, lost-response recovery, Content input, workspace/frozen-profile query, same-book editor navigation; no real manuscript chain"
+    },
+    "same_book_real_prose": {
+      "state": "CODE_EXISTS",
+      "execution_evidence": "NOT_PROVEN",
+      "new_manuscripts": 0
+    },
+    "editing_loop": "NOT_PROVEN",
+    "literary_benefit": "NOT_PROVEN",
+    "longform_stability": "NOT_PROVEN"
+  },
+  "preserved_history": {
+    "book_production": true,
+    "effect_counts": true,
+    "unresolved_effects": true,
+    "budget_reservations": true,
+    "budget_scopes": true,
+    "provider_dispatches": true,
+    "book_records": true
+  },
+  "live_mutations": {
+    "sampling_project_created": true,
+    "sampling_book_created": true,
+    "diagnostic_creative_briefs": 2,
+    "production_project_created": false,
+    "independent_approval_recorded": false,
+    "new_agents": 0,
+    "new_budget_grants": 0,
+    "pack": "wp02-planning-diagnostic-45c95af102d1-native-retry",
+    "compilation_hash": "sha256:19750651c28e9468d7786bddb23df629cab9860bf28706f1104912e21d82084a",
+    "compilation_id": "compilation:author-entry:wp02-planning-diagnostic-45c95af102d1-native-retry",
+    "pack_activation": false
+  },
+  "prose_and_editorial_delivery": {
+    "initial_draft": null,
+    "revised_draft": null,
+    "accepted_draft": null,
+    "edition": null,
+    "successor_provider_input": null,
+    "reason": "No authorized model dispatch reached execution. Content input and Pack compilation are not manuscripts.",
+    "finding_denominator": 0,
+    "verified_improvement_denominator": 0,
+    "false_positive_false_negative_overedit_rates": "UNDEFINED; no exact-text paired review",
+    "independent_human_labels": 0
+  },
+  "remaining_external_items": [
+    {
+      "item": "Independent authenticated Pack approval principal and actual approval record",
+      "why": "Existing validation installer checks compiler != approver; native approval is configured with duties separation. Same agent relabeling is insufficient.",
+      "reviewable_artifact": "reviewable-pack.json",
+      "code": "src/novel_forge/modules/capability_packs/validation_deployment.py:349"
+    },
+    {
+      "item": "DeepSeek monetary ceiling and frozen current route/pricing",
+      "why": "Family authorization exists but original approval leaves this undefined. Codex entitlement diagnostic scope is separate."
+    },
+    {
+      "item": "Actual independent reference participant and labels where protocol requires them",
+      "why": "Permission to organize is not an actual label; not required merely to compile or inspect diagnostics."
+    }
+  ],
+  "remaining_engineering_and_qualification": [
+    "Finish and verify the Formation REVIEW_PLAN candidate decision author flow against actual eligible candidates; no claim that merely starting Formation completes design approval.",
+    "Expose and verify explicit Context/Craft/Actor/review policy selection as versioned approved assets; current UI chooses existing qualified profiles and displays persisted configuration, does not automatically enable newer policies.",
+    "Install/reuse exact needed Pack and existing Agent bindings after independent approval; verify first scoped diagnostic, one-call native grant and actual account serving identity before further samples.",
+    "Acquire only task-required admission evidence; preserve same-model evaluator rejection and frozen compatibility.",
+    "Execute real same-book prose, native finding/revision, acceptance, edition selection and successor consumption; none is substituted by isolated tests.",
+    "P2 creative choice/context recall/cohort maintenance remains contingent on real observations; no blanket 30-day qualification rebuild."
+  ],
+  "constraints": [
+    {
+      "constraint": "object_key uniqueness and immutable reservation replay",
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "evidence": "isolated PostgreSQL/MinIO tests"
+    },
+    {
+      "constraint": "current native Pack retry constraints must match registered Authority policy",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "evidence": "retained compilation rejection; native-profile successor compiles"
+    },
+    {
+      "constraint": "independent Pack approval duties separation",
+      "classification": "CONFIGURABLE_POLICY",
+      "evidence": "existing scoped approval policy; not relaxed in this run"
+    },
+    {
+      "constraint": "old project pause and expired budgets",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "evidence": "live-final.json"
+    },
+    {
+      "constraint": "v2/16000 supervisor defaults",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "evidence": "supervisor constructor; no new Chapter Provider request exists to claim they were used"
+    },
+    {
+      "constraint": "legacy frozen export keys",
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "evidence": "ordinary/edition/adoption reservation tests"
+    }
+  ],
+  "source_file_sha256": {
+    "src/novel_forge/api/authority_app.py": "sha256:ae27f7bde2645626c055fdad0f5a36c0a419411f06a55eb7de2e50da1fb07be1",
+    "src/novel_forge/api/routers/book_authority.py": "sha256:b3c4f1ac15cdc5c0d306abd5b91c6b84ca572bbb89526669f92007d2ec0dbcae",
+    "src/novel_forge/modules/book_authority/queries.py": "sha256:abea3d8e1dbf672b558a3ebc451f209c1766087652ad4153a7cea90978d366d1",
+    "src/novel_forge/modules/chapter_authority/export_delivery.py": "sha256:8d7d39bdfd8187f20198fac08bf68969e2e145df579651a6a94febf0a0357ad4",
+    "src/novel_forge/modules/command_kernel/asset_runtime.py": "sha256:5fea3fdf14373e1e39935b24abcec148e9d6a70b98264bf7f79b4bf4bbbcc384",
+    "src/novel_forge/modules/content_authority/application.py": "sha256:dacddf1b6478c2aa2e969ba086df7d40c648693f2a5b1fce82eebbde5120f8d3",
+    "src/novel_forge/modules/content_authority/definitions.py": "sha256:12eaa149052ae395fd58dad152590c7935ffe05d883c3b74310c8edf615fd299",
+    "src/novel_forge/modules/provider_control/composition.py": "sha256:698d4e4078cfd05d4f57d94bab8869910fc29c9e773053f4b250d8c9b7d7c8be",
+    "tests/integration/test_book_to_chapter_authority_vertical_postgres.py": "sha256:8143fed0448d369927c4e81ccb3ec533e4f2f690defe610a86c9329c66b8e736",
+    "tests/integration/test_chapter_export_isolation_postgres.py": "sha256:70f2aba0286b6fb78342bbc8f4c50a00eb4e8913bce260b385d022583787bc88",
+    "tests/integration/test_content_authority_runtime_postgres.py": "sha256:ef471107b76b188d16b16e741ed8bfd542588d8e9bfd935895d211e02d133b94",
+    "tests/unit/test_content_authority_definitions.py": "sha256:8ce057ab4fec59065a953cd1ddb2640b5047f602238eba187d07a9555365a70e",
+    "tests/unit/test_provider_adapter_v2.py": "sha256:09f03688a72bab701d79f999709dc8ba7bab29042bb3a58cbe52654e52e81996",
+    "web/admin/app/features/editor/EditionPanel.tsx": "sha256:6a3bb76fd36579c32d08716e400c965de0331956546e7b2324bb0c36bbea9a09",
+    "web/admin/app/features/editor/EditorPage.tsx": "sha256:2fc08c55d3bf6d89d3a2a38a5f628792815633c7007a40e239e86dfc1f1c2c3f",
+    "web/admin/app/features/production/CreativeInputPanel.tsx": "sha256:c7f29b885accbbf88db71e8ea1a59971a7cd1ff17cc5e5f7bed685d98fc7a9ab",
+    "web/admin/app/features/production/ProductionChainPage.tsx": "sha256:51e1d9e8d89a483bbbdb1e58f9774245f60a0b60d0a7d21cc9fb207bfdcd8736",
+    "web/admin/app/features/production/api.ts": "sha256:0b98b7399df635d9134e9a127d588fd60af2e07d3fd8d46934a8da9d8d03e14a",
+    "web/admin/app/shared/types.ts": "sha256:5d9e215b23263a2c2a5c140a2f648bb169b6a9c40657978522a3e7573dd89393",
+    "web/admin/tests/feature-architecture.test.mjs": "sha256:d0c8fb5f5b8847ebee26d1e5642b699dba6d5657ea6f7ab58955ea450cbf398e"
+  }
+}

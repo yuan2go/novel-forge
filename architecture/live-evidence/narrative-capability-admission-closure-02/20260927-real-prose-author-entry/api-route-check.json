@@ -1,0 +1,103 @@
+[
+  {
+    "operation": "start",
+    "previous_path": "/product/production/chapter-run/start",
+    "current_path": "/product/production/book-authority/commands",
+    "method": "POST",
+    "request": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BookAuthorityStartRequest"
+          }
+        }
+      },
+      "required": true
+    },
+    "responses": [
+      "202",
+      "422"
+    ],
+    "status": "REGISTERED",
+    "consumer_proof": "Book targeted integration checks; no real model production proven"
+  },
+  {
+    "operation": "resume",
+    "previous_path": "/product/production/chapter-run/resume",
+    "current_path": "/product/production/book-authority/runs/{book_run_id}/resume",
+    "method": "POST",
+    "request": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BookAuthorityControlRequest"
+          }
+        }
+      }
+    },
+    "responses": [
+      "200",
+      "422"
+    ],
+    "status": "REGISTERED",
+    "consumer_proof": "Book targeted integration checks; no real model production proven"
+  },
+  {
+    "operation": "pause",
+    "previous_path": "/product/production/chapter-run/pause",
+    "current_path": "/product/production/book-authority/runs/{book_run_id}/pause",
+    "method": "POST",
+    "request": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BookAuthorityControlRequest"
+          }
+        }
+      }
+    },
+    "responses": [
+      "200",
+      "422"
+    ],
+    "status": "REGISTERED",
+    "consumer_proof": "Book targeted integration checks; no real model production proven"
+  },
+  {
+    "operation": "cancel",
+    "previous_path": "/product/production/chapter-run/cancel",
+    "current_path": "/product/production/book-authority/runs/{book_run_id}/cancel",
+    "method": "POST",
+    "request": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BookAuthorityControlRequest"
+          }
+        }
+      }
+    },
+    "responses": [
+      "200",
+      "422"
+    ],
+    "status": "REGISTERED",
+    "consumer_proof": "Book targeted integration checks; no real model production proven"
+  },
+  {
+    "operation": "recover",
+    "previous_path": "/product/production/chapter-run/recover",
+    "current_path": "/product/production/book-authority/chapter-requests/{chapter_request_id}/recover",
+    "method": "POST",
+    "request": {},
+    "responses": [
+      "200",
+      "422"
+    ],
+    "status": "REGISTERED",
+    "consumer_proof": "Book targeted integration checks; no real model production proven"
+  }
+]

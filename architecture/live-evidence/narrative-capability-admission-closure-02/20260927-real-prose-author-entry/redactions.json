@@ -1,0 +1,26 @@
+[
+  {
+    "artifact": "final-ledger.py",
+    "original_sha256": "sha256:96021040793198c9859adbc595d65cde007ea63dda4e4afaac8cde3f4e6214a3",
+    "reason": "private account identifier also occurs inside a database identity; original guarded harness remains private",
+    "runnable_redacted_copy": false
+  },
+  {
+    "artifact": "prepare-native-pack.py",
+    "original_sha256": "sha256:252937cad15a92d761fa21309d2b5e0b8e3acba2da9f8c8be1eaf908dc8cf846",
+    "reason": "private account identifier also occurs inside a database identity; original guarded harness remains private",
+    "runnable_redacted_copy": false
+  },
+  {
+    "artifact": "deployment.json",
+    "original_sha256": "sha256:a6d2760e5d519d763a51f8c272e707291d6f4fc366c9549bbc2106f0f1607f63",
+    "reason": "private account identifier also occurs inside a database identity; original guarded harness remains private",
+    "runnable_redacted_copy": null
+  },
+  {
+    "artifact": "live-final.json",
+    "original_sha256": "sha256:8729e1ed040853d4edba3c3f1a1a51a1d410bfaec49d02725f4c3f2ccc111b34",
+    "reason": "private account identifier also occurs inside a database identity; original guarded harness remains private",
+    "runnable_redacted_copy": null
+  }
+]

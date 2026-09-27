@@ -1,0 +1,57 @@
+{
+  "scope": "Affected checks only; no full backend/PostgreSQL/UI/remote CI. Fixture evidence is not literary or Provider evidence. Different check SHAs are not combined into a real production chain PASS.",
+  "checks": [
+    {
+      "command": "pytest tests/integration/test_asset_blob_protocol_postgres.py tests/integration/test_chapter_export_isolation_postgres.py -q",
+      "result": "15 passed, 5 subtests passed",
+      "implementation": "637bcfa8; relevant source hashes unchanged through 45c95af102d16241a4329c39ae1f3e56b744d35d",
+      "log": "logs/blob-export-regressions.log",
+      "object_store": "isolated MinIO"
+    },
+    {
+      "command": "pytest tests/unit/test_provider_adapter_v2.py -q",
+      "result": "11 passed, 2 subtests passed",
+      "log": "logs/registry-after.log"
+    },
+    {
+      "command": "pytest tests/unit/test_content_authority_definitions.py tests/integration/test_content_authority_runtime_postgres.py::ContentAuthorityRuntimePostgresTests::test_unrelated_historical_definition_drift_does_not_block_brief -q",
+      "result": "4 passed",
+      "log": "logs/content-final.log"
+    },
+    {
+      "command": "pytest tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_author_workspace_keeps_frozen_profile_and_project_book_scope -q",
+      "result": "1 passed",
+      "log": "logs/author-workspace-test-fixed.log"
+    },
+    {
+      "command": "pytest tests/integration/test_book_to_chapter_authority_vertical_postgres.py::{BookToChapterAuthorityVerticalPostgresTests::test_book_chapter_dispatch_idempotency,BookToChapterAuthorityVerticalPostgresTests::test_book_pause_blocks_new_child,BookToChapterAuthorityVerticalPostgresTests::test_book_resume_reconciles_existing_child,BookToChapterAuthorityVerticalPostgresTests::test_book_cancel_propagates_to_child} -q",
+      "result": "4 passed",
+      "log": "logs/book-controls.log"
+    },
+    {
+      "command": "npm --prefix web/admin run lint",
+      "result": "PASS",
+      "log": "logs/tsc-precommit.log"
+    },
+    {
+      "command": "node --test --test-name-pattern='studios|workflow|production|feature' web/admin/tests/feature-architecture.test.mjs",
+      "result": "12 passed",
+      "log": "logs/web-structural-final.log"
+    },
+    {
+      "command": "node /tmp/novel-forge-real-prose-20260927/author-browser.mjs",
+      "result": "PASS",
+      "log": "logs/author-browser-final.log",
+      "limits": "actual clone API and PostgreSQL; simulated lost HTTP response; exact new non-model Content command dispatched explicitly while global worker loop brake remains on; no manuscript/edition acceptance or real model claim"
+    },
+    {
+      "command": "python3 /tmp/novel-forge-real-prose-20260927/api-route-check.py",
+      "result": "5 registered native POST routes; old paths absent",
+      "log": "api-route-check.json"
+    },
+    {
+      "command": "ruff check affected Python files; git diff --check",
+      "result": "PASS"
+    }
+  ]
+}

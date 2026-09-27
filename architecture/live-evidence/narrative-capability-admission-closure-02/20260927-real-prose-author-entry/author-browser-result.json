@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "evidence_class": "ISOLATED_BROWSER_API_POSTGRES_NO_MODEL",
+  "bookId": "book:90cab4a2-42f1-406a-900c-9c365f8c23ed",
+  "operationId": "fd61cad3-b2ea-458f-a090-9800985725c0",
+  "steps": [
+    "unsaved author title survives reload",
+    "book create committed with lost response; reload replays identical body and key",
+    "creative input admitted via registered Content API; exact isolated non-model command executed through native scheduler while general worker brake stays enabled",
+    "editor respects same-book deep link; empty new book never opens another book draft"
+  ]
+}

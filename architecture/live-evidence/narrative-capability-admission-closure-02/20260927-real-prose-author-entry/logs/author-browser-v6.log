@@ -1,0 +1,30 @@
+CONSOLE Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE Failed to load resource: the server responded with a status of 403 (Forbidden)
+CONSOLE Failed to load resource: the server responded with a status of 403 (Forbidden)
+FAILED http://127.0.0.1:8137/authority/books { errorText: 'net::ERR_FAILED' }
+CONSOLE Failed to load resource: net::ERR_FAILED
+CONSOLE Failed to load resource: the server responded with a status of 403 (Forbidden)
+CONSOLE Failed to load resource: the server responded with a status of 403 (Forbidden)
+CONSOLE Failed to load resource: the server responded with a status of 403 (Forbidden)
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ null
+- 'book:0bffda8a-5fd5-407b-97b6-323777796900'
+
+    at file:///private/tmp/novel-forge-real-prose-20260927/author-browser.mjs:40:9
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at process.processImmediate (node:internal/timers:472:9) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: null,
+  expected: 'book:0bffda8a-5fd5-407b-97b6-323777796900',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v26.3.1

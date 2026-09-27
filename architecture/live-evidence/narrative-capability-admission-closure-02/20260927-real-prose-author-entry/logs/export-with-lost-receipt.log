@@ -1,0 +1,61 @@
+.....F                                                                   [100%]
+=================================== FAILURES ===================================
+______ test_lost_upload_receipt_queries_original_object_without_resending ______
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x1095636b0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109562ed0>
+
+    def test_lost_upload_receipt_queries_original_object_without_resending(objects, monkeypatch):
+        request, _, _ = manuscript(identifier('project'), 'book-a', 'run-a', '上传完成，回执丢失。')
+        execute = objects.execute
+        calls = []
+    
+        def lose_receipt(**kwargs):
+            calls.append(kwargs['stable_idempotency_key'])
+            result = execute(**kwargs)
+            assert result.outcome == 'success'
+            return ProviderResult('unknown', result.provider_correlation_id, {'request_sent':True})
+    
+        monkeypatch.setattr(objects, 'execute', lose_receipt)
+        with pytest.raises(KernelError, match='CHAPTER_EXPORT_DELIVERY_INCOMPLETE'):
+            export(request, objects)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute('SELECT blob_id,object_key,upload_effect_id FROM authority_blob WHERE project_id=%s', [request.project_id])
+            original = cursor.fetchone()
+>       recovered = export(request, objects)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:42: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:93: in deliver_export
+    effect_id = request_blob_upload(
+src/novel_forge/modules/command_kernel/asset_runtime.py:358: in request_blob_upload
+    repository.attach_upload_effect(blob_id, result["external_effect_id"])
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.storage.asset_blob_repositories.AssetBlobRepository object at 0x1095aef00>
+blob_id = '6f00ba4f-d760-5923-a7ce-75e81c283067'
+external_effect_id = '3293ff86-4690-43f7-815e-c4ab8bde6d85'
+
+    def attach_upload_effect(self, blob_id: str, external_effect_id: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_blob
+            SET upload_effect_id = %s, status = 'UPLOADING'
+            WHERE blob_id = %s
+              AND (upload_effect_id IS NULL OR upload_effect_id = %s)
+              AND status IN ('PENDING_UPLOAD', 'UPLOADING')
+            """,
+            [external_effect_id, blob_id, external_effect_id],
+        )
+        if self.cursor.rowcount != 1:
+>           raise KernelError("BLOB_STATUS_CONFLICT", "blob is not uploadable")
+E           novel_forge.modules.command_kernel.errors.KernelError: BLOB_STATUS_CONFLICT: blob is not uploadable
+
+src/novel_forge/storage/asset_blob_repositories.py:352: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_lost_upload_receipt_queries_original_object_without_resending
+1 failed, 5 passed in 3.11s

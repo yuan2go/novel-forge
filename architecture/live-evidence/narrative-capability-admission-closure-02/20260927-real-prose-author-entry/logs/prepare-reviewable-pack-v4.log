@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-real-prose-20260927/diagnostic-run-final.py", line 16, in <module>
+    runpy.run_path(sys.argv[0], run_name='__main__')
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/novel-forge-real-prose-20260927/prepare-reviewable-pack.py", line 30, in <module>
+    compiled=_pack_command(app,compiler,action='capability_pack.compile',pack_version=profile.manifest['identity']['version'],compilation_id=compilation_id,payload={'target_runtime_profile':'validation','novel_forge_version':'6.0.0','release_sha':sha,'release_channel':'VALIDATION'},**common)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-45c95af1/src/novel_forge/modules/capability_packs/validation_deployment.py", line 528, in _pack_command
+    return app.execute(
+           ^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-45c95af1/src/novel_forge/modules/capability_pack_authority/application.py", line 516, in execute
+    return execute_transaction_command(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-45c95af1/src/novel_forge/modules/command_kernel/service.py", line 91, in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-45c95af1/src/novel_forge/modules/capability_pack_authority/application.py", line 508, in handler
+    return self._execute_transaction(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-45c95af1/src/novel_forge/modules/capability_pack_authority/application.py", line 786, in _execute_transaction
+    raise KernelError(
+novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_OPERATION_POLICY_CONFLICT@$.workflow_template.nodes[0].retry_policy:Manifest retry constraints differ from the Authority retry policy, CAPABILITY_PACK_OPERATION_POLICY_CONFLICT@$.workflow_template.nodes[1].retry_policy:Manifest retry constraints differ from the Authority retry policy, CAPABILITY_PACK_OPERATION_POLICY_CONFLICT@$.workflow_template.nodes[2].retry_policy:Manifest retry constraints differ from the Authority retry policy, CAPABILITY_PACK_OPERATION_POLICY_CONFLICT@$.workflow_template.nodes[3].retry_policy:Manifest retry constraints differ from the Authority retry policy, CAPABILITY_PACK_OPERATION_POLICY_CONFLICT@$.workflow_template.nodes[4].retry_policy:Manifest retry constraints differ from the Authority retry policy, CAPABILITY_PACK_OPERATION_POLICY_CONFLICT@$.workflow_template.nodes[5].retry_policy:Manifest retry constraints differ from the Authority retry policy, CAPABILITY_PACK_OPERATION_POLICY_CONFLICT@$.workflow_template.nodes[6].retry_policy:Manifest retry constraints differ from the Authority retry policy, CAPABILITY_PACK_OPERATION_POLICY_CONFLICT@$.workflow_template.nodes[7].retry_policy:Manifest retry constraints differ from the Authority retry policy, CAPABILITY_PACK_OPERATION_POLICY_CONFLICT@$.workflow_template.nodes[8].retry_policy:Manifest retry constraints differ from the Authority retry policy, CAPABILITY_PACK_OPERATION_POLICY_CONFLICT@$.workflow_template.nodes[9].retry_policy:Manifest retry constraints differ from the Authority retry policy, CAPABILITY_PACK_OPERATION_POLICY_CONFLICT@$.workflow_template.nodes[10].retry_policy:Manifest retry constraints differ from the Authority retry policy

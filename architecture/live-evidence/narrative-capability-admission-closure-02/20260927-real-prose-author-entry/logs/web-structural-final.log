@@ -1,0 +1,22 @@
+▶ Novel Forge admin feature architecture
+  ✔ does not expose retired score-only quality or unbounded campaign consoles (1.281583ms)
+  ✔ keeps V6/V7 navigation groups and local factory centers wired (0.199417ms)
+  ✔ has routed feature modules for P2 centers (0.12975ms)
+  ✔ has routed Novel OS runtime consoles wired to real runtime APIs (0.89275ms)
+  ✔ has routed Novel OS editable consoles for longform governance (0.3885ms)
+  ✔ exposes asset graph, publishing calendar, version registry, and impact visualization in source (0.232875ms)
+  ✔ keeps API client contracts for P2 endpoints explicit (0.625208ms)
+  ✔ upgrades the MKAOS console into a knowledge asset operations workbench (0.642042ms)
+  ✔ wires MKAOS ingestion and creative extraction workbench routes (0.412ms)
+  ✔ wires industrial deep workbench panels for analysis, context, editor, production, evaluation, and control (0.39725ms)
+  ✔ keeps content intelligence artifact repairs review-only (0.150958ms)
+  ✔ contains an optional Playwright browser smoke test (0.27375ms)
+✔ Novel Forge admin feature architecture (6.52375ms)
+ℹ tests 12
+ℹ suites 1
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 197.458

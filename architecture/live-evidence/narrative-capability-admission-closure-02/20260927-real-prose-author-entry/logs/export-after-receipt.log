@@ -1,0 +1,248 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+___________ test_same_project_chapter_exports_are_independent[True] ____________
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x1094b7ef0>
+other_book = True
+
+    @pytest.mark.parametrize('other_book', [True, False])
+    def test_same_project_chapter_exports_are_independent(objects, other_book):
+        project = identifier('project')
+        first, _, _ = manuscript(project, 'book-a', 'run-a', '第一份稿：门外传来三声叩击。')
+        second, _, _ = manuscript(project, 'book-b' if other_book else 'book-a', 'run-b', '第二份稿：他把钥匙沉进井里。')
+        one = export(first, objects)
+        original = read_blob(one.blob_id, objects)
+        two = export(second, objects)
+        assert one.blob_id != two.blob_id
+        assert original[0] != read_blob(two.blob_id, objects)[0]
+        assert read_blob(one.blob_id, objects) == original
+>       replay = export(first, objects)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:38: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:122: in deliver_export
+    evidence = _deliver_synchronously(
+src/novel_forge/modules/chapter_authority/export_delivery.py:173: in _deliver_synchronously
+    dispatched = read_succeeded_external_effect(
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:131: in read_succeeded_external_effect
+    return _read_verified_success(uow, repository, context, effect_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:162: in _read_verified_success
+    frozen_capability_profile = _validated_frozen_provider_capability_profile(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+effect = {'external_effect_id': '158f790f-12cf-49c8-855d-f4dde5df7134', 'operation_id': 'export-3ed27e69-30b3-466c-bfb9-7120b7245fee', 'project_id': 'project-b8223e64-d38d-4301-8199-7f4895e481ea', 'effect_type': 'blob.upload', ...}
+
+    def _validated_frozen_provider_capability_profile(
+        effect: dict[str, Any],
+    ) -> dict[str, Any]:
+        frozen = effect.get("provider_capability_profile")
+        if not isinstance(frozen, dict) or not frozen:
+>           raise KernelError(
+                "EFFECT_PROVIDER_CAPABILITY_MISSING",
+                "succeeded Provider Effect has no frozen capability profile",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: EFFECT_PROVIDER_CAPABILITY_MISSING: succeeded Provider Effect has no frozen capability profile
+
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:986: KernelError
+___________ test_same_project_chapter_exports_are_independent[False] ___________
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x10824e9f0>
+other_book = False
+
+    @pytest.mark.parametrize('other_book', [True, False])
+    def test_same_project_chapter_exports_are_independent(objects, other_book):
+        project = identifier('project')
+        first, _, _ = manuscript(project, 'book-a', 'run-a', '第一份稿：门外传来三声叩击。')
+        second, _, _ = manuscript(project, 'book-b' if other_book else 'book-a', 'run-b', '第二份稿：他把钥匙沉进井里。')
+        one = export(first, objects)
+        original = read_blob(one.blob_id, objects)
+        two = export(second, objects)
+        assert one.blob_id != two.blob_id
+        assert original[0] != read_blob(two.blob_id, objects)[0]
+        assert read_blob(one.blob_id, objects) == original
+>       replay = export(first, objects)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:38: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:122: in deliver_export
+    evidence = _deliver_synchronously(
+src/novel_forge/modules/chapter_authority/export_delivery.py:173: in _deliver_synchronously
+    dispatched = read_succeeded_external_effect(
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:131: in read_succeeded_external_effect
+    return _read_verified_success(uow, repository, context, effect_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:162: in _read_verified_success
+    frozen_capability_profile = _validated_frozen_provider_capability_profile(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+effect = {'external_effect_id': '0da2c7b1-5203-477f-bca7-306c516cd615', 'operation_id': 'export-7a156d5c-320a-4834-91da-efdfe01c40d5', 'project_id': 'project-51ac5dd2-5284-4477-9c6a-3ded5b9d1af3', 'effect_type': 'blob.upload', ...}
+
+    def _validated_frozen_provider_capability_profile(
+        effect: dict[str, Any],
+    ) -> dict[str, Any]:
+        frozen = effect.get("provider_capability_profile")
+        if not isinstance(frozen, dict) or not frozen:
+>           raise KernelError(
+                "EFFECT_PROVIDER_CAPABILITY_MISSING",
+                "succeeded Provider Effect has no frozen capability profile",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: EFFECT_PROVIDER_CAPABILITY_MISSING: succeeded Provider Effect has no frozen capability profile
+
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:986: KernelError
+______ test_existing_reservation_keeps_frozen_key_and_bytes[preparation0] ______
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x10827a570>
+preparation = {}
+
+    @pytest.mark.parametrize('preparation', [{}, {'book_edition':{'revision_id':'edition-1'}}, {'author_draft_adoption':{'revision_id':'adoption-1'}}])
+    def test_existing_reservation_keeps_frozen_key_and_bytes(objects, preparation):
+        request, context, digest = manuscript(identifier('project'), 'book-a', 'run-a', '旧稿保持不变。', preparation)
+        old_key = f'chapters/{request.project_id}/1/chapter.txt'
+        blob = reserve_blob(DATABASE_URL, context, provider=objects.provider, object_key=old_key,
+                            expected_hash=digest, expected_size=len('旧稿保持不变。'.encode()), media_type='text/plain')
+        evidence = export(request, objects)
+        assert evidence.blob_id == blob
+        assert read_blob(blob, objects) == (old_key, '旧稿保持不变。'.encode())
+>       assert export(request, objects).blob_id == blob
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:38: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:122: in deliver_export
+    evidence = _deliver_synchronously(
+src/novel_forge/modules/chapter_authority/export_delivery.py:173: in _deliver_synchronously
+    dispatched = read_succeeded_external_effect(
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:131: in read_succeeded_external_effect
+    return _read_verified_success(uow, repository, context, effect_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:162: in _read_verified_success
+    frozen_capability_profile = _validated_frozen_provider_capability_profile(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+effect = {'external_effect_id': 'd101c1f5-58f1-4a0d-ab20-bf0b7ff08f46', 'operation_id': 'export-5c1e9601-71e3-4259-9a85-77a93260b1b8', 'project_id': 'project-385a1733-2b6b-4c38-8895-4e2beaf4b7cf', 'effect_type': 'blob.upload', ...}
+
+    def _validated_frozen_provider_capability_profile(
+        effect: dict[str, Any],
+    ) -> dict[str, Any]:
+        frozen = effect.get("provider_capability_profile")
+        if not isinstance(frozen, dict) or not frozen:
+>           raise KernelError(
+                "EFFECT_PROVIDER_CAPABILITY_MISSING",
+                "succeeded Provider Effect has no frozen capability profile",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: EFFECT_PROVIDER_CAPABILITY_MISSING: succeeded Provider Effect has no frozen capability profile
+
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:986: KernelError
+______ test_existing_reservation_keeps_frozen_key_and_bytes[preparation1] ______
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x10824e6f0>
+preparation = {'book_edition': {'revision_id': 'edition-1'}}
+
+    @pytest.mark.parametrize('preparation', [{}, {'book_edition':{'revision_id':'edition-1'}}, {'author_draft_adoption':{'revision_id':'adoption-1'}}])
+    def test_existing_reservation_keeps_frozen_key_and_bytes(objects, preparation):
+        request, context, digest = manuscript(identifier('project'), 'book-a', 'run-a', '旧稿保持不变。', preparation)
+        old_key = f'chapters/{request.project_id}/1/chapter.txt'
+        blob = reserve_blob(DATABASE_URL, context, provider=objects.provider, object_key=old_key,
+                            expected_hash=digest, expected_size=len('旧稿保持不变。'.encode()), media_type='text/plain')
+        evidence = export(request, objects)
+        assert evidence.blob_id == blob
+        assert read_blob(blob, objects) == (old_key, '旧稿保持不变。'.encode())
+>       assert export(request, objects).blob_id == blob
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:38: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:122: in deliver_export
+    evidence = _deliver_synchronously(
+src/novel_forge/modules/chapter_authority/export_delivery.py:173: in _deliver_synchronously
+    dispatched = read_succeeded_external_effect(
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:131: in read_succeeded_external_effect
+    return _read_verified_success(uow, repository, context, effect_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:162: in _read_verified_success
+    frozen_capability_profile = _validated_frozen_provider_capability_profile(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+effect = {'external_effect_id': '03e23f25-dc97-49fd-88c2-181e2dc6f6f8', 'operation_id': 'export-4ec6c16a-5238-4602-a856-3c596ac8dcda', 'project_id': 'project-2e3d3b13-ebae-4c11-b0cd-43e37ce03f7c', 'effect_type': 'blob.upload', ...}
+
+    def _validated_frozen_provider_capability_profile(
+        effect: dict[str, Any],
+    ) -> dict[str, Any]:
+        frozen = effect.get("provider_capability_profile")
+        if not isinstance(frozen, dict) or not frozen:
+>           raise KernelError(
+                "EFFECT_PROVIDER_CAPABILITY_MISSING",
+                "succeeded Provider Effect has no frozen capability profile",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: EFFECT_PROVIDER_CAPABILITY_MISSING: succeeded Provider Effect has no frozen capability profile
+
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:986: KernelError
+______ test_existing_reservation_keeps_frozen_key_and_bytes[preparation2] ______
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x109e119a0>
+preparation = {'author_draft_adoption': {'revision_id': 'adoption-1'}}
+
+    @pytest.mark.parametrize('preparation', [{}, {'book_edition':{'revision_id':'edition-1'}}, {'author_draft_adoption':{'revision_id':'adoption-1'}}])
+    def test_existing_reservation_keeps_frozen_key_and_bytes(objects, preparation):
+        request, context, digest = manuscript(identifier('project'), 'book-a', 'run-a', '旧稿保持不变。', preparation)
+        old_key = f'chapters/{request.project_id}/1/chapter.txt'
+        blob = reserve_blob(DATABASE_URL, context, provider=objects.provider, object_key=old_key,
+                            expected_hash=digest, expected_size=len('旧稿保持不变。'.encode()), media_type='text/plain')
+        evidence = export(request, objects)
+        assert evidence.blob_id == blob
+        assert read_blob(blob, objects) == (old_key, '旧稿保持不变。'.encode())
+>       assert export(request, objects).blob_id == blob
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:38: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:122: in deliver_export
+    evidence = _deliver_synchronously(
+src/novel_forge/modules/chapter_authority/export_delivery.py:173: in _deliver_synchronously
+    dispatched = read_succeeded_external_effect(
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:131: in read_succeeded_external_effect
+    return _read_verified_success(uow, repository, context, effect_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:162: in _read_verified_success
+    frozen_capability_profile = _validated_frozen_provider_capability_profile(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+effect = {'external_effect_id': '4702019c-f6a1-42c7-9307-95ea489e991d', 'operation_id': 'export-e677e279-37ce-4664-b9e2-721a92e615cd', 'project_id': 'project-51c24e4b-30ea-4853-a762-969b4a5b8cca', 'effect_type': 'blob.upload', ...}
+
+    def _validated_frozen_provider_capability_profile(
+        effect: dict[str, Any],
+    ) -> dict[str, Any]:
+        frozen = effect.get("provider_capability_profile")
+        if not isinstance(frozen, dict) or not frozen:
+>           raise KernelError(
+                "EFFECT_PROVIDER_CAPABILITY_MISSING",
+                "succeeded Provider Effect has no frozen capability profile",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: EFFECT_PROVIDER_CAPABILITY_MISSING: succeeded Provider Effect has no frozen capability profile
+
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:986: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_same_project_chapter_exports_are_independent[True]
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_same_project_chapter_exports_are_independent[False]
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_existing_reservation_keeps_frozen_key_and_bytes[preparation0]
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_existing_reservation_keeps_frozen_key_and_bytes[preparation1]
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_existing_reservation_keeps_frozen_key_and_bytes[preparation2]
+5 failed in 3.17s

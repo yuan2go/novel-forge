@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-real-prose-20260927/diagnostic-run.py", line 16, in <module>
+    runpy.run_path(sys.argv[0], run_name='__main__')
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/novel-forge-wp02-p0-private/postdeploy-foundation-prepare.py", line 88, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/tmp/novel-forge-wp02-p0-private/postdeploy-foundation-prepare.py", line 56, in main
+    result=content.execute(ContentOperationRequest(definition_name='creative.brief.create',project_id=project,workspace_id=workspace,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-637bcfa8/src/novel_forge/modules/content_authority/application.py", line 65, in execute
+    admission = self.admit(request, principal=principal)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-637bcfa8/src/novel_forge/modules/content_authority/application.py", line 110, in admit
+    uow.repositories.definitions.register(definition)
+  File "/tmp/novel-forge-real-prose-20260927/release-637bcfa8/src/novel_forge/storage/authority_repositories.py", line 240, in register
+    raise KernelError(
+novel_forge.modules.command_kernel.errors.KernelError: OPERATION_DEFINITION_VERSION_CONFLICT: operation definition name/version is already bound to different content

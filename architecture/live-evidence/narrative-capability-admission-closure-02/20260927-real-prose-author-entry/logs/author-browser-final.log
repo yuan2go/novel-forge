@@ -1,0 +1,7 @@
+CONSOLE Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE Failed to load resource: the server responded with a status of 403 (Forbidden)
+CONSOLE Failed to load resource: the server responded with a status of 403 (Forbidden)
+FAILED http://127.0.0.1:8137/authority/books { errorText: 'net::ERR_FAILED' }
+CONSOLE Failed to load resource: net::ERR_FAILED
+CONSOLE Failed to load resource: the server responded with a status of 403 (Forbidden)
+{"status":"PASS","steps":["unsaved author title survives reload","book create committed with lost response; reload replays identical body and key","creative input admitted via registered Content API; exact isolated non-model command executed through native scheduler while general worker brake stays enabled","editor respects same-book deep link; empty new book never opens another book draft"]}

@@ -1,0 +1,63 @@
+.....F                                                                   [100%]
+=================================== FAILURES ===================================
+______ test_lost_upload_receipt_queries_original_object_without_resending ______
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x1095c9100>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1095ca690>
+
+    def test_lost_upload_receipt_queries_original_object_without_resending(objects, monkeypatch):
+        request, _, _ = manuscript(identifier('project'), 'book-a', 'run-a', '上传完成，回执丢失。')
+        execute = objects.execute
+        calls = []
+    
+        def lose_receipt(**kwargs):
+            calls.append(kwargs['stable_idempotency_key'])
+            result = execute(**kwargs)
+            assert result.outcome == 'success'
+            return ProviderResult('unknown', result.provider_correlation_id, {'request_sent':True})
+    
+        monkeypatch.setattr(objects, 'execute', lose_receipt)
+        with pytest.raises(KernelError, match='CHAPTER_EXPORT_DELIVERY_INCOMPLETE'):
+            export(request, objects)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute('SELECT blob_id,object_key,upload_effect_id FROM authority_blob WHERE project_id=%s', [request.project_id])
+            original = cursor.fetchone()
+>       recovered = export(request, objects)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:42: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:121: in deliver_export
+    evidence = _deliver_synchronously(
+src/novel_forge/modules/chapter_authority/export_delivery.py:180: in _deliver_synchronously
+    dispatched = _retained_delivery_receipt(database_url, effect_context, effect_id=effect_id)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_url = 'user=novel_forge password=CDMb3wg1azFQEWtYYeSMcgpEWX6HcdN5 dbname=nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test host=127.0.0.1 port=61959'
+context = EffectCommandContext(operation_id='export-6fe2e065-6d07-4a67-bb30-d4866af8eab0', project_id='project-35d62ed3-f1b7-44f...tion_id='correlation-ea1b89de-199d-4c8e-947a-721e3bdd8ce4', causation_id='export-6fe2e065-6d07-4a67-bb30-d4866af8eab0')
+effect_id = '6cba7fd8-124e-4d84-965f-3d7e3e2688bf'
+
+    def _retained_delivery_receipt(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(database_url) as uow:
+            effect = uow.repositories.external_effects.get_for_update(effect_id)
+            if (effect["project_id"], effect["operation_id"], effect["effect_type"]) != (context.project_id, context.operation_id, "blob.upload"):
+                raise KernelError("CHAPTER_EXPORT_RESERVATION_DRIFT", "Export Effect belongs to another scope")
+            if effect["status"] != "SUCCEEDED":
+                return None
+            uow.cursor.execute("""SELECT d.dispatch_id,d.evidence,r.payload_hash,r.payload
+                FROM authority_external_effect_dispatch d JOIN authority_external_receipt r USING(dispatch_id)
+                WHERE d.external_effect_id=%s AND d.status='SUCCEEDED' AND r.status='VERIFIED'
+                ORDER BY d.generation DESC LIMIT 1""", [effect_id])
+            row = uow.cursor.fetchone()
+        if row is None or row[3].get("evidence") != row[1] or _json_hash(row[1]) != row[2]:
+>           raise KernelError("EFFECT_SUCCESS_RECEIPT_INVALID", "Export success lacks an intact verified receipt")
+E           novel_forge.modules.command_kernel.errors.KernelError: EFFECT_SUCCESS_RECEIPT_INVALID: Export success lacks an intact verified receipt
+
+src/novel_forge/modules/chapter_authority/export_delivery.py:233: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_lost_upload_receipt_queries_original_object_without_resending
+1 failed, 5 passed in 2.97s

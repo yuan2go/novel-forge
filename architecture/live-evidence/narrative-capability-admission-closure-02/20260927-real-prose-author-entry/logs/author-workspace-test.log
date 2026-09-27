@@ -1,0 +1,56 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ BookToChapterAuthorityVerticalPostgresTests.test_author_workspace_keeps_frozen_profile_and_project_book_scope _
+
+self = <tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests testMethod=test_author_workspace_keeps_frozen_profile_and_project_book_scope>
+
+    def test_author_workspace_keeps_frozen_profile_and_project_book_scope(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=2)
+        project = fixture["project_id"]
+        book_id = f"book:{project}"
+        query = PostgresBookProductionQuery(DATABASE_URL)
+        missing = query.author_workspace(project_id=project, book_id=book_id)
+        self.assertEqual(len(missing["runs"]), 1)
+        self.assertIsNone(missing["runs"][0]["frozen_profile"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            asset_id = identifier("production-profile")
+            uow.cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'production_profile')", [asset_id, project])
+            for version, state, content in ((1, 'SUPERSEDED', {"book_id": book_id, "context_profile": "v2"}),
+                                            (2, 'ACTIVE', {"book_id": book_id, "context_profile": "v3"}),
+                                            (3, 'ACTIVE', {"book_id": "another-book", "context_profile": "unrelated"})):
+>               uow.cursor.execute("INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version) VALUES (%s,%s,%s,%s,'ELIGIBLE','CLEAR',%s,%s,'fixture.v1')",
+                    ['production-profile:v1' if version == 1 else f'{asset_id}:v{version}', asset_id, version, state, json.dumps(content), 'sha256:' + hashlib.sha256(json.dumps(content).encode()).hexdigest()])
+
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [IDLE] (host=127.0.0.1 port=61959 user=novel_forge database=nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test) at 0x109bb5b50>
+query = "INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version) VALUES (%s,%s,%s,%s,'ELIGIBLE','CLEAR',%s,%s,'fixture.v1')"
+params = ['production-profile-6e22c45d-6d9f-4958-9b95-50d5ec051711:v3', 'production-profile-6e22c45d-6d9f-4958-9b95-50d5ec05171...her-book", "context_profile": "unrelated"}', 'sha256:3d2bd2fc5ed6697cac39b02003fb1070087e074f5aecf5974ef131a6fa5a6411']
+prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "authority_one_active_asset_version"
+E           DETAIL:  Key (asset_id)=(production-profile-6e22c45d-6d9f-4958-9b95-50d5ec051711) already exists.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: UniqueViolation
+=========================== short test summary info ============================
+FAILED tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_author_workspace_keeps_frozen_profile_and_project_book_scope
+1 failed in 2.47s

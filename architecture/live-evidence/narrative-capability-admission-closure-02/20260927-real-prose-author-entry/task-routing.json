@@ -1,0 +1,334 @@
+{
+  "classification": "PRE_DISPATCH_INVENTORY_NOT_MODEL_ADMISSION",
+  "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+  "expires_at": "2026-09-28T05:28:24Z",
+  "approved_caps_not_usage": {
+    "sampling": {
+      "calls": 720,
+      "tokens": 40108032
+    },
+    "same_book_production": {
+      "calls": 125,
+      "tokens": 8421376
+    },
+    "effect_experiment": {
+      "calls": 468,
+      "tokens": 33030144
+    }
+  },
+  "native_grants_created": 0,
+  "actual_novel_forge_usage": {
+    "codex_cli": {
+      "calls": 0,
+      "retries": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "incremental_usage": 0,
+      "monetary_subscription_allocation": "UNKNOWN; no paid extra quota purchased"
+    },
+    "deepseek": {
+      "calls": 0,
+      "retries": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "incremental_charge": 0
+    },
+    "new_unknown_effects": 0
+  },
+  "development_agent_codex_usage": {
+    "tokens": "NOT_OBSERVABLE",
+    "fees": "NOT_OBSERVABLE",
+    "distinct_from_runtime": true
+  },
+  "codex_identity": "codex-identity.json; configured runtime succeeds despite unrelated shell codex ENOENT",
+  "deepseek": "credential present privately; exact live model/revision, pricing and authorized amount not verified/frozen; no request sent",
+  "evaluator_independence": "generator_feedback.independent_model_identities rejects same model/revision or absent real serving evidence; gpt-6-sol for both generator and evaluator cannot imply valid independent calibration",
+  "tasks": [
+    {
+      "task": "creative.candidates.generate",
+      "input_contract_source": "creative brief",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "theme.candidates.generate",
+      "input_contract_source": "approved creative foundation",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "ending.intent.generate",
+      "input_contract_source": "approved theme and foundation",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "reader.promise.generate",
+      "input_contract_source": "approved ending/theme",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "world.design.generate",
+      "input_contract_source": "approved prior Formation layers",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "character.cast.generate",
+      "input_contract_source": "approved world and reader promise",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "narrative_semantic_evaluation",
+      "input_contract_source": "exact candidate and evaluation contract",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "book_plan.generate",
+      "input_contract_source": "approved Formation/BookDesign and frozen profile",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "volume_plan.generate",
+      "input_contract_source": "active Book plan",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "arc_plan.generate",
+      "input_contract_source": "active volume/arc portfolio",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "chapter_group_plan.generate",
+      "input_contract_source": "current cursor and active arc working set",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "chapter_plan.generate",
+      "input_contract_source": "current group and accepted state",
+      "native_entry": "Formation/StoryPlanning",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "new sampling Pack compiled but independent approval/activation and one-call native grants absent",
+      "actual_model_call": false
+    },
+    {
+      "task": "memo",
+      "input_contract_source": "frozen Chapter Context",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "draft",
+      "input_contract_source": "approved Chapter/Scene plan, Context, Craft and applicable Actor",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "review",
+      "input_contract_source": "exact draft",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "revision",
+      "input_contract_source": "exact draft, finding and preservation targets",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "rereview",
+      "input_contract_source": "exact revised draft",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "quality_structural",
+      "input_contract_source": "exact candidate and structural contract",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "quality_commercial",
+      "input_contract_source": "exact candidate and reader promise",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "quality_source_originality",
+      "input_contract_source": "candidate plus governed source boundaries",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "quality_platform",
+      "input_contract_source": "candidate plus platform contract",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "canon_extraction",
+      "input_contract_source": "exact reviewed prose",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "canon_support",
+      "input_contract_source": "exact extraction and source",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "reader_outcome",
+      "input_contract_source": "accepted ChapterOutcome and reader contract",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "longform_recap",
+      "input_contract_source": "accepted window",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    },
+    {
+      "task": "longform_prose_review",
+      "input_contract_source": "exact edition/window with independent review contract",
+      "native_entry": "Chapter/BookFollowup/ProseReview",
+      "candidate_comparison": "DeepSeek for Chinese drafting/local revisions/summaries; authorized codex-cli:gpt-6-sol for constrained planning and independent evaluation where identities permit. Candidate only, no performance conclusion.",
+      "producer_pack_context": "Frozen only when actual native task prepares; no invented hash",
+      "task_qualification": "NOT_ESTABLISHED",
+      "native_budget": "NO_NEW_GRANT",
+      "earliest_breakpoint": "same-book approved production inputs and task-scoped admission not established",
+      "actual_model_call": false
+    }
+  ]
+}

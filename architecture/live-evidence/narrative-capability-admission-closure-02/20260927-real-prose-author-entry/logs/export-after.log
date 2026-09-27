@@ -1,0 +1,253 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+___________ test_same_project_chapter_exports_are_independent[True] ____________
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x108babe60>
+other_book = True
+
+    @pytest.mark.parametrize('other_book', [True, False])
+    def test_same_project_chapter_exports_are_independent(objects, other_book):
+        project = identifier('project')
+        first, _, _ = manuscript(project, 'book-a', 'run-a', '第一份稿：门外传来三声叩击。')
+        second, _, _ = manuscript(project, 'book-b' if other_book else 'book-a', 'run-b', '第二份稿：他把钥匙沉进井里。')
+        one = export(first, objects)
+        original = read_blob(one.blob_id, objects)
+        two = export(second, objects)
+        assert one.blob_id != two.blob_id
+        assert original[0] != read_blob(two.blob_id, objects)[0]
+        assert read_blob(one.blob_id, objects) == original
+>       replay = export(first, objects)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:38: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:93: in deliver_export
+    effect_id = request_blob_upload(
+src/novel_forge/modules/command_kernel/asset_runtime.py:351: in request_blob_upload
+    repository.attach_upload_effect(blob_id, result["external_effect_id"])
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.storage.asset_blob_repositories.AssetBlobRepository object at 0x1094d3680>
+blob_id = 'ead1dc48-58ed-5dc9-8309-6fec2dd5f88f'
+external_effect_id = '02e3126a-d001-4d24-9516-09a81bff2ce3'
+
+    def attach_upload_effect(self, blob_id: str, external_effect_id: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_blob
+            SET upload_effect_id = %s, status = 'UPLOADING'
+            WHERE blob_id = %s
+              AND (upload_effect_id IS NULL OR upload_effect_id = %s)
+              AND status IN ('PENDING_UPLOAD', 'UPLOADING')
+            """,
+            [external_effect_id, blob_id, external_effect_id],
+        )
+        if self.cursor.rowcount != 1:
+>           raise KernelError("BLOB_STATUS_CONFLICT", "blob is not uploadable")
+E           novel_forge.modules.command_kernel.errors.KernelError: BLOB_STATUS_CONFLICT: blob is not uploadable
+
+src/novel_forge/storage/asset_blob_repositories.py:352: KernelError
+___________ test_same_project_chapter_exports_are_independent[False] ___________
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x107941370>
+other_book = False
+
+    @pytest.mark.parametrize('other_book', [True, False])
+    def test_same_project_chapter_exports_are_independent(objects, other_book):
+        project = identifier('project')
+        first, _, _ = manuscript(project, 'book-a', 'run-a', '第一份稿：门外传来三声叩击。')
+        second, _, _ = manuscript(project, 'book-b' if other_book else 'book-a', 'run-b', '第二份稿：他把钥匙沉进井里。')
+        one = export(first, objects)
+        original = read_blob(one.blob_id, objects)
+        two = export(second, objects)
+        assert one.blob_id != two.blob_id
+        assert original[0] != read_blob(two.blob_id, objects)[0]
+        assert read_blob(one.blob_id, objects) == original
+>       replay = export(first, objects)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:38: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:93: in deliver_export
+    effect_id = request_blob_upload(
+src/novel_forge/modules/command_kernel/asset_runtime.py:351: in request_blob_upload
+    repository.attach_upload_effect(blob_id, result["external_effect_id"])
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.storage.asset_blob_repositories.AssetBlobRepository object at 0x10796ec00>
+blob_id = '27e5591b-e2ed-5ebe-abf0-ab5a053d7cc7'
+external_effect_id = '9ed2c465-70f4-4fa0-ac57-01a758af69b2'
+
+    def attach_upload_effect(self, blob_id: str, external_effect_id: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_blob
+            SET upload_effect_id = %s, status = 'UPLOADING'
+            WHERE blob_id = %s
+              AND (upload_effect_id IS NULL OR upload_effect_id = %s)
+              AND status IN ('PENDING_UPLOAD', 'UPLOADING')
+            """,
+            [external_effect_id, blob_id, external_effect_id],
+        )
+        if self.cursor.rowcount != 1:
+>           raise KernelError("BLOB_STATUS_CONFLICT", "blob is not uploadable")
+E           novel_forge.modules.command_kernel.errors.KernelError: BLOB_STATUS_CONFLICT: blob is not uploadable
+
+src/novel_forge/storage/asset_blob_repositories.py:352: KernelError
+______ test_existing_reservation_keeps_frozen_key_and_bytes[preparation0] ______
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x107940f20>
+preparation = {}
+
+    @pytest.mark.parametrize('preparation', [{}, {'book_edition':{'revision_id':'edition-1'}}, {'author_draft_adoption':{'revision_id':'adoption-1'}}])
+    def test_existing_reservation_keeps_frozen_key_and_bytes(objects, preparation):
+        request, context, digest = manuscript(identifier('project'), 'book-a', 'run-a', '旧稿保持不变。', preparation)
+        old_key = f'chapters/{request.project_id}/1/chapter.txt'
+        blob = reserve_blob(DATABASE_URL, context, provider=objects.provider, object_key=old_key,
+                            expected_hash=digest, expected_size=len('旧稿保持不变。'.encode()), media_type='text/plain')
+        evidence = export(request, objects)
+        assert evidence.blob_id == blob
+        assert read_blob(blob, objects) == (old_key, '旧稿保持不变。'.encode())
+>       assert export(request, objects).blob_id == blob
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:38: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:93: in deliver_export
+    effect_id = request_blob_upload(
+src/novel_forge/modules/command_kernel/asset_runtime.py:351: in request_blob_upload
+    repository.attach_upload_effect(blob_id, result["external_effect_id"])
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.storage.asset_blob_repositories.AssetBlobRepository object at 0x1079430b0>
+blob_id = '6f7aa50a-29c6-4775-8f21-53fc72f73401'
+external_effect_id = 'e5a213e5-3c90-4764-ae83-2660dc66e34e'
+
+    def attach_upload_effect(self, blob_id: str, external_effect_id: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_blob
+            SET upload_effect_id = %s, status = 'UPLOADING'
+            WHERE blob_id = %s
+              AND (upload_effect_id IS NULL OR upload_effect_id = %s)
+              AND status IN ('PENDING_UPLOAD', 'UPLOADING')
+            """,
+            [external_effect_id, blob_id, external_effect_id],
+        )
+        if self.cursor.rowcount != 1:
+>           raise KernelError("BLOB_STATUS_CONFLICT", "blob is not uploadable")
+E           novel_forge.modules.command_kernel.errors.KernelError: BLOB_STATUS_CONFLICT: blob is not uploadable
+
+src/novel_forge/storage/asset_blob_repositories.py:352: KernelError
+______ test_existing_reservation_keeps_frozen_key_and_bytes[preparation1] ______
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x1079433e0>
+preparation = {'book_edition': {'revision_id': 'edition-1'}}
+
+    @pytest.mark.parametrize('preparation', [{}, {'book_edition':{'revision_id':'edition-1'}}, {'author_draft_adoption':{'revision_id':'adoption-1'}}])
+    def test_existing_reservation_keeps_frozen_key_and_bytes(objects, preparation):
+        request, context, digest = manuscript(identifier('project'), 'book-a', 'run-a', '旧稿保持不变。', preparation)
+        old_key = f'chapters/{request.project_id}/1/chapter.txt'
+        blob = reserve_blob(DATABASE_URL, context, provider=objects.provider, object_key=old_key,
+                            expected_hash=digest, expected_size=len('旧稿保持不变。'.encode()), media_type='text/plain')
+        evidence = export(request, objects)
+        assert evidence.blob_id == blob
+        assert read_blob(blob, objects) == (old_key, '旧稿保持不变。'.encode())
+>       assert export(request, objects).blob_id == blob
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:38: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:93: in deliver_export
+    effect_id = request_blob_upload(
+src/novel_forge/modules/command_kernel/asset_runtime.py:351: in request_blob_upload
+    repository.attach_upload_effect(blob_id, result["external_effect_id"])
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.storage.asset_blob_repositories.AssetBlobRepository object at 0x109558e30>
+blob_id = '4b1d6381-a1f8-4d4b-bad3-091964a569a3'
+external_effect_id = '982f6257-4c22-41e5-b5d5-cde140d147ff'
+
+    def attach_upload_effect(self, blob_id: str, external_effect_id: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_blob
+            SET upload_effect_id = %s, status = 'UPLOADING'
+            WHERE blob_id = %s
+              AND (upload_effect_id IS NULL OR upload_effect_id = %s)
+              AND status IN ('PENDING_UPLOAD', 'UPLOADING')
+            """,
+            [external_effect_id, blob_id, external_effect_id],
+        )
+        if self.cursor.rowcount != 1:
+>           raise KernelError("BLOB_STATUS_CONFLICT", "blob is not uploadable")
+E           novel_forge.modules.command_kernel.errors.KernelError: BLOB_STATUS_CONFLICT: blob is not uploadable
+
+src/novel_forge/storage/asset_blob_repositories.py:352: KernelError
+______ test_existing_reservation_keeps_frozen_key_and_bytes[preparation2] ______
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x1094d2810>
+preparation = {'author_draft_adoption': {'revision_id': 'adoption-1'}}
+
+    @pytest.mark.parametrize('preparation', [{}, {'book_edition':{'revision_id':'edition-1'}}, {'author_draft_adoption':{'revision_id':'adoption-1'}}])
+    def test_existing_reservation_keeps_frozen_key_and_bytes(objects, preparation):
+        request, context, digest = manuscript(identifier('project'), 'book-a', 'run-a', '旧稿保持不变。', preparation)
+        old_key = f'chapters/{request.project_id}/1/chapter.txt'
+        blob = reserve_blob(DATABASE_URL, context, provider=objects.provider, object_key=old_key,
+                            expected_hash=digest, expected_size=len('旧稿保持不变。'.encode()), media_type='text/plain')
+        evidence = export(request, objects)
+        assert evidence.blob_id == blob
+        assert read_blob(blob, objects) == (old_key, '旧稿保持不变。'.encode())
+>       assert export(request, objects).blob_id == blob
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:38: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:93: in deliver_export
+    effect_id = request_blob_upload(
+src/novel_forge/modules/command_kernel/asset_runtime.py:351: in request_blob_upload
+    repository.attach_upload_effect(blob_id, result["external_effect_id"])
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.storage.asset_blob_repositories.AssetBlobRepository object at 0x1079036b0>
+blob_id = '48c3ff6f-feeb-4491-aad7-e8a78727f356'
+external_effect_id = 'e404b680-bfa4-4067-8f9f-8eab6a2afee7'
+
+    def attach_upload_effect(self, blob_id: str, external_effect_id: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_blob
+            SET upload_effect_id = %s, status = 'UPLOADING'
+            WHERE blob_id = %s
+              AND (upload_effect_id IS NULL OR upload_effect_id = %s)
+              AND status IN ('PENDING_UPLOAD', 'UPLOADING')
+            """,
+            [external_effect_id, blob_id, external_effect_id],
+        )
+        if self.cursor.rowcount != 1:
+>           raise KernelError("BLOB_STATUS_CONFLICT", "blob is not uploadable")
+E           novel_forge.modules.command_kernel.errors.KernelError: BLOB_STATUS_CONFLICT: blob is not uploadable
+
+src/novel_forge/storage/asset_blob_repositories.py:352: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_same_project_chapter_exports_are_independent[True]
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_same_project_chapter_exports_are_independent[False]
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_existing_reservation_keeps_frozen_key_and_bytes[preparation0]
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_existing_reservation_keeps_frozen_key_and_bytes[preparation1]
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_existing_reservation_keeps_frozen_key_and_bytes[preparation2]
+5 failed in 3.11s
