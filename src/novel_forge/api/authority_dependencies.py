@@ -207,6 +207,9 @@ _PACK_SKILL_FOR_STAGE = {
     "quality_platform": "quality-review",
     "reader_outcome": "quality-review",
     "longform_prose_review": "quality-review",
+    "screenplay_generate": "prose-generation",
+    "screenplay_review": "quality-review",
+    "screenplay_revision": "prose-generation",
     "narrative_semantic_evaluation": "quality-review",
     "agent_session": "agent-loop-governance",
     "retrieval": "context-builder-source-isolation",
@@ -451,6 +454,11 @@ def build_production_execution_composition(
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL",
         ),
     ]
+    stage_routes.extend([
+        ("screenplay_generate", "NOVEL_FORGE_DRAFT_PROVIDER", "NOVEL_FORGE_DRAFT_MODEL"),
+        ("screenplay_review", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
+        ("screenplay_revision", "NOVEL_FORGE_REVISION_PROVIDER", "NOVEL_FORGE_REVISION_MODEL"),
+    ])
     agent_provider = str(values.get("NOVEL_FORGE_AGENT_PROVIDER") or "").strip()
     agent_model = str(values.get("NOVEL_FORGE_AGENT_MODEL") or "").strip()
     agent_binding_enabled = bool(agent_provider and agent_model)
@@ -1000,6 +1008,7 @@ def build_production_execution_composition(
         local_binding = codex_local_binding_hash(
             codex_home=codex_home, executable=codex_executable,
             entitlement=codex_entitlement.to_dict() if codex_entitlement else None,
+            retry_policy=str(values.get("NOVEL_FORGE_CODEX_RETRY_POLICY") or ""),
         )
         routes = {
             stage: replace(
@@ -1123,6 +1132,7 @@ def build_production_execution_composition(
                     codex_home=codex_home,
                     pricing=codex_pricing,
                     account_entitlement=codex_entitlement,
+                    retry_policy=str(values.get("NOVEL_FORGE_CODEX_RETRY_POLICY") or ""),
                     structured_result_validator=validate_codex_result,
                     qualification_ref="capability-probe:codex-cli:real-runtime-v1",
                 )
@@ -1785,6 +1795,7 @@ def build_book_followup_authority_application(
         raise RuntimeError("PostgreSQL database is required for Book Followup")
     values = os.environ if env is None else env
     build_id, commit_sha = authority_release_identity(env=values)
+    from novel_forge.modules.book_followup_authority.screenplay_execution import build_screenplay_model_ports
     return BookFollowupAuthorityApplication(
         settings.database_url,
         application_build_id=build_id,
@@ -1795,6 +1806,7 @@ def build_book_followup_authority_application(
             env=values,
         ),
         prose_model_port=build_longform_prose_review_model_port(settings, execution=execution, env=values),
+        screenplay_model_ports=build_screenplay_model_ports(settings, execution=execution, env=values),
         worker_id=str(
             values.get("NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID")
             or "book-followup-authority-worker"
@@ -1963,6 +1975,7 @@ def build_book_production_composition(
         production_preparation=preparation,
         realizations=realizations,
         narrative_search=narrative_search,
+        draft_context_profile_version=values.get("NOVEL_FORGE_BOOK_DRAFT_CONTEXT_PROFILE_VERSION") or "draft-context-profile-v2",
         context_token_budget=int(
             values.get("NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET") or 16_000
         ),

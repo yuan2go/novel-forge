@@ -345,6 +345,8 @@ class PostgresPlanChangeAuthority:
                 )
             return proposal
         if approved:
+            from novel_forge.modules.mkaos_authority.craft_scope import validate_scope_transition_decision
+            validate_scope_transition_decision(self.database_url, proposal=proposal, evidence=evidence)
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.repositories.plan_change.require_current_inferred_impacts(
                     project_id=proposal["project_id"],

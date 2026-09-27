@@ -1463,7 +1463,7 @@ class PostgresBookProjectionRepairAuthority:
             """
             SELECT arc_state
             FROM authority_book_narrative_projection_set
-            WHERE book_run_id=%s AND chapter_number=%s AND status='COMPLETE'
+            WHERE book_run_id=authority_book_source_run(%s,chapter_number) AND chapter_number=%s AND status='COMPLETE'
             """,
             [context["book_run_id"], chapter_number - 1],
         )
@@ -1485,7 +1485,7 @@ class PostgresBookProjectionRepairAuthority:
             FROM authority_arc_outcome_v2 AS outcome
             JOIN authority_book_narrative_projection_set AS projection
               ON projection.projection_set_id=outcome.projection_set_id
-            WHERE projection.book_run_id=%s
+            WHERE projection.book_run_id=authority_book_source_run(%s,projection.chapter_number)
               AND outcome.accepted_through_chapter < %s
             """,
             [context["book_run_id"], chapter_number],
@@ -1616,11 +1616,12 @@ class PostgresBookProjectionRepairAuthority:
                 """
                 SELECT projection_set_id, state
                 FROM authority_arc_actual_state
-                WHERE project_id=%s AND book_id=%s AND arc_plan_version_id=%s
+                WHERE project_id=%s AND book_id=%s AND book_run_id=%s AND arc_plan_version_id=%s
                 """,
                 [
                     projection["project_id"],
                     projection["book_id"],
+                    projection["book_run_id"],
                     state["arc_plan_version_id"],
                 ],
             )
@@ -1643,9 +1644,9 @@ class PostgresBookProjectionRepairAuthority:
                 """
                 SELECT projection_set_id, state
                 FROM authority_narrative_obligation_state
-                WHERE project_id=%s AND book_id=%s AND obligation_id=%s
+                WHERE project_id=%s AND book_id=%s AND book_run_id=%s AND obligation_id=%s
                 """,
-                [projection["project_id"], projection["book_id"], obligation_id],
+                [projection["project_id"], projection["book_id"], projection["book_run_id"], obligation_id],
             )
             row = uow.cursor.fetchone()
             if (

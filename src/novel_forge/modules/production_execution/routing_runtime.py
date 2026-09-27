@@ -84,7 +84,35 @@ class PostgresRoutingRegistry:
 
     def observations(
         self, *, project_id: str, task_type: str, candidate: ModelCandidate,
-        producer_contract_hash: str | None = None,
+        producer_contract_hash: str | None = None, work_id: str = "",
+        policy_snapshot: Mapping[str, Any] | None = None,
+    ) -> list[BenchmarkObservation]:
+        from .routing_sources import matching_bindings, validate_binding
+
+        snapshot = self.policy(project_id) if policy_snapshot is None else policy_snapshot
+        bindings = matching_bindings(snapshot.get("policy", {}), project_id=project_id,
+            work_id=work_id, task_type=task_type, candidate=candidate, producer_contract_hash=producer_contract_hash)
+        observations = self._local_observations(project_id=project_id, task_type=task_type,
+            candidate=candidate, producer_contract_hash=producer_contract_hash)
+        sources: dict[str, set[str]] = {}
+        for binding in bindings:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                validate_binding(uow.cursor, binding, now=datetime.now(timezone.utc))
+            row = binding["export"]
+            sources.setdefault(row["source_project_id"], set()).update(item["asset_version_id"] for item in row["observations"])
+        for source_project, refs in sources.items():
+            observations.extend(self._local_observations(project_id=source_project,
+                task_type=task_type, candidate=candidate, producer_contract_hash=producer_contract_hash,
+                observation_refs=tuple(sorted(refs))))
+        observations = list({item.evidence_ref: item for item in observations}.values())
+        if candidate.provider == "deepseek" and observations:
+            latest = max(observations, key=lambda item: datetime.fromisoformat(item.occurred_at))
+            observations = [item for item in observations if item.served_model_identity_hash == latest.served_model_identity_hash]
+        return observations
+
+    def _local_observations(
+        self, *, project_id: str, task_type: str, candidate: ModelCandidate,
+        producer_contract_hash: str | None = None, observation_refs: tuple[str, ...] | None = None,
     ) -> list[BenchmarkObservation]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -177,6 +205,7 @@ class PostgresRoutingRegistry:
                        ORDER BY v.created_at DESC LIMIT 1
                    ) quality ON true
                    WHERE asset.project_id=%s AND asset.asset_type='model_call_log'
+                     AND (%s::text[] IS NULL OR version.asset_version_id=ANY(%s::text[]))
                      AND effect.external_effect_id IS NOT NULL
                      AND COALESCE(version.content->>'stage',model.evidence #>> '{production_execution,execution_request,stage}')=%s
                      AND model.evidence->>'provider_id'=%s
@@ -189,6 +218,8 @@ class PostgresRoutingRegistry:
                    ORDER BY version.created_at DESC LIMIT 200""",
                 [
                     project_id,
+                    list(observation_refs) if observation_refs is not None else None,
+                    list(observation_refs) if observation_refs is not None else None,
                     task_type,
                     candidate.provider,
                     candidate.model,
@@ -729,8 +760,9 @@ class ProductionProviderRouter:
         self.token_caps = dict(token_caps or {})
         self.call_caps = dict(call_caps or {})
         self.execution_environment = execution_environment
-        if self.task_token_limit <= 0 or Decimal(task_money_limit) <= 0:
-            raise ValueError("ROUTING_POSITIVE_TASK_BUDGET_REQUIRED")
+        money_limit = Decimal(task_money_limit)
+        if self.task_token_limit <= 0 or not money_limit.is_finite() or money_limit < 0:
+            raise ValueError("ROUTING_NONNEGATIVE_MONEY_AND_POSITIVE_TOKEN_BUDGET_REQUIRED")
 
     def select(
         self,
@@ -897,16 +929,17 @@ class ProductionProviderRouter:
                 for candidate in self.candidates
             ),
         )
+        policy_snapshot = self.registry.policy(project_id)
         observations = {
             candidate.candidate_id: self.registry.observations(
                 project_id=project_id, task_type=task_type, candidate=candidate,
-                producer_contract_hash=contract_hash,
+                producer_contract_hash=contract_hash, work_id=work_id,
+                policy_snapshot=policy_snapshot,
             )
             for candidate in candidates
         }
         from .routing_policy import task_requirements
 
-        policy_snapshot = self.registry.policy(project_id)
         requirements = (
             task_requirements(
                 policy_snapshot["policy"],

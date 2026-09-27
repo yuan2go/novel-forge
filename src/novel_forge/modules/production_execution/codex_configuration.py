@@ -31,16 +31,36 @@ CODEX_INPUT_ONLY_OVERRIDES = (
 
 
 CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v2"
+CODEX_NO_RETRY_POLICY = "codex-no-transport-retry.v1"
 
 
-def codex_local_binding_hash(*, codex_home: str, executable: str, entitlement: Mapping[str, str] | None) -> str:
-    return hashlib.sha256(json.dumps({
+def codex_retry_overrides(policy: str = "") -> tuple[str, ...]:
+    if not policy:
+        return ()
+    if policy != CODEX_NO_RETRY_POLICY:
+        raise ValueError("unsupported frozen Codex transport retry policy")
+    return (
+        'model_provider="novel_forge_openai_no_retry"',
+        'model_providers.novel_forge_openai_no_retry.name="OpenAI"',
+        'model_providers.novel_forge_openai_no_retry.wire_api="responses"',
+        "model_providers.novel_forge_openai_no_retry.requires_openai_auth=true",
+        "model_providers.novel_forge_openai_no_retry.request_max_retries=0",
+        "model_providers.novel_forge_openai_no_retry.stream_max_retries=0",
+    )
+
+
+def codex_local_binding_hash(*, codex_home: str, executable: str, entitlement: Mapping[str, str] | None, retry_policy: str = "") -> str:
+    binding = {
         "codex_home": codex_home,
         "executable": executable,
         "entitlement": dict(entitlement) if entitlement is not None else None,
         "input_only_overrides": CODEX_INPUT_ONLY_OVERRIDES,
         "schema_projection": CODEX_SCHEMA_PROJECTION_VERSION,
-    }, sort_keys=True).encode()).hexdigest()
+    }
+    overrides = codex_retry_overrides(retry_policy)
+    if overrides:
+        binding.update(retry_policy=retry_policy, retry_overrides=overrides)
+    return hashlib.sha256(json.dumps(binding, sort_keys=True).encode()).hexdigest()
 
 
 def codex_account_binding_evidence(backend: object) -> dict:
@@ -48,11 +68,14 @@ def codex_account_binding_evidence(backend: object) -> dict:
 
     if not isinstance(backend, CodexCliExecutionBackend) or backend.account_entitlement is None:
         raise ValueError("existing native Codex account-entitlement backend required")
-    return {
+    evidence = {
         "codex_home": backend.codex_home,
         "executable": backend.codex_executable,
         "entitlement": backend.account_entitlement.to_dict(),
     }
+    if backend.retry_policy:
+        evidence["retry_policy"] = backend.retry_policy
+    return evidence
 
 
 def codex_output_schema(schema: dict) -> dict:
@@ -131,12 +154,19 @@ def inspect_local_codex(values: Mapping[str, str] | None = None) -> dict:
         "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT",
     )
     missing = [name for name in required if not str(values.get(name) or "").strip()]
+    retry_policy = str(values.get("NOVEL_FORGE_CODEX_RETRY_POLICY") or "")
+    try:
+        retry_overrides = codex_retry_overrides(retry_policy)
+    except ValueError:
+        retry_overrides = ()
+        blockers.append("CODEX_RETRY_POLICY_UNSUPPORTED")
     return {
         "state": "BLOCKED" if blockers else "LOCAL_PROCESS_VERIFIED",
         "identity": identity,
         "blockers": blockers,
         "missing_configuration": missing,
-        "invocation_overrides": list(CODEX_INPUT_ONLY_OVERRIDES),
+        "invocation_overrides": [*CODEX_INPUT_ONLY_OVERRIDES, *retry_overrides],
+        "retry_policy": retry_policy or "LEGACY_CLI_DEFAULTS",
         "authorization": "REQUIRES_EXTERNAL_USER_GRANT_VERIFICATION",
         "credentials_inspected": False,
         "remote_availability": "NOT_TESTED",

@@ -361,6 +361,12 @@ class PostgresHierarchicalPlanningAuthority:
                 str(operation[6]) == PLAN_BINDING_DEFINITION_VERSION
             ),
         )
+        edition_scope = (content.get("constraint_envelope") or {}).get("edition_execution")
+        if edition_scope:
+            from novel_forge.modules.book_authority.edition_planning import validate_edition_plan_scope
+            validate_edition_plan_scope(self.database_url, project_id=project_id, book_id=book_id, scope=edition_scope)
+            if not contract.logical_key.startswith("edition:" + edition_scope["book_run_id"] + ":"):
+                raise KernelError("EDITION_PLAN_SCOPE_INVALID", "Edition execution plans cannot replace a source-edition logical key")
         epistemic_state_sources: tuple[dict[str, str], ...] = ()
         if contract_type is PlanContractType.CHAPTER:
             binding = (content.get("constraint_envelope") or {}).get("world_preparation")

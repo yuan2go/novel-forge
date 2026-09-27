@@ -1,0 +1,11 @@
+--- original
++++ submitted
+@@ -8,7 +8,7 @@
+ The scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.
+ 
+ [2] Chapter 2: The Door Closes
+-Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {"actor_step": 2, "status": "OPEN"}.
++Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {"actor_step": 2, "status": "OPEN"}. 风声掠过檐角，话音却很稳。
+ 
+ The scene carries its action contribution forward.
+ 

@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-wp02-p0-private/resume-selected-edition-tail.py", line 51, in <module>
+    exec(compile(textwrap.dedent(body),'same-book-checkpoint-native-tail','exec'),namespace)
+  File "same-book-checkpoint-native-tail", line 31, in <module>
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/tests/integration/edition_joint_evidence_support.py", line 16, in require_joint_accepted_evidence
+    assert [use["chapter"] for use in uses] == [1, 2, 3]
+AssertionError

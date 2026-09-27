@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-wp02-p0-private/resume-joint-tail-checkpoint.py", line 44, in <module>
+    exec(compile(textwrap.dedent(body),'same-book-checkpoint-native-tail','exec'),namespace)
+  File "same-book-checkpoint-native-tail", line 7, in <module>
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/tests/integration/narrative_closure_joint_support.py", line 115, in settle_joint_unknown
+    tick = scheduler.tick(project_id=project_id, root_operation_id=root_operation_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/chapter_authority/scheduler.py", line 257, in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/chapter_authority/scheduler.py", line 1354, in _execute_node
+    with LeaseHeartbeatGuard(
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/command_kernel/lease_heartbeat.py", line 38, in __enter__
+    self._probe()
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/chapter_authority/scheduler.py", line 1360, in <lambda>
+    probe=lambda: probe_operation_execution(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/command_kernel/deadline_runtime.py", line 39, in probe_operation_execution
+    raise KernelError(
+novel_forge.modules.command_kernel.errors.KernelError: OPERATION_BUSINESS_TIMEOUT: frozen operation business deadline has expired

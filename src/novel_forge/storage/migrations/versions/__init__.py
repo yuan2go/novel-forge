@@ -144,6 +144,11 @@ from . import (
     v20260921_0140_prose_editorial_closure,
     v20260921_0141_author_chapter_replacement,
     v20260921_0142_prose_editorial_foreign_key_indexes,
+    v20260927_0143_runtime_dispatch_control,
+    v20260927_0144_book_editions,
+    v20260927_0145_edition_execution_windows,
+    v20260927_0146_edition_prefix_inheritance,
+    v20260927_0147_runtime_job_dispatch_pause,
 )
 
 VERSION_MODULES = [
@@ -290,6 +295,11 @@ VERSION_MODULES = [
     v20260921_0140_prose_editorial_closure,
     v20260921_0141_author_chapter_replacement,
     v20260921_0142_prose_editorial_foreign_key_indexes,
+    v20260927_0143_runtime_dispatch_control,
+    v20260927_0144_book_editions,
+    v20260927_0145_edition_execution_windows,
+    v20260927_0146_edition_prefix_inheritance,
+    v20260927_0147_runtime_job_dispatch_pause,
 ]
 
 __all__ = ["VERSION_MODULES"]

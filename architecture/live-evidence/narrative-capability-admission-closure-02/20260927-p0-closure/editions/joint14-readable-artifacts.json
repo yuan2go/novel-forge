@@ -1,0 +1,24 @@
+{
+  "evidence_class": "SCRIPTED_NATIVE_ENGINEERING_NOT_REAL_PROVIDER_OR_HUMAN_QUALITY",
+  "implementation_identity": "DEVELOPMENT_WORKTREE_NOT_FINAL_COMMON_SHA",
+  "joint_status": "PARTIAL_CHAIN_UNKNOWN_RECOVERY_IN_PROGRESS",
+  "real_model_calls": 0,
+  "literary_quality": "NOT_PROVEN; SCRIPTED_PROSE_CONTAINS_REPETITION",
+  "files": [
+    {
+      "file": "joint14-accepted-chinese-source.txt",
+      "sha256": "685d45d9bbec3626c7b85907c905f3abc53a3d0d86b35b8fe54764e4abfd26f4",
+      "bytes": 3131
+    },
+    {
+      "file": "joint14-accepted-actor-evidence.json",
+      "sha256": "0938d0be2daa085e897f3eeb02e3bf05f91f765c37a0932eedca60dc7633da81",
+      "bytes": 90067
+    },
+    {
+      "file": "joint14-source-screenplay.txt",
+      "sha256": "74309897f8a3b0e79445414984da4110aef1f1546a776b172d7005efcd21bc44",
+      "bytes": 924
+    }
+  ]
+}

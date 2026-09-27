@@ -1,0 +1,12 @@
+CRAFT_EXPLICIT_PASS 69.66
+Traceback (most recent call last):
+  File "<PRIVATE_EVIDENCE_ROOT>/craft-explicit-screenplay-runner.py", line 31, in <module>
+    result=run_screenplay_vertical(url,book,original['revision_id'],principal,out,application_build_id=app.application_build_id,commit_sha=app.commit_sha,run_samples=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/tests/integration/screenplay_production_support.py", line 146, in run_screenplay_vertical
+    with pytest.raises(KernelError, match="SCREENPLAY_KNOWLEDGE_SOURCE_INVALID"):
+  File "<PROJECT>/.venv/lib/python3.12/site-packages/_pytest/raises.py", line 711, in __exit__
+    raise AssertionError(self._fail_reason) from None
+AssertionError: Regex pattern did not match.
+  Expected regex: 'SCREENPLAY_KNOWLEDGE_SOURCE_INVALID'
+  Actual message: 'SCREENPLAY_CHARACTER_SOURCE_INVALID: A participant must exist in the mapped accepted narrative state'

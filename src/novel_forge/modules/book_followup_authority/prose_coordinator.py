@@ -23,7 +23,7 @@ def load_accepted_sources(
     uow: AuthorityUnitOfWork, book_run_id: str, project_id: str
 ) -> list[dict[str, Any]]:
     uow.cursor.execute(
-        "SELECT acceptance_id,chapter_number,chapter_outcome_asset_version_id FROM authority_book_chapter_acceptance WHERE book_run_id=%s AND project_id=%s AND status='COMMITTED' ORDER BY chapter_number",
+        "SELECT acceptance_id,chapter_number,chapter_outcome_asset_version_id FROM authority_book_acceptance_lineage(%s) WHERE project_id=%s AND status='COMMITTED' ORDER BY chapter_number",
         [book_run_id, project_id],
     )
     sources = []
@@ -387,7 +387,7 @@ class BookProseReviewCoordinator:
                              JOIN authority_operation operation ON operation.operation_id=event.content->>'operation_id'
                              WHERE event.run_id=run.run_id AND event.kind='WINDOW_ADMITTED' AND operation.status<>'SUCCEEDED')
                          OR (run.manifest #>> '{policy,follow_acceptance}'='true' AND EXISTS (
-                             SELECT 1 FROM authority_book_chapter_acceptance acceptance WHERE acceptance.book_run_id=run.book_run_id
+                             SELECT 1 FROM authority_book_chapter_acceptance acceptance WHERE acceptance.book_run_id=authority_book_source_run(run.book_run_id,acceptance.chapter_number)
                              AND acceptance.status='COMMITTED' AND NOT EXISTS (
                                  SELECT 1 FROM jsonb_array_elements(run.manifest->'sources') source WHERE source->>'acceptance_id'=acceptance.acceptance_id))))
                      AND (EXISTS (SELECT 1 FROM jsonb_array_elements(run.manifest->'windows') candidate_window
@@ -397,7 +397,7 @@ class BookProseReviewCoordinator:
                              AND event.content->>'window_id'=candidate_window->>'window_id' AND operation.status='SUCCEEDED'))
                          OR (run.manifest #>> '{policy,follow_acceptance}'='true'
                              AND EXISTS (SELECT 1 FROM authority_book_chapter_acceptance acceptance
-                                 WHERE acceptance.book_run_id=run.book_run_id AND acceptance.status='COMMITTED'
+                                 WHERE acceptance.book_run_id=authority_book_source_run(run.book_run_id,acceptance.chapter_number) AND acceptance.status='COMMITTED'
                                  AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(run.manifest->'sources') source
                                      WHERE source->>'acceptance_id'=acceptance.acceptance_id))))
                    ORDER BY run.created_at,run.run_id LIMIT %s""",

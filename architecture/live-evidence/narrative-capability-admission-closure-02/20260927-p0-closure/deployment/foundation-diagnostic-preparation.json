@@ -1,0 +1,100 @@
+{
+  "contract_version": "wp02-foundation-diagnostic-preparation.v1",
+  "state": "PREPARED_NOT_NATIVE_FROZEN",
+  "authorization_file": "config/production/narrative-closure/authorization-approved-p0-20260927.json",
+  "scope": {
+    "project_id": "narrative-closure-02-admission-20260927",
+    "workspace_id": "ws:zheng-deng:sampling:20260927",
+    "book_id": "duanchao-guan-zheng-deng-reference-01"
+  },
+  "release_binding": "EXACT_COMMON_RELEASE_REQUIRED_AT_NATIVE_FREEZE",
+  "task_type": "creative.candidates.generate",
+  "task_contract": "story_planning.generate@1.16.0",
+  "candidate_id": "codex-cli:gpt-6-sol:high",
+  "candidate_model_revision": "READ_EXACT_CONFIGURED_ENTITLEMENT_CONFIGURATION_AT_FREEZE",
+  "retry_policy": "codex-no-transport-retry.v1",
+  "model_calls": 0,
+  "inputs": {
+    "path": "config/production/narrative-closure/diagnostic-foundation-inputs.json",
+    "sha256": "sha256:e462a04dcbbc30baa51aa53dc20ef1a63afc1f3c7299b50d4820645f31e62216"
+  },
+  "first_batch": {
+    "samples": 2,
+    "each_grant_calls": 1,
+    "each_grant_tokens": 32768,
+    "initial_native_cumulative_calls": 2,
+    "initial_native_cumulative_tokens": 65536,
+    "purpose_pool_calls": 720,
+    "purpose_pool_tokens": 40108032,
+    "monetary_grant_amount": null,
+    "monetary_cost_status": "UNKNOWN",
+    "priced_spend_cap": "0",
+    "automatic_retry": false,
+    "automatic_repair": false
+  },
+  "frozen_native_fields_required": [
+    "actual Book scope",
+    "exact Content brief asset versions/hashes",
+    "exact current Pack compilation",
+    "Router producer_contract/hash from native preflight",
+    "candidate model revision and existing account binding",
+    "bootstrap command and input hashes",
+    "approved evidence hash",
+    "manifest hash",
+    "validity",
+    "native budget policy hash"
+  ],
+  "native_entries": [
+    "ProjectAuthorityApplication.execute(project_lifecycle.create)",
+    "BookDesignAuthorityApplication.execute(book.create)",
+    "ContentAuthorityApplication.execute(creative.brief.create)",
+    "install_longform_validation_pack using current build_story_planning_pack_profile",
+    "configure_owned_policy(CREATIVE_EXPERIMENT_BUDGET)",
+    "StoryPlanningGenerationApplication.generate: preflight without native entitlement budget; preserve exact materialization/Router decision and zero-dispatch receipt, then cancel probe natively before any sampling budget becomes active",
+    "configure_owned_policy(PROVIDER_ROUTING): exact bounded bootstrap_authorizations",
+    "StoryPlanningGenerationApplication.generate: one invocation per frozen sample; never retry/repair loop",
+    "Planning reference subject / native blind annotation after outputs exist"
+  ],
+  "stop_conditions": [
+    "failure or UNKNOWN: stop batch and preserve exact receipt/reservation",
+    "contract/Pack/input/model/account drift: stop before dispatch",
+    "native or entitlement quota exhausted: stop without top-up",
+    "two samples reached: stop awaiting actual independent reference and task admission",
+    "all outputs remain BENCHMARK_ONLY and INELIGIBLE"
+  ],
+  "human_reference_status": "NO_PARTICIPANTS_OR_RATINGS",
+  "production_eligibility": "FORBIDDEN_FOR_EXPERIMENT_OUTPUTS",
+  "execution_constraints": [
+    "从正常层级规划与批准Craft范围生成；不得事后注入策略、接受状态或人为篡改模型正文。",
+    "原接纳小说在正式新edition验收前保持可读；场景剧本只改编明确源版范围，不能反向修改小说事实。",
+    "输出只作creative.candidates.generate的隔离诊断样本，后续质量判断仍需独立真人reference。"
+  ],
+  "producer_preparation": {
+    "evidence_class": "PREPARED_ZERO_DISPATCH",
+    "expected_gate": "ROUTER_OR_BUDGET_BLOCKED",
+    "counts_as_model_sample": false,
+    "counts_as_model_failure": false,
+    "required_before_grants": [
+      "native zero Provider dispatch evidence",
+      "exact Router/materialization producer identity",
+      "native probe cancellation receipt"
+    ],
+    "unexpected_dispatch": "STOP_AND_RECONCILE; never hide or classify as preparation"
+  },
+  "batch_execution_order": "Run sample A once. On any failure, UNKNOWN, exhausted quota or drift, stop the entire batch. Run sample B once only if A produced a retained valid sample. Then stop pending real independent reference.",
+  "native_operator_preparation": {
+    "state": "PREPARED_NOT_EXECUTED",
+    "scope_creation": "normal ProjectAuthority and durable PAUSED control",
+    "producer_probe": "normal Router blocked without entitlement policy, zero Effect assertion, then native CANCELLED before grants",
+    "budget_binding": "immutable original approved sampling phase allocations; current CALIBRATION authorized cap 2 calls / 65536 tokens only; REFERENCE and all other phases remain zero",
+    "one_call_execution": "native bootstrap generate exactly once; first failure/UNKNOWN/schema/account/model/quota/producer drift stops entire batch and returns scope to PAUSED",
+    "schema_only_validation": "PASS; no native registration, no Provider dispatch",
+    "private_runner_sha256": {
+      "postdeploy-empty-projects.py": "8dbccbcf70785ebeedbbfca34254dcba700932d452112c7877a64b011ff0ab87",
+      "postdeploy-foundation-prepare.py": "37741328e10a215ec16a59ce927d0c487c5a5f6c05e01e557eded007a7ab1ca7",
+      "postdeploy-foundation-probe.py": "0efd94ab968a327554c4b5d5a0632f2ab2285f2c0c2888e853d2fd86cbe96b97",
+      "postdeploy-foundation-freeze.py": "b1830c9e2952985c9bdd0f377a1301e99af07e1afdce25138c92e880e99bf577",
+      "postdeploy-foundation-run.py": "330dc1feb8a7d315a5b76591d7917b01d0e7bb5badd25163cb071e7ef0ca1f1c"
+    }
+  }
+}

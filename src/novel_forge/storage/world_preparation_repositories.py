@@ -315,7 +315,11 @@ class WorldPreparationRepository:
             [action["source"]["asset_version_id"]],
         )
         source_row = self.cursor.fetchone()
-        if source_row is None or action["book_run_id"] != book_run_id:
+        origin_run = book_run_id
+        if existing:
+            self.cursor.execute("SELECT authority_book_source_run(%s,%s)", [book_run_id, int(action["world_plan"]["chapter_number"])])
+            origin_run = self.cursor.fetchone()[0]
+        if source_row is None or action["book_run_id"] != origin_run:
             raise KernelError(
                 "CAUSAL_OBLIGATION_ORIGIN_UNRESOLVED",
                 "preparation belongs to another Book or missing source",
@@ -615,9 +619,65 @@ class WorldPreparationRepository:
             "entity_ids": reality["approved_entity_ids"],
             "policy": asdict(policy),
             **({"actor_experiment": actor_experiment} if actor_experiment is not None else {}),
+            **({"actor_intent_sources": self.actor_intent_sources(
+                project_id=project_id, book_run_id=request["book_run_id"],
+                through_chapter=chapter, actor_ids=actor_experiment["actor_ids"],
+            )} if actor_experiment and actor_experiment["version"] == "world-actor-experiment.v2" else {}),
             "control_snapshot": control_snapshot,
             "fact_mutation_allowed": False,
         }
+
+    def actor_intent_sources(
+        self, *, project_id: str, book_run_id: str, through_chapter: int,
+        actor_ids: list[str],
+    ) -> dict[str, Any]:
+        from novel_forge.modules.worldbuilding.actor_intents import reconcile_accepted_intent
+
+        result = {}
+        for actor_id in actor_ids:
+            self.cursor.execute(
+                """
+                SELECT accepted.acceptance_id, outcome.asset_version_id,
+                       outcome.content_hash, outcome.content,
+                       plan.content->'constraint_envelope'->'world_preparation',
+                       proposal.asset_version_id, proposal.content_hash,
+                       proposal.content->'contract'
+                FROM authority_book_chapter_acceptance accepted
+                JOIN authority_book_chapter_request request USING(chapter_request_id)
+                JOIN authority_asset_version plan ON plan.asset_version_id=request.chapter_plan_version
+                JOIN authority_asset_version outcome ON outcome.asset_version_id=accepted.chapter_outcome_asset_version_id
+                JOIN authority_asset_version action ON action.asset_version_id=plan.content->'constraint_envelope'->'world_preparation'->>'asset_version_id'
+                CROSS JOIN LATERAL jsonb_array_elements(action.content->'contract'->'actor_proposals') reference
+                JOIN authority_asset_version proposal ON proposal.asset_version_id=reference->>'asset_version_id'
+                JOIN authority_asset asset ON asset.asset_id=proposal.asset_id
+                WHERE accepted.project_id=%s AND accepted.book_run_id=authority_book_source_run(%s,accepted.chapter_number)
+                  AND accepted.status='COMMITTED' AND accepted.chapter_number<=%s
+                  AND asset.project_id=accepted.project_id
+                  AND proposal.content_hash=reference->>'content_hash'
+                  AND action.content_hash=plan.content->'constraint_envelope'->'world_preparation'->>'content_hash'
+                  AND action.content->'contract'->>'book_run_id'=accepted.book_run_id
+                  AND proposal.content->'contract'->'output'->>'actor_id'=%s
+                  AND proposal.content->'contract'->'output'->'intent_state'->>'contract_version'='actor-intent-state.v1'
+                ORDER BY accepted.chapter_number DESC LIMIT 1
+                """,
+                [project_id, book_run_id, through_chapter, actor_id],
+            )
+            row = self.cursor.fetchone()
+            if row is None:
+                continue
+            acceptance_id, outcome_id, outcome_hash, outcome, binding, proposal_id, proposal_hash, proposal = row
+            if proposal["source"] != binding["action"]["source"]:
+                raise KernelError("WORLD_ACTOR_INTENT_SOURCE_DRIFT", "accepted intention must retain the exact frozen world source")
+            outcome_ref = {"asset_version_id": outcome_id, "content_hash": outcome_hash}
+            result[actor_id] = {
+                "proposal_ref": {"asset_version_id": proposal_id, "content_hash": proposal_hash},
+                "acceptance_id": acceptance_id, "outcome_ref": outcome_ref,
+                "state": reconcile_accepted_intent(
+                    output=proposal["output"], binding=binding, outcome=outcome,
+                    acceptance_id=acceptance_id, outcome_ref=outcome_ref,
+                ),
+            }
+        return result
 
     def preparation_sources(
         self, *, reality: dict[str, Any], limit: int

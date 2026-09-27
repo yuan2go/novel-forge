@@ -601,12 +601,13 @@ class _ExternalEffectPepAgentPort:
                     lease_seconds=self.lease_seconds,
                     adapter=self.adapter,
                 )
-            except KernelError:
-                resolve_provider_budget_failure(
-                    self.database_url,
-                    reservation_id=self.reservation_id,
-                    project_id=self.effect_context.project_id,
-                )
+            except KernelError as exc:
+                if getattr(exc, "code", "") != "RUNTIME_DISPATCH_PAUSED":
+                    resolve_provider_budget_failure(
+                        self.database_url,
+                        reservation_id=self.reservation_id,
+                        project_id=self.effect_context.project_id,
+                    )
                 raise
             if dispatched["outcome"] != "success":
                 resolve_provider_budget_failure(

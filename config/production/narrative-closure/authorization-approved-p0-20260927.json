@@ -1,0 +1,129 @@
+{
+  "contract_version": "narrative-closure-user-approval.v1",
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "status": "USER_APPROVED_BOUNDED_SCOPE_PENDING_NATIVE_FREEZE",
+  "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+  "approved_request_path": "config/production/narrative-closure/authorization-request-p0-20260927.json",
+  "approved_request_sha256": "sha256:e8c5a3fcae552d38eef8ba2a5cbf70040d3a9fc32c60028ebfe2949acc4e604a",
+  "recorded_at": "2026-09-27T05:28:24Z",
+  "effective_from": "2026-09-27T05:28:24Z",
+  "expires_at": "2026-09-28T05:28:24Z",
+  "validity_basis": "OPERATOR_NARROWED_TO_THIS_ACTIVE_TASK_AND_24_HOURS; no permission to renew expired scope automatically",
+  "user_decisions_redacted": {
+    "models": "允许使用 gpt-6-sol 及以下的模型和 DeepSeek",
+    "separate_call_token_caps": "允许",
+    "independent_human_work": "允许"
+  },
+  "approved_totals_by_separate_purpose": {
+    "sampling": {
+      "calls": 720,
+      "tokens": 40108032
+    },
+    "same_book_production": {
+      "calls": 125,
+      "tokens": 8421376
+    },
+    "effect_experiment": {
+      "calls": 468,
+      "tokens": 33030144
+    },
+    "combined_ceiling": {
+      "calls": 1313,
+      "tokens": 81559552
+    },
+    "transfer_between_purposes_allowed": false,
+    "status": "APPROVED_CAPS_NOT_NATIVE_GRANTS"
+  },
+  "scope": {
+    "project_id": "narrative-closure-02-zheng-deng-20260927",
+    "workspace_id": "ws:zheng-deng:production:20260927",
+    "book_id": "duanchao-guan-zheng-deng-01",
+    "book_run_id": "PENDING_NATIVE_PRODUCTION_TASK",
+    "edition_revision_id": "ORIGINAL_NATIVE_MANUSCRIPT_NOT_YET_CREATED",
+    "source_operation_ids": "PENDING_NATIVE_PREPARE",
+    "sample_project_separate_from_production": true,
+    "production_cannot_consume_experimental_samples": true,
+    "scope_status": "PROPOSED_NOT_CREATED",
+    "edition_scope": "Original immutable manuscript created only after native acceptance, plus at most one explicitly bound edited successor; every screenplay freezes exact revision and stable unit range.",
+    "sampling_project_id": "narrative-closure-02-admission-20260927",
+    "sampling_workspace_id": "ws:zheng-deng:sampling:20260927",
+    "sampling_book_id": "duanchao-guan-zheng-deng-reference-01"
+  },
+  "model_policy": {
+    "default_candidate": "configured-codex-cli:gpt-6-sol",
+    "gpt-6-astra_authorized": false,
+    "additional_candidates": 0,
+    "deepseek": "AUTHORIZED_FAMILY_CREDENTIAL_STORED_PRIVATELY; NOT_SELECTED; pricing/account ceiling and exact route must be frozen before use",
+    "fallback": "NO_SILENT_FALLBACK; stop failed or unknown scope; any different route needs an explicit recorded decision within the same fixed purpose cap"
+  },
+  "account_policy": {
+    "existing_codex_entitlement_only": true,
+    "purchase_extra_quota": false,
+    "cost_accounting": "ACCOUNT_ENTITLEMENT; monetary cost UNKNOWN, never zero/free",
+    "actual_principal": "codex-chatgpt-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+    "identity_verification": "READ_ONLY_EXISTING_CHATGPT_ACCOUNT_ID_HASH_AND_CODEX_LOGIN_STATUS"
+  },
+  "dispatch_conditions": {
+    "common_release_required": true,
+    "native_project_grants_and_ledger_required": true,
+    "first_diagnostic_samples_per_task": 2,
+    "continue_past_diagnostic_requires_actual_reference_and_gate": true,
+    "production_requires_task_scoped_admission": true,
+    "samples_are_never_formal_assets": true,
+    "global_worker_brake_stays_enabled": true,
+    "only_explicit_sampling_process_may_dispatch": true
+  },
+  "human_evidence": {
+    "permission_to_organize": true,
+    "registered_participant_ids": [],
+    "actual_ratings": [],
+    "reader_consent_records": [],
+    "status": "MISSING_ACTUAL_IDENTITIES_AND_EVALUATIONS; permission is not a label or qualification"
+  },
+  "stop_conditions": [
+    "Run at most two diagnostic samples for each task first. Any failed sample, UNKNOWN outcome, exhausted limit or changed contract stops that task; no automatic repeat or additional samples.",
+    "Missing or expired scoped authorization/account identity; no dispatch.",
+    "Producer/schema/Pack/contract drift: freeze the changed task only after compatibility recheck; do not copy qualification.",
+    "Unknown external outcome or unknown cost holds its original task/campaign budget until native reconciliation; unrelated authorized scopes remain independent.",
+    "Any task, campaign, token, amount, entitlement or expiry ceiling reached: stop that scope; no automatic top-up.",
+    "Source/edition mismatch, knowledge leak, Canon contamination or permission bypass: stop affected production.",
+    "Reference disagreement, poor quality, no measured benefit or insufficient coverage: retain negative evidence and report; do not manufacture labels or seek PASS with more samples."
+  ],
+  "publication_authorized": false,
+  "secret_material": "OMITTED; secret remains outside repository and evidence",
+  "task_candidate_overrides": {
+    "creative.candidates.generate": "configured-codex-cli:gpt-6-sol",
+    "theme.candidates.generate": "configured-codex-cli:gpt-6-sol",
+    "ending.intent.generate": "configured-codex-cli:gpt-6-sol",
+    "reader.promise.generate": "configured-codex-cli:gpt-6-sol",
+    "world.design.generate": "configured-codex-cli:gpt-6-sol",
+    "character.cast.generate": "configured-codex-cli:gpt-6-sol",
+    "book_plan.generate": "configured-codex-cli:gpt-6-sol",
+    "volume_plan.generate": "configured-codex-cli:gpt-6-sol",
+    "arc_plan.generate": "configured-codex-cli:gpt-6-sol",
+    "chapter_group_plan.generate": "configured-codex-cli:gpt-6-sol",
+    "chapter_plan.generate": "configured-codex-cli:gpt-6-sol",
+    "world_candidates.generate": "configured-codex-cli:gpt-6-sol",
+    "world_candidates.actor_0": "configured-codex-cli:gpt-6-sol",
+    "world_candidates.actor_1": "configured-codex-cli:gpt-6-sol",
+    "world_candidates.actor_2": "configured-codex-cli:gpt-6-sol",
+    "memo": "configured-codex-cli:gpt-6-sol",
+    "draft": "configured-codex-cli:gpt-6-sol",
+    "revision": "configured-codex-cli:gpt-6-sol",
+    "canon_extraction": "configured-codex-cli:gpt-6-sol",
+    "screenplay_generate": "configured-codex-cli:gpt-6-sol",
+    "screenplay_revision": "configured-codex-cli:gpt-6-sol",
+    "review": "configured-codex-cli:gpt-6-sol",
+    "rereview": "configured-codex-cli:gpt-6-sol",
+    "quality_structural": "configured-codex-cli:gpt-6-sol",
+    "quality_commercial": "configured-codex-cli:gpt-6-sol",
+    "quality_source_originality": "configured-codex-cli:gpt-6-sol",
+    "quality_platform": "configured-codex-cli:gpt-6-sol",
+    "world_candidates.evaluate": "configured-codex-cli:gpt-6-sol",
+    "quality_longform": "configured-codex-cli:gpt-6-sol",
+    "narrative_semantic_evaluation": "configured-codex-cli:gpt-6-sol",
+    "longform_prose_review": "configured-codex-cli:gpt-6-sol",
+    "screenplay_review": "configured-codex-cli:gpt-6-sol",
+    "canon_support": "configured-codex-cli:gpt-6-sol"
+  }
+}

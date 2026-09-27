@@ -24,6 +24,7 @@ CHAPTER_GENERATOR_TASKS = {
     "chapter.canon.extract": "canon_extraction",
 }
 CHAPTER_REFERENCE_TASKS = {
+    "chapter.canon.propose_changes": "canon_support",
     "chapter.review.evaluate": "review",
     "chapter.revision.review": "rereview",
     **{"chapter.quality." + group + ".evaluate": "quality_" + group
@@ -33,6 +34,7 @@ CHAPTER_BOOTSTRAP_TASKS = {**CHAPTER_GENERATOR_TASKS, **CHAPTER_REFERENCE_TASKS}
 CHAPTER_SAMPLE_DEFINITION_VERSION = "1.0.0"
 CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE = "book:chapter-provider-sample"
 CHAPTER_SAMPLE_SOURCE_VERSION = "3.4.1"
+SCREENPLAY_SAMPLE_TASKS = {"screenplay_generate", "screenplay_review", "screenplay_revision"}
 WORLD_SAMPLE_TASKS = {"world_candidates.generate", "world_candidates.evaluate", *("world_candidates.actor_" + str(index) for index in range(3))}
 WORLD_SAMPLE_IDEMPOTENCY_SCOPE = "book:world-provider-sample"
 WORLD_SAMPLE_DEFINITION_VERSION = "1.0.0"
@@ -127,17 +129,19 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         raise ValueError("ROUTING_BOOTSTRAP_ACCOUNTING_INVALID")
     reference = grant.get("reference_evaluation")
     if grant["purpose"] == "REFERENCE_EVALUATION":
-        if grant["task_type"] not in {"narrative_semantic_evaluation", "world_candidates.evaluate", "longform_prose_review", *CHAPTER_REFERENCE_TASKS.values()} or "campaign" not in grant:
+        if grant["task_type"] not in {"narrative_semantic_evaluation", "world_candidates.evaluate", "longform_prose_review", "screenplay_review", *CHAPTER_REFERENCE_TASKS.values()} or "campaign" not in grant:
             raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
         validate_reference_evaluation_binding(reference)
         if (grant["task_type"] in {*CHAPTER_REFERENCE_TASKS.values(), "world_candidates.evaluate"}) != ("adjudications" in reference):
             raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
-    elif reference is not None or grant["task_type"] in {"narrative_semantic_evaluation", "world_candidates.evaluate", "longform_prose_review", *CHAPTER_REFERENCE_TASKS.values()}:
+    elif reference is not None or grant["task_type"] in {"narrative_semantic_evaluation", "world_candidates.evaluate", "longform_prose_review", "screenplay_review", *CHAPTER_REFERENCE_TASKS.values()}:
         raise ValueError("ROUTING_REFERENCE_AUTHORIZATION_REQUIRED")
     if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and "campaign" not in grant:
         raise ValueError("ROUTING_SOURCE_CAMPAIGN_REQUIRED")
     if grant["task_type"] in CHAPTER_BOOTSTRAP_TASKS.values() and "campaign" not in grant:
         raise ValueError("ROUTING_CHAPTER_CAMPAIGN_REQUIRED")
+    if grant["task_type"] in SCREENPLAY_SAMPLE_TASKS and "campaign" not in grant:
+        raise ValueError("ROUTING_SCREENPLAY_CAMPAIGN_REQUIRED")
     if grant["task_type"] in WORLD_SAMPLE_TASKS and "campaign" not in grant:
         raise ValueError("ROUTING_WORLD_CAMPAIGN_REQUIRED")
     if any(
@@ -257,7 +261,7 @@ def validate_bootstrap_campaign(campaign: Mapping[str, Any]) -> None:
            for key in ("maximum_calls", "maximum_tokens")):
         raise ValueError("ROUTING_CAMPAIGN_QUOTA_INVALID")
     amount = Decimal(campaign["maximum_amount"])
-    if not amount.is_finite() or amount <= 0 or datetime.fromisoformat(
+    if not amount.is_finite() or amount < 0 or datetime.fromisoformat(
         campaign["expires_at"]
     ).tzinfo is None:
         raise ValueError("ROUTING_CAMPAIGN_LIMIT_INVALID")
@@ -359,7 +363,7 @@ def validate_bootstrap_scope(
         expected = {
             "authorization_id": payload.get("routing_bootstrap_authorization_id"),
             "book_id": payload.get("book_id"),
-            "task_type": "narrative_semantic_evaluation" if payload.get("reference_evaluation") and not (payload.get("chapter_sampling") or payload.get("world_sampling") or payload.get("prose_sampling")) else payload.get("generator_operation_name"),
+            "task_type": "narrative_semantic_evaluation" if payload.get("reference_evaluation") and not (payload.get("chapter_sampling") or payload.get("world_sampling") or payload.get("prose_sampling") or payload.get("screenplay_sampling")) else payload.get("generator_operation_name"),
             "logical_key": payload.get("logical_key"),
             "generation_idempotency_key": payload.get("idempotency_key"),
             "input_versions_hash": authorization_hash(payload.get("input_versions")),
@@ -537,12 +541,24 @@ def load_bootstrap_authorization(
         from novel_forge.modules.book_followup_authority.prose_sampling import PROSE_SAMPLE_DEFINITION, PROSE_SAMPLE_VERSION, PROSE_SAMPLE_SCOPE
 
         contract = (PROSE_SAMPLE_DEFINITION, PROSE_SAMPLE_VERSION, PROSE_SAMPLE_SCOPE)
+    if payload.get("screenplay_sampling"):
+        from novel_forge.modules.book_followup_authority.screenplay_sampling import sample_definition_name, SCREENPLAY_SAMPLE_VERSION, SCREENPLAY_SAMPLE_SCOPE
+        contract = (sample_definition_name(payload.get("generator_operation_name")), SCREENPLAY_SAMPLE_VERSION, SCREENPLAY_SAMPLE_SCOPE)
     if tuple(row[1:4]) != contract or row[4] != payload.get("idempotency_key"):
         raise KernelError(
             "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
             "benchmark authorization requires its exact admitted native operation contract",
         )
     grant = validate_bootstrap_scope(snapshot, payload, check_expiry=check_expiry)
+    if grant["task_type"] in {"screenplay_generate", "screenplay_review", "screenplay_revision"} or payload.get("screenplay_sampling"):
+        from novel_forge.modules.book_followup_authority.screenplay_sampling import validate_screenplay_sample_origin, sample_purpose
+        if not payload.get("screenplay_sampling") or grant["purpose"] != sample_purpose(grant["task_type"]):
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Screenplay grants require their exact native sampling task")
+        validate_screenplay_sample_origin(cursor, project_id=project_id, payload=payload)
+        cursor.execute("SELECT input_asset_snapshot FROM authority_operation WHERE project_id=%s AND operation_id=%s", [project_id, operation_id])
+        inputs = cursor.fetchone()
+        if not inputs or inputs[0] != [{"project_id": project_id, **binding} for binding in payload["input_versions"]]:
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Screenplay sample inputs differ from their frozen grant")
     if grant["task_type"] == "longform_prose_review" or payload.get("prose_sampling"):
         from novel_forge.modules.book_followup_authority.prose_sampling import validate_prose_sample_origin
 

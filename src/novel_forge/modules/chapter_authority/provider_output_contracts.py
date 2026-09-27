@@ -874,6 +874,9 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False) ->
         }, required=("coverage", "no_change_supported", "claims"))
     elif stage in _QUALITY_STAGES:
         schema = _quality_schema()
+    elif stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
+        from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
+        schema = screenplay_output_schema(stage)
     elif stage == "longform_prose_review":
         from novel_forge.modules.book_followup_authority.prose_review import prose_review_output_schema
         schema = prose_review_output_schema()
@@ -899,7 +902,7 @@ def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False
         else "v4"
         if stage in {"review", "rereview"}
         else "v2"
-        if stage in _QUALITY_STAGES | {"draft", "revision", "review", "rereview"}
+        if stage in _QUALITY_STAGES | {"draft", "revision", "review", "rereview", "screenplay_generate", "screenplay_review", "screenplay_revision"}
         else "v1"
     )
     return f"schema:chapter-provider-output:{stage}:{version}"

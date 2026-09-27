@@ -53,7 +53,7 @@ def native_reviewer_source(h, tmp_path, original, stage):
     for _ in range(20):
         tick = scheduler.tick(project_id=h.project_id, root_operation_id=original["root_operation_id"])
         assert tick.operation_status == "SUCCEEDED", tick
-        if tick.node == stage:
+        if tick.node == ("canon_proposal" if stage == "canon_support" else stage):
             break
     else:
         raise AssertionError("native reviewer source was not reached")
@@ -80,7 +80,7 @@ def fixture_adjudicated_reference(h, original, stage, *, sample_target=None, liv
             WHERE operation.operation_id=%s AND asset.asset_type=%s
               AND EXISTS (SELECT 1 FROM jsonb_array_elements(operation.input_asset_snapshot) input
                           WHERE input->>'asset_version_id'=version.asset_version_id)""",
-            [original["operation_id"], "draft_chapter" if stage == "review" else "best_draft_candidate"])
+            [original["operation_id"], "canon_extraction" if stage == "canon_support" else "draft_chapter" if stage == "review" else "best_draft_candidate"])
             target = dict(zip(("asset_version_id", "content_hash"), uow.cursor.fetchone(), strict=True))
         result = original["dispatch_evidence"]["result"]
     else:
@@ -97,10 +97,19 @@ def fixture_adjudicated_reference(h, original, stage, *, sample_target=None, liv
                 project_scope=frozenset({h.project_id}), authentication_source="integration-fixture"))
         return {"asset_version_id": written.asset_version_id, "content_hash": written.content_hash}
 
+    canon = None
+    if stage == "canon_support":
+        from novel_forge.modules.chapter_quality_authority.canon_support_reference import PROTOCOL, reference_dimensions as canon_dimensions
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [target["asset_version_id"]])
+            canon = uow.cursor.fetchone()[0]
+            uow.cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [canon["grounding"]["candidate_asset_version_id"]])
+            prose = uow.cursor.fetchone()[0]["text"]
+        generator_contract = {"dimensions": canon_dimensions(canon), "protocol_version": PROTOCOL, "evaluation_version": PROTOCOL}
     adjudications = []
     dimensions = generator_contract["dimensions"] if generator_contract and generator_contract["dimensions"] else reference_dimensions(stage)
     for dimension in dimensions:
-        entry = {"gate_status": result["decision"], "score": 80} if stage in {"review", "rereview", "memo", "canon_extraction"} else next(item for item in result["dimensions"] if item["dimension"] == dimension)
+        entry = {"gate_status": "PASSED", "score": 80} if canon is not None else {"gate_status": result["decision"], "score": 80} if stage in {"review", "rereview", "memo", "canon_extraction"} else next(item for item in result["dimensions"] if item["dimension"] == dimension)
         shared = {"subject_asset_version_id": target["asset_version_id"], "dimension": dimension,
             "status": entry["gate_status"], "protocol_version": generator_contract["protocol_version"] if generator_contract else "fixture-blind-reference-v1",
             "evaluation_version": generator_contract["evaluation_version"] if generator_contract else "fixture-review-labels-v1", "scope_type": "CHAPTER", "chapter_start": 1, "chapter_end": 1}
@@ -111,7 +120,10 @@ def fixture_adjudicated_reference(h, original, stage, *, sample_target=None, liv
                 **shared, "evaluation_id": h.project_id + ":" + dimension + ":human:" + str(ordinal),
                 "evaluator_id": actor, "evaluator_group": "synthetic-native-shaped-contract-test" if live_shape else "SCRIPTED_INTEGRATION_FIXTURE",
                 "evaluator_identity_class": "PROFESSIONAL_EDITOR", "score": entry.get("score"),
-                "confidence": 0.8, "evidence": [{"fixture_protocol_only": not live_shape, "span": [0, 5]}], "blind": True,
+                "confidence": 0.8, "evidence": [{"fixture_protocol_only": not live_shape, "span": [0, 5],
+                    **({"claim_id": "$NO_CHANGE" if dimension == "canon_no_change" else dimension.removeprefix("canon_support:"),
+                        "source_asset_version_id": canon["grounding"]["candidate_asset_version_id"], "start": 0, "end": len(prose),
+                        "quote": prose, "rationale": "Scripted support reference validates plumbing only."} if canon else {})}], "blind": True,
             }}, [target]))
         actor = h.principal("fixture-adjudicator").principal_id
         adjudications.append(author("quality.adjudication.record", actor, {"adjudication": {
@@ -126,7 +138,7 @@ def fixture_adjudicated_reference(h, original, stage, *, sample_target=None, liv
 @pytest.mark.parametrize("stage,scenario", [
     *(("draft", scenario) for scenario in ("success", "unknown_then_reconciled", "terminal_failure", "producer_drift")),
     ("review", "success"), ("review", "unknown_then_reconciled"), ("quality_structural", "success"),
-    ("revision", "success"), ("review", "reference_feedback"), ("draft", "generator_feedback"), ("memo", "generator_feedback"),
+    ("revision", "success"), ("canon_support", "success"), ("canon_support", "negative_support"), ("review", "reference_feedback"), ("draft", "generator_feedback"), ("memo", "generator_feedback"),
 ])
 def test_native_chapter_sample_replays_without_formal_chapter_mutation(
     tmp_path, scenario, stage
@@ -286,6 +298,14 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
             h.project_id + ":sample:" + candidate.candidate_id,
             reference_evaluation=reference,
         )
+        if stage == "canon_support":
+            preview = app.prepare_provider_sample(replace(command, reference_evaluation=None), principal=principal)
+            assert preview["status"] == "REFERENCE_LABELS_REQUIRED_NO_PROVIDER_CALL"
+            assert preview["provider_calls"] == 0
+            assert preview["reference_contract"]["metric"] == "REFERENCE_AGREEMENT.v1"
+            assert len(preview["reference_contract"]["dimensions"]) == len(reference["adjudications"])
+            with pytest.raises(KernelError, match="QUALITY_REFERENCE_REQUIRED"):
+                app.admit_provider_sample(replace(command, reference_evaluation=None), principal=principal)
         prepared = app.prepare_provider_sample(command, principal=principal)
         assert prepared["provider_calls"] == 0
         if reference:
@@ -451,6 +471,12 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
             evidence = fixture_evidence(kwargs)
             assert evidence["fixture_protocol_only"]
             evidence.update(real_model_call=False, production_verified=False)
+            if stage == "canon_support" and scenario == "negative_support":
+                if evidence["result"]["claims"]:
+                    for claim in evidence["result"]["claims"]:
+                        claim["assessment"] = "UNSUPPORTED"
+                else:
+                    evidence["result"]["no_change_supported"] = False
             if scenario in {"reference_feedback", "generator_feedback"}:
                 evidence.update(real_model_call=True, fixture_protocol_only=False, provider_id=candidate.provider, model_id=candidate.model)
                 evidence["production_execution"]["route_snapshot"]["reasoning_effort"] = candidate.reasoning
@@ -478,7 +504,7 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
                     uow.cursor.execute("SELECT count(*) FROM authority_budget_reservation WHERE operation_id=%s", [admitted["operation_id"]])
                     assert uow.cursor.fetchone() == (0,)
                 continue
-            if scenario in {"success", "reference_feedback", "generator_feedback"}:
+            if scenario in {"success", "negative_support", "reference_feedback", "generator_feedback"}:
                 tick = scheduler.tick(
                     project_id=h.project_id, root_operation_id=admitted["operation_id"]
                 )
@@ -604,7 +630,7 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
             assert outputs[0][2]["production_eligible"] is False
             if reference:
                 agreement = outputs[0][2]["reference_evaluation"]
-                assert agreement["status_accuracy"] == (0 if scenario == "reference_feedback" and len(calls) == 2 else 1)
+                assert agreement["status_accuracy"] == (0 if scenario == "negative_support" or scenario == "reference_feedback" and len(calls) == 2 else 1)
                 assert agreement["real_model_call"] is (scenario == "reference_feedback")
                 assert agreement["calibration_claim_allowed"] is False
                 assert agreement["production_qualification_eligible"] is False

@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "<PRIVATE_EVIDENCE>/routing-source-native.py", line 9, in <module>
+    case.test_native_benchmark_source_requires_explicit_two_project_approval_and_keeps_evidence_in_place(monkeypatch)
+  File "<WORKTREE>/tests/integration/test_routing_benchmark_sources_postgres.py", line 120, in test_native_benchmark_source_requires_explicit_two_project_approval_and_keeps_evidence_in_place
+    assert CostAwareRouter().explain(task, [model], {model.candidate_id: observations}).status == "BLOCKED"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'RoutingDecision' object has no attribute 'status'

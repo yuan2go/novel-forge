@@ -29,6 +29,7 @@ BOOK_OPENING_RUNTIME_JOB_IDENTITIES = frozenset(
         (BOOK_OPENING_WORKFLOW_JOB_KIND, BOOK_OPENING_WORKFLOW_RUNTIME_GROUP),
     }
 )
+MODEL_COORDINATION_RUNTIME_GROUPS = ("story_formation", "book", "book_followup", BOOK_OPENING_LEGACY_RUNTIME_GROUP, BOOK_OPENING_WORKFLOW_RUNTIME_GROUP)
 BOOK_OPENING_RUNTIME_JOB_KINDS = frozenset(
     job_kind for job_kind, _runtime_group in BOOK_OPENING_RUNTIME_JOB_IDENTITIES
 )
@@ -389,6 +390,9 @@ class RuntimeJobAuthority:
         projects = tuple(dict.fromkeys(str(item) for item in project_ids if str(item)))
         if project_id and projects:
             raise ValueError("runtime job claim accepts one project filter form")
+        from novel_forge.modules.command_kernel.dispatch_control import process_dispatch_suspended
+        if runtime_group in MODEL_COORDINATION_RUNTIME_GROUPS and process_dispatch_suspended():
+            return None
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -399,6 +403,8 @@ class RuntimeJobAuthority:
                 FROM authority_runtime_job AS job
                 WHERE job.runtime_group=%s
                   AND job.lease_loss_policy='SAME_JOB_TAKEOVER'
+                  AND (NOT (job.runtime_group=ANY(%s)) OR NOT EXISTS (
+                      SELECT 1 FROM authority_runtime_dispatch_control control WHERE control.project_id=job.project_id AND control.state='PAUSED'))
                   AND (%s::text[]='{}'::text[] OR job.job_kind=ANY(%s))
                   AND (%s='' OR job.project_id=%s)
                   AND (%s::text[]='{}'::text[] OR job.project_id=ANY(%s))
@@ -406,7 +412,9 @@ class RuntimeJobAuthority:
                   AND (
                       (
                           job.status IN ('READY','RETRY_WAIT')
-                          AND job.attempt_count < job.max_attempts
+                          AND job.attempt_count - (SELECT count(*) FROM authority_runtime_job_attempt paused
+                              WHERE paused.runtime_job_id=job.runtime_job_id AND paused.status='FAILED'
+                              AND paused.error @> '{"dispatch_pause_contract":"runtime-dispatch-control.v1","code":"RUNTIME_DISPATCH_PAUSED","request_sent":false}'::jsonb) < job.max_attempts
                           AND job.available_at <= NOW()
                       )
                       OR (
@@ -427,6 +435,7 @@ class RuntimeJobAuthority:
                 """,
                 [
                     runtime_group,
+                    list(MODEL_COORDINATION_RUNTIME_GROUPS),
                     list(kinds),
                     list(kinds),
                     project_id,
@@ -478,7 +487,7 @@ class RuntimeJobAuthority:
                     fencing_token=int(row[7]),
                     payload={"previous_status": previous_status},
                 )
-                if int(row[5]) >= int(row[10]):
+                if int(row[5]) - self._paused_attempt_count(uow, runtime_job_id) >= int(row[10]):
                     terminal_error = {
                         "code": "FINAL_ATTEMPT_LEASE_EXPIRED",
                         "attempt_id": previous_attempt_id,
@@ -659,6 +668,8 @@ class RuntimeJobAuthority:
                 "Book Opening coordinator requires an unclaimed READY RuntimeJob",
             )
 
+        from novel_forge.modules.command_kernel.dispatch_control import require_dispatch_enabled
+        require_dispatch_enabled(uow.cursor, str(row[4]))
         attempt_id = f"runtime-attempt:{uuid4()}"
         lease_id = f"runtime-lease:{uuid4()}"
         fencing_token = 1
@@ -1399,23 +1410,36 @@ class RuntimeJobAuthority:
             "continuation_created": created,
         }
 
+    @staticmethod
+    def _paused_attempt_count(uow: AuthorityUnitOfWork, runtime_job_id: str) -> int:
+        uow.cursor.execute("""SELECT count(*) FROM authority_runtime_job_attempt WHERE runtime_job_id=%s AND status='FAILED'
+            AND error @> '{"dispatch_pause_contract":"runtime-dispatch-control.v1","code":"RUNTIME_DISPATCH_PAUSED","request_sent":false}'::jsonb""", [runtime_job_id])
+        return int(uow.cursor.fetchone()[0])
+
     def fail(
         self,
         claim: RuntimeJobClaim,
         error: dict[str, Any],
         *,
         retry_delay_seconds: int = 0,
+        cause: BaseException | None = None,
     ) -> dict[str, Any]:
         if retry_delay_seconds < 0:
             raise ValueError("runtime job retry delay cannot be negative")
-        error_hash = canonical_payload_hash(error)
         with AuthorityUnitOfWork(self.database_url) as uow:
             job = self._lock_and_assert_claim(uow, claim)
+            from novel_forge.modules.command_kernel.dispatch_control import confirmed_dispatch_pause
+            pause = confirmed_dispatch_pause(uow.cursor, cause, claim.project_id)
+            error = {key: value for key, value in error.items() if key not in {"dispatch_pause_contract", "control_evidence", "disposition"}}
+            if pause is not None:
+                error = {**error, "code": "RUNTIME_DISPATCH_PAUSED", "dispatch_pause_contract": "runtime-dispatch-control.v1",
+                    "control_evidence": pause, "disposition": "PAUSED_AWAITING_CONTROL", "request_sent": False}
+            error_hash = canonical_payload_hash(error)
             self._require_generic_terminal_allowed(
                 job_kind=str(job[14]),
                 lease_loss_policy=str(job[15]),
             )
-            terminal = int(job[2]) >= int(job[3])
+            terminal = pause is None and int(job[2]) - self._paused_attempt_count(uow, claim.runtime_job_id) >= int(job[3])
             job_status = "DEAD_LETTER" if terminal else "RETRY_WAIT"
             result_id = f"runtime-result:{uuid4()}"
             uow.cursor.execute(
@@ -1460,6 +1484,7 @@ class RuntimeJobAuthority:
                 """
                 UPDATE authority_runtime_job
                 SET status=%s, claimed_by='', last_error=%s,
+                    paused_attempt_count=paused_attempt_count+%s,
                     available_at=NOW() + (%s * INTERVAL '1 second'),
                     completed_at=CASE WHEN %s='DEAD_LETTER' THEN NOW() ELSE NULL END,
                     updated_at=NOW()
@@ -1470,6 +1495,7 @@ class RuntimeJobAuthority:
                 [
                     job_status,
                     Jsonb(error),
+                    int(pause is not None),
                     retry_delay_seconds,
                     job_status,
                     claim.runtime_job_id,
@@ -2163,7 +2189,7 @@ class RuntimeJobAuthority:
                        attempt_count, max_attempts, claimed_by,
                        current_attempt_id, current_fencing_token,
                        result_hash, last_error, created_at, updated_at,
-                       completed_at, lease_loss_policy
+                       completed_at, lease_loss_policy, paused_attempt_count
                 FROM authority_runtime_job WHERE runtime_job_id=%s
                 """,
                 [runtime_job_id],
@@ -2195,6 +2221,7 @@ class RuntimeJobAuthority:
             "updated_at",
             "completed_at",
             "lease_loss_policy",
+            "paused_attempt_count",
         )
         return dict(zip(keys, row, strict=True))
 

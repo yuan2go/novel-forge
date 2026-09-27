@@ -1,0 +1,16 @@
+{
+  "state": "PASS",
+  "evidence_class": "FOCUSED_UNIT_NOT_FINAL_NATIVE_JOINT",
+  "contract_version": "planning-input-role-references.v1",
+  "source_equality_required": [
+    "asset_version_id",
+    "content_hash",
+    "complete_raw_content"
+  ],
+  "retained_content": "Exact current matrix row and all shared ChapterGroup constraints in the same Provider Context",
+  "old_frozen_context_rewritten": false,
+  "budget_increased": false,
+  "actual_real_model_calls": 0,
+  "unit_passed": 180,
+  "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_provider_task_views.py tests/unit/test_story_planning_runtime.py -q"
+}

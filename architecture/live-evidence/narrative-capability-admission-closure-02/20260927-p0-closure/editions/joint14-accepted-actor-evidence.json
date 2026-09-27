@@ -1,0 +1,1044 @@
+{
+  "evidence_state": "EXECUTABLE",
+  "kind": "SCRIPTED_NATIVE_POSTGRESQL",
+  "release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "same_implementation_final_proof": false,
+  "project_id": "project-9be7646ec62144fd92b8833a6f8e3391",
+  "book_run_id": "book-run:cd4829f2-a601-4ee8-88d4-1b136ac6cd5d",
+  "chapters": [
+    {
+      "chapter": 1,
+      "intent": {
+        "proposal_ref": {
+          "asset_version_id": "c5286e59-3e77-4cb1-8024-a634f0f951fd",
+          "content_hash": "sha256:eceabdbd3edc16f2f19c077b69aa1d5b69a91528eb64ce7f4481af71e4b9b6c7"
+        },
+        "acceptance_id": "chapter-acceptance:609efdf8b5367e72f717805a59c86893425da1e2d280fbf55198362163157177",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:85ddce9b-83b9-4d32-bf8b-a58057e639a0:chapter.outcome:v1",
+          "content_hash": "sha256:5996eaca8ab0726e65077a51852aeff25675613d7b7514ad26d4edd199d6efbd"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "保存逃民证词，点亮见证旧渡口的证灯",
+              "reason": "先保住证人与证词",
+              "status": "COMPLETED",
+              "step_id": "preserve",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": {
+                "acceptance_id": "chapter-acceptance:609efdf8b5367e72f717805a59c86893425da1e2d280fbf55198362163157177",
+                "outcome_ref": {
+                  "asset_version_id": "authority-output:85ddce9b-83b9-4d32-bf8b-a58057e639a0:chapter.outcome:v1",
+                  "content_hash": "sha256:5996eaca8ab0726e65077a51852aeff25675613d7b7514ad26d4edd199d6efbd"
+                },
+                "event_id": "narrative-event:sha256:41a13be140203f693f696fb3097baf1770f7d1d1cebf61768cfc35845031ec3a",
+                "accepted_draft_asset_version_id": "authority-output:432c27a2-3c77-46a8-8ac0-f2d79a8b759e:chapter.best_candidate:v1",
+                "grounded_claim_id": "sha256:dd4191a02935894e84c2397924ab8693327a17bde777e478a918c2d502e29d5d",
+                "observed_action": "闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。",
+                "execution_contract_version": "world-scene-execution.v2"
+              },
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "将已经保存的证词送达断潮关守碑人",
+              "reason": "保全以后才能交付",
+              "status": "PLANNED",
+              "step_id": "deliver",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": null,
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "ACTIVE",
+          "goal_id": "actor-intent:sha256:9b1601c828d0c581e:goal",
+          "actor_id": "mara",
+          "revision": 1,
+          "intent_id": "actor-intent:sha256:9b1601c828d0c581e",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {},
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:mara:observed"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "preserve",
+          "accepted_predecessor": {}
+        }
+      },
+      "accepted_event": {
+        "layer": "STATE_EVENT",
+        "scope": {
+          "book_id": "book:project-9be7646ec62144fd92b8833a6f8e3391",
+          "project_id": "project-9be7646ec62144fd92b8833a6f8e3391"
+        },
+        "version": {
+          "entity": 1,
+          "event_contract": 3
+        },
+        "coverage": "UNSPECIFIED",
+        "event_id": "narrative-event:sha256:41a13be140203f693f696fb3097baf1770f7d1d1cebf61768cfc35845031ec3a",
+        "evidence": {
+          "span": {
+            "end": 226,
+            "start": 176
+          },
+          "quote": "闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。",
+          "model_id": "scripted_provider_v2-canon_extraction",
+          "text_hash": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c",
+          "project_id": "project-9be7646ec62144fd92b8833a6f8e3391",
+          "offset_unit": "UNICODE_CODE_POINT",
+          "provider_id": "scripted_provider_v2",
+          "excerpt_digest": "sha256:c6246dad98d10c3886eaa35eff88f40efc3f293557bc23b8d6c5534939672397",
+          "prompt_version": "prompt-system:chapter-generation-pack@v1",
+          "previous_state_reference": "",
+          "source_revision_asset_version_id": "authority-output:432c27a2-3c77-46a8-8ac0-f2d79a8b759e:chapter.best_candidate:v1"
+        },
+        "identity": {
+          "components": {
+            "world_state_id": "council-inquiry"
+          },
+          "entity_key": "world_state_id=council-inquiry",
+          "identity_kind": "world_state"
+        },
+        "mutation": {
+          "payload": {
+            "status": "OPEN",
+            "summary": "闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。",
+            "model_id": "scripted_provider_v2-canon_extraction",
+            "actor_step": 1,
+            "claim_kind": "OBJECTIVE_EVENT",
+            "provider_id": "scripted_provider_v2",
+            "causal_batch": {
+              "local_id": "actor-step-1",
+              "depends_on": [
+                "foundation:fixture:project-9be7646ec62144fd92b8833a6f8e3391:foundation:creative_foundation:selected:v1",
+                "fixture-initial:mara:observed"
+              ],
+              "contract_version": "causal-batch-event.v1"
+            },
+            "evidence_end": 226,
+            "evidence_quote": "闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。",
+            "evidence_start": 176,
+            "extractor_type": "provider_semantic_extractor",
+            "prompt_version": "prompt-system:chapter-generation-pack@v1",
+            "world_state_id": "council-inquiry",
+            "world_transition": {
+              "payload_json": "{\"action\":\"\\u95fb\\u6f88\\u5728\\u8bc1\\u706f\\u4e0b\\u5b8c\\u6210\\u4e86\\u773c\\u524d\\u8fd9\\u4e00\\u6b65\\uff1a\\u4fdd\\u5b58\\u9003\\u6c11\\u8bc1\\u8bcd\\uff0c\\u70b9\\u4eae\\u89c1\\u8bc1\\u65e7\\u6e21\\u53e3\\u7684\\u8bc1\\u706f\\u3002\\u706f\\u7130\\u7a33\\u4f4f\\uff0c\\u6e21\\u53e3\\u7684\\u8f6e\\u5ed3\\u6682\\u65f6\\u6ca1\\u6709\\u6d88\\u5931\\u3002\",\"actor_id\":\"mara\",\"camera\":\"ON_CAMERA\",\"cause_refs\":[\"foundation:fixture:project-9be7646ec62144fd92b8833a6f8e3391:foundation:creative_foundation:selected:v1\",\"fixture-initial:mara:observed\"],\"changes\":{\"actor_step\":1,\"status\":\"OPEN\"},\"entity_key\":\"world_state_id=council-inquiry\",\"epistemic_basis\":[{\"entity_key\":\"character_id=mara|fact_id=mara-observation\",\"field\":\"status\",\"operator\":\"EQUALS\",\"requirement_id\":\"own-frozen-observation\",\"state_kind\":\"character_knowledge\",\"value\":\"KNOWN\"}],\"requirements\":[],\"state_kind\":\"world_state\",\"story_time\":{\"end_ordinal\":1,\"label\":\"\",\"precision\":\"EXACT\",\"start_ordinal\":1,\"timeline_id\":\"main\"},\"transition_id\":\"actor-step-1\"}"
+            },
+            "grounded_claim_id": "sha256:dd4191a02935894e84c2397924ab8693327a17bde777e478a918c2d502e29d5d",
+            "approval_resolution": {
+              "decision": "APPROVE",
+              "change_id": "canon-change:0dac2a8ea27ec0f7372656bdbf1401c2503306b993f28651997f2a88a30fac1b",
+              "approval_decision_asset_version_id": ""
+            },
+            "preparation_lineage": {
+              "path_id": "",
+              "transition_id": "actor-step-1",
+              "contract_version": "world-preparation-lineage.v1",
+              "origin_action_version_id": "cdccf31f-fbda-482d-9aa2-0d712a8deec0"
+            },
+            "actor_step_execution": {
+              "target_source": {
+                "content_hash": "sha256:b91abd294e5ac8a7e78983b0b6bf585acc8b2cd4ea3ef2441cc857bec8efbaa9",
+                "asset_version_id": "cdccf31f-fbda-482d-9aa2-0d712a8deec0"
+              },
+              "approved_target": {
+                "action": "保存逃民证词，点亮见证旧渡口的证灯",
+                "goal_id": "actor-intent:sha256:9b1601c828d0c581e:goal",
+                "step_id": "preserve",
+                "actor_id": "mara",
+                "intent_id": "actor-intent:sha256:9b1601c828d0c581e",
+                "proposal_ref": {
+                  "content_hash": "sha256:eceabdbd3edc16f2f19c077b69aa1d5b69a91528eb64ce7f4481af71e4b9b6c7",
+                  "asset_version_id": "c5286e59-3e77-4cb1-8024-a634f0f951fd"
+                },
+                "step_version": 1,
+                "transition_id": "actor-step-1",
+                "intent_revision": 1
+              },
+              "observed_action": "闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。",
+              "contract_version": "actor-step-execution-comparison.v1",
+              "support_requirement": "Compare the actual observed action and its final-prose evidence with the approved current step. SUPPORT requires the prose to realize this specific action; a matching actor, transition ID or state counter is insufficient. A future intention, different action, ambiguity or missing evidence is UNSUPPORTED or UNCERTAIN. The approved target is a plan, never observed evidence."
+            },
+            "approval_requirement": "NONE",
+            "source_revision_asset_version_id": "authority-output:432c27a2-3c77-46a8-8ac0-f2d79a8b759e:chapter.best_candidate:v1"
+          },
+          "semantics": "OPEN"
+        },
+        "authority": {
+          "status": "PENDING_BOOK_ACCEPTANCE",
+          "canon_status": "APPROVED_CANON_PATCH",
+          "required_boundary": "COMMITTED_BOOK_CHAPTER_ACCEPTANCE"
+        },
+        "causality": {
+          "cause_refs": [
+            "foundation:fixture:project-9be7646ec62144fd92b8833a6f8e3391:foundation:creative_foundation:selected:v1",
+            "fixture-initial:mara:observed"
+          ],
+          "effect_kinds": [
+            "STATE"
+          ],
+          "participant_ids": [
+            "mara"
+          ],
+          "precondition_refs": []
+        },
+        "confidence": 1.0,
+        "coordinate": {
+          "source_chapter": 1,
+          "effective_from_chapter": 1
+        },
+        "provenance": {
+          "trace_id": "79a4040a-d507-4c45-8d11-07c3b72302bd:accept",
+          "source_field": "canon_patch",
+          "source_ordinal": 0,
+          "chapter_outcome_id": "chapter-outcome:book:project-9be7646ec62144fd92b8833a6f8e3391:1:authority-output:47067a9e-ed7b-45ba-8d2b-d5457d3e96df:chapter.plan:v1",
+          "source_operation_id": "85ddce9b-83b9-4d32-bf8b-a58057e639a0",
+          "source_asset_version_id": "authority-output:681a6826-98c2-4732-bc43-d66edba328cd:chapter.canon:v1",
+          "accepted_draft_asset_version_id": "authority-output:432c27a2-3c77-46a8-8ac0-f2d79a8b759e:chapter.best_candidate:v1"
+        },
+        "state_kind": "world_state",
+        "story_time": {
+          "label": "",
+          "precision": "EXACT",
+          "end_ordinal": 1,
+          "timeline_id": "main",
+          "start_ordinal": 1
+        },
+        "supersession": {
+          "supersedes_event_id": ""
+        },
+        "contract_version": "narrative-state-event-v3"
+      },
+      "draft_ref": {
+        "asset_version_id": "authority-output:432c27a2-3c77-46a8-8ac0-f2d79a8b759e:chapter.best_candidate:v1",
+        "content_hash": "sha256:080a6e980e96607c9acb3d85547be74cdcbdcb7f6d3a4f4d47c5c89ad7e7088d"
+      },
+      "text": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+      "craft": {
+        "mechanism_id": "spatial-anchor",
+        "mechanism_version": 1,
+        "use_id": "craft-use:6ad612b8dbcd674ddfe07255",
+        "scene_id": "chapter:1:scene:1",
+        "role": "PRIMARY",
+        "knowledge_card_asset_version_id": "knowledge-card:project-9be7646ec62144fd92b8833a6f8e3391:c8132df6c16d4bc8b2e77ebb9f56830179f79e34e0b01b18a40cfa5495e339ea:v1",
+        "content_hash": "sha256:632b423cafe900754d31a2f51f8d4ec2d26cc2c2cb2e8a769e601e6fb32bbe22",
+        "usage": {
+          "phase": "SETUP",
+          "status": "PLANNED",
+          "type_id": "staged",
+          "scope_id": "authority-output:4b468f65-f574-4033-8d9f-90271ed5fdde:story_planning.candidate:v1",
+          "transition": {
+            "action": "START",
+            "progress": "同阶段展示新的行动代价。",
+            "condition": "证人与证词尚未同时安全抵达。"
+          },
+          "instance_id": "craft-instance:6ad612b8dbcd674ddfe07255",
+          "type_policy": {
+            "mode": "PHASED",
+            "scope": "ARC",
+            "phases": [
+              "SETUP",
+              "DEVELOPMENT",
+              "PAYOFF"
+            ],
+            "frequency_unit": "INSTANCE",
+            "transition_policy": "accepted-phase-transitions.v1"
+          },
+          "scope_binding": {
+            "scope": "ARC",
+            "book_id": "book:project-9be7646ec62144fd92b8833a6f8e3391",
+            "scope_id": "authority-output:4b468f65-f574-4033-8d9f-90271ed5fdde:story_planning.candidate:v1",
+            "project_id": "project-9be7646ec62144fd92b8833a6f8e3391"
+          },
+          "scope_context": {
+            "book_id": "book:project-9be7646ec62144fd92b8833a6f8e3391",
+            "project_id": "project-9be7646ec62144fd92b8833a6f8e3391",
+            "chapter_number": 1,
+            "scope_transitions": [],
+            "arc_plan_version_ids": [
+              "authority-output:4b468f65-f574-4033-8d9f-90271ed5fdde:story_planning.candidate:v1",
+              "authority-output:e3684f62-e41c-455b-b38d-b75203a1b0a2:story_planning.candidate:v1"
+            ]
+          },
+          "budget_snapshot": {
+            "frequency": 0,
+            "in_cooldown": false
+          },
+          "scope_transition": null,
+          "accepted_predecessor": null
+        },
+        "family": "ACTION",
+        "pattern_signature": [
+          "abstract_mechanism",
+          "affinity",
+          "chase",
+          "chinese_serial",
+          "combat",
+          "first_person",
+          "genre",
+          "limited",
+          "pacing",
+          "pov",
+          "scene_type",
+          "variable",
+          "wuxia",
+          "xuanhuan",
+          "人物",
+          "位置",
+          "参照",
+          "可达",
+          "和可",
+          "定参",
+          "对位",
+          "少量",
+          "束人",
+          "照物",
+          "物相",
+          "物约",
+          "用少",
+          "用少量稳定参照物约束人物相对位置",
+          "相对",
+          "离和",
+          "稳定",
+          "约束",
+          "距离",
+          "距离和可达路线",
+          "路线",
+          "达路",
+          "量稳"
+        ],
+        "chapter": 1,
+        "acceptance_id": "chapter-acceptance:609efdf8b5367e72f717805a59c86893425da1e2d280fbf55198362163157177",
+        "book_run_id": "book-run:cd4829f2-a601-4ee8-88d4-1b136ac6cd5d",
+        "accepted_draft_asset_version_id": "authority-output:432c27a2-3c77-46a8-8ac0-f2d79a8b759e:chapter.best_candidate:v1",
+        "accepted_draft_content_hash": "sha256:080a6e980e96607c9acb3d85547be74cdcbdcb7f6d3a4f4d47c5c89ad7e7088d",
+        "review_asset_version_id": "authority-output:432c27a2-3c77-46a8-8ac0-f2d79a8b759e:chapter.best_candidate.selected_review:v1",
+        "review_content_hash": "sha256:049d130c6a12b606f02c46b33d04d52c8fe3199df91c1169564d8a4ae5834106",
+        "target_text_hash": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c",
+        "evidence": {
+          "end": 549,
+          "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+          "start": 0,
+          "offset_unit": "UNICODE_CODE_POINT",
+          "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+        },
+        "effect_status": "ACHIEVED",
+        "side_effects": [
+          {
+            "kind": "MISUSE",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 549,
+              "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "OVERUSE",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 549,
+              "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "ARTIFICIALITY",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 549,
+              "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "PACING_DAMAGE",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 549,
+              "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "VOICE_CONFLICT",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 549,
+              "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "POV_VIOLATION",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 549,
+              "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "NEARBY_REPETITION",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 549,
+              "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "UNINTENDED_EXPOSITION",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 549,
+              "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "PRESERVATION_DAMAGE",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 549,
+              "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+            },
+            "issue_codes": []
+          }
+        ],
+        "phase_transition": {
+          "phase": "SETUP",
+          "action": "START",
+          "reason": "按接纳正文定位，同一阶段仍有未满足条件。",
+          "status": "SUPPORTED",
+          "evidence": {
+            "end": 549,
+            "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+          },
+          "progress": "证词得到保存或交付，但护送证人的承诺仍未终结。"
+        },
+        "evidence_class": "FIXTURE_SEMANTIC_REVIEW",
+        "usage_basis": "ACCEPTED_PROSE_REVIEW",
+        "reader_effect_proven": false
+      }
+    },
+    {
+      "chapter": 2,
+      "intent": {
+        "proposal_ref": {
+          "asset_version_id": "4aa0551d-fa0a-4bc1-bf3a-83d744638453",
+          "content_hash": "sha256:9b8db6709fecc8e490d843da12d4e926b5ecfaa7618d109400d2bb4e4ae01ae5"
+        },
+        "acceptance_id": "chapter-acceptance:a446969ec28a738ca219bbf28841b2d3fb558b5e7efa5bf6e48dc9e8d2492923",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:e8daa310-69d6-48a9-a373-c63e63b90194:chapter.outcome:v1",
+          "content_hash": "sha256:db1840dd472eaaef25dbe2e7ef324b4309c319041828ab705479c159f04f35f4"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "保存逃民证词，点亮见证旧渡口的证灯",
+              "reason": "先保住证人与证词",
+              "status": "COMPLETED",
+              "step_id": "preserve",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": {
+                "event_id": "narrative-event:sha256:41a13be140203f693f696fb3097baf1770f7d1d1cebf61768cfc35845031ec3a",
+                "outcome_ref": {
+                  "content_hash": "sha256:5996eaca8ab0726e65077a51852aeff25675613d7b7514ad26d4edd199d6efbd",
+                  "asset_version_id": "authority-output:85ddce9b-83b9-4d32-bf8b-a58057e639a0:chapter.outcome:v1"
+                },
+                "acceptance_id": "chapter-acceptance:609efdf8b5367e72f717805a59c86893425da1e2d280fbf55198362163157177",
+                "observed_action": "闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。",
+                "grounded_claim_id": "sha256:dd4191a02935894e84c2397924ab8693327a17bde777e478a918c2d502e29d5d",
+                "execution_contract_version": "world-scene-execution.v2",
+                "accepted_draft_asset_version_id": "authority-output:432c27a2-3c77-46a8-8ac0-f2d79a8b759e:chapter.best_candidate:v1"
+              },
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "将已经保存的证词送达断潮关守碑人",
+              "reason": "保全以后才能交付",
+              "status": "COMPLETED",
+              "step_id": "deliver",
+              "version": 2,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": {
+                "acceptance_id": "chapter-acceptance:a446969ec28a738ca219bbf28841b2d3fb558b5e7efa5bf6e48dc9e8d2492923",
+                "outcome_ref": {
+                  "asset_version_id": "authority-output:e8daa310-69d6-48a9-a373-c63e63b90194:chapter.outcome:v1",
+                  "content_hash": "sha256:db1840dd472eaaef25dbe2e7ef324b4309c319041828ab705479c159f04f35f4"
+                },
+                "event_id": "narrative-event:sha256:e76de665537878e87fbd07816aa600f5950d3953ee23633eeac8b400788efe5e",
+                "accepted_draft_asset_version_id": "authority-output:0c99e4d9-2041-4759-881b-e05d50045887:chapter.best_candidate:v1",
+                "grounded_claim_id": "sha256:4a4c70f83ba0fd41c290c45185f008d171bbd07a154f8242d2758a7f9dd14997",
+                "observed_action": "闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。",
+                "execution_contract_version": "world-scene-execution.v2"
+              },
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "COMPLETED",
+          "goal_id": "actor-intent:sha256:9b1601c828d0c581e:goal",
+          "actor_id": "mara",
+          "revision": 2,
+          "intent_id": "actor-intent:sha256:9b1601c828d0c581e",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {
+            "content_hash": "sha256:eceabdbd3edc16f2f19c077b69aa1d5b69a91528eb64ce7f4481af71e4b9b6c7",
+            "asset_version_id": "c5286e59-3e77-4cb1-8024-a634f0f951fd"
+          },
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:mara:observed",
+            "narrative-event:sha256:f87145d43f26aae23e92d8a5cec2ebd40cd245886f638b1e7de37eb5d497cbf4"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "deliver",
+          "accepted_predecessor": {
+            "outcome_ref": {
+              "content_hash": "sha256:5996eaca8ab0726e65077a51852aeff25675613d7b7514ad26d4edd199d6efbd",
+              "asset_version_id": "authority-output:85ddce9b-83b9-4d32-bf8b-a58057e639a0:chapter.outcome:v1"
+            },
+            "acceptance_id": "chapter-acceptance:609efdf8b5367e72f717805a59c86893425da1e2d280fbf55198362163157177"
+          }
+        }
+      },
+      "accepted_event": {
+        "layer": "STATE_EVENT",
+        "scope": {
+          "book_id": "book:project-9be7646ec62144fd92b8833a6f8e3391",
+          "project_id": "project-9be7646ec62144fd92b8833a6f8e3391"
+        },
+        "version": {
+          "entity": 2,
+          "event_contract": 3
+        },
+        "coverage": "UNSPECIFIED",
+        "event_id": "narrative-event:sha256:e76de665537878e87fbd07816aa600f5950d3953ee23633eeac8b400788efe5e",
+        "evidence": {
+          "span": {
+            "end": 174,
+            "start": 125
+          },
+          "quote": "闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。",
+          "model_id": "scripted_provider_v2-canon_extraction",
+          "text_hash": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c",
+          "project_id": "project-9be7646ec62144fd92b8833a6f8e3391",
+          "offset_unit": "UNICODE_CODE_POINT",
+          "provider_id": "scripted_provider_v2",
+          "excerpt_digest": "sha256:498ec026afaf1c333981e2de02be9a178ddb9e183402c8268d3b7d637a6a2147",
+          "prompt_version": "prompt-system:chapter-generation-pack@v1",
+          "previous_state_reference": "",
+          "source_revision_asset_version_id": "authority-output:0c99e4d9-2041-4759-881b-e05d50045887:chapter.best_candidate:v1"
+        },
+        "identity": {
+          "components": {
+            "world_state_id": "council-inquiry"
+          },
+          "entity_key": "world_state_id=council-inquiry",
+          "identity_kind": "world_state"
+        },
+        "mutation": {
+          "payload": {
+            "status": "OPEN",
+            "summary": "闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。",
+            "model_id": "scripted_provider_v2-canon_extraction",
+            "actor_step": 2,
+            "claim_kind": "OBJECTIVE_EVENT",
+            "provider_id": "scripted_provider_v2",
+            "causal_batch": {
+              "local_id": "actor-step-2",
+              "depends_on": [
+                "foundation:fixture:project-9be7646ec62144fd92b8833a6f8e3391:foundation:creative_foundation:selected:v1",
+                "fixture-initial:mara:observed",
+                "narrative-event:sha256:f87145d43f26aae23e92d8a5cec2ebd40cd245886f638b1e7de37eb5d497cbf4"
+              ],
+              "contract_version": "causal-batch-event.v1"
+            },
+            "evidence_end": 174,
+            "evidence_quote": "闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。",
+            "evidence_start": 125,
+            "extractor_type": "provider_semantic_extractor",
+            "prompt_version": "prompt-system:chapter-generation-pack@v1",
+            "world_state_id": "council-inquiry",
+            "world_transition": {
+              "payload_json": "{\"action\":\"\\u95fb\\u6f88\\u5728\\u8bc1\\u706f\\u4e0b\\u5b8c\\u6210\\u4e86\\u773c\\u524d\\u8fd9\\u4e00\\u6b65\\uff1a\\u5c06\\u5df2\\u7ecf\\u4fdd\\u5b58\\u7684\\u8bc1\\u8bcd\\u9001\\u8fbe\\u65ad\\u6f6e\\u5173\\u5b88\\u7891\\u4eba\\u3002\\u706f\\u7130\\u7a33\\u4f4f\\uff0c\\u6e21\\u53e3\\u7684\\u8f6e\\u5ed3\\u6682\\u65f6\\u6ca1\\u6709\\u6d88\\u5931\\u3002\",\"actor_id\":\"mara\",\"camera\":\"ON_CAMERA\",\"cause_refs\":[\"foundation:fixture:project-9be7646ec62144fd92b8833a6f8e3391:foundation:creative_foundation:selected:v1\",\"fixture-initial:mara:observed\",\"narrative-event:sha256:f87145d43f26aae23e92d8a5cec2ebd40cd245886f638b1e7de37eb5d497cbf4\"],\"changes\":{\"actor_step\":2,\"status\":\"OPEN\"},\"entity_key\":\"world_state_id=council-inquiry\",\"epistemic_basis\":[{\"entity_key\":\"character_id=mara|fact_id=mara-observation\",\"field\":\"status\",\"operator\":\"EQUALS\",\"requirement_id\":\"own-frozen-observation\",\"state_kind\":\"character_knowledge\",\"value\":\"KNOWN\"}],\"requirements\":[],\"state_kind\":\"world_state\",\"story_time\":{\"end_ordinal\":2,\"label\":\"\",\"precision\":\"EXACT\",\"start_ordinal\":2,\"timeline_id\":\"main\"},\"transition_id\":\"actor-step-2\"}"
+            },
+            "grounded_claim_id": "sha256:4a4c70f83ba0fd41c290c45185f008d171bbd07a154f8242d2758a7f9dd14997",
+            "approval_resolution": {
+              "decision": "APPROVE",
+              "change_id": "canon-change:6ae99177dc069a8b1f4c9c9a5461859cca280659822c5b4e0bd7f72906e9839e",
+              "approval_decision_asset_version_id": ""
+            },
+            "preparation_lineage": {
+              "path_id": "",
+              "transition_id": "actor-step-2",
+              "contract_version": "world-preparation-lineage.v1",
+              "origin_action_version_id": "f4cfb5c2-c38b-4412-8819-670dff9608d4"
+            },
+            "actor_step_execution": {
+              "target_source": {
+                "content_hash": "sha256:82cf04a235a4c0bcc640e31edc33c14bfa8e55370e89178939a2e319db82527b",
+                "asset_version_id": "f4cfb5c2-c38b-4412-8819-670dff9608d4"
+              },
+              "approved_target": {
+                "action": "将已经保存的证词送达断潮关守碑人",
+                "goal_id": "actor-intent:sha256:9b1601c828d0c581e:goal",
+                "step_id": "deliver",
+                "actor_id": "mara",
+                "intent_id": "actor-intent:sha256:9b1601c828d0c581e",
+                "proposal_ref": {
+                  "content_hash": "sha256:9b8db6709fecc8e490d843da12d4e926b5ecfaa7618d109400d2bb4e4ae01ae5",
+                  "asset_version_id": "4aa0551d-fa0a-4bc1-bf3a-83d744638453"
+                },
+                "step_version": 2,
+                "transition_id": "actor-step-2",
+                "intent_revision": 2
+              },
+              "observed_action": "闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。",
+              "contract_version": "actor-step-execution-comparison.v1",
+              "support_requirement": "Compare the actual observed action and its final-prose evidence with the approved current step. SUPPORT requires the prose to realize this specific action; a matching actor, transition ID or state counter is insufficient. A future intention, different action, ambiguity or missing evidence is UNSUPPORTED or UNCERTAIN. The approved target is a plan, never observed evidence."
+            },
+            "approval_requirement": "NONE",
+            "source_revision_asset_version_id": "authority-output:0c99e4d9-2041-4759-881b-e05d50045887:chapter.best_candidate:v1"
+          },
+          "semantics": "OPEN"
+        },
+        "authority": {
+          "status": "PENDING_BOOK_ACCEPTANCE",
+          "canon_status": "APPROVED_CANON_PATCH",
+          "required_boundary": "COMMITTED_BOOK_CHAPTER_ACCEPTANCE"
+        },
+        "causality": {
+          "cause_refs": [
+            "foundation:fixture:project-9be7646ec62144fd92b8833a6f8e3391:foundation:creative_foundation:selected:v1",
+            "fixture-initial:mara:observed",
+            "narrative-event:sha256:f87145d43f26aae23e92d8a5cec2ebd40cd245886f638b1e7de37eb5d497cbf4"
+          ],
+          "effect_kinds": [
+            "STATE"
+          ],
+          "participant_ids": [
+            "mara"
+          ],
+          "precondition_refs": []
+        },
+        "confidence": 1.0,
+        "coordinate": {
+          "source_chapter": 2,
+          "effective_from_chapter": 2
+        },
+        "provenance": {
+          "trace_id": "a11a1bcb-fb74-445c-81cd-77691840a358:accept",
+          "source_field": "canon_patch",
+          "source_ordinal": 0,
+          "chapter_outcome_id": "chapter-outcome:book:project-9be7646ec62144fd92b8833a6f8e3391:2:authority-output:3c1e4b43-ef92-4798-bbae-117e5d75e8c5:chapter.plan:v1",
+          "source_operation_id": "e8daa310-69d6-48a9-a373-c63e63b90194",
+          "source_asset_version_id": "authority-output:e3a517d8-64ba-4d96-97fb-a68bfc416cd1:chapter.canon:v1",
+          "accepted_draft_asset_version_id": "authority-output:0c99e4d9-2041-4759-881b-e05d50045887:chapter.best_candidate:v1"
+        },
+        "state_kind": "world_state",
+        "story_time": {
+          "label": "",
+          "precision": "EXACT",
+          "end_ordinal": 2,
+          "timeline_id": "main",
+          "start_ordinal": 2
+        },
+        "supersession": {
+          "supersedes_event_id": ""
+        },
+        "contract_version": "narrative-state-event-v3"
+      },
+      "draft_ref": {
+        "asset_version_id": "authority-output:0c99e4d9-2041-4759-881b-e05d50045887:chapter.best_candidate:v1",
+        "content_hash": "sha256:d134aa99790b78fcd2bf97db6ab5e63087fa2296945484860980132eeb09acfa"
+      },
+      "text": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+      "craft": {
+        "mechanism_id": "spatial-anchor",
+        "mechanism_version": 1,
+        "use_id": "craft-use:3db2210828cefbddd773d6e7",
+        "scene_id": "chapter:2:scene:1",
+        "role": "PRIMARY",
+        "knowledge_card_asset_version_id": "knowledge-card:project-9be7646ec62144fd92b8833a6f8e3391:c8132df6c16d4bc8b2e77ebb9f56830179f79e34e0b01b18a40cfa5495e339ea:v1",
+        "content_hash": "sha256:632b423cafe900754d31a2f51f8d4ec2d26cc2c2cb2e8a769e601e6fb32bbe22",
+        "usage": {
+          "phase": "SETUP",
+          "status": "PLANNED",
+          "type_id": "staged",
+          "scope_id": "authority-output:4b468f65-f574-4033-8d9f-90271ed5fdde:story_planning.candidate:v1",
+          "transition": {
+            "action": "CONTINUE",
+            "progress": "同阶段展示新的行动代价。",
+            "condition": "证人与证词尚未同时安全抵达。"
+          },
+          "instance_id": "craft-instance:6ad612b8dbcd674ddfe07255",
+          "type_policy": {
+            "mode": "PHASED",
+            "scope": "ARC",
+            "phases": [
+              "SETUP",
+              "DEVELOPMENT",
+              "PAYOFF"
+            ],
+            "frequency_unit": "INSTANCE",
+            "transition_policy": "accepted-phase-transitions.v1"
+          },
+          "scope_binding": {
+            "scope": "ARC",
+            "book_id": "book:project-9be7646ec62144fd92b8833a6f8e3391",
+            "scope_id": "authority-output:4b468f65-f574-4033-8d9f-90271ed5fdde:story_planning.candidate:v1",
+            "project_id": "project-9be7646ec62144fd92b8833a6f8e3391"
+          },
+          "scope_context": {
+            "book_id": "book:project-9be7646ec62144fd92b8833a6f8e3391",
+            "project_id": "project-9be7646ec62144fd92b8833a6f8e3391",
+            "chapter_number": 2,
+            "scope_transitions": [],
+            "arc_plan_version_ids": [
+              "authority-output:4b468f65-f574-4033-8d9f-90271ed5fdde:story_planning.candidate:v1",
+              "authority-output:e3684f62-e41c-455b-b38d-b75203a1b0a2:story_planning.candidate:v1"
+            ]
+          },
+          "budget_snapshot": {
+            "frequency": 1,
+            "in_cooldown": true
+          },
+          "scope_transition": null,
+          "accepted_predecessor": {
+            "usage": {
+              "phase": "SETUP",
+              "type_id": "staged",
+              "scope_id": "authority-output:4b468f65-f574-4033-8d9f-90271ed5fdde:story_planning.candidate:v1",
+              "transition": {
+                "action": "START",
+                "progress": "同阶段展示新的行动代价。",
+                "condition": "证人与证词尚未同时安全抵达。"
+              },
+              "instance_id": "craft-instance:6ad612b8dbcd674ddfe07255",
+              "type_policy": {
+                "mode": "PHASED",
+                "scope": "ARC",
+                "phases": [
+                  "SETUP",
+                  "DEVELOPMENT",
+                  "PAYOFF"
+                ],
+                "frequency_unit": "INSTANCE",
+                "transition_policy": "accepted-phase-transitions.v1"
+              },
+              "scope_binding": {
+                "scope": "ARC",
+                "book_id": "book:project-9be7646ec62144fd92b8833a6f8e3391",
+                "scope_id": "authority-output:4b468f65-f574-4033-8d9f-90271ed5fdde:story_planning.candidate:v1",
+                "project_id": "project-9be7646ec62144fd92b8833a6f8e3391"
+              }
+            },
+            "use_id": "craft-use:6ad612b8dbcd674ddfe07255",
+            "chapter": 1,
+            "evidence": {
+              "end": 549,
+              "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+            },
+            "book_run_id": "book-run:cd4829f2-a601-4ee8-88d4-1b136ac6cd5d",
+            "usage_basis": "ACCEPTED_PROSE_REVIEW",
+            "content_hash": "sha256:632b423cafe900754d31a2f51f8d4ec2d26cc2c2cb2e8a769e601e6fb32bbe22",
+            "acceptance_id": "chapter-acceptance:609efdf8b5367e72f717805a59c86893425da1e2d280fbf55198362163157177",
+            "effect_status": "ACHIEVED",
+            "phase_transition": {
+              "phase": "SETUP",
+              "action": "START",
+              "reason": "按接纳正文定位，同一阶段仍有未满足条件。",
+              "status": "SUPPORTED",
+              "evidence": {
+                "end": 549,
+                "quote": "断潮关的钟响到第三声，渡口最外侧的石阶少了一截。闻澈把刀横在石缝里，刀尖碰不到昨日的水。逃民缩在檐下，谁也不肯先说出自己的名字。阵籍收得走地名，也收得走作证的人。沈照把仅剩的灯油倒进证灯：‘再等，连回去的路都会没。’闻澈本可循暗渠独自过关；他把通关符压在灯底，火沿符角烧起，退路便只剩水声。他没有催证人。等最年幼的那个开口，他才逐字记下渡口原来的样子。闻澈在证灯下完成了眼前这一步：保存逃民证词，点亮见证旧渡口的证灯。灯焰稳住，渡口的轮廓暂时没有消失。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。\n\n证灯照出旧码头的边线。沈照贴着墙根把三个人移到背风处，闻澈沿灯影确认能走的石阶；他只说自己看见的路，没有许诺尚未探明的安全。 闻澈按住即将熄灭的证灯，对灯下三名逃民说：‘我答应护你们过断潮关。证词先送出去，人也一个不能少。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 火光褪去，纸灰从闻澈指间散尽。他等到了证词，也失去了最容易脱身的凭据。",
+                "start": 0,
+                "offset_unit": "UNICODE_CODE_POINT",
+                "excerpt_digest": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c"
+              },
+              "progress": "证词得到保存或交付，但护送证人的承诺仍未终结。"
+            },
+            "target_text_hash": "sha256:f54210098b17cceb74b284ef9a2951f621999c0cd8ee12192207378cc5c1773c",
+            "review_asset_version_id": "authority-output:432c27a2-3c77-46a8-8ac0-f2d79a8b759e:chapter.best_candidate.selected_review:v1",
+            "accepted_draft_asset_version_id": "authority-output:432c27a2-3c77-46a8-8ac0-f2d79a8b759e:chapter.best_candidate:v1",
+            "knowledge_card_asset_version_id": "knowledge-card:project-9be7646ec62144fd92b8833a6f8e3391:c8132df6c16d4bc8b2e77ebb9f56830179f79e34e0b01b18a40cfa5495e339ea:v1"
+          }
+        },
+        "family": "ACTION",
+        "pattern_signature": [
+          "abstract_mechanism",
+          "affinity",
+          "chase",
+          "chinese_serial",
+          "combat",
+          "first_person",
+          "genre",
+          "limited",
+          "pacing",
+          "pov",
+          "scene_type",
+          "variable",
+          "wuxia",
+          "xuanhuan",
+          "人物",
+          "位置",
+          "参照",
+          "可达",
+          "和可",
+          "定参",
+          "对位",
+          "少量",
+          "束人",
+          "照物",
+          "物相",
+          "物约",
+          "用少",
+          "用少量稳定参照物约束人物相对位置",
+          "相对",
+          "离和",
+          "稳定",
+          "约束",
+          "距离",
+          "距离和可达路线",
+          "路线",
+          "达路",
+          "量稳"
+        ],
+        "chapter": 2,
+        "acceptance_id": "chapter-acceptance:a446969ec28a738ca219bbf28841b2d3fb558b5e7efa5bf6e48dc9e8d2492923",
+        "book_run_id": "book-run:cd4829f2-a601-4ee8-88d4-1b136ac6cd5d",
+        "accepted_draft_asset_version_id": "authority-output:0c99e4d9-2041-4759-881b-e05d50045887:chapter.best_candidate:v1",
+        "accepted_draft_content_hash": "sha256:d134aa99790b78fcd2bf97db6ab5e63087fa2296945484860980132eeb09acfa",
+        "review_asset_version_id": "authority-output:0c99e4d9-2041-4759-881b-e05d50045887:chapter.best_candidate.selected_review:v1",
+        "review_content_hash": "sha256:261d53c2272d16e2ca6a0416549909f4ec641ff80174d022dafdd62a8cbb9f69",
+        "target_text_hash": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c",
+        "evidence": {
+          "end": 502,
+          "quote": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+          "start": 0,
+          "offset_unit": "UNICODE_CODE_POINT",
+          "excerpt_digest": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c"
+        },
+        "effect_status": "ACHIEVED",
+        "side_effects": [
+          {
+            "kind": "MISUSE",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 502,
+              "quote": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "OVERUSE",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 502,
+              "quote": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "ARTIFICIALITY",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 502,
+              "quote": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "PACING_DAMAGE",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 502,
+              "quote": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "VOICE_CONFLICT",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 502,
+              "quote": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "POV_VIOLATION",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 502,
+              "quote": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "NEARBY_REPETITION",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 502,
+              "quote": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "UNINTENDED_EXPOSITION",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 502,
+              "quote": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c"
+            },
+            "issue_codes": []
+          },
+          {
+            "kind": "PRESERVATION_DAMAGE",
+            "reason": "scripted局部干扰评价；首轮证据不足，修订后重新定位，总体效果待真实评价。",
+            "status": "CLEAR",
+            "evidence": {
+              "end": 502,
+              "quote": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+              "start": 0,
+              "offset_unit": "UNICODE_CODE_POINT",
+              "excerpt_digest": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c"
+            },
+            "issue_codes": []
+          }
+        ],
+        "phase_transition": {
+          "phase": "SETUP",
+          "action": "CONTINUE",
+          "reason": "按接纳正文定位，同一阶段仍有未满足条件。",
+          "status": "SUPPORTED",
+          "evidence": {
+            "end": 502,
+            "quote": "闻澈抵达关碑前，袖中的证词已被江雾浸软。守碑人伸手要他的证灯，他却先把证词摊在石面上。一张通关符能换一个人进去；把逃民的名字写进阵籍，能让渡口多留一夜，也会让追索者找到他们。闻澈只交出了获准公开的证词。碑纹停了片刻，给出一条窄得仅容一人侧身通过的路。闻澈在证灯下完成了眼前这一步：将已经保存的证词送达断潮关守碑人。灯焰稳住，渡口的轮廓暂时没有消失。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。\n\n沈照没有收到闻澈尚未说出的消息。她守在灯旁，依照约定每隔一刻添一滴油；远处第二遍钟声响起，她把三个人的位置重新挪到了檐影里。 闻澈把封好的证词交给守碑人，却没有收回同一个承诺：‘证到了，人还没过关。我回去接他们。’ 闻澈把背后交给沈照，相信她会守住灯下的人。 沈照接过灯，心里仍不赞同闻澈独自赴关的冒险。 守碑人收起证词，闻澈却没有踏进关门。他把可以独自通行的印记留在碑前，转身去找仍在等他的人。",
+            "start": 0,
+            "offset_unit": "UNICODE_CODE_POINT",
+            "excerpt_digest": "sha256:86273005708b6f842a1a857e604c6ff5454610669b092cc75426de4c2abbb48c"
+          },
+          "progress": "证词得到保存或交付，但护送证人的承诺仍未终结。"
+        },
+        "evidence_class": "FIXTURE_SEMANTIC_REVIEW",
+        "usage_basis": "ACCEPTED_PROSE_REVIEW",
+        "reader_effect_proven": false
+      }
+    }
+  ],
+  "real_model_calls": 0,
+  "human_evaluations": 0
+}

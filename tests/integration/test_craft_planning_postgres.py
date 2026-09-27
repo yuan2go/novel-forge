@@ -81,8 +81,8 @@ def test_pg_frozen_selection_production_planning_handler_derives_exact_scene_str
         handler.execute(request)
 
 
-@pytest.mark.parametrize("continue_after_acceptance,typed_usage", [(False, False), (True, False), (True, True)])
-def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(request, monkeypatch, continue_after_acceptance, typed_usage):
+@pytest.mark.parametrize("continue_after_acceptance,typed_usage", [(False, False), (True, False), (True, True), (True, "explicit"), (False, "reselection")])
+def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(request, monkeypatch, continue_after_acceptance, typed_usage, budget_stop=""):
     from copy import deepcopy
 
     from novel_forge.modules.runtime_job import RuntimeJobAuthority
@@ -91,12 +91,15 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
     from tests.integration import test_core_functional_loops_postgres as core
 
     state = {}
+    explicit = typed_usage in {"explicit", "reselection"}
+    reselect = typed_usage == "reselection"
+    craft_policy = {"schema_version": "narrative-craft-budget.v4" if explicit else "narrative-craft-budget.v3", "mechanism_usage_types": {"choice-exposes-value": "staged", **({"spatial-anchor": "staged"} if reselect else {})}, **({"max_craft_candidates": 1} if reselect else {})} if typed_usage else None
     original_seed = core._seed_inputs
 
     def seed_with_approved_craft(project_id, book_id, **kwargs):
         kwargs["world_production_policy"] = {**(kwargs.get("world_production_policy") or {}), "context_token_budget": 16000}
         if typed_usage:
-            kwargs["craft_budget_policy"] = {"schema_version": "narrative-craft-budget.v3", "mechanism_usage_types": {"choice-exposes-value": "staged"}}
+            kwargs["craft_budget_policy"] = craft_policy
         generic = original_seed(project_id, book_id, **kwargs)
         principal = _principal(project_id)
         principal = replace(principal, permissions=principal.permissions | {"mkaos.authority.execute", "mkaos.authority.approve", "mkaos.authority.query"})
@@ -107,6 +110,9 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
         catalog_hash = core_catalog_hash()
         authored = knowledge.execute_core_craft(AuthorCoreCraftCommand(project_id=project_id, workspace_id=workspace_id, mechanism_id="choice-exposes-value", catalog_hash=catalog_hash, actor_id=principal.principal_id, idempotency_key="craft:native:author", trace_id="trace:craft:native", correlation_id="correlation:craft:native"), principal=principal)
         approved = knowledge.execute_approval(ApproveKnowledgeCandidateCommand(project_id=project_id, workspace_id=workspace_id, candidate_asset_version_id=authored["asset_version_id"], policy_version="repository-original-craft-v1:" + catalog_hash, rationale="Editorial approval of original abstract choice mechanism; scripted engineering proof only.", actor_id=principal.principal_id, idempotency_key="craft:native:approve", trace_id="trace:craft:native", correlation_id="correlation:craft:native"), principal=principal)
+        if reselect:
+            alternative = knowledge.execute_core_craft(AuthorCoreCraftCommand(project_id=project_id, workspace_id=workspace_id, mechanism_id="spatial-anchor", catalog_hash=catalog_hash, actor_id=principal.principal_id, idempotency_key="craft:native:alternative", trace_id="trace:craft:native", correlation_id="correlation:craft:native"), principal=principal)
+            knowledge.execute_approval(ApproveKnowledgeCandidateCommand(project_id=project_id, workspace_id=workspace_id, candidate_asset_version_id=alternative["asset_version_id"], policy_version="repository-original-craft-v1:" + catalog_hash, rationale="Approved alternative for scoped native rejection protocol; no reader benefit claim.", actor_id=principal.principal_id, idempotency_key="craft:native:alternative:approve", trace_id="trace:craft:native", correlation_id="correlation:craft:native"), principal=principal)
         state.update(project_id=project_id, approved=approved)
         return generic
 
@@ -121,6 +127,8 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
             if stage in {"review", "rereview"}:
                 for check in result.get("craft_checks", []):
                     check.update(effect_status="ACHIEVED", reason="Scripted located realization for native feedback protocol; no reader-effect claim.")
+                    if explicit:
+                        check["phase_transition"].update(status="SUPPORTED", progress="同阶段的承诺在既定行动中得到延续。", reason="Scripted located phase observation; not independent literary judgment.")
                     for side in check["side_effects"]:
                         side.update(status="CLEAR", reason="Scripted negative side-effect control.")
                 for check in result.get("craft_preservation_checks", []):
@@ -148,16 +156,29 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
                     translation["use_sites"][0]["craft_usage"] = {
                         "instance_id": previous["usage"]["instance_id"] if previous else "",
                         "predecessor_use_id": previous["use_id"] if previous else "",
-                        "phase": "DEVELOPMENT" if previous else "SETUP",
+                        "phase": "SETUP" if explicit else "DEVELOPMENT" if previous else "SETUP",
                         "scope_id": selection["need"]["craft_context"]["usage_scope_context"]["arc_plan_version_ids"][0],
                     }
+                    if explicit:
+                        translation.update(rejected_scene_ids=[], failure_condition="")
+                        translation["use_sites"][0]["craft_usage"]["transition"] = {
+                            "action": "CONTINUE" if previous else "START", "condition": "既定承诺尚未达到兑现条件，继续展示行动代价。", "progress": "在同一阶段延续承诺，保持未来兑现空间。"}
+                    if reselect and not self.chapter_inputs:
+                        translation.update(decision="REJECT", use_sites=[], rejected_scene_ids=[scene["scene_id"] for scene in result["scene_plan"]], failure_condition="当前具体场景不具备此技法要求的可见行动条件。", rationale="Scripted concrete non-applicability control; select another approved Card.")
                 result["knowledge_translations"].append(translation)
             if stage == "chapter_plan.generate":
                 self.chapter_inputs.append(deepcopy(inputs))
+                if budget_stop and len(self.chapter_inputs) == 2:
+                    result["knowledge_translations"][0]["content_hash"] = "sha256:" + "0" * 64
             return result
 
     def drive_native_planning(*, composition, chapter_application, snapshot, generic, transport):
         admitted = native.admit_native_production(composition=composition, snapshot=snapshot, generic=generic)
+        if budget_stop:
+            from tests.integration.craft_reselection_budget_support import run_reselection_budget_probe
+            state["native_proof"] = run_reselection_budget_probe(composition=composition, snapshot=snapshot,
+                admitted=admitted, transport=transport, monkeypatch=monkeypatch, stop=budget_stop)
+            return state["native_proof"]
         jobs = RuntimeJobAuthority(DATABASE_URL)
         generation_operation = ""
         for _ in range(20):
@@ -181,12 +202,23 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
         strategy = candidate.content["craft_strategy"]
         assert strategy == candidate.content["candidate_payload"]["craft_strategy"]
         assert len(strategy["uses"]) == 1
-        assert strategy["uses"][0]["mechanism_id"] == "choice-exposes-value"
+        assert strategy["uses"][0]["mechanism_id"] in ({"choice-exposes-value", "spatial-anchor"} if reselect else {"choice-exposes-value"})
         execution_plan = composition.query.require_chapter_execution_plan(candidate_version)
         assert execution_plan["content"]["craft_strategy"] == strategy
-        assert len(transport.chapter_inputs) == 1
-        delivered = transport.chapter_inputs[0]["narrative_intelligence"]
-        assert len(delivered["selected"]) == 1 < delivered["craft_policy"]["max_craft_candidates"]
+        assert len(transport.chapter_inputs) == (2 if reselect else 1)
+        delivered = transport.chapter_inputs[-1]["narrative_intelligence"]
+        assert len(delivered["selected"]) == 1
+        assert delivered["craft_policy"]["max_craft_candidates"] == 1 if reselect else len(delivered["selected"]) < delivered["craft_policy"]["max_craft_candidates"]
+        if reselect:
+            first_selection = transport.chapter_inputs[0]["narrative_intelligence"]
+            assert first_selection["selected"][0]["knowledge_card_asset_version_id"] != delivered["selected"][0]["knowledge_card_asset_version_id"]
+            lineage = delivered["need"]["craft_context"]["reselection"]
+            assert lineage["history"][0]["failure_class"] == "BUSINESS_REJECT"
+            assert lineage["history"][0]["selection_digest"] == first_selection["selection_digest"]
+            source = assets.require(project_id=snapshot.project_id, asset_version_id=lineage["history"][0]["source_asset_version_id"])
+            assert source.content["raw_result"]["knowledge_translations"][0]["decision"] == "REJECT"
+            assert source.content["diagnostic"]["failure_class"] == "BUSINESS_REJECT"
+            assert source.content["execution_evidence"]["external_receipt_ref"]
         assert delivered["selection_digest"] == strategy["selection_digest"]
         assert delivered["selected"][0]["selected_content"]["craft_mechanism"] == strategy["uses"][0]["mechanism"]
         assert delivered["need"]["craft_context"]["scene_goal"]
@@ -214,10 +246,10 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
         prompt, prompt_evidence = _materialize_production_codex_prompt(target_scope=TargetScope(scope_kind=frozen_command.planning_scope.value.lower(), scope_id=frozen_command.logical_key, project_id=snapshot.project_id, book_id=snapshot.book_id).to_dict(), stage="chapter_plan.generate", inputs=payload["input"], materialization=materialization)
         assert prompt_evidence["fully_rendered_prompt_hash"] == admission["prompt_materialization"]["fully_rendered_prompt_hash"]
         assert strategy["uses"][0]["mechanism"]["abstract_mechanism"] in prompt
-        assert "choice-exposes-value" in prompt and "craft_sequence" in prompt
+        assert strategy["uses"][0]["mechanism_id"] in prompt and "craft_sequence" in prompt
         replay = composition.planning.generate(frozen_command, principal=composition.principal)
         assert replay.candidate_asset_version_id == candidate_version
-        assert len(transport.chapter_inputs) == 1
+        assert len(transport.chapter_inputs) == (2 if reselect else 1)
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s AND request_payload->>'stage'='chapter_plan.generate'", [generation_operation])
             assert uow.cursor.fetchall() == [(effect_id,)]
@@ -259,7 +291,10 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
                 assert continued["craft_assessment"]["budget_assessment"]["frequency"] == 1
                 assert continued["craft_assessment"]["budget_assessment"]["temporal_budget_applied"] is False
                 final_usage = list_accepted_craft_usage(DATABASE_URL, project_id=snapshot.project_id, book_id=snapshot.book_id)
-                assert {row["usage"]["phase"] for row in final_usage} == {"SETUP", "DEVELOPMENT"}
+                assert {row["usage"]["phase"] for row in final_usage} == ({"SETUP"} if explicit else {"SETUP", "DEVELOPMENT"})
+                if explicit:
+                    assert {row["usage"]["transition"]["action"] for row in final_usage} == {"START", "CONTINUE"}
+                    assert all(row["phase_transition"]["status"] == "SUPPORTED" for row in final_usage)
                 assert len({row["usage"]["instance_id"] for row in final_usage}) == 1
                 assert final_usage[0]["usage"]["accepted_predecessor"]["acceptance_id"] == first_usage[0]["acceptance_id"]
                 state["native_proof"]["accepted_phase_usage"] = final_usage
@@ -312,5 +347,11 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
     monkeypatch.setattr(core, "_seed_inputs", seed_with_approved_craft)
     monkeypatch.setattr(native, "NativeRealityTransportFixture", CraftPlanningTransport)
     monkeypatch.setattr(native, "execute_native_reality_vertical", drive_native_planning)
-    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy={"schema_version": "narrative-craft-budget.v3", "mechanism_usage_types": {"choice-exposes-value": "staged"}} if typed_usage else None)
-    assert state["native_proof"]["candidate_asset_version_id"]
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+    assert state["native_proof"]["budget_exhaustion" if budget_stop else "candidate_asset_version_id"]
+
+
+@pytest.mark.parametrize("stop", ["calls", "tokens"])
+def test_pg_craft_reselection_preserves_cumulative_campaign_budget(request, monkeypatch, stop):
+    test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(
+        request, monkeypatch, continue_after_acceptance=False, typed_usage="reselection", budget_stop=stop)

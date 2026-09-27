@@ -1,0 +1,88 @@
+....FFFF......                                                           [100%]
+=================================== FAILURES ===================================
+_____ test_export_contract_rejects_unbounded_or_unowned_source[<lambda>3] ______
+
+mutation = <function <lambda> at 0x10874a2a0>
+
+    @pytest.mark.parametrize("mutation", [
+        lambda row: row.update(target_project_id="source"),
+        lambda row: row.update(expires_at="2026-10-01T12:00:00"),
+        lambda row: row.update(observations=row["observations"] * 2),
+        lambda row: row.update(producer_contract_hash="latest"),
+        lambda row: row.update(observations=[]),
+        lambda row: row.update(model_revision=""),
+        lambda row: row.update(approval_ref="arbitrary-unowned-string"),
+    ])
+    def test_export_contract_rejects_unbounded_or_unowned_source(mutation):
+        row = export_scope()
+        mutation(row)
+>       with pytest.raises(KernelError, match="ROUTING_POLICY_SCHEMA_INVALID"):
+E       Failed: DID NOT RAISE KernelError
+
+tests/unit/test_routing_benchmark_sources.py:55: Failed
+_____ test_export_contract_rejects_unbounded_or_unowned_source[<lambda>4] ______
+
+mutation = <function <lambda> at 0x10874a340>
+
+    @pytest.mark.parametrize("mutation", [
+        lambda row: row.update(target_project_id="source"),
+        lambda row: row.update(expires_at="2026-10-01T12:00:00"),
+        lambda row: row.update(observations=row["observations"] * 2),
+        lambda row: row.update(producer_contract_hash="latest"),
+        lambda row: row.update(observations=[]),
+        lambda row: row.update(model_revision=""),
+        lambda row: row.update(approval_ref="arbitrary-unowned-string"),
+    ])
+    def test_export_contract_rejects_unbounded_or_unowned_source(mutation):
+        row = export_scope()
+        mutation(row)
+>       with pytest.raises(KernelError, match="ROUTING_POLICY_SCHEMA_INVALID"):
+E       Failed: DID NOT RAISE KernelError
+
+tests/unit/test_routing_benchmark_sources.py:55: Failed
+_____ test_export_contract_rejects_unbounded_or_unowned_source[<lambda>5] ______
+
+mutation = <function <lambda> at 0x10874a3e0>
+
+    @pytest.mark.parametrize("mutation", [
+        lambda row: row.update(target_project_id="source"),
+        lambda row: row.update(expires_at="2026-10-01T12:00:00"),
+        lambda row: row.update(observations=row["observations"] * 2),
+        lambda row: row.update(producer_contract_hash="latest"),
+        lambda row: row.update(observations=[]),
+        lambda row: row.update(model_revision=""),
+        lambda row: row.update(approval_ref="arbitrary-unowned-string"),
+    ])
+    def test_export_contract_rejects_unbounded_or_unowned_source(mutation):
+        row = export_scope()
+        mutation(row)
+>       with pytest.raises(KernelError, match="ROUTING_POLICY_SCHEMA_INVALID"):
+E       Failed: DID NOT RAISE KernelError
+
+tests/unit/test_routing_benchmark_sources.py:55: Failed
+_____ test_export_contract_rejects_unbounded_or_unowned_source[<lambda>6] ______
+
+mutation = <function <lambda> at 0x10874a480>
+
+    @pytest.mark.parametrize("mutation", [
+        lambda row: row.update(target_project_id="source"),
+        lambda row: row.update(expires_at="2026-10-01T12:00:00"),
+        lambda row: row.update(observations=row["observations"] * 2),
+        lambda row: row.update(producer_contract_hash="latest"),
+        lambda row: row.update(observations=[]),
+        lambda row: row.update(model_revision=""),
+        lambda row: row.update(approval_ref="arbitrary-unowned-string"),
+    ])
+    def test_export_contract_rejects_unbounded_or_unowned_source(mutation):
+        row = export_scope()
+        mutation(row)
+>       with pytest.raises(KernelError, match="ROUTING_POLICY_SCHEMA_INVALID"):
+E       Failed: DID NOT RAISE KernelError
+
+tests/unit/test_routing_benchmark_sources.py:55: Failed
+=========================== short test summary info ============================
+FAILED tests/unit/test_routing_benchmark_sources.py::test_export_contract_rejects_unbounded_or_unowned_source[<lambda>3]
+FAILED tests/unit/test_routing_benchmark_sources.py::test_export_contract_rejects_unbounded_or_unowned_source[<lambda>4]
+FAILED tests/unit/test_routing_benchmark_sources.py::test_export_contract_rejects_unbounded_or_unowned_source[<lambda>5]
+FAILED tests/unit/test_routing_benchmark_sources.py::test_export_contract_rejects_unbounded_or_unowned_source[<lambda>6]
+4 failed, 10 passed in 0.24s

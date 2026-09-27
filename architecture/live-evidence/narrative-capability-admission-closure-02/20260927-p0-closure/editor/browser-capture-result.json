@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "scope": {
+    "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+    "workspace_id": "workspace-91d6d7a2d32c4e90b106c12793a93616",
+    "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+    "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662"
+  },
+  "candidate_revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f",
+  "captured_revision_id": "1134c91e-34c5-442c-82a3-66c0cb957c57",
+  "checks": [
+    "native reviewed changes displayed against submitted exact candidate",
+    "explicit capture creates a new immutable native accepted revision",
+    "original candidate and selected head unchanged",
+    "exact predecessor and validation proof retained without publication permission"
+  ],
+  "actual_model_calls": 0,
+  "proof_ceiling": "SCRIPTED_NATIVE_API_POSTGRES_BROWSER"
+}

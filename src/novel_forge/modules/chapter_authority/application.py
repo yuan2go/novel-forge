@@ -22,6 +22,7 @@ from novel_forge.modules.chapter_authority.orchestrator import (
     ChapterSliceResult,
     SingleChapterRequest,
     admit_single_chapter_saga,
+    recover_single_chapter_admission,
     run_single_chapter_slice,
 )
 from novel_forge.modules.chapter_authority.scheduler import ChapterAuthorityScheduler
@@ -142,16 +143,29 @@ class ChapterAuthorityApplication:
             raise PermissionError("Chapter command actor must be the trusted Principal")
         adoption = (request.preparation_report or {}).get("author_draft_adoption")
         if adoption:
-            from .author_draft import freeze_author_adoption
-            frozen = freeze_author_adoption(
-                self.database_url, project_id=request.project_id, workspace_id=request.workspace_id,
-                book_id=request.book_id, chapter=request.chapter,
-                candidate_asset_version_id=str(adoption.get("candidate_asset_version_id") or ""),
-                decision_asset_version_id=str(adoption.get("decision_asset_version_id") or ""), principal=principal,
-            )
+            if adoption.get("contract_version") == "book-edition-draft-adoption.v1":
+                from novel_forge.modules.book_authority.edition_runtime import freeze_edition_adoption
+                frozen = freeze_edition_adoption(
+                    self.database_url, project_id=request.project_id, workspace_id=request.workspace_id,
+                    book_id=request.book_id, chapter=request.chapter, revision_id=adoption["revision_id"],
+                    book_run_id=adoption["book_run_id"], principal=principal, chapter_request=request,
+                )
+            else:
+                from .author_draft import freeze_author_adoption
+                frozen = freeze_author_adoption(
+                    self.database_url, project_id=request.project_id, workspace_id=request.workspace_id,
+                    book_id=request.book_id, chapter=request.chapter,
+                    candidate_asset_version_id=str(adoption.get("candidate_asset_version_id") or ""),
+                    decision_asset_version_id=str(adoption.get("decision_asset_version_id") or ""), principal=principal,
+                )
             if dict(adoption) != frozen:
                 raise ValueError("Author adoption must match its exact immutable candidate and author decision")
-            if frozen["source_chapter_plan_asset_version_id"] and frozen["source_chapter_plan_asset_version_id"] != request.chapter_plan_asset_version_id:
+            if frozen.get("contract_version") == "book-edition-draft-adoption.v1":
+                from novel_forge.modules.book_authority.edition_planning import require_edition_execution_plan
+                require_edition_execution_plan(self.database_url, project_id=request.project_id, book_id=request.book_id,
+                    book_run_id=frozen["book_run_id"], execution_plan_version_id=request.chapter_plan_asset_version_id,
+                    revision_id=frozen["revision_id"], chapter=request.chapter, source_plan_version_id=frozen["source_chapter_plan_asset_version_id"])
+            elif frozen["source_chapter_plan_asset_version_id"] and frozen["source_chapter_plan_asset_version_id"] != request.chapter_plan_asset_version_id:
                 from novel_forge.modules.command_kernel.errors import KernelError
                 raise KernelError("AUTHOR_PLAN_DRIFT", "Reprepare from the author's exact source Chapter Plan before dispatch")
             request = replace(request, preparation_report={**dict(request.preparation_report or {}), "author_draft_adoption": frozen})
@@ -161,6 +175,14 @@ class ChapterAuthorityApplication:
             registry=self.registry,
             permissions=principal.permissions,
         )
+
+    def recover_admission(
+        self, request: SingleChapterRequest, *, principal: Principal,
+    ) -> ChapterSagaAdmission | None:
+        principal.require("chapter.authority.execute", request.project_id)
+        if request.actor_id != principal.principal_id:
+            raise PermissionError("Chapter recovery actor must be the trusted Principal")
+        return recover_single_chapter_admission(self.database_url, request=request)
 
     def scheduler(self, *, principal: Principal) -> ChapterAuthorityScheduler:
         if principal.principal_type.value != "worker":

@@ -29,6 +29,14 @@ from tests.unit.test_creative_budget_contract import provider_campaign_policy
 
 
 def test_native_actor_sample_independent_feedback_does_not_advance_accepted_state(request, monkeypatch):
+    run_native_actor_sample(request, monkeypatch, persistent_intents=False)
+
+
+def test_native_multistep_actor_sample_retains_v3_contract_and_cannot_complete_steps(request, monkeypatch):
+    run_native_actor_sample(request, monkeypatch, persistent_intents=True)
+
+
+def run_native_actor_sample(request, monkeypatch, *, persistent_intents):
     captured = {}
     harness_type, composition_factory = core.CapabilityPackPostgresHarness, core.build_book_production_composition
 
@@ -44,11 +52,11 @@ def test_native_actor_sample_independent_feedback_does_not_advance_accepted_stat
 
     monkeypatch.setattr(core, "CapabilityPackPostgresHarness", harness)
     monkeypatch.setattr(core, "build_book_production_composition", composition)
-    actors.test_actor_receipt_recovery_continues_through_native_acceptances(request, monkeypatch)
-    exercise_actor_sample(captured["app"], captured["harness"])
+    actors.run_actor_receipt_recovery(request, monkeypatch, persistent_intents=persistent_intents)
+    exercise_actor_sample(captured["app"], captured["harness"], actor_version="v3" if persistent_intents else "v2")
 
 
-def exercise_actor_sample(app, harness):
+def exercise_actor_sample(app, harness, *, actor_version="v2"):
     database_url, project_id = app.database_url, harness.project_id
     stage = "world_candidates.actor_0"
     operator = harness.principal("actor-sample-operator", "story_planning.authority.execute", "provider.routing_policy.configure", "book.authority.execute")
@@ -89,11 +97,11 @@ def exercise_actor_sample(app, harness):
         stage, "fixture-actor-grant", project_id + ":actor-sample")
     prepared = prepare_world_sample(app, command, principal=operator)
     assert prepared["provider_calls"] == 0
-    assert prepared["producer_contract"]["output_schema"]["ref"] == "schema:world_candidates.actor_0:v2"
+    assert prepared["producer_contract"]["output_schema"]["ref"] == f"schema:world_candidates.actor_0:{actor_version}"
     contract = prepared["generator_evaluation_contract"]
     assert len(contract["dimensions"]) == 4 and contract["independent_humans_required"] == 2
     frozen = require_world_sample_source(database_url, project_id=project_id, book_id=book_id, source_operation_id=source_operation_id, stage=stage)
-    assert frozen.stage.task["role"] == "ACTOR" and frozen.stage.task["contract_version"] == "world-actor-task.v2"
+    assert frozen.stage.task["role"] == "ACTOR" and frozen.stage.task["contract_version"] == f"world-actor-task.{actor_version}"
     for judge_stage in ("world_candidates.generate", "world_candidates.evaluate"):
         native_judge = require_world_sample_source(database_url, project_id=project_id, book_id=book_id, source_operation_id=source_operation_id, stage=judge_stage)
         assert {row["actor_id"] for row in native_judge.stage.task["actor_proposals"]} == {"mara", "ilya"}
@@ -136,7 +144,7 @@ def exercise_actor_sample(app, harness):
         decision = kwargs["request_payload"]["_production_execution"]["capability_runtime"]["routing_decision"]
         assert decision["task"]["producer_contract"] == prepared["producer_contract"]
         assert decision["selected"]["candidate"]["candidate_id"] == candidate.candidate_id
-        assert decision["task"]["producer_contract"]["output_schema"]["ref"] == "schema:world_candidates.actor_0:v2"
+        assert decision["task"]["producer_contract"]["output_schema"]["ref"] == f"schema:world_candidates.actor_0:{actor_version}"
         evidence = deepcopy(original_evidence)
         # WHY: Native-shaped synthetic receipts exercise feedback joins, not a real Provider claim.
         evidence.update(fixture_protocol_only=False, real_model_call=True, production_verified=False)

@@ -60,6 +60,11 @@ class PostgresBookAuthorityScheduler:
         before = str(book["state"])
         if before in self._CHAPTER_RECONCILIATION_STATES:
             request = self._active_request(book)
+            if request["status_reference"] == "SUBMITTING" and not request.get("chapter_root_operation_id"):
+                if request.get("parent_group_version_id"):
+                    return self._result(book_run_id, before, "WAIT_GROUP_DISPATCH_RECOVERY")
+                recovered = self.authority.recover_chapter_submission(request["chapter_request_id"], principal=self.principal)
+                return self._result(book_run_id, before, "DISPATCH_CHAPTER", str(recovered["chapter_root_operation_id"]))
             self.authority.reconcile_chapter(request["chapter_request_id"])
             return self._result(book_run_id, before, "RECONCILE_CHAPTER")
         if before in self._CHAPTER_ACCEPTANCE_STATES:
@@ -158,7 +163,10 @@ class PostgresBookAuthorityScheduler:
                 "BOOK_ACTIVE_CHAPTER_MISSING",
                 "Book checkpoint has no active Chapter request",
             )
-        return self.authority.require_chapter_request(request_id)
+        request = self.authority.require_chapter_request(request_id)
+        if request.get("book_run_id") != book["book_run_id"] or request.get("project_id") != book["project_id"]:
+            raise KernelError("BOOK_ACTIVE_CHAPTER_SCOPE_MISMATCH", "active Chapter reservation belongs to another Book run")
+        return request
 
     def _result(
         self, book_run_id: str, before: str, action: str, operation_id: str = ""

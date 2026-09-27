@@ -297,3 +297,17 @@ def test_accepted_actor_commitment_rebuild_and_replay_preserve_version_gate():
     stale["reader_promise"][0]["entity_version"] = 1
     with pytest.raises(KernelError, match="NARRATIVE_ENTITY_VERSION_CONFLICT"):
         rebuild_story_state([first_outcome, _outcome(2, stale)])
+
+
+def test_world_context_budget_version_is_explicit_and_preserves_old_policy_bounds():
+    for version in ("world-production-policy.v1", "world-production-policy.v2"):
+        with pytest.raises(KernelError, match="WORLD_PRODUCTION_POLICY_INVALID"):
+            WorldProductionPolicy(version=version, max_provider_stages=2 if version.endswith("v1") else 4, context_token_budget=20000)
+    policy = WorldProductionPolicy(**{**source()["policy"], "version": "world-production-policy.v3", "context_token_budget": 20000})
+    experiment = {"version": "world-actor-experiment.v2", "actor_ids": ["hero", "rival"], "max_rounds": 1, "max_actions_per_actor": 1, "max_intent_steps": 4}
+    assert validate_actor_policy(experiment, character_ids=["hero", "rival"], policy=policy) == experiment
+    assert policy.context_token_budget == 20000 and policy.max_provider_stages == 4
+    with pytest.raises(KernelError, match="WORLD_PRODUCTION_POLICY_INVALID"):
+        WorldProductionPolicy(version="world-production-policy.v3", max_provider_stages=4, context_token_budget=24001)
+    with pytest.raises(KernelError, match="WORLD_ACTOR_POLICY_INVALID"):
+        validate_actor_policy({**experiment, "max_rounds": 2}, character_ids=["hero", "rival"], policy=policy)

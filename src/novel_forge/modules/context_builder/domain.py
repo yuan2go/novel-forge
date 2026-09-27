@@ -1042,6 +1042,10 @@ def build_authority_context_bundle(
     frozen_candidates = tuple(candidates)
     _validate_context_knowledge_access(frozen_candidates, access)
     profile = resolve_context_profile(stage)
+    if context_profile_version == "draft-context-profile-v3":
+        if profile.name != "draft":
+            raise ValueError("draft-context-profile-v3 is only valid for draft Context")
+        profile = replace(profile, maximum_token_budget=24_000)
     required = frozenset(str(item) for item in required_asset_types if str(item))
     unsupported = required - profile.allowed_asset_types
     if unsupported:

@@ -211,6 +211,21 @@ manufacture a different template. This conservative identity fingerprints the ow
 schema code; it does not prove compatibility across Judge versions, risk or length strata.
 Frozen old decisions remain immutable replay evidence, not new qualification evidence.
 
+Independent sampling Projects can expose exact observations through a versioned
+`PROVIDER_ROUTING` policy using `routing-benchmark-export.v1`. Both the source export
+and target binding require an authenticated operator with authority over both Projects.
+The target binds the successful source policy Operation, immutable version/hash, exact
+Book, task, producer contract, model revision, campaign and observation asset hashes.
+The registry reads those assets in their original Project and retains the existing
+independent-reference and real-Provider gates; it does not copy samples or admissions.
+Revoked, expired or mismatched exports block new use. Frozen routing decisions preserve
+their original policy evidence. An export by itself does not qualify a task or merge
+sampling and production budgets.
+The approved observation list is a selected cohort, not proof of random sampling or
+complete campaign coverage. It remains subject to the independent evaluation protocol.
+New observations are never added implicitly; more than 200 distinct matching references
+from one source Project is rejected rather than silently truncating the denominator.
+
 Quality predictions are bounded by observed schema and acceptance yield, so failed
 outputs cannot disappear behind scores from successful outputs. Cache estimates use
 measured hit tokens from the same stable instruction prefix. Recent dispatch failures
@@ -257,7 +272,10 @@ uses an environment allowlist and has no cross-Book resume state. `ACCOUNT_ENTIT
 uses the existing budget lifecycle with finite call and token ceilings; observed terminal
 usage settles after execution while unavailable monetary cost remains `UNKNOWN`. These
 controls do not turn post-call usage into an exact pre-call remote token hard limit and do
-not permit silent rerouting to another model, account or billing method.
+not permit silent rerouting to another model, account or billing method. New diagnostic
+requests may explicitly freeze `codex-no-transport-retry.v1`, which disables CLI HTTP and
+stream retries on the same authenticated OpenAI route. The policy participates in the
+local binding hash and receipt; old bindings retain their former retry semantics.
 
 Creative experiments additionally select an immutable allocation plan and append explicit
 operator phase grants through the existing versioned runtime policy mechanism. Command
@@ -271,7 +289,9 @@ The `creative-provider-campaign-budget.v4` contract binds one Book, a frozen cam
 manifest and expiry across reference evaluation, screening, calibration, holdout, Source,
 design, production and repair. It adds cumulative priced USD ceilings and exact
 Provider/account entitlement lanes to the same Kernel ledger. Subscription USD remains
-unknown; all lanes also consume the common call/token ceilings. Native Operation and
+unknown; all lanes also consume the common call/token ceilings. A campaign with a priced
+amount ceiling of zero may authorize a separate account-entitlement lane; it cannot
+admit priced grants, and an unknown subscription cost is never recorded as free. Native Operation and
 chapter boundaries determine business scope, while sampling phases come from the frozen
 grant. Expiry prevents new sends but permits reconciliation of existing calls. This
 budget contract does not supply evaluator calibration, paid authorization or campaign
@@ -395,9 +415,27 @@ transitive dependencies. Shared dependencies occupy one Card slot; realization i
 scenes occupies each scene and chapter use. The search checks conflicts, scene density,
 precedence cycles, chapter density and typed frequency allowances before selecting a set,
 then removes orphan dependencies and fills from remaining candidates. Exhausted search and
-an oversized eligible pool are distinct from proved infeasibility. Concrete Provider use
-sites still require normal validation; a Provider rejection does not yet trigger automatic
-alternative generation/reselection.
+an oversized eligible pool are distinct from proved infeasibility. Concrete Provider use sites still require normal validation. Opt-in
+`narrative-craft-budget.v4` records successful business rejection separately from invalid
+output, known transport failure and unknown external outcome. It reuses native Planning
+result repair and cumulative budget, appending exact scoped exclusions and a new selector
+result. Mandatory uses remain required; alternate decisions retain predecessor results,
+receipts and updated combination reasons. Unknown external results require reconciliation.
+New v4 Planning Contexts explicitly freeze `planning-craft-history-projection.v1`.
+The Provider task retains every accepted observation once and replaces identical Card
+history lists with ordered, hash-checked references to that same request. Context
+materialization recomputes the whole projection from the frozen source. The domain
+selection and ledger remain complete; older Contexts without this field retain their
+original Provider representation.
+New Planning Contexts also freeze `planning-input-role-references.v1`: when the matrix
+input and its ChapterGroup input are the same immutable asset, hash and content, the
+matrix role refers to the exact current row and the complete group constraints already
+in that Context. Different versions remain separate. The compiled projection is frozen
+before dispatch, and old compiled Contexts are not rebuilt during recovery.
+The v4 concrete-scene check cannot substitute abstract set feasibility for actual placement.
+`narrative-craft-strategy.v3` separates stable instance, use, phase and progress; located
+final accepted review supports CONTINUE, ADVANCE, DEFER or END. Approved scope changes
+require exact inheritance/rebinding/end evidence; older frozen strategies keep their semantics.
 
 Explicit `narrative-craft-budget.v3` declares bounded usage types, scopes, frequency units,
 mechanism assignments and ordered phases. EVENT counts manifestations; PERSISTENT and
@@ -417,7 +455,23 @@ selection with an explicit evidence-budget error, never a claim of no legal cont
 Only the matching mechanism history is copied into each candidate's phase evidence.
 Plan/Intent/Memo retain complete immutable strategies. A typed Memo's Context projection
 may replace an identical strategy with its exact protected ExecutionIntent reference; it
-cannot omit the only copy or change the existing Context maximum.
+cannot omit the only copy or change the existing Context maximum. A new request can
+explicitly freeze `draft-context-profile-v3`, whose Context owner ceiling is 24,000 tokens;
+the approved Pack and request may impose smaller limits. The profile is frozen in the
+Chapter preparation report. Requests without the field retain v2 and its 16,000-token
+ceiling, even if they previously requested a larger budget. The corresponding v3 Provider
+view enforces the frozen token budget times four as its serialized-character bound,
+retains all selected facts, and omits their duplicate generated JSON summary. Legacy
+Provider views retain their fixed 65,536-character bound and representation. These
+local estimates remain separate from actual Provider token accounting.
+
+Persistent Actor intentions use `world-actor-experiment.v2` and
+`world-actor-task.v3`. A newly approved `world-production-policy.v3` may bound its
+complete World role projection at up to 24,000 estimated tokens; v1/v2 retain their
+16,000-token ceiling. This is a versioned configuration policy, not a change to the
+number of actors, simulation rounds, actions, or accepted facts. The normal Pack,
+Router and cumulative native budget gates still apply, and qualification must cover
+the frozen input policy actually used.
 
 The canonical consumer chain is:
 
@@ -573,8 +627,8 @@ and cross-chapter-v2 schema variants align category, judgment, severity and conf
 structural validity remains separate from factual and literary judgment. Stable diagnosis codes distinguish multiple locations in one category
 and retain repair lineage. Candidate Selection keeps the prior candidate if a prior blocker
 remains, preservation regresses, or a new blocker appears. Existing Canon and Book
-acceptance remain independent downstream gates. Historical manuscripts remain read-only;
-there is no new historical repair/edition consumer.
+acceptance remain independent downstream gates. Original accepted manuscripts remain
+read-only; retrospective edits enter the separate Book-owned edition consumer below.
 
 Quality-triggered corrections freeze failed-dimension evidence into
 `governed-revision-task-v2` edit ranges. An unlocated issue stops before Provider dispatch
@@ -628,7 +682,8 @@ An adopted author candidate enters `chapter.draft.generate@3.4.1-author-input.v1
 an exact author adoption evidence asset. This contract performs no `model.draft` effect;
 Review, Revision, ReReview, candidate selection, Quality, Canon and Book acceptance still
 run through their existing owners and gates. Already accepted historical chapters remain
-read-only; an editing candidate does not grant retrospective edition authority. For an
+read-only; a Chapter editing candidate does not grant retrospective edition authority.
+Whole-manuscript changes use Book edition manifests and native revalidation. For an
 unaccepted Book child, the Book command appends a replacement request generation bound
 to the exact adopted candidate and settled predecessor. Reservation, native Chapter
 admission and atomic Book/ChapterGroup linkage retain recoverable evidence. Unlinked
@@ -692,6 +747,13 @@ boundaries; cycles and excessive scope are bounded. Revalidation alone does not 
 asset: normal Hierarchical Planning binding and qualification still apply. Lost proposal or
 activation receipts and duplicate revalidation preserve original evidence and event identity.
 
+When an activated replacement ChapterPlan has no typed execution projection, the normal
+Book Supervisor asks Planning to materialize it. Planning locks the Book before checking
+the exact current eligible candidate and any existing projection history. Concurrent
+requests reuse the original successful result; revoked, isolated or ambiguous projections
+remain failures. An already frozen Chapter request must recover its original projection.
+This recovery does not grant activation, change accepted history or extend task deadlines.
+
 Separate WP02 and Craft campaigns use the existing Book/Chapter commands and native
 creative-experiment budget ledger under `creative-paired-samples-budget.v5`. This contract
 is separate from the existing Provider-calibration campaign v4. The versioned runner freezes paired conditions, gates
@@ -727,6 +789,61 @@ Canon and Narrative State advance only at Book Acceptance. Older frozen v1 tasks
 original contract and schema. The supported Context budget is a configurable policy; an
 insufficient complete role scope blocks instead of silently discarding accepted causes.
 This is an experimental mode with no demonstrated literary or cost advantage.
+
+## Book manuscript editions and scene screenplays
+
+Book Authority owns `book-manuscript-edition.v1` sessions, immutable manifests/revisions,
+append-only decisions, a versioned selected head and exact native validation-run bindings.
+The existing Editor and `authority-edition` expose creation, mapped editing, difference,
+validation, selection and export. Source text/hash/acceptance and stable units remain
+separate from display order. Splits, merges, scene changes and reordering retain explicit
+source coverage; missing/overlapping mappings fail closed. Unknown impacts require
+revalidation from the earliest affected position. New editing does not alter accepted
+source assets, sign old reviews, or grant publication rights.
+
+An unchanged prefix can be inherited only through an immutable exact Book-owned source
+proof. The new run references original acceptances and their Canon/State/projection lineage;
+it does not insert duplicate acceptances. Subsequent production owns its new acceptances.
+Quality observations and preparation state resolve the exact run's acceptance lineage.
+An unspecified run requires the selected edition or one unambiguous historical run.
+Selected-edition queries intersect the exact acceptance lineage with that manifest's
+validation proof; later accepted continuation outside the snapshot requires an explicit run.
+Multiple versions cannot silently contribute to a shared quality history.
+`book-edition-planning.v1` scopes new Scheduling and Chapter bindings to the validation run,
+uses normal Planning/World/qualification gates, and retains the source-plan and target-scene
+mapping. Edited prose enters author adoption and the ordinary Chapter review/Canon/Book
+chain. Validation must match the exact saved manuscript and its native proof. If native
+review changes the text, the Editor exposes the differences and explicitly captures a new
+immutable version, preserving the submitted candidate and its frozen validation binding. Selection
+locks the target run and uses head CAS. Old in-flight tasks settle only into their frozen run;
+new dispatch on an unselected source is denied. Reverting to an older manuscript is another
+recorded selection, subject to the same checks.
+
+`scene-screenplay.v2` is a separate scene/action/dialogue contract with approved Craft references, located realization and effect/interference review; frozen v1 retains its original contract. Its explicit source range,
+scene plan, preservation/adaptation policy and character/reader knowledge bind one validated
+edition. Book Follow-up executes generation, review and revision through the existing
+Pack/Router/Effect/budget chain; acceptance requires the exact native candidate and review.
+Source knowledge is checked against exact accepted reality, while semantic fidelity still
+requires review. A changed source range appends an update task without replacing any old
+script source. `authority-screenplay` and the Editor expose prepare/run/query/revise/accept,
+source updates and export. Samples remain ineligible and have a separate finite grant;
+these engineering paths do not establish real task qualification or independent reader benefit.
+
+Canon support is an independent `canon_support` evaluator task: native
+`chapter.canon.propose` consumes grounded extraction and exact prose. Its reference sample
+path retains every claim judgment, including unsupported/uncertain and no-change outcomes,
+without creating a Canon proposal. The explicit v11 routing policy requires HIGH-risk
+reference agreement; two actual blind reviewers and a separate adjudicator supply located
+claim evidence under `canon-support-independent-reference.v1`. Fixture labels never count
+as real task admission. Frozen prior routing decisions keep their original policy.
+
+Explicit `world-actor-experiment.v2` / `world-actor-task.v3` retain bounded multi-step
+private intentions with stable goals, steps, versions, dependencies and commitment decisions.
+Only located actions in accepted prose can complete steps. New observations may continue,
+defer, reorder, renegotiate or abandon later steps with retained reasons. Completed/abandoned
+intentions form predecessors to a new goal; unexecuted judged steps remain plans. Context
+reads the exact run and explicitly inherited prefix, not another edition's current facts.
+Historical single-action contracts retain their original replay behavior.
 
 ## Production topology
 

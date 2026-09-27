@@ -1,0 +1,20 @@
+[]
+Traceback (most recent call last):
+  File "<PRIVATE_EVIDENCE>/debug-edition-tail.py", line 26, in <module>
+    text=Path(test.__file__).read_text();tail=text[text.index('    validated = app.execute'):];tail='\n'.join(line[4:] if line.startswith('    ') else line for line in tail.splitlines());exec(compile(tail,test.__file__,'exec'),ns)
+                                                                                                                                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/tests/integration/test_book_editions_postgres.py", line 1, in <module>
+    from contextlib import nullcontext
+                ^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/edition_application.py", line 137, in execute
+    return execute_transaction_command(self.database_url, {
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/command_kernel/service.py", line 91, in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/edition_application.py", line 202, in _handle
+    result = self._validate(uow, repo, book, revision, data, operation_id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/edition_application.py", line 296, in _validate
+    raise KernelError("EDITION_VALIDATION_INCOMPLETE", "Every exact edited unit needs native review, Canon and Book acceptance at its mapped position")
+novel_forge.modules.command_kernel.errors.KernelError: EDITION_VALIDATION_INCOMPLETE: Every exact edited unit needs native review, Canon and Book acceptance at its mapped position

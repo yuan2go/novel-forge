@@ -1,0 +1,129 @@
+.FF                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-explicit] _
+tests/integration/test_craft_planning_postgres.py:343: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1984: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    native_evidence = execute_native_reality_vertical(
+tests/integration/test_craft_planning_postgres.py:263: in drive_native_planning
+    tick = execute_book_coordination_claim(jobs, composition, claim)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/workers/book_authority.py:115: in execute_book_coordination_claim
+    tick = ticker.tick(claim.subject_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/composition.py:69: in tick
+    return self.supervisor.tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:126: in tick
+    return self._tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:454: in _tick
+    result = self._generate_plan(book, "chapter_plan.generate", next_chapter)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:920: in _generate_plan
+    result = self.planning.generate(frozen or generation, principal=self.principal)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:728: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:229: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:144: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:213: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:405: in execute
+    bundle = self.resolver.resolve(
+src/novel_forge/modules/story_planning_runtime/binder.py:261: in resolve
+    prepared = prepare(
+src/novel_forge/modules/story_planning_runtime/execution.py:3741: in prepare
+    action = PlanningWorldPreparation(self).prepare(
+src/novel_forge/modules/story_planning_runtime/world_preparation.py:259: in prepare
+    self.evaluation_stage(source, source_ref, generation, generation_ref, knowledge_selection, actor_proposals=actor_proposals)
+src/novel_forge/modules/story_planning_runtime/world_preparation.py:367: in evaluation_stage
+    return PlanningProviderStage(
+<string>:6: in __init__
+    ???
+src/novel_forge/modules/story_planning_runtime/world_preparation.py:64: in __post_init__
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED: complete world role input exceeds the frozen Context budget; compile a smaller scope
+_ test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[False-reselection] _
+src/novel_forge/modules/story_planning_runtime/application.py:253: in _execute
+    validate_concrete_selection(candidate.candidate_payload, selection)
+src/novel_forge/modules/mkaos_authority/craft_reselection.py:37: in validate_concrete_selection
+    raise KernelError("CRAFT_CONCRETE_REJECTED", "Selected Craft was rejected at concrete scenes; record a new bounded selection: " + ", ".join(item["knowledge_card_asset_version_id"] for item in rejected))
+E   novel_forge.modules.command_kernel.errors.KernelError: CRAFT_CONCRETE_REJECTED: Selected Craft was rejected at concrete scenes; record a new bounded selection: knowledge-card:project-d8e6d74093024d15893000d0330ae8c3:f40f1b00090dfd9a5405ea2bc92d934b3dbeb2516ff8ea801ac1ffdf047f0711:v1
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:144: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:259: in _execute
+    raise PlanningResultValidationError(error, raw_result=candidate.candidate_payload, execution_evidence=evidence) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Selected Craft was rejected at concrete scenes; record a new bounded selection: knowledge-card:project-d8e6d74093024d15893000d0330ae8c3:f40f1b00090dfd9a5405ea2bc92d934b3dbeb2516ff8ea801ac1ffdf047f0711:v1
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_craft_planning_postgres.py:343: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1984: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    native_evidence = execute_native_reality_vertical(
+tests/integration/test_craft_planning_postgres.py:181: in drive_native_planning
+    tick = execute_book_coordination_claim(jobs, composition, claim)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/workers/book_authority.py:115: in execute_book_coordination_claim
+    tick = ticker.tick(claim.subject_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/composition.py:69: in tick
+    return self.supervisor.tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:126: in tick
+    return self._tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:454: in _tick
+    result = self._generate_plan(book, "chapter_plan.generate", next_chapter)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:920: in _generate_plan
+    result = self.planning.generate(frozen or generation, principal=self.principal)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:728: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:229: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:147: in execute
+    persist_result_failure(self.database_url, request=request, command=_command_from_payload(dict(request.command["payload"])), error=error)
+src/novel_forge/modules/story_planning_runtime/result_recovery.py:105: in persist_result_failure
+    "raw_result_hash": canonical_hash(error.raw_result),
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/domain.py:1329: in canonical_hash
+    return _hash(value)
+           ^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/domain.py:1400: in _hash
+    encoded = json.dumps(
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/__init__.py:238: in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py:180: in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+E   TypeError: Object of type mappingproxy is not JSON serializable
+=========================== short test summary info ============================
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-explicit]
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[False-reselection]
+2 failed, 1 passed, 3 deselected in 133.81s (0:02:13)

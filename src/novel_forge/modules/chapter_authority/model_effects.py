@@ -377,7 +377,7 @@ class ExternalEffectChapterModelPort:
         reservation_tokens: int | None = None,
         pre_send_assertion: Callable[[], None] | None = None,
     ) -> ModelProviderResult:
-        if stage not in MODEL_CAPABILITY_STAGES | {"reader_outcome", "longform_prose_review"}:
+        if stage not in MODEL_CAPABILITY_STAGES | {"reader_outcome", "longform_prose_review", "screenplay_generate", "screenplay_review", "screenplay_revision"}:
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}"
             )
@@ -912,12 +912,13 @@ class ExternalEffectChapterModelPort:
                 budget_reservation_id=str(reservation["reservation_id"]),
                 pre_send_assertion=pre_send_assertion,
             )
-        except KernelError:
-            resolve_provider_budget_failure(
-                self.database_url,
-                reservation_id=str(reservation["reservation_id"]),
-                project_id=request.project_id,
-            )
+        except KernelError as exc:
+            if getattr(exc, "code", "") != "RUNTIME_DISPATCH_PAUSED":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=str(reservation["reservation_id"]),
+                    project_id=request.project_id,
+                )
             raise
         if dispatched["outcome"] != "success":
             decision = _model_failed_provider_budget_decision(
@@ -1774,6 +1775,8 @@ def _decode_agent_json_envelope(
 def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise KernelError("MODEL_RESPONSE_INVALID", "model response must be an object")
+    if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
+        return dict(raw)
     if stage == "draft":
         text = str(raw.get("text") or "")
         if not text.strip():

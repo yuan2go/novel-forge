@@ -1,0 +1,899 @@
+{
+  "contract_version": "narrative-closure-authorization-request.v2",
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "status": "NOT_AUTHORIZATION",
+  "created_date": "2026-09-27",
+  "historical_request_preserved": "authorization-request.json",
+  "historical_928_calls_are_authorized": false,
+  "implementation": {
+    "baseline_sha": "cc6afa5e4a62eb74f7bbb17887784f16b70289c5",
+    "final_sha": "PENDING_FINAL_LOCAL_COMMIT",
+    "frozen_release_manifest": "PENDING_EXACT_FINAL_VERSION",
+    "mutable_contracts_must_not_freeze_early": true,
+    "routing_policy_version": "quality-constrained-routing.v11"
+  },
+  "native_binding_before_any_dispatch": {
+    "project_id": "narrative-closure-02-zheng-deng-20260927",
+    "workspace_id": "ws:zheng-deng:production:20260927",
+    "book_id": "duanchao-guan-zheng-deng-01",
+    "book_run_id": "PENDING_NATIVE_PRODUCTION_TASK",
+    "edition_revision_id": "ORIGINAL_NATIVE_MANUSCRIPT_NOT_YET_CREATED",
+    "source_operation_ids": "PENDING_NATIVE_PREPARE",
+    "sample_project_separate_from_production": true,
+    "production_cannot_consume_experimental_samples": true,
+    "scope_status": "PROPOSED_NOT_CREATED",
+    "edition_scope": "Original immutable manuscript created only after native acceptance, plus at most one explicitly bound edited successor; every screenplay freezes exact revision and stable unit range.",
+    "sampling_project_id": "narrative-closure-02-admission-20260927",
+    "sampling_workspace_id": "ws:zheng-deng:sampling:20260927",
+    "sampling_book_id": "duanchao-guan-zheng-deng-reference-01"
+  },
+  "verified_account_configuration": {
+    "evidence": "deployment read-only local configuration inspection; no model request",
+    "backend": "codex-cli",
+    "cli_version": "0.155.1",
+    "configured_model": "gpt-6-astra",
+    "account_identity_ref": "local-account-directory:<configured-Codex-account-home>:chatgpt-login",
+    "account_principal_identity": "PENDING_USER_CONFIRMATION_WITHOUT_CREDENTIAL_DISCLOSURE",
+    "historical_authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913:unused-balance-reallocation-v2",
+    "historical_profile_ref": "account-entitlement:guofeng-xuanhuan-01:codex-production-01-v1",
+    "historical_scope_grants_expired_on": "2026-09-14",
+    "historical_project_460_and_opening_60_caps_are_new_authorization": false,
+    "model_revision_and_entitlement_current_availability": "PENDING_NATIVE_IDENTITY_AND_USER_AUTHORIZATION",
+    "monetary_cost": "UNKNOWN",
+    "subscription_is_free": false,
+    "deepseek_catalog_candidates": "CODE_EXISTS_ONLY; NOT_SELECTED; ZERO_REQUESTED_CALLS"
+  },
+  "authorization_inputs_required": {
+    "sampling_authorization_ref": "PENDING",
+    "production_authorization_ref": "PENDING_SEPARATE",
+    "authorization_evidence_hash": "PENDING",
+    "effective_from": "PENDING_USER",
+    "expires_at": "PENDING_USER",
+    "account_or_paid_limit": "PENDING_USER; never silently switch entitlement to priced billing",
+    "independent_human_1": "PENDING_ACTUAL_REGISTERED_PERSON_OR_PRINCIPAL",
+    "independent_human_2": "PENDING_DISTINCT_ACTUAL_REGISTERED_PERSON_OR_PRINCIPAL",
+    "adjudicator": "PENDING_THIRD_DISTINCT_ACTUAL_REGISTERED_PERSON_OR_PRINCIPAL",
+    "reader_panel": "PENDING_ACTUAL_INDEPENDENT_PARTICIPANTS_AND_CONSENT"
+  },
+  "tasks": [
+    {
+      "task_type": "creative.candidates.generate",
+      "group": "foundation",
+      "required_contract": "existing governed foundation contract; exact final producer",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "HIGH",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 36,
+      "maximum_tokens_per_call": 32768,
+      "sampling_tokens_ceiling": 1179648,
+      "production_calls_ceiling": 1,
+      "production_tokens_ceiling": 32768,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "theme.candidates.generate",
+      "group": "foundation",
+      "required_contract": "existing governed foundation contract; exact final producer",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "HIGH",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 36,
+      "maximum_tokens_per_call": 32768,
+      "sampling_tokens_ceiling": 1179648,
+      "production_calls_ceiling": 1,
+      "production_tokens_ceiling": 32768,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "ending.intent.generate",
+      "group": "foundation",
+      "required_contract": "existing governed foundation contract; exact final producer",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "HIGH",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 36,
+      "maximum_tokens_per_call": 32768,
+      "sampling_tokens_ceiling": 1179648,
+      "production_calls_ceiling": 1,
+      "production_tokens_ceiling": 32768,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "reader.promise.generate",
+      "group": "foundation",
+      "required_contract": "existing governed foundation contract; exact final producer",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "HIGH",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 36,
+      "maximum_tokens_per_call": 32768,
+      "sampling_tokens_ceiling": 1179648,
+      "production_calls_ceiling": 1,
+      "production_tokens_ceiling": 32768,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "world.design.generate",
+      "group": "foundation",
+      "required_contract": "existing governed foundation contract; exact final producer",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "HIGH",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 36,
+      "maximum_tokens_per_call": 32768,
+      "sampling_tokens_ceiling": 1179648,
+      "production_calls_ceiling": 1,
+      "production_tokens_ceiling": 32768,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "character.cast.generate",
+      "group": "foundation",
+      "required_contract": "existing governed foundation contract; exact final producer",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "HIGH",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 36,
+      "maximum_tokens_per_call": 32768,
+      "sampling_tokens_ceiling": 1179648,
+      "production_calls_ceiling": 1,
+      "production_tokens_ceiling": 32768,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "book_plan.generate",
+      "group": "hierarchical_planning",
+      "required_contract": "existing typed planning contract; exact final producer",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "HIGH",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 36,
+      "maximum_tokens_per_call": 32768,
+      "sampling_tokens_ceiling": 1179648,
+      "production_calls_ceiling": 1,
+      "production_tokens_ceiling": 32768,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "volume_plan.generate",
+      "group": "hierarchical_planning",
+      "required_contract": "existing typed planning contract; exact final producer",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "HIGH",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 36,
+      "maximum_tokens_per_call": 32768,
+      "sampling_tokens_ceiling": 1179648,
+      "production_calls_ceiling": 1,
+      "production_tokens_ceiling": 32768,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "arc_plan.generate",
+      "group": "hierarchical_planning",
+      "required_contract": "existing typed planning contract; exact final producer",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "HIGH",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 36,
+      "maximum_tokens_per_call": 32768,
+      "sampling_tokens_ceiling": 1179648,
+      "production_calls_ceiling": 1,
+      "production_tokens_ceiling": 32768,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "chapter_group_plan.generate",
+      "group": "hierarchical_planning",
+      "required_contract": "narrative-craft-budget.v4 / narrative-craft-strategy.v3 / accepted-phase-transitions.v1; book-edition-planning.v1 where enabled",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "chapter_plan.generate",
+      "group": "hierarchical_planning",
+      "required_contract": "narrative-craft-budget.v4 / narrative-craft-strategy.v3 / accepted-phase-transitions.v1; book-edition-planning.v1 where enabled; execution contract 1.16.0 exact-native longform_prose_review_report feedback branch (review judgment, not accepted fact)",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN",
+      "input_coverage_required": [
+        "normal accepted continuation",
+        "Craft business REJECT followed by bounded legal replacement",
+        "approved future replan using exact native prose review evidence",
+        "edition scene/source mapping"
+      ]
+    },
+    {
+      "task_type": "world_candidates.generate",
+      "group": "world_and_actor",
+      "required_contract": "world-actor-task.v3 for actors; exact World v4 selected Knowledge projection and persistent intent contract",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 8,
+      "production_tokens_ceiling": 524288,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "world_candidates.actor_0",
+      "group": "world_and_actor",
+      "required_contract": "world-actor-task.v3 for actors; exact World v4 selected Knowledge projection and persistent intent contract",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 8,
+      "production_tokens_ceiling": 524288,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "world_candidates.actor_1",
+      "group": "world_and_actor",
+      "required_contract": "world-actor-task.v3 for actors; exact World v4 selected Knowledge projection and persistent intent contract",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 8,
+      "production_tokens_ceiling": 524288,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "world_candidates.actor_2",
+      "group": "world_and_actor",
+      "required_contract": "world-actor-task.v3 for actors; exact World v4 selected Knowledge projection and persistent intent contract",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 0,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 0,
+      "production_calls_ceiling": 0,
+      "production_tokens_ceiling": 0,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN",
+      "activation_condition": "ONLY_IF_AN_APPROVED_FROZEN_ACTOR_POLICY_ACTUALLY_HAS_A_THIRD_SLOT",
+      "enabled_for_proposed_two_actor_path": false,
+      "conditional_calls_not_authorized": true
+    },
+    {
+      "task_type": "memo",
+      "group": "chapter_production",
+      "required_contract": "exact accepted edition/run Context; Craft strategy.v3; draft/accepted fact separation",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "draft",
+      "group": "chapter_production",
+      "required_contract": "exact accepted edition/run Context; Craft strategy.v3; draft/accepted fact separation",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "revision",
+      "group": "chapter_production",
+      "required_contract": "exact accepted edition/run Context; Craft strategy.v3; draft/accepted fact separation",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "canon_extraction",
+      "group": "chapter_production",
+      "required_contract": "exact accepted edition/run Context; Craft strategy.v3; draft/accepted fact separation",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "screenplay_generate",
+      "group": "screenplay",
+      "required_contract": "screenplay-source.v2 / scene-screenplay.v2 / exact approved scene Craft",
+      "native_source": "eligible native screenplay source; authorized INELIGIBLE upstream samples for sampling only",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 2,
+      "production_tokens_ceiling": 131072,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "screenplay_revision",
+      "group": "screenplay",
+      "required_contract": "screenplay-source.v2 / scene-screenplay.v2 / exact approved scene Craft",
+      "native_source": "eligible native screenplay source; authorized INELIGIBLE upstream samples for sampling only",
+      "risk": "MEDIUM",
+      "metric": "GENERATOR_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 2,
+      "production_tokens_ceiling": 131072,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "review",
+      "group": "chapter_evaluation",
+      "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "REFERENCE_AGREEMENT",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 22,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 1441792,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "rereview",
+      "group": "chapter_evaluation",
+      "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "REFERENCE_AGREEMENT",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 22,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 1441792,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "quality_structural",
+      "group": "chapter_evaluation",
+      "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "REFERENCE_AGREEMENT",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 22,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 1441792,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "quality_commercial",
+      "group": "chapter_evaluation",
+      "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "REFERENCE_AGREEMENT",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 22,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 1441792,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "quality_source_originality",
+      "group": "chapter_evaluation",
+      "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "REFERENCE_AGREEMENT",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 22,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 1441792,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "quality_platform",
+      "group": "chapter_evaluation",
+      "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "REFERENCE_AGREEMENT",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 22,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 1441792,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "world_candidates.evaluate",
+      "group": "world_evaluation",
+      "required_contract": "native World Director contract and actual adjudicated reference",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "REFERENCE_AGREEMENT",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 22,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 1441792,
+      "production_calls_ceiling": 8,
+      "production_tokens_ceiling": 524288,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "quality_longform",
+      "group": "longform_evaluation",
+      "required_contract": "native independent adjudicated longform reference",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "HIGH",
+      "metric": "REFERENCE_AGREEMENT",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 46,
+      "maximum_tokens_per_call": 131072,
+      "sampling_tokens_ceiling": 6029312,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 524288,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "narrative_semantic_evaluation",
+      "group": "planning_evaluation",
+      "required_contract": "exact typed Planning candidate and canonical dependency contract; separate profile/producer compatibility",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "HIGH",
+      "metric": "REFERENCE_AGREEMENT",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 46,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 3014656,
+      "production_calls_ceiling": 16,
+      "production_tokens_ceiling": 1048576,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "longform_prose_review",
+      "group": "prose_evaluation",
+      "required_contract": "prose-reviewer-independent-quality.v1 and exact final producer",
+      "native_source": "exact native admitted task and qualified source artifacts",
+      "risk": "MEDIUM",
+      "metric": "INDEPENDENT_REVIEWER_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 131072,
+      "sampling_tokens_ceiling": 1048576,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 524288,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "screenplay_review",
+      "group": "screenplay_evaluation",
+      "required_contract": "screenplay-review.v2 / screenplay-independent-quality.v1",
+      "native_source": "native authorized screenplay generation/revision sample and exact source, separate independent labels",
+      "risk": "MEDIUM",
+      "metric": "INDEPENDENT_REVIEWER_SCORE",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 8,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 524288,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+    },
+    {
+      "task_type": "canon_support",
+      "group": "canon_grounding_evaluation",
+      "required_contract": "grounded-canon.v1 + canon-support-independent-reference.v1; exact extraction and exact final draft hashes, one adjudicated label per claim or no-change coverage",
+      "native_source": "chapter.canon.propose_changes → chapter.provider.sample.canon_support@1.0.0; prepare without labels returns exact source/claim reference contract; sample never commits Canon",
+      "risk": "HIGH",
+      "metric": "REFERENCE_AGREEMENT",
+      "candidate_id": "configured-codex-cli:gpt-6-astra",
+      "sampling_calls_ceiling": 46,
+      "maximum_tokens_per_call": 65536,
+      "sampling_tokens_ceiling": 3014656,
+      "production_calls_ceiling": 4,
+      "production_tokens_ceiling": 262144,
+      "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+      "existing_evidence": "EXECUTABLE: scripted native positive and negative references, independent-author checks, idempotency/recovery and fixture exclusion PASS; no real Provider/human qualification verified",
+      "reference_participant_work": "Each sample needs 2 independent blind readers covering every extracted claim with exact quoted final-draft evidence, plus a distinct adjudicator. Uncertain labels remain evidence but do not count as binary pass/fail admission coverage."
+    }
+  ],
+  "proposed_sampling": {
+    "status": "NOT_AUTHORIZATION",
+    "one_candidate_per_task": true,
+    "total": {
+      "calls": 720,
+      "tokens": 40108032
+    },
+    "phase_caps": {
+      "CALIBRATION": {
+        "calls": 412,
+        "tokens": 16384000,
+        "monetary_ceiling": "PENDING_EXPLICIT_USER_AUTHORIZATION"
+      },
+      "REFERENCE": {
+        "calls": 308,
+        "tokens": 23724032,
+        "monetary_ceiling": "PENDING_EXPLICIT_USER_AUTHORIZATION"
+      }
+    },
+    "repair_calls": 0,
+    "additional_candidate_calls": 0,
+    "basis": "Finite one-candidate, one compatible producer/protocol/context-bucket pass. These are ceilings, not a claim that the budget achieves admission. No automatic top-up. Failures and unknowns consume the same cumulative budget. First two samples of each task form a diagnostic batch before the rest.",
+    "admission_math": {
+      "medium_scored": "8 is only the quantity floor; at 8 samples the conservative mean lower endpoint must reach at least 0.90 with no variance to pass 0.75.",
+      "high_scored": "20 cannot pass 0.85 even at a perfect score because the penalty is 0.20. 36 is the theoretical first possible passing size at perfect independent scores; realistic results may remain insufficient. Stop and report, do not sample until PASS.",
+      "medium_binary": "At least 11 correct independent samples in each PASS and FAIL stratum are necessary under the current Wilson/penalty floor. 22 assumes distinct samples for each stratum.",
+      "high_binary": "At least 23 correct independent samples in each PASS and FAIL stratum; 46 assumes distinct samples. Actual legitimate labels must determine strata, not manufactured negatives.",
+      "evidence_deduplication": "Native retry, duplicate input or duplicate normalized content is not an independent sample. Exact producer, risk, protocol and context bucket must agree."
+    },
+    "human_workload": {
+      "independent_sample_readings_lower_bound": 1440,
+      "adjudicated_sample_reviews_lower_bound": 720,
+      "minimum_distinct_participants": 3,
+      "dimension_level_records": "Each sampled task uses every frozen task dimension; actual annotation count exceeds sample count. Cannot replace humans with model consensus.",
+      "estimated_hours": "UNKNOWN; agree after blinded two-sample pilot",
+      "blind_registration_required": true
+    },
+    "benchmark_window_days": 30,
+    "maximum_rows_per_query": 200
+  },
+  "proposed_production": {
+    "status": "NOT_AUTHORIZATION",
+    "total": {
+      "calls": 125,
+      "tokens": 8421376
+    },
+    "task_ceilings_from": "tasks[].production_calls_ceiling",
+    "repairs_share_task_caps": true,
+    "unknowns_keep_occupied_budget": true,
+    "basis": "Bounded same-Book realization, accepted continuation, one future replan, one edition validation and screenplay update. Actual chapters are determined by behavior coverage. No guarantee that this ceiling completes production.",
+    "phase_accounting": "Freeze per native scope before send; phase totals may not exceed the listed overall task ceilings. All monetary/entitlement caps still require user input.",
+    "publication_authorized": false
+  },
+  "effect_validation": {
+    "status": "NOT_AUTHORIZATION",
+    "model_calls_additional_to_production": 468,
+    "protocol_required_before_first_comparison": "Freeze hypotheses, exact legal baselines, grouping, sample independence, one changed factor, cost/latency, craft/character/review quality and continue-reading measures.",
+    "initial_comparison_scope": "2 independent short narrative decision windows per approved factor; no Cartesian product, no million-word extrapolation.",
+    "participant_identity": "Actual independent readers; separate from generator and model evaluator identities",
+    "negative_or_inconclusive_result": "RETAIN_AND_REPORT; no automatic extra sampling",
+    "prespecified_design": {
+      "protocol_version": "wp02-p0-bounded-effects.v1",
+      "status": "PROPOSED_NOT_AUTHORIZED_NOT_RUN",
+      "freeze_before_dispatch": [
+        "final implementation and producer hashes",
+        "exact accepted source edition and input hashes",
+        "task-scoped model admissions for every arm",
+        "separate finite effect-experiment campaign and per-arm native grants",
+        "actual participant identities and concealed A/B assignment seed"
+      ],
+      "unit_of_analysis": "One independently authored narrative decision window; repeated judgments and native retries are not independent samples.",
+      "pair_count_per_factor": 2,
+      "factors": [
+        {
+          "id": "craft-composition",
+          "hypothesis": "A compatible optional second Card improves located causal or spatial clarity without forced explanation or weakening the primary Card.",
+          "control": "Same v4 mandatory primary Card and accepted phase; optional secondary Card omitted under its approved abstention policy.",
+          "treatment": "Same primary plus the selector-approved compatible secondary Card at its validated scene position.",
+          "changed_factor": "Optional compatible composition only; no mandatory requirement or phase gate removed."
+        },
+        {
+          "id": "intent-lookahead",
+          "hypothesis": "An additional justified private lookahead step preserves unfinished commitments without unnatural action or knowledge leakage.",
+          "control": "Current v3 bounded two-step intent with all commitments and necessary private facts retained.",
+          "treatment": "Current v3 intent with one additional legal lookahead step; same current action opportunity.",
+          "changed_factor": "Bounded lookahead horizon; both contracts and producer variants require explicit compatibility/admission."
+        },
+        {
+          "id": "review-located-repair",
+          "hypothesis": "A governed paired accepted-prose window reduces missed continuity errors without increasing false positives, over-editing or new contradictions.",
+          "control": "Current legal local review path with the same mandatory accepted fact/knowledge/permission constraints.",
+          "treatment": "Same reviewer and revision policy with the admitted cross-window prose evidence.",
+          "changed_factor": "Permitted review prose window; if the current frozen policy requires the window, this pair is ineligible rather than bypassing it."
+        }
+      ],
+      "stage_continuity_measure": "Within the same admitted production chain, inspect located CONTINUE and justified ADVANCE observations, interruptions and costs. Without a separately admitted phase-only control, report this as descriptive evidence and do not claim an isolated causal phase benefit.",
+      "shared_constraints": [
+        "same original brief and exact accepted source",
+        "same task model and reasoning settings",
+        "same source/knowledge/Canon boundaries",
+        "same mandatory Craft requirements",
+        "same maximum native budget and recovery rules",
+        "same maximum revision rounds",
+        "no automatic grant expansion"
+      ],
+      "allocation": "Separate effect-only campaign: 3 factors × 2 independent decision-window pairs × 2 arms = 12 arms, each at most 2 sequential native windows. No Cartesian product. These calls are additional to the separately bounded same-Book production request; no transfer between pools.",
+      "blinding": "Use the existing blind-pack exporter and native human/reference registration. Conceal model identity, intervention label and generated ordering; retain the original concealed mapping for authorized audit. No model-filled human fields.",
+      "outcomes": [
+        "paired reader preference and continuation willingness",
+        "1-5 readability and character-action naturalness",
+        "located promise continuity and knowledge-boundary violations",
+        "review false positive/missed issue/over-edit/new-contradiction counts",
+        "unchanged-range preservation and actual repair success",
+        "input/output tokens, wall latency, revision counts, failures and UNKNOWN cost/receipts"
+      ],
+      "analysis": "Publish each pair and each independent reader response, denominators, disagreement, abstention and missing data. Report ordinal paired differences and raw failure counts; two pairs cannot establish broad statistical benefit. Model judgments remain a separate proxy source.",
+      "stopping": "Stop the affected scope at any source/permission/knowledge contamination, unknown external result, contract drift or exhausted reservation. Stop expansion after inconclusive or adverse pilot results; retain all negatives and propose adjustment or non-use without sampling to PASS.",
+      "extrapolation": "No inference beyond the observed windows; no million-word stability or universal quality claim."
+    },
+    "model_tokens_additional_to_production": 33030144,
+    "proposed_budget": {
+      "status": "NOT_AUTHORIZATION",
+      "account_identity_ref": "local-account-directory:<configured-Codex-account-home>:chatgpt-login",
+      "accounting_basis": "PENDING_EXPLICIT_USER_ENTITLEMENT_OR_PRICED_AUTHORIZATION",
+      "monetary_cost": "UNKNOWN",
+      "expires_at": "PENDING_USER",
+      "arm_count": 12,
+      "native_windows_per_arm_ceiling": 2,
+      "per_arm_stage_caps": [
+        {
+          "task_type": "chapter_group_plan.generate",
+          "calls": 1,
+          "tokens": 65536
+        },
+        {
+          "task_type": "chapter_plan.generate",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "narrative_semantic_evaluation",
+          "calls": 3,
+          "tokens": 196608
+        },
+        {
+          "task_type": "world_candidates.generate",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "world_candidates.actor_0",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "world_candidates.actor_1",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "world_candidates.evaluate",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "memo",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "draft",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "review",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "revision",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "rereview",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "canon_extraction",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "canon_support",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "quality_structural",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "quality_commercial",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "quality_source_originality",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "quality_platform",
+          "calls": 2,
+          "tokens": 131072
+        },
+        {
+          "task_type": "quality_longform",
+          "calls": 2,
+          "tokens": 262144
+        },
+        {
+          "task_type": "longform_prose_review",
+          "calls": 1,
+          "tokens": 131072
+        }
+      ],
+      "per_arm_total": {
+        "calls": 39,
+        "tokens": 2752512
+      },
+      "total": {
+        "calls": 468,
+        "tokens": 33030144
+      },
+      "additional_model_candidates": 0,
+      "unallocated_retry_calls": 0,
+      "repairs_share_stage_caps": true,
+      "source_preparation_calls": 0,
+      "qualification_calls": 0,
+      "source_condition": "Reuse exact legally available accepted source and native dependencies already established by production. If an arm needs new source preparation or a new incompatible producer admission, stop that arm; no implicit extra calls or invented qualification.",
+      "experimental_outputs": "Remain governed experiment outputs and can never be promoted to the official manuscript or counted as production literary evidence; keep per-arm facts and acceptance lineage isolated.",
+      "native_arm_binding": "PENDING_EXACT_LEGAL_NATIVE_SOURCE_AND_CAMPAIGN_FREEZE; do not dispatch until replayable source/permission/acceptance boundaries and arm accounting are proven",
+      "phases": {
+        "PILOT": {
+          "calls": 468,
+          "tokens": 33030144
+        },
+        "EXPLORATION": {
+          "calls": 0,
+          "tokens": 0
+        }
+      },
+      "human_workload": {
+        "minimum_distinct_independent_readers": 2,
+        "blinded_pair_readings_per_reader": 6,
+        "total_pair_readings_lower_bound": 12,
+        "separate_adjudicator": "One actual third participant for disputed located facts; reading preference is not adjudicated into a fabricated consensus",
+        "required_actual_identity_and_consent": true
+      }
+    },
+    "sample_independence": "The 6 matched pairs are separate narrative decision-window sources; the 2 arms within a pair and each arm's 2 sequential windows are not independent samples. Repeated review or retries never increase the denominator."
+  },
+  "stop_conditions": [
+    "Missing or expired scoped authorization/account identity; no dispatch.",
+    "Producer/schema/Pack/contract drift: freeze the changed task only after compatibility recheck; do not copy qualification.",
+    "Unknown external outcome or unknown cost holds its original task/campaign budget until native reconciliation; unrelated authorized scopes remain independent.",
+    "Any task, campaign, token, amount, entitlement or expiry ceiling reached: stop that scope; no automatic top-up.",
+    "Source/edition mismatch, knowledge leak, Canon contamination or permission bypass: stop affected production.",
+    "Reference disagreement, poor quality, no measured benefit or insufficient coverage: retain negative evidence and report; do not manufacture labels or seek PASS with more samples."
+  ],
+  "evidence_ceiling": {
+    "code": "CODE_EXISTS",
+    "native_sampling": "PARTIAL_EXECUTABLE_PENDING_FULL_DIRECTED_RUN",
+    "qualified": "NOT_PROVEN",
+    "production": "NOT_PROVEN",
+    "benefit": "NOT_PROVEN"
+  },
+  "proposed_totals_by_separate_purpose": {
+    "sampling": {
+      "calls": 720,
+      "tokens": 40108032
+    },
+    "same_book_production": {
+      "calls": 125,
+      "tokens": 8421376
+    },
+    "effect_experiment": {
+      "calls": 468,
+      "tokens": 33030144
+    },
+    "combined_ceiling": {
+      "calls": 1313,
+      "tokens": 81559552
+    },
+    "transfer_between_purposes_allowed": false,
+    "status": "NOT_AUTHORIZATION"
+  }
+}

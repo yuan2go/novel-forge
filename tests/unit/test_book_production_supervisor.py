@@ -21,6 +21,100 @@ from novel_forge.modules.hierarchical_planning import PlanExecutionScope
 from novel_forge.modules.story_planning_runtime import PlanningGenerationStatus
 
 
+def test_activated_chapter_projection_is_materialized_by_owner_once_and_resumes():
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.principal = object()
+    result = {"asset_version_id": "execution:exact", "content_hash": "hash"}
+    projections = []
+    calls = []
+
+    def query(candidate, **kwargs):
+        assert candidate == "candidate:active"
+        return projections[0] if projections else None
+
+    def materialize(candidate, **kwargs):
+        assert candidate == "candidate:active"
+        calls.append(kwargs)
+        projections.append(result)
+        raise RuntimeError("process lost response after native projection commit")
+
+    supervisor.query = SimpleNamespace(require_chapter_execution_plan=query)
+    supervisor.planning = SimpleNamespace(materialize_activated_chapter_plan_projection=materialize)
+    book = {"book_run_id": "run:one", "active_chapter_request_id": ""}
+    plan = {"asset_version_id": "candidate:active"}
+    with pytest.raises(RuntimeError, match="lost response"):
+        supervisor._require_chapter_execution_plan(book, plan)
+    assert supervisor._require_chapter_execution_plan(book, plan) == result
+    assert len(calls) == 1
+    assert calls[0]["idempotency_key"] == "book:run:one:active-chapter-projection:candidate:active"
+    assert calls[0]["principal"] is supervisor.principal
+
+
+@pytest.mark.parametrize("conflicting", [False, True])
+def test_projection_recovery_does_not_replace_frozen_request_or_ambiguous_projection(conflicting):
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    calls = []
+
+    def query(*args, **kwargs):
+        if conflicting:
+            raise KernelError("BOOK_SUPERVISOR_CHAPTER_PLAN_PROJECTION_INVALID", "multiple active projections")
+        return None
+
+    supervisor.query = SimpleNamespace(require_chapter_execution_plan=query)
+    supervisor.planning = SimpleNamespace(materialize_activated_chapter_plan_projection=lambda *args, **kwargs: calls.append(args))
+    with pytest.raises(KernelError, match="BOOK_SUPERVISOR_CHAPTER_PLAN_PROJECTION_INVALID"):
+        supervisor._require_chapter_execution_plan({"book_run_id": "run:one", "active_chapter_request_id": "frozen-request"}, {"asset_version_id": "candidate:active"})
+    assert calls == []
+
+
+@pytest.mark.parametrize("candidate_legal,history", [
+    (True, []),
+    (False, []),
+    (True, [("p", "h", {}, "source", "ACTIVE", "ELIGIBLE", "QUARANTINED", "SUCCEEDED")]),
+    (True, [("p", "h", {}, "source", "SUPERSEDED", "ELIGIBLE", "CLEAR", "SUCCEEDED")]),
+    (True, [("p", "h", {}, "source", "ACTIVE", "ELIGIBLE", "CLEAR", "FAILED_FINAL")]),
+    (True, [("p", "h", {}, "source", "ACTIVE", "ELIGIBLE", "CLEAR", "SUCCEEDED"),
+            ("old", "h", {}, "source", "SUPERSEDED", "ELIGIBLE", "CLEAR", "SUCCEEDED")]),
+])
+def test_projection_query_only_recovers_a_legal_candidate_without_any_output(monkeypatch, candidate_legal, history):
+    from contextlib import nullcontext
+    from novel_forge.modules.book_authority import queries
+    cursor = SimpleNamespace(execute=lambda *args: None, fetchall=lambda: history,
+                             fetchone=lambda: (1,) if candidate_legal and not history else None)
+    monkeypatch.setattr(queries, "AuthorityUnitOfWork", lambda database_url: nullcontext(SimpleNamespace(cursor=cursor)))
+    query = queries.PostgresBookProductionQuery("unused")
+    if candidate_legal and not history:
+        assert query.require_chapter_execution_plan("candidate", allow_missing=True) is None
+    else:
+        with pytest.raises(KernelError, match="BOOK_SUPERVISOR_CHAPTER_PLAN_PROJECTION_INVALID"):
+            query.require_chapter_execution_plan("candidate", allow_missing=True)
+
+
+@pytest.mark.parametrize("history,expected", [
+    ([], None),
+    ([("projection", "hash", "ACTIVE", "ELIGIBLE", "CLEAR", "SUCCEEDED", "project", "generation", "original-operation")], "projection"),
+    ([("projection", "hash", "ACTIVE", "ELIGIBLE", "QUARANTINED", "SUCCEEDED", "project", "generation", "original-operation")], "INVALID"),
+    ([("projection", "hash", "ACTIVE", "ELIGIBLE", "CLEAR", "SUCCEEDED", "project", "generation", "original-operation")] * 2, "INVALID"),
+])
+def test_materialization_reuses_exact_projection_and_keeps_disposition(history, expected):
+    from novel_forge.modules.story_planning_runtime.application import StoryPlanningGenerationApplication
+    reads = iter([("book",), ("candidate-hash", "ACTIVE", "ELIGIBLE", "CLEAR", "ACTIVE", True)])
+    queries = []
+    cursor = SimpleNamespace(execute=lambda sql, params: queries.append(sql), fetchone=lambda: next(reads), fetchall=lambda: history)
+    uow = SimpleNamespace(cursor=cursor)
+    kwargs = {"generation": {"project_id": "project", "book_id": "book", "generation_operation_id": "generation"},
+              "candidate_asset_version_id": "candidate", "content_hash": "candidate-hash"}
+    if expected == "INVALID":
+        with pytest.raises(KernelError, match="BOOK_SUPERVISOR_CHAPTER_PLAN_PROJECTION_INVALID"):
+            StoryPlanningGenerationApplication._lock_chapter_projection_source(uow, **kwargs)
+    else:
+        result = StoryPlanningGenerationApplication._lock_chapter_projection_source(uow, **kwargs)
+        assert (result["asset_version_id"] if result else None) == expected
+    assert "authority_book" in queries[0] and "FOR UPDATE" in queries[0]
+    assert "FOR UPDATE OF state, version" in queries[1]
+    assert "FOR UPDATE OF projection" in queries[2]
+
+
 def test_supervisor_derives_two_exact_four_chapter_horizons() -> None:
     assert _bounded_chapter_group_range(
         start_chapter=1, target_chapter_count=8, preferred_size=4
@@ -274,6 +368,7 @@ def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -
     supervisor = object.__new__(PostgresBookProductionSupervisor)
     supervisor.context_token_budget = 16_000
     supervisor.quality_context_token_budget = 28_000
+    supervisor.draft_context_profile_version = "draft-context-profile-v2"
     supervisor.production_preparation = SimpleNamespace(
         resolver=SimpleNamespace(
             resolve_override=lambda **_values: SimpleNamespace(
@@ -319,6 +414,10 @@ def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -
         "decision": "READY",
         "stage_context_token_budgets": {"draft": 16_000, "quality": 28_000},
     }
+    supervisor.draft_context_profile_version = "draft-context-profile-v3"
+    newer = supervisor._stage_budgeted_preparation_report(SimpleNamespace(preparation_report={"decision": "READY"}, context_token_budget=20_000))
+    assert newer["stage_context_profile_versions"] == {"draft": "draft-context-profile-v3"}
+    assert "stage_context_profile_versions" not in report
 
 
 def test_supervisor_freezes_exact_character_and_reader_promise_foundation() -> None:
@@ -486,3 +585,35 @@ def test_supervisor_finishes_replan_resume_after_snapshot_binding_restart() -> N
     assert tick.action is SupervisorAction.ACTIVATE_REPLAN
     assert tick.evidence_ref == "replan:1"
     assert activated == ["replan:1"]
+
+
+def test_edition_planning_consumes_its_exact_accepted_frontier():
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    snapshot = {key + "_version": key + ":snapshot" for key in ("book_plan", "character_state", "foreshadowing_state", "quality_trend", "reward_ledger", "promise_ledger")}
+    supervisor.query = SimpleNamespace(require_input_snapshot=lambda _: snapshot)
+    supervisor._active_plan = lambda *_: {"asset_version_id": "group:edition"}
+    seen = []
+    supervisor._latest_role_asset = lambda _, role: seen.append(role) or "unrelated-latest:" + role
+    result = supervisor._resolve_generation_inputs({"input_snapshot_id": "snapshot", "accepted_through_chapter": 1,
+        "active_story_state_version_id": "source-prefix-state:exact", "active_canon_snapshot_version_id": "source-prefix-canon:exact",
+        "last_chapter_outcome_version_id": "source-prefix-outcome:exact"}, "chapter_plan.generate", primary_arc_version="arc", volume_plan_version="volume")
+    assert result["story_state"] == "source-prefix-state:exact"
+    assert result["canon_snapshot"] == "source-prefix-canon:exact"
+    assert result["previous_chapter_outcome"] == "source-prefix-outcome:exact"
+    assert not {"story_state", "canon_snapshot", "previous_chapter_outcome"}.intersection(seen)
+
+
+def test_reader_planning_uses_effective_run_history_before_initial_profile():
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    calls = []
+    supervisor.query = SimpleNamespace(
+        previous_reader_state=lambda **kwargs: calls.append(kwargs) or "reader-prefix:exact",
+        latest_eligible_role_asset=lambda **kwargs: (_ for _ in ()).throw(AssertionError("Another edition's transition must not be queried")),
+    )
+    book = {"book_run_id": "edition:run", "accepted_through_chapter": 1}
+    assert supervisor._latest_role_asset(book, "reader_state") == "reader-prefix:exact"
+    assert calls == [{"book_run_id": "edition:run", "chapter_number": 2}]
+    supervisor.query.previous_reader_state = lambda **_: "NONE"
+    supervisor.query.latest_eligible_role_asset = lambda **kwargs: calls.append(kwargs) or "reader-initial"
+    assert supervisor._latest_role_asset({**book, "project_id": "project", "book_id": "book"}, "reader_state") == "reader-initial"
+    assert calls[-1]["asset_types"] == ("reader_state",)

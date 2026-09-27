@@ -1,0 +1,32 @@
+Traceback (most recent call last):
+  File "<PRIVATE_EVIDENCE_ROOT>/craft-explicit-screenplay-runner.py", line 14, in <module>
+    test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(request,patch,True,'explicit')
+  File "<WORKTREE>/tests/integration/test_craft_planning_postgres.py", line 343, in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+  File "<WORKTREE>/tests/integration/test_core_functional_loops_postgres.py", line 1984, in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    native_evidence = execute_native_reality_vertical(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/tests/integration/test_craft_planning_postgres.py", line 181, in drive_native_planning
+    tick = execute_book_coordination_claim(jobs, composition, claim)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/workers/book_authority.py", line 115, in execute_book_coordination_claim
+    tick = ticker.tick(claim.subject_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/composition.py", line 69, in tick
+    return self.supervisor.tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/supervisor.py", line 126, in tick
+    return self._tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/supervisor.py", line 393, in _tick
+    realization = self.realizations.require_current_for_chapter(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/hierarchical_planning/realization_application.py", line 237, in require_current_for_chapter
+    ).require_current_for_chapter(
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/storage/narrative_realization_repositories.py", line 454, in require_current_for_chapter
+    self._require_current_evidence(
+  File "<WORKTREE>/src/novel_forge/storage/narrative_realization_repositories.py", line 974, in _require_current_evidence
+    WHERE edition.book_run_id=production.book_run_id AND edition.role='VALIDATION')))
+                    ^^^^^^^^^^^
+NameError: name 'book_run_id' is not defined

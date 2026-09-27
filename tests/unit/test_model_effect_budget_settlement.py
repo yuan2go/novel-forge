@@ -518,3 +518,29 @@ def test_missing_billing_proof_cannot_release_a_monetary_reservation() -> None:
         "2",
         "RESERVATION_CEILING",
     )
+
+
+@pytest.mark.parametrize("error_code,settlement_calls", [("RUNTIME_DISPATCH_PAUSED", 0), ("EFFECT_EXTERNAL_STATE_UNKNOWN", 1)])
+def test_operator_pause_retains_frozen_reservation_without_reclassifying_unknown(monkeypatch, error_code, settlement_calls):
+    adapter = SimpleNamespace(provider="provider-v2", reconciliation_mode="NONE", capability_profile={})
+    port = ExternalEffectChapterModelPort("postgresql://unit-not-connected", adapter=adapter, worker_id="worker", max_cost_per_call="2")
+    request = ChapterHandlerRequest(operation_id="operation", project_id="project", workspace_id="workspace", trace_id="trace",
+        correlation_id="correlation", command={"context_token_budget": 10000}, inputs=(), attempt_id="attempt", fencing_token=1, worker_id="worker")
+    monkeypatch.setattr(port, "_execution_identity", lambda *_a, **_kw: (1, "worker"))
+    monkeypatch.setattr(port, "_request_timeout_seconds", lambda _request: 30)
+    monkeypatch.setattr(port, "completed_effect_result", lambda *_a: None)
+    monkeypatch.setattr(model_effects, "resolve_provider_token_reservation_contract", lambda *_a, **_kw: {"source": "REQUEST", "estimated_total_tokens": 10000})
+    monkeypatch.setattr(model_effects, "read_external_effect_intent", lambda *_a, **_kw: None)
+    monkeypatch.setattr(model_effects, "plan_external_effect", lambda *_a, **_kw: {"external_effect_id": "frozen-effect", "replayed": False})
+    reserve = Mock(return_value={"reservation_id": "frozen-reservation", "execution_authorized": True})
+    release = Mock()
+    settle = Mock()
+    monkeypatch.setattr(model_effects, "reserve_provider_budget", reserve)
+    monkeypatch.setattr(model_effects, "resolve_provider_budget_failure", release)
+    monkeypatch.setattr(model_effects, "settle_provider_budget", settle)
+    monkeypatch.setattr(model_effects, "dispatch_external_effect", Mock(side_effect=KernelError(error_code, "controlled boundary")))
+    with pytest.raises(KernelError, match=error_code):
+        port.invoke(request, stage="retrieval", payload={"texts": ["frozen query"]})
+    assert reserve.call_args.args[1].external_effect_id == "frozen-effect"
+    assert release.call_count == settlement_calls
+    settle.assert_not_called()

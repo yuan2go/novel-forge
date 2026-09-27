@@ -155,6 +155,12 @@ class ExternalEffectRepository:
         )
         return dict(zip(fields, row, strict=True))
 
+    def _paused_dispatch_count(self, effect_id: str) -> int:
+        self.cursor.execute("""SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s
+            AND status='FAILED_RETRYABLE' AND evidence @> %s""", [effect_id, Jsonb({"dispatch_pause_contract": "runtime-dispatch-control.v1",
+                "error_code": "RUNTIME_DISPATCH_PAUSED", "request_sent": False})])
+        return int(self.cursor.fetchone()[0])
+
     def prepare_dispatch(self, effect: dict[str, Any], dispatch_id: str) -> dict[str, Any]:
         if effect["status"] in {"UNKNOWN", "RECONCILIATION_REQUIRED"}:
             raise KernelError(
@@ -228,7 +234,7 @@ class ExternalEffectRepository:
         if effect["status"] not in {"READY", "FAILED_RETRYABLE"}:
             raise KernelError("EFFECT_STATUS_CONFLICT", "effect is not dispatchable")
         generation = int(latest[1]) + 1 if latest else 1
-        if generation > effect["max_attempts"]:
+        if generation - self._paused_dispatch_count(effect["external_effect_id"]) > effect["max_attempts"]:
             raise KernelError("EFFECT_RETRY_EXHAUSTED", "effect retry policy is exhausted")
         self.cursor.execute(
             """
@@ -397,7 +403,10 @@ class ExternalEffectRepository:
         provider_correlation_id: str,
         provider_request_id: str,
     ) -> str:
-        if outcome == "retryable_failure" and dispatch["generation"] >= dispatch["max_attempts"]:
+        paused = (evidence.get("dispatch_pause_contract") == "runtime-dispatch-control.v1"
+            and evidence.get("error_code") == "RUNTIME_DISPATCH_PAUSED" and evidence.get("request_sent") is False)
+        counted = dispatch["generation"] - self._paused_dispatch_count(dispatch["external_effect_id"])
+        if outcome == "retryable_failure" and not paused and counted >= dispatch["max_attempts"]:
             accepted_outcome = "final_failure"
             dispatch_status = "DEAD_LETTER"
             effect_status = "DEAD_LETTER"

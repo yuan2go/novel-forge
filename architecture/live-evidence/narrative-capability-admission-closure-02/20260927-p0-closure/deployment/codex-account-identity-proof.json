@@ -1,0 +1,10 @@
+{
+  "account_identity_ref": "codex-chatgpt-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+  "login_kind": "ChatGPT",
+  "existing_account_directory": true,
+  "login_status_succeeded": true,
+  "subject_source": "existing local account token account_id, hashed; verified CLI login status",
+  "subject_or_credentials_disclosed": false,
+  "monetary_cost": "UNKNOWN",
+  "model_calls": 0
+}

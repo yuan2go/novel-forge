@@ -1151,6 +1151,7 @@ class _ContextHandler:
                 *sorted(required_candidate_types & available_candidate_types),
             ),
             token_budget=int(request.command.get("context_token_budget", 6000)),
+            context_profile_version=str(((request.command.get("preparation_report") or {}).get("stage_context_profile_versions") or {}).get("draft") or "draft-context-profile-v2"),
             book_id=str(
                 request.command.get("book_id")
                 or plan.content.get("book_id")
@@ -1777,6 +1778,11 @@ class _CanonProposalHandler:
                 "revision": revision.content, "grounding": extraction.content["grounding"],
                 "claims": grounded_claims(extraction.content),
             })
+            if request.command.get("chapter_sampling"):
+                from novel_forge.modules.chapter_quality_authority.canon_support_reference import validate_sample_result
+                validate_sample_result(extraction.content, revision.content, revision.asset_version_id, generated.output)
+                return replace(_model_output(ChapterNode.CANON_PROPOSAL, dict(generated.output),
+                    request=request, generated=generated), asset_type="canon_support_review")
             proposal["grounding"] = validate_support_review(
                 extraction=extraction.content, revision=revision.content,
                 revision_asset_version_id=revision.asset_version_id, result=generated.output,

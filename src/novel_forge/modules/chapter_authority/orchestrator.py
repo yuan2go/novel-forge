@@ -106,6 +106,62 @@ class ChapterSliceResult:
     evidence_manifest: dict[str, Any]
 
 
+def recover_single_chapter_admission(
+    database_url: str, *, request: SingleChapterRequest,
+) -> ChapterSagaAdmission | None:
+    request = _bind_context_candidate_scope(request)
+    _validate_request(request)
+    if not request.idempotency_key:
+        raise KernelError("CHAPTER_ADMISSION_RECOVERY_KEY_REQUIRED", "Recovery requires the frozen Chapter key")
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """SELECT to_jsonb(root),to_jsonb(saga),to_jsonb(step),to_jsonb(plan)
+            FROM authority_operation root
+            LEFT JOIN authority_saga saga ON saga.root_operation_id=root.operation_id
+            LEFT JOIN authority_saga_step step ON step.saga_id=saga.saga_id AND step.step_key=%s
+            LEFT JOIN authority_operation plan ON plan.operation_id=step.operation_id
+            WHERE root.project_id=%s AND root.idempotency_scope='project:chapter-slice'
+              AND root.idempotency_key=%s""",
+            [ChapterNode.PLAN.value, request.project_id, request.idempotency_key],
+        )
+        row = uow.cursor.fetchone()
+    if row is None:
+        return None
+    root, saga, step, plan = row
+    if (root["definition_name"] != CHAPTER_SLICE_ROOT_DEFINITION_NAME
+        or root["workspace_id"] != request.workspace_id
+        or root["root_operation_id"] != root["operation_id"]
+        or root.get("parent_operation_id") or root.get("causation_operation_id")):
+        raise KernelError("CHAPTER_ADMISSION_RECOVERY_SCOPE_DRIFT", "Frozen Chapter root belongs to another request scope")
+    if not saga or not step or not plan or root["status"] == "ADMITTED":
+        raise KernelError("CHAPTER_ADMISSION_REQUIRES_RECOVERY", "Existing Chapter admission has an incomplete native saga or PLAN step")
+    root_id, saga_id = root["operation_id"], saga["saga_id"]
+    if (saga["project_id"] != request.project_id or root.get("saga_id") != saga_id
+        or saga["root_operation_id"] != root_id or step["ordinal"] != 1
+        or plan["project_id"] != request.project_id or plan["workspace_id"] != request.workspace_id
+        or plan["definition_name"] != ChapterNode.PLAN.definition_name
+        or plan["root_operation_id"] != root_id or plan["parent_operation_id"] != root_id
+        or plan.get("causation_operation_id") != root_id or plan.get("saga_id") != saga_id
+        or plan.get("step_key") != ChapterNode.PLAN.value or plan["actor_id"] != root["actor_id"]
+        or plan["idempotency_scope"] != "project:chapter-slice"
+        or plan["idempotency_key"] != request.idempotency_key + ":" + ChapterNode.PLAN.value):
+        raise KernelError("CHAPTER_ADMISSION_RECOVERY_SCOPE_DRIFT", "Frozen Chapter saga and PLAN lineage disagree")
+    for operation, parent, refs in (
+        (root, None, [{"asset_version_id": str(item["asset_version_id"]), "content_hash": str(item["content_hash"])} for item in request.context_candidates]),
+        (plan, root_id, [_chapter_plan_input(request)]),
+    ):
+        expected = _command(request, definition_name=operation["definition_name"],
+            definition_version=operation["definition_version"], idempotency_key=operation["idempotency_key"],
+            input_assets=refs, root_operation_id=parent, parent_operation_id=parent, causation_operation_id=parent)
+        actual_refs = operation.get("input_asset_snapshot") or []
+        if (operation["command_payload"] != json.loads(json.dumps(expected["input"]))
+            or [(item.get("asset_version_id"), item.get("content_hash")) for item in actual_refs]
+                != [(item["asset_version_id"], item["content_hash"]) for item in refs]
+            or any(item.get("project_id", request.project_id) != request.project_id for item in actual_refs)):
+            raise KernelError("CHAPTER_ADMISSION_RECOVERY_INPUT_DRIFT", "Recovery must match the complete frozen Chapter payload and input hashes")
+    return ChapterSagaAdmission(root_id, saga_id, plan["operation_id"], "ACCEPTED", True)
+
+
 def admit_single_chapter_saga(
     database_url: str,
     *,

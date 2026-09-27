@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260921_0142_prose_editorial_foreign_key_indexes",
+  "migration_head": "20260927_0147_runtime_job_dispatch_pause",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4748,6 +4748,10 @@
         {
           "path": "src/novel_forge/api/authority_app.py",
           "symbol": "create_authority_app"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/dispatch_control.py",
+          "symbol": "change_dispatch_control"
         }
       ],
       "domain_symbols": [
@@ -4793,6 +4797,16 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260712_0007_postgres_command_kernel_authority.py",
           "locator": "MIGRATION_ID = \"20260712_0007_postgres_command_kernel_authority\"",
           "id": "20260712_0007_postgres_command_kernel_authority"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260927_0143_runtime_dispatch_control.py",
+          "locator": "MIGRATION_ID = \"20260927_0143_runtime_dispatch_control\"",
+          "id": "20260927_0143_runtime_dispatch_control"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260927_0147_runtime_job_dispatch_pause.py",
+          "locator": "MIGRATION_ID = \"20260927_0147_runtime_job_dispatch_pause\"",
+          "id": "20260927_0147_runtime_job_dispatch_pause"
         }
       ],
       "external_effects": {
@@ -5322,6 +5336,10 @@
         {
           "path": "src/novel_forge/modules/book_followup_authority/prose_sample_feedback.py",
           "symbol": "prose_sample_outcomes"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/dispatch_control.py",
+          "symbol": "require_dispatch_enabled"
         }
       ],
       "commands_operations": [
@@ -5530,6 +5548,10 @@
         {
           "path": "tests/integration/test_provider_routing_postgres.py",
           "symbol": "test_formal_quality_reference_calibration_binds_native_receipt_decision_and_target"
+        },
+        {
+          "path": "tests/unit/test_runtime_dispatch_control.py",
+          "locator": "def test_"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -6410,6 +6432,10 @@
         {
           "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py",
           "symbol": "require_actor_judgments"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_planning.py",
+          "symbol": "validate_edition_plan_scope"
         }
       ],
       "commands_operations": [
@@ -7131,6 +7157,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260921_0141_author_chapter_replacement.py",
           "id": "20260921_0141_author_chapter_replacement",
           "locator": "20260921_0141_author_chapter_replacement"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260927_0145_edition_execution_windows.py",
+          "locator": "MIGRATION_ID = \"20260927_0145_edition_execution_windows\"",
+          "id": "20260927_0145_edition_execution_windows"
         }
       ],
       "external_effects": {
@@ -7698,6 +7729,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/control_application.py",
           "symbol": "PostgresBookControlApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_application.py",
+          "symbol": "BookEditionApplication"
         }
       ],
       "domain_symbols": [
@@ -7712,6 +7747,14 @@
         {
           "path": "src/novel_forge/modules/canon_graph/world_reconciliation.py",
           "symbol": "validate_actual_world_events"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/editions.py",
+          "symbol": "revise_manifest"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_runtime.py",
+          "symbol": "inherit_unchanged_prefix"
         }
       ],
       "commands_operations": [
@@ -7774,6 +7817,16 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260921_0141_author_chapter_replacement.py",
           "id": "20260921_0141_author_chapter_replacement",
           "locator": "20260921_0141_author_chapter_replacement"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260927_0144_book_editions.py",
+          "locator": "MIGRATION_ID = \"20260927_0144_book_editions\"",
+          "id": "20260927_0144_book_editions"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260927_0146_edition_prefix_inheritance.py",
+          "locator": "MIGRATION_ID = \"20260927_0146_edition_prefix_inheritance\"",
+          "id": "20260927_0146_edition_prefix_inheritance"
         }
       ],
       "external_effects": {
@@ -7804,6 +7857,10 @@
         {
           "path": "tests/integration/test_author_book_replacement_postgres.py",
           "symbol": "test_native_book_author_replacement_recovers_unlinked_admission_then_accepts_exact_new_run"
+        },
+        {
+          "path": "tests/unit/test_book_editions.py",
+          "locator": "def test_"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8003,6 +8060,10 @@
         {
           "path": "src/novel_forge/modules/canon_graph/grounding.py",
           "symbol": "validate_support_review"
+        },
+        {
+          "path": "src/novel_forge/modules/worldbuilding/actor_intents.py",
+          "symbol": "reconcile_accepted_intent"
         }
       ],
       "commands_operations": [
@@ -8122,6 +8183,10 @@
         {
           "path": "tests/integration/test_core_functional_loops_postgres.py",
           "symbol": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres"
+        },
+        {
+          "path": "tests/unit/test_world_actor_intents.py",
+          "locator": "def test_"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8158,6 +8223,10 @@
         {
           "path": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
           "symbol": "BookProseReviewCoordinator"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/screenplay_application.py",
+          "symbol": "ScreenplayApplication"
         }
       ],
       "domain_symbols": [
@@ -8188,6 +8257,14 @@
         {
           "path": "src/novel_forge/modules/plan_change_authority/structured_retrieval.py",
           "symbol": "retrieve_structured_matches"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/screenplay.py",
+          "symbol": "source_contract"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/screenplay_handler.py",
+          "symbol": "ScreenplayHandler"
         }
       ],
       "commands_operations": [
@@ -8305,6 +8382,10 @@
         {
           "path": "tests/unit/test_longform_prose_editorial.py",
           "symbol": "test_dismissal_needs_named_reviewer_and_complete_located_counterevidence"
+        },
+        {
+          "path": "tests/unit/test_screenplay.py",
+          "locator": "def test_"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8774,6 +8855,14 @@
         {
           "path": "src/novel_forge/modules/mkaos_authority/craft_usage.py",
           "symbol": "bind_usage"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_reselection.py",
+          "symbol": "next_reselection_context"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_scope.py",
+          "symbol": "validate_scope_transition_decision"
         }
       ],
       "commands_operations": [
@@ -8902,6 +8991,10 @@
         {
           "path": "tests/integration/test_narrative_craft_chapter_postgres.py",
           "symbol": "test_same_chapter_combines_accepted_history_and_adopted_craft_through_book_acceptance"
+        },
+        {
+          "path": "tests/unit/test_craft_closure.py",
+          "locator": "def test_"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9049,7 +9142,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc"
+    "implementation_tree_sha": "sha256:2e9b401527757c5c23b9242d5a2b1b1f85bebca4991fc0fe39624e1d6fdc2e0b"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

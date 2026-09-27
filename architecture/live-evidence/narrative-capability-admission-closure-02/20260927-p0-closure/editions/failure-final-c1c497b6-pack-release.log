@@ -1,0 +1,72 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-wp02-p0-private/edition-joint-runner.py", line 35, in <module>
+    test.test_edition_candidate_uses_native_acceptance_and_isolates_source_facts(request,patch,output)
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/tests/integration/test_book_editions_postgres.py", line 83, in test_edition_candidate_uses_native_acceptance_and_isolates_source_facts
+    captured = persistent_actor_book(request, monkeypatch, tmp_path, joint_story=os.environ.get("NOVEL_FORGE_EDITION_JOINT_STORY") == "1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-wp02-p0-private/edition-joint-runner.py", line 28, in capture
+    captured=original(*args,**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/tests/integration/test_book_editions_postgres.py", line 48, in persistent_actor_book
+    actors.run_actor_receipt_recovery(request, monkeypatch, persistent_intents=True, **options)
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/tests/integration/test_world_actor_isolation_postgres.py", line 328, in run_actor_receipt_recovery
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/tests/integration/test_core_functional_loops_postgres.py", line 1776, in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    opened = execute_book_opening_claim(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/workers/book_authority.py", line 558, in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/workers/book_authority.py", line 370, in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/workers/book_authority.py", line 404, in _execute_book_opening_claim
+    result = opening.execute_run(
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/book_authority/opening.py", line 1195, in execute_run
+    return self._execute_workflow_node(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/book_authority/opening.py", line 1264, in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/book_authority/opening.py", line 1702, in _execute_workflow_node_payload
+    search = self._search(
+             ^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/book_authority/opening.py", line 5935, in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/story_planning_runtime/search_application.py", line 333, in explore
+    result = self.planning.generate(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/story_planning_runtime/application.py", line 755, in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/content_authority/scheduler.py", line 229, in run_or_recover
+    output = execute_content_handler(
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/content_authority/runtime.py", line 22, in execute_content_handler
+    return execute_authority_handler(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/authority_handler_runtime/runtime.py", line 50, in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/story_planning_runtime/application.py", line 151, in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/story_planning_runtime/application.py", line 220, in _execute
+    candidate = self.binder.execute(
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/story_planning_runtime/binder.py", line 405, in execute
+    bundle = self.resolver.resolve(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/story_planning_runtime/binder.py", line 215, in resolve
+    attempt_snapshot = self.pack_resolver.freeze_attempt_snapshot(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/capability_pack_authority/runtime.py", line 164, in freeze_attempt_snapshot
+    else self.resolve_in_uow(uow, request)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/capability_pack_authority/runtime.py", line 369, in resolve_in_uow
+    _validate_deployment(
+  File "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/capability_pack_authority/runtime.py", line 926, in _validate_deployment
+    raise KernelError(
+novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_DEPLOYMENT_COMPATIBILITY_DRIFT: Pack Deployment is incompatible with runtime: release_sha

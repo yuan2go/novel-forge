@@ -29,6 +29,7 @@ class BookFollowupHandlerRegistry:
         model_port: ReaderOutcomeModelPort | None = None,
         reader_judge_resolver: ReaderJudgeRuntimeResolver | None = None,
         prose_model_port: ReaderOutcomeModelPort | None = None,
+        screenplay_model_ports: dict[str, ReaderOutcomeModelPort] | None = None,
     ) -> None:
         self._handlers = {
             PROSE_SAMPLE_DEFINITION: ProseReviewSampleHandler(prose_model_port)
@@ -43,6 +44,15 @@ class BookFollowupHandlerRegistry:
             ),
             LONGFORM_RECAP_DEFINITION: LongformRecapHandler(),
         }
+        from .screenplay import SCREENPLAY_STAGES
+        from .screenplay_handler import ScreenplayHandler
+        ports = screenplay_model_ports or {}
+        self._handlers.update({stage: ScreenplayHandler(ports[stage], stage) if stage in ports else _UnavailableReaderOutcomeHandler()
+                               for stage in SCREENPLAY_STAGES})
+        from .screenplay_sampling import sample_definition_name, ScreenplaySampleHandler
+        self._handlers.update({sample_definition_name(stage): ScreenplaySampleHandler(ports[stage], stage)
+            if stage in ports else _UnavailableReaderOutcomeHandler() for stage in SCREENPLAY_STAGES})
+
 
     def registration(
         self, definition_name: str, definition_version: str
@@ -50,7 +60,11 @@ class BookFollowupHandlerRegistry:
         handler = self._handlers.get(definition_name)
         if handler is None:
             raise KernelError("BOOK_FOLLOWUP_HANDLER_NOT_REGISTERED", definition_name)
+        from .screenplay import SCREENPLAY_STAGES, CANDIDATE_TYPE, REVIEW_TYPE
+        from .screenplay_sampling import sample_definition_name, SCREENPLAY_SAMPLE_TYPE
         asset_type, output_key = {
+            **{sample_definition_name(stage): (SCREENPLAY_SAMPLE_TYPE, sample_definition_name(stage)) for stage in SCREENPLAY_STAGES},
+            **{stage: (REVIEW_TYPE if stage == "screenplay_review" else CANDIDATE_TYPE, stage + ".result") for stage in SCREENPLAY_STAGES},
             PROSE_SAMPLE_DEFINITION: (PROSE_SAMPLE_TYPE, PROSE_SAMPLE_OUTPUT),
             PROSE_REVIEW_DEFINITION: (
                 "longform_prose_review_report",

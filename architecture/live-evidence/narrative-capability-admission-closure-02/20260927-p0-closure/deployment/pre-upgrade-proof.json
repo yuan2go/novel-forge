@@ -1,0 +1,31 @@
+{
+  "database": "novel_forge_first_novel_pilot_test",
+  "migration_head": "20260921_0142_prose_editorial_foreign_key_indexes",
+  "backup_path": "<operator-home>/novel-runtime/guofeng-xuanhuan-01/recovery-20260927-wp02-p0/pre-upgrade-0142.dump",
+  "bytes": 21876642,
+  "sha256": "37e958eeefdefdabd65bb4ee3a20d293e6b26a2df5e32c4dc23ee9a6efc2d42f",
+  "archive_list_entries": 3963,
+  "native_fingerprints": {
+    "authority_operation": {
+      "count": 538,
+      "digest": "eb5745258ad31ee2c1565e5f64ccbf94"
+    },
+    "authority_external_effect": {
+      "count": 407,
+      "digest": "4e9fe96007fccbffafaadbd26fdae88f"
+    },
+    "authority_external_effect_dispatch": {
+      "count": 407,
+      "digest": "f1b81f4e84962530b7fac5b10997ff92"
+    },
+    "authority_book_chapter_acceptance": {
+      "count": 0,
+      "digest": null
+    },
+    "authority_budget_reservation": {
+      "count": 29,
+      "digest": "33b40d23cb0b6691094739a945e073e0"
+    }
+  },
+  "provider_dispatch_performed": false
+}

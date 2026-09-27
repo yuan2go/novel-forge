@@ -372,6 +372,18 @@ the existing `content.authority.query` permission. Estimated upper bounds must n
 reported as actual billed cost. Missing calibrated benchmark evidence blocks routing;
 operators must not seed fixture scores as production quality evidence.
 
+To consume an independent sampling Project, configure its native `PROVIDER_ROUTING`
+policy with `benchmark_exports`, then configure the production Project with
+`benchmark_source_bindings`. Use the existing routing-policy configure entry, as an
+authenticated operator authorized for both Projects. Each binding includes the exact
+export and `source_policy: {policy_version, content_hash, operation_id}` returned by
+the source configuration. Exports identify the target Book, task, candidate/model revision,
+producer hash, campaign/manifest, finite expiry, and exact observation asset/hash pairs.
+Keep the source's other policy fields and grants when selecting the new version.
+Query or explain before dispatch; missing independent evaluation still blocks admission.
+Removing an export from a newly selected source policy revokes new use without rewriting
+old policy Operations or Effect receipts. Do not replace exact observations with `latest`.
+
 For a current scoped explanation, copy `producer_contract` from a native frozen
 RoutingDecision into the task context. Native dispatch builds it from its
 actual Prompt/Skill, Context policy, provider view and Schema identities; a workflow does
@@ -620,6 +632,16 @@ and `production_qualification_eligible: false`. Replay and unknown-result reconc
 retain the same Kernel budget and reference scope. This entry reuses existing native
 review tasks and labeled drafts; authoring a new reference corpus, admitting a calibrated
 evaluator and closing generator feedback are not implied by this sampling path.
+
+The same Chapter sample preparation endpoint supports `chapter.canon.propose` as the
+`canon_support` task. Preparation without reference labels returns the exact extracted
+claims, source prose/hash, evaluation dimensions and required annotation fields under
+`canon-support-independent-reference.v1`; it does not dispatch. Record two actual blind
+evaluations plus a distinct adjudicator for every claim (or the explicit no-change
+dimension), with source Unicode locations and reasoning, then supply their immutable
+adjudications as `reference_evaluation`. Admission refuses missing labels. Negative and
+uncertain support samples remain inspectable and never advance Canon. New v11 Router
+decisions require independent HIGH-risk reference agreement for this task.
 
 To annotate a completed Chapter generator sample, use the existing
 `POST /product/content-authority/commands` with `quality.human_evaluation.record` or
@@ -1245,6 +1267,17 @@ operation; resume that operation after reconciliation. Changing to unified gener
 on a failed actor run is forbidden. A separate controlled comparison and finite model
 allowance are needed to assess benefit, leakage, naturalness, cost and latency.
 
+For accepted-state persistent intentions, freeze `world-actor-experiment.v2`; its
+`world-actor-task.v3` keeps goals, steps and commitments across accepted windows. Only
+Book acceptance completes an observed step. Deferred or abandoned commitments retain
+their disposition lineage. If the complete required private/World projection exceeds
+the v2 policy's 16,000-token ceiling, a new approved profile may explicitly select
+`world-production-policy.v3`, with a context budget no greater than 24,000 tokens.
+This changes only the configurable context ceiling: actor, round, action and window
+bounds remain enforced. It does not change old frozen v1/v2 requests, add allowance to
+their ledgers, or establish model qualification for the new input contract. The joint
+engineering scenario freezes 20,000 tokens; Provider usage is still settled from receipts.
+
 ## Failure and recovery procedure
 
 1. Freeze the project, operation, attempt, lease, fence, RuntimeJob and ExternalEffect
@@ -1766,6 +1799,11 @@ memories, hooks and autonomous agents. Account entitlement also requires ChatGPT
 mode. Local configuration and tool policy are part of route identity; changed bindings
 require a new governed request. Returned tool-use evidence remains checked independently.
 Local checks do not establish remote availability or bound unobserved CLI overhead.
+For an authorized diagnostic that must stop at its first failed or unknown call, set
+`NOVEL_FORGE_CODEX_RETRY_POLICY=codex-no-transport-retry.v1` before freezing the route.
+This opt-in policy uses the existing ChatGPT account and Codex backend with zero HTTP
+and stream retries. Pair it with a one-call native grant per diagnostic sample and stop
+the runner on failure; never change a frozen request to acquire this policy afterward.
 
 For multiple corrected requests under one grant, retain the same project and absolute
 `NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT` / `NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT`.
@@ -1799,6 +1837,13 @@ without rewriting their terminal history. Local process termination is not proof
 cancellation; missing remote identifiers or receipts can require external evidence.
 Paused jobs with an unresolved CLI outcome report `RECONCILE_CLI_OUTCOME` before
 `RESUME`; pausing does not clear the unresolved outcome or its budget reservation.
+
+New Book requests needing more than the legacy draft Context ceiling must explicitly set
+`NOVEL_FORGE_BOOK_DRAFT_CONTEXT_PROFILE_VERSION=draft-context-profile-v3` before
+Supervisor preparation, together with the bounded Book token budget and a compatible
+approved Pack policy. The request freezes that profile; replay without this field stays
+on v2. Increasing an environment budget alone does not upgrade an old frozen request.
+The v3 owner maximum is 24,000 tokens, and effective Pack/request limits still apply.
 
 ## Author-guided single-Book production
 
@@ -2091,3 +2136,94 @@ natural integration, causality, character, pacing, voice and desire to continue.
 private mappings away from reviewers. Assign actual reviewers and collect their own
 responses; generated empty forms are `NOT_REVIEWED`. A completed six-chapter comparison
 can establish a bounded result, not long-novel stability or real-reader benefit.
+
+## Controlled deployment and Book edition operations
+
+Keep `NOVEL_FORGE_NO_MODEL_DISPATCH=1` while restoring/upgrading and checking a release.
+The process brake applies before Effect preparation and immediately before transport send;
+reconciliation remains available. Official workers emit health but do not claim historical
+work under that brake. A project PAUSED decision also persists across process reconstruction.
+Native no-send pauses retain their immutable RuntimeJob attempts and a guarded pause count;
+they do not consume failure retries. Ordinary failures and UNKNOWN remain subject to their
+original recovery and budget rules. Status/export list jobs waiting for dispatch control.
+Resume is scheduling permission only; it never grants Provider qualification, account quota
+or budget. Check the expected database identity, historical source and persistent volume;
+a database name containing `test` is not sufficient evidence of a disposable ledger.
+
+```sh
+novel-forge authority-runtime status --project-id "$PROJECT" --expected-database "$LEDGER_DB"
+novel-forge authority-runtime pause --project-id "$PROJECT" --expected-database "$LEDGER_DB" --expected-version "$CONTROL_VERSION" --idempotency-key "$PAUSE_KEY" --reason "$REASON"
+novel-forge authority-runtime export --project-id "$PROJECT" --expected-database "$LEDGER_DB" --output "$NEW_PRIVATE_EXPORT_PATH"
+```
+
+Take a private backup and verify its restore before forward migration. Check object hashes
+and native references, run/Effect/reservation fingerprints, release/Schema/Pack/Provider
+identities, health and process rebuild under the brake. Preserve unknown costs/effects and
+isolate their exact scope; do not replay a timed-out external call merely to obtain a clean
+status. Resume only a scope with valid finite authorization and current task qualification.
+Do not roll back accepted history; compatible code recovery or forward repair is required.
+After checking those native records, use `authority-runtime resume` with the same project
+and expected database plus its current `--expected-version`, a new `--idempotency-key`
+and `--reason`. This records a new scheduling decision; the process brake must also be
+explicitly disabled in the intended release process configuration before a send is possible.
+
+Use the existing Editor's **整稿版本** panel, or the same CLI/API operations:
+
+```sh
+novel-forge authority-edition query --project-id "$PROJECT" --workspace-id "$WORKSPACE" --book-run-id "$BOOK_RUN"
+novel-forge authority-edition create --project-id "$PROJECT" --workspace-id "$WORKSPACE" --book-run-id "$BOOK_RUN" --payload-file "$CREATE_JSON" --idempotency-key "$CREATE_KEY"
+novel-forge authority-edition save --project-id "$PROJECT" --workspace-id "$WORKSPACE" --book-run-id "$BOOK_RUN" --payload-file "$SAVE_JSON" --idempotency-key "$SAVE_KEY"
+novel-forge authority-edition start-validation --project-id "$PROJECT" --workspace-id "$WORKSPACE" --book-run-id "$BOOK_RUN" --revision-id "$REVISION"
+novel-forge authority-edition validate --project-id "$PROJECT" --workspace-id "$WORKSPACE" --book-run-id "$BOOK_RUN" --payload-file "$VALIDATION_JSON" --idempotency-key "$VALIDATION_KEY"
+novel-forge authority-edition select --project-id "$PROJECT" --workspace-id "$WORKSPACE" --book-run-id "$BOOK_RUN" --payload-file "$SELECTION_JSON" --idempotency-key "$SELECTION_KEY"
+novel-forge authority-edition export --project-id "$PROJECT" --workspace-id "$WORKSPACE" --book-run-id "$BOOK_RUN" --revision-id "$REVISION" --format text --output "$NEW_MANUSCRIPT_PATH"
+```
+
+Create binds `base_manifest_digest` and optional `base_revision_id`. Save binds `revision_id`,
+`expected_version`, exact `base_manifest_digest`, mapped `units`, `reason`, and `change_kind`
+(EXPRESSION/STRUCTURE/NARRATIVE_FACT/UNKNOWN). Source ranges use Unicode offsets and exact
+source/hash/span hash; deletions require `removed_source_ranges`. Scene mappings bind stable realization slots to explicit Scene identities, separately from prose artifacts. Do not identify a chapter
+by its display number. Query returns differences, native events, validation bindings and
+inherited-prefix proof. Start-validation admits a separate native Book run and dispatches
+nothing itself. If upper plans changed or structural edits exceed the frozen production scope, provide an approved same-Book `input_snapshot_id`; its profile and plan versions are resolved and checked by the existing native gates. Resume that run through normal workers or production controls. Validation
+binds its `validation_book_run_id` and current candidate version. If native review changes
+the saved text, validation remains blocked for that original candidate. Query exposes
+`validation_result` with the exact accepted manuscript and differences. The Editor's
+**保存审改后的版本**, or existing `create` with `source_validation_revision_id`,
+`validation_book_run_id`, `expected_version`, that result's `base_manifest_digest` and
+`reason`, captures a new immutable version with the submitted candidate as its predecessor.
+Its validation proof comes from actual native acceptances; the original frozen request and
+candidate remain unchanged. Selection remains a separate action.
+Selection needs the current `expected_head_version` and reason. Conflicts retain input;
+reconcile an uncertain response by querying/retrying the same idempotency key.
+Subsequent saves retain existing explicit removal mappings unless replacement mappings
+are supplied. Reject applies to an editing candidate; switching the current formal
+manuscript requires a separately validated selection. Neither action erases the old draft.
+Default accepted-fact and quality queries use the selected manifest's exact acceptance
+list. An explicit ongoing `book_run_id` is required to inspect subsequent accepted work
+that has not yet been captured in that immutable manuscript.
+If an old two-chapter revision's run has since accepted a third chapter, direct selection
+returns `EDITION_FRONTIER_STALE`. To return to that earlier text, create a new candidate
+with the old `base_revision_id` and exact manifest digest, then start its separate
+validation run, inspect native review, validate or capture the reviewed result, and select
+with the current head version and reason. Continue from the returned
+`continuation_book_run_id`; the old run and its later acceptances remain intact.
+
+The panel **从此稿改编场景剧本** reads exact allowed knowledge with
+GET `/product/editor/editions/knowledge` (explicit selected unit IDs), freezes a scene plan,
+and submits `/product/editor/screenplays/stages`. CLI `authority-screenplay` exposes
+prepare/generate/review/revise/accept/update/run/status/export. Prepared source contracts
+bind the exact edition; stage commands reference exact source/candidate/review assets.
+`run` resumes the original Operation and its Effects. A review with unresolved findings
+cannot authorize acceptance. The Editor lists source-update tasks after edition selection;
+a replacement source requires its exact `update_task_asset_version_id` and predecessor.
+Export does not grant publication rights. Native screenplay Provider sampling uses the
+existing production Book API's `/product/production/book-authority/runs/{book_run_id}/screenplay/provider-samples` entry; `dry_run=true` checks
+scope/grant without calls, and all sample outputs remain INELIGIBLE.
+
+The applicable WP02 checks are focused Craft selection/repair/phase, Actor private intents,
+Book edition/source isolation and in-flight recovery, screenplay production/sampling,
+runtime dispatch control, fresh/upgrade migration and the same-Book native vertical.
+Run actual Editor/API operations after relevant changes. Scripted outputs must stay outside
+real qualification and production statistics. Full P0/backend/PostgreSQL/Compose/UI/remote
+CI matrices are not implied by this targeted package evidence.

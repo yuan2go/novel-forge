@@ -1,0 +1,10 @@
+{
+  "source_tree_hash_before": "68aba01708b84d76a8d2ba97be3be48eaac82b82cac836a298c15a3bbd664703",
+  "source_tree_hash_after": "68aba01708b84d76a8d2ba97be3be48eaac82b82cac836a298c15a3bbd664703",
+  "status": "PASS",
+  "stop_dimension": "tokens",
+  "elapsed_seconds": 49.16,
+  "release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL_DIRECT_REGRESSION",
+  "actual_real_model_calls": 0
+}

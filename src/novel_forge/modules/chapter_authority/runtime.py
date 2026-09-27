@@ -45,6 +45,7 @@ class _ChapterHandlerAdapter:
     sampling: bool = False
 
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
+        stage = "canon_support" if self.node is ChapterNode.CANON_PROPOSAL else self.node.value
         snapshot = None
         if self.sampling:
             with AuthorityUnitOfWork(self.database_url) as uow:
@@ -82,7 +83,7 @@ class _ChapterHandlerAdapter:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 subject = require_chapter_sample_target(uow.cursor, project_id=request.project_id, payload=chapter_request.command) if (
                     chapter_request.command["chapter_sampling"].get("generation_sample") is not None) else None
-                reference = require_chapter_reference(uow.cursor, project_id=request.project_id, stage=self.node.value,
+                reference = require_chapter_reference(uow.cursor, project_id=request.project_id, stage=stage,
                     input_versions=chapter_request.command["input_versions"],
                     binding=chapter_request.command["reference_evaluation"], evaluator_actor_id=request.actor_id,
                     chapter=chapter_request.command["chapter"], generation_sample=subject)
@@ -95,8 +96,8 @@ class _ChapterHandlerAdapter:
 
             with AuthorityUnitOfWork(self.database_url) as uow:
                 provider = reference_provider_result(uow.cursor, project_id=request.project_id,
-                    operation_id=request.operation_id, attempt_id=self.attempt_id, stage=self.node.value)
-            agreement = {**chapter_reference_agreement(reference, stage=self.node.value, result=provider["result"]),
+                    operation_id=request.operation_id, attempt_id=self.attempt_id, stage=stage)
+            agreement = {**chapter_reference_agreement(reference, stage=stage, result=provider["result"]),
                          **{key: value for key, value in provider.items() if key != "result"}}
         if snapshot is not None:
             grant = snapshot["authorization"]
@@ -104,7 +105,7 @@ class _ChapterHandlerAdapter:
                 asset_type="chapter_provider_sample", output_key=CHAPTER_SAMPLE_OUTPUT_KEY, role="primary",
                 content={
                     "schema_version": "chapter-provider-sample.v1", "routing_eligibility": "BENCHMARK_ONLY",
-                    "production_eligible": False, "stage": self.node.value,
+                    "production_eligible": False, "stage": stage,
                     "source_operation_id": chapter_request.command["chapter_sampling"]["source_operation_id"],
                     "authorization_id": grant["authorization_id"], "campaign": grant["campaign"],
                     "sampled_asset_type": output.asset_type, "sampled_output": output.content,
@@ -158,6 +159,7 @@ def execute_chapter_handler(
     execution_probe: Callable[[], object] | None = None,
     sampling: bool = False,
 ) -> ChapterExecutionResult:
+    stage = "canon_support" if node is ChapterNode.CANON_PROPOSAL else node.value
     sample_version = CHAPTER_SAMPLE_DEFINITION_VERSION
     if sampling:
         with AuthorityUnitOfWork(database_url) as uow:
@@ -170,11 +172,11 @@ def execute_chapter_handler(
         command=command,
         execution_probe=execution_probe,
         registration=AuthorityHandlerRegistration(
-            definition_name=chapter_sample_definition_name(node.value) if sampling else node.definition_name,
+            definition_name=chapter_sample_definition_name(stage) if sampling else node.definition_name,
             definition_version=(sample_version if sampling else
                 CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION if author_input and node is ChapterNode.DRAFT
                 else chapter_definition_version(registry.model_effects_required)),
-            handler_key="novel_forge.chapter_authority.sample." + node.value if sampling else node.handler_key,
+            handler_key="novel_forge.chapter_authority.sample." + stage if sampling else node.handler_key,
             handler_contract_version="chapter-provider-sample.v1" if sampling else "chapter-authority-handler-v2",
             output_asset_type="chapter_provider_sample" if sampling else node.asset_type,
             output_key=CHAPTER_SAMPLE_OUTPUT_KEY if sampling else node.output_key,

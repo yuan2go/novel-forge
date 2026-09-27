@@ -8,6 +8,141 @@
   ],
   "classification_rules": [
     {
+      "id": "chapter-dispatch-recovery-unit",
+      "patterns": [
+        "tests/unit/test_chapter_dispatch_recovery.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "chapter-dispatch-recovery",
+      "production_target": "src/novel_forge/modules/book_authority/governed_scheduler.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "chapter-dispatch-recovery-integration",
+      "patterns": [
+        "tests/integration/test_chapter_dispatch_recovery_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "chapter-dispatch-recovery",
+      "production_target": "src/novel_forge/modules/book_authority/governed_scheduler.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "book-editions-unit",
+      "patterns": [
+        "tests/unit/test_book_editions.py",
+        "tests/unit/test_book_edition_planning.py",
+        "tests/unit/test_book_edition_prefix.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "book-editions",
+      "production_target": "src/novel_forge/modules/book_authority/edition_application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "book-editions-integration",
+      "patterns": [
+        "tests/integration/test_book_editions_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "book-editions",
+      "production_target": "src/novel_forge/modules/book_authority/edition_application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "canon-support-sampling-unit",
+      "patterns": [
+        "tests/unit/test_canon_support_sampling.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-quality-authority",
+      "capability": "canon-support-sampling",
+      "production_target": "src/novel_forge/modules/chapter_quality_authority/canon_support_reference.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "scene-screenplay-sampling-unit",
+      "patterns": [
+        "tests/unit/test_screenplay_sampling.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-followup-authority",
+      "capability": "scene-screenplay-sampling-unit",
+      "production_target": "src/novel_forge/modules/book_followup_authority/screenplay_sampling.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "scene-screenplay-unit",
+      "patterns": [
+        "tests/unit/test_screenplay.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-followup-authority",
+      "capability": "scene-screenplay-unit",
+      "production_target": "src/novel_forge/modules/book_followup_authority/screenplay.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "runtime-dispatch-control-unit",
+      "patterns": [
+        "tests/unit/test_runtime_dispatch_control.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "command-kernel",
+      "capability": "runtime-dispatch-control",
+      "production_target": "src/novel_forge/modules/command_kernel/dispatch_control.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "runtime-dispatch-control-integration",
+      "patterns": [
+        "tests/integration/test_runtime_dispatch_control_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "command-kernel",
+      "capability": "runtime-dispatch-control",
+      "production_target": "src/novel_forge/modules/command_kernel/dispatch_control.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "craft-closure-unit",
+      "patterns": [
+        "tests/unit/test_craft_closure.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "mkaos-authority",
+      "capability": "craft-closure",
+      "production_target": "src/novel_forge/modules/mkaos_authority/craft_reselection.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "world-actor-intents-unit",
+      "patterns": [
+        "tests/unit/test_world_actor_intents.py",
+        "tests/unit/test_world_actor_execution.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "worldbuilding",
+      "capability": "world-actor-intents",
+      "production_target": "src/novel_forge/modules/worldbuilding/actor_intents.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
       "id": "runtime-inspection-postgres",
       "patterns": [
         "tests/integration/test_runtime_inspection_postgres.py"
@@ -236,7 +371,8 @@
     {
       "id": "routing-evidence-budget",
       "patterns": [
-        "tests/integration/test_provider_routing_postgres.py"
+        "tests/integration/test_provider_routing_postgres.py",
+        "tests/integration/test_routing_benchmark_sources_postgres.py"
       ],
       "classification": "CURRENT_RUNTIME_CONTRACT",
       "owner": "production-execution",
@@ -260,7 +396,8 @@
     {
       "id": "cost-aware-routing",
       "patterns": [
-        "tests/unit/test_cost_aware_routing.py"
+        "tests/unit/test_cost_aware_routing.py",
+        "tests/unit/test_routing_benchmark_sources.py"
       ],
       "classification": "CURRENT_DOMAIN_INVARIANT",
       "owner": "production-execution",

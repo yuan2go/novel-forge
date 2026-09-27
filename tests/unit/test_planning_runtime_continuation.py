@@ -320,6 +320,7 @@ def test_profile_contract_creation_race_reuses_only_exact_winner(same):
         ({"codex_home": "/different/account"}, "ACCOUNT_DRIFT"),
         ({"executable": "/different/codex"}, "ACCOUNT_DRIFT"),
         ({"configuration_ref": "different-configuration"}, "ACCOUNT_DRIFT"),
+        ({"retry_policy": "codex-no-transport-retry.v1"}, "ACCOUNT_DRIFT"),
     ],
 )
 def test_continuation_preserves_native_book_account_but_uses_current_reasoning_decision(
@@ -378,7 +379,7 @@ def test_continuation_preserves_native_book_account_but_uses_current_reasoning_d
         },
     }
     for key, value in change.items():
-        if key in {"codex_home", "executable"}:
+        if key in {"codex_home", "executable", "retry_policy"}:
             target["account"][key] = value
         elif key in old:
             target["account"]["entitlement"][key] = value

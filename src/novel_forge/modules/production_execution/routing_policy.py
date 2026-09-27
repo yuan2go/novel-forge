@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -9,11 +10,13 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
     SOURCE_BOOTSTRAP_TASKS,
     CHAPTER_BOOTSTRAP_TASKS,
     WORLD_SAMPLE_TASKS,
+    SCREENPLAY_SAMPLE_TASKS,
     validate_bootstrap_authorization,
     validate_bootstrap_history,
 )
 
 from .cost_routing import task_policy
+from .routing_sources import BINDING_SCHEMA, EXPORT_SCHEMA
 
 
 OWNER = "PROVIDER_ROUTING"
@@ -51,11 +54,20 @@ POLICY_SCHEMA = {
 }
 
 
+LEGACY_POLICY_SCHEMA = deepcopy(POLICY_SCHEMA)
+POLICY_SCHEMA["properties"].update({
+    "benchmark_exports": {"type": "array", "maxItems": 16, "items": EXPORT_SCHEMA},
+    "benchmark_source_bindings": {"type": "array", "maxItems": 16, "items": BINDING_SCHEMA},
+})
+
+
 def validate_routing_policy(content: Mapping[str, Any]) -> None:
     try:
         _validate_json_schema(POLICY_SCHEMA, dict(content))
         if not all(content[key].strip() for key in ("policy_version", "reason")):
             raise ValueError("policy identity and reason are required")
+        from .routing_sources import validate_source_fields
+        validate_source_fields(content)
         authorization_ids = set()
         for grant in content.get("bootstrap_authorizations", []):
             validate_bootstrap_authorization(grant)
@@ -66,7 +78,8 @@ def validate_routing_policy(content: Mapping[str, Any]) -> None:
                      or grant["task_type"] == "longform_prose_review"
                      or grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values()
                      or grant["task_type"] in CHAPTER_BOOTSTRAP_TASKS.values()
-                     or grant["task_type"] in WORLD_SAMPLE_TASKS)
+                     or grant["task_type"] in WORLD_SAMPLE_TASKS
+                     or grant["task_type"] in SCREENPLAY_SAMPLE_TASKS)
                 or grant["authorization_id"] in authorization_ids
             ):
                 raise ValueError(

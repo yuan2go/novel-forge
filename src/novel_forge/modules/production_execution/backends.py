@@ -50,7 +50,7 @@ from .process_supervisor import (
 from .security import assert_no_inline_secrets
 from .codex_configuration import (
     CODEX_INPUT_ONLY_OVERRIDES, CODEX_SCHEMA_PROJECTION_VERSION,
-    codex_output_schema, require_codex_home,
+    codex_output_schema, codex_retry_overrides, require_codex_home,
 )
 
 
@@ -1391,6 +1391,7 @@ class CodexCliExecutionBackend:
         codex_home: str = "",
         pricing: CodexPricingSnapshot | None = None,
         account_entitlement: CodexAccountEntitlementSnapshot | None = None,
+        retry_policy: str = "",
         structured_result_validator: CodexStructuredResultValidator | None = None,
     ) -> None:
         self.admission = admission
@@ -1402,6 +1403,10 @@ class CodexCliExecutionBackend:
         self.codex_home = require_codex_home(codex_home) if codex_executable else ""
         self.pricing = pricing
         self.account_entitlement = account_entitlement
+        self.retry_policy = retry_policy
+        self.retry_overrides = codex_retry_overrides(retry_policy)
+        if retry_policy and account_entitlement is None:
+            raise ValueError("controlled Codex no-retry policy requires its existing account entitlement")
         self.structured_result_validator = structured_result_validator
         if codex_executable:
             executable = Path(codex_executable)
@@ -1567,6 +1572,13 @@ class CodexCliExecutionBackend:
             "denied_tools": list(payload.denied_tools),
             "model_authority": model_authority,
         }
+        if self.retry_policy:
+            evidence["transport_retry_policy"] = {
+                "version": self.retry_policy,
+                "invocation_overrides": list(self.retry_overrides),
+                "request_max_retries": 0,
+                "stream_max_retries": 0,
+            }
         if (
             receipt.status is ProcessReceiptStatus.CANCELLED
             and receipt.result_integrity is ResultIntegrity.VALID
@@ -1715,7 +1727,7 @@ class CodexCliExecutionBackend:
             f"model_reasoning_effort={route.reasoning_effort}",
             *(
                 arg
-                for override in CODEX_INPUT_ONLY_OVERRIDES
+                for override in (*CODEX_INPUT_ONLY_OVERRIDES, *self.retry_overrides)
                 for arg in ("-c", override)
             ),
             *(

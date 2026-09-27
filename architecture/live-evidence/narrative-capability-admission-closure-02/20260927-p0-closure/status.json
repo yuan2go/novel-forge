@@ -1,0 +1,137 @@
+{
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "overall_status": "INCOMPLETE",
+  "baseline_sha": "cc6afa5e4a62eb74f7bbb17887784f16b70289c5",
+  "branch": "codex/narrative-closure-02-p0",
+  "final_implementation_sha": "2fda12e3ff6c1adb99919c85d4f07f11378e4c74",
+  "deployment_version": "2fda12e3ff6c1adb99919c85d4f07f11378e4c74_INSTALLED_NOT_HEALTHY; TWELVE_NEW_SERVICES_STOPPED",
+  "migration_head": "20260927_0147_runtime_job_dispatch_pause",
+  "evidence_ceiling": {
+    "native_engineering": {
+      "state": "EXECUTABLE",
+      "scope": "FOCUSED_COMPONENT_PATHS_ONLY",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "same_version_joint_status": "NOT_YET_PASS"
+    },
+    "task_admission": "NOT_PROVEN",
+    "authorized_production": "NOT_PROVEN",
+    "reader_or_craft_benefit": "NOT_PROVEN"
+  },
+  "progress": {
+    "craft": "NATIVE_RESELECTION_PHASE_CUMULATIVE_CALL_AND_TOKEN_BUDGET_AND_CROSS_PRINCIPAL_RECOVERY_PASS; SAME_VERSION_JOINT_PENDING",
+    "actors": "PERSISTENT_CURRENT_STEP_GROUNDED_ACCEPTANCE_AND_NEW_EDITION_CONTINUATION_EXECUTABLE",
+    "editions": "NATIVE_REVIEW_CAPTURE_SELECT_CONTINUE_AND_ISOLATION_PASS; CONCURRENT_PROJECTION_RECOVERY_PASS; OLD_CHAPTER_TIMEOUT_RETAINED",
+    "screenplays": "NATIVE_GENERATE_REVIEW_REVISE_ACCEPT_AND_SOURCE_UPDATE_PASS",
+    "joint_chinese_story": "COMMON_2FDA_RUN_SOURCE3_ACCEPTED_AND_UNKNOWN_RECONCILED; EDITION3_EXPORT_FAILED_FINAL_OBJECT_KEY_COLLISION; EDITION_ACCEPTED_CURSOR2; NO_FULL_CHAIN_PASS",
+    "persistent_deployment": "ORIGINAL_SCHEMA_0147; NEW_RELEASE_INSTALLED; API_ADAPTER_REGISTRATION_FAILED; NEW_SERVICES_STOPPED; HISTORICAL_UNKNOWN_UNCHANGED",
+    "task_evidence_bridge": "FINITE_EXACT_COHORT_CROSS_PROJECT_ROUTER_EXPORT_BINDING_EXECUTABLE; NO_QUALIFICATION_GRANTED"
+  },
+  "checks": [
+    {
+      "file": "checks/directed-unit-second.xml",
+      "status": "PASS",
+      "tests": 387,
+      "subtests": 6,
+      "seconds": 7.83,
+      "identity": "DEVELOPMENT_WORKTREE_NOT_FINAL_COMMIT"
+    },
+    {
+      "file": "checks/edition-quality-scope-second.xml",
+      "status": "PASS",
+      "tests": 47,
+      "subtests": 6,
+      "identity": "DEVELOPMENT_WORKTREE_NOT_FINAL_COMMIT"
+    },
+    {
+      "file": "editor/verification.json",
+      "status": "PASS",
+      "native_browser_operations": 12,
+      "identity": "DEVELOPMENT_WORKTREE_NOT_FINAL_COMMIT",
+      "draft_recovery_browser_checks": 4
+    },
+    {
+      "file": "checks/directed-unit-third.xml",
+      "status": "PASS",
+      "tests": 742,
+      "subtests": 6,
+      "seconds": 9.86,
+      "identity": "DEVELOPMENT_WORKTREE_NOT_FINAL_COMMIT"
+    },
+    {
+      "file": "checks/documentation-manifests-third.xml",
+      "status": "FAIL",
+      "tests_passed": 28,
+      "subtests_passed": 20,
+      "failed": 1,
+      "reason": "SOURCE_COMMENT_RATCHET_508_GT_505; FIX_IN_PROGRESS; BASELINE_UNCHANGED",
+      "identity": "DEVELOPMENT_WORKTREE_NOT_FINAL_COMMIT"
+    },
+    {
+      "file": "checks/documentation-reality-fourth.log",
+      "status": "PASS",
+      "tests": 1,
+      "seconds": 13.33,
+      "fix": "CONDENSED_REDUNDANT_COMMENTS; RATCHET_BASELINE_UNCHANGED",
+      "identity": "DEVELOPMENT_WORKTREE_NOT_FINAL_COMMIT"
+    }
+  ],
+  "deployment_evidence": "deployment/execution-index.json",
+  "actual_real_model_calls": 0,
+  "authorization_request": "config/production/narrative-closure/authorization-request-p0-20260927.json",
+  "authorization_state": "USER_APPROVED_THREE_SEPARATE_CAPS_AND_SOL_OR_LOWER_OR_DEEPSEEK; NATIVE_GRANTS_PENDING; ACTUAL_HUMAN_IDENTITIES_AND_EVALUATIONS_MISSING",
+  "not_run": [
+    "full P0",
+    "full backend",
+    "full PostgreSQL",
+    "full Compose",
+    "full UI",
+    "remote CI",
+    "paid or entitlement model samples",
+    "independent human qualification",
+    "formal literary production",
+    "real reader or effect controls"
+  ],
+  "versioned_failures_retained": true,
+  "publication_authorized": false,
+  "git_remote_mutations": "NONE",
+  "authorization_approval": "config/production/narrative-closure/authorization-approved-p0-20260927.json",
+  "main_checkout_preserved": {
+    "head_sha": "cc6afa5e4a62eb74f7bbb17887784f16b70289c5",
+    "working_tree": "CLEAN",
+    "verified_at": "2026-09-27T07:10:26.017419+00:00"
+  },
+  "engineering_checkpoint": {
+    "state": "LOCALLY_COMMITTED",
+    "implementation_tree_sha": "sha256:e7394db8d9f37dc106a321ff88023323368a63cda633aa861fce59d0ee95773f",
+    "joint_remaining": "ORIGINAL_FROZEN_EFFECT_UNKNOWN_RECONCILIATION_AND_EDITION_CONTINUATION_TAIL; FRESH_COMMON_SHA_RUN_PENDING",
+    "deployment": "NOT_DEPLOYED",
+    "qualification": "NOT_PROVEN",
+    "real_model_calls": 0,
+    "commit_sha": "b2fcbd20a9ee4681ed755c2c12a44da7523adb8e",
+    "subsequent_fix_sha": "c1c497b69ebc06a12431ab7242a354a31cd1e434"
+  },
+  "implementation_tree_sha": "sha256:2e9b401527757c5c23b9242d5a2b1b1f85bebca4991fc0fe39624e1d6fdc2e0b",
+  "common_release_fixture_identity_fix": {
+    "previous_attempt_sha": "c1c497b69ebc06a12431ab7242a354a31cd1e434",
+    "failure": "CAPABILITY_PACK_DEPLOYMENT_COMPATIBILITY_DRIFT",
+    "cause": "TEST_PACK_HELPER_USED_LEGACY_DEFAULT_RELEASE_WHILE_RUNTIME_USED_EXPLICIT_SHA",
+    "fixed_in": "2fda12e3ff6c1adb99919c85d4f07f11378e4c74",
+    "production_code_changed": false,
+    "historical_failure_retained": true
+  },
+  "execution_state": "PAUSED_BY_USER",
+  "paused_at": "2026-09-27T07:29:53.566217+00:00",
+  "pause_reason": "用户要求暂停验证：小说产出与Codex消耗不匹配",
+  "new_native_grants": 0,
+  "uncommitted_unverified_code": [
+    "src/novel_forge/modules/chapter_authority/export_delivery.py"
+  ],
+  "pause_boundary": {
+    "validation_running": false,
+    "development_running": false,
+    "new_services_running": false,
+    "new_model_dispatch_allowed": false,
+    "historical_data_retained": true,
+    "partial_export_fix_tested": false
+  }
+}

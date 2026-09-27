@@ -521,13 +521,13 @@ class BookAuthorityRepository:
             self.cursor.execute(
                 """
                 INSERT INTO authority_arc_progress_v2(
-                    progress_id, projection_set_id, project_id, book_id,
+                    progress_id, projection_set_id, project_id, book_id, book_run_id,
                     arc_plan_version_id, chapter_number,
                     acceptance_operation_id, chapter_outcome_asset_version_id,
                     observation_status, contribution_kind, progress_units,
                     cumulative_progress_units, deviation_units, evidence
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                ON CONFLICT (project_id, book_id, arc_plan_version_id, chapter_number)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (book_run_id, arc_plan_version_id, chapter_number)
                 DO NOTHING
                 """,
                 [
@@ -535,6 +535,7 @@ class BookAuthorityRepository:
                     projection_set_id,
                     projection["project_id"],
                     projection["book_id"],
+                    projection["book_run_id"],
                     progress["arc_plan_version_id"],
                     accepted["chapter_number"],
                     accepted["acceptance_operation_id"],
@@ -551,13 +552,13 @@ class BookAuthorityRepository:
             self.cursor.execute(
                 """
                 INSERT INTO authority_arc_actual_state(
-                    project_id, book_id, arc_plan_version_id,
+                    project_id, book_id, book_run_id, arc_plan_version_id,
                     projection_set_id, accepted_through_chapter,
                     acceptance_operation_id, observation_status,
                     lifecycle_status, cumulative_progress_units,
                     current_phase, state, version
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
-                ON CONFLICT (project_id, book_id, arc_plan_version_id)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
+                ON CONFLICT (book_run_id, arc_plan_version_id)
                 DO UPDATE SET
                     projection_set_id=EXCLUDED.projection_set_id,
                     accepted_through_chapter=EXCLUDED.accepted_through_chapter,
@@ -576,6 +577,7 @@ class BookAuthorityRepository:
                 [
                     projection["project_id"],
                     projection["book_id"],
+                    projection["book_run_id"],
                     state["arc_plan_version_id"],
                     projection_set_id,
                     state["accepted_through_chapter"],
@@ -592,12 +594,12 @@ class BookAuthorityRepository:
             self.cursor.execute(
                 """
                 INSERT INTO authority_arc_checkpoint_v2(
-                    checkpoint_id, projection_set_id, project_id, book_id,
+                    checkpoint_id, projection_set_id, project_id, book_id, book_run_id,
                     arc_plan_version_id, accepted_through_chapter,
                     acceptance_operation_id, progress_id, decision, reasons,
                     checkpoint
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                ON CONFLICT (project_id, book_id, arc_plan_version_id,
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (book_run_id, arc_plan_version_id,
                              accepted_through_chapter) DO NOTHING
                 """,
                 [
@@ -605,6 +607,7 @@ class BookAuthorityRepository:
                     projection_set_id,
                     projection["project_id"],
                     projection["book_id"],
+                    projection["book_run_id"],
                     checkpoint["arc_plan_version_id"],
                     accepted["chapter_number"],
                     accepted["acceptance_operation_id"],
@@ -679,17 +682,18 @@ class BookAuthorityRepository:
             self.cursor.execute(
                 """
                 INSERT INTO authority_arc_outcome_v2(
-                    arc_outcome_id, projection_set_id, project_id, book_id,
+                    arc_outcome_id, projection_set_id, project_id, book_id, book_run_id,
                     arc_plan_version_id, accepted_through_chapter,
                     acceptance_operation_id, status, completion_evidence
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                ON CONFLICT (project_id, book_id, arc_plan_version_id) DO NOTHING
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (book_run_id, arc_plan_version_id) DO NOTHING
                 """,
                 [
                     outcome["arc_outcome_id"],
                     projection_set_id,
                     projection["project_id"],
                     projection["book_id"],
+                    projection["book_run_id"],
                     outcome["arc_plan_version_id"],
                     outcome["accepted_through_chapter"],
                     outcome["acceptance_operation_id"],
@@ -707,12 +711,12 @@ class BookAuthorityRepository:
             self.cursor.execute(
                 """
                 INSERT INTO authority_narrative_obligation_state(
-                    project_id, book_id, obligation_id, projection_set_id,
+                    project_id, book_id, book_run_id, obligation_id, projection_set_id,
                     accepted_through_chapter, acceptance_operation_id,
                     story_state_asset_version_id, obligation_type, status,
                     state, version
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
-                ON CONFLICT (project_id, book_id, obligation_id)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
+                ON CONFLICT (book_run_id, obligation_id)
                 DO UPDATE SET
                     projection_set_id=EXCLUDED.projection_set_id,
                     accepted_through_chapter=EXCLUDED.accepted_through_chapter,
@@ -730,6 +734,7 @@ class BookAuthorityRepository:
                 [
                     projection["project_id"],
                     projection["book_id"],
+                    projection["book_run_id"],
                     obligation_id,
                     projection_set_id,
                     obligation["accepted_through_chapter"],

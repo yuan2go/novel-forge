@@ -174,6 +174,35 @@ def test_codex_sampling_retains_unknown_money_and_production_escalation_restrict
     assert "ESCALATION_THRESHOLD_NOT_MET" in blocked["candidates"][0]["rejected_reasons"]
 
 
+def test_zero_router_money_cap_retains_entitlement_identity_quota_and_unknown_cost():
+    from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+
+    router = ProductionProviderRouter("unused", candidates=(), task_money_limit="0", task_token_limit=4096)
+    _, sampled = codex_benchmark_decision(task_overrides={"remaining_money": router.task_money_limit})
+    assert sampled["status"] == "BENCHMARK_SELECTED"
+    assert sampled["selected"]["candidate"]["pricing"]["accounting_basis"] == "ACCOUNT_ENTITLEMENT"
+    assert sampled["selected"]["candidate"]["pricing"]["currency"] == "UNKNOWN"
+    assert sampled["selected"]["reservation_upper_bound"] is None
+    assert sampled["production_eligible"] is False
+    for invalid in ({"quota_remaining": 0}, {"authorization_ref": "another-account"}):
+        _, blocked = codex_benchmark_decision(task_overrides={"remaining_money": "0"}, candidate_overrides=invalid)
+        assert blocked["status"] == "BLOCKED"
+
+
+def test_zero_router_money_cap_rejects_priced_spending_and_invalid_limits():
+    from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+
+    _, _, snapshot = contract()
+    ordinary = ordinary_decision(task_overrides={"remaining_money": "0"})
+    blocked = benchmark_decision(ordinary, snapshot, environment="validation").to_dict()
+    assert blocked["status"] == "BLOCKED"
+    assert "BUDGET_HARD_LIMIT" in blocked["candidates"][0]["rejected_reasons"]
+    assert ProductionProviderRouter("unused", candidates=(), task_money_limit="1", task_token_limit=4096).task_money_limit == "1"
+    for money, tokens in (("-1", 4096), ("NaN", 4096), ("Infinity", 4096), ("0", 0)):
+        with pytest.raises(ValueError, match="ROUTING_NONNEGATIVE_MONEY_AND_POSITIVE_TOKEN_BUDGET_REQUIRED"):
+            ProductionProviderRouter("unused", candidates=(), task_money_limit=money, task_token_limit=tokens)
+
+
 @pytest.mark.parametrize("changes,reason", [
     ({"available": False}, "PROVIDER_UNAVAILABLE:"),
     ({"quota_remaining": 0}, "ESCALATION_CAPACITY_OR_AUTHORIZATION_MISSING"),
@@ -572,3 +601,21 @@ def test_campaign_arms_cannot_compare_different_producer_versions():
                "producer_contract_hash": authorization_hash({"fixture_prompt": "v2"})}
     with pytest.raises(KernelError, match="ROUTING_CAMPAIGN_SAMPLE_REDEFINED"):
         validate_bootstrap_history([changed], [original])
+
+
+def test_zero_priced_campaign_cap_allows_authorized_entitlement_but_never_priced_spend():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_authorization
+    grant = entitlement_grant()
+    grant["campaign"] = {**grant["campaign"], "maximum_amount": "0"}
+    validate_bootstrap_authorization(grant)
+    _, sampled = codex_benchmark_decision(grant_overrides=grant)
+    assert sampled["status"] == "BENCHMARK_SELECTED"
+    assert sampled["selected"]["reservation_upper_bound"] is None
+    assert sampled["selected"]["candidate"]["pricing"]["currency"] == "UNKNOWN"
+    priced = {**campaign_grant(), "campaign": grant["campaign"]}
+    with pytest.raises(ValueError, match="ROUTING_CAMPAIGN_GRANT_EXCEEDS_TOTAL"):
+        validate_bootstrap_authorization(priced)
+    with pytest.raises(ValueError, match="ROUTING_BOOTSTRAP_LIMIT_INVALID"):
+        validate_bootstrap_authorization({**priced, "maximum_amount": "0"})
+    with pytest.raises(ValueError, match="ROUTING_CAMPAIGN_LIMIT_INVALID"):
+        validate_bootstrap_authorization({**grant, "campaign": {**grant["campaign"], "maximum_amount": "-1"}})

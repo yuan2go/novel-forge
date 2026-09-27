@@ -1611,12 +1611,13 @@ class PostgresContentIntelligenceExecutionPort:
                     ),
                 ),
             )
-        except Exception:
-            resolve_provider_budget_failure(
-                self.database_url,
-                reservation_id=str(reservation["reservation_id"]),
-                project_id=worker.project_id,
-            )
+        except Exception as exc:
+            if getattr(exc, "code", "") != "RUNTIME_DISPATCH_PAUSED":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=str(reservation["reservation_id"]),
+                    project_id=worker.project_id,
+                )
             raise
         if dispatched["outcome"] != "success" or not isinstance(
             dispatched.get("provider_evidence"), Mapping

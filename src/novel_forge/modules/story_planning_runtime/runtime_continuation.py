@@ -453,6 +453,7 @@ def require_route_evidence(
         codex_home=account["codex_home"],
         executable=account["executable"],
         entitlement=prior_entitlement,
+        retry_policy=str(account.get("retry_policy") or ""),
     )
     if not auth_profile.endswith(":codex:" + expected_suffix):
         raise KernelError(

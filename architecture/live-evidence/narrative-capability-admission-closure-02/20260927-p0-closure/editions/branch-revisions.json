@@ -1,0 +1,2349 @@
+{
+  "original": {
+    "created_at": "2026-09-27T04:25:48.926207+00:00",
+    "edition_id": "edition:deb08b68-0dba-45db-86ef-4d0213839452",
+    "revision_id": "5eb46853-356f-43f4-90e4-698c69e374a1",
+    "manifest_digest": "sha256:c300264e840f59aa9f6710cac5ceeabbd59083d53cd0c762a6bff27ca7794679",
+    "revision_number": 1,
+    "base_revision_id": null,
+    "created_by_operation_id": "bb4defd4-02a9-4778-b197-8499814fe43e",
+    "predecessor_revision_id": null,
+    "edition": {
+      "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+      "version": 1,
+      "created_at": "2026-09-27T04:25:48.926207+00:00",
+      "edition_id": "edition:deb08b68-0dba-45db-86ef-4d0213839452",
+      "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+      "workspace_id": "workspace-91d6d7a2d32c4e90b106c12793a93616",
+      "source_book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+      "current_revision_id": "5eb46853-356f-43f4-90e4-698c69e374a1",
+      "created_by_operation_id": "bb4defd4-02a9-4778-b197-8499814fe43e"
+    },
+    "manifest": {
+      "units": [
+        {
+          "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 1: The Door Closes",
+          "unit_id": "chapter:chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+          "text_hash": "sha256:8f34cb81b8885702a2af84a88bc5c83e1bc753a264325574120ad61938910b50",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:action",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:integration",
+              "scene_id": "chapter:1:scene:1"
+            }
+          ],
+          "source_ranges": [
+            {
+              "end": 589,
+              "start": 0,
+              "text_hash": "sha256:8f34cb81b8885702a2af84a88bc5c83e1bc753a264325574120ad61938910b50",
+              "asset_hash": "sha256:47f565fbf591e76547e563a603db4956d8fd672d89b057099af5f5cc56bc050b",
+              "asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1"
+            }
+          ],
+          "scene_artifacts": [
+            {
+              "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:1:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:1:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "scene_separators": null,
+          "source_acceptance_ids": [
+            "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980"
+          ],
+          "chapter_plan_asset_version_id": "9d8ac6d5-a5b3-4061-887d-057c8ca84a61"
+        },
+        {
+          "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 2: The Door Closes",
+          "unit_id": "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+          "text_hash": "sha256:e8b60fd72e816df79cda3dc2c7b7c2fe69033289003b9911a0f1de0a905ffe61",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:action",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:integration",
+              "scene_id": "chapter:2:scene:1"
+            }
+          ],
+          "source_ranges": [
+            {
+              "end": 633,
+              "start": 0,
+              "text_hash": "sha256:e8b60fd72e816df79cda3dc2c7b7c2fe69033289003b9911a0f1de0a905ffe61",
+              "asset_hash": "sha256:03ed81901df04c992eb383b847bf361ed6bab5fca372f748bb79de00640a4d79",
+              "asset_version_id": "authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1"
+            }
+          ],
+          "scene_artifacts": [
+            {
+              "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:2:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:2:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "scene_separators": null,
+          "source_acceptance_ids": [
+            "chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097"
+          ],
+          "chapter_plan_asset_version_id": "30ccac8f-bb54-426a-bf86-c9e29d4fd46f"
+        }
+      ],
+      "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+      "sources": [
+        {
+          "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 1: The Door Closes",
+          "asset_hash": "sha256:47f565fbf591e76547e563a603db4956d8fd672d89b057099af5f5cc56bc050b",
+          "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:action",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:integration",
+              "scene_id": "chapter:1:scene:1"
+            }
+          ],
+          "chapter_number": 1,
+          "scene_artifacts": [
+            {
+              "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:1:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:1:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+          "scene_separators": null,
+          "projection_set_id": "longform-projection:b9ddfa2aa9bb2c1098c47d1bdf50a7e6962e4d453e366c6be79ace8d96de11dc",
+          "relation_evidence": [
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:86330f3f7e9b85b2258b7a3ce56a598e937dd6a114f975e3d24b6f7b3dc1b5ee",
+              "references": [
+                "canon_fact:subject=protagonist|predicate=gave_up",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:86330f3f7e9b85b2258b7a3ce56a598e937dd6a114f975e3d24b6f7b3dc1b5ee"
+              ],
+              "state_kind": "canon_fact"
+            },
+            {
+              "end": 426,
+              "start": 360,
+              "event_id": "narrative-event:sha256:c0ea40c32fe09461ad169009dd1f65a445e3dfa0dd62be659a20000731414c36",
+              "references": [
+                "character:mara",
+                "character_state:character_id=mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:c0ea40c32fe09461ad169009dd1f65a445e3dfa0dd62be659a20000731414c36"
+              ],
+              "state_kind": "character_state"
+            },
+            {
+              "end": 467,
+              "start": 427,
+              "event_id": "narrative-event:sha256:6b4434bccd2102ddd2d101ce35caf47c776c91cdc750ccb832d886ac1cf0339d",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:6b4434bccd2102ddd2d101ce35caf47c776c91cdc750ccb832d886ac1cf0339d",
+                "relationship_state:source_id=mara|target_id=ilya"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 511,
+              "start": 468,
+              "event_id": "narrative-event:sha256:6789503911d49f3ece6762ae9c68aa90ed22bac5b03104a39c621d56c169de9f",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:6789503911d49f3ece6762ae9c68aa90ed22bac5b03104a39c621d56c169de9f",
+                "relationship_state:source_id=ilya|target_id=mara"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:7f81f3f5b23ab6300ee9da144a87528f784350980287d624d05c7e38b4da8f70",
+              "references": [
+                "character:protagonist",
+                "character_arc:character_id=protagonist|arc_id=character-arc:accountability",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:7f81f3f5b23ab6300ee9da144a87528f784350980287d624d05c7e38b4da8f70"
+              ],
+              "state_kind": "character_arc"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:7b6e93c385f0e76f14f7a1e1127bcf0e98e3d20ee14c7df0fbd50424e0c81044",
+              "references": [
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:7b6e93c385f0e76f14f7a1e1127bcf0e98e3d20ee14c7df0fbd50424e0c81044",
+                "proposition:fact:hidden-cost",
+                "reader_knowledge:fact_id=fact:hidden-cost"
+              ],
+              "state_kind": "reader_knowledge"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:57166c7da467ed75c6ba2a74090d8e5cd6b34005b3fe609935d29d82bf408441",
+              "references": [
+                "disclosure_event:disclosure_id=disclosure:hidden-cost:chapter:1",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:57166c7da467ed75c6ba2a74090d8e5cd6b34005b3fe609935d29d82bf408441",
+                "proposition:fact:hidden-cost"
+              ],
+              "state_kind": "disclosure_event"
+            },
+            {
+              "end": 196,
+              "start": 120,
+              "event_id": "narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+              "references": [
+                "event:fixture-initial:mara:observed",
+                "event:foundation:fixture:project-91d6d7a2d32c4e90b106c12793a93616:foundation:creative_foundation:selected:v1",
+                "event:narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+                "world_state:council-inquiry",
+                "world_state:world_state_id=council-inquiry"
+              ],
+              "state_kind": "world_state"
+            },
+            {
+              "end": 426,
+              "start": 360,
+              "event_id": "narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+              "references": [
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+                "narrative_obligation:obligation_id=mara:protect-witnesses",
+                "obligation:mara:protect-witnesses"
+              ],
+              "state_kind": "narrative_obligation"
+            }
+          ],
+          "outcome_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+          "relation_evidence_coverage": {
+            "events": 10,
+            "indexed": 9,
+            "truncated": 0,
+            "unlocated": 1,
+            "invalid_location": 0
+          },
+          "story_state_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1",
+          "chapter_plan_asset_version_id": "9d8ac6d5-a5b3-4061-887d-057c8ca84a61",
+          "canon_snapshot_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+        },
+        {
+          "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 2: The Door Closes",
+          "asset_hash": "sha256:03ed81901df04c992eb383b847bf361ed6bab5fca372f748bb79de00640a4d79",
+          "acceptance_id": "chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:action",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:integration",
+              "scene_id": "chapter:2:scene:1"
+            }
+          ],
+          "chapter_number": 2,
+          "scene_artifacts": [
+            {
+              "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:2:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:2:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "asset_version_id": "authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+          "scene_separators": null,
+          "projection_set_id": "longform-projection:fab7254ecd7e47f954034ecb12fa2b52205e62a4f04d60f7b705e61d8c8d8894",
+          "relation_evidence": [
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:33ba665e7515c7b4b08bb62a9b963fe10d2a882553e5b2d79f2df07a2e41b098",
+              "references": [
+                "canon_fact:subject=protagonist|predicate=gave_up",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:33ba665e7515c7b4b08bb62a9b963fe10d2a882553e5b2d79f2df07a2e41b098"
+              ],
+              "state_kind": "canon_fact"
+            },
+            {
+              "end": 470,
+              "start": 360,
+              "event_id": "narrative-event:sha256:2c23390846c1a3fbf7c88b5f454f419f640345b023abe963ebf72978d710e376",
+              "references": [
+                "character:mara",
+                "character_state:character_id=mara",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:2c23390846c1a3fbf7c88b5f454f419f640345b023abe963ebf72978d710e376"
+              ],
+              "state_kind": "character_state"
+            },
+            {
+              "end": 511,
+              "start": 471,
+              "event_id": "narrative-event:sha256:03e0f0aa83c04b8223be8b1895b06eb4ac4b712bd48eb76301be0b74aef10ad3",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:03e0f0aa83c04b8223be8b1895b06eb4ac4b712bd48eb76301be0b74aef10ad3",
+                "relationship_state:source_id=mara|target_id=ilya"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 555,
+              "start": 512,
+              "event_id": "narrative-event:sha256:e457e0ac78c14d394823a70296daf218646e01b5435e2e41fae62897bbbbb527",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:e457e0ac78c14d394823a70296daf218646e01b5435e2e41fae62897bbbbb527",
+                "relationship_state:source_id=ilya|target_id=mara"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:21f6ba5edda71cb44fd8cb6e31c3e3fc6da472d3f6d8dde3083cd390f445a652",
+              "references": [
+                "character:protagonist",
+                "character_arc:character_id=protagonist|arc_id=character-arc:accountability",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:21f6ba5edda71cb44fd8cb6e31c3e3fc6da472d3f6d8dde3083cd390f445a652"
+              ],
+              "state_kind": "character_arc"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:341244bbd596bd19bb5273fa99f745756520e3f51cc4ab7cabfe28c6f2665c06",
+              "references": [
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:341244bbd596bd19bb5273fa99f745756520e3f51cc4ab7cabfe28c6f2665c06",
+                "proposition:fact:hidden-cost",
+                "reader_knowledge:fact_id=fact:hidden-cost"
+              ],
+              "state_kind": "reader_knowledge"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:c1cddc4e6d5feb468e1ae4ee19e78ca78c198fe40cf754c822fbf3e9389a0ab2",
+              "references": [
+                "disclosure_event:disclosure_id=disclosure:hidden-cost:chapter:2",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:c1cddc4e6d5feb468e1ae4ee19e78ca78c198fe40cf754c822fbf3e9389a0ab2",
+                "proposition:fact:hidden-cost"
+              ],
+              "state_kind": "disclosure_event"
+            },
+            {
+              "end": 196,
+              "start": 120,
+              "event_id": "narrative-event:sha256:cb8c221a016a7ad8af99f12d70bb44e96c448464888ea0a514bd160e2d0b4f61",
+              "references": [
+                "event:fixture-initial:mara:observed",
+                "event:foundation:fixture:project-91d6d7a2d32c4e90b106c12793a93616:foundation:creative_foundation:selected:v1",
+                "event:narrative-event:sha256:cb8c221a016a7ad8af99f12d70bb44e96c448464888ea0a514bd160e2d0b4f61",
+                "event:narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+                "world_state:council-inquiry",
+                "world_state:world_state_id=council-inquiry"
+              ],
+              "state_kind": "world_state"
+            },
+            {
+              "end": 470,
+              "start": 360,
+              "event_id": "narrative-event:sha256:02849824476811e1f092c9491944e35113ccca6d4726727fde734879f40a6711",
+              "references": [
+                "character:mara",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:02849824476811e1f092c9491944e35113ccca6d4726727fde734879f40a6711",
+                "narrative_obligation:obligation_id=mara:protect-witnesses",
+                "obligation:mara:protect-witnesses"
+              ],
+              "state_kind": "narrative_obligation"
+            }
+          ],
+          "outcome_asset_version_id": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.outcome:v1",
+          "relation_evidence_coverage": {
+            "events": 10,
+            "indexed": 9,
+            "truncated": 0,
+            "unlocated": 1,
+            "invalid_location": 0
+          },
+          "story_state_asset_version_id": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.story_state:v1",
+          "chapter_plan_asset_version_id": "30ccac8f-bb54-426a-bf86-c9e29d4fd46f",
+          "canon_snapshot_asset_version_id": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.canon.current:v1"
+        }
+      ],
+      "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+      "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+      "workspace_id": "workspace-91d6d7a2d32c4e90b106c12793a93616",
+      "manifest_digest": "sha256:c300264e840f59aa9f6710cac5ceeabbd59083d53cd0c762a6bff27ca7794679",
+      "contract_version": "book-manuscript-edition.v1",
+      "publication_authorized": false
+    },
+    "content_hash": "sha256:b3f929c11f4940fe6272d006a865a7499f4383d12edd5af862137bb59858b75d"
+  },
+  "submitted": {
+    "created_at": "2026-09-27T04:46:47.391157+00:00",
+    "edition_id": "edition:b190a047-bc71-4d3f-bc63-6848defd4af0",
+    "revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f",
+    "manifest_digest": "sha256:7cd1000a08fbf8a2ea2af6d620687a6bad94a6fcf561dc717e0e427ce4be993a",
+    "revision_number": 2,
+    "base_revision_id": "5eb46853-356f-43f4-90e4-698c69e374a1",
+    "created_by_operation_id": "bc8afbb3-0036-4e64-83ed-f00e2a3d37a3",
+    "predecessor_revision_id": "17971f8f-bb32-47dc-819e-9939bfe330ec",
+    "edition": {
+      "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+      "version": 2,
+      "created_at": "2026-09-27T04:46:47.316506+00:00",
+      "edition_id": "edition:b190a047-bc71-4d3f-bc63-6848defd4af0",
+      "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+      "workspace_id": "workspace-91d6d7a2d32c4e90b106c12793a93616",
+      "source_book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+      "current_revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f",
+      "created_by_operation_id": "7bbc4e19-ac15-4244-8bf2-582d90805769"
+    },
+    "manifest": {
+      "units": [
+        {
+          "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 1: The Door Closes",
+          "unit_id": "chapter:chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+          "text_hash": "sha256:8f34cb81b8885702a2af84a88bc5c83e1bc753a264325574120ad61938910b50",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:action",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:integration",
+              "scene_id": "chapter:1:scene:1"
+            }
+          ],
+          "source_ranges": [
+            {
+              "end": 589,
+              "start": 0,
+              "text_hash": "sha256:8f34cb81b8885702a2af84a88bc5c83e1bc753a264325574120ad61938910b50",
+              "asset_hash": "sha256:47f565fbf591e76547e563a603db4956d8fd672d89b057099af5f5cc56bc050b",
+              "asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1"
+            }
+          ],
+          "scene_artifacts": [
+            {
+              "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:1:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:1:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "scene_separators": null,
+          "source_acceptance_ids": [
+            "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980"
+          ],
+          "chapter_plan_asset_version_id": "9d8ac6d5-a5b3-4061-887d-057c8ca84a61"
+        },
+        {
+          "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}. 风声掠过檐角，话音却很稳。\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 2: The Door Closes",
+          "unit_id": "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+          "text_hash": "sha256:5f718189b584fa9bbbbaac192b82a62aba54cdaf8d29988c41e574e1d97f3ecc",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:action",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:integration",
+              "scene_id": "chapter:2:scene:1"
+            }
+          ],
+          "source_ranges": [
+            {
+              "end": 633,
+              "start": 0,
+              "text_hash": "sha256:e8b60fd72e816df79cda3dc2c7b7c2fe69033289003b9911a0f1de0a905ffe61",
+              "asset_hash": "sha256:03ed81901df04c992eb383b847bf361ed6bab5fca372f748bb79de00640a4d79",
+              "asset_version_id": "authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1"
+            }
+          ],
+          "scene_artifacts": [
+            {
+              "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}. 风声掠过檐角，话音却很稳。",
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:2:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:2:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "scene_separators": null,
+          "source_acceptance_ids": [
+            "chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097"
+          ],
+          "chapter_plan_asset_version_id": "30ccac8f-bb54-426a-bf86-c9e29d4fd46f"
+        }
+      ],
+      "impact": {
+        "fact_reuse": "REQUIRES_EXACT_NATIVE_VALIDATION",
+        "changed_unit_ids": [
+          "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097"
+        ],
+        "review_signatures": "INVALIDATED",
+        "publication_candidates": "INVALIDATED",
+        "earliest_affected_position": 2,
+        "required_revalidation_unit_ids": [
+          "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097"
+        ]
+      },
+      "reason": "作者修订第二章收束句，保留承诺与证词因果",
+      "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+      "sources": [
+        {
+          "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 1: The Door Closes",
+          "asset_hash": "sha256:47f565fbf591e76547e563a603db4956d8fd672d89b057099af5f5cc56bc050b",
+          "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:action",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:integration",
+              "scene_id": "chapter:1:scene:1"
+            }
+          ],
+          "chapter_number": 1,
+          "scene_artifacts": [
+            {
+              "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:1:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:1:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+          "scene_separators": null,
+          "projection_set_id": "longform-projection:b9ddfa2aa9bb2c1098c47d1bdf50a7e6962e4d453e366c6be79ace8d96de11dc",
+          "relation_evidence": [
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:86330f3f7e9b85b2258b7a3ce56a598e937dd6a114f975e3d24b6f7b3dc1b5ee",
+              "references": [
+                "canon_fact:subject=protagonist|predicate=gave_up",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:86330f3f7e9b85b2258b7a3ce56a598e937dd6a114f975e3d24b6f7b3dc1b5ee"
+              ],
+              "state_kind": "canon_fact"
+            },
+            {
+              "end": 426,
+              "start": 360,
+              "event_id": "narrative-event:sha256:c0ea40c32fe09461ad169009dd1f65a445e3dfa0dd62be659a20000731414c36",
+              "references": [
+                "character:mara",
+                "character_state:character_id=mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:c0ea40c32fe09461ad169009dd1f65a445e3dfa0dd62be659a20000731414c36"
+              ],
+              "state_kind": "character_state"
+            },
+            {
+              "end": 467,
+              "start": 427,
+              "event_id": "narrative-event:sha256:6b4434bccd2102ddd2d101ce35caf47c776c91cdc750ccb832d886ac1cf0339d",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:6b4434bccd2102ddd2d101ce35caf47c776c91cdc750ccb832d886ac1cf0339d",
+                "relationship_state:source_id=mara|target_id=ilya"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 511,
+              "start": 468,
+              "event_id": "narrative-event:sha256:6789503911d49f3ece6762ae9c68aa90ed22bac5b03104a39c621d56c169de9f",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:6789503911d49f3ece6762ae9c68aa90ed22bac5b03104a39c621d56c169de9f",
+                "relationship_state:source_id=ilya|target_id=mara"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:7f81f3f5b23ab6300ee9da144a87528f784350980287d624d05c7e38b4da8f70",
+              "references": [
+                "character:protagonist",
+                "character_arc:character_id=protagonist|arc_id=character-arc:accountability",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:7f81f3f5b23ab6300ee9da144a87528f784350980287d624d05c7e38b4da8f70"
+              ],
+              "state_kind": "character_arc"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:7b6e93c385f0e76f14f7a1e1127bcf0e98e3d20ee14c7df0fbd50424e0c81044",
+              "references": [
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:7b6e93c385f0e76f14f7a1e1127bcf0e98e3d20ee14c7df0fbd50424e0c81044",
+                "proposition:fact:hidden-cost",
+                "reader_knowledge:fact_id=fact:hidden-cost"
+              ],
+              "state_kind": "reader_knowledge"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:57166c7da467ed75c6ba2a74090d8e5cd6b34005b3fe609935d29d82bf408441",
+              "references": [
+                "disclosure_event:disclosure_id=disclosure:hidden-cost:chapter:1",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:57166c7da467ed75c6ba2a74090d8e5cd6b34005b3fe609935d29d82bf408441",
+                "proposition:fact:hidden-cost"
+              ],
+              "state_kind": "disclosure_event"
+            },
+            {
+              "end": 196,
+              "start": 120,
+              "event_id": "narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+              "references": [
+                "event:fixture-initial:mara:observed",
+                "event:foundation:fixture:project-91d6d7a2d32c4e90b106c12793a93616:foundation:creative_foundation:selected:v1",
+                "event:narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+                "world_state:council-inquiry",
+                "world_state:world_state_id=council-inquiry"
+              ],
+              "state_kind": "world_state"
+            },
+            {
+              "end": 426,
+              "start": 360,
+              "event_id": "narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+              "references": [
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+                "narrative_obligation:obligation_id=mara:protect-witnesses",
+                "obligation:mara:protect-witnesses"
+              ],
+              "state_kind": "narrative_obligation"
+            }
+          ],
+          "outcome_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+          "relation_evidence_coverage": {
+            "events": 10,
+            "indexed": 9,
+            "truncated": 0,
+            "unlocated": 1,
+            "invalid_location": 0
+          },
+          "story_state_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1",
+          "chapter_plan_asset_version_id": "9d8ac6d5-a5b3-4061-887d-057c8ca84a61",
+          "canon_snapshot_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+        },
+        {
+          "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 2: The Door Closes",
+          "asset_hash": "sha256:03ed81901df04c992eb383b847bf361ed6bab5fca372f748bb79de00640a4d79",
+          "acceptance_id": "chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:action",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:integration",
+              "scene_id": "chapter:2:scene:1"
+            }
+          ],
+          "chapter_number": 2,
+          "scene_artifacts": [
+            {
+              "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:2:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:2:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "asset_version_id": "authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+          "scene_separators": null,
+          "projection_set_id": "longform-projection:fab7254ecd7e47f954034ecb12fa2b52205e62a4f04d60f7b705e61d8c8d8894",
+          "relation_evidence": [
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:33ba665e7515c7b4b08bb62a9b963fe10d2a882553e5b2d79f2df07a2e41b098",
+              "references": [
+                "canon_fact:subject=protagonist|predicate=gave_up",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:33ba665e7515c7b4b08bb62a9b963fe10d2a882553e5b2d79f2df07a2e41b098"
+              ],
+              "state_kind": "canon_fact"
+            },
+            {
+              "end": 470,
+              "start": 360,
+              "event_id": "narrative-event:sha256:2c23390846c1a3fbf7c88b5f454f419f640345b023abe963ebf72978d710e376",
+              "references": [
+                "character:mara",
+                "character_state:character_id=mara",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:2c23390846c1a3fbf7c88b5f454f419f640345b023abe963ebf72978d710e376"
+              ],
+              "state_kind": "character_state"
+            },
+            {
+              "end": 511,
+              "start": 471,
+              "event_id": "narrative-event:sha256:03e0f0aa83c04b8223be8b1895b06eb4ac4b712bd48eb76301be0b74aef10ad3",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:03e0f0aa83c04b8223be8b1895b06eb4ac4b712bd48eb76301be0b74aef10ad3",
+                "relationship_state:source_id=mara|target_id=ilya"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 555,
+              "start": 512,
+              "event_id": "narrative-event:sha256:e457e0ac78c14d394823a70296daf218646e01b5435e2e41fae62897bbbbb527",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:e457e0ac78c14d394823a70296daf218646e01b5435e2e41fae62897bbbbb527",
+                "relationship_state:source_id=ilya|target_id=mara"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:21f6ba5edda71cb44fd8cb6e31c3e3fc6da472d3f6d8dde3083cd390f445a652",
+              "references": [
+                "character:protagonist",
+                "character_arc:character_id=protagonist|arc_id=character-arc:accountability",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:21f6ba5edda71cb44fd8cb6e31c3e3fc6da472d3f6d8dde3083cd390f445a652"
+              ],
+              "state_kind": "character_arc"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:341244bbd596bd19bb5273fa99f745756520e3f51cc4ab7cabfe28c6f2665c06",
+              "references": [
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:341244bbd596bd19bb5273fa99f745756520e3f51cc4ab7cabfe28c6f2665c06",
+                "proposition:fact:hidden-cost",
+                "reader_knowledge:fact_id=fact:hidden-cost"
+              ],
+              "state_kind": "reader_knowledge"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:c1cddc4e6d5feb468e1ae4ee19e78ca78c198fe40cf754c822fbf3e9389a0ab2",
+              "references": [
+                "disclosure_event:disclosure_id=disclosure:hidden-cost:chapter:2",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:c1cddc4e6d5feb468e1ae4ee19e78ca78c198fe40cf754c822fbf3e9389a0ab2",
+                "proposition:fact:hidden-cost"
+              ],
+              "state_kind": "disclosure_event"
+            },
+            {
+              "end": 196,
+              "start": 120,
+              "event_id": "narrative-event:sha256:cb8c221a016a7ad8af99f12d70bb44e96c448464888ea0a514bd160e2d0b4f61",
+              "references": [
+                "event:fixture-initial:mara:observed",
+                "event:foundation:fixture:project-91d6d7a2d32c4e90b106c12793a93616:foundation:creative_foundation:selected:v1",
+                "event:narrative-event:sha256:cb8c221a016a7ad8af99f12d70bb44e96c448464888ea0a514bd160e2d0b4f61",
+                "event:narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+                "world_state:council-inquiry",
+                "world_state:world_state_id=council-inquiry"
+              ],
+              "state_kind": "world_state"
+            },
+            {
+              "end": 470,
+              "start": 360,
+              "event_id": "narrative-event:sha256:02849824476811e1f092c9491944e35113ccca6d4726727fde734879f40a6711",
+              "references": [
+                "character:mara",
+                "event:authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1",
+                "event:authority-output:f0fb5c5e-4158-4700-ad00-c1800d9fd240:chapter.canon:v1",
+                "event:narrative-event:sha256:02849824476811e1f092c9491944e35113ccca6d4726727fde734879f40a6711",
+                "narrative_obligation:obligation_id=mara:protect-witnesses",
+                "obligation:mara:protect-witnesses"
+              ],
+              "state_kind": "narrative_obligation"
+            }
+          ],
+          "outcome_asset_version_id": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.outcome:v1",
+          "relation_evidence_coverage": {
+            "events": 10,
+            "indexed": 9,
+            "truncated": 0,
+            "unlocated": 1,
+            "invalid_location": 0
+          },
+          "story_state_asset_version_id": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.story_state:v1",
+          "chapter_plan_asset_version_id": "30ccac8f-bb54-426a-bf86-c9e29d4fd46f",
+          "canon_snapshot_asset_version_id": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.canon.current:v1"
+        }
+      ],
+      "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+      "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+      "change_kind": "EXPRESSION",
+      "workspace_id": "workspace-91d6d7a2d32c4e90b106c12793a93616",
+      "manifest_digest": "sha256:7cd1000a08fbf8a2ea2af6d620687a6bad94a6fcf561dc717e0e427ce4be993a",
+      "contract_version": "book-manuscript-edition.v1",
+      "base_manifest_digest": "sha256:c300264e840f59aa9f6710cac5ceeabbd59083d53cd0c762a6bff27ca7794679",
+      "removed_source_ranges": [],
+      "publication_authorized": false
+    },
+    "content_hash": "sha256:9ac9875c6df04589d2d3283e7d25a369ea46ec028ce13803087288489f3ae118"
+  },
+  "reviewed": {
+    "created_at": "2026-09-27T05:02:34.237239+00:00",
+    "edition_id": "edition:d967356e-263c-4820-b261-032c1803c6a7",
+    "revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+    "manifest_digest": "sha256:82dc773b9b321364702f42b4eb1d10eec777997b496329544a28708060bd7c40",
+    "revision_number": 1,
+    "base_revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f",
+    "created_by_operation_id": "65efa962-2582-4060-87e5-c220c918430c",
+    "predecessor_revision_id": null,
+    "edition": {
+      "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+      "version": 1,
+      "created_at": "2026-09-27T05:02:34.237239+00:00",
+      "edition_id": "edition:d967356e-263c-4820-b261-032c1803c6a7",
+      "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+      "workspace_id": "workspace-91d6d7a2d32c4e90b106c12793a93616",
+      "source_book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+      "current_revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+      "created_by_operation_id": "65efa962-2582-4060-87e5-c220c918430c"
+    },
+    "manifest": {
+      "units": [
+        {
+          "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 1: The Door Closes",
+          "unit_id": "chapter:chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+          "text_hash": "sha256:8f34cb81b8885702a2af84a88bc5c83e1bc753a264325574120ad61938910b50",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:action",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:integration",
+              "scene_id": "chapter:1:scene:1"
+            }
+          ],
+          "source_ranges": [
+            {
+              "end": 589,
+              "start": 0,
+              "text_hash": "sha256:8f34cb81b8885702a2af84a88bc5c83e1bc753a264325574120ad61938910b50",
+              "asset_hash": "sha256:47f565fbf591e76547e563a603db4956d8fd672d89b057099af5f5cc56bc050b",
+              "asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1"
+            }
+          ],
+          "scene_artifacts": [
+            {
+              "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:1:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:1:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "scene_separators": null,
+          "source_acceptance_ids": [
+            "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980"
+          ],
+          "chapter_plan_asset_version_id": "9d8ac6d5-a5b3-4061-887d-057c8ca84a61"
+        },
+        {
+          "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}. 风声掠过檐角，话音却很稳。\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 2: The Door Closes",
+          "unit_id": "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+          "text_hash": "sha256:8a14674bf545c2563a8779a0dacdb097fd6aeced609bf14346e3e65aa1671a68",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:action",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:integration",
+              "scene_id": "chapter:2:scene:1"
+            }
+          ],
+          "source_ranges": [
+            {
+              "end": 725,
+              "start": 0,
+              "text_hash": "sha256:8a14674bf545c2563a8779a0dacdb097fd6aeced609bf14346e3e65aa1671a68",
+              "asset_hash": "sha256:70845356bc9dbe9ae583b88efd04d9ee9d2bc8833d017d52ea78a0436bceefe9",
+              "asset_version_id": "authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1"
+            }
+          ],
+          "scene_artifacts": [
+            {
+              "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}. 风声掠过檐角，话音却很稳。",
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:2:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:2:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "scene_separators": null,
+          "source_acceptance_ids": [
+            "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0"
+          ],
+          "chapter_plan_asset_version_id": "a0695a83-2f13-4355-bf3a-8169267b010b"
+        }
+      ],
+      "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+      "sources": [
+        {
+          "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 1: The Door Closes",
+          "unit_id": "chapter:chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+          "asset_hash": "sha256:47f565fbf591e76547e563a603db4956d8fd672d89b057099af5f5cc56bc050b",
+          "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:action",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:integration",
+              "scene_id": "chapter:1:scene:1"
+            }
+          ],
+          "chapter_number": 1,
+          "scene_artifacts": [
+            {
+              "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:1:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:1:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+          "scene_separators": null,
+          "projection_set_id": "longform-projection:b9ddfa2aa9bb2c1098c47d1bdf50a7e6962e4d453e366c6be79ace8d96de11dc",
+          "relation_evidence": [
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:86330f3f7e9b85b2258b7a3ce56a598e937dd6a114f975e3d24b6f7b3dc1b5ee",
+              "references": [
+                "canon_fact:subject=protagonist|predicate=gave_up",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:86330f3f7e9b85b2258b7a3ce56a598e937dd6a114f975e3d24b6f7b3dc1b5ee"
+              ],
+              "state_kind": "canon_fact"
+            },
+            {
+              "end": 426,
+              "start": 360,
+              "event_id": "narrative-event:sha256:c0ea40c32fe09461ad169009dd1f65a445e3dfa0dd62be659a20000731414c36",
+              "references": [
+                "character:mara",
+                "character_state:character_id=mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:c0ea40c32fe09461ad169009dd1f65a445e3dfa0dd62be659a20000731414c36"
+              ],
+              "state_kind": "character_state"
+            },
+            {
+              "end": 467,
+              "start": 427,
+              "event_id": "narrative-event:sha256:6b4434bccd2102ddd2d101ce35caf47c776c91cdc750ccb832d886ac1cf0339d",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:6b4434bccd2102ddd2d101ce35caf47c776c91cdc750ccb832d886ac1cf0339d",
+                "relationship_state:source_id=mara|target_id=ilya"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 511,
+              "start": 468,
+              "event_id": "narrative-event:sha256:6789503911d49f3ece6762ae9c68aa90ed22bac5b03104a39c621d56c169de9f",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:6789503911d49f3ece6762ae9c68aa90ed22bac5b03104a39c621d56c169de9f",
+                "relationship_state:source_id=ilya|target_id=mara"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:7f81f3f5b23ab6300ee9da144a87528f784350980287d624d05c7e38b4da8f70",
+              "references": [
+                "character:protagonist",
+                "character_arc:character_id=protagonist|arc_id=character-arc:accountability",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:7f81f3f5b23ab6300ee9da144a87528f784350980287d624d05c7e38b4da8f70"
+              ],
+              "state_kind": "character_arc"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:7b6e93c385f0e76f14f7a1e1127bcf0e98e3d20ee14c7df0fbd50424e0c81044",
+              "references": [
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:7b6e93c385f0e76f14f7a1e1127bcf0e98e3d20ee14c7df0fbd50424e0c81044",
+                "proposition:fact:hidden-cost",
+                "reader_knowledge:fact_id=fact:hidden-cost"
+              ],
+              "state_kind": "reader_knowledge"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:57166c7da467ed75c6ba2a74090d8e5cd6b34005b3fe609935d29d82bf408441",
+              "references": [
+                "disclosure_event:disclosure_id=disclosure:hidden-cost:chapter:1",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:57166c7da467ed75c6ba2a74090d8e5cd6b34005b3fe609935d29d82bf408441",
+                "proposition:fact:hidden-cost"
+              ],
+              "state_kind": "disclosure_event"
+            },
+            {
+              "end": 196,
+              "start": 120,
+              "event_id": "narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+              "references": [
+                "event:fixture-initial:mara:observed",
+                "event:foundation:fixture:project-91d6d7a2d32c4e90b106c12793a93616:foundation:creative_foundation:selected:v1",
+                "event:narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+                "world_state:council-inquiry",
+                "world_state:world_state_id=council-inquiry"
+              ],
+              "state_kind": "world_state"
+            },
+            {
+              "end": 426,
+              "start": 360,
+              "event_id": "narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+              "references": [
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+                "narrative_obligation:obligation_id=mara:protect-witnesses",
+                "obligation:mara:protect-witnesses"
+              ],
+              "state_kind": "narrative_obligation"
+            }
+          ],
+          "outcome_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+          "relation_evidence_coverage": {
+            "events": 10,
+            "indexed": 9,
+            "truncated": 0,
+            "unlocated": 1,
+            "invalid_location": 0
+          },
+          "story_state_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1",
+          "chapter_plan_asset_version_id": "9d8ac6d5-a5b3-4061-887d-057c8ca84a61",
+          "canon_snapshot_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+        },
+        {
+          "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}. 风声掠过檐角，话音却很稳。\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 2: The Door Closes",
+          "unit_id": "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+          "asset_hash": "sha256:70845356bc9dbe9ae583b88efd04d9ee9d2bc8833d017d52ea78a0436bceefe9",
+          "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:action",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:integration",
+              "scene_id": "chapter:2:scene:1"
+            }
+          ],
+          "chapter_number": 2,
+          "scene_artifacts": [
+            {
+              "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}. 风声掠过檐角，话音却很稳。",
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:2:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:2:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "asset_version_id": "authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+          "scene_separators": null,
+          "projection_set_id": "longform-projection:954d2621a124d24ff0284c5b302bb1c0c327d819c03cabc0a0a51cc826ff2b8e",
+          "relation_evidence": [
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:86559d57d96d27478c6d23dcf2dd2f4e3fd15f2c657a0f51b874b2ef3ce4fe0b",
+              "references": [
+                "canon_fact:subject=protagonist|predicate=gave_up",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:86559d57d96d27478c6d23dcf2dd2f4e3fd15f2c657a0f51b874b2ef3ce4fe0b"
+              ],
+              "state_kind": "canon_fact"
+            },
+            {
+              "end": 484,
+              "start": 374,
+              "event_id": "narrative-event:sha256:a0847b2be0749b79639d9e65d3930ab5b3e5557843cc489b9262e84b2caf1e45",
+              "references": [
+                "character:mara",
+                "character_state:character_id=mara",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:a0847b2be0749b79639d9e65d3930ab5b3e5557843cc489b9262e84b2caf1e45"
+              ],
+              "state_kind": "character_state"
+            },
+            {
+              "end": 525,
+              "start": 485,
+              "event_id": "narrative-event:sha256:de4c69465feb442527ec65ebc8fd9a6f390c5da5fe39e392949707217c018e91",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:de4c69465feb442527ec65ebc8fd9a6f390c5da5fe39e392949707217c018e91",
+                "relationship_state:source_id=mara|target_id=ilya"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 569,
+              "start": 526,
+              "event_id": "narrative-event:sha256:11cbe5d8b4fc11af76d8fcb81109a6fbcbdab6df1defb7ebbcc3efe84be560d8",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:11cbe5d8b4fc11af76d8fcb81109a6fbcbdab6df1defb7ebbcc3efe84be560d8",
+                "relationship_state:source_id=ilya|target_id=mara"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:f7f100c73c306bb90e730d932ca835659e981de78858a8b256e013d8ea15e8f8",
+              "references": [
+                "character:protagonist",
+                "character_arc:character_id=protagonist|arc_id=character-arc:accountability",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:f7f100c73c306bb90e730d932ca835659e981de78858a8b256e013d8ea15e8f8"
+              ],
+              "state_kind": "character_arc"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:ca1b5a547b964948b2c4f2de55c287a60297ef9ebbe0f9279c2fe51ae8949f75",
+              "references": [
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:ca1b5a547b964948b2c4f2de55c287a60297ef9ebbe0f9279c2fe51ae8949f75",
+                "proposition:fact:hidden-cost",
+                "reader_knowledge:fact_id=fact:hidden-cost"
+              ],
+              "state_kind": "reader_knowledge"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:dfcadc1eb24367ab4be55e069e65669e070c51c48c69676e9192d79d8a9b57fa",
+              "references": [
+                "disclosure_event:disclosure_id=disclosure:hidden-cost:chapter:2",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:dfcadc1eb24367ab4be55e069e65669e070c51c48c69676e9192d79d8a9b57fa",
+                "proposition:fact:hidden-cost"
+              ],
+              "state_kind": "disclosure_event"
+            },
+            {
+              "end": 196,
+              "start": 120,
+              "event_id": "narrative-event:sha256:d0fd81cd11f18e77eb8153ec97a131cde6d3b53e259bbc7c4738ceb401f998dc",
+              "references": [
+                "event:fixture-initial:mara:observed",
+                "event:foundation:fixture:project-91d6d7a2d32c4e90b106c12793a93616:foundation:creative_foundation:selected:v1",
+                "event:narrative-event:sha256:d0fd81cd11f18e77eb8153ec97a131cde6d3b53e259bbc7c4738ceb401f998dc",
+                "event:narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+                "world_state:council-inquiry",
+                "world_state:world_state_id=council-inquiry"
+              ],
+              "state_kind": "world_state"
+            },
+            {
+              "end": 484,
+              "start": 374,
+              "event_id": "narrative-event:sha256:4f33856fa5dd62960002d2d891272e89bfd6a6e19db9e9b3d82e686856caaf76",
+              "references": [
+                "character:mara",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:4f33856fa5dd62960002d2d891272e89bfd6a6e19db9e9b3d82e686856caaf76",
+                "narrative_obligation:obligation_id=mara:protect-witnesses",
+                "obligation:mara:protect-witnesses"
+              ],
+              "state_kind": "narrative_obligation"
+            }
+          ],
+          "outcome_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1",
+          "relation_evidence_coverage": {
+            "events": 10,
+            "indexed": 9,
+            "truncated": 0,
+            "unlocated": 1,
+            "invalid_location": 0
+          },
+          "story_state_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.story_state:v1",
+          "chapter_plan_asset_version_id": "a0695a83-2f13-4355-bf3a-8169267b010b",
+          "canon_snapshot_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.canon.current:v1"
+        }
+      ],
+      "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+      "book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+      "workspace_id": "workspace-91d6d7a2d32c4e90b106c12793a93616",
+      "manifest_digest": "sha256:82dc773b9b321364702f42b4eb1d10eec777997b496329544a28708060bd7c40",
+      "contract_version": "book-manuscript-edition.v1",
+      "review_result_origin": {
+        "candidate_revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f",
+        "validation_book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+        "accepted_manifest_digest": "sha256:455d7b06c11b4a361bfa74c3bdc43f12e28b3ae7286e6bb4fe652ae269b7355c",
+        "candidate_manifest_digest": "sha256:7cd1000a08fbf8a2ea2af6d620687a6bad94a6fcf561dc717e0e427ce4be993a"
+      },
+      "publication_authorized": false
+    },
+    "content_hash": "sha256:e53153e12ef1655b1ffa71b8599cc45b6859405b8a0f5cdbf8242c5af1229693"
+  },
+  "continued": {
+    "created_at": "2026-09-27T05:16:32.024926+00:00",
+    "edition_id": "edition:f03e8898-d59c-4eac-ab35-1a1bbe6ef9f6",
+    "revision_id": "74ab7bf6-ae69-4ff5-bcf7-ed09aa54b085",
+    "manifest_digest": "sha256:1bc86d01e19d10ea7a70c4f93a39e359643bface2f593013b8ee1d07cf78de6b",
+    "revision_number": 1,
+    "base_revision_id": null,
+    "created_by_operation_id": "187a149e-f971-4172-9dd0-dddbafc18dad",
+    "predecessor_revision_id": null,
+    "edition": {
+      "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+      "version": 1,
+      "created_at": "2026-09-27T05:16:32.024926+00:00",
+      "edition_id": "edition:f03e8898-d59c-4eac-ab35-1a1bbe6ef9f6",
+      "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+      "workspace_id": "workspace-91d6d7a2d32c4e90b106c12793a93616",
+      "source_book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+      "current_revision_id": "74ab7bf6-ae69-4ff5-bcf7-ed09aa54b085",
+      "created_by_operation_id": "187a149e-f971-4172-9dd0-dddbafc18dad"
+    },
+    "manifest": {
+      "units": [
+        {
+          "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 1: The Door Closes",
+          "unit_id": "chapter:chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+          "text_hash": "sha256:8f34cb81b8885702a2af84a88bc5c83e1bc753a264325574120ad61938910b50",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:action",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:integration",
+              "scene_id": "chapter:1:scene:1"
+            }
+          ],
+          "source_ranges": [
+            {
+              "end": 589,
+              "start": 0,
+              "text_hash": "sha256:8f34cb81b8885702a2af84a88bc5c83e1bc753a264325574120ad61938910b50",
+              "asset_hash": "sha256:47f565fbf591e76547e563a603db4956d8fd672d89b057099af5f5cc56bc050b",
+              "asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1"
+            }
+          ],
+          "scene_artifacts": [
+            {
+              "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:1:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:1:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "scene_separators": null,
+          "source_acceptance_ids": [
+            "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980"
+          ],
+          "chapter_plan_asset_version_id": "9d8ac6d5-a5b3-4061-887d-057c8ca84a61"
+        },
+        {
+          "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}. 风声掠过檐角，话音却很稳。\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 2: The Door Closes",
+          "unit_id": "chapter:chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+          "text_hash": "sha256:8a14674bf545c2563a8779a0dacdb097fd6aeced609bf14346e3e65aa1671a68",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:action",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:integration",
+              "scene_id": "chapter:2:scene:1"
+            }
+          ],
+          "source_ranges": [
+            {
+              "end": 725,
+              "start": 0,
+              "text_hash": "sha256:8a14674bf545c2563a8779a0dacdb097fd6aeced609bf14346e3e65aa1671a68",
+              "asset_hash": "sha256:70845356bc9dbe9ae583b88efd04d9ee9d2bc8833d017d52ea78a0436bceefe9",
+              "asset_version_id": "authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1"
+            }
+          ],
+          "scene_artifacts": [
+            {
+              "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}. 风声掠过檐角，话音却很稳。",
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:2:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:2:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "scene_separators": null,
+          "source_acceptance_ids": [
+            "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0"
+          ],
+          "chapter_plan_asset_version_id": "a0695a83-2f13-4355-bf3a-8169267b010b"
+        },
+        {
+          "text": "Chapter 3 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-3: {\"actor_step\": 3, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 3: The Door Closes",
+          "unit_id": "chapter:chapter-acceptance:e9fa30a63fbe088fcbff3b6309cbfde37159155952de0a9cf339403791781c76",
+          "text_hash": "sha256:ffe223e5988ecdeaf3e7fe64d25af124de221edb619c5cda66aaebc52a183b76",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:3:scene:1:skeleton",
+              "scene_id": "chapter:3:scene:1"
+            },
+            {
+              "slot_id": "chapter:3:scene:1:action",
+              "scene_id": "chapter:3:scene:1"
+            },
+            {
+              "slot_id": "chapter:3:scene:1:interior:protagonist",
+              "scene_id": "chapter:3:scene:1"
+            },
+            {
+              "slot_id": "chapter:3:scene:1:integration",
+              "scene_id": "chapter:3:scene:1"
+            }
+          ],
+          "source_ranges": [
+            {
+              "end": 633,
+              "start": 0,
+              "text_hash": "sha256:ffe223e5988ecdeaf3e7fe64d25af124de221edb619c5cda66aaebc52a183b76",
+              "asset_hash": "sha256:73c1d69987bb46a1e173ffbbee75099f7ac97737f475b11648203b2d70a01262",
+              "asset_version_id": "authority-output:4b9c8ed9-e212-4d45-a490-a236ad9c45bd:chapter.best_candidate:v1"
+            }
+          ],
+          "scene_artifacts": [
+            {
+              "text": "Chapter 3 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-3: {\"actor_step\": 3, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:3:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:3:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:3:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:3:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "scene_separators": null,
+          "source_acceptance_ids": [
+            "chapter-acceptance:e9fa30a63fbe088fcbff3b6309cbfde37159155952de0a9cf339403791781c76"
+          ],
+          "chapter_plan_asset_version_id": "650b180e-5fda-489c-87fc-b4d2f82dc0e8"
+        }
+      ],
+      "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+      "sources": [
+        {
+          "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 1: The Door Closes",
+          "asset_hash": "sha256:47f565fbf591e76547e563a603db4956d8fd672d89b057099af5f5cc56bc050b",
+          "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:action",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "scene_id": "chapter:1:scene:1"
+            },
+            {
+              "slot_id": "chapter:1:scene:1:integration",
+              "scene_id": "chapter:1:scene:1"
+            }
+          ],
+          "chapter_number": 1,
+          "scene_artifacts": [
+            {
+              "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-1: {\"actor_step\": 1, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:1:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:1:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:1:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara promises to protect the witnesses until they reach sanctuary. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:1:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+          "scene_separators": null,
+          "projection_set_id": "longform-projection:b9ddfa2aa9bb2c1098c47d1bdf50a7e6962e4d453e366c6be79ace8d96de11dc",
+          "relation_evidence": [
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:86330f3f7e9b85b2258b7a3ce56a598e937dd6a114f975e3d24b6f7b3dc1b5ee",
+              "references": [
+                "canon_fact:subject=protagonist|predicate=gave_up",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:86330f3f7e9b85b2258b7a3ce56a598e937dd6a114f975e3d24b6f7b3dc1b5ee"
+              ],
+              "state_kind": "canon_fact"
+            },
+            {
+              "end": 426,
+              "start": 360,
+              "event_id": "narrative-event:sha256:c0ea40c32fe09461ad169009dd1f65a445e3dfa0dd62be659a20000731414c36",
+              "references": [
+                "character:mara",
+                "character_state:character_id=mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:c0ea40c32fe09461ad169009dd1f65a445e3dfa0dd62be659a20000731414c36"
+              ],
+              "state_kind": "character_state"
+            },
+            {
+              "end": 467,
+              "start": 427,
+              "event_id": "narrative-event:sha256:6b4434bccd2102ddd2d101ce35caf47c776c91cdc750ccb832d886ac1cf0339d",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:6b4434bccd2102ddd2d101ce35caf47c776c91cdc750ccb832d886ac1cf0339d",
+                "relationship_state:source_id=mara|target_id=ilya"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 511,
+              "start": 468,
+              "event_id": "narrative-event:sha256:6789503911d49f3ece6762ae9c68aa90ed22bac5b03104a39c621d56c169de9f",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:6789503911d49f3ece6762ae9c68aa90ed22bac5b03104a39c621d56c169de9f",
+                "relationship_state:source_id=ilya|target_id=mara"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:7f81f3f5b23ab6300ee9da144a87528f784350980287d624d05c7e38b4da8f70",
+              "references": [
+                "character:protagonist",
+                "character_arc:character_id=protagonist|arc_id=character-arc:accountability",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:7f81f3f5b23ab6300ee9da144a87528f784350980287d624d05c7e38b4da8f70"
+              ],
+              "state_kind": "character_arc"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:7b6e93c385f0e76f14f7a1e1127bcf0e98e3d20ee14c7df0fbd50424e0c81044",
+              "references": [
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:7b6e93c385f0e76f14f7a1e1127bcf0e98e3d20ee14c7df0fbd50424e0c81044",
+                "proposition:fact:hidden-cost",
+                "reader_knowledge:fact_id=fact:hidden-cost"
+              ],
+              "state_kind": "reader_knowledge"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:57166c7da467ed75c6ba2a74090d8e5cd6b34005b3fe609935d29d82bf408441",
+              "references": [
+                "disclosure_event:disclosure_id=disclosure:hidden-cost:chapter:1",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:57166c7da467ed75c6ba2a74090d8e5cd6b34005b3fe609935d29d82bf408441",
+                "proposition:fact:hidden-cost"
+              ],
+              "state_kind": "disclosure_event"
+            },
+            {
+              "end": 196,
+              "start": 120,
+              "event_id": "narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+              "references": [
+                "event:fixture-initial:mara:observed",
+                "event:foundation:fixture:project-91d6d7a2d32c4e90b106c12793a93616:foundation:creative_foundation:selected:v1",
+                "event:narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+                "world_state:council-inquiry",
+                "world_state:world_state_id=council-inquiry"
+              ],
+              "state_kind": "world_state"
+            },
+            {
+              "end": 426,
+              "start": 360,
+              "event_id": "narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+              "references": [
+                "character:mara",
+                "event:authority-output:5170f62c-cb5e-480a-a082-c907aeb07525:chapter.canon:v1",
+                "event:authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+                "narrative_obligation:obligation_id=mara:protect-witnesses",
+                "obligation:mara:protect-witnesses"
+              ],
+              "state_kind": "narrative_obligation"
+            }
+          ],
+          "outcome_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+          "relation_evidence_coverage": {
+            "events": 10,
+            "indexed": 9,
+            "truncated": 0,
+            "unlocated": 1,
+            "invalid_location": 0
+          },
+          "story_state_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1",
+          "chapter_plan_asset_version_id": "9d8ac6d5-a5b3-4061-887d-057c8ca84a61",
+          "canon_snapshot_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+        },
+        {
+          "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}. 风声掠过檐角，话音却很稳。\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 2: The Door Closes",
+          "asset_hash": "sha256:70845356bc9dbe9ae583b88efd04d9ee9d2bc8833d017d52ea78a0436bceefe9",
+          "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:action",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "scene_id": "chapter:2:scene:1"
+            },
+            {
+              "slot_id": "chapter:2:scene:1:integration",
+              "scene_id": "chapter:2:scene:1"
+            }
+          ],
+          "chapter_number": 2,
+          "scene_artifacts": [
+            {
+              "text": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-2: {\"actor_step\": 2, \"status\": \"OPEN\"}. 风声掠过檐角，话音却很稳。",
+              "slot_id": "chapter:2:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:2:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:2:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:2:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "asset_version_id": "authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+          "scene_separators": null,
+          "projection_set_id": "longform-projection:954d2621a124d24ff0284c5b302bb1c0c327d819c03cabc0a0a51cc826ff2b8e",
+          "relation_evidence": [
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:86559d57d96d27478c6d23dcf2dd2f4e3fd15f2c657a0f51b874b2ef3ce4fe0b",
+              "references": [
+                "canon_fact:subject=protagonist|predicate=gave_up",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:86559d57d96d27478c6d23dcf2dd2f4e3fd15f2c657a0f51b874b2ef3ce4fe0b"
+              ],
+              "state_kind": "canon_fact"
+            },
+            {
+              "end": 484,
+              "start": 374,
+              "event_id": "narrative-event:sha256:a0847b2be0749b79639d9e65d3930ab5b3e5557843cc489b9262e84b2caf1e45",
+              "references": [
+                "character:mara",
+                "character_state:character_id=mara",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:a0847b2be0749b79639d9e65d3930ab5b3e5557843cc489b9262e84b2caf1e45"
+              ],
+              "state_kind": "character_state"
+            },
+            {
+              "end": 525,
+              "start": 485,
+              "event_id": "narrative-event:sha256:de4c69465feb442527ec65ebc8fd9a6f390c5da5fe39e392949707217c018e91",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:de4c69465feb442527ec65ebc8fd9a6f390c5da5fe39e392949707217c018e91",
+                "relationship_state:source_id=mara|target_id=ilya"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 569,
+              "start": 526,
+              "event_id": "narrative-event:sha256:11cbe5d8b4fc11af76d8fcb81109a6fbcbdab6df1defb7ebbcc3efe84be560d8",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:11cbe5d8b4fc11af76d8fcb81109a6fbcbdab6df1defb7ebbcc3efe84be560d8",
+                "relationship_state:source_id=ilya|target_id=mara"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:f7f100c73c306bb90e730d932ca835659e981de78858a8b256e013d8ea15e8f8",
+              "references": [
+                "character:protagonist",
+                "character_arc:character_id=protagonist|arc_id=character-arc:accountability",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:f7f100c73c306bb90e730d932ca835659e981de78858a8b256e013d8ea15e8f8"
+              ],
+              "state_kind": "character_arc"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:ca1b5a547b964948b2c4f2de55c287a60297ef9ebbe0f9279c2fe51ae8949f75",
+              "references": [
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:ca1b5a547b964948b2c4f2de55c287a60297ef9ebbe0f9279c2fe51ae8949f75",
+                "proposition:fact:hidden-cost",
+                "reader_knowledge:fact_id=fact:hidden-cost"
+              ],
+              "state_kind": "reader_knowledge"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:dfcadc1eb24367ab4be55e069e65669e070c51c48c69676e9192d79d8a9b57fa",
+              "references": [
+                "disclosure_event:disclosure_id=disclosure:hidden-cost:chapter:2",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:dfcadc1eb24367ab4be55e069e65669e070c51c48c69676e9192d79d8a9b57fa",
+                "proposition:fact:hidden-cost"
+              ],
+              "state_kind": "disclosure_event"
+            },
+            {
+              "end": 196,
+              "start": 120,
+              "event_id": "narrative-event:sha256:d0fd81cd11f18e77eb8153ec97a131cde6d3b53e259bbc7c4738ceb401f998dc",
+              "references": [
+                "event:fixture-initial:mara:observed",
+                "event:foundation:fixture:project-91d6d7a2d32c4e90b106c12793a93616:foundation:creative_foundation:selected:v1",
+                "event:narrative-event:sha256:d0fd81cd11f18e77eb8153ec97a131cde6d3b53e259bbc7c4738ceb401f998dc",
+                "event:narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93",
+                "world_state:council-inquiry",
+                "world_state:world_state_id=council-inquiry"
+              ],
+              "state_kind": "world_state"
+            },
+            {
+              "end": 484,
+              "start": 374,
+              "event_id": "narrative-event:sha256:4f33856fa5dd62960002d2d891272e89bfd6a6e19db9e9b3d82e686856caaf76",
+              "references": [
+                "character:mara",
+                "event:authority-output:07842eb9-538c-4fa2-922b-2a48cd832453:chapter.canon:v1",
+                "event:authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+                "event:narrative-event:sha256:4f33856fa5dd62960002d2d891272e89bfd6a6e19db9e9b3d82e686856caaf76",
+                "narrative_obligation:obligation_id=mara:protect-witnesses",
+                "obligation:mara:protect-witnesses"
+              ],
+              "state_kind": "narrative_obligation"
+            }
+          ],
+          "outcome_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1",
+          "relation_evidence_coverage": {
+            "events": 10,
+            "indexed": 9,
+            "truncated": 0,
+            "unlocated": 1,
+            "invalid_location": 0
+          },
+          "story_state_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.story_state:v1",
+          "chapter_plan_asset_version_id": "a0695a83-2f13-4355-bf3a-8169267b010b",
+          "canon_snapshot_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.canon.current:v1"
+        },
+        {
+          "text": "Chapter 3 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-3: {\"actor_step\": 3, \"status\": \"OPEN\"}.\n\nThe scene carries its action contribution forward.\n\nThe scene carries its interior contribution forward.\n\nThe scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+          "title": "Chapter 3: The Door Closes",
+          "asset_hash": "sha256:73c1d69987bb46a1e173ffbbee75099f7ac97737f475b11648203b2d70a01262",
+          "acceptance_id": "chapter-acceptance:e9fa30a63fbe088fcbff3b6309cbfde37159155952de0a9cf339403791781c76",
+          "scene_mapping": [
+            {
+              "slot_id": "chapter:3:scene:1:skeleton",
+              "scene_id": "chapter:3:scene:1"
+            },
+            {
+              "slot_id": "chapter:3:scene:1:action",
+              "scene_id": "chapter:3:scene:1"
+            },
+            {
+              "slot_id": "chapter:3:scene:1:interior:protagonist",
+              "scene_id": "chapter:3:scene:1"
+            },
+            {
+              "slot_id": "chapter:3:scene:1:integration",
+              "scene_id": "chapter:3:scene:1"
+            }
+          ],
+          "chapter_number": 3,
+          "scene_artifacts": [
+            {
+              "text": "Chapter 3 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. mara performs preparation actor-step-3: {\"actor_step\": 3, \"status\": \"OPEN\"}.",
+              "slot_id": "chapter:3:scene:1:skeleton",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its action contribution forward.",
+              "slot_id": "chapter:3:scene:1:action",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its interior contribution forward.",
+              "slot_id": "chapter:3:scene:1:interior:protagonist",
+              "used_fact_ids": []
+            },
+            {
+              "text": "The scene carries its integration contribution forward. Mara carries out the same promise by delivering their testimony, while the witnesses still await safe passage. Mara trusts Ilya to guard the witnesses. Ilya privately still doubts Mara's caution. The protagonist gives up the only safe route home before the witnesses leave.",
+              "slot_id": "chapter:3:scene:1:integration",
+              "used_fact_ids": []
+            }
+          ],
+          "asset_version_id": "authority-output:4b9c8ed9-e212-4d45-a490-a236ad9c45bd:chapter.best_candidate:v1",
+          "scene_separators": null,
+          "projection_set_id": "longform-projection:19f0d3d57b7dc390ec9b983b97c7f93c13142565f79661cdd07e8c63da5c0fc5",
+          "relation_evidence": [
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:505017781b34568819301fe8a6d397617ba90ac043f36a5cf6983968ceadb588",
+              "references": [
+                "canon_fact:subject=protagonist|predicate=gave_up",
+                "event:authority-output:4b9c8ed9-e212-4d45-a490-a236ad9c45bd:chapter.best_candidate:v1",
+                "event:authority-output:dbc9f07b-fc70-4c45-b04b-7d9d6fae5ab5:chapter.canon:v1",
+                "event:narrative-event:sha256:505017781b34568819301fe8a6d397617ba90ac043f36a5cf6983968ceadb588"
+              ],
+              "state_kind": "canon_fact"
+            },
+            {
+              "end": 470,
+              "start": 360,
+              "event_id": "narrative-event:sha256:26401f8ef79ecca0285cd56fa8e145706eb1a437e7bbaf066c7a439f122fb444",
+              "references": [
+                "character:mara",
+                "character_state:character_id=mara",
+                "event:authority-output:4b9c8ed9-e212-4d45-a490-a236ad9c45bd:chapter.best_candidate:v1",
+                "event:authority-output:dbc9f07b-fc70-4c45-b04b-7d9d6fae5ab5:chapter.canon:v1",
+                "event:narrative-event:sha256:26401f8ef79ecca0285cd56fa8e145706eb1a437e7bbaf066c7a439f122fb444"
+              ],
+              "state_kind": "character_state"
+            },
+            {
+              "end": 511,
+              "start": 471,
+              "event_id": "narrative-event:sha256:c806ae3037e7fc778a874cdd26314bb3ebaeb335eda39f2cfc671b2fbe8d110c",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:4b9c8ed9-e212-4d45-a490-a236ad9c45bd:chapter.best_candidate:v1",
+                "event:authority-output:dbc9f07b-fc70-4c45-b04b-7d9d6fae5ab5:chapter.canon:v1",
+                "event:narrative-event:sha256:c806ae3037e7fc778a874cdd26314bb3ebaeb335eda39f2cfc671b2fbe8d110c",
+                "relationship_state:source_id=mara|target_id=ilya"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 555,
+              "start": 512,
+              "event_id": "narrative-event:sha256:b53c339f970ee6c2641116b96cf1eac0243ec0584a3a761bf9c5db9ad6cc11f7",
+              "references": [
+                "character:ilya",
+                "character:mara",
+                "event:authority-output:4b9c8ed9-e212-4d45-a490-a236ad9c45bd:chapter.best_candidate:v1",
+                "event:authority-output:dbc9f07b-fc70-4c45-b04b-7d9d6fae5ab5:chapter.canon:v1",
+                "event:narrative-event:sha256:b53c339f970ee6c2641116b96cf1eac0243ec0584a3a761bf9c5db9ad6cc11f7",
+                "relationship_state:source_id=ilya|target_id=mara"
+              ],
+              "state_kind": "relationship_state"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:654a7b55f6c8dae68298a8126a355beb060b8c88913704ec0efed29b689f99b7",
+              "references": [
+                "character:protagonist",
+                "character_arc:character_id=protagonist|arc_id=character-arc:accountability",
+                "event:authority-output:4b9c8ed9-e212-4d45-a490-a236ad9c45bd:chapter.best_candidate:v1",
+                "event:authority-output:dbc9f07b-fc70-4c45-b04b-7d9d6fae5ab5:chapter.canon:v1",
+                "event:narrative-event:sha256:654a7b55f6c8dae68298a8126a355beb060b8c88913704ec0efed29b689f99b7"
+              ],
+              "state_kind": "character_arc"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:eceab956cbfeeca722987350ee0448261afefeefb60e0bbbdc8ad58ec2e5df73",
+              "references": [
+                "event:authority-output:4b9c8ed9-e212-4d45-a490-a236ad9c45bd:chapter.best_candidate:v1",
+                "event:authority-output:dbc9f07b-fc70-4c45-b04b-7d9d6fae5ab5:chapter.canon:v1",
+                "event:narrative-event:sha256:eceab956cbfeeca722987350ee0448261afefeefb60e0bbbdc8ad58ec2e5df73",
+                "proposition:fact:hidden-cost",
+                "reader_knowledge:fact_id=fact:hidden-cost"
+              ],
+              "state_kind": "reader_knowledge"
+            },
+            {
+              "end": 40,
+              "start": 0,
+              "event_id": "narrative-event:sha256:01ff3f41dd16feb22291a2bb1d495af349f0374ddf4487ab30ee2df3b963f226",
+              "references": [
+                "disclosure_event:disclosure_id=disclosure:hidden-cost:chapter:3",
+                "event:authority-output:4b9c8ed9-e212-4d45-a490-a236ad9c45bd:chapter.best_candidate:v1",
+                "event:authority-output:dbc9f07b-fc70-4c45-b04b-7d9d6fae5ab5:chapter.canon:v1",
+                "event:narrative-event:sha256:01ff3f41dd16feb22291a2bb1d495af349f0374ddf4487ab30ee2df3b963f226",
+                "proposition:fact:hidden-cost"
+              ],
+              "state_kind": "disclosure_event"
+            },
+            {
+              "end": 196,
+              "start": 120,
+              "event_id": "narrative-event:sha256:11b291399e9626c6a8a2d38eeb749f2f9ab196713eb575a8413be3c71a06e9ec",
+              "references": [
+                "event:fixture-initial:mara:observed",
+                "event:foundation:fixture:project-91d6d7a2d32c4e90b106c12793a93616:foundation:creative_foundation:selected:v1",
+                "event:narrative-event:sha256:11b291399e9626c6a8a2d38eeb749f2f9ab196713eb575a8413be3c71a06e9ec",
+                "event:narrative-event:sha256:4f33856fa5dd62960002d2d891272e89bfd6a6e19db9e9b3d82e686856caaf76",
+                "world_state:council-inquiry",
+                "world_state:world_state_id=council-inquiry"
+              ],
+              "state_kind": "world_state"
+            },
+            {
+              "end": 470,
+              "start": 360,
+              "event_id": "narrative-event:sha256:ab005d29fc2fad672c32ec3b5225d1cbc8d9446145638116001d70e080865559",
+              "references": [
+                "character:mara",
+                "event:authority-output:4b9c8ed9-e212-4d45-a490-a236ad9c45bd:chapter.best_candidate:v1",
+                "event:authority-output:dbc9f07b-fc70-4c45-b04b-7d9d6fae5ab5:chapter.canon:v1",
+                "event:narrative-event:sha256:ab005d29fc2fad672c32ec3b5225d1cbc8d9446145638116001d70e080865559",
+                "narrative_obligation:obligation_id=mara:protect-witnesses",
+                "obligation:mara:protect-witnesses"
+              ],
+              "state_kind": "narrative_obligation"
+            }
+          ],
+          "outcome_asset_version_id": "authority-output:6cea533f-4a24-41dd-8d74-cdba2b1d8709:chapter.outcome:v1",
+          "relation_evidence_coverage": {
+            "events": 10,
+            "indexed": 9,
+            "truncated": 0,
+            "unlocated": 1,
+            "invalid_location": 0
+          },
+          "story_state_asset_version_id": "authority-output:6cea533f-4a24-41dd-8d74-cdba2b1d8709:chapter.story_state:v1",
+          "chapter_plan_asset_version_id": "650b180e-5fda-489c-87fc-b4d2f82dc0e8",
+          "canon_snapshot_asset_version_id": "authority-output:6cea533f-4a24-41dd-8d74-cdba2b1d8709:chapter.canon.current:v1"
+        }
+      ],
+      "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+      "book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+      "workspace_id": "workspace-91d6d7a2d32c4e90b106c12793a93616",
+      "manifest_digest": "sha256:1bc86d01e19d10ea7a70c4f93a39e359643bface2f593013b8ee1d07cf78de6b",
+      "contract_version": "book-manuscript-edition.v1",
+      "publication_authorized": false
+    },
+    "content_hash": "sha256:e92228b8d9b4d9cffac5921df5fbd7666d01b7dff8f2638c6488491a9efeef2b"
+  }
+}

@@ -114,6 +114,9 @@ _STAGES = frozenset(
         "quality_platform",
         "reader_outcome",
         "longform_prose_review",
+        "screenplay_generate",
+        "screenplay_review",
+        "screenplay_revision",
         "narrative_semantic_evaluation",
     }
 )
@@ -148,6 +151,9 @@ _STAGE_CAPABILITIES = {
     "quality_platform": CapabilityId.QUALITY_PLATFORM_JUDGE,
     "reader_outcome": CapabilityId.QUALITY_READER_OUTCOME_JUDGE,
     "longform_prose_review": CapabilityId.REVIEW_CHAPTER_EVALUATE,
+    "screenplay_generate": CapabilityId.PROSE_CHAPTER_DRAFT,
+    "screenplay_review": CapabilityId.REVIEW_CHAPTER_EVALUATE,
+    "screenplay_revision": CapabilityId.REVISION_CHAPTER_REVISE,
     "narrative_semantic_evaluation": CapabilityId.QUALITY_INTRINSIC_JUDGE,
     "agent_session": CapabilityId.AGENT_WORKSPACE_EXECUTE,
     "retrieval": CapabilityId.RETRIEVAL_EMBED,
@@ -402,6 +408,9 @@ def _provider_effective_context_policy(
         "novelos.reader_outcome_context_bundle.v1": "reader_outcome",
         "novelos.reader_outcome_context_bundle.v2": "reader_outcome",
         "novelos.longform_prose_review_context_bundle.v2": "longform_prose_review",
+        "novelos.screenplay_generate_context_bundle.v1": "screenplay_generate",
+        "novelos.screenplay_review_context_bundle.v1": "screenplay_review",
+        "novelos.screenplay_revision_context_bundle.v1": "screenplay_revision",
     }.get(typed_schema)
     if typed_stage and not isinstance(manifest, Mapping):
         provider_view = build_provider_context_view(typed_stage, content, {})
@@ -1116,6 +1125,13 @@ class PostgresChapterExecutionContractBinder:
         )
         schema = chapter_provider_output_schema(stage, causal_batch=causal_batch)
         schema_ref = chapter_provider_output_schema_ref(stage, causal_batch=causal_batch)
+        if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
+            from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
+            contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")
+            if contract not in {"screenplay-source.v1", "screenplay-source.v2"}:
+                raise KernelError("SCREENPLAY_SOURCE_CONTRACT_UNSUPPORTED", "Provider schema requires the exact frozen source contract")
+            schema = screenplay_output_schema(stage, craft=contract == "screenplay-source.v2")
+            schema_ref = "schema:chapter-provider-output:" + stage + (":v2" if contract == "screenplay-source.v2" else ":v1")
         if inputs.get("cross_chapter_window") or (stage == "revision" and inputs.get("required_actions") is None and (inputs.get("review") or {}).get("cross_chapter_window")):
             from novel_forge.modules.review.cross_chapter import extend_provider_schema
             schema, schema_ref = extend_provider_schema(schema, stage), f"schema:chapter-provider-output:{stage}:cross-chapter-v2"
@@ -1131,8 +1147,9 @@ class PostgresChapterExecutionContractBinder:
             from novel_forge.modules.review.craft import craft_review_targets, extend_craft_provider_schema
             candidate = inputs.get("revision") or inputs.get("draft") or {}
             if craft_review_targets(candidate) and not (stage == "revision" and inputs.get("required_actions") is not None):
-                schema = extend_craft_provider_schema(schema, stage)
-                schema_ref += ":narrative-craft-v1"
+                phase_transitions = any(target.get("usage", {}).get("type_policy", {}).get("transition_policy") for target in craft_review_targets(candidate))
+                schema = extend_craft_provider_schema(schema, stage, phase_transitions=phase_transitions)
+                schema_ref += ":narrative-craft-v2" if phase_transitions else ":narrative-craft-v1"
         return schema, schema_ref
 
     def bind(
@@ -1417,7 +1434,11 @@ class PostgresChapterExecutionContractBinder:
             policy_id=definition.commit_policy_ref,
             policy_version="v1",
             candidate_asset_type=(
-                "generation_candidate"
+                "screenplay_review_candidate"
+                if stage == "screenplay_review"
+                else "screenplay_candidate"
+                if stage in {"screenplay_generate", "screenplay_revision"}
+                else "generation_candidate"
                 if stage == "draft"
                 else "revision_candidate"
                 if stage == "revision"
@@ -1986,6 +2007,17 @@ class PostgresChapterExecutionContractBinder:
                 if snapshot is None or snapshot["authorization"]["purpose"] != "REFERENCE_EVALUATION" or not row or row[0].get("generator_operation_name") != reference_stage:
                     raise KernelError("CHAPTER_CAPABILITY_CONTEXT_INVALID", "sample inputs require the exact native reference evaluation grant")
                 reference_target = require_chapter_sample_target(uow.cursor, project_id=project_id, payload=row[0])
+        if any(item.artifact_type == "screenplay_provider_sample" for item in artifacts):
+            from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
+            from novel_forge.modules.book_followup_authority.screenplay_sampling import validate_screenplay_sample_origin
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                snapshot = load_bootstrap_authorization(uow.cursor, project_id=project_id, operation_id=reference_operation_id, check_expiry=False)
+                uow.cursor.execute("SELECT command_payload->'payload' FROM authority_operation WHERE project_id=%s AND operation_id=%s", [project_id, reference_operation_id])
+                row = uow.cursor.fetchone()
+                if not snapshot or not row or row[0].get("generator_operation_name") != reference_stage:
+                    raise KernelError("SCREENPLAY_SAMPLE_INVALID", "Only the exact authorized native sample stage may consume a sample")
+                reference_target = validate_screenplay_sample_origin(uow.cursor, project_id=project_id, payload=row[0])["upstream"]
         selected: list[dict[str, Any]] = []
         for pointer in artifacts:
             document = self.query.require(

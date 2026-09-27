@@ -44,6 +44,13 @@ def create_attempt(
             operation_id,
             project_id,
         )
+        from .dispatch_control import require_dispatch_enabled
+        uow.cursor.execute("""SELECT definition.external_capabilities FROM authority_operation op JOIN authority_operation_definition definition
+            ON definition.name=op.definition_name AND definition.definition_version=op.definition_version
+            WHERE op.operation_id=%s AND op.project_id=%s""", [operation_id, project_id])
+        capabilities = uow.cursor.fetchone()
+        if capabilities and any(str(value).startswith("model.") for value in capabilities[0]):
+            require_dispatch_enabled(uow.cursor, project_id)
         if uow.repositories.cancellations.active_attempt(operation_id) is not None:
             raise KernelError(
                 "ATTEMPT_ALREADY_ACTIVE",
@@ -163,6 +170,11 @@ def acquire_attempt_lease(
                 attempt_id,
                 project_id,
             )
+            if attempt["status"] == "CHECKPOINTED":
+                uow.cursor.execute("SELECT checkpoint->>'reason' FROM authority_attempt WHERE attempt_id=%s", [attempt_id])
+                if uow.cursor.fetchone()[0] == "runtime_dispatch_paused":
+                    from .dispatch_control import require_dispatch_enabled
+                    require_dispatch_enabled(uow.cursor, project_id)
             lease = uow.repositories.attempt_runtime.acquire_lease(
                 str(uuid4()),
                 attempt_id,
@@ -218,6 +230,19 @@ def checkpoint_attempt(
         "CHECKPOINTED",
         checkpoint=checkpoint,
     )
+
+
+def checkpoint_attempt_for_dispatch_pause(database_url: str, command: WorkerLeaseCommand) -> None:
+    with AuthorityUnitOfWork(database_url) as uow:
+        attempt = uow.repositories.attempt_runtime.get_for_update(command.attempt_id, command.project_id)
+        valid, _ = uow.repositories.attempt_runtime.current_fence(command.attempt_id, command.worker_id, command.fencing_token)
+        if not valid:
+            raise KernelError("ATTEMPT_FENCING_TOKEN_STALE", "Dispatch pause requires the current Attempt fence")
+        if attempt["status"] == "RUNNING":
+            _transition_attempt(uow, attempt, "CHECKPOINTED", worker_id=command.worker_id, fencing_token=command.fencing_token,
+                trace_id=command.trace_id, correlation_id=command.correlation_id, checkpoint={"reason": "runtime_dispatch_paused", "external_outcome": "NOT_INFERRED"})
+        uow.repositories.attempt_runtime.release(command.attempt_id, command.worker_id, command.fencing_token, "runtime_dispatch_paused")
+        uow.commit()
 
 
 def checkpoint_attempt_for_external_reconciliation(

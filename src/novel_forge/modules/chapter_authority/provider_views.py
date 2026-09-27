@@ -277,6 +277,53 @@ def _project_empty_world_query_directory(selection: dict[str, Any]) -> dict[str,
     return result if _serialized_character_count(result) < _serialized_character_count(selection) else selection
 
 
+def _project_selected_world_selection(selection: Any) -> Any:
+    if not isinstance(selection, Mapping) or not selection.get("selected") or selection.get("craft_policy", {}).get("schema_version") != "narrative-craft-budget.v4":
+        return _project_empty_world_selection(selection)
+    result = deepcopy(dict(selection))
+    receipt = result.get("world_selection_receipt")
+    if receipt is not None:
+        if (not isinstance(receipt, Mapping) or receipt.get("contract_version") != "world-selected-knowledge-projection.v1"
+            or receipt.get("selection_digest") != result.get("selection_digest")
+            or receipt.get("need_digest") != result.get("need", {}).get("need_digest")):
+            raise KernelError("WORLD_SELECTION_RECEIPT_INVALID", "Selected World knowledge must preserve exact selection identity")
+        return result
+    need = result.get("need", {})
+    if (need.get("need_digest") != _projection_hash({key: value for key, value in need.items() if key != "need_digest"})
+        or result.get("selection_digest") != _projection_hash({key: value for key, value in result.items() if key != "selection_digest"})):
+        raise KernelError("WORLD_SELECTION_RECEIPT_INVALID", "World knowledge projection requires the complete frozen selection")
+    omitted = {}
+    # WHY: World adjudicates legal actions; Chapter Planning alone locates Craft uses and advances planned phases.
+    for key in ("condition_sources", "recent_craft_usage", "recently_used_repetition_keys"):
+        if key in need:
+            omitted["/need/" + key] = need.pop(key)
+    context = need.get("craft_context", {})
+    for key in ("usage_scope_context", "reselection"):
+        if key in context:
+            omitted["/need/craft_context/" + key] = context.pop(key)
+    for key in ("craft_history", "recent_craft_usage", "rejected"):
+        if key in result:
+            omitted["/" + key] = result.pop(key)
+    if need.get("craft_policy") == result.get("craft_policy") and "craft_policy" in need:
+        omitted["/need/craft_policy"] = need.pop("craft_policy")
+    for index, card in enumerate(result["selected"]):
+        assessment = card.get("craft_assessment", {})
+        if "budget_assessment" in assessment:
+            omitted[f"/selected/{index}/craft_assessment/budget_assessment"] = assessment.pop("budget_assessment")
+    # WHY: Retrieval terms are a search query, not additional facts; World consumes its exact role projection and parent plans.
+    for key in tuple(need):
+        if key not in {"need_digest", "target_stage", "hard_constraints", "required_card_asset_version_ids"}:
+            omitted["/need/" + key] = need.pop(key)
+    result["world_selection_receipt"] = {
+        "contract_version": "world-selected-knowledge-projection.v1",
+        "selection_digest": result["selection_digest"], "need_digest": need["need_digest"],
+        "frozen_context_pointer": "/narrative_intelligence",
+        "omitted_fields": sorted(omitted), "omitted_value_hash": _projection_hash(omitted),
+        "authority": "WORLD_ACTIONS_ONLY_CHAPTER_CRAFT_PLACEMENT_REQUIRES_FULL_SELECTION",
+    }
+    return result
+
+
 def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[str, Any]:
     from novel_forge.modules.mkaos_authority.domain import validate_book_knowledge_access_policy
 
@@ -420,8 +467,24 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
                     "omitted_fields": sorted(audit),
                     "rejected_source_count": len(audit.get("rejections", [])),
                 }
+        for proposal in projected_task.get("actor_proposals", []):
+            if "intent_plan" not in proposal or "intent_state" not in proposal:
+                continue
+            # WHY: The validated state contains the complete private plan plus acceptance status; deliver it once.
+            plan = proposal.pop("intent_plan")
+            state = proposal["intent_state"]
+            if any(state.get(key) != value for key, value in plan.items() if key != "steps") or any(
+                any(actual.get(key) != value and not (key in {"decision", "reason"} and expected.get("decision") == "PRESERVE" and actual.get("status") in {"COMPLETED", "ABANDONED"})
+                    for key, value in expected.items())
+                for expected, actual in zip(plan["steps"], state["steps"], strict=True)
+            ):
+                raise KernelError("WORLD_ACTOR_INTENT_PROJECTION_DRIFT", "Validated intent state must retain every field of its proposed plan")
+            proposal["intent_plan_receipt"] = {"contract_version": "world-actor-intent-plan-reference.v1",
+                "proposal_hash": proposal["proposal_hash"], "plan_hash": _projection_hash(plan),
+                "equivalent_state_pointer": "/intent_state", "authority": "PROPOSAL_NOT_ACCEPTANCE",
+                "proposed_step_dispositions": {step["step_id"]: {"decision": step["decision"], "reason": step["reason"]} for step in plan["steps"]}}
         if "narrative_intelligence" in projected_task:
-            projected_task["narrative_intelligence"] = _project_empty_world_selection(projected_task["narrative_intelligence"])
+            projected_task["narrative_intelligence"] = _project_selected_world_selection(projected_task["narrative_intelligence"])
         return _task(stage, world_preparation=_compact(projected_task))
     from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS, FOUNDATION_INPUT_ROLES, foundation_task
 
@@ -488,15 +551,26 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
                 "PLANNING_PROVIDER_TASK_VIEW_INVALID",
                 "Planning Provider Task View requires governed Narrative Intelligence possibilities",
             )
-        return _task(
+        from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories
+        projection_version = inputs.get("craft_history_projection_version")
+        if projection_version not in (None, "planning-craft-history-projection.v1"):
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Planning history projection requires an explicitly supported frozen version")
+        projected_selection = _compact(_project_denied_planning_selection(narrative_intelligence))
+        if projection_version:
+            projected_selection = project_planning_craft_histories(projected_selection)
+        task = _task(
             stage,
             planning_command=_compact(command),
             world_preparation=_compact(inputs.get("world_preparation") or {}),
             frozen_inputs=_compact(frozen_inputs),
             authoritative_narrative_load=_compact(authoritative_load),
             arc_working_set=_compact(arc_working_set),
-            narrative_intelligence=_compact(_project_denied_planning_selection(narrative_intelligence)),
+            narrative_intelligence=projected_selection,
         )
+        if projection_version:
+            task["contract_version"] = "provider-task-view-v2"
+            task["craft_history_projection_version"] = projection_version
+        return task
     if stage == "narrative_semantic_evaluation":
         profiles = inputs.get("qualification_profiles")
         target = inputs.get("evaluation_target")
@@ -662,8 +736,16 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             author_design_review_targets=deepcopy(inputs.get("author_design_review_targets") or {}),
         )
     if stage == "canon_support":
-        return _task(stage, final_candidate=_prose(inputs.get("revision")),
+        task = _task(stage, final_candidate=_prose(inputs.get("revision")),
                      grounding=deepcopy(inputs.get("grounding")), claims=deepcopy(inputs.get("claims")))
+        comparisons = [item["claim"]["actor_step_execution"] for item in inputs.get("claims") or []
+                       if isinstance(item, Mapping) and isinstance(item.get("claim"), Mapping) and "actor_step_execution" in item["claim"]]
+        if comparisons:
+            if any(not isinstance(item, Mapping) or item.get("contract_version") != "actor-step-execution-comparison.v1" for item in comparisons):
+                raise KernelError("WORLD_ACTOR_EXECUTION_CONTRACT_INVALID", "Canon support requires an explicit current-step comparison contract")
+            task["contract_version"] = "provider-task-view-v2"
+            task["actor_step_support_contract"] = "actor-step-execution-comparison.v1"
+        return task
     if stage == "canon_extraction":
         from novel_forge.modules.canon_graph.background import without_private_world
         return _task(
@@ -678,6 +760,9 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             quality_context=_compact(inputs.get("quality_context")),
             dimensions=_compact(inputs.get("dimensions")),
         )
+    if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
+        return _task(stage, source_digest=inputs.get("source_digest"), candidate_digest=inputs.get("candidate_digest", ""),
+                     **({"screenplay_source_contract": inputs["screenplay_source_contract"]} if inputs.get("screenplay_source_contract") else {}))
     if stage == "longform_prose_review":
         return _task(stage, manifest_digest=inputs.get("manifest_digest"), window_id=inputs.get("window_id"))
     if stage == "reader_outcome":
@@ -994,6 +1079,10 @@ def build_provider_context_view(
                 "world task differs from its frozen role Context",
             )
         selection = task.get("narrative_intelligence") or {}
+        if selection.get("world_selection_receipt") is not None:
+            original = context_bundle.get("narrative_intelligence")
+            if not isinstance(original, Mapping) or selection != _compact(_project_selected_world_selection(original)):
+                raise KernelError("WORLD_SELECTION_RECEIPT_DRIFT", "Selected World knowledge must resolve to the complete immutable selection")
         if (selection.get("need") or {}).get("condition_sources_receipt") is not None:
             original = context_bundle.get("narrative_intelligence")
             policy = original.get("knowledge_access_policy") if isinstance(original, Mapping) else None
@@ -1074,6 +1163,15 @@ def build_provider_context_view(
     from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS
 
     if stage in _PLANNING_STAGES or stage in FOUNDATION_GENERATORS:
+        projected_selection = task_view.get("narrative_intelligence", {})
+        projection_version = context_bundle.get("craft_history_projection_version")
+        if projection_version or task_view.get("craft_history_projection_version") or "planning_history_projection" in projected_selection:
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories
+            expected = project_planning_craft_histories(_compact(_project_denied_planning_selection(context_bundle.get("narrative_intelligence", {}))))
+            if (projection_version != "planning-craft-history-projection.v1"
+                or task_view.get("craft_history_projection_version") != projection_version
+                or projected_selection != expected):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Planning task history must match its exact frozen Context selection")
         return _build_planning_context_view(stage, context_bundle)
     if stage == "narrative_semantic_evaluation":
         return _build_narrative_evaluation_context_view(context_bundle)
@@ -1099,6 +1197,9 @@ def build_provider_context_view(
         }
     if stage == "longform_prose_review":
         return _build_longform_prose_review_context_view(context_bundle)
+    if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
+        from novel_forge.modules.book_followup_authority.screenplay_execution import screenplay_context_view
+        return screenplay_context_view(stage, context_bundle)
     if stage == "reader_outcome":
         return _build_reader_outcome_context_view(context_bundle)
     correctness = context_bundle.get("context_correctness")
@@ -1178,9 +1279,17 @@ def build_provider_context_view(
             "state-bearing ContextBundle requires a task narrative projection; "
             "rebuild Context from the accepted checkpoint",
         )
+    extended_context = context_bundle.get("context_profile_version") == "draft-context-profile-v3"
+    maximum_characters = _MAX_PROVIDER_CONTEXT_CHARACTERS
+    if extended_context:
+        budget = context_bundle.get("token_budget")
+        if type(budget) is not int or not 0 < budget <= 24_000:
+            raise KernelError("CHAPTER_PROVIDER_CONTEXT_BUDGET_INVALID", "Draft Context v3 requires its exact bounded frozen token budget")
+        maximum_characters = budget * 4
     rendered: list[dict[str, Any]] = []
     omitted_facts = 0
     omitted_segments = 0
+    duplicate_state_summaries = 0
     for raw in segments:
         if not isinstance(raw, Mapping) or raw.get("allowed_use") == "evidence_only":
             omitted_segments += 1
@@ -1191,8 +1300,7 @@ def build_provider_context_view(
             omitted_facts += len(raw.get("structured_facts") or ())
             continue
         if stage.startswith("quality_"):
-            # WHY: QualityContext is already a bounded, dimension-specific projection.
-            # Rendering Context segments again would duplicate the same semantics.
+            # WHY: QualityContext already bounds each dimension; rendering Context again duplicates its evidence.
             omitted_segments += 1
             omitted_facts += len(raw.get("structured_facts") or ())
             continue
@@ -1244,11 +1352,16 @@ def build_provider_context_view(
             asset_type in _STATE_ASSET_TYPES
             and "disclosure_field_projections" in projection
         ):
-            summary = (
-                json.dumps(selected_facts, ensure_ascii=False, sort_keys=True)
-                if selected_facts
-                else ""
-            )
+            # WHY: v3 carries projected facts once; their generated JSON summary duplicates the same evidence.
+            if extended_context:
+                summary = ""
+                duplicate_state_summaries += bool(selected_facts)
+            else:
+                summary = (
+                    json.dumps(selected_facts, ensure_ascii=False, sort_keys=True)
+                    if selected_facts
+                    else ""
+                )
         if not summary and not selected_facts:
             omitted_segments += 1
             continue
@@ -1279,7 +1392,7 @@ def build_provider_context_view(
         else {}
     )
     view = {
-        "contract_version": "provider-context-view-v2",
+        "contract_version": "provider-context-view-v3" if extended_context else "provider-context-view-v2",
         "stage": stage,
         "narrative_position": {
             key: position[key]
@@ -1300,7 +1413,7 @@ def build_provider_context_view(
         "task_narrative_projection": _compact(dict(projection)),
         "segments": rendered,
         "selection_explanation": {
-            "policy": "minimum-sufficient-context-v3",
+            "policy": "minimum-sufficient-context-v4" if extended_context else "minimum-sufficient-context-v3",
             "included_segment_count": len(rendered),
             "included_fact_count": sum(
                 len(item["structured_facts"]) for item in rendered
@@ -1309,13 +1422,16 @@ def build_provider_context_view(
             "omitted_fact_count": omitted_facts,
             "maximum_segments": _MAX_SEGMENTS,
             "maximum_facts_per_segment": _MAX_FACTS_PER_SEGMENT,
-            "maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS,
+            "maximum_serialized_characters": maximum_characters,
+            **({"context_profile_version": "draft-context-profile-v3",
+                "frozen_context_token_budget": context_bundle["token_budget"],
+                "duplicate_state_summary_count": duplicate_state_summaries} if extended_context else {}),
         },
         "context_correctness_receipt_hash": str(
             (correctness or {}).get("receipt_hash") or ""
         ),
     }
-    if _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
+    if _serialized_character_count(view) > maximum_characters:
         raise KernelError(
             "CHAPTER_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
             "projected Provider Context exceeds its deterministic size boundary; "
@@ -1790,6 +1906,16 @@ def _build_planning_context_view(
     }
     if context_bundle.get("author_design_projection"):
         view["author_design_projection"] = compile_provider_author_projection(context_bundle["author_design_projection"])
+    input_projection = context_bundle.get("planning_input_projection_version")
+    if input_projection is not None:
+        if input_projection != "planning-input-role-references.v1":
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_VIEW_INVALID", "Planning input references require an explicit supported frozen version")
+        _reference_planning_matrix_source(view, sources=raw_inputs, chapter=chapter)
+        view["contract_version"] = "provider-context-view-v3"
+        view["selection_explanation"]["compiler_version"] = "scope-preserving-planning-context-v2"
+    if context_bundle.get("edition_execution"):
+        view["edition_execution"] = deepcopy(context_bundle["edition_execution"])
+        view["edition_execution_instruction"] = "This is a new manuscript edition, not a mutation of its source. Implement the exact target_scene_ids and order where supplied; source_scene_plan is provenance, and source_ranges retain the original mapping for splits, merges and reorder; bind new World and accepted-state evidence in this run. Source plans remain plans, not proof that edited prose realized them. Return a failed qualification when source structure cannot satisfy the current world or mission."
     reference_contract = context_bundle.get("realization_reference_contract")
     if reference_contract is not None:
         if not isinstance(reference_contract, Mapping):
@@ -1846,6 +1972,8 @@ def _build_planning_context_view(
     _compact_planning_loss_sources(view)
     source_hash = planning_context_source_hash(context_bundle) if projection_audit is not None else ""
     _prune_optional_planning_context(view, sources=raw_inputs, character_budget=character_budget, audit_source_hash=source_hash)
+    if input_projection:
+        _reference_planning_matrix_source(view, sources=raw_inputs, chapter=chapter)
     if projection_audit is not None:
         view, audit = _planning_view_with_audit_receipt(view, source_input_hash=source_hash)
         projection_audit.update(audit)
@@ -1856,6 +1984,30 @@ def _build_planning_context_view(
             + json.dumps({"total": _serialized_character_count(view), "segments": [{"role": item["role"], "characters": _serialized_character_count(item)} for item in projected], "repair": _serialized_character_count(view.get("repair_context", {})), "references": _serialized_character_count(view.get("realization_reference_contract", {}))}, sort_keys=True),
         )
     return view
+
+
+def _reference_planning_matrix_source(view: dict[str, Any], *, sources: list[Mapping[str, Any]], chapter: int) -> None:
+    groups = [(index, source) for index, source in enumerate(sources) if source.get("role") == "chapter_group_plan"]
+    if not chapter or len(groups) != 1:
+        return
+    group_index, group = groups[0]
+    projected = view["segments"][group_index]["content"]
+    rows = projected.get("chapter_function_matrix")
+    if not isinstance(rows, list) or len(rows) != 1 or rows[0].get("chapter_number") != chapter:
+        return
+    for index, source in enumerate(sources):
+        if (source.get("role") != "chapter_function_matrix_row"
+            or not all(group.get(field) and source.get(field) == group[field] for field in ("asset_version_id", "content_hash"))
+            or source.get("content") != group.get("content")):
+            continue
+        view["segments"][index]["content"] = {
+            "contract_version": "planning-chapter-matrix-reference.v1", "chapter_number": chapter,
+            "json_pointer": f"/segments/{group_index}/content/chapter_function_matrix/0",
+            "row_content_hash": _projection_hash(rows[0]),
+            "group_constraints_pointer": f"/segments/{group_index}/content",
+            "instruction": "Read this exact current-chapter matrix row and all its group constraints at the referenced locations in this same Context view. Both input roles bind the same immutable group asset and hash; this reference does not remove or weaken any group constraint.",
+        }
+        view["selection_explanation"]["role_reference_contract"] = "planning-input-role-references.v1"
 
 
 def _compact_qualified_foundation_planning(
@@ -2089,6 +2241,12 @@ def _planning_accepted_through_chapter(
 
 
 def _planning_chapter(context_bundle: Mapping[str, Any]) -> int:
+    edition_scope = context_bundle.get("edition_execution") or {}
+    if edition_scope:
+        chapter = edition_scope.get("chapter")
+        if type(chapter) is not int or chapter < 1:
+            raise KernelError("EDITION_PLANNING_SCOPE_INVALID", "Edition context requires its exact positive chapter position")
+        return chapter
     logical_key = str(context_bundle.get("logical_key") or "")
     parts = logical_key.split(":")
     if len(parts) >= 2 and parts[0] == "chapter" and parts[1].isdigit():
@@ -2162,6 +2320,9 @@ def _project_planning_content(
     content = without_author_private(content)
     if role == "previous_chapter_outcome":
         return _compact(_pick(content, "chapter_number", "scene_outcomes", "arc_evidence", "realization_evidence", "reader_state_observations")), 0, 0
+    if role.startswith("change_evidence:") and content.get("schema_version") == "longform-prose-review.v1":
+        return {"authority": "REVIEW_JUDGMENT_NOT_ACCEPTED_FACT", "report": deepcopy(dict(content)),
+                "accepted_history_mutation_allowed": False, "plan_change_requires_authority_approval": True}, 0, 0
     from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS
 
     payload = content.get("candidate_payload", content)

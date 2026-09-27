@@ -57,9 +57,10 @@ def owned_policy_definition(
     production_book_budget = False
     paired_samples_budget = False
     provider_campaign_budget = False
+    routing_sources = owner == "PROVIDER_ROUTING" and any(key in content for key in ("benchmark_exports", "benchmark_source_bindings"))
     if owner == "PROVIDER_ROUTING":
-        from novel_forge.modules.production_execution.routing_policy import POLICY_SCHEMA
-        policy_schema = POLICY_SCHEMA
+        from novel_forge.modules.production_execution.routing_policy import POLICY_SCHEMA, LEGACY_POLICY_SCHEMA
+        policy_schema = POLICY_SCHEMA if routing_sources else LEGACY_POLICY_SCHEMA
     if owner == "CREATIVE_EXPERIMENT_BUDGET":
         from novel_forge.modules.command_kernel.creative_budget_contract import PAIRED_SAMPLES_VERSION, V5_POLICY_SCHEMA, PRODUCTION_BOOK_VERSION, SINGLE_BOOK_VERSION, PROVIDER_CAMPAIGN_VERSION, V1_POLICY_SCHEMA, V2_POLICY_SCHEMA, V3_POLICY_SCHEMA, V4_POLICY_SCHEMA
         single_book_budget = not content or content.get("comparison_budget", {}).get("contract_version") == SINGLE_BOOK_VERSION
@@ -89,12 +90,12 @@ def owned_policy_definition(
     }
     return {
         "name": name,
-        "definition_version": "1.5.0" if paired_samples_budget else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
+        "definition_version": "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
         "family": owner.lower(),
         "enabled": True,
         "definition_status": "implemented_validation_pending",
-        "command_schema_version": f"{name}.command.v3" if production_book_budget else f"{name}.command.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.command.v1",
-        "result_schema_version": f"{name}.result.v3" if production_book_budget else f"{name}.result.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.result.v1",
+        "command_schema_version": f"{name}.command.v3" if production_book_budget or routing_sources else f"{name}.command.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.command.v1",
+        "result_schema_version": f"{name}.result.v3" if production_book_budget or routing_sources else f"{name}.result.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.result.v1",
         "command_schema": command_schema,
         "result_schema": result_schema,
         "input_contract": command_schema,
@@ -150,6 +151,8 @@ def configure_owned_policy(
         validate_routing_policy(content)
         if principal.principal_type is not PrincipalType.LOCAL_OPERATOR:
             raise PermissionError("only an authenticated operator can change routing requirements")
+        from novel_forge.modules.production_execution.routing_sources import require_source_permissions
+        require_source_permissions(principal, project_id=project_id, content=content)
     if owner == "CREATIVE_EXPERIMENT_BUDGET":
         from novel_forge.modules.authority_security import PrincipalType
         from novel_forge.modules.command_kernel.creative_budget_contract import validate_policy
@@ -179,6 +182,8 @@ def configure_owned_policy(
         if owner == "PROVIDER_ROUTING":
             from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_policy_in_uow
             validate_bootstrap_policy_in_uow(uow.cursor, project_id=project_id, content=content)
+            from novel_forge.modules.production_execution.routing_sources import validate_sources_in_uow
+            validate_sources_in_uow(uow.cursor, project_id=project_id, content=content)
         if owner == "CREATIVE_EXPERIMENT_BUDGET":
             from novel_forge.modules.command_kernel.creative_budget_runtime import validate_selection_in_uow
             validate_selection_in_uow(uow, project_id=project_id, content=content)

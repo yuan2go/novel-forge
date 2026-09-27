@@ -1,0 +1,12 @@
+{
+  "source": "existing-local-model-cache",
+  "cache_sha256": "sha256:a24b5eef0edf46a93b5fe91f75d297473ee56d501a7d081ad2dbcc8e84f0af68",
+  "model": "gpt-6-sol",
+  "context_window": 272000,
+  "runtime_context_limit": 200000,
+  "semantic_runtime_context_limit": 272000,
+  "reasoning_effort": "high",
+  "remote_availability": "NOT_TESTED",
+  "model_calls": 0,
+  "stale_astra_token_reference_replaced": true
+}

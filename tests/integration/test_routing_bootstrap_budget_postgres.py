@@ -90,6 +90,7 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
                      "expires_at": expiry.isoformat()},
     }
     if entitlement:
+        grant["campaign"]["maximum_amount"] = "0"
         grant.update(accounting_basis=accounting_basis, currency="UNKNOWN", maximum_amount=None,
                      cost_authorization_ref=candidate.authorization_ref)
     overrides = [{"work_id": book, "task_type": command.generator_operation_name,

@@ -1,0 +1,21 @@
+{
+  "scope": "LOCAL_CONFIGURATION_PARSE_ONLY",
+  "retry_policy": "codex-no-transport-retry.v1",
+  "overrides": [
+    "model_provider=\"novel_forge_openai_no_retry\"",
+    "model_providers.novel_forge_openai_no_retry.name=\"OpenAI\"",
+    "model_providers.novel_forge_openai_no_retry.wire_api=\"responses\"",
+    "model_providers.novel_forge_openai_no_retry.requires_openai_auth=true",
+    "model_providers.novel_forge_openai_no_retry.request_max_retries=0",
+    "model_providers.novel_forge_openai_no_retry.stream_max_retries=0"
+  ],
+  "exit_code": 0,
+  "stdout_sha256": "890f3166ba5223242fdb7d3a33e61038e4927756b788381307de94cb7650906a",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "model_calls": 0,
+  "native_provider_backend": "codex-cli",
+  "same_existing_account": true,
+  "config_reference": "https://developers.openai.com/codex/config-reference/",
+  "provider_implementation_reference": "https://github.com/openai/codex/blob/main/codex-rs/model-provider-info/src/lib.rs",
+  "real_dispatch_or_remote_success": "NOT_RUN"
+}

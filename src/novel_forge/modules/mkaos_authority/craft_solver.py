@@ -8,6 +8,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 def solve_candidates(
     ranked: list[dict[str, Any]], *, limit: int, required_ids: set[str],
     policy: Mapping[str, Any], search_budget: int = 100_000,
+    placement_scope: Mapping[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if type(search_budget) is not int or search_budget < 1:
         raise ValueError("Craft search budget must be a positive integer")
@@ -28,6 +29,10 @@ def solve_candidates(
     suffix_names: list[set[str]] = [set() for _ in range(len(ranked) + 1)]
     for index in range(len(ranked) - 1, -1, -1):
         suffix_names[index] = suffix_names[index + 1] | ({names[index]} if names[index] else set())
+    concrete_scenes = list(placement_scope["scene_ids"]) if placement_scope else None
+    if concrete_scenes is not None and (not concrete_scenes or len(concrete_scenes) > 256 or len(set(concrete_scenes)) != len(concrete_scenes)):
+        raise KernelError("CRAFT_SEARCH_SCOPE_EXCEEDED", "Concrete scene search requires 1..256 distinct scene identities")
+    exclusions = placement_scope.get("exclusions", []) if placement_scope else []
     visited = 0
     failures: set[str] = set()
     realization_cache = {}
@@ -63,21 +68,33 @@ def solve_candidates(
         allowances = []
         for i in craft:
             budget = ranked[i].get("craft_assessment", {}).get("budget_assessment", {})
-            if policy["schema_version"] == "narrative-craft-budget.v3" and budget.get("temporal_budget_applied", True):
+            if policy["schema_version"] in {"narrative-craft-budget.v3", "narrative-craft-budget.v4"} and budget.get("temporal_budget_applied", True):
                 allowances.append(0 if budget.get("in_cooldown") else max(0, policy["max_frequency_in_window"] - budget.get("frequency", 0)))
             else:
                 allowances.append(policy["max_uses_per_chapter"])
         failed_allocations = set()
 
-        def allocate(covered, counts):
+        allowed_bundles = None
+        if concrete_scenes is not None:
+            allowed_bundles = []
+            for scene in concrete_scenes:
+                excluded = {offset for offset, i in enumerate(craft) if any(
+                    row["knowledge_card_asset_version_id"] == identities[i] and row["content_hash"] == ranked[i]["content_hash"]
+                    and scene in row["scene_ids"] for row in exclusions)}
+                blocked = sum(1 << offset for offset in excluded)
+                allowed_bundles.append([bundle for bundle in bundles if not bundle & blocked])
+
+        def allocate(covered, counts, available=None):
             nonlocal visited
             if covered == full:
                 return True
-            key = (covered, counts)
+            key = (covered, counts, available)
             if key in failed_allocations:
                 return False
             first_missing = (~covered & full) & -(~covered & full)
-            for bundle in bundles:
+            choices = ((None, bundle) for bundle in bundles) if allowed_bundles is None else (
+                (scene, bundle) for scene in available for bundle in allowed_bundles[scene])
+            for scene, bundle in choices:
                 if not bundle & first_missing:
                     continue
                 visited += 1
@@ -86,12 +103,12 @@ def solve_candidates(
                 following = tuple(count + bool(bundle & (1 << offset)) for offset, count in enumerate(counts))
                 if sum(following) > policy["max_uses_per_chapter"] or any(count > allowance for count, allowance in zip(following, allowances, strict=True)):
                     continue
-                if allocate(covered | bundle, following):
+                if allocate(covered | bundle, following, tuple(value for value in available if value != scene) if available is not None else None):
                     return True
             failed_allocations.add(key)
             return False
 
-        result = allocate(0, (0,) * len(craft))
+        result = allocate(0, (0,) * len(craft), tuple(range(len(concrete_scenes))) if concrete_scenes is not None else None)
         realization_cache[craft] = result
         if not result:
             failures.add("scene-dependency-density-order-or-frequency")
@@ -142,7 +159,7 @@ def solve_candidates(
 
     solution = search(0, (), set(), set())
     if solution is None:
-        raise KernelError("MKAOS_REQUIRED_KNOWLEDGE_UNAVAILABLE", "Exhaustive eligible-pool search proved no combination for required cards " + ", ".join(sorted(required_ids)) + "; constraints=" + ", ".join(sorted(failures)))
+        raise KernelError("CRAFT_CONCRETE_PLACEMENT_INFEASIBLE" if concrete_scenes is not None else "MKAOS_REQUIRED_KNOWLEDGE_UNAVAILABLE", "Exhaustive eligible-pool search proved no combination for required cards " + ", ".join(sorted(required_ids)) + "; constraints=" + ", ".join(sorted(failures)))
     selected = [ranked[index] for index in solution]
     selected_names = {names[index] for index in solution if names[index]}
     rejected = []

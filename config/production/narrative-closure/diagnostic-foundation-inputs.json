@@ -1,0 +1,51 @@
+{
+  "contract_version": "narrative-closure-foundation-diagnostic-inputs.v1",
+  "origin": "TASK_AGENT_AUTHORED_ORIGINAL_DIAGNOSTIC_INPUTS",
+  "human_reference": false,
+  "production_assets": false,
+  "task_type": "creative.candidates.generate",
+  "samples": [
+    {
+      "sample_id": "creative-zheng-deng-a",
+      "data_group": "zheng-deng-original-family",
+      "creative_brief": {
+        "creative_brief_contract_version": "creative-brief-v2",
+        "idea": "《断潮关·证灯》：断潮关以阵籍抹去旧渡口，逃民的亲历证词能延缓抹除，却会暴露作证者的位置。闻澈承诺先保存并送出证词，再回来护送三名逃民过关；沈照接过只能维持有限时间的证灯，愿意保护证人，却不赞同闻澈独自赴关。两人必须在新得知的路况、余油和互信变化下重估步骤，不能把证词送达当作护送完成。",
+        "genre": "原创简体中文玄幻与武侠，第三人称限知",
+        "audience": "重视人物选择、行动代价与承诺连续性的中文类型文学读者",
+        "constraints": [
+          "让保存证词与护送证人的相互影响形成完整因果链；人物必须实际面对承诺未完成的代价。",
+          "闻澈与沈照各有持续目标、私有认知和未完成承诺；未行动的步骤只是计划。",
+          "证灯余油、道路可达性与公开证词的风险必须产生实际选择代价；未知信息保持未知。"
+        ],
+        "source_boundaries": [
+          "诊断输入A：由本任务AI执行者据用户原创方向拟定的新梗概；不是独立真人reference，不是既有事实，不属于正式作品。",
+          "该梗概是本工作包的原创作者意图，不是已发生事实或真实模型样本。",
+          "测试脚本、fixture正文、模型样本、人工评价与生产账本严格分离。",
+          "不导入参考作品的受保护文字、人物、世界设定或独特情节组合。"
+        ]
+      }
+    },
+    {
+      "sample_id": "creative-xue-zhan-b",
+      "data_group": "xue-zhan-original-family",
+      "creative_brief": {
+        "creative_brief_contract_version": "creative-brief-v2",
+        "idea": "《雪栈借火》：连雪封住山栈，守炉女弟子洛棠欠药师迟岳一次救命之恩，却答应把最后一罐火种交给山下的接生人。迟岳带来消息，师门命他在日落前带回火种，否则会拘走替他担保的老伙计；洛棠只亲眼确认了栈外一段山路坍塌，并不知道药师收到的密令是否完整。两人约定先试通旧索道、确认接生人的位置，再决定是否借用山栈禁炉。每一步都消耗有限炭料，失败不能被一句旧恩抵消，承诺也不能因为换路就算完成。",
+        "genre": "原创简体中文武侠与低魔玄幻，第三人称限知",
+        "audience": "偏好具体行动、互负承诺和可信选择的中文类型文学读者",
+        "constraints": [
+          "以分配火种的真实代价推动情节，设计至少两条互相影响的持续意图与未完成承诺。",
+          "洛棠只能使用实际亲见或被告知的信息；迟岳的密令内容不自动进入洛棠认知。",
+          "允许有依据地延期、重新协商或放弃步骤，但不允许抹去未完成承诺。",
+          "保留雪路、炭料、索道承重的约束；试通与打算通行都不等于已经抵达。"
+        ],
+        "source_boundaries": [
+          "诊断输入B：由本任务AI执行者新拟的独立情境，与证灯样本使用不同人物、资源、目标和数据组；不是独立真人reference。",
+          "未使用参考小说的文字、人物、世界设定或独特情节组合。",
+          "本输入与生成的候选均不进入正式作品或接纳Canon。"
+        ]
+      }
+    }
+  ]
+}

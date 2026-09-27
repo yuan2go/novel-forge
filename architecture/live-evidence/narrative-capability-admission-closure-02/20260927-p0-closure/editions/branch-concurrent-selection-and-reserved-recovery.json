@@ -1,0 +1,23 @@
+{
+  "evidence_class": "SCRIPTED_NATIVE_EDITION_RESERVATION_RECOVERY",
+  "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+  "book_run_id": "book-run:ec29a072-4c97-4e72-bc69-973afbfd81fe",
+  "chapter_request_id": "chapter-request:0f7bab19678671f0b7d1a7b886cae3c2c75bf7e5f4f63201d13ac540a8984826:edition:87dbf0ff-1e21-4766-9604-43edc9246650",
+  "root_operation_id": "1953ef29-b688-474b-973d-7304bd013193",
+  "new_request_without_reservation": "REJECTED",
+  "changed_full_payload": "REJECTED",
+  "selected_cursor_unchanged": 3,
+  "real_model_calls": 0,
+  "frozen_payload_hash": "sha256:38fad59bb9e15a3ce1facd5af732cd02d0c120ef69278d18015109242f1534f2",
+  "stable_idempotency_key": "book-chapter:0f7bab19678671f0b7d1a7b886cae3c2c75bf7e5f4f63201d13ac540a8984826:edition:87dbf0ff-1e21-4766-9604-43edc9246650",
+  "selection_interleave": {
+    "result": "EDITION_DISPATCH_SELECTION_CHANGED",
+    "new_request_count": 0,
+    "preceding_native_log": "failure-edition-dispatch-boundaries-second.log",
+    "final_cursor_unchanged": true
+  },
+  "implementation_identity": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee + current shared working tree; not final release qualification",
+  "reservation_created_at": "2026-09-27T05:51:52.316997+00:00",
+  "rejected_revision_id": "87dbf0ff-1e21-4766-9604-43edc9246650",
+  "rejected_at": "2026-09-27T05:51:52.504484+00:00"
+}

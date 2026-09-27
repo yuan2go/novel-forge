@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-wp02-p0-private/migration-0147-runner.py", line 14, in <module>
+    before=fingerprint();status=run_migrations(url);after=fingerprint();assert before==after
+           ^^^^^^^^^^^^^
+  File "/tmp/novel-forge-wp02-p0-private/migration-0147-runner.py", line 13, in fingerprint
+    return {table:c.execute(sql.SQL("SELECT count(*),md5(string_agg(to_jsonb(t)::text,'' ORDER BY to_jsonb(t)::text)) FROM {} t").format(sql.Identifier(table))).fetchone() for table in tables}
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<workspace-root>/novel-forge/.venv/lib/python3.12/site-packages/psycopg/connection.py", line 300, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "authority_creative_budget_reservation" does not exist
+LINE 1: ...onb(t)::text,'' ORDER BY to_jsonb(t)::text)) FROM "authority...
+                                                             ^

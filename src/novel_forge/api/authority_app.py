@@ -439,6 +439,8 @@ def create_authority_app(settings: IndustrialSettings):
     app.include_router(create_chapter_editor_router(
         ProductRouterContext(app_settings=settings, models=product_model_map(), services=services)
     ))
+    from novel_forge.api.routers.screenplay_sampling import create_router as create_screenplay_sampling_router
+    app.include_router(create_screenplay_sampling_router(ProductRouterContext(app_settings=settings, models=product_model_map(), services=services)))
     app.include_router(
         create_temporal_query_router(
             ProductRouterContext(
@@ -514,7 +516,8 @@ def create_authority_app(settings: IndustrialSettings):
 
     @app.get("/health")
     def health() -> dict[str, Any]:
-        return {
+        from novel_forge.modules.command_kernel.dispatch_control import process_dispatch_suspended
+        return {"provider_dispatch_suspended": process_dispatch_suspended(),
             "status": "alive",
             "storage_authority": "postgresql",
         }
@@ -693,6 +696,8 @@ def create_authority_app(settings: IndustrialSettings):
     @app.get("/startup")
     def startup() -> dict[str, Any]:
         result = readiness_payload()
+        from novel_forge.modules.command_kernel.dispatch_control import process_dispatch_suspended
+        result["provider_dispatch_suspended"] = process_dispatch_suspended()
         if result["status"] != "ready":
             from fastapi import HTTPException
 

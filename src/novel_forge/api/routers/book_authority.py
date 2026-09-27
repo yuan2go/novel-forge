@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from typing import Annotated, Any
 from uuid import uuid4
 
@@ -46,6 +46,7 @@ class PlanChangeDecisionRequest:
     actor_id: str
     approved: bool
     reason: str
+    craft_scope_dispositions: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -316,7 +317,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             _planning_scope(authority.require(proposal_id), project_id=request.project_id, book_id=book_id)
             if not request.reason.strip():
                 raise ValueError("PlanChange decision requires a reason")
-            return authority.decide(proposal_id, approved=request.approved, authority_type="OPERATOR", authority_version="operator-plan-change-v1", evidence={"reason": request.reason, "actor_id": principal.principal_id}, principal=principal)
+            evidence = {"reason": request.reason, "actor_id": principal.principal_id}
+            if request.craft_scope_dispositions:
+                evidence["craft_scope_dispositions"] = request.craft_scope_dispositions
+            return authority.decide(proposal_id, approved=request.approved, authority_type="OPERATOR", authority_version="operator-plan-change-v1", evidence=evidence, principal=principal)
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:

@@ -55,6 +55,9 @@ def adopted_author_draft(request) -> ChapterHandlerOutput | None:
     adoption = (request.command.get("preparation_report") or {}).get("author_draft_adoption")
     if not adoption:
         return None
+    if adoption.get("contract_version") == "book-edition-draft-adoption.v1":
+        from novel_forge.modules.book_authority.edition_runtime import edition_adopted_draft
+        return edition_adopted_draft(request, adoption)
     scope = {"project_id": request.project_id, "workspace_id": request.workspace_id,
              "book_id": request.command.get("book_id"), "chapter": int(request.command["chapter"])}
     if any(adoption.get(key) != value for key, value in scope.items()) or adoption.get("contract_version") != "author-draft-adoption.v1":

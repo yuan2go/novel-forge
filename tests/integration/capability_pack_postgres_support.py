@@ -4,6 +4,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 import hashlib
 import json
+import os
 from pathlib import Path
 import tempfile
 from typing import Any, Mapping, Sequence
@@ -62,7 +63,7 @@ from tests.integration.authority_postgres_support import (
 
 ROOT = Path(__file__).resolve().parents[2]
 PACK_PATH = ROOT / "config/capability_packs/chapter_generation_pack.json"
-RELEASE_SHA = "e" * 40
+RELEASE_SHA = os.environ.get("NOVEL_FORGE_TEST_RELEASE_SHA", "e" * 40)
 APP_BUILD_ID = "capability-pack-integrity-hardening"
 PACK_PERMISSIONS = (
     "capability_pack.authority.register",

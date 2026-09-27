@@ -1,0 +1,24 @@
+{
+  "source_candidate": "authority-output:3d09eeb5-6062-484f-9520-3279e97c9ee9:story_planning.candidate:v1",
+  "original_projection": "fea14e6c-3e2f-4376-b4fe-0ef1b170eb0e",
+  "results": [
+    {
+      "operation_id": "ff4c0392-e61c-48a9-8b69-56893c2997fc",
+      "status": "SUCCEEDED",
+      "asset_version_id": "fea14e6c-3e2f-4376-b4fe-0ef1b170eb0e",
+      "content_hash": "sha256:be48710e43444aeb11c0d5406dab14f2543e873a44300aeade1e83ec04193424",
+      "source_planning_candidate_asset_version_id": "authority-output:3d09eeb5-6062-484f-9520-3279e97c9ee9:story_planning.candidate:v1",
+      "replayed": true
+    },
+    {
+      "operation_id": "ff4c0392-e61c-48a9-8b69-56893c2997fc",
+      "status": "SUCCEEDED",
+      "asset_version_id": "fea14e6c-3e2f-4376-b4fe-0ef1b170eb0e",
+      "content_hash": "sha256:be48710e43444aeb11c0d5406dab14f2543e873a44300aeade1e83ec04193424",
+      "source_planning_candidate_asset_version_id": "authority-output:3d09eeb5-6062-484f-9520-3279e97c9ee9:story_planning.candidate:v1",
+      "replayed": true
+    }
+  ],
+  "output_count": 1,
+  "model_effects": 0
+}

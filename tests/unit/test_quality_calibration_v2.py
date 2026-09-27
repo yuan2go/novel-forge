@@ -433,6 +433,8 @@ def test_new_quality_call_requires_its_qualified_reference_route_and_unchanged_s
             "execution_result": {"outcome": "SUCCEEDED"}, "route_snapshot": {"reasoning_effort": model.reasoning},
             "process_evidence": {"model_revision": model.model_revision, "served_model_identity_hash": "sha256:" + "e" * 64}}}
     assert reference_decision_qualifies(frozen, evidence=evidence, stage=current.task_type)
+    legacy = {**frozen, "schema_version": "quality-constrained-routing.v10", "policy_version": "quality-constrained-routing.v10"}
+    assert reference_decision_qualifies(legacy, evidence=evidence, stage=current.task_type)
     for mutation in ("sampling", "missing-protocol", "missing-stratum", "wrong-task", "changed-producer", "lowered-policy"):
         invalid = deepcopy(frozen)
         if mutation == "sampling":

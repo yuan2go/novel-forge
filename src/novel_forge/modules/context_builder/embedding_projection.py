@@ -568,6 +568,10 @@ class RetrievalEmbeddingProjectionRuntime:
         error_code = (
             error.code if isinstance(error, KernelError) else type(error).__name__
         )
+        if classification is WorkerFailureClass.DISPATCH_PAUSED:
+            from novel_forge.modules.command_kernel.attempt_runtime import checkpoint_attempt_for_dispatch_pause
+            checkpoint_attempt_for_dispatch_pause(self.database_url, worker)
+            return
         if classification is WorkerFailureClass.UNKNOWN_EXTERNAL_STATE:
             self._persist_projection_status(
                 project_id=worker.project_id,

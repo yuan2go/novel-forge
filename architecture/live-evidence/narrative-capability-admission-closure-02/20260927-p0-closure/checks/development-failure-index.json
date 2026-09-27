@@ -1,0 +1,21 @@
+{
+  "runs": [
+    {
+      "artifact": "directed-unit-first.log",
+      "sha256": "8d99f06533370be9425e61e5f266f38b959b2a7a00685be71ae49e14df5c3642",
+      "retention": "PRIVATE_LOCAL_EVIDENCE",
+      "cause": "Shared venv imported baseline checkout because the runner omitted PYTHONPATH=src; nine new-module collection errors, no behavior test ran.",
+      "disposition": "Reran with explicit worktree PYTHONPATH; directed-unit-second.xml records 387 passing tests and 6 subtests.",
+      "overwritten": false
+    },
+    {
+      "artifact": "documentation-reality-fifth.log",
+      "sha256": "8aab17c8ed4edf59d7e5c95cf7a41c0cf4a632b8dbb6d99f28b9a03a5d50937f",
+      "retention": "PRIVATE_LOCAL_EVIDENCE",
+      "cause": "Current projection implementation hash and migration head were stale while code remained under development. Comment ratchet passed; 28 other checks and 20 subtests passed.",
+      "disposition": "Migration head updated to0147; implementation identity and the applicable static checks will be repeated at the common code freeze.",
+      "overwritten": false
+    }
+  ],
+  "additional_command_errors": "Two targeted commands named a nonexistent quality projection test file; collection stopped before tests; corrected existing quality_longitudinal_evidence suite passed. No test or assertion was removed."
+}

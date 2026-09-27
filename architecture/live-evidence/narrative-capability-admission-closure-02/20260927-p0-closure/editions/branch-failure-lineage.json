@@ -1,0 +1,38 @@
+[
+  {
+    "log_excerpt": "failure-edition-tail-first.log",
+    "original_log_sha256": "e2580ff45e33c3beb4e9276445034f257b6184038e19d679bdc1a7f7cfc4286b",
+    "failure_code": "EDITION_VALIDATION_INCOMPLETE",
+    "disposition": "Expected strict validation rejected submitted text after native review modified it; preserved candidate and captured actual accepted result into a new immutable revision."
+  },
+  {
+    "log_excerpt": "failure-edition-tail-capture.log",
+    "original_log_sha256": "fad5b9689f655230464356122798dc4362dfeb4963e7b26ff93057ecfd13c336",
+    "failure_code": "CheckViolation",
+    "disposition": "New event kind violated existing check; fixed to existing VALIDATED event plus explicit content validation_basis; transaction did not commit."
+  },
+  {
+    "log_excerpt": "failure-edition-tail-capture-second.log",
+    "original_log_sha256": "cdebd5a1815bd62fcb8efdf518053ee83b9d1d81efaaa9068ccb32ac5e2552fc",
+    "failure_code": "OPERATION_BUSINESS_TIMEOUT",
+    "disposition": "Old source chapter was frozen hours before iterative debugging; business deadline expired. Terminal history retained. This branch does not prove old-inflight settlement."
+  },
+  {
+    "log_excerpt": "failure-edition-joint-first.log",
+    "original_log_sha256": "2cb74c3ef8772450fb6e239f834103a6940966287799118db8e8ca386decbf07",
+    "failure_code": "accepted_usage_history",
+    "disposition": "Fixture first-selection history absent; corrected empty first-use handling."
+  },
+  {
+    "log_excerpt": "failure-edition-joint-second.log",
+    "original_log_sha256": "33b549c5bae2e2a0804cdc54ed137178fc1b019c71b64398eacc2b9ce6259a55",
+    "failure_code": "usage_scope_context",
+    "disposition": "Fixture dropped Craft policy before native profile construction; corrected caller propagation to preserve explicit v4 policy."
+  },
+  {
+    "log_excerpt": "failure-edition-joint-third.log",
+    "original_log_sha256": "ee949b37b13c50c268b5edc8322f806693a3528d7c4438280ddf2da0a7d1bbab",
+    "failure_code": "PLANNING_RESULT_REPAIR_SOURCE_INVALID",
+    "disposition": "Actual concrete Craft REJECT reached native repair; exact frozen-input repair lineage guard failed. Full joint remains FAIL at export time."
+  }
+]

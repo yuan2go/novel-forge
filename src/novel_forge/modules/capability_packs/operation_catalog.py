@@ -327,9 +327,9 @@ def chapter_sampling_workflow_binding_catalog(*, reference: bool = False, refere
         CHAPTER_REFERENCE_WORKFLOW_ID if reference else CHAPTER_SAMPLE_WORKFLOW_ID,
         CHAPTER_REFERENCE_SAMPLE_VERSION if reference_samples else CHAPTER_SAMPLE_DEFINITION_VERSION,
         (WorkflowBinding(
-            node_id=stage, operation_name=chapter_sample_definition_name(stage), stage=stage,
+            node_id="canon_proposal" if stage == "canon_support" else stage, operation_name=chapter_sample_definition_name(stage), stage=stage,
             handler_key="novel_forge.chapter_authority.sample." + stage,
-            capability_id=formal.resolve(stage).capability_id, depends_on=(),
+            capability_id=formal.resolve("canon_proposal" if stage == "canon_support" else stage).capability_id, depends_on=(),
             primary_output_asset_type="chapter_provider_sample",
         ) for stage in (CHAPTER_REFERENCE_SAMPLE_SOURCES if reference_samples else (CHAPTER_REFERENCE_TASKS if reference else CHAPTER_GENERATOR_TASKS).values())),
     )
@@ -401,6 +401,22 @@ def longform_prose_review_workflow_binding_catalog(*, provider_sampling: bool = 
     ))
 
 
+def screenplay_workflow_binding_catalog(stage: str, *, provider_sampling: bool = False) -> WorkflowBindingCatalog:
+    from novel_forge.modules.book_followup_authority.screenplay import SCREENPLAY_STAGES, CANDIDATE_TYPE, REVIEW_TYPE
+    from novel_forge.modules.chapter_authority.execution_gateway import chapter_stage_capability
+    if stage not in SCREENPLAY_STAGES:
+        raise ValueError("Unknown screenplay workflow stage")
+    from novel_forge.modules.book_followup_authority.screenplay_sampling import SCREENPLAY_SAMPLE_VERSION, SCREENPLAY_SAMPLE_TYPE, sample_definition_name
+    name = sample_definition_name(stage) if provider_sampling else stage
+    return WorkflowBindingCatalog("book_followup_" + stage + ("_sampling" if provider_sampling else ""),
+        SCREENPLAY_SAMPLE_VERSION if provider_sampling else BOOK_FOLLOWUP_DEFINITION_VERSION, (
+        WorkflowBinding(node_id=stage, operation_name=name, stage=stage,
+            handler_key="novel_forge.book_followup_authority." + name,
+            capability_id=chapter_stage_capability(stage), depends_on=(),
+            primary_output_asset_type=SCREENPLAY_SAMPLE_TYPE if provider_sampling else REVIEW_TYPE if stage == "screenplay_review" else CANDIDATE_TYPE),
+    ))
+
+
 def narrative_evaluation_workflow_binding_catalog() -> WorkflowBindingCatalog:
     return WorkflowBindingCatalog(
         "story_design_semantic_evaluation",
@@ -451,6 +467,7 @@ def governed_workflow_binding_catalog(
         reader_outcome_workflow_binding_catalog(),
         longform_prose_review_workflow_binding_catalog(),
         longform_prose_review_workflow_binding_catalog(provider_sampling=True),
+        *(screenplay_workflow_binding_catalog(stage, provider_sampling=sample) for stage in ("screenplay_generate", "screenplay_review", "screenplay_revision") for sample in (False, True)),
         narrative_evaluation_workflow_binding_catalog(),
         agent_session_workflow_binding_catalog(),
     )

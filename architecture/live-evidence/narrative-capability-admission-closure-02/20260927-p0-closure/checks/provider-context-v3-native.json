@@ -1,0 +1,21 @@
+{
+  "source_context_asset": "40334645-cfc2-4917-acd7-935cba84269d",
+  "frozen_profile": "draft-context-profile-v3",
+  "token_budget": 20000,
+  "serialized_characters": 69369,
+  "selection_explanation": {
+    "policy": "minimum-sufficient-context-v4",
+    "included_segment_count": 12,
+    "included_fact_count": 10,
+    "omitted_segment_count": 12,
+    "omitted_fact_count": 5,
+    "maximum_segments": 24,
+    "maximum_facts_per_segment": 32,
+    "maximum_serialized_characters": 80000,
+    "context_profile_version": "draft-context-profile-v3",
+    "frozen_context_token_budget": 20000,
+    "duplicate_state_summary_count": 1
+  },
+  "evidence": "READ_ONLY_REPROJECTION_OF_EXACT_RETAINED_CONTEXT",
+  "model_calls": 0
+}

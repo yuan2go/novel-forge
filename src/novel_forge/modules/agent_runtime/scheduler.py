@@ -672,6 +672,9 @@ class AgentAuthorityScheduler:
                 worker,
                 expected_operation_version=int(current["version"]),
             )
+        elif classification is WorkerFailureClass.DISPATCH_PAUSED:
+            from novel_forge.modules.command_kernel.attempt_runtime import checkpoint_attempt_for_dispatch_pause
+            checkpoint_attempt_for_dispatch_pause(self.database_url, worker)
         elif classification is WorkerFailureClass.UNKNOWN_EXTERNAL_STATE:
             checkpoint_attempt_for_external_reconciliation(
                 self.database_url,

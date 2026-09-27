@@ -1,0 +1,12 @@
+{
+  "source_tree_hash_before": "fc8014a98be9643ecd3e9338bd19e56b8115b7bdb7c6e7054ccfdf4aab13d47c",
+  "source_tree_hash_after": "fc8014a98be9643ecd3e9338bd19e56b8115b7bdb7c6e7054ccfdf4aab13d47c",
+  "elapsed_seconds": 14.01,
+  "proof_ceiling": "SCRIPTED_NATIVE_POSTGRESQL_DIRECT_REGRESSION",
+  "actual_real_model_calls": 0,
+  "actual_human_reviews": 0,
+  "user_properties": [],
+  "status": "FAIL_PACK_RELEASE_IDENTITY_BEFORE_SOURCE_BOOK",
+  "reason": "Core/runtime frozen c1c497b6; CapabilityPack harness still used legacy e*40; original compatibility gate correctly blocked",
+  "configured_release_sha": "c1c497b69ebc06a12431ab7242a354a31cd1e434"
+}

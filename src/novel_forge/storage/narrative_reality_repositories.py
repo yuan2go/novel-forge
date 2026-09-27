@@ -27,6 +27,10 @@ class NarrativeRealityRepository:
             validate_planned_character_knowledge,
         )
 
+        book_run_id = str(((plan.get("constraint_envelope") or {}).get("world_preparation") or {}).get("action", {}).get("book_run_id") or "")
+        if not book_run_id:
+            book_run_id = self.selected_edition_run(project_id=project_id, book_id=book_id)
+
         self.cursor.execute(
             """
             SELECT version.asset_version_id, version.content_hash, version.content
@@ -34,10 +38,11 @@ class NarrativeRealityRepository:
             JOIN authority_asset_version version
               ON version.asset_version_id=book.active_story_state_version_id
             WHERE book.project_id=%s AND book.book_id=%s
+              AND (%s='' OR book.book_run_id=%s)
               AND book.state NOT IN ('COMPLETED', 'ABORTED')
             ORDER BY book.book_run_id FOR UPDATE OF book
             """,
-            [project_id, book_id],
+            [project_id, book_id, book_run_id, book_run_id],
         )
         sources = self.cursor.fetchall()
         if not sources:
@@ -108,8 +113,9 @@ class NarrativeRealityRepository:
         return dict(row[0])
 
     def rebuild_sources(
-        self, *, project_id: str, book_id: str, through_chapter: int | None
+        self, *, project_id: str, book_id: str, through_chapter: int | None, book_run_id: str = ""
     ) -> tuple[list[Any], dict[str, Any] | None, str]:
+        book_run_id = book_run_id or self.selected_edition_run(project_id=project_id, book_id=book_id)
         self.cursor.execute(
             """
             SELECT source.accepted_chapter, source.chapter_outcome_asset_version_id,
@@ -120,10 +126,11 @@ class NarrativeRealityRepository:
             JOIN authority_book_chapter_acceptance acceptance ON acceptance.acceptance_id=source.acceptance_id
             JOIN authority_operation operation ON operation.operation_id=acceptance.acceptance_operation_id
             WHERE source.project_id=%s AND source.book_id=%s
+              AND (%s='' OR acceptance.book_run_id=authority_book_source_run(%s,acceptance.chapter_number))
               AND (%s::integer IS NULL OR source.accepted_chapter<=%s)
             ORDER BY source.accepted_chapter, source.chapter_outcome_asset_version_id
             """,
-            [project_id, book_id, through_chapter, through_chapter],
+            [project_id, book_id, book_run_id, book_run_id, through_chapter, through_chapter],
         )
         rows = self.cursor.fetchall()
         if not rows:
@@ -135,6 +142,14 @@ class NarrativeRealityRepository:
             frozen_versions={str(item["asset_version_id"]) for item in rows[0][5]},
         )
         return rows, initial, version_id
+
+    def selected_edition_run(self, *, project_id: str, book_id: str) -> str:
+        self.cursor.execute("""SELECT COALESCE(e.content->>'validation_book_run_id',e.content->>'source_book_run_id')
+            FROM authority_book_edition_head h JOIN authority_book b USING(book_id)
+            JOIN authority_book_edition_event e ON e.revision_id=h.selected_revision_id AND e.event_kind='VALIDATED'
+            WHERE b.project_id=%s AND b.book_id=%s ORDER BY e.created_at DESC,e.event_id DESC LIMIT 1""", [project_id, book_id])
+        row = self.cursor.fetchone()
+        return str(row[0]) if row else ""
 
     def require(
         self,
@@ -151,13 +166,13 @@ class NarrativeRealityRepository:
                    COALESCE(r.parent_revision_id, ''), r.revision_id,
                    s.content, c.content, o.content_hash, s.content_hash,
                    c.content_hash, p.projection_hash
-            FROM authority_narrative_reality_revision r
-            JOIN authority_book_chapter_acceptance a ON a.acceptance_id=r.acceptance_id
+            FROM authority_book_acceptance_lineage(%s) a
+            JOIN authority_narrative_reality_revision r ON r.acceptance_id=a.acceptance_id
             JOIN authority_asset_version s ON s.asset_version_id=r.state_version_id
             JOIN authority_asset_version c ON c.asset_version_id=r.canon_version_id
             JOIN authority_asset_version o ON o.asset_version_id=r.outcome_version_id
             JOIN authority_book_narrative_projection_set p ON p.projection_set_id=r.projection_set_id
-            WHERE r.book_run_id=%s AND (%s::integer IS NULL OR r.chapter_number=%s)
+            WHERE (%s::integer IS NULL OR r.chapter_number=%s)
               AND a.status='COMMITTED' AND p.status='COMPLETE'
               AND a.chapter_outcome_asset_version_id=r.outcome_version_id
               AND a.story_state_asset_version_id=r.state_version_id
@@ -195,14 +210,14 @@ class NarrativeRealityRepository:
             include_frontier=True,
         )
         self.cursor.execute(
-            "SELECT timeline_id, max(end_ordinal) FROM authority_reality_event_index WHERE book_run_id=%s AND accepted_chapter<=%s AND world_tick AND timeline_id IS NOT NULL GROUP BY timeline_id",
+            "SELECT timeline_id, max(end_ordinal) FROM authority_reality_event_index WHERE book_run_id=authority_book_source_run(%s,accepted_chapter) AND accepted_chapter<=%s AND world_tick AND timeline_id IS NOT NULL GROUP BY timeline_id",
             [book_run_id, revision.chapter_number],
         )
         projected["world_clock"] = {
             str(timeline): int(ordinal) for timeline, ordinal in self.cursor.fetchall()
         }
         self.cursor.execute(
-            "SELECT state_kind, entity_key, timeline_id, max(end_ordinal) FROM authority_reality_event_index WHERE book_run_id=%s AND accepted_chapter<=%s AND world_tick AND timeline_id IS NOT NULL GROUP BY state_kind, entity_key, timeline_id",
+            "SELECT state_kind, entity_key, timeline_id, max(end_ordinal) FROM authority_reality_event_index WHERE book_run_id=authority_book_source_run(%s,accepted_chapter) AND accepted_chapter<=%s AND world_tick AND timeline_id IS NOT NULL GROUP BY state_kind, entity_key, timeline_id",
             [book_run_id, revision.chapter_number],
         )
         projected["entity_clocks"] = {
@@ -227,10 +242,11 @@ class NarrativeRealityRepository:
         self.cursor.execute(
             """
             SELECT v.content->'state_events'->i.event_ordinal
-            FROM authority_reality_event_index i
-            JOIN authority_narrative_reality_revision r ON r.revision_id=i.revision_id
+            FROM authority_book_acceptance_lineage(%s) accepted
+            JOIN authority_narrative_reality_revision r ON r.acceptance_id=accepted.acceptance_id
+            JOIN authority_reality_event_index i ON i.revision_id=r.revision_id
             JOIN authority_asset_version v ON v.asset_version_id=r.outcome_version_id
-            WHERE i.book_run_id=%s AND i.accepted_chapter<=%s AND i.world_tick
+            WHERE i.accepted_chapter<=%s AND i.world_tick
             ORDER BY i.accepted_chapter DESC, i.event_ordinal DESC LIMIT %s
             """,
             [book_run_id, through_chapter, limit],
@@ -253,10 +269,11 @@ class NarrativeRealityRepository:
         self.cursor.execute(
             """
             SELECT v.content->'state_events'->i.event_ordinal
-            FROM authority_reality_event_index i
-            JOIN authority_narrative_reality_revision r ON r.revision_id=i.revision_id
+            FROM authority_book_acceptance_lineage(%s) accepted
+            JOIN authority_narrative_reality_revision r ON r.acceptance_id=accepted.acceptance_id
+            JOIN authority_reality_event_index i ON i.revision_id=r.revision_id
             JOIN authority_asset_version v ON v.asset_version_id=r.outcome_version_id
-            WHERE i.book_run_id=%s AND i.accepted_chapter<=%s
+            WHERE i.accepted_chapter<=%s
               AND (i.event_id=ANY(%s) OR (%s AND i.accepted_chapter=%s))
             ORDER BY i.accepted_chapter, i.event_ordinal
             """,
@@ -291,7 +308,7 @@ class NarrativeRealityRepository:
                 local_names = [ref[6:] for ref in causes if ref.startswith("local:")]
                 pending.extend(ref for ref in causes if not ref.startswith("local:"))
                 if local_names:
-                    self.cursor.execute("SELECT parent.event_id FROM authority_reality_event_index child JOIN authority_reality_event_index parent ON parent.revision_id=child.revision_id WHERE child.book_run_id=%s AND child.event_id=%s AND child.accepted_chapter<=%s AND parent.batch_local_id=ANY(%s)", [reality["book_run_id"], event["event_id"], reality["chapter_number"], local_names])
+                    self.cursor.execute("SELECT parent.event_id FROM authority_reality_event_index child JOIN authority_reality_event_index parent ON parent.revision_id=child.revision_id WHERE child.book_run_id=authority_book_source_run(%s,child.accepted_chapter) AND child.event_id=%s AND child.accepted_chapter<=%s AND parent.batch_local_id=ANY(%s)", [reality["book_run_id"], event["event_id"], reality["chapter_number"], local_names])
                     pending.extend(str(row[0]) for row in self.cursor.fetchall())
         return {**reality, "events": list(events.values())}
 
@@ -330,7 +347,7 @@ class NarrativeRealityRepository:
 
     def verify_replay(self, *, book_run_id: str) -> dict[str, Any]:
         self.cursor.execute(
-            "SELECT chapter_number FROM authority_book_chapter_acceptance WHERE book_run_id=%s AND status='COMMITTED' ORDER BY chapter_number",
+            "SELECT chapter_number FROM authority_book_acceptance_lineage(%s) WHERE TRUE AND status='COMMITTED' ORDER BY chapter_number",
             [book_run_id],
         )
         chapters = [int(row[0]) for row in self.cursor.fetchall()]

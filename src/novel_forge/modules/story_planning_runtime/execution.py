@@ -469,11 +469,12 @@ def _planning_narrative_intelligence_need(
             **({"usage_scope_context": {
                 "project_id": command.project_id, "book_id": command.book_id,
                 "chapter_number": int((command.narrative_realization or {}).get("chapter_number") or 0),
+                **({"scope_transitions": []} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") == "narrative-craft-budget.v4" else {}),
                 "arc_plan_version_ids": list(dict.fromkeys([
                     *([str(command.input_versions["arc_plans"])] if command.input_versions.get("arc_plans") else []),
                     *command.related_arc_plan_version_ids,
                 ])),
-            }} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") == "narrative-craft-budget.v3" else {}),
+            }} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") in {"narrative-craft-budget.v3", "narrative-craft-budget.v4"} else {}),
         },
         craft_policy=dict(production_profile.get("craft_budget_policy") or {}),
         recent_craft_usage=recent_craft_usage,
@@ -898,7 +899,8 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             logical_ordinal = max(1, int(logical_key.rsplit(":", 1)[-1]))
         except ValueError:
             logical_ordinal = 1
-    chapter_number = _logical_chapter_number(logical_key)
+    edition_scope = command.get("edition_execution") or {}
+    chapter_number = int(edition_scope["chapter"]) if edition_scope else _logical_chapter_number(logical_key)
     if stage == "chapter_group_plan.generate":
         chapter_number = max(
             chapter_number,
@@ -3309,12 +3311,13 @@ class _PlanningPepPort:
                 adapter=self.adapter,
                 budget_reservation_id=self.reservation_id,
             )
-        except Exception:
-            resolve_provider_budget_failure(
-                self.database_url,
-                reservation_id=self.reservation_id,
-                project_id=self.context.project_id,
-            )
+        except Exception as exc:
+            if getattr(exc, "code", "") != "RUNTIME_DISPATCH_PAUSED":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                )
             raise
         recovered_completion = self.recovered_completion is not None
         if recovered_completion:
@@ -3910,6 +3913,8 @@ class PostgresPlanningExecutionPreparer:
         else:
             from .knowledge_translation import add_translation_contract
 
+            if command.edition_execution:
+                output_schema_ref += ":book-edition-planning-v1"
             output_schema = add_translation_contract(
                 output_schema, context_document.content.get("narrative_intelligence") or {}
             )
@@ -4125,6 +4130,7 @@ class PostgresPlanningExecutionPreparer:
                         command.narrative_search_hard_constraints
                     ),
                     "narrative_realization": dict(command.narrative_realization or {}),
+                    **({"edition_execution": dict(command.edition_execution)} if command.edition_execution else {}),
                 },
                 "frozen_inputs": [
                     {
@@ -4157,6 +4163,8 @@ class PostgresPlanningExecutionPreparer:
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
+                **({"craft_history_projection_version": context_document.content["craft_history_projection_version"]}
+                   if context_document.content.get("craft_history_projection_version") else {}),
             },
             "trace_id": command.trace_id,
             "correlation_id": command.correlation_id,
@@ -4907,11 +4915,13 @@ class PostgresPlanningExecutionPreparer:
                 }
             )
         repair_context: dict[str, Any] | None = None
+        result_repair_source = None
         if command.repair_of_operation_id:
             from .result_recovery import require_result_repair_source
             source = require_result_repair_source(self.database_url, command=command, operation_id=command.repair_of_operation_id, source_asset_version_id=command.repair_result_asset_version_id)
             if source["diagnostic"] != dict(command.repair_result_diagnostic or {}):
                 raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "result repair context must use its frozen failure diagnosis")
+            result_repair_source = source
             documents.append(self.query.require(project_id=command.project_id, asset_version_id=source["asset_version_id"]))
             repair_context = {
                 "contract_version": "planning-result-repair-context.v1",
@@ -4942,7 +4952,7 @@ class PostgresPlanningExecutionPreparer:
                 asset_version_id=asset_version_id,
             )
             if (
-                document.asset_type not in {"longform_recap", "replan_request"}
+                document.asset_type not in {"longform_recap", "replan_request", "longform_prose_review_report"}
                 or document.governance != "CLEAR"
                 or document.eligibility not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
             ):
@@ -4950,6 +4960,9 @@ class PostgresPlanningExecutionPreparer:
                     "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID",
                     "Planning change evidence drifted after admission",
                 )
+            if document.asset_type == "longform_prose_review_report":
+                from novel_forge.modules.book_followup_authority.prose_change_evidence import require_prose_planning_evidence
+                require_prose_planning_evidence(self.database_url, command=command, asset_version_id=asset_version_id, commit_sha=self.planning_route.release_sha)
             documents.append(document)
             selected.append(
                 {
@@ -5030,10 +5043,11 @@ class PostgresPlanningExecutionPreparer:
             return frozen_context, tuple(documents)
         recent_craft_usage = []
         if hasattr(self.mkaos, "list_accepted_craft_usage"):
-            history_options = {"include_continuing": True} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") == "narrative-craft-budget.v3" else {}
+            history_options = {"include_continuing": True} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") in {"narrative-craft-budget.v3", "narrative-craft-budget.v4"} else {}
             recent_craft_usage = self.mkaos.list_accepted_craft_usage(
                 project_id=command.project_id, book_id=command.book_id, limit=100,
                 **history_options,
+                **({"book_run_id": str(command.world_preparation_request["book_run_id"])} if command.world_preparation_request else {}),
             )
         need = _planning_narrative_intelligence_need(
             command=command,
@@ -5048,6 +5062,29 @@ class PostgresPlanningExecutionPreparer:
                 )
             ),
         )
+        if need.craft_policy.get("schema_version") == "narrative-craft-budget.v4":
+            from novel_forge.modules.mkaos_authority.craft_scope import approved_arc_scope_transitions
+            scope_context = dict(need.craft_context["usage_scope_context"])
+            scope_context["scope_transitions"] = approved_arc_scope_transitions(self.database_url,
+                project_id=command.project_id, book_id=command.book_id,
+                arc_plan_version_ids=scope_context["arc_plan_version_ids"])
+            need = replace(need, craft_context={**need.craft_context, "usage_scope_context": scope_context})
+        if result_repair_source and need.craft_policy.get("schema_version") == "narrative-craft-budget.v4":
+            from novel_forge.modules.mkaos_authority.craft_reselection import next_reselection_context
+            context_version = result_repair_source["execution_evidence"].get("context_bundle_asset_version_id")
+            original = self.query.require(project_id=command.project_id,
+                **({"asset_version_id": context_version} if context_version else {"logical_ref": f"planning/context_bundles/{result_repair_source['source_operation_id']}.json"}))
+            previous_selection = original.content["narrative_intelligence"]
+            from novel_forge.modules.mkaos_authority.craft_selection import validate_craft_policy
+            if previous_selection.get("craft_policy") and previous_selection["craft_policy"] != validate_craft_policy(need.craft_policy):
+                raise KernelError("CRAFT_RESELECTION_POLICY_DRIFT", "Concrete repair cannot reinterpret its predecessor policy")
+            task_identity = canonical_hash({"project_id": command.project_id, "book_id": command.book_id,
+                "logical_key": command.logical_key, "generator_operation_name": command.generator_operation_name,
+                "input_versions": dict(command.input_versions)})
+            reselection = next_reselection_context(selection=previous_selection, source=result_repair_source, task_identity=task_identity)
+            if reselection:
+                need = replace(need, craft_context={**need.craft_context, "reselection": reselection})
+                repair_context["instruction"] = "Create a new concrete translation for the newly selected exact Cards. Preserve scene identities and prior correct planning content. Respect every scoped rejection; do not invent replacements. Recompute roles, order, dependency placements, combined effect, interference and abstention reasons. Earlier requests and results remain immutable."
         narrative_intelligence = self.mkaos.resolve_narrative_intelligence(
             project_id=command.project_id,
             book_id=command.book_id,
@@ -5072,7 +5109,13 @@ class PostgresPlanningExecutionPreparer:
             "input_versions": selected,
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_search": command.narrative_search_snapshot,
+            **({"edition_execution": dict(command.edition_execution)} if command.edition_execution else {}),
             "narrative_intelligence": narrative_intelligence,
+            **({"planning_input_projection_version": "planning-input-role-references.v1"}
+               if command.generator_operation_name not in FOUNDATION_GENERATORS else {}),
+            **({"craft_history_projection_version": "planning-craft-history-projection.v1"}
+               if command.generator_operation_name not in FOUNDATION_GENERATORS
+               and narrative_intelligence.get("craft_policy", {}).get("schema_version") == "narrative-craft-budget.v4" else {}),
             "knowledge_access_policy": knowledge_access_policy,
             **(
                 {"foundation_task": foundation_task(command.generator_operation_name)}

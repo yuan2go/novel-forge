@@ -1,0 +1,630 @@
+{
+  "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+  "source_run": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+  "validation_run": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+  "snapshot": {
+    "operation_id": "187a149e-f971-4172-9dd0-dddbafc18dad",
+    "status": "CREATED",
+    "edition_id": "edition:f03e8898-d59c-4eac-ab35-1a1bbe6ef9f6",
+    "revision_id": "74ab7bf6-ae69-4ff5-bcf7-ed09aa54b085",
+    "version": 1,
+    "manifest_digest": "sha256:1bc86d01e19d10ea7a70c4f93a39e359643bface2f593013b8ee1d07cf78de6b",
+    "publication_authorized": false,
+    "replayed": false
+  },
+  "updated_screenplay": {
+    "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL_INTEGRATION",
+    "actual_real_model_calls": 0,
+    "actual_human_evaluations": 0,
+    "source_asset_version_id": "b854d5bb-82d9-423f-9258-bba13244c7e6",
+    "source_revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+    "source_digest": "sha256:534599d79b811bbe5cdd3695c7a9dabd05eae3a813ac53c2c39a2ed30cb6eee4",
+    "sampling": null,
+    "first_candidate_asset_version_id": "authority-output:462e1545-092e-4a3f-9815-f0afeac53e17:screenplay_generate.result:v1",
+    "first_review_asset_version_id": "authority-output:e9baf3b0-8d1f-4343-a703-d0896c2d17ec:screenplay_review.result:v1",
+    "candidate_asset_version_id": "authority-output:4f6f00b0-cdf9-4abb-9f1f-098556cbfadf:screenplay_revision.result:v1",
+    "review_asset_version_id": "authority-output:e5c32a0f-80df-47e5-9895-ad6a802c9ffc:screenplay_review.result:v1",
+    "operation_id": "1282e42c-27a5-4e8d-991c-caae00b501e8",
+    "status": "ACCEPTED",
+    "accepted_asset_version_id": "f23c2e0f-c777-4712-b176-d92a39973229",
+    "publication_authorized": false,
+    "replayed": false,
+    "command_inputs": {
+      "prepare": [
+        {
+          "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+          "content_hash": "sha256:e53153e12ef1655b1ffa71b8599cc45b6859405b8a0f5cdbf8242c5af1229693",
+          "asset_version_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357"
+        },
+        {
+          "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+          "content_hash": "sha256:093dba42c12041ad84ad2303d7f043c374437bc6a7729b5fe08e886d45bb0600",
+          "asset_version_id": "daed1a59-6432-4d16-a678-94e907ce4bfd"
+        },
+        {
+          "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+          "content_hash": "sha256:f0b900596924a501ca034a9dcf3f831ea1c561337620bd726fa3812ffcef4a4f",
+          "asset_version_id": "b67e8938-00bb-4038-914a-23ff361bb46a"
+        }
+      ],
+      "accept": [
+        {
+          "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+          "content_hash": "sha256:0c70dc4dc0b9bba94f1884eedfac5d456fb6c92174bebd7a59fed6d6c0abc058",
+          "asset_version_id": "b854d5bb-82d9-423f-9258-bba13244c7e6"
+        },
+        {
+          "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+          "content_hash": "sha256:2121e802a560ade273e57d7f881d8e16eb1ee2576fab716ba9bf50f316d07220",
+          "asset_version_id": "authority-output:4f6f00b0-cdf9-4abb-9f1f-098556cbfadf:screenplay_revision.result:v1"
+        },
+        {
+          "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+          "content_hash": "sha256:7e2e6c8097cca9437fa2fd2faf224090afdcd57e3d2d35569e1fdf65eefcf470",
+          "asset_version_id": "authority-output:e5c32a0f-80df-47e5-9895-ad6a802c9ffc:screenplay_review.result:v1"
+        }
+      ]
+    },
+    "operations": [
+      {
+        "operation_id": "462e1545-092e-4a3f-9815-f0afeac53e17",
+        "status": "SUCCEEDED",
+        "outputs": [
+          "authority-output:462e1545-092e-4a3f-9815-f0afeac53e17:screenplay_generate.result:v1"
+        ]
+      },
+      {
+        "operation_id": "e9baf3b0-8d1f-4343-a703-d0896c2d17ec",
+        "status": "SUCCEEDED",
+        "outputs": [
+          "authority-output:e9baf3b0-8d1f-4343-a703-d0896c2d17ec:screenplay_review.result:v1"
+        ]
+      },
+      {
+        "operation_id": "4f6f00b0-cdf9-4abb-9f1f-098556cbfadf",
+        "status": "SUCCEEDED",
+        "outputs": [
+          "authority-output:4f6f00b0-cdf9-4abb-9f1f-098556cbfadf:screenplay_revision.result:v1"
+        ]
+      },
+      {
+        "operation_id": "e5c32a0f-80df-47e5-9895-ad6a802c9ffc",
+        "status": "SUCCEEDED",
+        "outputs": [
+          "authority-output:e5c32a0f-80df-47e5-9895-ad6a802c9ffc:screenplay_review.result:v1"
+        ]
+      }
+    ],
+    "business_scopes": [
+      {
+        "phase": "CREATION_EARLY",
+        "origin_phase": "CREATION_EARLY",
+        "chapter_number": 2,
+        "generator_operation_name": "",
+        "operation_name": "screenplay_generate",
+        "capability": "model.screenplay_generate",
+        "stage": "screenplay_generate",
+        "dispatch_generation": 1,
+        "provider_request_hash": "sha256:f50e4f09b8e4346ef93119e141760ccc87a50ebd4f54196bebbf1854fbc5188a",
+        "scope_sources": [
+          {
+            "path": "native_screenplay_source.chapter_end",
+            "value": 2
+          },
+          {
+            "path": "native_screenplay_source",
+            "value": {
+              "source_revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+              "manifest_digest": "sha256:82dc773b9b321364702f42b4eb1d10eec777997b496329544a28708060bd7c40",
+              "source_digest": "sha256:534599d79b811bbe5cdd3695c7a9dabd05eae3a813ac53c2c39a2ed30cb6eee4",
+              "source_asset": {
+                "asset_version_id": "b854d5bb-82d9-423f-9258-bba13244c7e6",
+                "content_hash": "sha256:0c70dc4dc0b9bba94f1884eedfac5d456fb6c92174bebd7a59fed6d6c0abc058"
+              },
+              "chapter_start": 1,
+              "chapter_end": 2,
+              "units": [
+                {
+                  "known": {
+                    "ilya": [
+                      "ilya-observation"
+                    ],
+                    "mara": [
+                      "mara-observation"
+                    ]
+                  },
+                  "unit_id": "chapter:chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                  "fact_ids": [
+                    "character_id=ilya|fact_id=ilya-observation",
+                    "character_id=mara",
+                    "character_id=mara|fact_id=mara-observation",
+                    "character_id=protagonist|arc_id=character-arc:accountability",
+                    "disclosure_id=disclosure:hidden-cost:chapter:1",
+                    "fact:hidden-cost",
+                    "fact_id=fact:hidden-cost",
+                    "ilya-observation",
+                    "mara-observation",
+                    "obligation_id=mara:protect-witnesses",
+                    "source_id=ilya|target_id=mara",
+                    "source_id=mara|target_id=ilya",
+                    "subject=chapter:1|predicate=accepted_revision_digest",
+                    "subject=protagonist|predicate=gave_up",
+                    "world_state_id=council-inquiry"
+                  ],
+                  "characters": [
+                    "ilya",
+                    "mara",
+                    "protagonist"
+                  ],
+                  "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+                  "reader_known": [],
+                  "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                  "chapter_number": 1,
+                  "projection_set_id": "longform-projection:b9ddfa2aa9bb2c1098c47d1bdf50a7e6962e4d453e366c6be79ace8d96de11dc",
+                  "reality_revision_id": "reality:sha256:c95076f9dcf4f6769c7153684968882fdb3fbe1ce18e16adb424e2b3859abd9a",
+                  "outcome_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+                  "story_state_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1",
+                  "canon_snapshot_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+                },
+                {
+                  "known": {
+                    "ilya": [
+                      "ilya-observation"
+                    ],
+                    "mara": [
+                      "mara-observation"
+                    ]
+                  },
+                  "unit_id": "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+                  "fact_ids": [
+                    "character_id=ilya|fact_id=ilya-observation",
+                    "character_id=mara",
+                    "character_id=mara|fact_id=mara-observation",
+                    "character_id=protagonist|arc_id=character-arc:accountability",
+                    "disclosure_id=disclosure:hidden-cost:chapter:1",
+                    "disclosure_id=disclosure:hidden-cost:chapter:2",
+                    "fact:hidden-cost",
+                    "fact_id=fact:hidden-cost",
+                    "ilya-observation",
+                    "mara-observation",
+                    "obligation_id=mara:protect-witnesses",
+                    "source_id=ilya|target_id=mara",
+                    "source_id=mara|target_id=ilya",
+                    "subject=chapter:1|predicate=accepted_revision_digest",
+                    "subject=chapter:2|predicate=accepted_revision_digest",
+                    "subject=protagonist|predicate=gave_up",
+                    "world_state_id=council-inquiry"
+                  ],
+                  "characters": [
+                    "ilya",
+                    "mara",
+                    "protagonist"
+                  ],
+                  "book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+                  "reader_known": [
+                    "fact:hidden-cost"
+                  ],
+                  "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+                  "chapter_number": 2,
+                  "projection_set_id": "longform-projection:954d2621a124d24ff0284c5b302bb1c0c327d819c03cabc0a0a51cc826ff2b8e",
+                  "reality_revision_id": "reality:sha256:b80ce458e3edcf277136dea8ef91a11e3515f677a6a5238102133819d8e4acc9",
+                  "outcome_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1",
+                  "story_state_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.story_state:v1",
+                  "canon_snapshot_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.canon.current:v1"
+                }
+              ],
+              "novel_canon_mutation_allowed": false
+            }
+          }
+        ]
+      },
+      {
+        "phase": "CREATION_EARLY",
+        "origin_phase": "CREATION_EARLY",
+        "chapter_number": 2,
+        "generator_operation_name": "",
+        "operation_name": "screenplay_review",
+        "capability": "model.screenplay_review",
+        "stage": "screenplay_review",
+        "dispatch_generation": 1,
+        "provider_request_hash": "sha256:937fa74d59c766c397861f1468fda33155754604c9ca4c888b19c1923e9f14f5",
+        "scope_sources": [
+          {
+            "path": "native_screenplay_source.chapter_end",
+            "value": 2
+          },
+          {
+            "path": "native_screenplay_source",
+            "value": {
+              "source_revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+              "manifest_digest": "sha256:82dc773b9b321364702f42b4eb1d10eec777997b496329544a28708060bd7c40",
+              "source_digest": "sha256:534599d79b811bbe5cdd3695c7a9dabd05eae3a813ac53c2c39a2ed30cb6eee4",
+              "source_asset": {
+                "asset_version_id": "b854d5bb-82d9-423f-9258-bba13244c7e6",
+                "content_hash": "sha256:0c70dc4dc0b9bba94f1884eedfac5d456fb6c92174bebd7a59fed6d6c0abc058"
+              },
+              "chapter_start": 1,
+              "chapter_end": 2,
+              "units": [
+                {
+                  "known": {
+                    "ilya": [
+                      "ilya-observation"
+                    ],
+                    "mara": [
+                      "mara-observation"
+                    ]
+                  },
+                  "unit_id": "chapter:chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                  "fact_ids": [
+                    "character_id=ilya|fact_id=ilya-observation",
+                    "character_id=mara",
+                    "character_id=mara|fact_id=mara-observation",
+                    "character_id=protagonist|arc_id=character-arc:accountability",
+                    "disclosure_id=disclosure:hidden-cost:chapter:1",
+                    "fact:hidden-cost",
+                    "fact_id=fact:hidden-cost",
+                    "ilya-observation",
+                    "mara-observation",
+                    "obligation_id=mara:protect-witnesses",
+                    "source_id=ilya|target_id=mara",
+                    "source_id=mara|target_id=ilya",
+                    "subject=chapter:1|predicate=accepted_revision_digest",
+                    "subject=protagonist|predicate=gave_up",
+                    "world_state_id=council-inquiry"
+                  ],
+                  "characters": [
+                    "ilya",
+                    "mara",
+                    "protagonist"
+                  ],
+                  "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+                  "reader_known": [],
+                  "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                  "chapter_number": 1,
+                  "projection_set_id": "longform-projection:b9ddfa2aa9bb2c1098c47d1bdf50a7e6962e4d453e366c6be79ace8d96de11dc",
+                  "reality_revision_id": "reality:sha256:c95076f9dcf4f6769c7153684968882fdb3fbe1ce18e16adb424e2b3859abd9a",
+                  "outcome_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+                  "story_state_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1",
+                  "canon_snapshot_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+                },
+                {
+                  "known": {
+                    "ilya": [
+                      "ilya-observation"
+                    ],
+                    "mara": [
+                      "mara-observation"
+                    ]
+                  },
+                  "unit_id": "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+                  "fact_ids": [
+                    "character_id=ilya|fact_id=ilya-observation",
+                    "character_id=mara",
+                    "character_id=mara|fact_id=mara-observation",
+                    "character_id=protagonist|arc_id=character-arc:accountability",
+                    "disclosure_id=disclosure:hidden-cost:chapter:1",
+                    "disclosure_id=disclosure:hidden-cost:chapter:2",
+                    "fact:hidden-cost",
+                    "fact_id=fact:hidden-cost",
+                    "ilya-observation",
+                    "mara-observation",
+                    "obligation_id=mara:protect-witnesses",
+                    "source_id=ilya|target_id=mara",
+                    "source_id=mara|target_id=ilya",
+                    "subject=chapter:1|predicate=accepted_revision_digest",
+                    "subject=chapter:2|predicate=accepted_revision_digest",
+                    "subject=protagonist|predicate=gave_up",
+                    "world_state_id=council-inquiry"
+                  ],
+                  "characters": [
+                    "ilya",
+                    "mara",
+                    "protagonist"
+                  ],
+                  "book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+                  "reader_known": [
+                    "fact:hidden-cost"
+                  ],
+                  "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+                  "chapter_number": 2,
+                  "projection_set_id": "longform-projection:954d2621a124d24ff0284c5b302bb1c0c327d819c03cabc0a0a51cc826ff2b8e",
+                  "reality_revision_id": "reality:sha256:b80ce458e3edcf277136dea8ef91a11e3515f677a6a5238102133819d8e4acc9",
+                  "outcome_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1",
+                  "story_state_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.story_state:v1",
+                  "canon_snapshot_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.canon.current:v1"
+                }
+              ],
+              "novel_canon_mutation_allowed": false
+            }
+          }
+        ]
+      },
+      {
+        "phase": "REPAIR",
+        "origin_phase": "CREATION_EARLY",
+        "chapter_number": 2,
+        "generator_operation_name": "",
+        "operation_name": "screenplay_revision",
+        "capability": "model.screenplay_revision",
+        "stage": "screenplay_revision",
+        "dispatch_generation": 1,
+        "provider_request_hash": "sha256:abaeb2134fa1e055c08e1f4e2e301f3fb2d586335ffe315de94eddb3b7b032f8",
+        "scope_sources": [
+          {
+            "path": "native_screenplay_source.chapter_end",
+            "value": 2
+          },
+          {
+            "path": "native_screenplay_source",
+            "value": {
+              "source_revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+              "manifest_digest": "sha256:82dc773b9b321364702f42b4eb1d10eec777997b496329544a28708060bd7c40",
+              "source_digest": "sha256:534599d79b811bbe5cdd3695c7a9dabd05eae3a813ac53c2c39a2ed30cb6eee4",
+              "source_asset": {
+                "asset_version_id": "b854d5bb-82d9-423f-9258-bba13244c7e6",
+                "content_hash": "sha256:0c70dc4dc0b9bba94f1884eedfac5d456fb6c92174bebd7a59fed6d6c0abc058"
+              },
+              "chapter_start": 1,
+              "chapter_end": 2,
+              "units": [
+                {
+                  "known": {
+                    "ilya": [
+                      "ilya-observation"
+                    ],
+                    "mara": [
+                      "mara-observation"
+                    ]
+                  },
+                  "unit_id": "chapter:chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                  "fact_ids": [
+                    "character_id=ilya|fact_id=ilya-observation",
+                    "character_id=mara",
+                    "character_id=mara|fact_id=mara-observation",
+                    "character_id=protagonist|arc_id=character-arc:accountability",
+                    "disclosure_id=disclosure:hidden-cost:chapter:1",
+                    "fact:hidden-cost",
+                    "fact_id=fact:hidden-cost",
+                    "ilya-observation",
+                    "mara-observation",
+                    "obligation_id=mara:protect-witnesses",
+                    "source_id=ilya|target_id=mara",
+                    "source_id=mara|target_id=ilya",
+                    "subject=chapter:1|predicate=accepted_revision_digest",
+                    "subject=protagonist|predicate=gave_up",
+                    "world_state_id=council-inquiry"
+                  ],
+                  "characters": [
+                    "ilya",
+                    "mara",
+                    "protagonist"
+                  ],
+                  "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+                  "reader_known": [],
+                  "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                  "chapter_number": 1,
+                  "projection_set_id": "longform-projection:b9ddfa2aa9bb2c1098c47d1bdf50a7e6962e4d453e366c6be79ace8d96de11dc",
+                  "reality_revision_id": "reality:sha256:c95076f9dcf4f6769c7153684968882fdb3fbe1ce18e16adb424e2b3859abd9a",
+                  "outcome_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+                  "story_state_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1",
+                  "canon_snapshot_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+                },
+                {
+                  "known": {
+                    "ilya": [
+                      "ilya-observation"
+                    ],
+                    "mara": [
+                      "mara-observation"
+                    ]
+                  },
+                  "unit_id": "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+                  "fact_ids": [
+                    "character_id=ilya|fact_id=ilya-observation",
+                    "character_id=mara",
+                    "character_id=mara|fact_id=mara-observation",
+                    "character_id=protagonist|arc_id=character-arc:accountability",
+                    "disclosure_id=disclosure:hidden-cost:chapter:1",
+                    "disclosure_id=disclosure:hidden-cost:chapter:2",
+                    "fact:hidden-cost",
+                    "fact_id=fact:hidden-cost",
+                    "ilya-observation",
+                    "mara-observation",
+                    "obligation_id=mara:protect-witnesses",
+                    "source_id=ilya|target_id=mara",
+                    "source_id=mara|target_id=ilya",
+                    "subject=chapter:1|predicate=accepted_revision_digest",
+                    "subject=chapter:2|predicate=accepted_revision_digest",
+                    "subject=protagonist|predicate=gave_up",
+                    "world_state_id=council-inquiry"
+                  ],
+                  "characters": [
+                    "ilya",
+                    "mara",
+                    "protagonist"
+                  ],
+                  "book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+                  "reader_known": [
+                    "fact:hidden-cost"
+                  ],
+                  "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+                  "chapter_number": 2,
+                  "projection_set_id": "longform-projection:954d2621a124d24ff0284c5b302bb1c0c327d819c03cabc0a0a51cc826ff2b8e",
+                  "reality_revision_id": "reality:sha256:b80ce458e3edcf277136dea8ef91a11e3515f677a6a5238102133819d8e4acc9",
+                  "outcome_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1",
+                  "story_state_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.story_state:v1",
+                  "canon_snapshot_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.canon.current:v1"
+                }
+              ],
+              "novel_canon_mutation_allowed": false
+            }
+          }
+        ]
+      },
+      {
+        "phase": "CREATION_EARLY",
+        "origin_phase": "CREATION_EARLY",
+        "chapter_number": 2,
+        "generator_operation_name": "",
+        "operation_name": "screenplay_review",
+        "capability": "model.screenplay_review",
+        "stage": "screenplay_review",
+        "dispatch_generation": 1,
+        "provider_request_hash": "sha256:504081b22432cd58e19a0f748070b0499a78dce80ac7e67550dbaf4e213bb1b8",
+        "scope_sources": [
+          {
+            "path": "native_screenplay_source.chapter_end",
+            "value": 2
+          },
+          {
+            "path": "native_screenplay_source",
+            "value": {
+              "source_revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+              "manifest_digest": "sha256:82dc773b9b321364702f42b4eb1d10eec777997b496329544a28708060bd7c40",
+              "source_digest": "sha256:534599d79b811bbe5cdd3695c7a9dabd05eae3a813ac53c2c39a2ed30cb6eee4",
+              "source_asset": {
+                "asset_version_id": "b854d5bb-82d9-423f-9258-bba13244c7e6",
+                "content_hash": "sha256:0c70dc4dc0b9bba94f1884eedfac5d456fb6c92174bebd7a59fed6d6c0abc058"
+              },
+              "chapter_start": 1,
+              "chapter_end": 2,
+              "units": [
+                {
+                  "known": {
+                    "ilya": [
+                      "ilya-observation"
+                    ],
+                    "mara": [
+                      "mara-observation"
+                    ]
+                  },
+                  "unit_id": "chapter:chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                  "fact_ids": [
+                    "character_id=ilya|fact_id=ilya-observation",
+                    "character_id=mara",
+                    "character_id=mara|fact_id=mara-observation",
+                    "character_id=protagonist|arc_id=character-arc:accountability",
+                    "disclosure_id=disclosure:hidden-cost:chapter:1",
+                    "fact:hidden-cost",
+                    "fact_id=fact:hidden-cost",
+                    "ilya-observation",
+                    "mara-observation",
+                    "obligation_id=mara:protect-witnesses",
+                    "source_id=ilya|target_id=mara",
+                    "source_id=mara|target_id=ilya",
+                    "subject=chapter:1|predicate=accepted_revision_digest",
+                    "subject=protagonist|predicate=gave_up",
+                    "world_state_id=council-inquiry"
+                  ],
+                  "characters": [
+                    "ilya",
+                    "mara",
+                    "protagonist"
+                  ],
+                  "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+                  "reader_known": [],
+                  "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                  "chapter_number": 1,
+                  "projection_set_id": "longform-projection:b9ddfa2aa9bb2c1098c47d1bdf50a7e6962e4d453e366c6be79ace8d96de11dc",
+                  "reality_revision_id": "reality:sha256:c95076f9dcf4f6769c7153684968882fdb3fbe1ce18e16adb424e2b3859abd9a",
+                  "outcome_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+                  "story_state_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1",
+                  "canon_snapshot_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+                },
+                {
+                  "known": {
+                    "ilya": [
+                      "ilya-observation"
+                    ],
+                    "mara": [
+                      "mara-observation"
+                    ]
+                  },
+                  "unit_id": "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+                  "fact_ids": [
+                    "character_id=ilya|fact_id=ilya-observation",
+                    "character_id=mara",
+                    "character_id=mara|fact_id=mara-observation",
+                    "character_id=protagonist|arc_id=character-arc:accountability",
+                    "disclosure_id=disclosure:hidden-cost:chapter:1",
+                    "disclosure_id=disclosure:hidden-cost:chapter:2",
+                    "fact:hidden-cost",
+                    "fact_id=fact:hidden-cost",
+                    "ilya-observation",
+                    "mara-observation",
+                    "obligation_id=mara:protect-witnesses",
+                    "source_id=ilya|target_id=mara",
+                    "source_id=mara|target_id=ilya",
+                    "subject=chapter:1|predicate=accepted_revision_digest",
+                    "subject=chapter:2|predicate=accepted_revision_digest",
+                    "subject=protagonist|predicate=gave_up",
+                    "world_state_id=council-inquiry"
+                  ],
+                  "characters": [
+                    "ilya",
+                    "mara",
+                    "protagonist"
+                  ],
+                  "book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+                  "reader_known": [
+                    "fact:hidden-cost"
+                  ],
+                  "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+                  "chapter_number": 2,
+                  "projection_set_id": "longform-projection:954d2621a124d24ff0284c5b302bb1c0c327d819c03cabc0a0a51cc826ff2b8e",
+                  "reality_revision_id": "reality:sha256:b80ce458e3edcf277136dea8ef91a11e3515f677a6a5238102133819d8e4acc9",
+                  "outcome_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1",
+                  "story_state_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.story_state:v1",
+                  "canon_snapshot_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.canon.current:v1"
+                }
+              ],
+              "novel_canon_mutation_allowed": false
+            }
+          }
+        ]
+      }
+    ],
+    "scripted_calls": [
+      {
+        "stage": "screenplay_generate",
+        "inputs": {
+          "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+          "source_digest": "sha256:534599d79b811bbe5cdd3695c7a9dabd05eae3a813ac53c2c39a2ed30cb6eee4",
+          "candidate_digest": "",
+          "screenplay_source_contract": "screenplay-source.v2"
+        }
+      },
+      {
+        "stage": "screenplay_review",
+        "inputs": {
+          "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+          "source_digest": "sha256:534599d79b811bbe5cdd3695c7a9dabd05eae3a813ac53c2c39a2ed30cb6eee4",
+          "candidate_digest": "sha256:fa9898a8b5cedde93fd9c12e25df62fc951c32b1cb63d6a0eb0bfa95477e0fca",
+          "screenplay_source_contract": "screenplay-source.v2"
+        }
+      },
+      {
+        "stage": "screenplay_revision",
+        "inputs": {
+          "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+          "source_digest": "sha256:534599d79b811bbe5cdd3695c7a9dabd05eae3a813ac53c2c39a2ed30cb6eee4",
+          "candidate_digest": "sha256:fa9898a8b5cedde93fd9c12e25df62fc951c32b1cb63d6a0eb0bfa95477e0fca",
+          "screenplay_source_contract": "screenplay-source.v2"
+        }
+      },
+      {
+        "stage": "screenplay_review",
+        "inputs": {
+          "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+          "source_digest": "sha256:534599d79b811bbe5cdd3695c7a9dabd05eae3a813ac53c2c39a2ed30cb6eee4",
+          "candidate_digest": "sha256:d6a4e156d5a2693dc8f6ec64355a5c3ac0f0e3b8ffcf5383f3407f2eb125dd5e",
+          "screenplay_source_contract": "screenplay-source.v2"
+        }
+      }
+    ],
+    "export": "branch-updated-screenplay.txt"
+  },
+  "old_inflight_status": "BUSINESS_DEADLINE_EXPIRED_RETAINED",
+  "proof_ceiling": "SCRIPTED_CONTINUATION_AND_ADAPTATION_ONLY_NOT_FULL_JOINT_PASS"
+}

@@ -284,9 +284,14 @@ class StoryPlanningGenerationCommand:
     narrative_realization: Mapping[str, Any] | None = None
     opening_execution_binding: Mapping[str, Any] | None = None
     world_preparation_request: Mapping[str, Any] | None = None
+    edition_execution: Mapping[str, Any] | None = None
     execution_contract_version: str = "1.16.0"
 
     def __post_init__(self) -> None:
+        if self.edition_execution:
+            if self.execution_contract_version != "1.16.0" or self.generator_operation_name not in {"chapter_plan.generate", "chapter_group_plan.generate"} or self.edition_execution.get("contract_version") != "book-edition-planning.v1":
+                raise ValueError("Edition planning requires its explicit current native execution contract")
+            object.__setattr__(self, "edition_execution", _json_object_snapshot(self.edition_execution, "edition_execution"))
         if not isinstance(self.routing_bootstrap_authorization_id, str) or (
             self.routing_bootstrap_authorization_id
             and (

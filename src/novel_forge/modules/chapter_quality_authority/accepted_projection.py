@@ -36,6 +36,7 @@ def load_accepted_quality_observations(
     project_id: str,
     book_id: str,
     accepted_through_chapter: int,
+    book_run_id: str = "",
 ) -> list[dict[str, Any]]:
 
     if (
@@ -48,6 +49,10 @@ def load_accepted_quality_observations(
     if accepted_through_chapter == 0:
         return []
     with AuthorityUnitOfWork(database_url) as uow:
+        from novel_forge.storage.book_edition_repositories import BookEditionRepository
+        book_run_id, acceptance_ids = BookEditionRepository(uow.cursor).accepted_scope(project_id=project_id, book_id=book_id, book_run_id=book_run_id)
+        if acceptance_ids is not None and accepted_through_chapter > len(acceptance_ids):
+            raise KernelError("EDITION_ACCEPTANCE_BOUNDARY_EXCEEDED", "Quality history cannot extend beyond the selected immutable manuscript; supply the exact ongoing Book run")
         uow.cursor.execute(
             """
             SELECT acceptance.acceptance_id, acceptance.status,
@@ -148,6 +153,8 @@ def load_accepted_quality_observations(
             ) AS realization_coverage ON TRUE
             WHERE acceptance.project_id=%s
               AND production.book_id=%s
+              AND acceptance.acceptance_id IN (SELECT acceptance_id FROM authority_book_acceptance_lineage(%s))
+              AND (%s OR acceptance.acceptance_id=ANY(%s::text[]))
               AND acceptance.status='COMMITTED'
               AND acceptance.chapter_number<=%s
               AND outcome.content->>'contract_version' IN (
@@ -159,6 +166,9 @@ def load_accepted_quality_observations(
             [
                 project_id,
                 book_id,
+                book_run_id,
+                acceptance_ids is None,
+                list(acceptance_ids or ()),
                 accepted_through_chapter,
                 _MAX_ACCEPTED_QUALITY_OBSERVATIONS + 1,
             ],

@@ -486,7 +486,7 @@ class ChapterAuthorityScheduler:
         operation = self._child(operation_id, project_id)
         terminal = {"SUCCEEDED", "FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}
         recovery_mode = "terminal_replay"
-        node = next(item for item in ChapterNode if item.value == stage)
+        node = next(item for item in ChapterNode if item.definition_name == source_name)
         if operation["status"] not in terminal:
             request = self._request_from_root({
                 **root, "command_payload": root["command_payload"]["payload"],
@@ -1447,6 +1447,9 @@ class ChapterAuthorityScheduler:
                     worker,
                     expected_operation_version=int(current["version"]),
                 )
+            elif classification is WorkerFailureClass.DISPATCH_PAUSED:
+                from novel_forge.modules.command_kernel.attempt_runtime import checkpoint_attempt_for_dispatch_pause
+                checkpoint_attempt_for_dispatch_pause(self.database_url, worker)
             elif classification is WorkerFailureClass.UNKNOWN_EXTERNAL_STATE:
                 checkpoint_attempt_for_external_reconciliation(
                     self.database_url,

@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "<PRIVATE_EVIDENCE>/debug-edition-dispatch-boundaries.py", line 7, in <module>
+    result=verify_edition_dispatch_boundaries(ns['captured'],principal=ns['principal'],selected_run=ns['validation'],selected_revision_id='74ab7bf6-ae69-4ff5-bcf7-ed09aa54b085',key='native-boundary-v2')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/tests/integration/edition_dispatch_boundary_support.py", line 85, in verify_edition_dispatch_boundaries
+    restored = authority.recover_chapter_submission(reserved["chapter_request_id"], principal=principal)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/production.py", line 2146, in recover_chapter_submission
+    return self._dispatch_reserved_chapter(chapter_request_id, principal=principal)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/production.py", line 992, in _dispatch_reserved_chapter
+    admission = self.chapter_port.submit(chapter_command, principal=principal)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/production.py", line 400, in submit
+    return self.application.admit(request, principal=principal)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/chapter_authority/application.py", line 148, in admit
+    frozen = freeze_edition_adoption(
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/edition_runtime.py", line 60, in freeze_edition_adoption
+    raise KernelError("EDITION_ADOPTION_REJECTED", "A rejected edition cannot start another validation task")
+novel_forge.modules.command_kernel.errors.KernelError: EDITION_ADOPTION_REJECTED: A rejected edition cannot start another validation task
