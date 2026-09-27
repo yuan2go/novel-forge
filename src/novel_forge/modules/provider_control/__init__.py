@@ -20,6 +20,7 @@ from .composition import (
     CHAPTER_PROVIDER_ENVIRONMENT_KEYS,
     build_provider_adapter_registry,
     configured_chapter_provider_ids,
+    configured_router_provider_ids,
     normalize_provider_id,
 )
 from .registry import (
@@ -50,6 +51,7 @@ __all__ = [
     "CHAPTER_PROVIDER_ENVIRONMENT_KEYS",
     "build_provider_adapter_registry",
     "configured_chapter_provider_ids",
+    "configured_router_provider_ids",
     "normalize_provider_id",
     "ChapterProviderV2Gateway",
     "ChapterProviderV2Route",
