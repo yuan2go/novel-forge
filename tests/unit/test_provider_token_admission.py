@@ -9,6 +9,7 @@ from novel_forge.modules.production_execution.provider_admission import (
     TokenAccountingContract,
     build_route_token_accounting_contract,
     prepare_provider_admission,
+    provider_request_token_components,
     verify_provider_admission,
 )
 
@@ -240,3 +241,25 @@ def test_manifest_identity_excludes_prompt_body_but_reconstructs_exact_envelope(
     )
     with pytest.raises(ValueError, match="PROVIDER_REQUEST_IDENTITY_DRIFT"):
         ProviderRequestEnvelope.from_identity_dict(identity, input_text="changed")
+
+
+def test_routing_and_admission_include_the_same_large_safety_margin():
+    text = "x" * 20617
+    components = provider_request_token_components(
+        text, output_reserve=10000, framing_overhead=16, safety_margin=8192,
+    )
+    contract = build_route_token_accounting_contract(
+        provider="codex-cli", model="gpt-test", route_identity="route:test",
+        accounting_method="CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+        accounting_evidence_ref="test:meter", model_context_limit=272000,
+        output_reserve=10000, safety_margin=8192, framing_overhead=16,
+    )
+    envelope = ProviderRequestEnvelope(
+        provider="codex-cli", model="gpt-test", protocol="codex-cli-application-stdin-v1",
+        input_text=text, max_output_tokens=10000, timeout_seconds=30, stable_idempotency_key="request:test",
+    )
+    receipt = prepare_provider_admission(envelope, contract, complete_request_coverage=COMPLETE_COVERAGE)
+    assert receipt.status == "ADMITTED"
+    assert receipt.component_usage == components
+    assert receipt.total_reserved == sum(components.values()) == 38825
+    assert sum(components.values()) - components["output_reserve"] == 28825

@@ -379,6 +379,22 @@ def build_route_token_accounting_contract(
     )
 
 
+def provider_request_token_components(
+    input_text: str, *, output_reserve: int, safety_margin: int, framing_overhead: int,
+) -> dict[str, int]:
+    """INVARIANT: Routing and admission reserve the same complete request components."""
+    if (any(type(value) is not int or value < 0
+            for value in (output_reserve, safety_margin, framing_overhead))
+        or output_reserve == 0):
+        raise ValueError("PROVIDER_TOKEN_COMPONENT_LIMIT_INVALID")
+    return {
+        "provider_input": len(input_text.encode("utf-8")),
+        "request_framing": framing_overhead,
+        "output_reserve": output_reserve,
+        "safety_margin": safety_margin,
+    }
+
+
 def prepare_provider_admission(
     envelope: ProviderRequestEnvelope,
     contract: TokenAccountingContract,
@@ -417,13 +433,10 @@ def prepare_provider_admission(
         or not coverage.intersection({"context_bundle", "source_analysis_input"})
     ):
         status, reason = "REJECTED", "PROVIDER_REQUEST_COVERAGE_INCOMPLETE"
-    provider_input = len(envelope.input_text.encode("utf-8"))
-    components = {
-        "provider_input": provider_input,
-        "request_framing": contract.framing_overhead,
-        "output_reserve": contract.output_reserve,
-        "safety_margin": contract.safety_margin,
-    }
+    components = provider_request_token_components(
+        envelope.input_text, output_reserve=contract.output_reserve,
+        safety_margin=contract.safety_margin, framing_overhead=contract.framing_overhead,
+    )
     total = sum(components.values())
     applicable_limit = min(
         contract.model_context_limit,
@@ -480,5 +493,6 @@ __all__ = [
     "TokenAccountingContract",
     "provider_request_protocol",
     "prepare_provider_admission",
+    "provider_request_token_components",
     "verify_provider_admission",
 ]

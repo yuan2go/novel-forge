@@ -100,6 +100,7 @@ from novel_forge.modules.production_execution.provider_admission import (
     build_route_token_accounting_contract,
     prepare_provider_admission,
     provider_request_protocol,
+    provider_request_token_components,
 )
 from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
@@ -4217,6 +4218,11 @@ class PostgresPlanningExecutionPreparer:
                 materialization=materialization,
             )
             output_reserve = int(stable_request_payload["max_output_tokens"])
+            token_components = provider_request_token_components(
+                prompt, output_reserve=output_reserve,
+                safety_margin=planning_route.token_safety_margin,
+                framing_overhead=planning_route.token_framing_overhead,
+            )
             if provider_router is not None:
                 if frozen_world_sample is not None:
                     from .world_sampling import world_sample_routing_lineage
@@ -4239,7 +4245,7 @@ class PostgresPlanningExecutionPreparer:
                     operation_id=operation_id,
                     attempt_id=attempt_id,
                     stable_key=stable_key,
-                    input_tokens=len(prompt.encode()) + 512,
+                    input_tokens=sum(token_components.values()) - output_reserve,
                     output_tokens=output_reserve,
                     trace_id=command.trace_id,
                     correlation_id=command.correlation_id,
@@ -4454,7 +4460,7 @@ class PostgresPlanningExecutionPreparer:
         cost_accounting_basis = self.cost_accounting_basis
         account_authorization_ref = self.account_authorization_ref
         if provider_router is not None:
-            from novel_forge.modules.production_execution.routing_runtime import routed_reservation
+            from novel_forge.modules.production_execution.routing_runtime import routed_reservation, validate_routed_reservation
 
             routing_decision = request_payload["_production_execution"]["capability_runtime"]["routing_decision"]
             planning_route, routing_decision = provider_router.select_for_payload(self.planning_route, request_payload)
@@ -4464,6 +4470,11 @@ class PostgresPlanningExecutionPreparer:
             provider_reservation_amount = routed_reservation(routing_decision,
                 input_tokens=max(0, provider_reservation_tokens - int(stable_request_payload["max_output_tokens"])),
                 output_tokens=int(stable_request_payload["max_output_tokens"]))
+            if existing_intent is None or existing_intent["status"] == "READY":
+                validate_routed_reservation(
+                    routing_decision, reserved_tokens=provider_reservation_tokens,
+                    reserved_amount=provider_reservation_amount,
+                )
             if provider_reservation_amount is not None and Decimal(provider_reservation_amount) > Decimal(self.max_cost_per_call):
                 raise KernelError("BUDGET_HARD_LIMIT", "routed Planning call exceeds the per-call cap")
         effect = plan_external_effect(

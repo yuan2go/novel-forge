@@ -1262,6 +1262,41 @@ class ProductionProviderRouter:
         raise KernelError("ROUTING_FROZEN_DECISION_REQUIRED", str(payload.get("stage")))
 
 
+def validate_routed_reservation(
+    decision: Mapping[str, Any], *, reserved_tokens: int, reserved_amount: str | None,
+) -> None:
+    """CONSTRAINT: Preflight the final reservation before creating any Effect intent.
+
+    Kernel still checks the live cumulative quota under lock. This check also
+    protects replay of older decisions whose input estimate omitted request margins.
+    """
+    selected = decision.get("selected")
+    if decision.get("status") not in {"SELECTED", "BENCHMARK_SELECTED"} or not selected:
+        raise KernelError("ROUTING_RESERVATION_DECISION_INVALID", "reservation requires a selected route")
+    task, candidate = decision["task"], selected["candidate"]
+    budget = task.get("budget_snapshot", {}).get("candidates", {}).get(candidate["candidate_id"], {})
+    token_limits = [int(task["remaining_tokens"])]
+    if "remaining_tokens" in budget:
+        token_limits.append(int(budget["remaining_tokens"]))
+    grant = decision.get("bootstrap_authorization", {}).get("authorization", {})
+    if grant:
+        token_limits.append(int(grant["maximum_tokens"]))
+    limit = min(token_limits)
+    if reserved_tokens <= 0 or reserved_tokens > limit or budget.get("remaining_calls") == 0:
+        raise KernelError("ROUTING_RESERVATION_BUDGET_EXCEEDED",
+                          f"complete Provider reservation tokens={reserved_tokens} exceeds available limit={limit}")
+    if candidate["pricing"]["accounting_basis"] == "PRICED":
+        amount = Decimal(reserved_amount) if reserved_amount is not None else Decimal("NaN")
+        money_limits = [Decimal(task["remaining_money"])]
+        if "remaining_money" in budget:
+            money_limits.append(Decimal(str(budget["remaining_money"])))
+        if grant.get("maximum_amount") is not None:
+            money_limits.append(Decimal(grant["maximum_amount"]))
+        if not amount.is_finite() or amount < 0 or amount > min(money_limits):
+            raise KernelError("ROUTING_RESERVATION_BUDGET_EXCEEDED",
+                              "complete Provider reservation exceeds the frozen monetary limit")
+
+
 def routed_reservation(
     decision: Mapping[str, Any], *, input_tokens: int, output_tokens: int
 ) -> str | None:

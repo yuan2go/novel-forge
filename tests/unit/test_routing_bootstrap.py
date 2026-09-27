@@ -695,3 +695,45 @@ def test_native_router_binds_admitted_diagnostic_before_explaining(monkeypatch):
     assert result["task"]["escalation_reason"] == authorization["authorization"]["reason"]
     assert result["task"]["history"] == []
     assert result["bootstrap_authorization"] == authorization
+
+
+@pytest.mark.parametrize("limiting_scope", ["grant", "task", "provider"])
+def test_complete_request_preflight_rejects_old_underestimated_decision(limiting_scope):
+    from novel_forge.modules.production_execution.routing_runtime import validate_routed_reservation
+
+    _, decision = codex_benchmark_decision()
+    decision["task"]["remaining_tokens"] = 65536
+    candidate_id = decision["selected"]["candidate"]["candidate_id"]
+    decision["task"]["budget_snapshot"]["candidates"] = {candidate_id: {"remaining_tokens": 65536}}
+    decision["bootstrap_authorization"]["authorization"]["maximum_tokens"] = 65536
+    if limiting_scope == "grant":
+        decision["bootstrap_authorization"]["authorization"]["maximum_tokens"] = 32768
+    elif limiting_scope == "task":
+        decision["task"]["remaining_tokens"] = 32768
+    else:
+        decision["task"]["budget_snapshot"]["candidates"][candidate_id]["remaining_tokens"] = 32768
+    validate_routed_reservation(decision, reserved_tokens=32768, reserved_amount=None)
+    with pytest.raises(KernelError, match="tokens=38825 exceeds available limit=32768"):
+        validate_routed_reservation(decision, reserved_tokens=38825, reserved_amount=None)
+
+
+def test_routing_complete_request_meter_rejects_oversized_diagnostic_before_selection():
+    from novel_forge.modules.production_execution.provider_admission import provider_request_token_components
+
+    task, candidate, authorization = diagnostic_escalation_fixture()
+    components = provider_request_token_components(
+        "x" * 20617, output_reserve=10000, framing_overhead=16, safety_margin=8192,
+    )
+    candidate = replace(candidate, context_limit=272000, output_limit=32000)
+    task = replace(task, input_tokens=sum(components.values()) - 10000,
+                   output_tokens=10000, remaining_tokens=65536, escalation_reason="approved diagnostic")
+    grant = {**authorization["authorization"], "maximum_tokens": 32768,
+             "campaign": {**authorization["authorization"]["campaign"], "maximum_tokens": 65536}}
+    authorization = {**authorization, "authorization": grant, "authorization_hash": authorization_hash(grant)}
+    ordinary = CostAwareRouter().explain(task, [candidate], {})
+    result = benchmark_decision(ordinary, authorization, environment="validation").to_dict()
+    assert result["status"] == "BLOCKED"
+    assert result["candidates"][0]["estimated_total_tokens"] == 38825
+    assert "BENCHMARK_AUTHORIZATION_BUDGET_EXCEEDED" in result["candidates"][0]["rejected_reasons"]
+    task_limited = CostAwareRouter().explain(replace(task, remaining_tokens=32768), [candidate], {}).to_dict()
+    assert "BUDGET_HARD_LIMIT" in task_limited["candidates"][0]["rejected_reasons"]
