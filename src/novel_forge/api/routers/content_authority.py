@@ -100,10 +100,11 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def list_operations(
         project_id: str = Query(..., min_length=1),
         limit: int = Query(default=100, ge=1, le=500),
+        idempotency_key: str = Query(default=""),
     ) -> list[dict[str, Any]]:
         principal = build_trusted_principal_resolver().resolve_api_principal()
         principal.require("content.authority.query", project_id)
-        return _query(ctx).list_operations(project_id=project_id, limit=limit)
+        return _query(ctx).list_operations(project_id=project_id, limit=limit, idempotency_key=idempotency_key)
 
     @router.get("/operations/{operation_id}")
     def operation_detail(operation_id: str, project_id: str = Query(..., min_length=1)) -> dict[str, Any]:
@@ -133,8 +134,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 trace_id=request.trace_id.strip() or f"trace:{uuid4()}",
                 correlation_id=request.correlation_id.strip() or f"correlation:{uuid4()}",
             ),
+            settle_undispatched=True,
         )
-        return {**result, "status": "CANCELLATION_REQUESTED"}
+        return result
 
     @router.post("/operations/{operation_id}/recover", status_code=202)
     def recover_operation(

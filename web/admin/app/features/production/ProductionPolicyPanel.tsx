@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ApiError, fetchJson } from "../../shared/api";
 import { loadCreativeInput, saveCreativeInput, type Book, type ContentOperation, type Profile, type Workspace } from "./api";
 
 type Choices = { name: string; target: number; draftProfile: string; draftBudget: number; qualityBudget: number; craft: string; neighbours: boolean; previous: number; sourceBudget: number; actors: string[]; actorMode: string; worldBudget: number; reason: string };
-type Saved = { choices: Choices; pending: Record<string, unknown> | null; operationId: string; completedAssetId?: string };
+type Rejection = {body: Record<string, unknown>; status: number; detail: string; rejectedAt: string};
+type Saved = { rejections?: Rejection[]; conflict?: boolean; choices: Choices; pending: Record<string, unknown> | null; operationId: string; completedAssetId?: string };
 const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 function initial(profile?: Profile): Choices {
   const content = profile?.content || {}, context = object(content.chapter_context_policy), review = object(content.cross_chapter_review_policy), actor = object(content.world_actor_experiment), world = object(content.world_production_policy);
@@ -25,6 +27,7 @@ export function ProductionPolicyPanel({project, book, profile, characters, onRef
   const [saved, setSaved] = useState<Saved>({choices: initial(profile), pending: null, operationId: ""});
   const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState("");
   const [operation, setOperation] = useState<ContentOperation | null>(null);
+  const [conflictingOperation, setConflictingOperation] = useState<ContentOperation | null>(null);
   const lock = useRef(false), consumed = useRef("");
   useEffect(() => { try {setSaved(JSON.parse(localStorage.getItem(storageKey) || "null") || {choices: initial(profile), pending: null, operationId: ""});} catch {setError("配置草稿无法读取，请先保留本地记录。");} setReady(true); }, [storageKey]);
   useEffect(() => {if (ready) localStorage.setItem(storageKey, JSON.stringify(saved));}, [storageKey, ready, saved]);
@@ -35,11 +38,36 @@ export function ProductionPolicyPanel({project, book, profile, characters, onRef
     const poll = async () => {try {const value = await loadCreativeInput(project, saved.operationId); if (!active) return; setOperation(value); const output = value.outputs?.[0]; if (value.status === "SUCCEEDED" && output && consumed.current !== value.operation_id && saved.completedAssetId !== output.asset_version_id) {consumed.current = value.operation_id; retain({...saved, completedAssetId: output.asset_version_id}); await onRefresh(); if (active) onSelect(output.asset_version_id);}} catch(e) {if (active) setError(String(e));}};
     void poll(); const timer = setInterval(poll, 5000); return () => {active = false; clearInterval(timer);};
   }, [project, saved.operationId]);
-  const choices = saved.choices, disabled = busy || !!saved.pending || (!!saved.operationId && !["FAILED", "CANCELLED", "SUCCEEDED"].includes(operation?.status || ""));
+  const choices = saved.choices, disabled = busy || !!saved.pending || (!!saved.operationId && !["FAILED_FINAL", "DEAD_LETTER", "CANCELLED", "SUCCEEDED"].includes(operation?.status || ""));
   function change<K extends keyof Choices>(key: K, value: Choices[K]) {setSaved(current => ({...current, choices: {...current.choices, [key]: value}}));}
   async function submit(body: Record<string, unknown>) {
     if (lock.current) return; lock.current = true; setBusy(true); setError(""); retain({...saved, pending: body});
-    try {const result = await saveCreativeInput(body); retain({...saved, pending: null, operationId: result.operation_id});} catch(e) {setError(String(e));} finally {lock.current = false; setBusy(false);}
+    try {const result = await saveCreativeInput(body); setOperation(result); retain({...saved, pending: null, conflict: false, operationId: result.operation_id});}
+    catch(e) {
+      setError(String(e));
+      if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
+        const rejected = {body, status: e.status, detail: e.message, rejectedAt: new Date().toISOString()};
+        const uncommitted = [400, 401, 403, 404, 422].includes(e.status);
+        retain({...saved, pending: uncommitted ? null : body, conflict: e.status === 409, rejections: [...(saved.rejections || []), rejected]});
+      }
+    } finally {lock.current = false; setBusy(false);}
+  }
+  async function inspectConflict() {
+    if (!saved.pending || lock.current) return;
+    lock.current = true; setBusy(true); setError("");
+    try {
+      const rows = await fetchJson<Array<{operation_id: string; definition_name: string}>>(`/product/content-authority/operations?${new URLSearchParams({project_id: project, idempotency_key: String(saved.pending.idempotency_key), limit: "2"})}`);
+      if (rows.length !== 1 || rows[0].definition_name !== "book.production_profile.author") throw new Error("未找到唯一的本项目配置任务。原请求仍保留；请核对冲突原因，不自动另发新请求。");
+      setConflictingOperation(await loadCreativeInput(project, rows[0].operation_id));
+    } catch(e) {setError(String(e));} finally {lock.current = false; setBusy(false);}
+  }
+  async function cancelRetryable() {
+    if (!operation || lock.current) return;
+    lock.current = true; setBusy(true); setError("");
+    try {
+      await fetchJson(`/product/content-authority/operations/${encodeURIComponent(operation.operation_id)}/cancel`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({project_id: project, idempotency_key: `author-config-cancel:${operation.operation_id}`, reason: "作者更正配置前停止原可重试任务；保留失败历史。"})});
+      setOperation(await loadCreativeInput(project, operation.operation_id));
+    } catch(e) {setError(String(e));} finally {lock.current = false; setBusy(false);}
   }
   function save() {
     const id = crypto.randomUUID();
@@ -66,8 +94,13 @@ export function ProductionPolicyPanel({project, book, profile, characters, onRef
     </div>
     <label>本次选择依据<textarea aria-label="策略选择依据" value={choices.reason} disabled={disabled} onChange={e => change("reason", e.target.value)} placeholder="说明当前场景需要的上下文、技法与角色参与；保持不需要的能力关闭。" /></label>
     <button disabled={disabled || !choices.name.trim() || !choices.reason.trim() || choices.target < 1 || (choices.actorMode === "PERSISTENT" && !choices.actors.length)} onClick={save}>确认并保存新配置</button>
-    {saved.pending && <button disabled={busy} onClick={() => submit(saved.pending!)}>恢复配置提交（原输入和幂等键）</button>}
-    {operation && <p role="status">配置任务：{operation.status} · {operation.operation_id}{operation.status === "FAILED" ? "；可更正输入后提交新的请求，失败记录保留。" : ""}</p>}
+    {saved.pending && !saved.conflict && <button disabled={busy} onClick={() => submit(saved.pending!)}>恢复配置提交（原输入和幂等键）</button>}
+    {saved.pending && saved.conflict && <div><p>服务器报告冲突。原请求与幂等键 {String(saved.pending.idempotency_key)} 保留；先核对已存在的任务，不能用新输入覆盖原请求。</p><button disabled={busy} onClick={inspectConflict}>按原幂等键查询配置任务</button>
+      {conflictingOperation && <div><p>已存在任务：{conflictingOperation.operation_id} · {conflictingOperation.status}。跟踪的是服务器已提交的原输入；当前修改和拒绝记录继续保留。</p><button disabled={busy} onClick={() => {setOperation(conflictingOperation); retain({...saved, pending: null, conflict: false, operationId: conflictingOperation.operation_id}); setConflictingOperation(null);}}>跟踪已提交的原任务</button></div>}
+    </div>}
+    {operation && <p role="status">配置任务：{operation.status} · {operation.operation_id}{["FAILED_FINAL", "DEAD_LETTER", "CANCELLED"].includes(operation.status) ? "；原任务已停止，可更正输入后提交新请求，历史保留。" : operation.status === "FAILED_RETRYABLE" ? "；原任务仍可重试，更正前先停止它。" : ""}</p>}
+    {operation?.status === "FAILED_RETRYABLE" && <button disabled={busy} onClick={cancelRetryable}>停止原任务后更正配置</button>}
+    {!!saved.rejections?.length && <details><summary>配置提交拒绝记录（{saved.rejections.length}）</summary>{saved.rejections.map((item,index) => <p key={index}>{item.rejectedAt} · HTTP {item.status} · 幂等键 {String(item.body.idempotency_key)} · {item.detail}</p>)}</details>}
     {error && <p role="alert">{error}</p>}
   </section>;
 }

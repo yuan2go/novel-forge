@@ -62,6 +62,13 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
             self.assertEqual(prepared.context_token_budget, expected)
         self.assertEqual(self.read_content(old.asset_version_id), original)
         self.assertNotEqual(old.asset_version_id, newer["asset_version_id"])
+        from novel_forge.modules.content_authority.queries import ContentAuthorityQuery
+        query = ContentAuthorityQuery(DATABASE_URL)
+        matching = query.list_operations(project_id=self.project_id, idempotency_key="config:first")
+        self.assertEqual(len(matching), 1)
+        self.assertEqual(query.require_operation(project_id=self.project_id, operation_id=matching[0]["operation_id"])["outputs"][0]["asset_version_id"], old.asset_version_id)
+        self.assertEqual(query.list_operations(project_id=self.project_id, idempotency_key="missing-key"), [])
+        self.assertEqual(query.list_operations(project_id="other-project", idempotency_key="config:first"), [])
 
     def seed(self, asset_type: str, content: dict, label: str):
         asset_version_id = f"{self.project_id}:{label}:v1"
