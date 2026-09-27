@@ -315,7 +315,7 @@ describe("Novel Forge admin feature architecture", () => {
     }
 
     const production = read("app/features/production/ProductionChainPage.tsx");
-    for (const token of ["章节队列", "Preflight Checklist", "进度历史", "pauseChapterProduction", "cancelChapterProduction"]) {
+    for (const token of ["作品与输入", "进度与恢复", "本次生产的冻结配置", "pauseBookProduction", "cancelBookProduction"]) {
       assert.match(production, new RegExp(token));
     }
 

@@ -176,6 +176,23 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         tags=["product-book-authority"],
     )
 
+    @router.get("/author-workspace")
+    def author_workspace(project_id: str, book_id: str = "") -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", project_id)
+            from novel_forge.api.authority_dependencies import authority_release_identity
+            from novel_forge.modules.command_kernel.dispatch_control import dispatch_control_status
+            composition = _composition(ctx)
+            control = dispatch_control_status(composition.query.database_url, project_id=project_id)
+            build_id, sha = authority_release_identity()
+            return {**composition.query.author_workspace(project_id=project_id, book_id=book_id),
+                    "release_identity": build_id + "@" + sha, "dispatch_control": control}
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
     @router.post("/books/{book_id}/planning-generations")
     def generate_plan(book_id: str, request: StoryPlanningGenerationCommand) -> dict[str, Any]:
         try:

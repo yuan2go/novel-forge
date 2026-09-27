@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { API_BASE, ApiError, fetchJson } from "../../shared/api";
 import type { DraftEditorState } from "./api";
+import { loadProductionWorkspace, type Snapshot } from "../production/api";
 import { ScreenplayPanel } from "./ScreenplayPanel";
 
 type Unit = { unit_id: string; title: string; text: string; text_hash: string; chapter_plan_asset_version_id: string; source_ranges: unknown[]; scene_artifacts: unknown[] };
@@ -17,8 +18,9 @@ type EditionState = { head: { version: number; selected_revision_id: string }; s
   diff?: EditionDiff };
 type Pending = { action: string; project_id: string; workspace_id: string; book_run_id: string; data: Record<string, unknown>; idempotency_key: string };
 
-export function EditionPanel({ state }: { state: DraftEditorState }) {
-  const [runId, setRunId] = useState(state.book_runs[0] || "");
+export function EditionPanel({ state, preferredBookRun = "" }: { state: DraftEditorState; preferredBookRun?: string }) {
+  const [runId, setRunId] = useState(preferredBookRun ? state.book_runs.find(id => id === preferredBookRun) || "" : state.book_runs[0] || "");
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [revisionId, setRevisionId] = useState("");
   const [edition, setEdition] = useState<EditionState | null>(null);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -43,6 +45,12 @@ export function EditionPanel({ state }: { state: DraftEditorState }) {
   })();
   const unsavedInputs = dirty || unappliedMapping;
   const savedKey = `novel-forge:edition-input:v1:${state.project_id}:${runId}:${revisionId}`;
+
+  useEffect(() => {
+    let active = true;
+    loadProductionWorkspace(state.project_id, state.book_id).then(value => {if (active) setSnapshots(value.snapshots);}).catch(caught => {if (active) setError(String(caught));});
+    return () => {active = false;};
+  }, [state.project_id, state.book_id]);
 
   useEffect(() => {
     if (!runId) return;
@@ -148,8 +156,8 @@ export function EditionPanel({ state }: { state: DraftEditorState }) {
       <label>变更类型 <select value={changeKind} onChange={(event) => setChangeKind(event.target.value)}>
         <option value="EXPRESSION">表达调整</option><option value="STRUCTURE">结构调整</option><option value="NARRATIVE_FACT">叙事事实变化</option><option value="UNKNOWN">影响待确定</option></select></label>
       <label>编辑理由 <textarea aria-label="整稿编辑理由" rows={2} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
-      <label>已批准的生产输入快照（可选）<input aria-label="版本复核输入快照" value={inputSnapshot} onChange={(event) => setInputSnapshot(event.target.value)} /></label>
-      <p>拆分章节超出原生产范围，或上层计划已换版时，先在生产工作台解析新输入，再填入快照身份。</p>
+      <label>已批准的生产输入快照（可选）<select aria-label="版本复核输入快照" value={inputSnapshot} onChange={(event) => setInputSnapshot(event.target.value)}><option value="">沿用原生可兼容快照</option>{snapshots.map(snapshot => <option key={snapshot.snapshot_id} value={snapshot.snapshot_id}>第 {snapshot.narrative_chapter_cursor} 章起 · {snapshot.snapshot_hash.slice(-12)}</option>)}</select></label>
+      <p>拆分章节超出原生产范围，或上层计划已换版时，先在生产工作台解析新输入，再选择已解析的快照。</p>
       <details><summary>章节与场景拆分、合并映射</summary><p>结构调整需保留精确来源范围和稳定身份，并绑定已批准的章节计划。保存时检查完整来源覆盖。</p>
         <button disabled={busy || !!pending} onClick={() => setMapping(JSON.stringify(units, null, 2))}>读取当前输入为映射</button>
         <textarea aria-label="整稿结构映射" rows={12} value={mapping} disabled={busy || !!pending} onChange={(event) => setMapping(event.target.value)} />

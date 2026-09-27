@@ -1,0 +1,111 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import type { ProjectRow } from "../../shared/types";
+import { createAuthorBook, createAuthorWorkspace, loadProductionProjects, saveCreativeInput, loadCreativeInput, startFormation, loadFormation, resumeFormation, type Book, type ContentOperation, type Formation } from "./api";
+
+type Pending = {kind: "book" | "brief" | "formation"; body: Record<string, unknown>; workspaceBody?: Record<string, unknown>};
+type Saved = {title: string; idea: string; genre: string; audience: string; constraints: string; sources: string; target: number; candidates: number; operationId: string; formationId: string; pending: Pending | null};
+const initial: Saved = {title: "", idea: "", genre: "", audience: "", constraints: "", sources: "", target: 1, candidates: 2, operationId: "", formationId: "", pending: null};
+export function CreativeInputPanel({project, book, release, onBook, onRefresh}: {project?: ProjectRow; book?: Book; release?: string; onBook: (id: string) => void; onRefresh: () => Promise<void>}) {
+  const key = `novel-forge:creative-input:${project?.project_id || ""}:${book?.book_id || "new"}`;
+  const [saved, setSaved] = useState<Saved>(initial);
+  const [ready, setReady] = useState(false);
+  const [operation, setOperation] = useState<ContentOperation | null>(null);
+  const [formation, setFormation] = useState<Formation | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const lock = useRef(false);
+  useEffect(() => {
+    try { setSaved({...initial, ...JSON.parse(localStorage.getItem(key) || "{}")}); }
+    catch { setError("本机创作输入读取失败，请保留原记录后重新输入。"); }
+    setReady(true);
+  }, [key]);
+  useEffect(() => { if (ready) localStorage.setItem(key, JSON.stringify(saved)); }, [key, ready, saved]);
+  useEffect(() => {
+    if (!project || !saved.operationId) {setOperation(null); return;}
+    let active = true;
+    const refresh = () => loadCreativeInput(project.project_id, saved.operationId).then(value => {if (active) setOperation(value);}).catch(e => {if (active) setError(String(e));});
+    refresh(); const timer = setInterval(refresh, 5000);
+    return () => {active = false; clearInterval(timer);};
+  }, [project?.project_id, saved.operationId]);
+  useEffect(() => {
+    if (!saved.formationId) {setFormation(null); return;}
+    let active = true;
+    const refresh = () => loadFormation(saved.formationId).then(value => {if (active) setFormation(value);}).catch(e => {if (active) setError(String(e));});
+    refresh(); const timer = setInterval(refresh, 5000);
+    return () => {active = false; clearInterval(timer);};
+  }, [saved.formationId]);
+  function retain(value: Saved) { localStorage.setItem(key, JSON.stringify(value)); setSaved(value); }
+  async function send(request: Pending) {
+    if (lock.current || !project) return;
+    lock.current = true; setBusy(true); setError("");
+    const frozen = {...saved, pending: request}; retain(frozen);
+    try {
+      if (request.kind === "book") {
+        if (request.workspaceBody) await createAuthorWorkspace(project.project_id, request.workspaceBody);
+        await createAuthorBook(request.body);
+        retain({...frozen, pending: null}); await onRefresh(); onBook(String(request.body.book_id));
+      } else if (request.kind === "brief") {
+        const result = await saveCreativeInput(request.body);
+        retain({...frozen, pending: null, operationId: result.operation_id});
+      } else {
+        const result = await startFormation(String(request.body.book_id), request.body);
+        retain({...frozen, pending: null, formationId: result.formation_run_id});
+      }
+    } catch(e) {setError(String(e));}
+    finally {lock.current = false; setBusy(false);}
+  }
+  async function create() {
+    if (!project || !release || lock.current) return;
+    setBusy(true); setError("");
+    try {
+      const current = (await loadProductionProjects()).find(p => p.project_id === project.project_id);
+      if (!current?.version || !current.asset_version_id) throw new Error("项目身份已变化，请重新选择。");
+      const id = crypto.randomUUID();
+      await send({kind: "book", workspaceBody: {workspace_id: `workspace:${id}`, expected_project_version: current.version, expected_project_asset_version_id: current.asset_version_id, idempotency_key: `workspace:${id}`},
+        body: {project_id: project.project_id, workspace_id: `workspace:${id}`, book_id: `book:${id}`, title: saved.title, service_identity: "book-design-authority", production_profile: {}, runtime_policy: {execution_fallback: "FAIL_CLOSED"}, release_identity: release, idempotency_key: id, trace_id: `trace:${id}`, correlation_id: id}});
+    } catch(e) {setError(String(e));} finally {setBusy(false);}
+  }
+  function brief() {
+    if (!project || !book) return;
+    const lines = (text: string) => text.split("\n").map(s => s.trim()).filter(Boolean);
+    void send({kind: "brief", body: {project_id: project.project_id, workspace_id: book.workspace_id, definition_name: "creative.brief.create", idempotency_key: crypto.randomUUID(), payload: {brief: {creative_brief_contract_version: "creative-brief-v2", idea: saved.idea, genre: saved.genre, audience: saved.audience, constraints: lines(saved.constraints), source_boundaries: lines(saved.sources)}}}});
+  }
+  function form() {
+    const asset = operation?.outputs[0]; if (!asset || !book || !project) return;
+    void send({kind: "formation", body: {project_id: project.project_id, workspace_id: book.workspace_id, book_id: book.book_id, expected_book_version: book.version, idempotency_key: crypto.randomUUID(), creative_brief_asset_version_id: asset.asset_version_id, creative_brief_content_hash: asset.content_hash, generation_policy: {contract_version: "formation-generation.v2", approval_mode: "REVIEW_PLAN", creative_candidates: saved.candidates, target_chapters: saved.target, title: saved.title || book.title}}});
+  }
+  const disabled = busy || !!saved.pending;
+  const change = (field: keyof Saved, value: string | number) => setSaved(current => ({...current, [field]: value}));
+  return <section className="panel">
+    <h2>{book ? "创作输入与设计准备" : "登记新作品"}</h2>
+    <p>已批准的作品可直接选择配置并解析快照。仅在缺少设计时启动设计准备；该操作可能产生模型调用，仍受现有授权、资格和预算约束。</p>
+    <div className="formGrid wide">
+      <label>作品标题<input aria-label="作品标题" value={saved.title} disabled={disabled} onChange={e => change("title", e.target.value)} placeholder={book?.title || "填写新作品标题"} /></label>
+      {!book && <button disabled={disabled || !saved.title.trim() || !project?.workspace_id || !release} onClick={create}>登记作品</button>}
+    </div>
+    {book && <>
+      <label>创作想法<textarea aria-label="创作想法" rows={5} value={saved.idea} disabled={disabled} onChange={e => change("idea", e.target.value)} /></label>
+      <div className="formGrid wide">
+        <label>类型<input aria-label="类型" value={saved.genre} disabled={disabled} onChange={e => change("genre", e.target.value)} /></label>
+        <label>目标读者<input aria-label="目标读者" value={saved.audience} disabled={disabled} onChange={e => change("audience", e.target.value)} /></label>
+        <label>创作约束（每行一条）<textarea aria-label="创作约束" value={saved.constraints} disabled={disabled} onChange={e => change("constraints", e.target.value)} /></label>
+        <label>素材使用边界（每行一条）<textarea aria-label="素材使用边界" value={saved.sources} disabled={disabled} onChange={e => change("sources", e.target.value)} /></label>
+      </div>
+      <button disabled={disabled || !saved.idea.trim() || !saved.genre.trim() || !saved.audience.trim() || !saved.sources.trim()} onClick={brief}>保存创作输入</button>
+      {operation && <p>输入任务：{operation.status} · {operation.operation_id} · {operation.outputs[0]?.content_hash || "等待形成持久输入"}</p>}
+      <div className="formGrid wide">
+        <label>设计目标章数<input aria-label="设计目标章数" type="number" min={1} max={10000} value={saved.target} disabled={disabled} onChange={e => change("target", Number(e.target.value))} /></label>
+        <label>比较候选数<select aria-label="比较候选数" value={saved.candidates} disabled={disabled} onChange={e => change("candidates", Number(e.target.value))}>{[2,3,4].map(n => <option key={n}>{n}</option>)}</select></label>
+        <button disabled={disabled || operation?.status !== "SUCCEEDED" || !operation.outputs.length || !!saved.formationId || saved.target < 1 || saved.target > 10000} onClick={form}>启动设计准备（确认计划后推进）</button>
+      </div>
+      {formation && <div><p>设计状态：{formation.lifecycle} · {formation.current_stage}</p><p>{JSON.stringify(formation.failure || formation.recovery_instruction || "等待原生任务更新")}</p>
+        <button disabled={disabled || !["FAILED", "WAITING_APPROVAL"].includes(formation.lifecycle)} onClick={async () => {setBusy(true); try {setFormation(await resumeFormation(formation));} catch(e) {setError(String(e));} finally {setBusy(false);}}}>核对停点后恢复设计</button>
+        {formation.book_design_asset_version_id && <a href={`/assets?path=${encodeURIComponent(`authority://asset-version/${formation.book_design_asset_version_id}`)}`}>查看设计版本与依据</a>}
+      </div>}
+    </>}
+    {saved.pending && <button disabled={busy} onClick={() => send(saved.pending!)}>恢复上次提交（保留原输入和幂等键）</button>}
+    {error && <p role="alert" className="errorLine">{error}</p>}
+  </section>;
+}

@@ -107,10 +107,6 @@ class ContentAuthorityApplication:
         definition = next((item for item in definitions if item["name"] == request.definition_name), None)
         if definition is None:
             raise ValueError("Unknown Content operation")
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            # WHY: unrelated task-contract drift must not block this admission.
-            uow.repositories.definitions.register(definition)
-            uow.commit()
         if self.trusted_only and principal is None:
             raise PermissionError("trusted Principal is required for Content admission")
         actor_id = request.actor_id
@@ -120,6 +116,10 @@ class ContentAuthorityApplication:
             principal.require("content.authority.execute", request.project_id)
             principal.require(definition_permission, request.project_id)
             actor_id = principal.principal_id
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            # WHY: unrelated task-contract drift must not block this admission.
+            uow.repositories.definitions.register(definition)
+            uow.commit()
         definition_version = definition["definition_version"]
         if reference_annotation:
             from novel_forge.modules.book_followup_authority.prose_sample_feedback import PROSE_ANNOTATION_VERSION

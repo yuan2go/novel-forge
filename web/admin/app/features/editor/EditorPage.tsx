@@ -19,6 +19,7 @@ const workingText = (state: DraftEditorState) => state.session?.status !== "REJE
 export function EditorPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [projectId, setProjectId] = useState("");
+  const [preferredBookRun, setPreferredBookRun] = useState("");
   const [drafts, setDrafts] = useState<EditorDraft[]>([]);
   const [draftId, setDraftId] = useState("");
   const [state, setState] = useState<DraftEditorState | null>(null);
@@ -41,11 +42,11 @@ export function EditorPage() {
   const candidate = state?.candidates.find((item) => item.asset_version_id === state.session?.candidate_asset_version_id);
   const canLeave = () => !(dirty || pending) || window.confirm("当前有未保存输入或待确认请求。保留本地输入并切换？");
 
-  useEffect(() => { loadEditorProjects().then((rows) => {setProjects(rows); setProjectId(rows[0]?.project_id || "");}).catch(showError); }, []);
+  useEffect(() => { setPreferredBookRun(new URLSearchParams(window.location.search).get("book_run_id") || ""); loadEditorProjects().then((rows) => {setProjects(rows); const requested = new URLSearchParams(window.location.search).get("project_id"); setProjectId(requested ? rows.find(row => row.project_id === requested)?.project_id || "" : rows[0]?.project_id || "");}).catch(showError); }, []);
   useEffect(() => {
     if (!projectId) return;
     let active = true;
-    loadEditorDrafts(projectId).then((rows) => { if (active) {setDrafts(rows); setDraftId(rows.find((item) => item.book_id)?.asset_version_id || "");} }).catch(showError);
+    loadEditorDrafts(projectId).then((rows) => { if (active) {const params = new URLSearchParams(window.location.search); const requested = params.get("project_id") === projectId ? params.get("book_id") : null; const scoped = requested ? rows.filter(item => item.book_id === requested) : rows; setDrafts(scoped); setDraftId(scoped.find((item) => item.book_id)?.asset_version_id || "");} }).catch(showError);
     return () => {active = false;};
   }, [projectId]);
   useEffect(() => {
@@ -207,7 +208,7 @@ export function EditorPage() {
         <a href="/manuscript">前往章节生产工作台查看后续接纳门控</a>
       </> : null}
     </section>
-    {state ? <EditionPanel key={`edition:${state.project_id}:${state.book_id}`} state={state} /> : null}
+    {state ? <EditionPanel key={`edition:${state.project_id}:${state.book_id}`} state={state} preferredBookRun={preferredBookRun} /> : null}
     {state ? <ProseReviewPanel key={`${state.project_id}:${state.book_id}`} state={state} onSelect={(source) => {
       setReviewSource(source); setNotice("已选定审读问题；编辑正文并保存后，可显式关联修改候选。"); editor.current?.focus();
     }} /> : null}

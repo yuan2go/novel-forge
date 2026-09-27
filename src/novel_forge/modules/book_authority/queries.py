@@ -89,6 +89,43 @@ class PostgresBookProductionQuery:
             raise ValueError("Book production query requires PostgreSQL")
         self.database_url = database_url
 
+    def author_workspace(self, *, project_id: str, book_id: str = "") -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            cur = uow.cursor
+            cur.execute("""SELECT b.book_id,b.workspace_id,b.version,b.status,
+                    COALESCE(v.content->>'title',b.book_id),b.production_profile,b.runtime_policy
+                FROM authority_book b JOIN authority_asset_version v
+                  ON v.asset_version_id=b.current_book_asset_version_id
+                WHERE b.project_id=%s ORDER BY b.book_id""", [project_id])
+            books = [dict(zip(("book_id", "workspace_id", "version", "status", "title", "production_profile", "runtime_policy"), row, strict=True)) for row in cur.fetchall()]
+            if book_id and book_id not in {book["book_id"] for book in books}:
+                raise KernelError("BOOK_NOT_FOUND", "Book does not belong to this project")
+            if not book_id:
+                return {"books": books, "runs": [], "profiles": [], "snapshots": [], "budget_scopes": []}
+            cur.execute("""SELECT to_jsonb(b),p.content,p.content_hash,s.snapshot_hash,r.command_payload
+                FROM authority_book_production b
+                LEFT JOIN authority_asset_version p ON p.asset_version_id=b.production_profile_version
+                LEFT JOIN authority_book_production_input_snapshot s ON s.snapshot_id=b.input_snapshot_id
+                LEFT JOIN authority_book_chapter_request r ON r.chapter_request_id=b.active_chapter_request_id
+                WHERE b.project_id=%s AND b.book_id=%s ORDER BY b.created_at DESC LIMIT 100""", [project_id, book_id])
+            runs = [{**row[0], "frozen_profile": row[1], "profile_hash": row[2], "snapshot_hash": row[3], "chapter_configuration": {key: value for key, value in (row[4] or {}).items()
+                     if key in {"context_token_budget", "context_version_refs", "preparation_report", "production_profile_version", "chapter_plan_version"}}} for row in cur.fetchall()]
+            cur.execute("""SELECT v.asset_version_id,v.content_hash,v.content
+                FROM authority_asset a JOIN authority_asset_version v USING(asset_id)
+                WHERE a.project_id=%s AND a.asset_type='production_profile'
+                  AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'
+                  AND COALESCE(v.content->>'book_id','') IN ('',%s)
+                ORDER BY v.created_at DESC LIMIT 100""", [project_id, book_id])
+            profiles = [dict(zip(("asset_version_id", "content_hash", "content"), row, strict=True)) for row in cur.fetchall()]
+            cur.execute("""SELECT to_jsonb(s) FROM authority_book_production_input_snapshot s
+                WHERE project_id=%s AND book_id=%s ORDER BY created_at DESC LIMIT 100""", [project_id, book_id])
+            snapshots = [row[0] for row in cur.fetchall()]
+            cur.execute("""SELECT budget_scope_id,owner_kind,owner_id,deadline_at,
+                    deadline_at<=NOW(),policy_snapshot
+                FROM authority_provider_budget_scope WHERE project_id=%s ORDER BY deadline_at DESC""", [project_id])
+            budgets = [dict(zip(("budget_scope_id", "owner_kind", "owner_id", "deadline_at", "expired", "policy"), row, strict=True)) for row in cur.fetchall()]
+        return {"books": books, "runs": runs, "profiles": profiles, "snapshots": snapshots, "budget_scopes": budgets}
+
     def narrative_reality(self, *, book_run_id: str, chapter_number: int | None = None) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             return NarrativeRealityRepository(uow.cursor).require(book_run_id=book_run_id, chapter_number=chapter_number)

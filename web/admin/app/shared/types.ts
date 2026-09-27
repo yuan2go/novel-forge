@@ -1,4 +1,5 @@
 export type ProjectRow = {
+  version?: number;
   path: string;
   id?: string;
   project_id: string;

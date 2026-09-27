@@ -1,372 +1,131 @@
 "use client";
 
-import { GitPullRequest, PenLine, RotateCcw, Workflow } from "lucide-react";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { CreativeInputPanel } from "./CreativeInputPanel";
+import { useEffect, useRef, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
-import type { AssetRow, ProjectRow } from "../../shared/types";
-import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import {
-  createCanonPatch,
-  createChapterPlanVersion,
-  createDraftVersion,
-  createGenerationRun,
-  createLongFormMacroPlan,
-  createOutlineVersion,
-  cancelChapterProduction,
-  loadProductionData,
-  pauseChapterProduction,
-  recoverChapterProduction,
-  resumeChapterProduction,
-  startChapterProduction,
-  type ChapterProductionRun,
-  type LongFormMacroPlanRow,
-  type ProductionVersionRow
-} from "./api";
+import type { ProjectRow } from "../../shared/types";
+import { loadProductionProjects, loadProductionWorkspace, resolveProductionSnapshot, startBookProduction, pauseBookProduction, resumeBookProduction, cancelBookProduction, recoverBookChapter, loadBookProgress, type Workspace, type Progress } from "./api";
 
+const empty: Workspace = { books: [], runs: [], profiles: [], snapshots: [], budget_scopes: [] };
+const storageKey = "novel-forge.author-production.v1";
 export function ProductionChainPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
-  const [versions, setVersions] = useState<ProductionVersionRow[]>([]);
-  const [assets, setAssets] = useState<AssetRow[]>([]);
-  const [chapterRuns, setChapterRuns] = useState<ChapterProductionRun[]>([]);
-  const [macroPlans, setMacroPlans] = useState<LongFormMacroPlanRow[]>([]);
-  const [projectId, setProjectId] = useState("");
-  const [selectedPath, setSelectedPath] = useState("");
-  const [outlinePath, setOutlinePath] = useState("");
-  const [chapterPlanPath, setChapterPlanPath] = useState("");
-  const [selectedRunPath, setSelectedRunPath] = useState("");
-  const [fromStep, setFromStep] = useState("next_chapter_plan");
-  const [runTo, setRunTo] = useState("next_chapter_plan");
-  const [asyncTask, setAsyncTask] = useState(false);
-  const [generatorMode, setGeneratorMode] = useState("strict_bus");
-  const [preflightRequired, setPreflightRequired] = useState(true);
-  const [chapter, setChapter] = useState(1);
-  const [contextBundlePath, setContextBundlePath] = useState("");
-  const [outputPath, setOutputPath] = useState("");
-  const [provider, setProvider] = useState("local-rules");
-  const [model, setModel] = useState("local-rules");
-  const [targetWordCount, setTargetWordCount] = useState(1000000);
-  const [volumeCount, setVolumeCount] = useState(5);
-  const [chaptersPerVolume, setChaptersPerVolume] = useState(80);
+  const [project, setProject] = useState("");
+  const [bookId, setBookId] = useState("");
+  const [workspace, setWorkspace] = useState<Workspace>(empty);
+  const [profileId, setProfileId] = useState("");
+  const [snapshotId, setSnapshotId] = useState("");
+  const [runId, setRunId] = useState("");
+  const [target, setTarget] = useState(1);
+  const [reason, setReason] = useState("");
+  const [progress, setProgress] = useState<Progress | null>(null);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
-
-  async function refresh(nextProjectId = projectId) {
-    const projectChanged = nextProjectId !== projectId;
-    const [projectRows, versionRows, assetRows, runRows, macroRows] = await loadProductionData(nextProjectId);
-    setProjects(projectRows);
-    setVersions(versionRows);
-    setAssets(assetRows);
-    setChapterRuns(runRows);
-    setMacroPlans(macroRows);
-    setProjectId(nextProjectId || projectRows[0]?.project_id || "");
-    setSelectedPath((current) => projectChanged ? assetRows[0]?.path || "" : current || assetRows[0]?.path || "");
-    setOutlinePath((current) => projectChanged ? assetRows.find((asset) => asset.type === "outline")?.path || "" : current || assetRows.find((asset) => asset.type === "outline")?.path || "");
-    setChapterPlanPath((current) => projectChanged ? assetRows.find((asset) => asset.type === "chapter_plan")?.path || "" : current || assetRows.find((asset) => asset.type === "chapter_plan")?.path || "");
-    setContextBundlePath((current) => projectChanged ? assetRows.find((asset) => asset.type === "context_bundle")?.path || "" : current || assetRows.find((asset) => asset.type === "context_bundle")?.path || "");
-    setSelectedRunPath((current) => projectChanged ? runRows[0]?.path || "" : current || runRows[0]?.path || "");
-  }
-
-  async function runAction(action: () => Promise<unknown>, message: string) {
-    setBusy(true);
-    setNotice("");
-    setError("");
-    try {
-      await action();
-      setNotice(message);
-      await refresh();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setBusy(false);
-    }
-  }
+  const [notice, setNotice] = useState("");
+  const [restored, setRestored] = useState(false);
+  const lock = useRef(false);
+  const pending = useRef<{body: Record<string, unknown>; key: string} | null>(null);
+  const resolution = useRef<{identity: string; key: string} | null>(null);
+  const book = workspace.books.find(item => item.book_id === bookId);
+  const run = workspace.runs.find(item => item.book_run_id === runId);
+  const snapshot = workspace.snapshots.find(item => item.snapshot_id === snapshotId);
+  const profile = workspace.profiles.find(item => item.asset_version_id === profileId);
 
   useEffect(() => {
-    refresh().catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)));
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+      if (saved) { setProject(saved.project || ""); setBookId(saved.bookId || ""); setProfileId(saved.profileId || ""); setSnapshotId(saved.snapshotId || ""); setRunId(saved.runId || ""); setTarget(saved.target || 1); setReason(saved.reason || ""); pending.current = saved.pending || null; resolution.current = saved.resolution || null; }
+    } catch { setError("本地未提交输入无法读取，请重新选择作品。"); }
+    setRestored(true);
+    loadProductionProjects().then(setProjects).catch(e => setError(String(e)));
   }, []);
-
-  const selectedProject = projects.find((project) => project.project_id === projectId);
-  const selectedRun = chapterRuns.find((run) => run.path === selectedRunPath) || chapterRuns[0];
-  const outlineAssets = assets.filter((asset) => asset.type === "outline");
-  const chapterPlanAssets = assets.filter((asset) => asset.type === "chapter_plan");
-
-  return (
-    <FeatureShell title="版本化生产链" subtitle="大纲、细纲、上下文、生成记录和稿件版本形成可追溯链条。">
-      {notice ? <div className="noticeLine">{notice}</div> : null}
-      {error ? <div className="errorLine">{error}</div> : null}
-      <section className="summaryBand manuscriptSummary">
-        <Metric label="版本资产" value={String(versions.length)} />
-        <Metric label="Outline" value={String(versions.filter((row) => row.type === "outline_version").length)} />
-        <Metric label="ChapterPlan" value={String(versions.filter((row) => row.type === "chapter_plan_version").length)} />
-        <Metric label="GenerationRun" value={String(versions.filter((row) => row.type === "generation_run").length)} />
-        <Metric label="章节总线" value={String(chapterRuns.length)} />
-        <Metric label="宏观规划" value={String(macroPlans.length)} />
-      </section>
-      <section className="workspaceGrid">
-        <div className="panel">
-          <PanelHeader title="百万字宏观规划" icon={<GitPullRequest size={18} />} />
-          <div className="formGrid wide">
-            <input type="number" min={100000} step={10000} value={targetWordCount} onChange={(event) => setTargetWordCount(Number(event.target.value || 1000000))} />
-            <input type="number" min={1} value={volumeCount} onChange={(event) => setVolumeCount(Number(event.target.value || 5))} />
-            <input type="number" min={10} value={chaptersPerVolume} onChange={(event) => setChaptersPerVolume(Number(event.target.value || 80))} />
-            <button
-              className="primaryButton"
-              disabled={busy || !selectedProject?.path}
-              onClick={() => runAction(
-                () => createLongFormMacroPlan(selectedProject?.path || "", outlinePath || selectedProject?.path || "", targetWordCount, volumeCount, chaptersPerVolume),
-                "长篇宏观规划已生成"
-              )}
-            >
-              <GitPullRequest size={18} />
-              生成宏观规划
-            </button>
-          </div>
-          <DataTable
-            emptyText="暂无宏观规划"
-            columns={["标题", "字数", "卷数", "主线", "支线", "Gate", "路径"]}
-            rows={macroPlans.map((row) => [
-              row.title,
-              String(row.target_word_count ?? "-"),
-              String(row.volume_count ?? "-"),
-              String(row.mainline_count ?? "-"),
-              String(row.subplot_count ?? "-"),
-              String(row.gate_count ?? "-"),
-              <span className="pathText" key={row.path}>{row.path}</span>
-            ])}
-          />
-        </div>
-        <div className="panel">
-          <PanelHeader title="Final Draft 后 Canon 更新" icon={<Workflow size={18} />} />
-          <p className="previewText">从最终稿抽取事件、人物状态、地点移动、伏笔推进，生成等待人工确认的 canon patch。</p>
-          <div className="formGrid wide">
-            <select value={selectedRunPath} onChange={(event) => setSelectedRunPath(event.target.value)}>
-              <option value="">选择章节 run</option>
-              {chapterRuns.map((run) => <option value={run.path} key={run.path}>Ch{run.chapter} {run.status}: {run.final_draft_path || run.current_step}</option>)}
-            </select>
-            <input value={selectedRun?.final_draft_path || ""} readOnly placeholder="final draft path" />
-            <button
-              className="secondaryButton"
-              disabled={busy || !selectedRun?.final_draft_path}
-              onClick={() => runAction(() => createCanonPatch(selectedRun?.final_draft_path || "", selectedProject?.path), "Canon patch 已生成，等待人工确认")}
-            >
-              <Workflow size={18} />
-              生成 Canon Patch
-            </button>
-          </div>
-        </div>
-      </section>
-      <section className="workspaceGrid">
-        <div className="panel">
-          <PanelHeader title="章节生产总线" icon={<Workflow size={18} />} />
-          <div className="formGrid wide">
-            <select value={projectId} onChange={(event) => refresh(event.target.value)}>
-              <option value="">全局</option>
-              {projects.map((project) => <option value={project.project_id} key={project.project_id}>{project.title}</option>)}
-            </select>
-            <select value={outlinePath} onChange={(event) => setOutlinePath(event.target.value)}>
-              <option value="">选择 outline</option>
-              {outlineAssets.map((asset) => <option value={asset.path} key={asset.path}>{asset.title}</option>)}
-            </select>
-            <select value={chapterPlanPath} onChange={(event) => setChapterPlanPath(event.target.value)}>
-              <option value="">自动生成 chapter plan</option>
-              {chapterPlanAssets.map((asset) => <option value={asset.path} key={asset.path}>{asset.title}</option>)}
-            </select>
-            <input type="number" min={1} value={chapter} onChange={(event) => setChapter(Number(event.target.value || 1))} />
-            <select value={runTo} onChange={(event) => setRunTo(event.target.value)}>
-              {CHAPTER_BUS_STEPS.map((step) => <option value={step.key} key={step.key}>{step.label}</option>)}
-            </select>
-            <select value={generatorMode} onChange={(event) => setGeneratorMode(event.target.value)}>
-              <option value="strict_bus">严格章节工厂</option>
-              <option value="draft_only">只到草稿</option>
-              <option value="review_gate">审稿门禁</option>
-            </select>
-            <label className="checkboxLine">
-              <input type="checkbox" checked={asyncTask} onChange={(event) => setAsyncTask(event.target.checked)} />
-              Celery 异步
-            </label>
-            <label className="checkboxLine">
-              <input type="checkbox" checked={preflightRequired} onChange={(event) => setPreflightRequired(event.target.checked)} />
-              强制 preflight
-            </label>
-            <button
-              className="primaryButton"
-              disabled={busy || !outlinePath || !selectedProject?.path || !preflightRequired}
-              onClick={() => runAction(
-                () => startChapterProduction(outlinePath, chapterPlanPath, selectedProject?.path || "", chapter, runToForMode(generatorMode, runTo), asyncTask),
-                "章节生产总线已推进"
-              )}
-            >
-              <Workflow size={18} />
-              启动总线
-            </button>
-          </div>
-        </div>
-        <div className="panel">
-          <PanelHeader title="失败恢复" icon={<RotateCcw size={18} />} />
-          <div className="formGrid wide">
-            <select value={selectedRunPath} onChange={(event) => setSelectedRunPath(event.target.value)}>
-              <option value="">选择 run</option>
-              {chapterRuns.map((run) => <option value={run.path} key={run.path}>Ch{run.chapter} {run.status}: {run.current_step}</option>)}
-            </select>
-            <select value={fromStep} onChange={(event) => setFromStep(event.target.value)}>
-              {CHAPTER_BUS_STEPS.map((step) => <option value={step.key} key={step.key}>{step.label}</option>)}
-            </select>
-            <select value={runTo} onChange={(event) => setRunTo(event.target.value)}>
-              {CHAPTER_BUS_STEPS.map((step) => <option value={step.key} key={step.key}>{step.label}</option>)}
-            </select>
-            <button
-              className="secondaryButton"
-              disabled={busy || !selectedRunPath}
-              onClick={() => runAction(() => resumeChapterProduction(selectedRunPath, fromStep, runTo, true, asyncTask), "章节生产总线已恢复")}
-            >
-              <RotateCcw size={18} />
-              从步骤恢复
-            </button>
-            <button className="secondaryButton" disabled={busy || !selectedRunPath} onClick={() => runAction(() => recoverChapterProduction(selectedRunPath, runTo, asyncTask), "失败步骤已恢复")}>失败恢复</button>
-            <button className="secondaryButton" disabled={busy || !selectedRunPath} onClick={() => runAction(() => pauseChapterProduction(selectedRunPath), "章节生产已暂停")}>暂停</button>
-            <button className="dangerButton" disabled={busy || !selectedRunPath} onClick={() => runAction(() => cancelChapterProduction(selectedRunPath), "章节生产已取消")}>取消</button>
-          </div>
-          {selectedRun?.recovery_instruction ? <div className="errorLine">{selectedRun.recovery_instruction}</div> : null}
-        </div>
-      </section>
-      <section className="workspaceGrid">
-        <div className="panel">
-          <PanelHeader title="章节队列" icon={<Workflow size={18} />} />
-          <DataTable
-            emptyText="暂无章节队列"
-            columns={["章节", "状态", "执行", "Preflight", "Celery", "失败恢复"]}
-            rows={chapterRuns.map((run) => [
-              `Ch${run.chapter}`,
-              <span className={statusClass(run.status || "")} key={`${run.path}-queue-status`}>{run.status}</span>,
-              run.execution_mode || "sync",
-              run.stability_preflight_path ? "ready" : "missing",
-              run.celery_task_id || "-",
-              <button className="linkButton" key={`${run.path}-recover`} onClick={() => { setSelectedRunPath(run.path); setFromStep(run.current_step || "outline_checkpoint"); }}>{run.current_step}</button>
-            ])}
-          />
-        </div>
-        <div className="panel">
-          <PanelHeader title="Preflight Checklist" icon={<GitPullRequest size={18} />} />
-          <div className="checklistGrid">
-            {CHAPTER_BUS_STEPS.slice(0, 6).map((step) => {
-              const state = selectedRun?.steps?.find((item) => item.step === step.key);
-              return (
-                <div className={`checkItem ${state?.status === "completed" ? "ok" : state?.status === "failed" ? "warn" : ""}`} key={step.key}>
-                  <strong>{step.label}</strong>
-                  <span>{state?.status || "planned"}</span>
-                  <small>{state?.output_paths?.[0] || state?.error || "等待执行"}</small>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-      <section className="panel">
-        <PanelHeader title="总线状态" icon={<Workflow size={18} />} />
-        <div className="productionSteps">
-          {(selectedRun?.steps || []).map((step) => (
-            <div className={`productionStep ${step.status === "completed" ? "ok" : step.status === "failed" ? "warn" : "muted"}`} key={step.step}>
-              <span>{step.label || step.step}</span>
-              <strong>{step.status}</strong>
-              <small>{step.output_paths?.[0] || step.error || `attempts ${step.attempts ?? 0}`}</small>
-            </div>
-          ))}
-          {!selectedRun ? <div className="emptyCell">暂无章节生产总线运行</div> : null}
-        </div>
-        <DataTable
-          emptyText="暂无章节生产运行"
-          columns={["章节", "状态", "当前步骤", "完成", "最终稿", "下一章细纲", "路径"]}
-          rows={chapterRuns.map((run) => [
-            String(run.chapter),
-            <span className={statusClass(run.status || "")} key={`${run.path}-status`}>{run.status}</span>,
-            run.current_step,
-            `${run.completed_steps}/${run.total_steps}`,
-            run.final_draft_path || "-",
-            run.next_chapter_plan_path || "-",
-            <button className="linkButton" key={run.path} onClick={() => setSelectedRunPath(run.path)}>{run.path}</button>
-          ])}
-        />
-      </section>
-      <section className="panel">
-        <PanelHeader title="进度历史" icon={<Workflow size={18} />} />
-        <DataTable
-          emptyText="暂无 timeline"
-          columns={["时间", "步骤", "状态", "输出", "错误"]}
-          rows={(selectedRun?.timeline || []).slice(-40).reverse().map((event, index) => [
-            String(event.recorded_at || "-"),
-            String(event.label || event.step || "-"),
-            <span className={statusClass(String(event.status || ""))} key={`timeline-${index}`}>{String(event.status || "-")}</span>,
-            Array.isArray(event.output_paths) ? event.output_paths.join(", ") : "-",
-            String(event.error || "-")
-          ])}
-        />
-      </section>
-      <section className="workspaceGrid">
-        <div className="panel">
-          <PanelHeader title="版本操作" icon={<GitPullRequest size={18} />} />
-          <div className="formGrid wide">
-            <select value={projectId} onChange={(event) => refresh(event.target.value)}>
-              <option value="">全局</option>
-              {projects.map((project) => <option value={project.project_id} key={project.project_id}>{project.title}</option>)}
-            </select>
-            <select value={selectedPath} onChange={(event) => setSelectedPath(event.target.value)}>
-              <option value="">选择资产</option>
-              {assets.map((asset) => <option value={asset.path} key={asset.path}>{asset.type}: {asset.title}</option>)}
-            </select>
-            <button className="secondaryButton" disabled={busy || !selectedPath} onClick={() => runAction(() => createOutlineVersion(selectedPath), "大纲版本已创建")}>大纲版本</button>
-            <button className="secondaryButton" disabled={busy || !selectedPath} onClick={() => runAction(() => createChapterPlanVersion(selectedPath), "细纲版本已创建")}>细纲版本</button>
-            <button className="secondaryButton" disabled={busy || !selectedPath} onClick={() => runAction(() => createDraftVersion(selectedPath), "稿件版本已创建")}>稿件版本</button>
-          </div>
-        </div>
-        <div className="panel">
-          <PanelHeader title="生成记录" icon={<PenLine size={18} />} />
-          <div className="formGrid wide">
-            <input value={contextBundlePath} onChange={(event) => setContextBundlePath(event.target.value)} placeholder="context bundle path" />
-            <input value={outputPath} onChange={(event) => setOutputPath(event.target.value)} placeholder="output path optional" />
-            <input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="provider" />
-            <input value={model} onChange={(event) => setModel(event.target.value)} placeholder="model" />
-            <button className="primaryButton" disabled={busy || !selectedPath || !contextBundlePath} onClick={() => runAction(() => createGenerationRun(selectedPath, contextBundlePath, outputPath, provider, model), "生成记录已创建")}>
-              <Workflow size={18} />
-              记录生成
-            </button>
-          </div>
-        </div>
-      </section>
-      <section className="panel">
-        <PanelHeader title="生产版本资产" icon={<GitPullRequest size={18} />} />
-        <DataTable
-          emptyText="暂无生产版本"
-          columns={["类型", "标题", "版本", "状态", "输入", "上下文", "输出", "路径"]}
-          rows={versions.map((row) => [
-            row.type,
-            row.title,
-            String(row.version_index ?? "-"),
-            <span className={statusClass(row.status || "")} key={`${row.path}-status`}>{row.status || "-"}</span>,
-            row.source_path || "-",
-            row.context_bundle_path || "-",
-            row.output_path || "-",
-            <span className="pathText" key={row.path}>{row.path}</span>
-          ])}
-        />
-      </section>
-    </FeatureShell>
-  );
-}
-
-const CHAPTER_BUS_STEPS = [
-  { key: "outline_checkpoint", label: "大纲检查点" },
-  { key: "chapter_plan", label: "章节细纲" },
-  { key: "context_bundle", label: "上下文包" },
-  { key: "draft_v0", label: "草稿 v0" },
-  { key: "review", label: "审稿" },
-  { key: "revision_plan", label: "修订计划" },
-  { key: "final_draft", label: "最终稿" },
-  { key: "next_chapter_plan", label: "下一章细纲" }
-];
-
-function runToForMode(mode: string, fallback: string) {
-  if (mode === "draft_only") return "draft_v0";
-  if (mode === "review_gate") return "review";
-  return fallback;
+  function persist() {
+    localStorage.setItem(storageKey, JSON.stringify({ project, bookId, profileId, snapshotId, runId, target, reason, pending: pending.current, resolution: resolution.current }));
+  }
+  useEffect(() => { if (restored) persist(); }, [restored, project, bookId, profileId, snapshotId, runId, target, reason]);
+  useEffect(() => {
+    if (!restored || !project) return;
+    let current = true;
+    loadProductionWorkspace(project, bookId).then(value => { if (current) setWorkspace(value); }).catch(e => { if (current) setError(String(e)); });
+    return () => { current = false; };
+  }, [restored, project, bookId]);
+  useEffect(() => {
+    if (!runId) { setProgress(null); return; }
+    let current = true;
+    const refresh = () => loadBookProgress(runId).then(value => { if (current) setProgress(value); }).catch(e => { if (current) setError(String(e)); });
+    refresh(); const timer = setInterval(refresh, 5000);
+    return () => { current = false; clearInterval(timer); };
+  }, [runId]);
+  async function refresh() { if (project) setWorkspace(await loadProductionWorkspace(project, bookId)); }
+  async function act(action: () => Promise<unknown>, message: string) {
+    if (lock.current) return;
+    lock.current = true; setBusy(true); setError(""); setNotice("");
+    try { await action(); await refresh(); setNotice(message); }
+    catch (e) { setError(String(e)); }
+    finally { lock.current = false; setBusy(false); }
+  }
+  async function resolve() {
+    if (!book || !profileId) return;
+    const cursor = (run?.accepted_through_chapter || 0) + 1;
+    const identity = JSON.stringify([project, book.book_id, book.version, profileId, cursor]);
+    if (resolution.current?.identity !== identity) resolution.current = { identity, key: crypto.randomUUID() };
+    persist();
+    const result = await resolveProductionSnapshot(project, book, profileId, cursor, resolution.current.key);
+    setSnapshotId(result.snapshot_id);
+  }
+  async function start() {
+    if (!book || !snapshot) return;
+    const body = { project_id: project, workspace_id: book.workspace_id, book_id: bookId, input_snapshot_id: snapshot.snapshot_id, input_mode: "RESOLVED_AUTHORITY_INPUT", target_chapter_count: target };
+    if (pending.current && JSON.stringify(pending.current.body) !== JSON.stringify(body)) throw new Error("上次启动尚未确认。请先恢复原输入并重试原请求，确认结果后再更改生产范围。");
+    if (!pending.current) pending.current = { body, key: crypto.randomUUID() };
+    persist();
+    const result = await startBookProduction({ ...pending.current.body, idempotency_key: pending.current.key });
+    setRunId(result.book_run_id); pending.current = null; persist();
+  }
+  const effectiveProfile = run ? run.frozen_profile : profile?.content;
+  return <FeatureShell title="作品生产" subtitle="选择作品和已批准输入，确认生产快照，再阅读、审改和继续。">
+    <section className="panel">
+      <h2>作品与输入</h2>
+      {workspace.dispatch_control && <p role="status">模型派发：{workspace.dispatch_control.process_dispatch_suspended ? "进程总暂停" : workspace.dispatch_control.state} · {workspace.dispatch_control.reason || "以持久项目控制和任务授权为准"}。排队输入尚未完成时请查询任务状态。</p>}
+      <div className="formGrid wide">
+        <label>项目<select aria-label="项目" value={project} disabled={busy} onChange={e => { setProject(e.target.value); setBookId(""); setRunId(""); setSnapshotId(""); setProfileId(""); setWorkspace(empty); }}><option value="">选择项目</option>{projects.map(p => <option key={p.project_id} value={p.project_id}>{p.title || p.project_id}</option>)}</select></label>
+        <label>作品<select aria-label="作品" value={bookId} disabled={busy} onChange={e => { setBookId(e.target.value); setRunId(""); setSnapshotId(""); setProfileId(""); }}><option value="">选择作品</option>{workspace.books.map(b => <option key={b.book_id} value={b.book_id}>{b.title} · {b.status}</option>)}</select></label>
+        <label>已批准生产配置<select aria-label="已批准生产配置" value={profileId} onChange={e => { setProfileId(e.target.value); setSnapshotId(""); }}><option value="">选择配置</option>{workspace.profiles.map(p => <option key={p.asset_version_id} value={p.asset_version_id}>{String(p.content.name || p.content.profile_id || p.asset_version_id)}</option>)}</select></label>
+        <button className="secondaryButton" disabled={busy || !book || !profileId} onClick={() => act(resolve, "生产输入已解析并冻结，请核对快照和预算。")}>解析生产快照</button>
+        <label>生产快照<select aria-label="生产快照" value={snapshotId} onChange={e => setSnapshotId(e.target.value)}><option value="">选择已冻结快照</option>{workspace.snapshots.map(s => <option key={s.snapshot_id} value={s.snapshot_id}>第 {s.narrative_chapter_cursor} 章起 · {s.snapshot_hash.slice(-12)}</option>)}</select></label>
+        <label>本次生产到第几章<input aria-label="生产到第几章" type="number" min={1} value={target} onChange={e => setTarget(Number(e.target.value))} /></label>
+        <button className="primaryButton" disabled={busy || !snapshot || !book || target < 1} onClick={() => act(start, "生产请求已接收。进度和停点由原生任务更新。")}>确认快照并启动</button>
+        <button className="secondaryButton" disabled={busy || !project} onClick={() => act(refresh, "已刷新持久状态。")}>查询最新状态</button>
+      </div>
+      {book && !workspace.profiles.length && <p>此作品尚无可选择的已批准生产配置。现有设计、开书输入和资格需先补齐；解析会保留具体缺项。</p>}
+      {snapshot && <p>快照校验：{snapshot.snapshot_hash} · 冻结版本：{snapshot.release_sha}</p>}
+    </section>
+    {(!bookId || book) && <CreativeInputPanel key={`${project}:${bookId}`} project={projects.find(p => p.project_id === project)} book={book} release={workspace.release_identity} onBook={setBookId} onRefresh={refresh} />}
+    <section className="panel">
+      <h2>进度与恢复</h2>
+      <label>生产记录<select aria-label="生产记录" value={runId} onChange={e => setRunId(e.target.value)}><option value="">选择生产记录</option>{workspace.runs.map(r => <option key={r.book_run_id} value={r.book_run_id}>{r.state} · 已接纳 {r.accepted_through_chapter}/{r.target_chapter_count} · {r.book_run_id.slice(-8)}</option>)}</select></label>
+      {progress && <dl><dt>当前状态</dt><dd>{progress.state}</dd><dt>停点</dt><dd>{progress.blocking_reason || progress.blocking_class || "无已报告停点"}</dd><dt>恢复条件</dt><dd>{progress.wake_condition || progress.next_expected_transition}</dd><dt>当前任务</dt><dd>{progress.active_operation_status || "未派发"}</dd></dl>}
+      <label>操作原因<input aria-label="操作原因" value={reason} onChange={e => setReason(e.target.value)} placeholder="记录暂停、恢复或取消的原因" /></label>
+      <div className="studioActions">
+        <button disabled={busy || !run || !reason.trim()} onClick={() => act(() => pauseBookProduction(runId, reason), "暂停请求已保存。")}>暂停</button>
+        <button disabled={busy || !run || !reason.trim()} onClick={() => act(() => resumeBookProduction(runId, reason), "恢复请求已保存；资格、预算和项目暂停仍由原生门禁检查。")}>恢复</button>
+        <button disabled={busy || !run?.active_chapter_request_id} onClick={() => act(() => recoverBookChapter(run!.active_chapter_request_id), "已核对并恢复原章节提交；未知外部结果仍需对账。")}>恢复章节提交</button>
+        <button className="dangerButton" disabled={busy || !run || !reason.trim()} onClick={() => act(() => cancelBookProduction(runId, reason), "取消请求已保存。")}>取消</button>
+        <Link className="secondaryButton" href={`/editor?${new URLSearchParams({project_id: project, book_id: bookId, book_run_id: runId})}`}>阅读正文、审稿与整稿版本</Link>
+      </div>
+    </section>
+    <section className="panel">
+      <h2>{run ? "本次生产的冻结配置" : "新请求待选择的配置"}</h2>
+      <p>{run ? `来源：${run.production_profile_version} · ${run.profile_hash}。恢复沿用此版本。` : "选择配置后解析快照；尚未冻结的设置不表示已用于正文。"}</p>
+      {effectiveProfile && <dl>{Object.entries(effectiveProfile).map(([name,value]) => <div key={name}><dt>{name}</dt><dd style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{typeof value === "object" ? JSON.stringify(value, null, 2) : String(value)}</dd></div>)}</dl>}
+      {run && <details><summary>章节实际冻结配置与版次来源</summary><p>Context、Craft、World／Actor、审读和版次只以该章节冻结的准备记录为依据。未形成章节请求时，尚无这一级配置证据。</p><pre>{JSON.stringify(run.chapter_configuration || {}, null, 2)}</pre></details>}
+      {run && !run.frozen_profile && <p>此历史生产记录未解析到配置资产，不能从当前选择推断其实际配置。</p>}
+      {book && <details><summary>作品策略来源</summary><pre>{JSON.stringify(book.runtime_policy, null, 2)}</pre></details>}
+      <h3>项目预算范围</h3><p>范围上限不是实际用量；项目预算不自动授权每个任务。</p>
+      {!workspace.budget_scopes.length ? <p>未查到持久预算范围。</p> : workspace.budget_scopes.map(b => <details key={b.budget_scope_id}><summary>{b.owner_kind} · {b.expired ? "已过期" : "有效期内"} · {b.deadline_at}</summary><pre>{JSON.stringify(b.policy, null, 2)}</pre></details>)}
+    </section>
+    {notice && <p role="status" className="noticeLine">{notice}</p>}
+    {error && <p role="alert" className="errorLine" style={{whiteSpace:"pre-wrap"}}>{error}</p>}
+  </FeatureShell>;
 }

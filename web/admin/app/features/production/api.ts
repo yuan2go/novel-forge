@@ -1,133 +1,33 @@
-import { fetchJson, postJson } from "../../shared/api";
-import type { AssetRow, FeatureAssetRow, ProjectRow } from "../../shared/types";
+import { fetchJson } from "../../shared/api";
+import type { ProjectRow } from "../../shared/types";
 
-export type ProductionVersionRow = FeatureAssetRow & {
-  version_index?: number | string;
-  source_path?: string;
-  context_bundle_path?: string;
-  output_path?: string;
-};
-
-export type ChapterProductionStep = {
-  step: string;
-  label: string;
-  status: string;
-  attempts?: number;
-  input_paths?: string[];
-  output_paths?: string[];
-  error?: string;
-  started_at?: string;
-  finished_at?: string;
-  task_status_paths?: string[];
-};
-
-export type ChapterProductionRun = FeatureAssetRow & {
-  run_id: string;
-  chapter: number | string;
-  current_step: string;
-  completed_steps: number;
-  total_steps: number;
-  final_draft_path: string;
-  stability_preflight_path?: string;
-  execution_mode?: string;
-  celery_task_id?: string;
-  pause_requested?: boolean;
-  cancel_requested?: boolean;
-  next_chapter_plan_path: string;
-  steps?: ChapterProductionStep[];
-  timeline?: Array<Record<string, unknown>>;
-  outputs?: Record<string, string>;
-  recovery_instruction?: string;
-};
-
-export type LongFormMacroPlanRow = FeatureAssetRow & {
-  target_word_count?: number;
-  volume_count?: number;
-  mainline_count?: number;
-  subplot_count?: number;
-  gate_count?: number;
-};
-
-export function loadProductionData(projectId?: string) {
-  return Promise.all([
-    fetchJson<ProjectRow[]>("/product/projects"),
-    fetchJson<ProductionVersionRow[]>(projectId ? `/product/production/versions?project_id=${encodeURIComponent(projectId)}&limit=160` : "/product/production/versions?limit=160"),
-    fetchJson<AssetRow[]>(projectId ? `/product/projects/${encodeURIComponent(projectId)}/assets?limit=160` : "/assets?limit=120&rank=path"),
-    fetchJson<ChapterProductionRun[]>(projectId ? `/product/production/chapter-runs?project_id=${encodeURIComponent(projectId)}&limit=80` : "/product/production/chapter-runs?limit=80"),
-    fetchJson<LongFormMacroPlanRow[]>(projectId ? `/product/production/macro-plans?project_id=${encodeURIComponent(projectId)}&limit=80` : "/product/production/macro-plans?limit=80")
-  ]);
+const prefix = "/product/production/book-authority";
+export type Book = { book_id: string; workspace_id: string; title: string; version: number; status: string; production_profile: Record<string, unknown>; runtime_policy: Record<string, unknown> };
+export type Profile = { asset_version_id: string; content_hash: string; content: Record<string, unknown> };
+export type Snapshot = { snapshot_id: string; snapshot_hash: string; release_sha: string; production_profile_version: string; narrative_chapter_cursor: number; [key: string]: unknown };
+export type Run = { book_run_id: string; state: string; accepted_through_chapter: number; target_chapter_count: number; active_chapter_request_id: string; input_snapshot_id: string; production_profile_version: string; frozen_profile: Record<string, unknown> | null; chapter_configuration?: Record<string, unknown>; profile_hash: string; failure_reason: string; paused_reason: string; version: number };
+export type Workspace = { release_identity?: string; dispatch_control?: {state: string; reason: string; process_dispatch_suspended: boolean}; books: Book[]; runs: Run[]; profiles: Profile[]; snapshots: Snapshot[]; budget_scopes: Array<{ budget_scope_id: string; owner_kind: string; owner_id: string; deadline_at: string; expired: boolean; policy: Record<string, unknown> }> };
+export type Progress = { state: string; blocking_reason: string; blocking_class: string; wake_condition: string; next_expected_transition: string; active_operation_id: string; active_operation_status: string; [key: string]: unknown };
+function post<T>(path: string, body: Record<string, unknown>) { return fetchJson<T>(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); }
+export function loadProductionProjects() { return fetchJson<ProjectRow[]>("/product/projects"); }
+export function loadProductionWorkspace(projectId: string, bookId = "") { return fetchJson<Workspace>(`${prefix}/author-workspace?${new URLSearchParams({ project_id: projectId, book_id: bookId })}`); }
+export function resolveProductionSnapshot(projectId: string, book: Book, profile: string, cursor: number, idempotencyKey: string) {
+  return post<Snapshot>(`${prefix}/books/${encodeURIComponent(book.book_id)}/production-inputs/resolve`, { project_id: projectId, workspace_id: book.workspace_id, production_profile: profile, expected_book_version: book.version, narrative_chapter_cursor: cursor, idempotency_key: idempotencyKey });
 }
+export function startBookProduction(body: Record<string, unknown>) { return post<{ book_run_id: string; replayed: boolean }>(`${prefix}/commands`, body); }
+export function pauseBookProduction(run: string, reason: string) { return post<Run>(`${prefix}/runs/${encodeURIComponent(run)}/pause`, { reason }); }
+export function resumeBookProduction(run: string, reason: string) { return post<Run>(`${prefix}/runs/${encodeURIComponent(run)}/resume`, { reason }); }
+export function cancelBookProduction(run: string, reason: string) { return post<Run>(`${prefix}/runs/${encodeURIComponent(run)}/cancel`, { reason }); }
+export function recoverBookChapter(requestId: string) { return post<Record<string, unknown>>(`${prefix}/chapter-requests/${encodeURIComponent(requestId)}/recover`, {}); }
+export function loadBookProgress(run: string) { return fetchJson<Progress>(`${prefix}/runs/${encodeURIComponent(run)}/progress`); }
 
-export function createOutlineVersion(outlinePath: string) {
-  return postJson("/product/production/outline-version", { outline_path: outlinePath, change_summary: "version from production workbench", status: "active" });
-}
+export type ContentOperation = { operation_id: string; status: string; outputs: Array<{asset_version_id: string; content_hash: string}> };
+export type Formation = { formation_run_id: string; version: number; lifecycle: string; current_stage: string; failure: unknown; recovery_instruction: unknown; book_design_asset_version_id: string; book_design_content_hash: string };
+export function createAuthorBook(body: Record<string, unknown>) { return post<Record<string, unknown>>("/authority/books", body); }
+export function saveCreativeInput(body: Record<string, unknown>) { return post<ContentOperation>("/product/content-authority/commands", body); }
+export function loadCreativeInput(project: string, operation: string) { return fetchJson<ContentOperation>(`/product/content-authority/operations/${encodeURIComponent(operation)}?${new URLSearchParams({project_id: project})}`); }
+export function startFormation(book: string, body: Record<string, unknown>) { return post<Formation>(`${prefix}/books/${encodeURIComponent(book)}/formation-runs`, body); }
+export function loadFormation(run: string) { return fetchJson<Formation>(`${prefix}/formation-runs/${encodeURIComponent(run)}`); }
+export function resumeFormation(run: Formation) { return post<Formation>(`${prefix}/formation-runs/${encodeURIComponent(run.formation_run_id)}/resume`, {expected_version: run.version}); }
 
-export function createChapterPlanVersion(chapterPlanPath: string) {
-  return postJson("/product/production/chapter-plan-version", { chapter_plan_path: chapterPlanPath, change_summary: "version from production workbench", status: "active" });
-}
-
-export function createDraftVersion(draftPath: string) {
-  return postJson("/product/production/draft-version", { draft_path: draftPath, change_summary: "version from production workbench", status: "active" });
-}
-
-export function createGenerationRun(inputPath: string, contextBundlePath: string, outputPath: string, provider: string, model: string) {
-  return postJson("/product/production/generation-run", {
-    input_path: inputPath,
-    context_bundle_path: contextBundlePath,
-    output_path: outputPath || null,
-    provider,
-    model,
-    prompt_version: "prompt-v1",
-    status: "succeeded"
-  });
-}
-
-export function startChapterProduction(outlinePath: string, chapterPlanPath: string, workspacePath: string, chapter: number, runTo: string, asyncTask = false) {
-  return postJson("/product/production/chapter-run/start", {
-    outline_path: outlinePath,
-    chapter_plan_path: chapterPlanPath || null,
-    workspace_path: workspacePath || null,
-    chapter,
-    run_to: runTo,
-    async_task: asyncTask
-  });
-}
-
-export function resumeChapterProduction(runPath: string, fromStep: string, runTo: string, force = false, asyncTask = false) {
-  return postJson("/product/production/chapter-run/resume", {
-    run_path: runPath,
-    from_step: fromStep || null,
-    run_to: runTo || null,
-    force,
-    async_task: asyncTask
-  });
-}
-
-export function pauseChapterProduction(runPath: string, reason = "paused from chapter factory") {
-  return postJson("/product/production/chapter-run/pause", { run_path: runPath, reason });
-}
-
-export function cancelChapterProduction(runPath: string, reason = "cancelled from chapter factory") {
-  return postJson("/product/production/chapter-run/cancel", { run_path: runPath, reason, terminate: true, signal: "SIGTERM" });
-}
-
-export function recoverChapterProduction(runPath: string, runTo: string, asyncTask = false) {
-  return postJson("/product/production/chapter-run/recover", { run_path: runPath, run_to: runTo || null, force: true, async_task: asyncTask });
-}
-
-export function createLongFormMacroPlan(workspacePath: string, sourcePath: string, targetWordCount: number, volumeCount: number, chaptersPerVolume: number) {
-  return postJson("/product/production/macro-plan", {
-    workspace_path: workspacePath || null,
-    source_path: sourcePath || null,
-    target_word_count: targetWordCount,
-    volume_count: volumeCount,
-    chapters_per_volume: chaptersPerVolume
-  });
-}
-
-export function createCanonPatch(draftPath: string, workspacePath?: string) {
-  return postJson("/product/continuity/canon-patch", {
-    draft_path: draftPath,
-    workspace_path: workspacePath || null
-  });
-}
+export function createAuthorWorkspace(project: string, body: Record<string, unknown>) { return post<Record<string, unknown>>(`/product/projects/${encodeURIComponent(project)}/workspaces`, body); }
