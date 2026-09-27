@@ -1,0 +1,90 @@
+{
+  "audit_main_sha": "d69053557e5dd16ccfa4217fde234245a90fdc50",
+  "samples": [
+    {
+      "asset_path": "novels/guofeng-xuanhuan-01/output/03_分层规划/题材与读者承诺/创作基础/authority-output_58320be8-f7a1-4508-bca0-06383f8f4c37_story_planning.candidate_v1.json",
+      "asset_version_id": "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1",
+      "native_content_hash": "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6",
+      "adoption_lifecycle": "ACTIVE",
+      "qualification": "QUALIFIED",
+      "qualification_scope": "DESIGN_CANDIDATE_NOT_LITERARY_CHAPTER",
+      "semantic_repair_count": 0,
+      "raw_result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-01c8181a-c950-4b8b-b850-e3974-142f81f4249d51f5/last-message.json",
+        "sha256": "7cbfead44bf64f2d9dbe75b8551f95ee8c77a1a6b49fadac81c56b203da8bff1",
+        "bytes": 18334
+      },
+      "exported_examples_equal_raw_result": true,
+      "example_count": 4,
+      "read_count": 4,
+      "example_characters": 383,
+      "example_han_characters": 300,
+      "examples": [
+        {
+          "example": "刀背又麻了一下。陆照把劈砍收成斜推，刀尖贴着木栏滑过去，割断了系铃的细绳。铃落进掌心，他先笑出了声，再去看刀：豁口已从米粒长到了指甲盖。赢来的工钱，得先分一半赔它。",
+          "purpose": "把手艺优势、战斗目的和具体代价写进同一次动作。",
+          "explanation": "通过触觉、改招、目标达成与兵刃损耗连续呈现能力和边界；胜利明确保留，同时让选择产生可追踪的经济后果。"
+        },
+        {
+          "example": "“你这把刀，救急还是长用？”陆照问。\n“有什么分别？”\n“救急，今天拿。长用，后天拿。”\n客人松了口气：“那长用。”\n陆照把刀推回半寸：“长用得先付钱。”\n客人的手也跟着退了半寸。",
+          "purpose": "建立磨刀少年的生计感与不依赖口号的幽默。",
+          "explanation": "对白围绕真实交易展开，人物的机灵与戒心通过小动作显现；笑点来自双方各有盘算。"
+        },
+        {
+          "example": "叶满汀听完，只问：“断了篙，谁赔？”\n“我赔。”陆照答得很快。\n她把那截断篙放上桌。竹节旁还缠着一圈旧布，浸透的水慢慢流到他袖口。\n“我爹今晚使什么撑船？”\n陆照摸钱的手停了。他只算了竹子的价。",
+          "purpose": "让同伴的生活与主角成长形成真实冲突。",
+          "explanation": "伙伴追问自身损失，逼出主角对责任理解的缺口；修复不止交钱，还涉及误工和后续行动。"
+        },
+        {
+          "example": "陶靖没有接那张联名纸。他先把茶碗挪开，免得沾湿纸角。\n“这趟若折一人，你们出多少抚恤？”\n陆照报了个数。\n“我门里出这个数的三倍。”陶靖这才看他，“你们少收的钱，从哪里补？”\n陆照盯着纸上的几个名字。来之前，他只怕对方不肯让价。",
+          "purpose": "塑造能干且目标可理解的对手，并保持知识边界。",
+          "explanation": "对手以职责和成本提出有效质疑，动作保留礼数；限知叙述只写陆照发现自己的准备不足，不宣告对手的全部动机。"
+        }
+      ],
+      "chapter_acceptance": "NONE; explicitly design examples only"
+    },
+    {
+      "asset_path": "novels/guofeng-xuanhuan-01/output/03_分层规划/题材与读者承诺/创作基础/authority-output_d6f70986-b171-47f8-9f04-3134aa74a740_story_planning.candidate_v1.json",
+      "asset_version_id": "authority-output:d6f70986-b171-47f8-9f04-3134aa74a740:story_planning.candidate:v1",
+      "native_content_hash": "sha256:57412de395dbf62ad92aa1a27f86fe5dc8ca1c8a113a90236b3ac81236fcf843",
+      "adoption_lifecycle": "MATERIALIZED",
+      "qualification": "QUALIFIED",
+      "qualification_scope": "DESIGN_CANDIDATE_NOT_LITERARY_CHAPTER",
+      "semantic_repair_count": 0,
+      "raw_result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-8e252887-ff1f-45e5-b845-1a8e2-8ddb0c0d273885ea/last-message.json",
+        "sha256": "a2ca4cd9c69adef5a107486db2b4f38bbc31b9388bb2efe8427b240f10b2cef8",
+        "bytes": 19340
+      },
+      "exported_examples_equal_raw_result": true,
+      "example_count": 4,
+      "read_count": 4,
+      "example_characters": 383,
+      "example_han_characters": 326,
+      "examples": [
+        {
+          "example": "剑客把剑往磨台上一放：“今晚能好？”陆照拿薄布试过刃口，布丝挂住了两处。“剑能好。你明早还拿它劈门，另算。”剑客笑了一声，压下半串钱。陆照等人走远才拎起来数，数到末尾，又把去码头问船价的念头翻了出来。",
+          "purpose": "建立磨刀少年声线、烟火气与主动欲望",
+          "explanation": "以接活和试刃呈现职业经验；顶嘴源于与顾客打交道的习惯，收钱后的行动欲望让玩笑连回出镇目标。"
+        },
+        {
+          "example": "陆照让开半步，把通往船舱的窄口露了出来。来人果然收刀抢进。他等的就是这一下，剑脊贴住刀背，顺着掌心那线细震往外一送。刀尖扎进舷板，身后两人趁隙钻进舱里。他还想抽剑，腕子忽然一麻；刃上新崩的缺口咬住了木头。",
+          "purpose": "通过战斗展示能力优势、任务收益与即时成本",
+          "explanation": "明确守舱目的，用诱导、接触和受力选择取得局部成功；救人收益与剑被卡住、腕伤的代价同场可见，能力没有直接杀败对手。"
+        },
+        {
+          "example": "“我赔。”陆照把钱袋推过桌面。祝青篙解开袋口，只取了补货的钱。“这个清了。”他刚松口气，她便把明日的站位图转向别人。“船头让阿顺守。”陆照伸到一半的手停住，最后落在自己膝上。",
+          "purpose": "表现失败后的具体状态变化与伙伴自主性",
+          "explanation": "赔偿落实物质后果，指挥安排落实关系变化；伙伴依据船务作出选择，主角无法用一句认错恢复原位。"
+        },
+        {
+          "example": "面摊老板照旧端来半碗面。陆照把三枚钱排在桌上：“今日整碗。”老板看他一眼，又添了一筷子。他端碗时，右手还使不上劲，便换了左手。肉片浮上来，他先拨给对面的青篙一片，余下两片压进面底，慢慢吃。",
+          "purpose": "在代价仍然存在时兑现轻松、关系与满足感",
+          "explanation": "用消费变化兑现实得工钱，用换手保留伤势连续性；分享和藏肉展示少年的亲近与小心思，让回报具有生活质地。"
+        }
+      ],
+      "chapter_acceptance": "NONE; explicitly design examples only"
+    }
+  ],
+  "proof_ceiling": "REAL_MODEL_MICRO_SCENES_INSIDE_DESIGN_NOT_FULL_CHAPTER_OR_LONGFORM"
+}

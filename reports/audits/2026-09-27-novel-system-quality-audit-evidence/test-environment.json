@@ -1,0 +1,11 @@
+{
+  "python": "3.12.2 (main, Feb  6 2024, 20:19:44) [Clang 15.0.0 (clang-1500.1.0.2.5)]",
+  "executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "packages": {
+    "pytest": "9.1.1",
+    "pydantic": "2.13.5",
+    "psycopg": "3.3.4",
+    "fastapi": "0.141.1"
+  }
+}

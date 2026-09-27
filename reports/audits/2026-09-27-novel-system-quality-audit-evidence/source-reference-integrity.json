@@ -1,0 +1,4235 @@
+{
+  "audit_sha": "d69053557e5dd16ccfa4217fde234245a90fdc50",
+  "method": "named file-and-line references resolved against frozen archive; Python symbols intersect cited lines; this is citation integrity, not semantic test evidence",
+  "references": [
+    {
+      "reference": "api/authority_app.py:173-209",
+      "report_line": 58,
+      "targets": [
+        {
+          "path": "src/novel_forge/api/authority_app.py",
+          "sha256": "a56f1c669fdad086b3af2b95bb080f747da4e25fb71ab6fb099a05523ca7f66f",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "create_authority_app",
+              "kind": "FunctionDef",
+              "line": 173,
+              "end_line": 754
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "api/authority_dependencies.py:1890-2035",
+      "report_line": 58,
+      "targets": [
+        {
+          "path": "src/novel_forge/api/authority_dependencies.py",
+          "sha256": "87e23376e25d180af2be87051f35c9a14c8582d202f3405877a6907283de3e60",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "build_book_production_composition",
+              "kind": "FunctionDef",
+              "line": 1886,
+              "end_line": 2036
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "compose.yml:4-19",
+      "report_line": 58,
+      "targets": [
+        {
+          "path": "compose.yml",
+          "sha256": "b3595a09d6256be37ef744928532d6bf1a7eaeb3b6db11af41d2e881f2c872ba",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "authority_app.py:517-620",
+      "report_line": 58,
+      "targets": [
+        {
+          "path": "src/novel_forge/api/authority_app.py",
+          "sha256": "a56f1c669fdad086b3af2b95bb080f747da4e25fb71ab6fb099a05523ca7f66f",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "create_authority_app",
+              "kind": "FunctionDef",
+              "line": 173,
+              "end_line": 754
+            },
+            {
+              "name": "health",
+              "kind": "FunctionDef",
+              "line": 518,
+              "end_line": 523
+            },
+            {
+              "name": "liveness",
+              "kind": "FunctionDef",
+              "line": 526,
+              "end_line": 531
+            },
+            {
+              "name": "readiness_payload",
+              "kind": "FunctionDef",
+              "line": 533,
+              "end_line": 694
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "command_kernel/service.py:31-138",
+      "report_line": 84,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/service.py",
+          "sha256": "495c6ee67c9a72f70f6412f5db2feb7800b233544ae1ce0502fef32a8e219b81",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "execute_transaction_command",
+              "kind": "FunctionDef",
+              "line": 31,
+              "end_line": 146
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "runtime_job/application.py:185-242,373-433",
+      "report_line": 84,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/runtime_job/application.py",
+          "sha256": "8d53e2cd208fc0d73731c434e7dadeb8d9a2ab6eaa04a1d8eefd851fbf0f7cf9",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "RuntimeJobAuthority",
+              "kind": "ClassDef",
+              "line": 178,
+              "end_line": 2402
+            },
+            {
+              "name": "schedule",
+              "kind": "FunctionDef",
+              "line": 185,
+              "end_line": 189
+            },
+            {
+              "name": "schedule_in_uow",
+              "kind": "FunctionDef",
+              "line": 191,
+              "end_line": 298
+            },
+            {
+              "name": "claim",
+              "kind": "FunctionDef",
+              "line": 373,
+              "end_line": 617
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "external_effect_runtime.py:279-354,524-640",
+      "report_line": 84,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "sha256": "28297463b4e7124f7974b506eac3eaa10c9c1766997faff41c9e206453249404",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "plan_external_effect",
+              "kind": "FunctionDef",
+              "line": 279,
+              "end_line": 408
+            },
+            {
+              "name": "dispatch_external_effect",
+              "kind": "FunctionDef",
+              "line": 524,
+              "end_line": 775
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "authority_uow.py:32-94",
+      "report_line": 84,
+      "targets": [
+        {
+          "path": "src/novel_forge/storage/authority_uow.py",
+          "sha256": "6b235134db54fd8ffa8829789d4251287c8b3c1cdfc1f4490730e8f8f6836852",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "AuthorityUnitOfWork",
+              "kind": "ClassDef",
+              "line": 15,
+              "end_line": 94
+            },
+            {
+              "name": "__enter__",
+              "kind": "FunctionDef",
+              "line": 32,
+              "end_line": 57
+            },
+            {
+              "name": "commit",
+              "kind": "FunctionDef",
+              "line": 59,
+              "end_line": 68
+            },
+            {
+              "name": "__exit__",
+              "kind": "FunctionDef",
+              "line": 70,
+              "end_line": 94
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "book_authority/production.py:1493-1520,1596-1612",
+      "report_line": 127,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "sha256": "915d4cc89bb8ab3241cffdddce4b86bcd188d77e40258f5323cca8e4008eaa96",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PostgresBookAuthority",
+              "kind": "ClassDef",
+              "line": 487,
+              "end_line": 3253
+            },
+            {
+              "name": "accept_chapter",
+              "kind": "FunctionDef",
+              "line": 1153,
+              "end_line": 1621
+            },
+            {
+              "name": "commit_acceptance",
+              "kind": "FunctionDef",
+              "line": 1299,
+              "end_line": 1594
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "chapter_dispatch.py:58-117",
+      "report_line": 127,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/chapter_dispatch.py",
+          "sha256": "882c74111132637ff54adaffe11b1a45bace17721ebb51621946beb58f61bb76",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "context_candidates_for_dispatch",
+              "kind": "FunctionDef",
+              "line": 58,
+              "end_line": 212
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "storage/authority_uow.py:32-94",
+      "report_line": 131,
+      "targets": [
+        {
+          "path": "src/novel_forge/storage/authority_uow.py",
+          "sha256": "6b235134db54fd8ffa8829789d4251287c8b3c1cdfc1f4490730e8f8f6836852",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "AuthorityUnitOfWork",
+              "kind": "ClassDef",
+              "line": 15,
+              "end_line": 94
+            },
+            {
+              "name": "__enter__",
+              "kind": "FunctionDef",
+              "line": 32,
+              "end_line": 57
+            },
+            {
+              "name": "commit",
+              "kind": "FunctionDef",
+              "line": 59,
+              "end_line": 68
+            },
+            {
+              "name": "__exit__",
+              "kind": "FunctionDef",
+              "line": 70,
+              "end_line": 94
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "command_kernel/service.py:31-138",
+      "report_line": 131,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/service.py",
+          "sha256": "495c6ee67c9a72f70f6412f5db2feb7800b233544ae1ce0502fef32a8e219b81",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "execute_transaction_command",
+              "kind": "FunctionDef",
+              "line": 31,
+              "end_line": 146
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "external_effect_runtime.py:95-112",
+      "report_line": 133,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "sha256": "28297463b4e7124f7974b506eac3eaa10c9c1766997faff41c9e206453249404",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "classify_external_effect_recovery",
+              "kind": "FunctionDef",
+              "line": 95,
+              "end_line": 112
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "dispatch_control.py:33-44,76-112",
+      "report_line": 133,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/dispatch_control.py",
+          "sha256": "ec5f415502c17a7e4eced5a15018786b214de30114d6367c7f2c87d9006b3b39",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "process_dispatch_suspended",
+              "kind": "FunctionDef",
+              "line": 33,
+              "end_line": 35
+            },
+            {
+              "name": "require_dispatch_enabled",
+              "kind": "FunctionDef",
+              "line": 38,
+              "end_line": 44
+            },
+            {
+              "name": "change_dispatch_control",
+              "kind": "FunctionDef",
+              "line": 76,
+              "end_line": 112
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "context_builder/embedding_projection.py:83-139",
+      "report_line": 135,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/context_builder/embedding_projection.py",
+          "sha256": "71d12f64e2837f97e36115d6f3ae675dd15b30729aa44c017c0b4104ea2212d8",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "_EmbeddingHandler",
+              "kind": "ClassDef",
+              "line": 83,
+              "end_line": 174
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 86,
+              "end_line": 174
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "embedding_projection.py:102-129",
+      "report_line": 144,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/context_builder/embedding_projection.py",
+          "sha256": "71d12f64e2837f97e36115d6f3ae675dd15b30729aa44c017c0b4104ea2212d8",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "_EmbeddingHandler",
+              "kind": "ClassDef",
+              "line": 83,
+              "end_line": 174
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 86,
+              "end_line": 174
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "authority_security/service.py:79-145",
+      "report_line": 147,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/authority_security/service.py",
+          "sha256": "27380b81a0795ed2338751474f48d97d2fd3c691c85c250f3e6637a5add80b5c",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "TrustedPrincipalResolver",
+              "kind": "ClassDef",
+              "line": 42,
+              "end_line": 228
+            },
+            {
+              "name": "resolve_api_principal",
+              "kind": "FunctionDef",
+              "line": 79,
+              "end_line": 146
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "compose.yml:167-170",
+      "report_line": 147,
+      "targets": [
+        {
+          "path": "compose.yml",
+          "sha256": "b3595a09d6256be37ef744928532d6bf1a7eaeb3b6db11af41d2e881f2c872ba",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "hierarchical_planning/domain.py:13-18,419-506",
+      "report_line": 153,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "sha256": "fa4840f7b44f3a30e697c3f1db281c7120de18c6e4b2f93e3dcd5e3983f5e972",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PlanContractType",
+              "kind": "ClassDef",
+              "line": 13,
+              "end_line": 18
+            },
+            {
+              "name": "_validate_canonical_narrative_contract",
+              "kind": "FunctionDef",
+              "line": 407,
+              "end_line": 637
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "formation_generation.py:61-183",
+      "report_line": 157,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+          "sha256": "94c2abba73efc674e8cebb6c17f9b4e9c6c1bf96baafbee9080c357fd113c33f",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "FormationGeneration",
+              "kind": "ClassDef",
+              "line": 52,
+              "end_line": 392
+            },
+            {
+              "name": "prepare_layer",
+              "kind": "FunctionDef",
+              "line": 61,
+              "end_line": 195
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "scripts/run_creation_synthesis.py:411-474",
+      "report_line": 157,
+      "targets": [
+        {
+          "path": "scripts/run_creation_synthesis.py",
+          "sha256": "0e89daad19132bcf1a724236f8f2c9a91667aebdd9c9be4a9dfa7bf607b6d7aa",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "main",
+              "kind": "FunctionDef",
+              "line": 67,
+              "end_line": 639
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "book_authority/creation_inputs.py:10-51,76-119",
+      "report_line": 158,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/creation_inputs.py",
+          "sha256": "892d03c020920a36c3b9f16ca0a94fabf94f29ae041958bcc4673220b87c9049",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "prepare_creation_inputs",
+              "kind": "FunctionDef",
+              "line": 10,
+              "end_line": 126
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "opening_workflow.py:223-228,442-514",
+      "report_line": 159,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/opening_workflow.py",
+          "sha256": "f7d6a3076d5ad53a95367322c842d4e8f716b23d7251f3725eb9beb3416707c4",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "BookOpeningWorkflowNodeKind",
+              "kind": "ClassDef",
+              "line": 223,
+              "end_line": 228
+            },
+            {
+              "name": "build_book_opening_workflow",
+              "kind": "FunctionDef",
+              "line": 415,
+              "end_line": 544
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "api/routers/book_authority.py:447-483",
+      "report_line": 159,
+      "targets": [
+        {
+          "path": "src/novel_forge/api/routers/book_authority.py",
+          "sha256": "851cfdc74d11be7fac15906e86827fbb7217891ef54afd75fd651f88d4767a84",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "create_router",
+              "kind": "FunctionDef",
+              "line": 150,
+              "end_line": 1433
+            },
+            {
+              "name": "start_book_opening",
+              "kind": "FunctionDef",
+              "line": 448,
+              "end_line": 483
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "supervisor.py:410-642,771-947",
+      "report_line": 160,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/supervisor.py",
+          "sha256": "adc7c1eb355bd38e893b0d8b51a87f0caaa1462c02a9094c9e49553dc19468cc",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PostgresBookProductionSupervisor",
+              "kind": "ClassDef",
+              "line": 77,
+              "end_line": 1328
+            },
+            {
+              "name": "_tick",
+              "kind": "FunctionDef",
+              "line": 137,
+              "end_line": 652
+            },
+            {
+              "name": "_generate_plan",
+              "kind": "FunctionDef",
+              "line": 771,
+              "end_line": 982
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "story_planning_runtime/world_preparation.py:175-199,336-377",
+      "report_line": 161,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+          "sha256": "825610e1f4be5ecf3cd26efb50730299c5dcdf6887b795134805758a2d8e169e",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PlanningWorldPreparation",
+              "kind": "ClassDef",
+              "line": 100,
+              "end_line": 531
+            },
+            {
+              "name": "prepare",
+              "kind": "FunctionDef",
+              "line": 104,
+              "end_line": 334
+            },
+            {
+              "name": "generation_stage",
+              "kind": "FunctionDef",
+              "line": 337,
+              "end_line": 360
+            },
+            {
+              "name": "evaluation_stage",
+              "kind": "FunctionDef",
+              "line": 363,
+              "end_line": 379
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "chapter_authority/handlers.py:1154-1277",
+      "report_line": 162,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+          "sha256": "ff2701cb8f1712f7b0e623e5bb8a3a83ebb16c12e33efae8904cc54fd19080af",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "_ContextHandler",
+              "kind": "ClassDef",
+              "line": 874,
+              "end_line": 1278
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 875,
+              "end_line": 1278
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "chapter_dispatch.py:58-117",
+      "report_line": 162,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/chapter_dispatch.py",
+          "sha256": "882c74111132637ff54adaffe11b1a45bace17721ebb51621946beb58f61bb76",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "context_candidates_for_dispatch",
+              "kind": "FunctionDef",
+              "line": 58,
+              "end_line": 212
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "chapter_authority/handlers.py:1282-1573",
+      "report_line": 163,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+          "sha256": "ff2701cb8f1712f7b0e623e5bb8a3a83ebb16c12e33efae8904cc54fd19080af",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "_DraftHandler",
+              "kind": "ClassDef",
+              "line": 1282,
+              "end_line": 1328
+            },
+            {
+              "name": "_ReviewHandler",
+              "kind": "ClassDef",
+              "line": 1332,
+              "end_line": 1358
+            },
+            {
+              "name": "_RevisionHandler",
+              "kind": "ClassDef",
+              "line": 1362,
+              "end_line": 1431
+            },
+            {
+              "name": "_ReReviewHandler",
+              "kind": "ClassDef",
+              "line": 1435,
+              "end_line": 1472
+            },
+            {
+              "name": "_BestCandidateHandler",
+              "kind": "ClassDef",
+              "line": 1476,
+              "end_line": 1626
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 1285,
+              "end_line": 1328
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 1335,
+              "end_line": 1358
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 1365,
+              "end_line": 1431
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 1438,
+              "end_line": 1472
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 1477,
+              "end_line": 1626
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "chapter_authority/contracts.py:30-171",
+      "report_line": 164,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/contracts.py",
+          "sha256": "434be868b7820ef1240c47dbccd4e138c52063b81bbbce1f0df9ead5768f163b",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "ChapterNode",
+              "kind": "ClassDef",
+              "line": 30,
+              "end_line": 202
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "book_authority/production.py:1153-1202,1435-1612",
+      "report_line": 164,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "sha256": "915d4cc89bb8ab3241cffdddce4b86bcd188d77e40258f5323cca8e4008eaa96",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PostgresBookAuthority",
+              "kind": "ClassDef",
+              "line": 487,
+              "end_line": 3253
+            },
+            {
+              "name": "accept_chapter",
+              "kind": "FunctionDef",
+              "line": 1153,
+              "end_line": 1621
+            },
+            {
+              "name": "commit_acceptance",
+              "kind": "FunctionDef",
+              "line": 1299,
+              "end_line": 1594
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "book_followup_authority/coordinator.py:89-181",
+      "report_line": 165,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/coordinator.py",
+          "sha256": "94bbd6dcf4bd0e2776b5bcd8dbcea33b8298c382ec6af1cbcf6fea0e0216e47d",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PostgresBookFollowupCoordinator",
+              "kind": "ClassDef",
+              "line": 59,
+              "end_line": 616
+            },
+            {
+              "name": "admit",
+              "kind": "FunctionDef",
+              "line": 89,
+              "end_line": 181
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "prose_coordinator.py:698-810,1000-1155",
+      "report_line": 165,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
+          "sha256": "6f77decb9e788d42f2fd821253a28f86d519d64cf627013ccd3904a505f4a442",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "BookProseReviewCoordinator",
+              "kind": "ClassDef",
+              "line": 208,
+              "end_line": 1315
+            },
+            {
+              "name": "disposition",
+              "kind": "FunctionDef",
+              "line": 682,
+              "end_line": 868
+            },
+            {
+              "name": "propose_plan_change",
+              "kind": "FunctionDef",
+              "line": 1000,
+              "end_line": 1156
+            },
+            {
+              "name": "handler",
+              "kind": "FunctionDef",
+              "line": 719,
+              "end_line": 864
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "completion_domain.py:184-262",
+      "report_line": 166,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/completion_domain.py",
+          "sha256": "8fcd14b214d000eeb692952e3d4b4471bbebe706bf1d12eabfb8ac5cbcd84de6",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "assess_completion",
+              "kind": "FunctionDef",
+              "line": 184,
+              "end_line": 263
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "book_authority/completion.py:504-529",
+      "report_line": 166,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/completion.py",
+          "sha256": "f5ca4ee3072b2ec6c04849f9d0869b28a559fe181718f00dda748920d6c00544",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PostgresBookCompletionAuthority",
+              "kind": "ClassDef",
+              "line": 191,
+              "end_line": 675
+            },
+            {
+              "name": "_decide",
+              "kind": "FunctionDef",
+              "line": 467,
+              "end_line": 549
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "cli/editions.py:10-60",
+      "report_line": 166,
+      "targets": [
+        {
+          "path": "src/novel_forge/cli/editions.py",
+          "sha256": "c22c095ceeb35e1f320673101ae28dd6bd4dd3eecc57c5d944709b8d7d485fe6",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "add_edition_parser",
+              "kind": "FunctionDef",
+              "line": 10,
+              "end_line": 20
+            },
+            {
+              "name": "run_edition_command",
+              "kind": "FunctionDef",
+              "line": 23,
+              "end_line": 60
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "supervisor.py:559-572",
+      "report_line": 197,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/supervisor.py",
+          "sha256": "adc7c1eb355bd38e893b0d8b51a87f0caaa1462c02a9094c9e49553dc19468cc",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PostgresBookProductionSupervisor",
+              "kind": "ClassDef",
+              "line": 77,
+              "end_line": 1328
+            },
+            {
+              "name": "_tick",
+              "kind": "FunctionDef",
+              "line": 137,
+              "end_line": 652
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "chapter_dispatch.py:78-117",
+      "report_line": 197,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/chapter_dispatch.py",
+          "sha256": "882c74111132637ff54adaffe11b1a45bace17721ebb51621946beb58f61bb76",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "context_candidates_for_dispatch",
+              "kind": "FunctionDef",
+              "line": 58,
+              "end_line": 212
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "chapter_authority/handlers.py:1476-1573",
+      "report_line": 203,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+          "sha256": "ff2701cb8f1712f7b0e623e5bb8a3a83ebb16c12e33efae8904cc54fd19080af",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "_BestCandidateHandler",
+              "kind": "ClassDef",
+              "line": 1476,
+              "end_line": 1626
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 1477,
+              "end_line": 1626
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "candidate_selection.py:86-147",
+      "report_line": 203,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+          "sha256": "25d0af630d1bf0bf47066690585a19691783d569a03f712e312278e8a5f249c4",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "compare_candidates",
+              "kind": "FunctionDef",
+              "line": 67,
+              "end_line": 180
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "chapter_authority/scheduler.py:296,321-340",
+      "report_line": 205,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/scheduler.py",
+          "sha256": "0a497594277fc86f5c922d3f02365c291bc2c8797aafbf02584d62a71bf3c394",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "ChapterAuthorityScheduler",
+              "kind": "ClassDef",
+              "line": 107,
+              "end_line": 1827
+            },
+            {
+              "name": "_advance_quality_correction",
+              "kind": "FunctionDef",
+              "line": 270,
+              "end_line": 439
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "edition_application.py:261-317",
+      "report_line": 228,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_application.py",
+          "sha256": "32bf86a703c2393eda36620907f23f674929bb310c97f3a82d34f82ece63cea4",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "BookEditionApplication",
+              "kind": "ClassDef",
+              "line": 42,
+              "end_line": 406
+            },
+            {
+              "name": "_create",
+              "kind": "FunctionDef",
+              "line": 261,
+              "end_line": 294
+            },
+            {
+              "name": "_require_current_candidate",
+              "kind": "FunctionDef",
+              "line": 297,
+              "end_line": 300
+            },
+            {
+              "name": "_save",
+              "kind": "FunctionDef",
+              "line": 302,
+              "end_line": 317
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "book_authority/editions.py:51-142",
+      "report_line": 228,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/editions.py",
+          "sha256": "efe59b11e718f1ee5c1ce597466a123b24c4b7d81a94ad70fcbaa1a00837d833",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "revise_manifest",
+              "kind": "FunctionDef",
+              "line": 51,
+              "end_line": 141
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "edition_runtime.py:78-188",
+      "report_line": 228,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_runtime.py",
+          "sha256": "10c7c4c5ab417ec36f8044e8fc1ef0d29be25def3d2dd07f82e0bf8a39d363f6",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "edition_adopted_draft",
+              "kind": "FunctionDef",
+              "line": 78,
+              "end_line": 119
+            },
+            {
+              "name": "inherit_unchanged_prefix",
+              "kind": "FunctionDef",
+              "line": 122,
+              "end_line": 188
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "edition_application.py:319-365",
+      "report_line": 230,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_application.py",
+          "sha256": "32bf86a703c2393eda36620907f23f674929bb310c97f3a82d34f82ece63cea4",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "BookEditionApplication",
+              "kind": "ClassDef",
+              "line": 42,
+              "end_line": 406
+            },
+            {
+              "name": "_validation_sources",
+              "kind": "FunctionDef",
+              "line": 319,
+              "end_line": 335
+            },
+            {
+              "name": "_reviewed_manifest",
+              "kind": "FunctionDef",
+              "line": 338,
+              "end_line": 348
+            },
+            {
+              "name": "_validation_proof",
+              "kind": "FunctionDef",
+              "line": 350,
+              "end_line": 357
+            },
+            {
+              "name": "_validate",
+              "kind": "FunctionDef",
+              "line": 359,
+              "end_line": 365
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "edition_runtime.py:20-41",
+      "report_line": 230,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_runtime.py",
+          "sha256": "10c7c4c5ab417ec36f8044e8fc1ef0d29be25def3d2dd07f82e0bf8a39d363f6",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "edition_dispatch_binding_in_uow",
+              "kind": "FunctionDef",
+              "line": 20,
+              "end_line": 41
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "book_followup_authority/screenplay_application.py:112-221",
+      "report_line": 232,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/screenplay_application.py",
+          "sha256": "f3122f229caa6424db57a5f272fb207e34fec9f569d28dd516456d01555f7f2c",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "ScreenplayApplication",
+              "kind": "ClassDef",
+              "line": 21,
+              "end_line": 261
+            },
+            {
+              "name": "_handle",
+              "kind": "FunctionDef",
+              "line": 103,
+              "end_line": 181
+            },
+            {
+              "name": "_write",
+              "kind": "FunctionDef",
+              "line": 184,
+              "end_line": 189
+            },
+            {
+              "name": "_asset",
+              "kind": "FunctionDef",
+              "line": 192,
+              "end_line": 196
+            },
+            {
+              "name": "admit",
+              "kind": "FunctionDef",
+              "line": 198,
+              "end_line": 221
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "screenplay_handler.py:29-63",
+      "report_line": 232,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/screenplay_handler.py",
+          "sha256": "40e62ba60a11a855cc5fe219f746ebff822eb2f23fc231a83269c7921fcff9ec",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "ScreenplayHandler",
+              "kind": "ClassDef",
+              "line": 29,
+              "end_line": 81
+            },
+            {
+              "name": "__post_init__",
+              "kind": "FunctionDef",
+              "line": 33,
+              "end_line": 35
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 37,
+              "end_line": 81
+            },
+            {
+              "name": "check_source",
+              "kind": "FunctionDef",
+              "line": 54,
+              "end_line": 56
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "source_import/application.py:4271-4410",
+      "report_line": 236,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/source_import/application.py",
+          "sha256": "4ed6011b36e3c6eb8ad25c8e3f4c0845d7645eb0ebd910729ea2a99649097464",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "SourceImportApplication",
+              "kind": "ClassDef",
+              "line": 244,
+              "end_line": 5516
+            },
+            {
+              "name": "_execute_mkaos",
+              "kind": "FunctionDef",
+              "line": 4271,
+              "end_line": 4436
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "mkaos_authority/application.py:1745-1875",
+      "report_line": 238,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/application.py",
+          "sha256": "e27bcb31fedf0a9d19ee517b14268aab6247d85e84e19202f16e9da74147bdd0",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "MkaosAuthorityApplication",
+              "kind": "ClassDef",
+              "line": 167,
+              "end_line": 1931
+            },
+            {
+              "name": "_require_approvable",
+              "kind": "FunctionDef",
+              "line": 1745,
+              "end_line": 1876
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "context_builder/domain.py:487-558",
+      "report_line": 238,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/context_builder/domain.py",
+          "sha256": "dab0c3069a27048257264175242783774eb3ae5f2039f3512ba390c3dc57ffd3",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "_eligibility_reason",
+              "kind": "FunctionDef",
+              "line": 487,
+              "end_line": 558
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "mkaos_authority/domain.py:184-244",
+      "report_line": 238,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/domain.py",
+          "sha256": "ff588347ef371d735b0322e9550a7edf6d5f1d3acb217f30b8fef302685557e8",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "resolve_book_knowledge_access_policy",
+              "kind": "FunctionDef",
+              "line": 184,
+              "end_line": 286
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "worldbuilding/actor_intents.py:15-169",
+      "report_line": 270,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/worldbuilding/actor_intents.py",
+          "sha256": "49b339d991a0ae80994f37a7cf9e4d3b94a1b1b39c6c82370d4ad95a0def18ef",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "intent_context",
+              "kind": "FunctionDef",
+              "line": 15,
+              "end_line": 34
+            },
+            {
+              "name": "validate_intent_context",
+              "kind": "FunctionDef",
+              "line": 37,
+              "end_line": 47
+            },
+            {
+              "name": "intent_schema",
+              "kind": "FunctionDef",
+              "line": 50,
+              "end_line": 73
+            },
+            {
+              "name": "validate_intent_plan",
+              "kind": "FunctionDef",
+              "line": 76,
+              "end_line": 129
+            },
+            {
+              "name": "reconcile_accepted_intent",
+              "kind": "FunctionDef",
+              "line": 132,
+              "end_line": 169
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "storage/world_preparation_repositories.py:630-678",
+      "report_line": 270,
+      "targets": [
+        {
+          "path": "src/novel_forge/storage/world_preparation_repositories.py",
+          "sha256": "599e8e0485ce262c66ae19611658bc9f3c073fe6f038b875448b290b419d4502",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "WorldPreparationRepository",
+              "kind": "ClassDef",
+              "line": 14,
+              "end_line": 789
+            },
+            {
+              "name": "actor_intent_sources",
+              "kind": "FunctionDef",
+              "line": 630,
+              "end_line": 680
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "mkaos_authority/craft_reselection.py:29-84",
+      "report_line": 271,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_reselection.py",
+          "sha256": "60d88200c439508493e7759a6037b3a7940757c2180c8ceb3646656c196632e6",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "validate_concrete_selection",
+              "kind": "FunctionDef",
+              "line": 29,
+              "end_line": 54
+            },
+            {
+              "name": "next_reselection_context",
+              "kind": "FunctionDef",
+              "line": 57,
+              "end_line": 84
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "story_planning_runtime/application.py:749-759,1760-1785",
+      "report_line": 271,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "sha256": "50652dfa89f1778bc2ce1a1029dec97d1597e72f759e62ca3e2ce169a6539109",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "StoryPlanningGenerationApplication",
+              "kind": "ClassDef",
+              "line": 454,
+              "end_line": 3214
+            },
+            {
+              "name": "generate",
+              "kind": "FunctionDef",
+              "line": 504,
+              "end_line": 783
+            },
+            {
+              "name": "_repair_unmaterialized_result",
+              "kind": "FunctionDef",
+              "line": 1760,
+              "end_line": 1786
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "craft_usage.py:92-177",
+      "report_line": 272,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_usage.py",
+          "sha256": "678bbcd2a03f6cd4beb721f0f2bb05667ef2535b686e0d4e1b1bee22de15c822",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "bind_usage",
+              "kind": "FunctionDef",
+              "line": 92,
+              "end_line": 155
+            },
+            {
+              "name": "approved_scope_transition",
+              "kind": "FunctionDef",
+              "line": 158,
+              "end_line": 178
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "runtime_usage.py:274-462",
+      "report_line": 272,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/runtime_usage.py",
+          "sha256": "35606d3c73858ce3ddefeeb3f5ef06f1bdb291ece7409ecb4fc5cf83264fc170",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "list_accepted_craft_usage",
+              "kind": "FunctionDef",
+              "line": 274,
+              "end_line": 457
+            },
+            {
+              "name": "_continuing_usage",
+              "kind": "FunctionDef",
+              "line": 460,
+              "end_line": 480
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "context_builder/domain.py:1045-1048",
+      "report_line": 273,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/context_builder/domain.py",
+          "sha256": "dab0c3069a27048257264175242783774eb3ae5f2039f3512ba390c3dc57ffd3",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "build_authority_context_bundle",
+              "kind": "FunctionDef",
+              "line": 1009,
+              "end_line": 1411
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "provider_views.py:1282-1438",
+      "report_line": 273,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/provider_views.py",
+          "sha256": "a3ac76318a9815b73a33451b14664b3e71b1d648cecb1aaeff7620a9dbbe6134",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "build_provider_context_view",
+              "kind": "FunctionDef",
+              "line": 1029,
+              "end_line": 1440
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "book_authority/edition_application.py:261-391",
+      "report_line": 274,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_application.py",
+          "sha256": "32bf86a703c2393eda36620907f23f674929bb310c97f3a82d34f82ece63cea4",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "BookEditionApplication",
+              "kind": "ClassDef",
+              "line": 42,
+              "end_line": 406
+            },
+            {
+              "name": "_create",
+              "kind": "FunctionDef",
+              "line": 261,
+              "end_line": 294
+            },
+            {
+              "name": "_require_current_candidate",
+              "kind": "FunctionDef",
+              "line": 297,
+              "end_line": 300
+            },
+            {
+              "name": "_save",
+              "kind": "FunctionDef",
+              "line": 302,
+              "end_line": 317
+            },
+            {
+              "name": "_validation_sources",
+              "kind": "FunctionDef",
+              "line": 319,
+              "end_line": 335
+            },
+            {
+              "name": "_reviewed_manifest",
+              "kind": "FunctionDef",
+              "line": 338,
+              "end_line": 348
+            },
+            {
+              "name": "_validation_proof",
+              "kind": "FunctionDef",
+              "line": 350,
+              "end_line": 357
+            },
+            {
+              "name": "_validate",
+              "kind": "FunctionDef",
+              "line": 359,
+              "end_line": 365
+            },
+            {
+              "name": "_select",
+              "kind": "FunctionDef",
+              "line": 367,
+              "end_line": 392
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "screenplay_application.py:112-221",
+      "report_line": 275,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/screenplay_application.py",
+          "sha256": "f3122f229caa6424db57a5f272fb207e34fec9f569d28dd516456d01555f7f2c",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "ScreenplayApplication",
+              "kind": "ClassDef",
+              "line": 21,
+              "end_line": 261
+            },
+            {
+              "name": "_handle",
+              "kind": "FunctionDef",
+              "line": 103,
+              "end_line": 181
+            },
+            {
+              "name": "_write",
+              "kind": "FunctionDef",
+              "line": 184,
+              "end_line": 189
+            },
+            {
+              "name": "_asset",
+              "kind": "FunctionDef",
+              "line": 192,
+              "end_line": 196
+            },
+            {
+              "name": "admit",
+              "kind": "FunctionDef",
+              "line": 198,
+              "end_line": 221
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "edition_application.py:389-391",
+      "report_line": 275,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_application.py",
+          "sha256": "32bf86a703c2393eda36620907f23f674929bb310c97f3a82d34f82ece63cea4",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "BookEditionApplication",
+              "kind": "ClassDef",
+              "line": 42,
+              "end_line": 406
+            },
+            {
+              "name": "_select",
+              "kind": "FunctionDef",
+              "line": 367,
+              "end_line": 392
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "prose_semantic_relations.py:14-96",
+      "report_line": 276,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_semantic_relations.py",
+          "sha256": "1ff263801a1117b166af430bf4bddaafd17cdf7f0dfaf17d315f84892f4af368",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "accepted_relation_evidence",
+              "kind": "FunctionDef",
+              "line": 14,
+              "end_line": 39
+            },
+            {
+              "name": "structured_relation_windows",
+              "kind": "FunctionDef",
+              "line": 42,
+              "end_line": 96
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "prose_coordinator.py:354-514",
+      "report_line": 276,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
+          "sha256": "6f77decb9e788d42f2fd821253a28f86d519d64cf627013ccd3904a505f4a442",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "BookProseReviewCoordinator",
+              "kind": "ClassDef",
+              "line": 208,
+              "end_line": 1315
+            },
+            {
+              "name": "automatic_candidates",
+              "kind": "FunctionDef",
+              "line": 354,
+              "end_line": 406
+            },
+            {
+              "name": "blocked_dispatch_operations",
+              "kind": "FunctionDef",
+              "line": 408,
+              "end_line": 426
+            },
+            {
+              "name": "automatic_tick",
+              "kind": "FunctionDef",
+              "line": 428,
+              "end_line": 514
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "production_execution/routing_bootstrap.py:17-73",
+      "report_line": 277,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_bootstrap.py",
+          "sha256": "05adec2fd26c8b39a0b5d571b32398404bd13c10bef500d88a574af2b1d7566e",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "benchmark_decision",
+              "kind": "FunctionDef",
+              "line": 17,
+              "end_line": 73
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "chapter_authority/export_delivery.py:64-99,150-166",
+      "report_line": 278,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/export_delivery.py",
+          "sha256": "432112f980e44fa517369ec567d7de0d3751ac50719754602b6e9490009f0a7e",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "deliver_export",
+              "kind": "FunctionDef",
+              "line": 57,
+              "end_line": 147
+            },
+            {
+              "name": "_retained_export_blob",
+              "kind": "FunctionDef",
+              "line": 150,
+              "end_line": 166
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "E0/status.json:6-27",
+      "report_line": 279,
+      "targets": [
+        {
+          "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/status.json",
+          "sha256": "862908b662a7033dd970f2dd7722be8354b2a1999f599bfaba76992b20e1f72d",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "E0/status.json:25,79-92",
+      "report_line": 280,
+      "targets": [
+        {
+          "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/status.json",
+          "sha256": "862908b662a7033dd970f2dd7722be8354b2a1999f599bfaba76992b20e1f72d",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "book_design_authority/formation_generation.py:122-128",
+      "report_line": 286,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+          "sha256": "94c2abba73efc674e8cebb6c17f9b4e9c6c1bf96baafbee9080c357fd113c33f",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "FormationGeneration",
+              "kind": "ClassDef",
+              "line": 52,
+              "end_line": 392
+            },
+            {
+              "name": "prepare_layer",
+              "kind": "FunctionDef",
+              "line": 61,
+              "end_line": 195
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "hierarchical_planning/domain.py:1404-1572",
+      "report_line": 288,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+          "sha256": "fa4840f7b44f3a30e697c3f1db281c7120de18c6e4b2f93e3dcd5e3983f5e972",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "_validate_scene_architecture",
+              "kind": "FunctionDef",
+              "line": 1391,
+              "end_line": 1574
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "chapter_authority/craft_execution.py:9-41",
+      "report_line": 290,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/craft_execution.py",
+          "sha256": "4a6a58df2abcfc1f29cc020b2e2814b2f77b93e8b5d1c7ee1258b979cd420574",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "bind_craft_realization",
+              "kind": "FunctionDef",
+              "line": 9,
+              "end_line": 42
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "worldbuilding/production_planning.py:24-57",
+      "report_line": 294,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/worldbuilding/production_planning.py",
+          "sha256": "37614eba2a1781158ea0cb7bf34e8bdf9ca66046722853b69775e324dcafdc0e",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "WorldProductionPolicy",
+              "kind": "ClassDef",
+              "line": 25,
+              "end_line": 58
+            },
+            {
+              "name": "__post_init__",
+              "kind": "FunctionDef",
+              "line": 35,
+              "end_line": 58
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "actor_isolation.py:38-56",
+      "report_line": 294,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py",
+          "sha256": "02105252700f3c1bf48b4fd38a8765b3618bb209fba4fcc8c2d5e0c660b7cdda",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "validate_actor_policy",
+              "kind": "FunctionDef",
+              "line": 38,
+              "end_line": 57
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "actor_isolation.py:23-35,60-95",
+      "report_line": 296,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py",
+          "sha256": "02105252700f3c1bf48b4fd38a8765b3618bb209fba4fcc8c2d5e0c660b7cdda",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "accepted_self_state",
+              "kind": "FunctionDef",
+              "line": 23,
+              "end_line": 35
+            },
+            {
+              "name": "actor_task",
+              "kind": "FunctionDef",
+              "line": 60,
+              "end_line": 95
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "actor_intents.py:132-169",
+      "report_line": 298,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/worldbuilding/actor_intents.py",
+          "sha256": "49b339d991a0ae80994f37a7cf9e4d3b94a1b1b39c6c82370d4ad95a0def18ef",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "reconcile_accepted_intent",
+              "kind": "FunctionDef",
+              "line": 132,
+              "end_line": 169
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "api/authority_dependencies.py:1978-1985",
+      "report_line": 302,
+      "targets": [
+        {
+          "path": "src/novel_forge/api/authority_dependencies.py",
+          "sha256": "87e23376e25d180af2be87051f35c9a14c8582d202f3405877a6907283de3e60",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "build_book_production_composition",
+              "kind": "FunctionDef",
+              "line": 1886,
+              "end_line": 2036
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "supervisor.py:758-769",
+      "report_line": 302,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/supervisor.py",
+          "sha256": "adc7c1eb355bd38e893b0d8b51a87f0caaa1462c02a9094c9e49553dc19468cc",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PostgresBookProductionSupervisor",
+              "kind": "ClassDef",
+              "line": 77,
+              "end_line": 1328
+            },
+            {
+              "name": "_stage_budgeted_preparation_report",
+              "kind": "FunctionDef",
+              "line": 758,
+              "end_line": 769
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "chapter_authority/handlers.py:1154",
+      "report_line": 302,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+          "sha256": "ff2701cb8f1712f7b0e623e5bb8a3a83ebb16c12e33efae8904cc54fd19080af",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "_ContextHandler",
+              "kind": "ClassDef",
+              "line": 874,
+              "end_line": 1278
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 875,
+              "end_line": 1278
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "provider_views.py:1289-1306,1351-1380",
+      "report_line": 304,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/provider_views.py",
+          "sha256": "a3ac76318a9815b73a33451b14664b3e71b1d648cecb1aaeff7620a9dbbe6134",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "build_provider_context_view",
+              "kind": "FunctionDef",
+              "line": 1029,
+              "end_line": 1440
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "craft_context_projection.py:15-128",
+      "report_line": 304,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_context_projection.py",
+          "sha256": "9a2b175bb4874e707f87698ca119d04b763325e26b5c1df6ffa87c2dd3591d5e",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "project_planning_craft_histories",
+              "kind": "FunctionDef",
+              "line": 15,
+              "end_line": 52
+            },
+            {
+              "name": "resolve_planning_craft_histories",
+              "kind": "FunctionDef",
+              "line": 55,
+              "end_line": 82
+            },
+            {
+              "name": "reference_duplicate_craft_uses",
+              "kind": "FunctionDef",
+              "line": 85,
+              "end_line": 109
+            },
+            {
+              "name": "resolve_projected_craft_uses",
+              "kind": "FunctionDef",
+              "line": 112,
+              "end_line": 128
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "mkaos_authority/craft_solver.py:8-112",
+      "report_line": 306,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_solver.py",
+          "sha256": "ddb52729f26f68bfd7cb5227e604a5c7904da92ca21a5624a1363f7ef02dd8ec",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "solve_candidates",
+              "kind": "FunctionDef",
+              "line": 8,
+              "end_line": 182
+            },
+            {
+              "name": "realizable",
+              "kind": "FunctionDef",
+              "line": 40,
+              "end_line": 115
+            },
+            {
+              "name": "allocate",
+              "kind": "FunctionDef",
+              "line": 87,
+              "end_line": 109
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "story_planning_runtime/application.py:229-261",
+      "report_line": 306,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "sha256": "50652dfa89f1778bc2ce1a1029dec97d1597e72f759e62ca3e2ce169a6539109",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "_PlanningGenerationHandler",
+              "kind": "ClassDef",
+              "line": 142,
+              "end_line": 389
+            },
+            {
+              "name": "_execute",
+              "kind": "FunctionDef",
+              "line": 157,
+              "end_line": 389
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "craft_execution.py:45-70",
+      "report_line": 306,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/craft_execution.py",
+          "sha256": "4a6a58df2abcfc1f29cc020b2e2814b2f77b93e8b5d1c7ee1258b979cd420574",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "require_craft_delivery",
+              "kind": "FunctionDef",
+              "line": 45,
+              "end_line": 70
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "craft_selection.py:35-55",
+      "report_line": 308,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+          "sha256": "67c00ae0b590cf72d6cc952abb9b84a780b721b4a656e3e7a777db44324c2a75",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "_policy_defaults",
+              "kind": "FunctionDef",
+              "line": 35,
+              "end_line": 49
+            },
+            {
+              "name": "validate_craft_policy",
+              "kind": "FunctionDef",
+              "line": 52,
+              "end_line": 78
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "craft_reselection.py:29-84",
+      "report_line": 308,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_reselection.py",
+          "sha256": "60d88200c439508493e7759a6037b3a7940757c2180c8ceb3646656c196632e6",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "validate_concrete_selection",
+              "kind": "FunctionDef",
+              "line": 29,
+              "end_line": 54
+            },
+            {
+              "name": "next_reselection_context",
+              "kind": "FunctionDef",
+              "line": 57,
+              "end_line": 84
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "routing_runtime.py:791-877",
+      "report_line": 308,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_runtime.py",
+          "sha256": "505269923ea4f43cd0e42f789efdf283dc37c4e4e34a0030eba97fac3d33a7e1",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "ProductionProviderRouter",
+              "kind": "ClassDef",
+              "line": 737,
+              "end_line": 1258
+            },
+            {
+              "name": "select",
+              "kind": "FunctionDef",
+              "line": 767,
+              "end_line": 1004
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "review/craft.py:10-30,135-166",
+      "report_line": 310,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/review/craft.py",
+          "sha256": "9f68d22e262b5d0e54e81b4e20cdd3d64a05f65e1bf5cd7281c8e0b9c6fcc43e",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "craft_provider_task",
+              "kind": "FunctionDef",
+              "line": 135,
+              "end_line": 168
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "craft_usage.py:92-177",
+      "report_line": 310,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_usage.py",
+          "sha256": "678bbcd2a03f6cd4beb721f0f2bb05667ef2535b686e0d4e1b1bee22de15c822",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "bind_usage",
+              "kind": "FunctionDef",
+              "line": 92,
+              "end_line": 155
+            },
+            {
+              "name": "approved_scope_transition",
+              "kind": "FunctionDef",
+              "line": 158,
+              "end_line": 178
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "review/craft.py:325-330",
+      "report_line": 312,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/review/craft.py",
+          "sha256": "9f68d22e262b5d0e54e81b4e20cdd3d64a05f65e1bf5cd7281c8e0b9c6fcc43e",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "validate_craft_checks",
+              "kind": "FunctionDef",
+              "line": 171,
+              "end_line": 337
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "runtime_usage.py:455",
+      "report_line": 312,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/runtime_usage.py",
+          "sha256": "35606d3c73858ce3ddefeeb3f5ef06f1bdb291ece7409ecb4fc5cf83264fc170",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "list_accepted_craft_usage",
+              "kind": "FunctionDef",
+              "line": 274,
+              "end_line": 457
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "workers/book_followup_authority.py:237-248",
+      "report_line": 316,
+      "targets": [
+        {
+          "path": "src/novel_forge/workers/book_followup_authority.py",
+          "sha256": "b7f5faea9261dc76094c5ee0273908edb4e0486eaf94cabbda1803128b5bcde3",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "main",
+              "kind": "FunctionDef",
+              "line": 132,
+              "end_line": 304
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "book_followup_authority/prose_review.py:130-184",
+      "report_line": 316,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_review.py",
+          "sha256": "763e1afd642369ba698d10c73bccb43dcee238ccdad551a3d619d89b26457997",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "freeze_manifest",
+              "kind": "FunctionDef",
+              "line": 130,
+              "end_line": 262
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "review/prose_window.py:161-202",
+      "report_line": 318,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/review/prose_window.py",
+          "sha256": "a9d6e85d6706e13e80c5442552d1168c6930f05736558c7cb09234d2e2198910",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "freeze_review_window",
+              "kind": "FunctionDef",
+              "line": 134,
+              "end_line": 227
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "prose_sources.py:15-93",
+      "report_line": 318,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/prose_sources.py",
+          "sha256": "f388b1c70375363eac4940a9c85713699245bf0b934c919812e06cae8334f341",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "freeze_accepted_prose",
+              "kind": "FunctionDef",
+              "line": 15,
+              "end_line": 93
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "prose_semantic_relations.py:14-96",
+      "report_line": 318,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_semantic_relations.py",
+          "sha256": "1ff263801a1117b166af430bf4bddaafd17cdf7f0dfaf17d315f84892f4af368",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "accepted_relation_evidence",
+              "kind": "FunctionDef",
+              "line": 14,
+              "end_line": 39
+            },
+            {
+              "name": "structured_relation_windows",
+              "kind": "FunctionDef",
+              "line": 42,
+              "end_line": 96
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "production_execution/routing_catalog.py:40-110",
+      "report_line": 324,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_catalog.py",
+          "sha256": "960724811345a2f3750aa2fcaafebbf076582f5e72a5ab33ebfe0cec003922c4",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "deepseek_candidates",
+              "kind": "FunctionDef",
+              "line": 40,
+              "end_line": 111
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "api/authority_dependencies.py:967-1007,1214-1248",
+      "report_line": 324,
+      "targets": [
+        {
+          "path": "src/novel_forge/api/authority_dependencies.py",
+          "sha256": "87e23376e25d180af2be87051f35c9a14c8582d202f3405877a6907283de3e60",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "build_production_execution_composition",
+              "kind": "FunctionDef",
+              "line": 334,
+              "end_line": 1293
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "cost_routing.py:28-62,181-205",
+      "report_line": 326,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/production_execution/cost_routing.py",
+          "sha256": "fcdbff3ecbf3718dd6ad4885a1f16113da7630072dbab43704045c3e755cd7e1",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "producer_contract_identity",
+              "kind": "FunctionDef",
+              "line": 28,
+              "end_line": 68
+            },
+            {
+              "name": "task_policy",
+              "kind": "FunctionDef",
+              "line": 187,
+              "end_line": 207
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "routing_runtime.py:207-285",
+      "report_line": 326,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_runtime.py",
+          "sha256": "505269923ea4f43cd0e42f789efdf283dc37c4e4e34a0030eba97fac3d33a7e1",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PostgresRoutingRegistry",
+              "kind": "ClassDef",
+              "line": 46,
+              "end_line": 734
+            },
+            {
+              "name": "_local_observations",
+              "kind": "FunctionDef",
+              "line": 113,
+              "end_line": 426
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "cost_routing.py:421-512",
+      "report_line": 326,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/production_execution/cost_routing.py",
+          "sha256": "fcdbff3ecbf3718dd6ad4885a1f16113da7630072dbab43704045c3e755cd7e1",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "benchmark_snapshot",
+              "kind": "FunctionDef",
+              "line": 412,
+              "end_line": 679
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "generator_feedback.py:14-53,99-157",
+      "report_line": 328,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/authority_handler_runtime/generator_feedback.py",
+          "sha256": "aaa3a84f882fbe5698cf204e955e2364c5177d03769a13396fe461a5fc60d519",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "independent_model_identities",
+              "kind": "FunctionDef",
+              "line": 14,
+              "end_line": 37
+            },
+            {
+              "name": "adjudicated_generator_score",
+              "kind": "FunctionDef",
+              "line": 40,
+              "end_line": 53
+            },
+            {
+              "name": "generator_sample_outcomes",
+              "kind": "FunctionDef",
+              "line": 56,
+              "end_line": 158
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "ProseReviewPanel.tsx:29-115",
+      "report_line": 339,
+      "targets": [
+        {
+          "path": "web/admin/app/features/editor/ProseReviewPanel.tsx",
+          "sha256": "0e9c8f82ae3820b193745d7565f8797c36c82688c851293c9a33722fdbac80a6",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "EditionPanel.tsx:125-185",
+      "report_line": 340,
+      "targets": [
+        {
+          "path": "web/admin/app/features/editor/EditionPanel.tsx",
+          "sha256": "56e9e3f67f6e294af708338786a7da48534d8a758e5937a0c724df67c80e16a0",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "ScreenplayPanel.tsx:116-143",
+      "report_line": 341,
+      "targets": [
+        {
+          "path": "web/admin/app/features/editor/ScreenplayPanel.tsx",
+          "sha256": "5125b40446f3ee4283c6a6fd51585600293329dfafea38c07e7e255cc8230981",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "web/admin/app/features/production/api.ts:51-125",
+      "report_line": 344,
+      "targets": [
+        {
+          "path": "web/admin/app/features/production/api.ts",
+          "sha256": "da5cfd663d8afdcb97480f1621b717082807457f812affae7d03f21fb814ae90",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "features/editor/api.ts:28-58",
+      "report_line": 344,
+      "targets": [
+        {
+          "path": "web/admin/app/features/editor/api.ts",
+          "sha256": "f448fe4dbebdff556b4921d288f76899d9b53ad8101e705fdb0d3dc5da3f4e98",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "EditorPage.tsx:210",
+      "report_line": 344,
+      "targets": [
+        {
+          "path": "web/admin/app/features/editor/EditorPage.tsx",
+          "sha256": "beb225fed474babc31926e6014d16394173150e8cacf0d14e817dcce86cf3971",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "E0/editions/branch-manifest.json:3-30",
+      "report_line": 356,
+      "targets": [
+        {
+          "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/branch-manifest.json",
+          "sha256": "6b3cbd4be42534b31c14a4dd1b9d00d5abdcb88ebef1835078dd48f9b6ac98fe",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "branch-manifest.json:58-78",
+      "report_line": 357,
+      "targets": [
+        {
+          "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/branch-manifest.json",
+          "sha256": "6b3cbd4be42534b31c14a4dd1b9d00d5abdcb88ebef1835078dd48f9b6ac98fe",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "E0/status.json:25",
+      "report_line": 357,
+      "targets": [
+        {
+          "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/status.json",
+          "sha256": "862908b662a7033dd970f2dd7722be8354b2a1999f599bfaba76992b20e1f72d",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "novels/guofeng-xuanhuan-01/output/00_导航与进度/progress.json:6-49,131-186",
+      "report_line": 363,
+      "targets": [
+        {
+          "path": "novels/guofeng-xuanhuan-01/output/00_导航与进度/progress.json",
+          "sha256": "700d92a3c5c5a125e56b40db466895a193bc75aaa5fab4f78322866e96bab2c5",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "output/04_正文/README.md:1-4",
+      "report_line": 363,
+      "targets": [
+        {
+          "path": "novels/guofeng-xuanhuan-01/output/04_正文/README.md",
+          "sha256": "44c000305b149ccdbb76c591bf98abae74ceee73d1262bdbcfa4132e1be08d32",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "novels/yu-xian-zhi-wai/output/00_导航/progress.json:4-40,165-177",
+      "report_line": 363,
+      "targets": [
+        {
+          "path": "novels/yu-xian-zhi-wai/output/00_导航/progress.json",
+          "sha256": "ce028b48f391ed2a70e85e819db39f68ce9374fedce3ee3af2f5d008eb2d6396",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/evidence/formation-step-20260913T141059Z.json:7-16",
+      "report_line": 363,
+      "targets": [
+        {
+          "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/evidence/formation-step-20260913T141059Z.json",
+          "sha256": "024a616a7e9f9ec1b8bf82282aa04a2e4bca8fcea016ca1177712dcd6a7888fe",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "world-failure-native-state.json:2-18",
+      "report_line": 363,
+      "targets": [
+        {
+          "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/evidence/world-failure-native-state.json",
+          "sha256": "f4876b99f06c88010b63de56fedb68c7c9ab6012742c34979ee8e589e2927dc4",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "current/group-a/06-voice-and-original-samples.md:3",
+      "report_line": 401,
+      "targets": [
+        {
+          "path": "novels/yu-xian-zhi-wai/current/group-a/06-voice-and-original-samples.md",
+          "sha256": "975981ffdada94036fc353bae239d9a161785d6099c8a8246ab31bf60aff3cd7",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "E0/editions/joint14-accepted-chinese-source.txt:4,6,8",
+      "report_line": 403,
+      "targets": [
+        {
+          "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/joint14-accepted-chinese-source.txt",
+          "sha256": "685d45d9bbec3626c7b85907c905f3abc53a3d0d86b35b8fe54764e4abfd26f4",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "joint14-partial-edition-manuscript.txt:17",
+      "report_line": 403,
+      "targets": [
+        {
+          "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/joint14-partial-edition-manuscript.txt",
+          "sha256": "2a0e6597c5d86002b6036fc7a2382b3fd40f64cb30f18811bf1b5b35d6135396",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "tests/integration/test_book_editions_postgres.py:104-109,141-169,217-255",
+      "report_line": 403,
+      "targets": [
+        {
+          "path": "tests/integration/test_book_editions_postgres.py",
+          "sha256": "789cae81c053ad9413522729851f5e80e7c1f1aa59f8467b2dc726a2fbf49206",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "test_edition_candidate_uses_native_acceptance_and_isolates_source_facts",
+              "kind": "FunctionDef",
+              "line": 82,
+              "end_line": 258
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "output/07_运行证据/opening-provider-failure.json:123-244",
+      "report_line": 417,
+      "targets": [
+        {
+          "path": "novels/guofeng-xuanhuan-01/output/07_运行证据/opening-provider-failure.json",
+          "sha256": "b7bd99390c8082ff2ff93e399dc8cef1a8caa59f9e7cccdb2743b2cb3e2c8d4b",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "full-opening-token-preflight.json:2-15,142",
+      "report_line": 419,
+      "targets": [
+        {
+          "path": "novels/guofeng-xuanhuan-01/output/07_运行证据/full-opening-token-preflight.json",
+          "sha256": "1e488bbbd6b995a0c370f6a48ddf0b9cfeca89f5159197a0a084369935b0029e",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "export_delivery.py:67-98",
+      "report_line": 471,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/export_delivery.py",
+          "sha256": "432112f980e44fa517369ec567d7de0d3751ac50719754602b6e9490009f0a7e",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "deliver_export",
+              "kind": "FunctionDef",
+              "line": 57,
+              "end_line": 147
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "v20260712_0007_postgres_command_kernel_authority.py:20",
+      "report_line": 471,
+      "targets": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260712_0007_postgres_command_kernel_authority.py",
+          "sha256": "e6a0d9489a4c3148ff0fe472371e427b30a8110ab699fd52407350bdbb32a1e2",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": []
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "asset_blob_repositories.py:189-212",
+      "report_line": 471,
+      "targets": [
+        {
+          "path": "src/novel_forge/storage/asset_blob_repositories.py",
+          "sha256": "b738b45ff6fb94ac5d812b65adde95180dbecee864ecdc8b3dff053cd9568690",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "AssetBlobRepository",
+              "kind": "ClassDef",
+              "line": 10,
+              "end_line": 497
+            },
+            {
+              "name": "reserve_blob",
+              "kind": "FunctionDef",
+              "line": 189,
+              "end_line": 212
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "v20260803_0051_book_design_authority_slice.py:21-41",
+      "report_line": 471,
+      "targets": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260803_0051_book_design_authority_slice.py",
+          "sha256": "fcb17d2c443cfae36f3c2213ceecfe279e600a674ab2d642b6eea362195c2738",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": []
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "features/production/api.ts:51-125",
+      "report_line": 472,
+      "targets": [
+        {
+          "path": "web/admin/app/features/production/api.ts",
+          "sha256": "da5cfd663d8afdcb97480f1621b717082807457f812affae7d03f21fb814ae90",
+          "max_reference_line_valid": true
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "prose_coordinator.py:698-810,1000-1155",
+      "report_line": 474,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
+          "sha256": "6f77decb9e788d42f2fd821253a28f86d519d64cf627013ccd3904a505f4a442",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "BookProseReviewCoordinator",
+              "kind": "ClassDef",
+              "line": 208,
+              "end_line": 1315
+            },
+            {
+              "name": "disposition",
+              "kind": "FunctionDef",
+              "line": 682,
+              "end_line": 868
+            },
+            {
+              "name": "propose_plan_change",
+              "kind": "FunctionDef",
+              "line": 1000,
+              "end_line": 1156
+            },
+            {
+              "name": "handler",
+              "kind": "FunctionDef",
+              "line": 719,
+              "end_line": 864
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "formation_generation.py:122-128",
+      "report_line": 476,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+          "sha256": "94c2abba73efc674e8cebb6c17f9b4e9c6c1bf96baafbee9080c357fd113c33f",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "FormationGeneration",
+              "kind": "ClassDef",
+              "line": 52,
+              "end_line": 392
+            },
+            {
+              "name": "prepare_layer",
+              "kind": "FunctionDef",
+              "line": 61,
+              "end_line": 195
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "command_kernel/dispatch_control.py:33-44",
+      "report_line": 533,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/dispatch_control.py",
+          "sha256": "ec5f415502c17a7e4eced5a15018786b214de30114d6367c7f2c87d9006b3b39",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "process_dispatch_suspended",
+              "kind": "FunctionDef",
+              "line": 33,
+              "end_line": 35
+            },
+            {
+              "name": "require_dispatch_enabled",
+              "kind": "FunctionDef",
+              "line": 38,
+              "end_line": 44
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "api/authority_app.py:173-209",
+      "report_line": 547,
+      "targets": [
+        {
+          "path": "src/novel_forge/api/authority_app.py",
+          "sha256": "a56f1c669fdad086b3af2b95bb080f747da4e25fb71ab6fb099a05523ca7f66f",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "create_authority_app",
+              "kind": "FunctionDef",
+              "line": 173,
+              "end_line": 754
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "api/authority_dependencies.py:340-380",
+      "report_line": 547,
+      "targets": [
+        {
+          "path": "src/novel_forge/api/authority_dependencies.py",
+          "sha256": "87e23376e25d180af2be87051f35c9a14c8582d202f3405877a6907283de3e60",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "build_production_execution_composition",
+              "kind": "FunctionDef",
+              "line": 334,
+              "end_line": 1293
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/command_kernel/service.py:31-138",
+      "report_line": 548,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/service.py",
+          "sha256": "495c6ee67c9a72f70f6412f5db2feb7800b233544ae1ce0502fef32a8e219b81",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "execute_transaction_command",
+              "kind": "FunctionDef",
+              "line": 31,
+              "end_line": 146
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/command_kernel/external_effect_runtime.py:95-112,279-354,524-640",
+      "report_line": 548,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "sha256": "28297463b4e7124f7974b506eac3eaa10c9c1766997faff41c9e206453249404",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "classify_external_effect_recovery",
+              "kind": "FunctionDef",
+              "line": 95,
+              "end_line": 112
+            },
+            {
+              "name": "plan_external_effect",
+              "kind": "FunctionDef",
+              "line": 279,
+              "end_line": 408
+            },
+            {
+              "name": "dispatch_external_effect",
+              "kind": "FunctionDef",
+              "line": 524,
+              "end_line": 775
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "storage/authority_uow.py:32-94",
+      "report_line": 548,
+      "targets": [
+        {
+          "path": "src/novel_forge/storage/authority_uow.py",
+          "sha256": "6b235134db54fd8ffa8829789d4251287c8b3c1cdfc1f4490730e8f8f6836852",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "AuthorityUnitOfWork",
+              "kind": "ClassDef",
+              "line": 15,
+              "end_line": 94
+            },
+            {
+              "name": "__enter__",
+              "kind": "FunctionDef",
+              "line": 32,
+              "end_line": 57
+            },
+            {
+              "name": "commit",
+              "kind": "FunctionDef",
+              "line": 59,
+              "end_line": 68
+            },
+            {
+              "name": "__exit__",
+              "kind": "FunctionDef",
+              "line": 70,
+              "end_line": 94
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/book_design_authority/formation_generation.py:61-183",
+      "report_line": 549,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+          "sha256": "94c2abba73efc674e8cebb6c17f9b4e9c6c1bf96baafbee9080c357fd113c33f",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "FormationGeneration",
+              "kind": "ClassDef",
+              "line": 52,
+              "end_line": 392
+            },
+            {
+              "name": "prepare_layer",
+              "kind": "FunctionDef",
+              "line": 61,
+              "end_line": 195
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/book_authority/creation_inputs.py:10-119",
+      "report_line": 549,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/creation_inputs.py",
+          "sha256": "892d03c020920a36c3b9f16ca0a94fabf94f29ae041958bcc4673220b87c9049",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "prepare_creation_inputs",
+              "kind": "FunctionDef",
+              "line": 10,
+              "end_line": 126
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 54,
+              "end_line": 74
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/book_authority/opening_workflow.py:442-514",
+      "report_line": 549,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/opening_workflow.py",
+          "sha256": "f7d6a3076d5ad53a95367322c842d4e8f716b23d7251f3725eb9beb3416707c4",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "build_book_opening_workflow",
+              "kind": "FunctionDef",
+              "line": 415,
+              "end_line": 544
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/book_authority/supervisor.py:410-642,758-947",
+      "report_line": 550,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/supervisor.py",
+          "sha256": "adc7c1eb355bd38e893b0d8b51a87f0caaa1462c02a9094c9e49553dc19468cc",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PostgresBookProductionSupervisor",
+              "kind": "ClassDef",
+              "line": 77,
+              "end_line": 1328
+            },
+            {
+              "name": "_tick",
+              "kind": "FunctionDef",
+              "line": 137,
+              "end_line": 652
+            },
+            {
+              "name": "_stage_budgeted_preparation_report",
+              "kind": "FunctionDef",
+              "line": 758,
+              "end_line": 769
+            },
+            {
+              "name": "_generate_plan",
+              "kind": "FunctionDef",
+              "line": 771,
+              "end_line": 982
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/book_authority/chapter_dispatch.py:58-117",
+      "report_line": 550,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/chapter_dispatch.py",
+          "sha256": "882c74111132637ff54adaffe11b1a45bace17721ebb51621946beb58f61bb76",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "context_candidates_for_dispatch",
+              "kind": "FunctionDef",
+              "line": 58,
+              "end_line": 212
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/book_authority/production.py:1435-1612",
+      "report_line": 550,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "sha256": "915d4cc89bb8ab3241cffdddce4b86bcd188d77e40258f5323cca8e4008eaa96",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "PostgresBookAuthority",
+              "kind": "ClassDef",
+              "line": 487,
+              "end_line": 3253
+            },
+            {
+              "name": "accept_chapter",
+              "kind": "FunctionDef",
+              "line": 1153,
+              "end_line": 1621
+            },
+            {
+              "name": "commit_acceptance",
+              "kind": "FunctionDef",
+              "line": 1299,
+              "end_line": 1594
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/chapter_authority/handlers.py:1282-1573",
+      "report_line": 551,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+          "sha256": "ff2701cb8f1712f7b0e623e5bb8a3a83ebb16c12e33efae8904cc54fd19080af",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "_DraftHandler",
+              "kind": "ClassDef",
+              "line": 1282,
+              "end_line": 1328
+            },
+            {
+              "name": "_ReviewHandler",
+              "kind": "ClassDef",
+              "line": 1332,
+              "end_line": 1358
+            },
+            {
+              "name": "_RevisionHandler",
+              "kind": "ClassDef",
+              "line": 1362,
+              "end_line": 1431
+            },
+            {
+              "name": "_ReReviewHandler",
+              "kind": "ClassDef",
+              "line": 1435,
+              "end_line": 1472
+            },
+            {
+              "name": "_BestCandidateHandler",
+              "kind": "ClassDef",
+              "line": 1476,
+              "end_line": 1626
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 1285,
+              "end_line": 1328
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 1335,
+              "end_line": 1358
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 1365,
+              "end_line": 1431
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 1438,
+              "end_line": 1472
+            },
+            {
+              "name": "execute",
+              "kind": "FunctionDef",
+              "line": 1477,
+              "end_line": 1626
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/chapter_authority/scheduler.py:296-340,412-417",
+      "report_line": 551,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/scheduler.py",
+          "sha256": "0a497594277fc86f5c922d3f02365c291bc2c8797aafbf02584d62a71bf3c394",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "ChapterAuthorityScheduler",
+              "kind": "ClassDef",
+              "line": 107,
+              "end_line": 1827
+            },
+            {
+              "name": "_advance_quality_correction",
+              "kind": "FunctionDef",
+              "line": 270,
+              "end_line": 439
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/chapter_authority/candidate_selection.py:86-147",
+      "report_line": 551,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+          "sha256": "25d0af630d1bf0bf47066690585a19691783d569a03f712e312278e8a5f249c4",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "compare_candidates",
+              "kind": "FunctionDef",
+              "line": 67,
+              "end_line": 180
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/worldbuilding/actor_isolation.py:23-95,201-222",
+      "report_line": 552,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py",
+          "sha256": "02105252700f3c1bf48b4fd38a8765b3618bb209fba4fcc8c2d5e0c660b7cdda",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "accepted_self_state",
+              "kind": "FunctionDef",
+              "line": 23,
+              "end_line": 35
+            },
+            {
+              "name": "validate_actor_policy",
+              "kind": "FunctionDef",
+              "line": 38,
+              "end_line": 57
+            },
+            {
+              "name": "actor_task",
+              "kind": "FunctionDef",
+              "line": 60,
+              "end_line": 95
+            },
+            {
+              "name": "require_actor_judgments",
+              "kind": "FunctionDef",
+              "line": 201,
+              "end_line": 222
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/worldbuilding/actor_intents.py:15-169",
+      "report_line": 552,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/worldbuilding/actor_intents.py",
+          "sha256": "49b339d991a0ae80994f37a7cf9e4d3b94a1b1b39c6c82370d4ad95a0def18ef",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "intent_context",
+              "kind": "FunctionDef",
+              "line": 15,
+              "end_line": 34
+            },
+            {
+              "name": "validate_intent_context",
+              "kind": "FunctionDef",
+              "line": 37,
+              "end_line": 47
+            },
+            {
+              "name": "intent_schema",
+              "kind": "FunctionDef",
+              "line": 50,
+              "end_line": 73
+            },
+            {
+              "name": "validate_intent_plan",
+              "kind": "FunctionDef",
+              "line": 76,
+              "end_line": 129
+            },
+            {
+              "name": "reconcile_accepted_intent",
+              "kind": "FunctionDef",
+              "line": 132,
+              "end_line": 169
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "storage/world_preparation_repositories.py:630-678",
+      "report_line": 552,
+      "targets": [
+        {
+          "path": "src/novel_forge/storage/world_preparation_repositories.py",
+          "sha256": "599e8e0485ce262c66ae19611658bc9f3c073fe6f038b875448b290b419d4502",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "WorldPreparationRepository",
+              "kind": "ClassDef",
+              "line": 14,
+              "end_line": 789
+            },
+            {
+              "name": "actor_intent_sources",
+              "kind": "FunctionDef",
+              "line": 630,
+              "end_line": 680
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/chapter_authority/provider_views.py:1282-1438",
+      "report_line": 553,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/provider_views.py",
+          "sha256": "a3ac76318a9815b73a33451b14664b3e71b1d648cecb1aaeff7620a9dbbe6134",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "build_provider_context_view",
+              "kind": "FunctionDef",
+              "line": 1029,
+              "end_line": 1440
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/mkaos_authority/craft_solver.py:8-112",
+      "report_line": 553,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_solver.py",
+          "sha256": "ddb52729f26f68bfd7cb5227e604a5c7904da92ca21a5624a1363f7ef02dd8ec",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "solve_candidates",
+              "kind": "FunctionDef",
+              "line": 8,
+              "end_line": 182
+            },
+            {
+              "name": "realizable",
+              "kind": "FunctionDef",
+              "line": 40,
+              "end_line": 115
+            },
+            {
+              "name": "allocate",
+              "kind": "FunctionDef",
+              "line": 87,
+              "end_line": 109
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "craft_reselection.py:29-84",
+      "report_line": 553,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_reselection.py",
+          "sha256": "60d88200c439508493e7759a6037b3a7940757c2180c8ceb3646656c196632e6",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "validate_concrete_selection",
+              "kind": "FunctionDef",
+              "line": 29,
+              "end_line": 54
+            },
+            {
+              "name": "next_reselection_context",
+              "kind": "FunctionDef",
+              "line": 57,
+              "end_line": 84
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "runtime_usage.py:274-462",
+      "report_line": 553,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/runtime_usage.py",
+          "sha256": "35606d3c73858ce3ddefeeb3f5ef06f1bdb291ece7409ecb4fc5cf83264fc170",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "list_accepted_craft_usage",
+              "kind": "FunctionDef",
+              "line": 274,
+              "end_line": 457
+            },
+            {
+              "name": "_continuing_usage",
+              "kind": "FunctionDef",
+              "line": 460,
+              "end_line": 480
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/story_planning_runtime/application.py:749-759,1686-1687,1760-1785",
+      "report_line": 554,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "sha256": "50652dfa89f1778bc2ce1a1029dec97d1597e72f759e62ca3e2ce169a6539109",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "StoryPlanningGenerationApplication",
+              "kind": "ClassDef",
+              "line": 454,
+              "end_line": 3214
+            },
+            {
+              "name": "generate",
+              "kind": "FunctionDef",
+              "line": 504,
+              "end_line": 783
+            },
+            {
+              "name": "_terminal_generation_replay",
+              "kind": "FunctionDef",
+              "line": 1646,
+              "end_line": 1758
+            },
+            {
+              "name": "_repair_unmaterialized_result",
+              "kind": "FunctionDef",
+              "line": 1760,
+              "end_line": 1786
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/story_planning_runtime/result_recovery.py:138-153,195-252",
+      "report_line": 554,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/result_recovery.py",
+          "sha256": "8a94280edd8aff8e881d9b7cad8b549f979d9df53836d74773f3dba9219ec421",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "require_result_repair_source",
+              "kind": "FunctionDef",
+              "line": 131,
+              "end_line": 293
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/book_followup_authority/prose_coordinator.py:354-514,698-810,1000-1155",
+      "report_line": 555,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
+          "sha256": "6f77decb9e788d42f2fd821253a28f86d519d64cf627013ccd3904a505f4a442",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "BookProseReviewCoordinator",
+              "kind": "ClassDef",
+              "line": 208,
+              "end_line": 1315
+            },
+            {
+              "name": "automatic_candidates",
+              "kind": "FunctionDef",
+              "line": 354,
+              "end_line": 406
+            },
+            {
+              "name": "blocked_dispatch_operations",
+              "kind": "FunctionDef",
+              "line": 408,
+              "end_line": 426
+            },
+            {
+              "name": "automatic_tick",
+              "kind": "FunctionDef",
+              "line": 428,
+              "end_line": 514
+            },
+            {
+              "name": "disposition",
+              "kind": "FunctionDef",
+              "line": 682,
+              "end_line": 868
+            },
+            {
+              "name": "propose_plan_change",
+              "kind": "FunctionDef",
+              "line": 1000,
+              "end_line": 1156
+            },
+            {
+              "name": "handler",
+              "kind": "FunctionDef",
+              "line": 719,
+              "end_line": 864
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/review/prose_window.py:161-202",
+      "report_line": 555,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/review/prose_window.py",
+          "sha256": "a9d6e85d6706e13e80c5442552d1168c6930f05736558c7cb09234d2e2198910",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "freeze_review_window",
+              "kind": "FunctionDef",
+              "line": 134,
+              "end_line": 227
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/book_followup_authority/prose_semantic_relations.py:14-96",
+      "report_line": 555,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_semantic_relations.py",
+          "sha256": "1ff263801a1117b166af430bf4bddaafd17cdf7f0dfaf17d315f84892f4af368",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "accepted_relation_evidence",
+              "kind": "FunctionDef",
+              "line": 14,
+              "end_line": 39
+            },
+            {
+              "name": "structured_relation_windows",
+              "kind": "FunctionDef",
+              "line": 42,
+              "end_line": 96
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/book_authority/edition_application.py:261-391",
+      "report_line": 556,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_application.py",
+          "sha256": "32bf86a703c2393eda36620907f23f674929bb310c97f3a82d34f82ece63cea4",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "BookEditionApplication",
+              "kind": "ClassDef",
+              "line": 42,
+              "end_line": 406
+            },
+            {
+              "name": "_create",
+              "kind": "FunctionDef",
+              "line": 261,
+              "end_line": 294
+            },
+            {
+              "name": "_require_current_candidate",
+              "kind": "FunctionDef",
+              "line": 297,
+              "end_line": 300
+            },
+            {
+              "name": "_save",
+              "kind": "FunctionDef",
+              "line": 302,
+              "end_line": 317
+            },
+            {
+              "name": "_validation_sources",
+              "kind": "FunctionDef",
+              "line": 319,
+              "end_line": 335
+            },
+            {
+              "name": "_reviewed_manifest",
+              "kind": "FunctionDef",
+              "line": 338,
+              "end_line": 348
+            },
+            {
+              "name": "_validation_proof",
+              "kind": "FunctionDef",
+              "line": 350,
+              "end_line": 357
+            },
+            {
+              "name": "_validate",
+              "kind": "FunctionDef",
+              "line": 359,
+              "end_line": 365
+            },
+            {
+              "name": "_select",
+              "kind": "FunctionDef",
+              "line": 367,
+              "end_line": 392
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "edition_runtime.py:20-41,78-188",
+      "report_line": 556,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_runtime.py",
+          "sha256": "10c7c4c5ab417ec36f8044e8fc1ef0d29be25def3d2dd07f82e0bf8a39d363f6",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "edition_dispatch_binding_in_uow",
+              "kind": "FunctionDef",
+              "line": 20,
+              "end_line": 41
+            },
+            {
+              "name": "edition_adopted_draft",
+              "kind": "FunctionDef",
+              "line": 78,
+              "end_line": 119
+            },
+            {
+              "name": "inherit_unchanged_prefix",
+              "kind": "FunctionDef",
+              "line": 122,
+              "end_line": 188
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "edition_planning.py:77-96",
+      "report_line": 556,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_planning.py",
+          "sha256": "ee11df82d0f3b46d46ee2b98e266ac916c79ac4537c0dd39ec15404ae4582641",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "require_edition_planning_request",
+              "kind": "FunctionDef",
+              "line": 77,
+              "end_line": 96
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/book_followup_authority/screenplay_application.py:112-221",
+      "report_line": 556,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/screenplay_application.py",
+          "sha256": "f3122f229caa6424db57a5f272fb207e34fec9f569d28dd516456d01555f7f2c",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "ScreenplayApplication",
+              "kind": "ClassDef",
+              "line": 21,
+              "end_line": 261
+            },
+            {
+              "name": "_handle",
+              "kind": "FunctionDef",
+              "line": 103,
+              "end_line": 181
+            },
+            {
+              "name": "_write",
+              "kind": "FunctionDef",
+              "line": 184,
+              "end_line": 189
+            },
+            {
+              "name": "_asset",
+              "kind": "FunctionDef",
+              "line": 192,
+              "end_line": 196
+            },
+            {
+              "name": "admit",
+              "kind": "FunctionDef",
+              "line": 198,
+              "end_line": 221
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/production_execution/cost_routing.py:28-62,181-205,421-512,794-817",
+      "report_line": 557,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/production_execution/cost_routing.py",
+          "sha256": "fcdbff3ecbf3718dd6ad4885a1f16113da7630072dbab43704045c3e755cd7e1",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "producer_contract_identity",
+              "kind": "FunctionDef",
+              "line": 28,
+              "end_line": 68
+            },
+            {
+              "name": "task_policy",
+              "kind": "FunctionDef",
+              "line": 187,
+              "end_line": 207
+            },
+            {
+              "name": "benchmark_snapshot",
+              "kind": "FunctionDef",
+              "line": 412,
+              "end_line": 679
+            },
+            {
+              "name": "CostAwareRouter",
+              "kind": "ClassDef",
+              "line": 766,
+              "end_line": 1001
+            },
+            {
+              "name": "explain",
+              "kind": "FunctionDef",
+              "line": 767,
+              "end_line": 1001
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/production_execution/routing_bootstrap.py:17-73",
+      "report_line": 557,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/production_execution/routing_bootstrap.py",
+          "sha256": "05adec2fd26c8b39a0b5d571b32398404bd13c10bef500d88a574af2b1d7566e",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "benchmark_decision",
+              "kind": "FunctionDef",
+              "line": 17,
+              "end_line": 73
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/authority_handler_runtime/generator_feedback.py:14-157",
+      "report_line": 557,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/authority_handler_runtime/generator_feedback.py",
+          "sha256": "aaa3a84f882fbe5698cf204e955e2364c5177d03769a13396fe461a5fc60d519",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "independent_model_identities",
+              "kind": "FunctionDef",
+              "line": 14,
+              "end_line": 37
+            },
+            {
+              "name": "adjudicated_generator_score",
+              "kind": "FunctionDef",
+              "line": 40,
+              "end_line": 53
+            },
+            {
+              "name": "generator_sample_outcomes",
+              "kind": "FunctionDef",
+              "line": 56,
+              "end_line": 158
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "modules/chapter_authority/export_delivery.py:64-99,150-166",
+      "report_line": 558,
+      "targets": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/export_delivery.py",
+          "sha256": "432112f980e44fa517369ec567d7de0d3751ac50719754602b6e9490009f0a7e",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "deliver_export",
+              "kind": "FunctionDef",
+              "line": 57,
+              "end_line": 147
+            },
+            {
+              "name": "_retained_export_blob",
+              "kind": "FunctionDef",
+              "line": 150,
+              "end_line": 166
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "storage/asset_blob_repositories.py:189-212",
+      "report_line": 558,
+      "targets": [
+        {
+          "path": "src/novel_forge/storage/asset_blob_repositories.py",
+          "sha256": "b738b45ff6fb94ac5d812b65adde95180dbecee864ecdc8b3dff053cd9568690",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": [
+            {
+              "name": "AssetBlobRepository",
+              "kind": "ClassDef",
+              "line": 10,
+              "end_line": 497
+            },
+            {
+              "name": "reserve_blob",
+              "kind": "FunctionDef",
+              "line": 189,
+              "end_line": 212
+            }
+          ]
+        }
+      ],
+      "resolution": "UNIQUE"
+    },
+    {
+      "reference": "storage/migrations/versions/v20260712_0007_postgres_command_kernel_authority.py:20",
+      "report_line": 558,
+      "targets": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20260712_0007_postgres_command_kernel_authority.py",
+          "sha256": "e6a0d9489a4c3148ff0fe472371e427b30a8110ab699fd52407350bdbb32a1e2",
+          "max_reference_line_valid": true,
+          "intersecting_symbols": []
+        }
+      ],
+      "resolution": "UNIQUE"
+    }
+  ]
+}

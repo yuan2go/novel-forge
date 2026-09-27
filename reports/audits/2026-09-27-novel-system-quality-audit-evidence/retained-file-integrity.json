@@ -1,0 +1,558 @@
+{
+  "audit_main_sha": "d69053557e5dd16ccfa4217fde234245a90fdc50",
+  "method": "independent parent rehash of each original retained file listed in receipt inventory",
+  "file_count": 110,
+  "all_match": true,
+  "checks": [
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-3c180f6a-806c-48a5-a7c9-cb965f-794a345d239d31b1/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-3c180f6a-806c-48a5-a7c9-cb965f-794a345d239d31b1/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-3c180f6a-806c-48a5-a7c9-cb965f-794a345d239d31b1/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-3c180f6a-806c-48a5-a7c9-cb965f-794a345d239d31b1/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-59e1dff6-18d6-4977-b81c-e9c360-d1d212d66f3f7002/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-59e1dff6-18d6-4977-b81c-e9c360-d1d212d66f3f7002/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-59e1dff6-18d6-4977-b81c-e9c360-d1d212d66f3f7002/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-59e1dff6-18d6-4977-b81c-e9c360-d1d212d66f3f7002/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-a0c61619-2aa7-451e-b798-ec19fe-70bc08f16ac51b80/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-a0c61619-2aa7-451e-b798-ec19fe-70bc08f16ac51b80/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-a0c61619-2aa7-451e-b798-ec19fe-70bc08f16ac51b80/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-a0c61619-2aa7-451e-b798-ec19fe-70bc08f16ac51b80/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-bd7f4d85-267e-4313-bec8-81f9d8-11d756a25f9ece58/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-bd7f4d85-267e-4313-bec8-81f9d8-11d756a25f9ece58/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-bd7f4d85-267e-4313-bec8-81f9d8-11d756a25f9ece58/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-bd7f4d85-267e-4313-bec8-81f9d8-11d756a25f9ece58/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-c0324929-af28-4735-8ecd-c5c1dd-bfe0238d56726496/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-c0324929-af28-4735-8ecd-c5c1dd-bfe0238d56726496/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-c0324929-af28-4735-8ecd-c5c1dd-bfe0238d56726496/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-c0324929-af28-4735-8ecd-c5c1dd-bfe0238d56726496/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-cf98c9fb-c69b-4577-9140-a73200-96d4d028514cd704/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-cf98c9fb-c69b-4577-9140-a73200-96d4d028514cd704/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-cf98c9fb-c69b-4577-9140-a73200-96d4d028514cd704/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-cf98c9fb-c69b-4577-9140-a73200-96d4d028514cd704/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e2705267-8685-4b7e-8c61-295b12-18ed4c4150803b41/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e2705267-8685-4b7e-8c61-295b12-18ed4c4150803b41/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e2705267-8685-4b7e-8c61-295b12-18ed4c4150803b41/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e2705267-8685-4b7e-8c61-295b12-18ed4c4150803b41/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e37cfbba-0132-47b8-a04b-450434-e082af94f3236151/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e37cfbba-0132-47b8-a04b-450434-e082af94f3236151/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e37cfbba-0132-47b8-a04b-450434-e082af94f3236151/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e37cfbba-0132-47b8-a04b-450434-e082af94f3236151/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-01c8181a-c950-4b8b-b850-e3974-142f81f4249d51f5/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-01c8181a-c950-4b8b-b850-e3974-142f81f4249d51f5/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-01c8181a-c950-4b8b-b850-e3974-142f81f4249d51f5/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-01c8181a-c950-4b8b-b850-e3974-142f81f4249d51f5/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-3d3ba024-121b-4bce-8b05-48663-49a482ba940e9f4a/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-3d3ba024-121b-4bce-8b05-48663-49a482ba940e9f4a/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-3d3ba024-121b-4bce-8b05-48663-49a482ba940e9f4a/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-3d3ba024-121b-4bce-8b05-48663-49a482ba940e9f4a/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-a30a43e5ca7162ce/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-a30a43e5ca7162ce/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-a30a43e5ca7162ce/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-f4072b332670c396/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-f4072b332670c396/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-f4072b332670c396/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-f4072b332670c396/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-8e252887-ff1f-45e5-b845-1a8e2-8ddb0c0d273885ea/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-8e252887-ff1f-45e5-b845-1a8e2-8ddb0c0d273885ea/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-8e252887-ff1f-45e5-b845-1a8e2-8ddb0c0d273885ea/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-8e252887-ff1f-45e5-b845-1a8e2-8ddb0c0d273885ea/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-d241afbc-f126-4bf3-9b71-03c72-1c8f49454c205e9c/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-d241afbc-f126-4bf3-9b71-03c72-1c8f49454c205e9c/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-d241afbc-f126-4bf3-9b71-03c72-1c8f49454c205e9c/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-d241afbc-f126-4bf3-9b71-03c72-1c8f49454c205e9c/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e411fdbb-1c14-4117-acb1-37690-8d5bcf72de680783/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e411fdbb-1c14-4117-acb1-37690-8d5bcf72de680783/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e411fdbb-1c14-4117-acb1-37690-8d5bcf72de680783/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e411fdbb-1c14-4117-acb1-37690-8d5bcf72de680783/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e9e2fe5a-21dd-4390-942c-1db3f-4e91794507b111a2/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e9e2fe5a-21dd-4390-942c-1db3f-4e91794507b111a2/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e9e2fe5a-21dd-4390-942c-1db3f-4e91794507b111a2/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e9e2fe5a-21dd-4390-942c-1db3f-4e91794507b111a2/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-ff4d2c74-67d4-4627-8a05-9e470-7f6742d8aa9289d2/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-ff4d2c74-67d4-4627-8a05-9e470-7f6742d8aa9289d2/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-ff4d2c74-67d4-4627-8a05-9e470-7f6742d8aa9289d2/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-023e2008-c925-4720-918c-9797a8-7e67521f42df7dd4/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-023e2008-c925-4720-918c-9797a8-7e67521f42df7dd4/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-023e2008-c925-4720-918c-9797a8-7e67521f42df7dd4/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-023e2008-c925-4720-918c-9797a8-7e67521f42df7dd4/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-6e2aea63-e62e-4cc7-abd4-202500-c168c852478dca06/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-6e2aea63-e62e-4cc7-abd4-202500-c168c852478dca06/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-6e2aea63-e62e-4cc7-abd4-202500-c168c852478dca06/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-6e2aea63-e62e-4cc7-abd4-202500-c168c852478dca06/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-71d7c81d-1961-453d-bec1-e39c57-a5ae05eeb9fb7b92/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-71d7c81d-1961-453d-bec1-e39c57-a5ae05eeb9fb7b92/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-71d7c81d-1961-453d-bec1-e39c57-a5ae05eeb9fb7b92/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-71d7c81d-1961-453d-bec1-e39c57-a5ae05eeb9fb7b92/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-85e459cc-27e0-4f1b-addd-8b3d71-75af29bfa1d6ca54/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-85e459cc-27e0-4f1b-addd-8b3d71-75af29bfa1d6ca54/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-85e459cc-27e0-4f1b-addd-8b3d71-75af29bfa1d6ca54/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-85e459cc-27e0-4f1b-addd-8b3d71-75af29bfa1d6ca54/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-af74acf8-d335-42d1-9eeb-8ba43a-5fbd03a97552a7b0/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-af74acf8-d335-42d1-9eeb-8ba43a-5fbd03a97552a7b0/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-af74acf8-d335-42d1-9eeb-8ba43a-5fbd03a97552a7b0/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-af74acf8-d335-42d1-9eeb-8ba43a-5fbd03a97552a7b0/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-3513911c-896b-4244-8211-098fb-5e79250fdc472585/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-3513911c-896b-4244-8211-098fb-5e79250fdc472585/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-3513911c-896b-4244-8211-098fb-5e79250fdc472585/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-3513911c-896b-4244-8211-098fb-5e79250fdc472585/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-a6a320a0-4dd8-4b0c-aad2-d84f3-8f243de944ae5151/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-a6a320a0-4dd8-4b0c-aad2-d84f3-8f243de944ae5151/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-a6a320a0-4dd8-4b0c-aad2-d84f3-8f243de944ae5151/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-a6a320a0-4dd8-4b0c-aad2-d84f3-8f243de944ae5151/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-c4a82256-08a0-4952-8bc3-b5e54-f63a55c05cdcb0a8/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-c4a82256-08a0-4952-8bc3-b5e54-f63a55c05cdcb0a8/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-c4a82256-08a0-4952-8bc3-b5e54-f63a55c05cdcb0a8/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-c4a82256-08a0-4952-8bc3-b5e54-f63a55c05cdcb0a8/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-df66d7a1-185d-4eda-be80-86eeb-54159e2bf8e2e4a0/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-df66d7a1-185d-4eda-be80-86eeb-54159e2bf8e2e4a0/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-df66d7a1-185d-4eda-be80-86eeb-54159e2bf8e2e4a0/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-df66d7a1-185d-4eda-be80-86eeb-54159e2bf8e2e4a0/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-ed93c442-382f-49b7-b923-55b27-597c19f90b2ca838/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-ed93c442-382f-49b7-b923-55b27-597c19f90b2ca838/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-ed93c442-382f-49b7-b923-55b27-597c19f90b2ca838/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-ed93c442-382f-49b7-b923-55b27-597c19f90b2ca838/last-message.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "receipt",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-fd4ab03e-e3d6-4216-936c-b2f64-cb6e81cc7e14cb2f/process-receipt.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "stdout",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-fd4ab03e-e3d6-4216-936c-b2f64-cb6e81cc7e14cb2f/stdout.log",
+      "matches_inventory": true
+    },
+    {
+      "kind": "execution_metadata",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-fd4ab03e-e3d6-4216-936c-b2f64-cb6e81cc7e14cb2f/execution-metadata.json",
+      "matches_inventory": true
+    },
+    {
+      "kind": "result",
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-fd4ab03e-e3d6-4216-936c-b2f64-cb6e81cc7e14cb2f/last-message.json",
+      "matches_inventory": true
+    }
+  ]
+}
