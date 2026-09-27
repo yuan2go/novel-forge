@@ -229,8 +229,8 @@ class PostgresBookProductionQuery:
             uow.cursor.execute(
                 """
                 SELECT MAX(created_at)
-                FROM authority_book_chapter_acceptance
-                WHERE book_run_id=%s AND status='COMMITTED'
+                FROM authority_book_acceptance_lineage(%s)
+                WHERE status='COMMITTED'
                 """,
                 [book_run_id],
             )
@@ -331,7 +331,7 @@ class PostgresBookProductionQuery:
                 """
                 SELECT COUNT(*)
                 FROM authority_book_chapter_acceptance AS acceptance
-                WHERE acceptance.book_run_id=%s AND acceptance.status='COMMITTED'
+                WHERE acceptance.book_run_id=authority_book_source_run(%s,acceptance.chapter_number) AND acceptance.status='COMMITTED'
                   AND NOT EXISTS (
                     SELECT 1 FROM authority_book_followup_operation AS followup
                     WHERE followup.chapter_request_id=acceptance.chapter_request_id
@@ -347,7 +347,7 @@ class PostgresBookProductionQuery:
                 FROM authority_book_chapter_acceptance AS acceptance
                 JOIN authority_book_production AS production
                   ON production.book_run_id=acceptance.book_run_id
-                WHERE acceptance.book_run_id=%s AND acceptance.status='COMMITTED'
+                WHERE acceptance.book_run_id=authority_book_source_run(%s,acceptance.chapter_number) AND acceptance.status='COMMITTED'
                   AND (
                     MOD(
                         acceptance.chapter_number,
@@ -916,7 +916,22 @@ class PostgresBookProductionQuery:
         book_id: str,
         contract_type: str,
         chapter_number: int,
+        book_run_id: str = "",
     ) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT 1 FROM authority_book_edition_run WHERE book_run_id=%s AND role='VALIDATION'", [book_run_id])
+            edition_run = book_run_id if uow.cursor.fetchone() else ""
+            book = None
+            if edition_run and contract_type == "CHAPTER":
+                uow.cursor.execute("SELECT to_jsonb(book) FROM authority_book_production book WHERE book_run_id=%s AND project_id=%s AND book_id=%s",
+                    [book_run_id, project_id, book_id])
+                row = uow.cursor.fetchone()
+                book = row[0] if row else None
+        revision_id = ""
+        if book and chapter_number > int(book["accepted_through_chapter"]):
+            from .edition_planning import edition_plan_scope
+            scope = edition_plan_scope(self.database_url, book=book, chapter=chapter_number, generator="chapter_plan.generate")
+            revision_id = scope["revision_id"] if scope else ""
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -929,9 +944,11 @@ class PostgresBookProductionQuery:
                   ON version.asset_version_id=binding.asset_version_id
                 WHERE active.project_id=%s AND active.book_id=%s
                   AND binding.contract_type=%s AND binding.freshness='CURRENT'
+                  AND COALESCE(version.content#>>'{constraint_envelope,edition_execution,book_run_id}','')=%s
+                  AND (%s='' OR version.content#>>'{constraint_envelope,edition_execution,revision_id}'=%s)
                 ORDER BY active.activated_at DESC
                 """,
-                [project_id, book_id, contract_type],
+                [project_id, book_id, contract_type, edition_run, revision_id, revision_id],
             )
             rows = tuple(uow.cursor.fetchall())
         matches = []
@@ -1107,7 +1124,7 @@ class PostgresBookProductionQuery:
                 FROM authority_book_chapter_acceptance AS acceptance
                 JOIN authority_book_chapter_request AS request
                   ON request.chapter_request_id=acceptance.chapter_request_id
-                WHERE acceptance.book_run_id=%s AND acceptance.chapter_number=%s
+                WHERE acceptance.book_run_id=authority_book_source_run(%s,acceptance.chapter_number) AND acceptance.chapter_number=%s
                   AND NOT EXISTS (
                     SELECT 1 FROM authority_book_volume_checkpoint AS checkpoint
                     WHERE checkpoint.book_run_id=acceptance.book_run_id
@@ -1409,7 +1426,7 @@ class PostgresBookProductionQuery:
                     JOIN authority_asset_version AS story
                       ON story.asset_version_id=
                          projection.story_state_asset_version_id
-                    WHERE projection.book_run_id=%s
+                    WHERE projection.book_run_id=authority_book_source_run(%s,projection.chapter_number)
                       AND projection.project_id=%s AND projection.book_id=%s
                       AND projection.chapter_number=%s
                       AND projection.status='COMPLETE'
@@ -1650,6 +1667,10 @@ class PostgresBookProductionQuery:
                 )
             chapter_content = dict(chapter[5])
             group_content = dict(group[5])
+            for content in (chapter_content, group_content):
+                edition_scope = (content.get("constraint_envelope") or {}).get("edition_execution")
+                if edition_scope and edition_scope.get("book_run_id") != book_run_id:
+                    raise KernelError("EDITION_PLAN_SCOPE_INVALID", "Edition execution plans cannot enter another Book run")
             group_range = group_content.get("chapter_range")
             if (
                 int(chapter_content.get("chapter_number") or 0) != chapter_number
@@ -1872,19 +1893,20 @@ class PostgresBookProductionQuery:
         return {**admission, "admission_hash": canonical_hash(admission)}
 
     def require_chapter_execution_plan(
-        self, planning_candidate_asset_version_id: str
-    ) -> dict[str, Any]:
+        self, planning_candidate_asset_version_id: str, *, allow_missing: bool = False
+    ) -> dict[str, Any] | None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
                 SELECT projection.asset_version_id, projection.content_hash,
-                       projection.content, candidate.content_hash
+                       projection.content, candidate.content_hash,
+                       projection.lifecycle, projection.eligibility,
+                       projection.governance, operation.status
                 FROM authority_asset_version AS candidate
                 JOIN authority_asset AS candidate_asset
                   ON candidate_asset.asset_id=candidate.asset_id
                 JOIN authority_operation AS operation
                   ON operation.project_id=candidate_asset.project_id
-                 AND operation.status='SUCCEEDED'
                 JOIN authority_operation_output_asset AS output
                   ON output.operation_id=operation.operation_id
                  AND output.output_key='story_planning.chapter_plan_projection'
@@ -1898,9 +1920,6 @@ class PostgresBookProductionQuery:
                   AND candidate.lifecycle='ACTIVE'
                   AND candidate.eligibility='ELIGIBLE'
                   AND candidate.governance='CLEAR'
-                  AND projection.lifecycle='ACTIVE'
-                  AND projection.eligibility='ELIGIBLE'
-                  AND projection.governance='CLEAR'
                 ORDER BY projection.created_at DESC
                 LIMIT 2
                 """,
@@ -1910,7 +1929,28 @@ class PostgresBookProductionQuery:
                 ],
             )
             rows = tuple(uow.cursor.fetchall())
-        if len(rows) != 1:
+            if not rows and allow_missing:
+                uow.cursor.execute(
+                    """
+                    SELECT 1 FROM authority_asset_version AS candidate
+                    WHERE candidate.asset_version_id=%s
+                      AND candidate.lifecycle='ACTIVE'
+                      AND candidate.eligibility='ELIGIBLE'
+                      AND candidate.governance='CLEAR'
+                      AND NOT EXISTS (
+                          SELECT 1 FROM authority_operation_output_asset AS output
+                          JOIN authority_asset_version AS projection
+                            ON projection.asset_version_id=output.asset_version_id
+                          WHERE output.output_key='story_planning.chapter_plan_projection'
+                            AND projection.content->>
+                                'source_planning_candidate_asset_version_id'=%s
+                      )
+                    """,
+                    [planning_candidate_asset_version_id, planning_candidate_asset_version_id],
+                )
+                if uow.cursor.fetchone() is not None:
+                    return None
+        if len(rows) != 1 or tuple(rows[0][4:]) != ("ACTIVE", "ELIGIBLE", "CLEAR", "SUCCEEDED"):
             raise KernelError(
                 "BOOK_SUPERVISOR_CHAPTER_PLAN_PROJECTION_INVALID",
                 "Active Chapter plan requires one typed Planning projection",
@@ -1977,7 +2017,7 @@ class PostgresBookProductionQuery:
                 FROM authority_book_chapter_acceptance AS acceptance
                 JOIN authority_book_chapter_request AS request
                   ON request.chapter_request_id=acceptance.chapter_request_id
-                WHERE acceptance.book_run_id=%s AND acceptance.project_id=%s
+                WHERE acceptance.book_run_id=authority_book_source_run(%s,acceptance.chapter_number) AND acceptance.project_id=%s
                 ORDER BY acceptance.chapter_number DESC
                 LIMIT 1
                 """,
@@ -2022,7 +2062,7 @@ class PostgresBookProductionQuery:
                 JOIN authority_operation_output_asset AS binding
                   ON binding.operation_id=link.operation_id
                  AND binding.output_key='reader_outcome.state_transition'
-                WHERE acceptance.book_run_id=%s
+                WHERE acceptance.book_run_id=authority_book_source_run(%s,acceptance.chapter_number)
                   AND acceptance.chapter_number=%s
                 """,
                 [book_run_id, chapter_number - 1],

@@ -14,6 +14,7 @@ class WorkerFailureClass(StrEnum):
     RETRYABLE = "retryable"
     FINAL_FAILURE = "final_failure"
     UNKNOWN_EXTERNAL_STATE = "unknown_external_state"
+    DISPATCH_PAUSED = "dispatch_paused"
     LEASE_CONFLICT = "lease_conflict"
     FENCING_CONFLICT = "fencing_conflict"
     CANCELLATION = "cancellation"
@@ -221,6 +222,8 @@ class WorkerFailureClassifier:
         if not isinstance(error, KernelError):
             return WorkerFailureClass.PROGRAMMING_BUG
         code = error.code.upper()
+        if code == "RUNTIME_DISPATCH_PAUSED":
+            return WorkerFailureClass.DISPATCH_PAUSED
         if code in _LEASE_CODES:
             return WorkerFailureClass.LEASE_CONFLICT
         if code in _FENCING_CODES or "FENC" in code:

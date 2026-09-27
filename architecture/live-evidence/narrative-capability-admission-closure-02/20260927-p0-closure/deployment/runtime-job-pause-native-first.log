@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-wp02-p0-private/runtime-job-pause-runner.py", line 10, in <module>
+    getattr(pause,name)(patch)
+  File "<operator-home>/.codex/worktrees/narrative-closure-02-p0/novel-forge/tests/integration/test_runtime_dispatch_control_postgres.py", line 202, in test_runtime_job_pause_preserves_monotonic_history_without_exhausting_limit
+    claim = jobs.claim(**claim_args)
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<operator-home>/.codex/worktrees/narrative-closure-02-p0/novel-forge/src/novel_forge/modules/runtime_job/application.py", line 570, in claim
+    uow.cursor.execute(
+  File "<workspace-root>/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.CheckViolation: new row for relation "authority_runtime_job" violates check constraint "authority_runtime_job_attempt_bounds_check"
+DETAIL:  Failing row contains (runtime-job:cde36d1d3254ce28e5d85633598055331f2380f834f225ee3e75..., BOOK_COORDINATION_TICK, book, BOOK_RUN, pause-subject, dispatch-control:259d508db5ad4eb191587dbb6cc98833, pause-max-one, {}, sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61..., CLAIMED, 100, 2026-09-27 05:10:36.862908+00, 2, 1, pause-worker, runtime-attempt:4b3ac3ff-3312-4447-96d5-ba14d8c03641, 2, , {"code": "RUNTIME_DISPATCH_PAUSED", "disposition": "PAUSED_AWAIT..., 2026-09-27 05:10:36.787889+00, 2026-09-27 05:10:36.883651+00, null, SAME_JOB_TAKEOVER).

@@ -1,0 +1,169 @@
+{
+  "evidence_class": "DEVELOPMENT_FAILURE_LINEAGE",
+  "history_preserved": true,
+  "failures": [
+    {
+      "run_id": "craft-native-first",
+      "evidence": [
+        "craft-native-first.log"
+      ],
+      "failure": "Undeclared jsonschema import prevented three native cases.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "run_id": "craft-native-second",
+      "evidence": [
+        "craft-native-second.log"
+      ],
+      "failure": "World Context budget overflow; MappingProxy raw rejection serialization failure.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "run_id": "craft-native-third",
+      "evidence": [
+        "craft-native-third.log"
+      ],
+      "failure": "Explicit continuation still exceeded protected Context budget.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "run_id": "craft-explicit-first",
+      "evidence": [
+        "craft-explicit-screenplay-first.log"
+      ],
+      "failure": "Undefined book_run_id in realization evidence scope query.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "run_id": "craft-explicit-second",
+      "evidence": [
+        "craft-explicit-screenplay-second.log",
+        "craft-explicit-fourth-evidence.json",
+        "accepted-manuscript.txt"
+      ],
+      "failure": "Subsequent screenplay helper used participant IDs absent from this source Book; source validator rejected it.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "run_id": "dispatch-recovery-first",
+      "evidence": [
+        "dispatch-recovery-native-first.log"
+      ],
+      "failure": "Fixture fault injection tried to patch a read-only slotted instance; production path was not reached.",
+      "debug_release_sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "run_id": "actor-craft-repair-source-failure",
+      "evidence": [
+        "../editions/failure-edition-joint-third.log",
+        "repair-source-failure-execution.json",
+        "repair-input-lineage.json"
+      ],
+      "failure": "JSONB reordered role keys after process continuation; identical role/asset/hash set produced a different ordered generation snapshot hash.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "sha256:9a28ddd281622b34a5de03b1710eff648d82b9f44df96391dd9e335375783ee7"
+    },
+    {
+      "run_id": "alternate-principal-unit-first",
+      "evidence_source": "Task tool output; no original standalone log recorded.",
+      "failure": "Test fixture lacked required ChapterPlan Context candidate; 11 failed, 19 passed. Production gate was retained; fixture was corrected.",
+      "debug_release_sha": "NOT_APPLICABLE_PURE_UNIT",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "run_id": "alternate-principal-unit-second",
+      "evidence": [
+        "alternate-principal-unit-second.log"
+      ],
+      "failure": "Fixture used chapter.plan rather than the exact chapter.plan.materialize definition; 1 failed, 29 passed. Corrected fixture definition; full input and scope assertions retained.",
+      "debug_release_sha": "NOT_APPLICABLE_PURE_UNIT",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "run_id": "craft-budget-calls-first",
+      "evidence": [
+        "craft-budget-calls-first.log"
+      ],
+      "failure": "Existing shared core fixture local canonical_hash import caused UnboundLocalError before budget probe; root removed redundant local import, retaining the common canonical hash function.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "run_id": "craft-budget-calls-second",
+      "evidence": [
+        "craft-budget-calls-second.log"
+      ],
+      "failure": "Fixture cumulative policy paired positive prior call counts with zero tokens; native contract rejected it. The declared positive token ceiling was corrected before a new independent run.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "run_id": "craft-budget-calls-third",
+      "evidence": [
+        "craft-budget-calls-third.log",
+        "craft-budget-calls-execution-third.json"
+      ],
+      "failure": "Fixture serialized PostgreSQL zero Decimal as 0E-8; native monetary contract rejected scientific notation. Fixed decimal string serialization in test policy only.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "sha256:be64d617696327ed08d4de3b1f9f5fc980fd3a749fd9e75084cd8dc5eff85bdc"
+    },
+    {
+      "run_id": "craft-budget-calls-fourth",
+      "evidence": [
+        "craft-budget-calls-fourth.log",
+        "craft-budget-calls-execution-fourth.json"
+      ],
+      "failure": "Scripted cost 0.01 exceeded its zero-cost reservation. Native BUDGET_ACTUAL_EXCEEDS_RESERVATION retained HELD_UNKNOWN evidence; subsequent independent fixture reports zero simulated billed cost and nonzero simulated tokens. Historical record was not changed.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "sha256:68aba01708b84d76a8d2ba97be3be48eaac82b82cac836a298c15a3bbd664703"
+    },
+    {
+      "run_id": "craft-budget-calls-fifth",
+      "evidence": [
+        "craft-budget-calls-fifth.log",
+        "craft-budget-calls-execution-fifth.json"
+      ],
+      "failure": "Fixture configure key reused across projects hit native IDEMPOTENCY_CONFLICT; changed future fixture keys to include their unique project. No frozen request was modified.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "sha256:68aba01708b84d76a8d2ba97be3be48eaac82b82cac836a298c15a3bbd664703"
+    },
+    {
+      "run_id": "routing-source-unit-first",
+      "evidence": [
+        "routing-source-unit-first.log"
+      ],
+      "failure": "Native Kernel schema helper does not recurse into array entries; four schema-negative tests exposed missing explicit source validation, subsequently fixed.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "run_id": "routing-source-native-first",
+      "evidence": [
+        "routing-source-native-first.log"
+      ],
+      "failure": "Test used RoutingDecision.status instead of its public to_dict result; native approval and source-read assertions had passed before this test-only error.",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    }
+  ],
+  "not_reclassified_as_pass": [
+    "craft-native-first",
+    "craft-native-second",
+    "craft-native-third",
+    "craft-explicit-first",
+    "craft-explicit-second",
+    "dispatch-recovery-first",
+    "actor-craft-repair-source-failure",
+    "craft-budget-calls-first",
+    "craft-budget-calls-second",
+    "craft-budget-calls-third",
+    "craft-budget-calls-fourth",
+    "craft-budget-calls-fifth"
+  ]
+}

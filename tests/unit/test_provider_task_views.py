@@ -1566,3 +1566,227 @@ def test_world_v2_operational_receipts_preserve_semantics_and_legacy_replay():
     assert build_provider_task_view("world_candidates.generate", {"world_preparation": current})["world_preparation"] == current
     legacy = {**before, "contract_version": "world-provider-task.v1"}
     assert build_provider_task_view("world_candidates.generate", {"world_preparation": legacy})["world_preparation"] == legacy
+
+
+def test_selected_world_craft_projection_retains_cards_and_binds_omitted_history():
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.provider_views import _project_selected_world_selection, _projection_hash
+    need = {"target_stage": "chapter_plan.generate", "required_card_asset_version_ids": ["card:1"],
+            "condition_sources": {"plan": {"asset_version_id": "plan:1", "content_hash": "sha256:" + "a" * 64}},
+            "craft_context": {"characters": ["小岑"], "obligations": ["归还剑谱"], "usage_scope_context": {"scope_transitions": ["accepted:1"]}},
+            "recent_craft_usage": [{"use_id": "use:1", "phase": "SETUP", "phase_observation": "未兑现"}]}
+    need["need_digest"] = _projection_hash(need)
+    selection = {"need": need, "craft_policy": {"schema_version": "narrative-craft-budget.v4"},
+                 "selected": [{"knowledge_card_asset_version_id": "card:1", "content_hash": "sha256:" + "b" * 64,
+                               "selected_content": {"prerequisites": ["人物已有承诺"], "craft_mechanism": {"phases": ["SETUP", "PAYOFF"]}},
+                               "applicability_assessment": {"status": "APPLICABLE"}}]}
+    selection["selected"][0]["craft_assessment"] = {"applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED",
+        "budget_assessment": {"accepted_usage_history": [{"acceptance_id": "accepted:1", "phase": "SETUP"}]}}
+    selection["rejected"] = [{"knowledge_card_asset_version_id": "not-selected", "reason": "EXCLUDED_FOR_THIS_SCENE"}]
+    selection["selection_digest"] = _projection_hash(selection)
+    original = deepcopy(selection)
+    projected = _project_selected_world_selection(selection)
+    expected = deepcopy(original["selected"])
+    expected[0]["craft_assessment"].pop("budget_assessment")
+    assert projected["selected"] == expected
+    assert "rejected" not in projected
+    assert "/selected/0/craft_assessment/budget_assessment" in projected["world_selection_receipt"]["omitted_fields"]
+    assert projected["need"] == {key: original["need"][key] for key in ("need_digest", "target_stage", "required_card_asset_version_ids")}
+    assert "/need/craft_context" in projected["world_selection_receipt"]["omitted_fields"]
+    assert "recent_craft_usage" not in projected["need"]
+    assert projected["world_selection_receipt"]["selection_digest"] == original["selection_digest"]
+    assert _project_selected_world_selection(projected) == projected
+    assert selection == original
+    altered = deepcopy(selection)
+    altered["need"]["recent_craft_usage"].append({"use_id": "forged"})
+    with pytest.raises(KernelError, match="WORLD_SELECTION_RECEIPT_INVALID"):
+        _project_selected_world_selection(altered)
+
+
+def test_edition_context_uses_exact_scope_position_separate_from_identity():
+    from novel_forge.modules.chapter_authority.provider_views import _planning_chapter
+    assert _planning_chapter({"logical_key": "edition:run:chapter:irrelevant", "edition_execution": {"chapter": 7}}) == 7
+    assert _planning_chapter({"logical_key": "chapter:3"}) == 3
+    with pytest.raises(KernelError, match="EDITION_PLANNING_SCOPE_INVALID"):
+        _planning_chapter({"edition_execution": {"chapter": 0}})
+
+
+def test_draft_provider_context_v3_preserves_full_semantics_with_explicit_larger_budget():
+    from copy import deepcopy
+    context = _context(0)
+    context["context_segments"].append({"asset_version_id": "intent:v1", "asset_type": "chapter_execution_intent",
+        "safe_summary": "必需行动与承诺" * 9_800, "structured_facts": [], "allowed_use": "generation"})
+    before = deepcopy(context)
+    task = build_provider_task_view("draft", {"plan": _plan()})
+    with pytest.raises(KernelError, match="CHAPTER_PROVIDER_CONTEXT_BUDGET_EXCEEDED"):
+        build_provider_context_view("draft", context, task)
+    context.update(context_profile_version="draft-context-profile-v3", token_budget=20_000)
+    view = build_provider_context_view("draft", context, task)
+    assert view["contract_version"] == "provider-context-view-v3"
+    assert view["selection_explanation"]["maximum_serialized_characters"] == 80_000
+    assert view["segments"][-1]["safe_summary"] == before["context_segments"][-1]["safe_summary"]
+    context["token_budget"] = 16_000
+    with pytest.raises(KernelError, match="CHAPTER_PROVIDER_CONTEXT_BUDGET_EXCEEDED"):
+        build_provider_context_view("draft", context, task)
+    context["context_profile_version"] = "draft-context-profile-v2"
+    context["token_budget"] = 20_000
+    with pytest.raises(KernelError, match="CHAPTER_PROVIDER_CONTEXT_BUDGET_EXCEEDED"):
+        build_provider_context_view("draft", context, task)
+
+
+@pytest.mark.parametrize("budget", [None, 0, 24_001, True, "20000"])
+def test_draft_provider_context_v3_rejects_unbounded_or_unfrozen_budget(budget):
+    context = _context(0)
+    context.update(context_profile_version="draft-context-profile-v3", token_budget=budget)
+    with pytest.raises(KernelError, match="CHAPTER_PROVIDER_CONTEXT_BUDGET_INVALID"):
+        build_provider_context_view("draft", context, {})
+
+
+def test_draft_provider_context_v3_omits_only_duplicate_generated_state_summary():
+    from copy import deepcopy
+    context = _context(0)
+    context["task_narrative_projection"]["disclosure_field_projections"] = []
+    task = build_provider_task_view("draft", {"plan": _plan()})
+    legacy = build_provider_context_view("draft", context, task)
+    assert legacy["segments"][0]["safe_summary"]
+    current = deepcopy(context)
+    current.update(context_profile_version="draft-context-profile-v3", token_budget=20_000)
+    view = build_provider_context_view("draft", current, task)
+    assert view["segments"][0]["safe_summary"] == ""
+    assert view["segments"][0]["structured_facts"] == legacy["segments"][0]["structured_facts"]
+    assert view["context_correctness_receipt_hash"] == legacy["context_correctness_receipt_hash"]
+    assert view["selection_explanation"]["duplicate_state_summary_count"] == 1
+    assert build_provider_context_view("draft", context, task) == legacy
+
+
+def _planning_history_inputs():
+    from copy import deepcopy
+    from novel_forge.modules.mkaos_authority.craft_selection import _hash
+    observations = [{"use_id": "use:" + str(n), "acceptance_id": "accepted:" + str(n),
+        "effect_status": "ACHIEVED" if n == 0 else "UNCERTAIN", "phase_transition": {"status": "SUPPORTED" if n == 0 else "UNCERTAIN"},
+        "evidence": [{"quote": "证人尚未越过城门，承诺未完成。" * 80}], "execution_evidence": {"trace_id": "operational-secret"}}
+        for n in range(2)]
+    selection = {**_narrative_intelligence(), "selection_status": "SELECTED", "craft_policy": {"schema_version": "narrative-craft-budget.v4"},
+        "need": {"recent_craft_usage": observations, "required_card_asset_version_ids": ["card:v1"], "craft_context": {"reselection": {"excluded": ["prior:card"]}}},
+        "selected": [{"knowledge_card_asset_version_id": "card:v1", "craft_assessment": {"budget_assessment": {
+            "recent_usage": deepcopy(observations), "accepted_usage_history": deepcopy([observations[1], observations[0], observations[1]]),
+            "realization_cautions": [{"use_id": "not-in-pool", "reason": "preserve this distinct unresolved observation"}]}}}]}
+    selection["need"]["need_digest"] = _hash(selection["need"])
+    selection["selection_digest"] = _hash(selection)
+    return {"planning_command": {"logical_key": "book:main", "planning_scope": "BOOK"},
+        "frozen_inputs": [{"role": "book_design", "asset_version_id": "design:v1"}],
+        "authoritative_narrative_load": _authoritative_load(), "arc_working_set": _arc_working_set(), "narrative_intelligence": selection}
+
+
+def test_planning_history_projection_keeps_all_observations_order_and_legacy_view():
+    from copy import deepcopy
+    from novel_forge.modules.mkaos_authority.craft_context_projection import resolve_planning_craft_histories
+    inputs = _planning_history_inputs()
+    original = deepcopy(inputs)
+    legacy = build_provider_task_view("book_plan.generate", inputs)
+    assert legacy["contract_version"] == "provider-task-view-v1"
+    assert "recent_usage" in legacy["narrative_intelligence"]["selected"][0]["craft_assessment"]["budget_assessment"]
+    task = build_provider_task_view("book_plan.generate", {**inputs, "craft_history_projection_version": "planning-craft-history-projection.v1"})
+    assert inputs == original
+    assert task["contract_version"] == "provider-task-view-v2"
+    projected = task["narrative_intelligence"]
+    assert resolve_planning_craft_histories(projected) == legacy["narrative_intelligence"]
+    budget = projected["selected"][0]["craft_assessment"]["budget_assessment"]
+    assert budget["accepted_usage_history_reference"]["indices"] == [1, 0, 1]
+    assert budget["realization_cautions"] == inputs["narrative_intelligence"]["selected"][0]["craft_assessment"]["budget_assessment"]["realization_cautions"]
+    assert "operational-secret" not in json.dumps(task)
+    assert len(json.dumps(task)) < len(json.dumps(legacy))
+
+
+@pytest.mark.parametrize("drift", ["missing_version", "wrong_source", "index", "hash", "pointer", "observation"])
+def test_planning_history_projection_requires_exact_frozen_context(drift):
+    from copy import deepcopy
+    inputs = _planning_history_inputs()
+    version = "planning-craft-history-projection.v1"
+    task = build_provider_task_view("book_plan.generate", {**inputs, "craft_history_projection_version": version})
+    context = {"schema_version": "novelos.planning_context_bundle.v1", "book_id": "book:main", "planning_scope": "BOOK",
+        "logical_key": "book:main", "craft_history_projection_version": version, "narrative_intelligence": deepcopy(inputs["narrative_intelligence"]),
+        "input_versions": [{"role": "book_design", "asset_version_id": "design:v1", "content": {"premise": "保护证人与公开证词相互牵制。"}}]}
+    assert build_provider_context_view("book_plan.generate", context, task)["stage"] == "book_plan.generate"
+    reference = task["narrative_intelligence"]["selected"][0]["craft_assessment"]["budget_assessment"]["recent_usage_reference"]
+    if drift == "missing_version":
+        context.pop("craft_history_projection_version")
+    elif drift == "wrong_source":
+        context["narrative_intelligence"]["need"]["required_card_asset_version_ids"] = ["different:card"]
+    elif drift == "observation":
+        task["narrative_intelligence"]["need"]["recent_craft_usage"][1]["effect_status"] = "ACHIEVED"
+    else:
+        reference[{"index": "indices", "hash": "content_hash", "pointer": "json_pointer"}[drift]] = {
+            "index": [0, 0], "hash": "sha256:" + "0" * 64, "pointer": "/different/book/history"}[drift]
+    with pytest.raises(KernelError, match="CRAFT_CONTEXT_PROJECTION_DRIFT"):
+        build_provider_context_view("book_plan.generate", context, task)
+
+
+def test_actor_step_support_has_distinct_producer_task_and_keeps_observation_independent():
+    from tests.unit.test_world_actor_execution import execution, observation
+    from novel_forge.modules.canon_graph.grounding import grounded_claims
+    _, binding, event = execution()
+    revision, extraction = observation(binding, event)
+    claims = grounded_claims(extraction)
+    task = build_provider_task_view('canon_support', {'revision': revision, 'grounding': extraction['grounding'], 'claims': claims})
+    assert task['contract_version'] == 'provider-task-view-v2'
+    assert task['claims'] == claims
+    comparison = task['claims'][0]['claim']['actor_step_execution']
+    assert comparison['approved_target']['action'] != comparison['observed_action'] == revision['text']
+    assert task['actor_step_support_contract'] == 'actor-step-execution-comparison.v1'
+    legacy = build_provider_task_view('canon_support', {'revision': revision, 'claims': [{'claim': {'claim_kind': 'OBJECTIVE_EVENT'}}]})
+    assert legacy['contract_version'] == 'provider-task-view-v1'
+    assert 'actor_step_support_contract' not in legacy
+    claims[0]['claim']['actor_step_execution']['contract_version'] = 'latest'
+    with pytest.raises(KernelError, match='WORLD_ACTOR_EXECUTION_CONTRACT_INVALID'):
+        build_provider_task_view('canon_support', {'revision': revision, 'claims': claims})
+
+
+def _matrix_alias_context():
+    from copy import deepcopy
+    source = {'role': 'chapter_group_plan', 'asset_version_id': 'group:exact:v1', 'content_hash': 'sha256:' + 'e' * 64,
+        'content': {'objective': '保留证词，护送承诺尚未完成。', 'hard_constraints': ['不得把未来送达写成既成事实。'],
+            'chapter_function_matrix': [{'chapter_number': 2, 'objective': '已接纳的交付。'},
+                {'chapter_number': 3, 'objective': '开始护送，尚未越关。', 'required_facts': ['证人在关内。']}],
+            'narrative_segments': [{'chapter_range': [1, 2], 'private_preparation_notes': '历史目录' * 4000},
+                                   {'chapter_range': [3, 3], 'purpose': '保留当前窗口依赖。'}],
+            'audit_directory': {'duplicate_only': 'historical-directory' * 300}}}
+    alias = {**deepcopy(source), 'role': 'chapter_function_matrix_row'}
+    return {'schema_version': 'novelos.planning_context_bundle.v1', 'logical_key': 'chapter:3', 'planning_scope': 'CHAPTER',
+        'planning_input_projection_version': 'planning-input-role-references.v1', 'input_versions': [source, alias]}
+
+
+def test_matrix_alias_references_exact_current_row_and_all_shared_constraints():
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.provider_views import compile_planning_provider_context, _projection_hash
+    context = _matrix_alias_context()
+    original = deepcopy(context)
+    view, _ = compile_planning_provider_context('chapter_plan.generate', context)
+    assert context == original
+    assert view['contract_version'] == 'provider-context-view-v3'
+    group = view['segments'][0]['content']
+    reference = view['segments'][1]['content']
+    assert reference['json_pointer'] == '/segments/0/content/chapter_function_matrix/0'
+    assert reference['row_content_hash'] == _projection_hash(group['chapter_function_matrix'][0])
+    assert reference['group_constraints_pointer'] == '/segments/0/content'
+    assert group['hard_constraints'] == context['input_versions'][0]['content']['hard_constraints']
+    assert group['chapter_function_matrix'] == [context['input_versions'][0]['content']['chapter_function_matrix'][1]]
+    legacy = deepcopy(context)
+    legacy.pop('planning_input_projection_version')
+    old, _ = compile_planning_provider_context('chapter_plan.generate', legacy)
+    assert old['contract_version'] == 'provider-context-view-v2'
+    assert 'audit_directory' in old['segments'][1]['content']
+
+
+@pytest.mark.parametrize('field', ['asset_version_id', 'content_hash', 'content'])
+def test_matrix_alias_never_references_a_different_frozen_group(field):
+    from novel_forge.modules.chapter_authority.provider_views import compile_planning_provider_context
+    context = _matrix_alias_context()
+    alias = context['input_versions'][1]
+    if field == 'content':
+        alias[field]['hard_constraints'] = ['另一版本的约束不能被父组覆盖。']
+    else:
+        alias[field] = 'different-source'
+    view, _ = compile_planning_provider_context('chapter_plan.generate', context)
+    assert 'json_pointer' not in view['segments'][1]['content']
+    assert view['segments'][1]['content']['hard_constraints'] == alias['content']['hard_constraints']

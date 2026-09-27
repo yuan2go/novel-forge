@@ -115,7 +115,7 @@ def evaluate_review_result(
         real_model_call=provider_evidence.get("real_model_call") is True,
     )
     return {
-        **({"craft_review_contract": CRAFT_REVIEW_CONTRACT, "craft_targets": craft_targets, "craft_checks": craft_checks} if craft_targets else {}),
+        **({"craft_review_contract": "narrative-craft-review.v2" if any(target.get("usage", {}).get("type_policy", {}).get("transition_policy") for target in craft_targets) else CRAFT_REVIEW_CONTRACT, "craft_targets": craft_targets, "craft_checks": craft_checks} if craft_targets else {}),
         **({"cross_chapter_window": cross_chapter_window,
             "cross_chapter_coverage": coverage_report(cross_chapter_window)} if cross_chapter_window is not None else {}),
         "report_type": "ReviewReport",

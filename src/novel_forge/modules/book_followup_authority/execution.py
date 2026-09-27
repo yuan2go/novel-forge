@@ -159,6 +159,9 @@ class PostgresReaderOutcomeExecutionContractBinder(
                 return None
             raise
 
+    def _context_input_permitted(self, document: Any, *, project_id: str, operation_id: str) -> bool:
+        return document.eligibility in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
+
     def _reader_context_bundle(
         self,
         *,
@@ -190,7 +193,7 @@ class PostgresReaderOutcomeExecutionContractBinder(
                 document.asset_type != str(raw.get("artifact_type") or "")
                 or document.content_hash != str(raw.get("content_hash") or "")
                 or document.governance != "CLEAR"
-                or document.eligibility not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
+                or not self._context_input_permitted(document, project_id=project_id, operation_id=operation_id)
             ):
                 raise KernelError(
                     "READER_OUTCOME_INPUT_DRIFT",
@@ -213,7 +216,7 @@ class PostgresReaderOutcomeExecutionContractBinder(
             "project_id": project_id,
             "operation_id": operation_id,
             "attempt_id": attempt_id,
-            "source_isolation": "ACCEPTED_AUTHORITY_ASSETS_ONLY",
+            "source_isolation": "EXACT_ACCEPTED_SOURCE_AND_AUTHORIZED_INELIGIBLE_SAMPLE" if any(item["asset_type"] == "screenplay_provider_sample" for item in selected) else "ACCEPTED_AUTHORITY_ASSETS_ONLY",
             "selected_inputs": selected,
         }
         try:

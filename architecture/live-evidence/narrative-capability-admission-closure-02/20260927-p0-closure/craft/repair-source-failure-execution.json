@@ -1,0 +1,9 @@
+{
+  "source_tree_hash_before": "9a28ddd281622b34a5de03b1710eff648d82b9f44df96391dd9e335375783ee7",
+  "source_tree_hash_after": "9a28ddd281622b34a5de03b1710eff648d82b9f44df96391dd9e335375783ee7",
+  "elapsed_seconds": 43.05,
+  "proof_ceiling": "SCRIPTED_NATIVE_POSTGRESQL_DIRECT_REGRESSION",
+  "actual_real_model_calls": 0,
+  "actual_human_reviews": 0,
+  "user_properties": []
+}

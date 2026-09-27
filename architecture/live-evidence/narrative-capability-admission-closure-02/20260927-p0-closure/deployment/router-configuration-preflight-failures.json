@@ -1,0 +1,26 @@
+{
+  "real_model_calls": 0,
+  "historical_dispatch_count_before": 407,
+  "historical_dispatch_count_after": 407,
+  "failures": [
+    {
+      "order": 1,
+      "status": "CONFIGURATION_BLOCKED",
+      "reason": "AGENT_SESSION explicit system/template/Skill hashes absent in old configuration",
+      "fix": "Resolved exact current repository agent_session_pack artifacts into private runtime controls."
+    },
+    {
+      "order": 2,
+      "status": "CONFIGURATION_BLOCKED",
+      "reason": "ROUTING_POSITIVE_TASK_BUDGET_REQUIRED rejected zero priced limit",
+      "fix": "Allow finite nonnegative money cap while retaining positive tokens; genuine entitlement authorization/unknown amount and priced candidate rejection verified."
+    }
+  ],
+  "code_test_failure": {
+    "file": "router-zero-priced-cap-unit.log",
+    "status": "FAIL_WRONG_CHECKOUT_IMPORT",
+    "cause": "Missing PYTHONPATH used shared venv editable install in narrative-closure-02-continuation; 3FAIL/108PASS belong old code",
+    "corrected_command": "PYTHONPATH=src:. .venv/bin/python -m pytest tests/unit/test_routing_bootstrap.py tests/unit/test_cost_aware_routing.py -q",
+    "corrected_result": "111 PASSED"
+  }
+}

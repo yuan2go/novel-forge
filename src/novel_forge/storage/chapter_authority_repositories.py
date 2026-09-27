@@ -129,7 +129,7 @@ class AuthorityHandlerRepository:
             )
             reference_sample = (
                 asset_version_id == reference_sample_asset_version_id
-                and row[1] in {"chapter_provider_sample", "world_provider_sample", "longform_prose_review_sample"}
+                and row[1] in {"chapter_provider_sample", "world_provider_sample", "longform_prose_review_sample", "screenplay_provider_sample"}
                 and row[4] == "ACTIVE" and row[5] == "INELIGIBLE" and row[6] == "CLEAR"
             )
             story_design_candidate = (

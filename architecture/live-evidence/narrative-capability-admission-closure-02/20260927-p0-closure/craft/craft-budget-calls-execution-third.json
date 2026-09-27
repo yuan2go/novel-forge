@@ -1,0 +1,10 @@
+{
+  "source_tree_hash_before": "be64d617696327ed08d4de3b1f9f5fc980fd3a749fd9e75084cd8dc5eff85bdc",
+  "source_tree_hash_after": "be64d617696327ed08d4de3b1f9f5fc980fd3a749fd9e75084cd8dc5eff85bdc",
+  "status": "FAIL",
+  "stop_dimension": "calls",
+  "elapsed_seconds": 46.28,
+  "release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL_DIRECT_REGRESSION",
+  "actual_real_model_calls": 0
+}

@@ -1,0 +1,16 @@
+{
+  "state": "PASS",
+  "evidence_class": "READ_ONLY_NATIVE_SOURCE_PROJECTION_AND_FOCUSED_UNIT",
+  "actual_real_model_calls": 0,
+  "source_asset_version_id": "68696b8b-23eb-4558-84d1-51244b737c7c",
+  "source_content_hash": "sha256:08d524ef787a5d1cbec80233c1eedfe59ad00bb90793bf12382b292366622bda",
+  "old_frozen_context_modified": false,
+  "new_context_opt_in_required": "planning-craft-history-projection.v1",
+  "original_safe_view_bytes": 180961,
+  "projected_safe_view_bytes": 75711,
+  "saved_utf8_bytes": 105250,
+  "complete_safe_view_roundtrip_equal": true,
+  "native_new_request_admission": "NOT_YET_RUN",
+  "unit_command": "PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_provider_task_views.py tests/unit/test_story_planning_runtime.py -q",
+  "unit_passed": 175
+}

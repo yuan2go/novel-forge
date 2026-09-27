@@ -1,0 +1,35 @@
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-explicit] _
+tests/integration/test_craft_planning_postgres.py:343: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1984: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    native_evidence = execute_native_reality_vertical(
+tests/integration/test_craft_planning_postgres.py:267: in drive_native_planning
+    chapter_tick = scheduler.tick(project_id=snapshot.project_id, root_operation_id=tick["operation_id"])
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:257: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1366: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:168: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:89: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1138: in execute
+    bundle = build_context_bundle(
+src/novel_forge/modules/chapter_authority/domain_handlers.py:381: in build_context_bundle
+    governed = build_authority_context_bundle(
+src/novel_forge/modules/context_builder/domain.py:1063: in build_authority_context_bundle
+    selection = select_context_candidates(
+src/novel_forge/modules/context_builder/domain.py:777: in select_context_candidates
+    raise ValueError(
+E   ValueError: PROTECTED_CONTEXT_BUDGET_EXCEEDED: knowledge-card:project-29bb371bb4a74eb9a9f900ecf89c339c:12d5b522b0f4624583775b5bd84e8461549993805982893d4c8afb32e5ac89d6:v1 exceeds TOTAL_CONTEXT_LIMIT; requires=3712, available=3281, used=12719, total=16000
+=========================== short test summary info ============================
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-explicit]
+1 failed, 1 passed, 4 deselected in 81.50s (0:01:21)

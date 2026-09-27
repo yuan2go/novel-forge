@@ -44,7 +44,7 @@ class NarrativeStateRebuildService:
         self.database_url = database_url
 
     def rebuild(
-        self, *, project_id: str, book_id: str, through_chapter: int | None = None
+        self, *, project_id: str, book_id: str, through_chapter: int | None = None, book_run_id: str = ""
     ) -> NarrativeProjectionRebuildResult:
         if not project_id or not book_id or (
             through_chapter is not None and through_chapter <= 0
@@ -52,7 +52,7 @@ class NarrativeStateRebuildService:
             raise ValueError("Project, Book and a positive optional boundary are required")
         with AuthorityUnitOfWork(self.database_url) as uow:
             rows, initial, initial_version = NarrativeRealityRepository(uow.cursor).rebuild_sources(
-                project_id=project_id, book_id=book_id, through_chapter=through_chapter,
+                project_id=project_id, book_id=book_id, through_chapter=through_chapter, book_run_id=book_run_id,
             )
         if not rows:
             raise KernelError(

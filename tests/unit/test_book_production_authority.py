@@ -127,9 +127,14 @@ class BookProductionAuthorityTests(unittest.TestCase):
 
         self.assertEqual(
             set(definitions),
-            {"reader_outcome.evaluate", "longform.recap", "longform.prose_review"},
+            {"reader_outcome.evaluate", "longform.recap", "longform.prose_review", "screenplay_generate", "screenplay_review", "screenplay_revision"},
         )
-        self.assertEqual(len(handlers), 3)
+        self.assertEqual(handlers, {"novel_forge.book_followup_authority." + name for name in {
+            *definitions, "longform.prose_review.sample", "book.screenplay.sample.generate", "book.screenplay.sample.review", "book.screenplay.sample.revision"}})
+        for stage in ("screenplay_generate", "screenplay_review", "screenplay_revision"):
+            self.assertEqual(definitions[stage]["external_capabilities"], ["model." + stage])
+            self.assertTrue(definitions[stage]["policy"]["frozen_inputs_required"])
+            self.assertFalse(definitions[stage]["policy"]["body_mutation_allowed"])
         reader = definitions["reader_outcome.evaluate"]
         recap = definitions["longform.recap"]
         prose = definitions["longform.prose_review"]
@@ -272,3 +277,26 @@ def test_cancel_replay_continues_effect_protocol_without_second_control_request(
     assert result['external_effect_cancellations'] == [{'status': 'UNKNOWN'}]
     request.assert_not_called()
     effects.assert_called_once()
+
+
+def test_submission_recovery_uses_only_the_persisted_request_boundary():
+    from dataclasses import asdict
+    from unittest.mock import Mock, patch
+
+    authority = object.__new__(PostgresBookAuthority)
+    command = SubmitBookChapterCommand(book_run_id="book-run:edition", chapter_number=2,
+        title="旧请求恢复", premise="只恢复既有定位合同", chapter_plan_asset_version_id="plan:2",
+        chapter_plan_content_hash="sha256:plan", context_candidates=(),
+        execution_chapter_plan_asset_version_id="execution:2", execution_chapter_plan_content_hash="sha256:execution",
+        parent_group_version_id="group:edition", narrative_realization_id="realization:edition",
+        narrative_realization_slice_id="slice:2", narrative_realization_contract_digest="sha256:realization",
+        preparation_report={"book_edition": {"revision_id": "edition:frozen"}})
+    authority.require_chapter_request = Mock(return_value={"book_run_id": command.book_run_id, "chapter_root_operation_id": None, "command_payload": asdict(command)})
+    authority.require = Mock(return_value={"project_id": "project"})
+    authority._dispatch_reserved_chapter = Mock(return_value={"chapter_root_operation_id": "root:resumed"})
+    authority.submit_chapter = Mock(side_effect=AssertionError("recovery must not reserve again"))
+    principal = Mock()
+    with patch("novel_forge.modules.book_authority.edition_runtime.edition_dispatch_binding", side_effect=AssertionError("selected edition changed")):
+        assert authority.recover_chapter_submission("request:2", principal=principal)["chapter_root_operation_id"] == "root:resumed"
+    authority._dispatch_reserved_chapter.assert_called_once_with("request:2", principal=principal)
+    authority.submit_chapter.assert_not_called()

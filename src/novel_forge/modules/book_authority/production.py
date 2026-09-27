@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields, replace
 from enum import StrEnum
 import hashlib
 import json
@@ -27,9 +27,6 @@ from novel_forge.modules.chapter_authority.orchestrator import (
 from novel_forge.modules.chapter_outcome import (
     ChapterOutcomeAuthorityApplication,
     ChapterOutcomeCommand,
-)
-from novel_forge.modules.chapter_quality_authority import (
-    load_accepted_quality_observations,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.cancellation import (
@@ -58,10 +55,6 @@ from novel_forge.modules.command_kernel.service import (
     TransactionCheckpoint,
     admit_command,
     execute_transaction_command,
-)
-from novel_forge.modules.narrative_state import (
-    compact_canon_facts,
-    compact_current_state_facts,
 )
 from novel_forge.modules.book_authority.longform_projection import (
     AcceptedLongformEvidence,
@@ -323,6 +316,7 @@ class StartBookProductionCommand:
     light_recap_cadence: int = 5
     formal_recap_cadence: int = 10
     input_snapshot_id: str = ""
+    edition_revision_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -354,6 +348,10 @@ class BookProductionAdmission:
 
 
 class ChapterAuthorityCommandPort(Protocol):
+    def recover_admission(
+        self, request: SingleChapterRequest, *, principal: Principal
+    ) -> ChapterSagaAdmission | None: ...
+
     def submit(
         self, request: SingleChapterRequest, *, principal: Principal
     ) -> ChapterSagaAdmission: ...
@@ -383,6 +381,11 @@ class ChapterAuthorityCommandPort(Protocol):
 class ChapterAuthorityCommandAdapter:
     application: ChapterAuthorityApplication
     external_effect_adapters: dict[str, ExternalEffectAdapter]
+
+    def recover_admission(
+        self, request: SingleChapterRequest, *, principal: Principal
+    ) -> ChapterSagaAdmission | None:
+        return self.application.recover_admission(request, principal=principal)
 
     def submit(
         self, request: SingleChapterRequest, *, principal: Principal
@@ -537,6 +540,10 @@ class PostgresBookAuthority:
             command.book_plan_version,
             *_longform_context_asset_version_ids(command.longform_context_versions),
         )
+        if command.edition_revision_id:
+            from .edition_runtime import edition_start_inputs
+            root_input_version_ids = tuple(dict.fromkeys((*root_input_version_ids, *edition_start_inputs(
+                self.database_url, project_id=command.project_id, book_id=command.book_id, revision_id=command.edition_revision_id))))
         root_input_assets = self.resolve_asset_refs(
             project_id=command.project_id,
             asset_version_ids=root_input_version_ids,
@@ -558,7 +565,7 @@ class PostgresBookAuthority:
                 "input": {
                     "project_id": command.project_id,
                     "input_asset_version_ids": list(root_input_version_ids),
-                    "payload": asdict(command),
+                    "payload": {key: value for key, value in asdict(command).items() if key != "edition_revision_id" or value},
                 },
                 "input_assets": list(root_input_assets),
             },
@@ -673,6 +680,20 @@ class PostgresBookAuthority:
                 }
             )
             checkpoint("after_book_run_insert")
+            if command.edition_revision_id:
+                from novel_forge.storage.book_edition_repositories import BookEditionRepository
+                edition_repository = BookEditionRepository(uow.cursor)
+                revision = edition_repository.revision(project_id=command.project_id, revision_id=command.edition_revision_id, book_id=command.book_id)
+                if revision["edition"]["current_revision_id"] != revision["revision_id"]:
+                    raise KernelError("EDITION_VERSION_CONFLICT", "Validation must start from the current saved candidate")
+                if any(event["event_kind"] == "REJECTED" for event in edition_repository.events(revision["revision_id"])):
+                    raise KernelError("EDITION_VALIDATION_REJECTED", "A rejected candidate cannot create a validation run")
+                uow.cursor.execute("INSERT INTO authority_book_edition_run(book_run_id,revision_id,role,created_by_operation_id) VALUES(%s,%s,'VALIDATION',%s)",
+                                   [book_run_id, command.edition_revision_id, _operation_id])
+                edition_repository.event(revision_id=command.edition_revision_id, kind="VALIDATION_BOUND",
+                    content={"validation_book_run_id": book_run_id, "manifest_digest": revision["manifest_digest"]}, operation_id=_operation_id)
+                from .edition_runtime import inherit_unchanged_prefix
+                inherit_unchanged_prefix(uow, book_run_id=book_run_id, revision=revision, operation_id=_operation_id)
             if command.input_mode == "RESOLVED_AUTHORITY_INPUT":
                 binding_id = (
                     "book-input-binding:"
@@ -767,6 +788,20 @@ class PostgresBookAuthority:
             chapter_plan_version=command.chapter_plan_asset_version_id,
             production_profile_version=book["production_profile_version"],
         )
+        from .edition_runtime import edition_dispatch_binding, freeze_edition_adoption
+        edition_binding = edition_dispatch_binding(self.database_url, book=book, chapter=command.chapter_number)
+        if edition_binding:
+            stable_key += ":edition:" + edition_binding["revision_id"]
+            command = replace(command, preparation_report={**dict(command.preparation_report or {}), "book_edition": edition_binding})
+            if edition_binding["role"] == "VALIDATION" and command.chapter_number <= edition_binding["unit_count"]:
+                adoption = freeze_edition_adoption(self.database_url, project_id=book["project_id"], workspace_id=book["workspace_id"],
+                    book_id=book["book_id"], chapter=command.chapter_number, revision_id=edition_binding["revision_id"],
+                    book_run_id=command.book_run_id, principal=principal)
+                from .edition_planning import require_edition_execution_plan
+                require_edition_execution_plan(self.database_url, project_id=book["project_id"], book_id=book["book_id"],
+                    book_run_id=command.book_run_id, execution_plan_version_id=command.execution_chapter_plan_asset_version_id or command.chapter_plan_asset_version_id,
+                    revision_id=edition_binding["revision_id"], chapter=command.chapter_number, source_plan_version_id=adoption["source_chapter_plan_asset_version_id"])
+                command = replace(command, preparation_report={**dict(command.preparation_report or {}), "author_draft_adoption": adoption})
         if command.chapter_number > int(book["target_chapter_count"]):
             raise KernelError(
                 "BOOK_CHAPTER_OUT_OF_RANGE", "chapter exceeds Book target count"
@@ -784,6 +819,10 @@ class PostgresBookAuthority:
             _operation_id: str,
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
+            uow.cursor.execute("SELECT book_id FROM authority_book WHERE book_id=%s FOR UPDATE", [book["book_id"]])
+            from .edition_runtime import edition_dispatch_binding_in_uow
+            if edition_dispatch_binding_in_uow(uow, book=book, chapter=command.chapter_number) != edition_binding:
+                raise KernelError("EDITION_DISPATCH_SELECTION_CHANGED", "Edition selection changed before the new request could freeze")
             uow.cursor.execute(
                 """
                 SELECT version, state, current_chapter
@@ -888,47 +927,32 @@ class PostgresBookAuthority:
             raise KernelError(
                 "BOOK_CHAPTER_REQUEST_MISSING", "chapter request was not persisted"
             )
-        request_id = str(existing[0])
-        persisted_request = self.require_chapter_request(request_id)
+        return self._dispatch_reserved_chapter(str(existing[0]), principal=principal)
+
+    def _dispatch_reserved_chapter(self, chapter_request_id: str, *, principal: Principal) -> dict[str, Any]:
+        persisted_request = self.require_chapter_request(chapter_request_id)
+        book = self.require(persisted_request["book_run_id"])
+        principal.require("book.authority.execute", book["project_id"])
+        if book["state"] in {BookProductionState.PAUSED.value, BookProductionState.ABORTED.value, BookProductionState.COMPLETED.value}:
+            raise KernelError("BOOK_CHAPTER_RECOVERY_NOT_RUNNABLE", "Paused or terminal Book coordination cannot dispatch a reserved request")
         if persisted_request["chapter_root_operation_id"]:
             return persisted_request
-        context_candidates = self._context_candidates_for_dispatch(
-            book_run_id=command.book_run_id,
-            project_id=book["project_id"],
-            chapter_number=command.chapter_number,
-            requested=command.context_candidates,
-        )
+        if book["active_chapter_request_id"] != chapter_request_id:
+            raise KernelError("BOOK_CHAPTER_RECOVERY_NOT_ACTIVE", "Only the Book's exact reserved request can resume admission")
+        payload = dict(persisted_request["command_payload"])
+        command = SubmitBookChapterCommand(**{field.name: payload[field.name] for field in fields(SubmitBookChapterCommand) if field.name in payload})
+        if command.book_run_id != book["book_run_id"] or command.chapter_number != persisted_request["chapter_number"]:
+            raise KernelError("BOOK_CHAPTER_RECOVERY_SCOPE_DRIFT", "Frozen Chapter request identity must match its owned Book reservation")
+        stable_key = persisted_request["stable_idempotency_key"]
+        request_id = chapter_request_id
+        from .chapter_dispatch import reserved_chapter_command
         self._probe("before_child_admission")
-        admission = self.chapter_port.submit(
-            SingleChapterRequest(
-                project_id=book["project_id"],
-                workspace_id=book["workspace_id"],
-                actor_id=principal.principal_id,
-                chapter=command.chapter_number,
-                title=command.title,
-                premise=command.premise,
-                trace_id=f"{book['root_operation_id']}:chapter:{command.chapter_number}",
-                correlation_id=book["root_operation_id"],
-                application_build_id=self.application_build_id,
-                commit_sha=self.commit_sha,
-                book_id=book["book_id"],
-                chapter_plan_asset_version_id=(
-                    command.execution_chapter_plan_asset_version_id
-                    or command.chapter_plan_asset_version_id
-                ),
-                chapter_plan_content_hash=(
-                    command.execution_chapter_plan_content_hash
-                    or command.chapter_plan_content_hash
-                ),
-                context_candidates=context_candidates,
-                accepted_prose_snapshot=persisted_request["command_payload"].get("accepted_prose_snapshot"),
-                context_version_refs=command.context_version_refs,
-                context_token_budget=command.context_token_budget,
-                preparation_report=command.preparation_report,
-                idempotency_key=stable_key,
-            ),
-            principal=principal,
-        )
+        chapter_command = reserved_chapter_command(self.database_url, book=book, persisted=persisted_request,
+            actor_id=principal.principal_id, application_build_id=self.application_build_id, commit_sha=self.commit_sha)
+        recover_admission = getattr(self.chapter_port, "recover_admission", None)
+        admission = recover_admission(chapter_command, principal=principal) if recover_admission else None
+        if admission is None:
+            admission = self.chapter_port.submit(chapter_command, principal=principal)
         self._probe("after_child_admission")
         self._probe("before_delegation_persist")
         delegation_id = (
@@ -942,6 +966,11 @@ class PostgresBookAuthority:
             _operation_id: str,
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
+            uow.cursor.execute("SELECT book_id FROM authority_book WHERE book_id=%s FOR UPDATE", [book["book_id"]])
+            uow.cursor.execute("SELECT version,state,active_chapter_request_id,current_chapter FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [command.book_run_id])
+            locked = uow.cursor.fetchone()
+            if locked != (int(current["version"]), BookProductionState.CHAPTER_SUBMITTED.value, request_id, command.chapter_number - 1):
+                raise KernelError("BOOK_CHAPTER_LINK_STATE_CHANGED", "Chapter admission cannot overwrite a concurrent pause, cancellation or frontier change")
             uow.repositories.book_authority.link_chapter(
                 chapter_request_id=request_id,
                 book_run_id=command.book_run_id,
@@ -1084,13 +1113,13 @@ class PostgresBookAuthority:
                  AND acceptance.status='COMMITTED'
                 WHERE projection.projection_set_id=%s
                   AND projection.project_id=%s AND projection.book_id=%s
-                  AND projection.book_run_id=%s
+                  AND projection.book_run_id=authority_book_source_run(%s,projection.chapter_number)
                   AND projection.chapter_number=%s
                   AND projection.status='COMPLETE'
                   AND projection.chapter_outcome_asset_version_id=%s
                   AND projection.story_state_asset_version_id=%s
                   AND projection.canon_snapshot_asset_version_id=%s
-                  AND acceptance.book_run_id=%s
+                  AND acceptance.book_run_id=authority_book_source_run(%s,acceptance.chapter_number)
                   AND acceptance.project_id=%s
                   AND acceptance.chapter_number=%s
                   AND acceptance.chapter_outcome_asset_version_id=
@@ -1364,7 +1393,7 @@ class PostgresBookAuthority:
                     """
                     SELECT arc_state
                     FROM authority_book_narrative_projection_set
-                    WHERE book_run_id=%s AND chapter_number=%s
+                    WHERE book_run_id=authority_book_source_run(%s,chapter_number) AND chapter_number=%s
                       AND status='COMPLETE'
                     """,
                     [request["book_run_id"], int(request["chapter_number"]) - 1],
@@ -1388,7 +1417,7 @@ class PostgresBookAuthority:
                     FROM authority_arc_outcome_v2 AS outcome
                     JOIN authority_book_narrative_projection_set AS projection
                       ON projection.projection_set_id=outcome.projection_set_id
-                    WHERE projection.book_run_id=%s
+                    WHERE projection.book_run_id=authority_book_source_run(%s,projection.chapter_number)
                       AND outcome.accepted_through_chapter < %s
                     """,
                     [request["book_run_id"], int(request["chapter_number"])],
@@ -2070,38 +2099,14 @@ class PostgresBookAuthority:
         self, chapter_request_id: str, *, principal: Principal
     ) -> dict[str, Any]:
         request = self.require_chapter_request(chapter_request_id)
+        principal.require("book.authority.execute", self.require(request["book_run_id"])["project_id"])
         if request["chapter_root_operation_id"]:
             return self.reconcile_chapter(chapter_request_id)
         payload = dict(request["command_payload"])
         if payload.get("author_replacement_chapter_command"):
             from .author_revision import resume_author_chapter_replacement
             return resume_author_chapter_replacement(self, chapter_request_id=chapter_request_id, principal=principal)
-        return self.submit_chapter(
-            SubmitBookChapterCommand(
-                book_run_id=str(payload["book_run_id"]),
-                chapter_number=int(payload["chapter_number"]),
-                title=str(payload["title"]),
-                premise=str(payload["premise"]),
-                chapter_plan_asset_version_id=str(
-                    payload["chapter_plan_asset_version_id"]
-                ),
-                chapter_plan_content_hash=str(payload["chapter_plan_content_hash"]),
-                context_candidates=tuple(payload["context_candidates"]),
-                execution_chapter_plan_asset_version_id=str(
-                    payload.get("execution_chapter_plan_asset_version_id") or ""
-                ),
-                execution_chapter_plan_content_hash=str(
-                    payload.get("execution_chapter_plan_content_hash") or ""
-                ),
-                parent_group_version_id=str(
-                    payload.get("parent_group_version_id") or ""
-                ),
-                context_version_refs=payload.get("context_version_refs"),
-                context_token_budget=int(payload.get("context_token_budget") or 16_000),
-                preparation_report=payload.get("preparation_report"),
-            ),
-            principal=principal,
-        )
+        return self._dispatch_reserved_chapter(chapter_request_id, principal=principal)
 
     def reconcile_chapter(self, chapter_request_id: str) -> dict[str, Any]:
         request = self.require_chapter_request(chapter_request_id)
@@ -3118,161 +3123,11 @@ class PostgresBookAuthority:
             asset_version_ids=versions,
         )
 
-    def _context_candidates_for_dispatch(
-        self,
-        *,
-        book_run_id: str,
-        project_id: str,
-        chapter_number: int,
-        requested: tuple[dict[str, Any], ...],
-    ) -> tuple[dict[str, Any], ...]:
-        if chapter_number <= 1:
-            return requested
-        book = self.require(book_run_id)
-        book_id = str(book["book_id"])
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT state.asset_type, state.asset_version_id,
-                       state.content_hash, state.content
-                FROM (
-                    SELECT 'story_state_snapshot'::text AS asset_type,
-                           story.asset_version_id,
-                           story.content_hash, story.content
-                    FROM authority_book_chapter_acceptance AS acceptance
-                    JOIN authority_asset_version AS story
-                      ON story.asset_version_id=
-                         acceptance.story_state_asset_version_id
-                    WHERE acceptance.book_run_id=%s
-                      AND acceptance.project_id=%s
-                      AND acceptance.chapter_number=%s
-                      AND acceptance.status='COMMITTED'
-                    UNION ALL
-                    SELECT 'canon_snapshot'::text AS asset_type,
-                           canon.asset_version_id,
-                           canon.content_hash, canon.content
-                    FROM authority_book_chapter_acceptance AS acceptance
-                    JOIN authority_asset_version AS canon
-                      ON canon.asset_version_id=
-                         acceptance.canon_snapshot_asset_version_id
-                    WHERE acceptance.book_run_id=%s
-                      AND acceptance.project_id=%s
-                      AND acceptance.chapter_number=%s
-                      AND acceptance.status='COMMITTED'
-                ) AS state
-                ORDER BY state.asset_type, state.asset_version_id
-                """,
-                [
-                    book_run_id,
-                    project_id,
-                    chapter_number - 1,
-                    book_run_id,
-                    project_id,
-                    chapter_number - 1,
-                ],
-            )
-            rows = uow.cursor.fetchall()
-        if {str(row[0]) for row in rows} != {
-            "story_state_snapshot",
-            "canon_snapshot",
-        }:
-            raise KernelError(
-                "BOOK_PREVIOUS_CHAPTER_STATE_MISSING",
-                "next Chapter requires one accepted predecessor Story State and Canon snapshot",
-            )
-        state_versions = {str(row[0]): str(row[1]) for row in rows}
-        governed_items: list[dict[str, Any]] = []
-        accepted_quality_observations = load_accepted_quality_observations(
-            self.database_url,
-            project_id=project_id,
-            book_id=book_id,
-            accepted_through_chapter=chapter_number - 1,
-        )
-        for row in rows:
-            content = dict(row[3] or {})
-            expected_contract = (
-                "story-state-snapshot-v2"
-                if row[0] == "story_state_snapshot"
-                else "canon-snapshot-v2"
-            )
-            if (
-                content.get("contract_version") != expected_contract
-                or content.get("project_id") != project_id
-                or content.get("book_id") != book_id
-                or int(content.get("accepted_through_chapter") or 0)
-                != chapter_number - 1
-            ):
-                raise KernelError(
-                    "BOOK_PREVIOUS_CHAPTER_STATE_INVALID",
-                    "predecessor state contract, Project, Book or accepted chapter is invalid",
-                )
-            safe_summary = (
-                f"Accepted chapter {chapter_number - 1} {row[0]} state snapshot."
-            )
-            structured_facts = (
-                compact_current_state_facts(content)
-                if row[0] == "story_state_snapshot"
-                else compact_canon_facts(content)
-            )
-            if row[0] == "story_state_snapshot" and accepted_quality_observations:
-                structured_facts.append(
-                    {
-                        "key": "accepted_quality_observations",
-                        "value": accepted_quality_observations,
-                        "provider_visibility": "INTERNAL_QUALITY_ONLY",
-                    }
-                )
-            rendered = json.dumps(
-                {
-                    "safe_summary": safe_summary,
-                    "structured_facts": [
-                        fact
-                        for fact in structured_facts
-                        if fact.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"
-                    ],
-                },
-                ensure_ascii=False,
-                sort_keys=True,
-                separators=(",", ":"),
-            )
-            governed_items.append(
-                {
-                    "asset_type": str(row[0]),
-                    "physical_asset_type": str(row[0]),
-                    "asset_version_id": str(row[1]),
-                    "content_hash": str(row[2]),
-                    "project_id": project_id,
-                    "book_id": book_id,
-                    "accepted_boundary": {
-                        "accepted_through_chapter": chapter_number - 1,
-                        "story_state_snapshot_version": state_versions[
-                            "story_state_snapshot"
-                        ],
-                        "canon_snapshot_version": state_versions["canon_snapshot"],
-                    },
-                    "scope": {
-                        "project_id": project_id,
-                        "book_id": str(content["book_id"]),
-                        "accepted_through_chapter": chapter_number - 1,
-                    },
-                    "estimated_tokens": max(1, len(rendered) // 4),
-                    "safe_summary": safe_summary,
-                    "structured_facts": structured_facts,
-                    "narrative_function": "authoritative_story_state",
-                    "source_use_mode": "generation",
-                    "allowed_use": "generation",
-                }
-            )
-        governed = tuple(governed_items)
-        merged: dict[str, dict[str, Any]] = {
-            str(item["asset_version_id"]): dict(item)
-            for item in requested
-            if str(item.get("asset_type") or "")
-            not in {"story_state_snapshot", "canon_snapshot"}
-        }
-        for item in governed:
-            merged[str(item["asset_version_id"])] = item
-        return tuple(merged.values())
+    def _context_candidates_for_dispatch(self, *, book_run_id: str, project_id: str,
+                                         chapter_number: int, requested: tuple[dict[str, Any], ...]) -> tuple[dict[str, Any], ...]:
+        from .chapter_dispatch import context_candidates_for_dispatch
+        return context_candidates_for_dispatch(self.database_url, book_id=self.require(book_run_id)["book_id"],
+            book_run_id=book_run_id, project_id=project_id, chapter_number=chapter_number, requested=requested)
 
     def _execute_mutation(
         self,

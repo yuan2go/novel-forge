@@ -1,0 +1,65 @@
+    return execute_authority_handler(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/authority_handler_runtime/runtime.py", line 50, in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/story_planning_runtime/application.py", line 145, in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/story_planning_runtime/application.py", line 260, in _execute
+    raise PlanningResultValidationError(error, raw_result=candidate.candidate_payload, execution_evidence=evidence) from error
+novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Selected Craft was rejected at concrete scenes; record a new bounded selection: knowledge-card:project-c56ece2b6b2947e9bde52c3778fca213:a7ee40f51687e858309cdef08159f67098b5a3ef29a30882dc7fb786463fb661:v1
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<PRIVATE_EVIDENCE>/edition-joint-runner.py", line 28, in <module>
+    test.test_edition_candidate_uses_native_acceptance_and_isolates_source_facts(request,patch,output)
+  File "<WORKTREE>/tests/integration/test_book_editions_postgres.py", line 83, in test_edition_candidate_uses_native_acceptance_and_isolates_source_facts
+    captured = persistent_actor_book(request, monkeypatch, tmp_path, joint_story=os.environ.get("NOVEL_FORGE_EDITION_JOINT_STORY") == "1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<PRIVATE_EVIDENCE>/edition-joint-runner.py", line 21, in capture
+    captured=original(*args,**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/tests/integration/test_book_editions_postgres.py", line 48, in persistent_actor_book
+    actors.run_actor_receipt_recovery(request, monkeypatch, persistent_intents=True, **options)
+  File "<WORKTREE>/tests/integration/test_world_actor_isolation_postgres.py", line 326, in run_actor_receipt_recovery
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
+  File "<WORKTREE>/tests/integration/test_core_functional_loops_postgres.py", line 1932, in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    native_evidence = execute_autonomous_world_vertical(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/tests/integration/test_book_editions_postgres.py", line 38, in capture
+    result = execute(**kwargs)
+             ^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/tests/integration/world_causal_production_support.py", line 1009, in execute_autonomous_world_vertical
+    result = execute_book_coordination_claim(jobs, composition, claim)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/workers/book_authority.py", line 116, in execute_book_coordination_claim
+    tick = ticker.tick(claim.subject_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/composition.py", line 69, in tick
+    return self.supervisor.tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/supervisor.py", line 126, in tick
+    return self._tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/supervisor.py", line 460, in _tick
+    result = self._generate_plan(book, "chapter_plan.generate", next_chapter)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/supervisor.py", line 926, in _generate_plan
+    result = self.planning.generate(frozen or generation, principal=self.principal)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/story_planning_runtime/application.py", line 753, in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/story_planning_runtime/application.py", line 1690, in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/story_planning_runtime/application.py", line 686, in generate
+    self._record_generation(
+  File "<WORKTREE>/src/novel_forge/modules/story_planning_runtime/application.py", line 2730, in _record_generation
+    uow.cursor.execute(
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.CheckViolation: PLANNING_RESULT_REPAIR_SOURCE_INVALID
+CONTEXT:  PL/pgSQL function authority_planning_result_repair_guard() line 22 at RAISE

@@ -1,0 +1,25 @@
+{
+  "state": "CONFIGURED_NO_PROVIDER_DISPATCH",
+  "router": "ProductionProviderRouter",
+  "candidate_ids": [
+    "deepseek:deepseek-flash:low",
+    "deepseek:deepseek-v4-pro:high",
+    "deepseek:deepseek-v4-pro:max",
+    "codex-cli:gpt-6-sol:high"
+  ],
+  "entitlement_candidates": [
+    {
+      "candidate_id": "codex-cli:gpt-6-sol:high",
+      "model_revision": "wp02-p0-controlled-no-dispatch-20260927",
+      "quota": 2,
+      "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1"
+    }
+  ],
+  "priced_task_spend_cap": "0",
+  "task_token_cap": 32768,
+  "scope": "CONFIGURATION_ONLY_NOT_FINAL_RELEASE_OR_NATIVE_ADMISSION",
+  "global_brake": "true",
+  "dispatch_count_before": 407,
+  "dispatch_count_after": 407,
+  "real_model_calls": 0
+}

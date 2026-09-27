@@ -340,21 +340,32 @@ def _load_request(
             if grant is None or grant["authorization"]["purpose"] != "REFERENCE_EVALUATION":
                 raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "World reference sampling requires its frozen evaluation grant")
             reference_sample_id = payload["world_sampling"]["generation_sample"]["asset_version_id"]
+        if policy.get("screenplay_sample_input_allowed") is True:
+            from novel_forge.modules.book_followup_authority.screenplay_sampling import validate_screenplay_sample_origin, sample_definition_name, SCREENPLAY_SAMPLE_VERSION
+            from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
+            if operation["definition_name"] != sample_definition_name(payload.get("generator_operation_name")) or operation["definition_version"] != SCREENPLAY_SAMPLE_VERSION:
+                raise KernelError("SCREENPLAY_SAMPLE_INVALID", "Only the native versioned sample may read an upstream sample")
+            if load_bootstrap_authorization(uow.cursor, project_id=operation["project_id"], operation_id=operation["operation_id"], check_expiry=False) is None:
+                raise KernelError("SCREENPLAY_SAMPLE_INVALID", "Sample inputs require their immutable native grant")
+            frozen_sample = validate_screenplay_sample_origin(uow.cursor, project_id=operation["project_id"], payload=payload)
+            reference_sample_id = frozen_sample["upstream"]["asset_version_id"] if frozen_sample["upstream"] else ""
         if policy.get("reference_sample_annotation_input_allowed") is True:
             from novel_forge.modules.book_followup_authority.prose_sample_feedback import PROSE_ANNOTATION_VERSION
+            from novel_forge.modules.book_followup_authority.screenplay_sample_feedback import SCREENPLAY_ANNOTATION_VERSION
             from novel_forge.modules.chapter_quality_authority.reference_subject import (
                 REFERENCE_ANNOTATION_VERSION, WORLD_REFERENCE_ANNOTATION_VERSION, PLANNING_REFERENCE_ANNOTATION_VERSION, require_reference_annotation,
             )
             world_sample = policy.get("world_reference_sample_annotation") is True
             planning_sample = policy.get("planning_reference_sample_annotation") is True
             prose_sample = policy.get("prose_reference_sample_annotation") is True
-            expected_version = PROSE_ANNOTATION_VERSION if prose_sample else PLANNING_REFERENCE_ANNOTATION_VERSION if planning_sample else (
+            screenplay_sample = policy.get("screenplay_reference_sample_annotation") is True
+            expected_version = SCREENPLAY_ANNOTATION_VERSION if screenplay_sample else PROSE_ANNOTATION_VERSION if prose_sample else PLANNING_REFERENCE_ANNOTATION_VERSION if planning_sample else (
                 WORLD_REFERENCE_ANNOTATION_VERSION if world_sample else REFERENCE_ANNOTATION_VERSION)
-            if operation["definition_version"] != expected_version or sum((world_sample, planning_sample, prose_sample)) > 1:
+            if operation["definition_version"] != expected_version or sum((world_sample, planning_sample, prose_sample, screenplay_sample)) > 1:
                 raise KernelError("QUALITY_REFERENCE_ANNOTATION_INVALID", "sample annotation requires its versioned native definition")
             reference_sample_id = require_reference_annotation(uow.cursor, project_id=operation["project_id"],
                 definition_name=operation["definition_name"], payload=payload, actor_id=operation["actor_id"],
-                allowed_types=frozenset({"longform_prose_review_sample"} if prose_sample else {"planning_generation_candidate"} if planning_sample else
+                allowed_types=frozenset({"screenplay_provider_sample"} if screenplay_sample else {"longform_prose_review_sample"} if prose_sample else {"planning_generation_candidate"} if planning_sample else
                     {"world_provider_sample"} if world_sample else {"chapter_provider_sample"}))
             if planning_sample:
                 evaluation_candidate_id, reference_sample_id = reference_sample_id, ""

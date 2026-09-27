@@ -387,10 +387,39 @@ coverage and issue dispositions. Public release is separately authorized.
 
 ## WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02
 
-The active continuation is based on fetched `origin/main`
-`6c501c8148c705a1e3466867fdcc4ff15d3ffdd6`, identical to the requested historical
-reference. Existing historical experiments and failures retain their original implementation
-identities. The table distinguishes current gaps rather than re-opening closed baseline work.
+The current execution baseline is fetched `origin/main`
+`cc6afa5e4a62eb74f7bbb17887784f16b70289c5`. The main checkout and the two recent
+continuation worktrees are clean; work proceeds in the isolated
+`codex/narrative-closure-02-p0` worktree. Earlier immutable experiment records retain their
+recorded SHA, results and failures. Implementation changes are accepted by behavior and
+state transition, not chapter count.
+
+The current bounded engineering, deployment and external-input states are retained in the
+[P0 execution evidence](../live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/status.json).
+This package remains incomplete until its same-version joint run, authorized real task
+qualification, production and independently evaluated effects are separately evidenced.
+
+| Remaining behavior | Existing consumer / category | Modification owner and boundary | Dependency | Acceptance |
+| --- | --- | --- | --- | --- |
+| Concrete Craft failure replacement and phase continuity | MKAOS solver → Planning translation → Chapter review → accepted usage; missing behavior | Craft worker: versioned selection/repair lineage, scoped exclusions, phase contracts; no new Authority | Existing Router budget, frozen Context, approved Card/plan versions | Native reject/reselect/accept; mandatory uses retained; UNKNOWN waits; bounded search; accepted-only continue/advance/defer/end and scope lineage |
+| Controlled current release and persistent recovery | Original PostgreSQL/MinIO recovered; application deployment missing | Deployment worker: project dispatch control and private release launcher; root owns migration registration | Verified backup/restore, objects, final common SHA | API/CLI/worker use same SHA/Schema/Pack; pause survives rebuild; zero accidental dispatch; unresolved receipt remains scoped |
+| Multi-step private character intentions | World Preparation isolated one-action Actor and accepted commitments; missing behavior | Actor worker: private bounded intent/step versions, acceptance evidence and reevaluation | Exact accepted Book-run/edition facts and private knowledge | Restart and cross-window continuation; unobserved steps remain plans; explicit deferral/reorder/renegotiation/abandonment |
+| Immutable manuscript editions and actual editor | Chapter author candidates and Book acceptance; missing behavior and wiring | Root: Book-owned edition manifest/events, mapped edits, native validation, fact isolation, switch; migration 0144 | Existing Chapter/Canon/Book/Editor gates | Concurrent edit conflicts, original readable, exact review binding, old in-flight isolation, selected-edition continuation and export |
+| Novel and scene screenplay | Existing native novel chain; adaptation missing | Root, delegated after deployment work: exact edition/range, screenplay-specific plan/generate/review/revise/accept/export | Admitted source edition; existing Pack/Router/Effect budget | Actual dialogue/action manuscript; knowledge/fidelity review; source-range invalidation and immutable old output |
+| Same-Book joint run | Partial scripted native artifacts; wiring and evidence gap | Root integration, sequential isolated PostgreSQL | Closed feature contracts | Chinese wuxia/xuanhuan assets flow through all stages including negative/recovery cases, with inspectable prose and differences |
+| Task qualification and real benefit | Sampling/admission exists; compatibility/reference/authorization gaps | Root and deployment inventory | Stable per-task contract; finite valid grant and actual independent evaluators | Native benchmark/admission/Router/production receipts; prespecified bounded control with negative/unknown costs retained |
+
+Root owns shared migrations, manifests, API/CLI registration and final integration. Migration
+0143 belongs to project dispatch control; 0144 belongs to Book editions; 0145 scopes execution windows to the Book run; 0146 records exact unchanged-prefix inheritance without copying acceptances; 0147 preserves RuntimeJob pause attempts separately from effective failure exhaustion. Tests initialize
+PostgreSQL sequentially in a separately verified disposable database. Each feature enters
+native targeted integration as its contract stabilizes. No full P0/backend/PostgreSQL/UI or
+remote CI run is authorized by this execution. New paid dispatch requires a matching valid
+native grant; independent human evidence cannot be synthesized. The current user approval
+allows `gpt-6-sol` or lower and DeepSeek within three separate call/token ceilings.
+The effective [approval record](../../config/production/narrative-closure/authorization-approved-p0-20260927.json)
+overrides the older proposed model list, limits the current diagnostic to two samples per
+task, and requires stopping the affected task on failure, UNKNOWN, exhaustion or contract
+drift. Approval to organize human work does not supply participant identities or ratings.
 
 | Capability | Existing implementation and actual consumer | Baseline gap | Required observable evidence |
 | --- | --- | --- | --- |
@@ -402,7 +431,7 @@ identities. The table distinguishes current gaps rather than re-opening closed b
 | Persistent characters | World Preparation actor isolation and accepted Narrative State | Accepted commitments were not required continuations; later rounds lacked execution proof | Stable obligation identity, exact accepted source/version, private knowledge projection, multi-acceptance and receipt/rebuild recovery |
 
 
-Implementation order follows the six remaining-work entries above. Existing sampling,
+Implementation order follows the remaining-behavior dependencies above. Existing sampling,
 reference calibration, cross-chapter token accounting, Craft preservation and accepted
 state reducers are dependencies to reuse, not replacement Authorities. The earlier
 window-review and single-round actor claims describe their bounded runtime only; they
@@ -418,17 +447,17 @@ blocker or a reason to move them to another package.
 
 Verification is restricted by the execution request to focused backend unit, native
 PostgreSQL vertical/recovery, applicable migration and static manifest checks. Full P0,
-backend/PostgreSQL/Compose collections and Web/UI tests are NOT_RUN; this restriction
+backend/PostgreSQL/Compose collections and the full Web/UI suite are NOT_RUN; focused actual Editor operations are required for the changed surface. This restriction
 cannot confer QUALIFIED or replace the existing full gate. Paid model execution and
 independent human evidence require matching existing authorization and identities.
 All historical fixed-SHA failures, campaign counters and unknown Effects are retained.
 
-The current native continuation is checked in the [versioned evidence record](../live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/status.json). It separates final focused execution, inspectable native artifacts, retained failures and still-blocked real qualification; the earlier backend and campaign records remain unchanged.
+The prior native continuation is retained in the [versioned evidence record](../live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/status.json). It separates final focused execution, inspectable native artifacts, retained failures and still-blocked real qualification; the earlier backend and campaign records remain unchanged.
 
-The expanded WP02 scope and current implementation boundary are tracked in the
+The pre-execution WP02 scope and implementation boundary were recorded in the
 [continuation evidence](../live-evidence/narrative-capability-admission-closure-02/20260927-composition-runtime/status.json).
 
-| Work | Current category | Remaining required behavior |
+| Work | Prior recorded category | Gap recorded before this execution |
 | --- | --- | --- |
 | P0-1 persistent environment | Implemented, partially verified | Original PostgreSQL/MinIO volumes recovered and forward-upgraded with backup/restore comparison; one historical timeout and unknown costs remain retained. No authorized production worker has restarted |
 | Craft composition and usage | Implemented, focused verification | Deterministic dependency/scene/frequency search, explicit typed phases, older open-instance retrieval and accepted feedback; Provider-rejection reselection and arbitrary supported scene applicability remain incomplete |
@@ -444,6 +473,6 @@ The supported output matrix for this package is textual novel (Book/Volume/Arc/C
 and a scene screenplay adaptation (Scene/action/dialogue, source fidelity and actor-knowledge
 review). Source editions, analysis, plans and review reports remain input or intermediate
 assets; file extensions do not constitute output forms. Neither form is newly declared
-complete by this scope decision. These gaps are mandatory work within WP02, not optional
+complete by this scope decision. The pre-execution gaps above remain mandatory work within WP02, not optional
 future recommendations. No engineering result here grants publishing authority or proves
 literary, reader, long-form or cost benefit.

@@ -14,6 +14,11 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.dispatch_control import (
+    MODEL_DISPATCH_EFFECT_TYPES,
+    assert_dispatch_enabled,
+    require_dispatch_enabled,
+)
 from novel_forge.modules.command_kernel.deadline_runtime import (
     probe_external_effect_execution,
 )
@@ -439,6 +444,8 @@ def prepare_effect_dispatch(
         _require_context(repository, context)
         effect = repository.get_for_update(effect_id)
         _require_project(effect, context.project_id)
+        if effect["effect_type"] in MODEL_DISPATCH_EFFECT_TYPES:
+            require_dispatch_enabled(uow.cursor, context.project_id)
         require_effect_retry_ready(uow.cursor, effect_id)
         result = repository.prepare_dispatch(effect, str(uuid4()))
         reconciliation_required = bool(result.get("reconciliation_required"))
@@ -639,6 +646,8 @@ def dispatch_external_effect(
                 final_gate_started = True
                 pre_send_assertion()
                 final_gate_started = False
+            if effect["effect_type"] in MODEL_DISPATCH_EFFECT_TYPES:
+                assert_dispatch_enabled(database_url, context.project_id)
             provider_send_started = True
             provider_result = adapter.execute(
                 stable_idempotency_key=effect["stable_idempotency_key"],
@@ -692,6 +701,7 @@ def dispatch_external_effect(
                 evidence={
                     "error_type": type(exc).__name__,
                     "error_code": error_code,
+                    **({"dispatch_pause_contract": "runtime-dispatch-control.v1"} if error_code == "RUNTIME_DISPATCH_PAUSED" else {}),
                     "message": redact_secret_text(exc),
                     "request_sent": False,
                     "failure_phase": (

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.workers.dispatch_pause import pause_worker_dispatch
+
 import os
 import signal
 import time
@@ -160,6 +162,7 @@ def execute_maintenance_runtime_claim(
         runtime_jobs.fail(
             claim,
             {"code": type(exc).__name__, "message": str(exc)},
+            cause=exc,
         )
         raise
 
@@ -201,6 +204,8 @@ def _maintenance_loop() -> int:
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
     while not stopping:
+        if pause_worker_dispatch(supervisor, poll_seconds):
+            continue
         schedule_bucket = int(time.time() // max(1.0, poll_seconds))
         schedule_maintenance_runtime_jobs(
             runtime_jobs,

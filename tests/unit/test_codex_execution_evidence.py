@@ -245,7 +245,8 @@ def test_codex_jsonl_requires_terminal_measured_usage() -> None:
         )
 
 
-def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() -> None:
+@pytest.mark.parametrize("retry_policy", ["", "codex-no-transport-retry.v1"])
+def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults(retry_policy) -> None:
     from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
     from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -295,7 +296,9 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() ->
             ),
             codex_executable=sys.executable,
             codex_home=tmp,
-            pricing=_pricing(),
+            pricing=None if retry_policy else _pricing(),
+            account_entitlement=_entitlement() if retry_policy else None,
+            retry_policy=retry_policy,
             structured_result_validator=lambda _stage, _schema, value: value,
         )
         frozen = admission.admit(request, backend.capability_profile)
@@ -324,6 +327,12 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() ->
     assert "features.view_image=false" in prepared.command
     assert "features.shell_tool=false" in prepared.command
     assert "features.skip_host_skill_discovery=true" in prepared.command
+    from novel_forge.modules.production_execution.codex_configuration import codex_retry_overrides
+    if retry_policy:
+        assert set(codex_retry_overrides(retry_policy)) <= set(prepared.command)
+        assert 'forced_login_method="chatgpt"' in prepared.command
+    else:
+        assert not any("request_max_retries" in value for value in prepared.command)
     assert evidence["policy_requested_model"] == profile.model_id
     assert evidence["frozen_route_model"] == route.model_id
     assert evidence["invocation_model"] == route.model_id
@@ -336,6 +345,30 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() ->
     assert evidence["route_policy_hash"] == policy.contract_hash
     assert evidence["local_user_config_ignored"] is True
     assert evidence["local_user_config_is_model_authority"] is False
+
+
+def test_codex_retry_policy_keeps_legacy_binding_and_separates_new_account_evidence(tmp_path):
+    from novel_forge.modules.production_execution.codex_configuration import (
+        CODEX_INPUT_ONLY_OVERRIDES, CODEX_NO_RETRY_POLICY,
+        CODEX_SCHEMA_PROJECTION_VERSION, codex_account_binding_evidence,
+        codex_local_binding_hash, codex_retry_overrides,
+    )
+
+    arguments = {"codex_home": str(tmp_path), "executable": sys.executable, "entitlement": _entitlement().to_dict()}
+    legacy = hashlib.sha256(json.dumps({
+        **arguments, "input_only_overrides": CODEX_INPUT_ONLY_OVERRIDES,
+        "schema_projection": CODEX_SCHEMA_PROJECTION_VERSION,
+    }, sort_keys=True).encode()).hexdigest()
+    assert codex_local_binding_hash(**arguments) == legacy
+    assert codex_local_binding_hash(**arguments, retry_policy=CODEX_NO_RETRY_POLICY) != legacy
+    with pytest.raises(ValueError, match="unsupported frozen"):
+        codex_retry_overrides("typo")
+    backend = object.__new__(CodexCliExecutionBackend)
+    backend.codex_home = str(tmp_path)
+    backend.codex_executable = sys.executable
+    backend.account_entitlement = _entitlement()
+    backend.retry_policy = CODEX_NO_RETRY_POLICY
+    assert codex_account_binding_evidence(backend) == {**arguments, "retry_policy": CODEX_NO_RETRY_POLICY}
 
 
 def test_provider_process_timeout_preserves_external_effect_settlement_headroom() -> (

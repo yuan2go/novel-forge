@@ -78,7 +78,7 @@ class CausalPlanningRepository:
         chapter = int(book[2])
         if not current:
             self.cursor.execute(
-                "SELECT chapter_number FROM authority_narrative_reality_revision WHERE book_run_id=%s AND revision_id=%s",
+                "SELECT chapter_number FROM authority_narrative_reality_revision WHERE book_run_id=authority_book_source_run(%s,chapter_number) AND revision_id=%s",
                 [book_run_id, reality_revision_id],
             )
             row = self.cursor.fetchone()
@@ -223,7 +223,11 @@ class CausalPlanningRepository:
                 ],
             )
             row = self.cursor.fetchone()
-            if row is None or row[0].get("book_run_id") != book_run_id:
+            origin_run = book_run_id
+            if row and payload["obligation_id"] in previous:
+                self.cursor.execute("SELECT authority_book_source_run(%s,%s)", [book_run_id, int(row[0]["chapter_number"])])
+                origin_run = self.cursor.fetchone()[0]
+            if row is None or row[0].get("book_run_id") != origin_run:
                 raise KernelError(
                     "CAUSAL_OBLIGATION_ORIGIN_UNRESOLVED",
                     "causal debt origin must be a committed planning proposal in this Book run",

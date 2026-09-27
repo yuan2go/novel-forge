@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from contextlib import nullcontext
+from types import SimpleNamespace
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -264,13 +266,15 @@ class MkaosAuthorityQuery:
         content_hash: str,
         book_id: str = "",
         knowledge_access_policy: dict[str, Any] | None = None,
+        cursor: Any | None = None,
     ) -> dict[str, Any]:
 
         if not project_id or not asset_version_id or not content_hash:
             raise ValueError(
                 "project_id, asset_version_id, and content_hash are required"
             )
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        scope = AuthorityUnitOfWork(self.database_url) if cursor is None else nullcontext(SimpleNamespace(cursor=cursor))
+        with scope as uow:
             uow.cursor.execute(
                 """
                 SELECT card.knowledge_card_id, card.project_id,
@@ -659,14 +663,14 @@ class MkaosAuthorityQuery:
 
     def list_accepted_craft_usage(
         self, *, project_id: str, book_id: str, limit: int = 100,
-        include_continuing: bool = False,
+        include_continuing: bool = False, book_run_id: str = "",
     ) -> list[dict[str, Any]]:
         from .runtime_usage import list_accepted_craft_usage
 
         _validate(project_id, limit)
         return list_accepted_craft_usage(
             self.database_url, project_id=project_id, book_id=book_id, limit=limit,
-            include_continuing=include_continuing,
+            include_continuing=include_continuing, book_run_id=book_run_id,
         )
 
     def list_runtime_selections(

@@ -110,6 +110,7 @@ def build_context_bundle(
     governed_candidates: list[dict[str, Any]] | None = None,
     version_refs: dict[str, Any] | None = None,
     token_budget: int = 6000,
+    context_profile_version: str = "draft-context-profile-v2",
     required_asset_types: tuple[str, ...] = (),
     book_id: str = "",
     target_capability_id: str = "prose.chapter.draft",
@@ -124,6 +125,8 @@ def build_context_bundle(
     knowledge_access_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
+    if context_profile_version not in {"draft-context-profile-v2", "draft-context-profile-v3"}:
+        raise ValueError("unsupported frozen draft Context profile version")
     scoped_book_id = book_id or f"book:{project_id}"
     access = (
         validate_book_knowledge_access_policy(
@@ -333,7 +336,7 @@ def build_context_bundle(
             if asset_type == "retrieval_result"
             else {key: value for key, value in content.items() if key != "execution_evidence"}
         )
-        if asset_type == "chapter_memo" and (content.get("craft_strategy") or {}).get("schema_version") == "narrative-craft-strategy.v2":
+        if asset_type == "chapter_memo" and (content.get("craft_strategy") or {}).get("schema_version") in {"narrative-craft-strategy.v2", "narrative-craft-strategy.v3"}:
             strategy = content["craft_strategy"]
             if not execution_intent_asset_version_id or strategy != (execution_intent or {}).get("craft_strategy"):
                 raise KernelError("CRAFT_STRATEGY_DRIFT", "Memo may reference only the identical protected execution-intent strategy")
@@ -378,12 +381,15 @@ def build_context_bundle(
                 accepted_boundary=dict(assembly_boundary),
             ),
         )
+    if execution_intent and execution_intent_asset_version_id:
+        from novel_forge.modules.mkaos_authority.craft_context_projection import reference_duplicate_craft_uses
+        candidates = reference_duplicate_craft_uses(candidates, intent=execution_intent, intent_asset_version_id=execution_intent_asset_version_id)
     governed = build_authority_context_bundle(
         project_id=project_id,
         book_id=book_id,
         stage="draft",
         created_by_operation_id=created_by_operation_id,
-        context_profile_version="draft-context-profile-v2",
+        context_profile_version=context_profile_version,
         candidates=candidates,
         token_budget=token_budget,
         version_refs=refs,

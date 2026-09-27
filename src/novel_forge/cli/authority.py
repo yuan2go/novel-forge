@@ -95,6 +95,12 @@ def _authority_parser() -> argparse.ArgumentParser:
     add_provider_routing_parser(subparsers)
     from novel_forge.cli.runtime_inspection import add_runtime_inspection_parser
     add_runtime_inspection_parser(subparsers)
+    from novel_forge.cli.runtime_control import add_runtime_control_parser
+    add_runtime_control_parser(subparsers)
+    from novel_forge.cli.editions import add_edition_parser
+    add_edition_parser(subparsers)
+    from novel_forge.cli.screenplay import add_screenplay_parser
+    add_screenplay_parser(subparsers)
     return parser
 
 
@@ -104,6 +110,18 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
     try:
         if not settings.database_url:
             raise RuntimeError("PostgreSQL database is required for authority CLI")
+        if args.command == "authority-runtime":
+            from novel_forge.cli.runtime_control import run_runtime_control
+            print(json.dumps(run_runtime_control(settings, args), ensure_ascii=False, indent=2, default=str))
+            return 0
+        if args.command == "authority-screenplay":
+            from novel_forge.cli.screenplay import run_screenplay_command
+            print(json.dumps(run_screenplay_command(settings, args), ensure_ascii=False, indent=2, default=str))
+            return 0
+        if args.command == "authority-edition":
+            from novel_forge.cli.editions import run_edition_command
+            print(json.dumps(run_edition_command(settings, args), ensure_ascii=False, indent=2, default=str))
+            return 0
         if args.command == "authority-runtime-inspect":
             from novel_forge.cli.runtime_inspection import run_runtime_inspection
             print(json.dumps(run_runtime_inspection(settings, args), ensure_ascii=False, indent=2, default=str))

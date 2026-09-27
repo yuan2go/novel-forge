@@ -140,7 +140,7 @@ def craft_provider_task(
         return {}
     task = {
         "craft_review_targets": targets,
-        "craft_review_contract": CRAFT_REVIEW_CONTRACT,
+        "craft_review_contract": "narrative-craft-review.v2" if any(item.get("usage", {}).get("type_policy", {}).get("transition_policy") for item in targets) else CRAFT_REVIEW_CONTRACT,
         "craft_side_effect_dimensions": list(SIDE_EFFECTS),
         "craft_review_instruction": (
             "Assess each frozen use at its specific scene and intended reader effect. Technique names are not evidence. "
@@ -151,6 +151,8 @@ def craft_provider_task(
             "Do not modify Canon, character knowledge, voice or the accepted plan to make a technique work."
         ),
     }
+    if any(item.get("usage", {}).get("type_policy", {}).get("transition_policy") for item in targets):
+        task["craft_review_instruction"] += " Separately evaluate the exact proposed phase_transition action, phase, condition and progress at a literal location. Return SUPPORTED, FAILED or UNCERTAIN. A achieved stylistic effect does not itself establish phase advancement. DEFER must preserve the phase and justify delay; END must have located closure evidence. Do not infer success from the plan."
     if prior is not None:
         task.update(
             {
@@ -287,9 +289,23 @@ def validate_craft_checks(
                     ),
                 }
             )
+        phase_observation = {}
+        usage = target.get("usage") or {}
+        if usage.get("type_policy", {}).get("transition_policy"):
+            observation = check.get("phase_transition")
+            if (not isinstance(observation, Mapping) or set(observation) != {"action", "phase", "status", "progress", "evidence", "reason"}
+                or observation["action"] != usage["transition"]["action"] or observation["phase"] != usage["phase"]
+                or observation["status"] not in {"SUPPORTED", "FAILED", "UNCERTAIN"}
+                or any(not isinstance(observation[key], str) or not observation[key].strip() or len(observation[key]) > 512 for key in ("progress", "reason"))):
+                raise KernelError("CRAFT_PHASE_REVIEW_REQUIRED", "Explicit phase progress needs a separate located judgment matching the proposed transition")
+            location = validate_location(dict(observation["evidence"]), text)
+            if not any(span["start"] <= location["start"] < location["end"] <= span["end"] for span in target["scene_ranges"]):
+                raise KernelError("CRAFT_PHASE_REVIEW_LOCATION_INVALID", "Phase evidence must occur in the exact use scene")
+            phase_observation = {"phase_transition": {**deepcopy(observation), "evidence": location}}
         result.append(
             {
                 **deepcopy(check),
+                **phase_observation,
                 "evidence": evidence,
                 "side_effects": normalized_sides,
                 **{
@@ -439,7 +455,7 @@ def craft_rereview_preservation(
     }
 
 
-def extend_craft_provider_schema(schema: dict[str, Any], stage: str) -> dict[str, Any]:
+def extend_craft_provider_schema(schema: dict[str, Any], stage: str, *, phase_transitions: bool = False) -> dict[str, Any]:
     result = deepcopy(schema)
     if stage == "revision":
         from .cross_chapter import extend_provider_schema
@@ -492,6 +508,14 @@ def extend_craft_provider_schema(schema: dict[str, Any], stage: str) -> dict[str
             "issue_codes": strings,
         }
     )
+    if phase_transitions:
+        check["properties"]["phase_transition"] = obj({
+            "action": {"type": "string", "enum": ["START", "CONTINUE", "ADVANCE", "DEFER", "END"]},
+            "phase": text, "status": {"type": "string", "enum": ["SUPPORTED", "FAILED", "UNCERTAIN"]},
+            "progress": {"type": "string", "minLength": 1, "maxLength": 512}, "evidence": location,
+            "reason": {"type": "string", "minLength": 1, "maxLength": 512},
+        })
+        check["required"].append("phase_transition")
     result["properties"]["craft_checks"] = {"type": "array", "items": check}
     result["required"].append("craft_checks")
     if stage == "rereview":
@@ -668,6 +692,8 @@ def craft_trace_projection(workspace: Mapping[str, Any]) -> dict[str, Any]:
                             "evidence_class",
                         )
                     },
+                    **({"usage": deepcopy(use["usage"])} if "usage" in use else {}),
+                    **({"phase_transition": deepcopy(check["phase_transition"])} if "phase_transition" in check else {}),
                     "review_asset_version_id": review["asset_version_id"],
                     "revision_version_id": review.get("revision_version_id"),
                     "provider_evidence": deepcopy(
@@ -780,6 +806,9 @@ def fixture_craft_checks(inputs: Mapping[str, Any]) -> list[dict[str, Any]]:
         {
             "use_id": target["use_id"],
             "effect_status": "UNCERTAIN",
+            **({"phase_transition": {"action": target["usage"]["transition"]["action"], "phase": target["usage"]["phase"], "status": "UNCERTAIN",
+                "progress": "Fixture cannot establish accepted phase progress.", "evidence": located(target), "reason": "No semantic qualification in scripted transport."}}
+                if target.get("usage", {}).get("type_policy", {}).get("transition_policy") else {}),
             "evidence": located(target),
             "reason": "Scripted transport cannot establish a Craft reader effect.",
             "signals_checked": ["Fixture checks delivery and immutable identity only."],

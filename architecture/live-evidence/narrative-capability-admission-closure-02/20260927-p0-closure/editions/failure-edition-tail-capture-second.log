@@ -1,0 +1,21 @@
+[]
+Traceback (most recent call last):
+  File "<PRIVATE_EVIDENCE>/debug-edition-tail.py", line 26, in <module>
+    text=Path(test.__file__).read_text();tail=text[text.index('    with pytest.raises(KernelError, match="EDITION_VALIDATION_INCOMPLETE")') :];tail='\n'.join(line[4:] if line.startswith('    ') else line for line in tail.splitlines());exec(compile(tail,test.__file__,'exec'),ns)
+                                                                                                                                                                                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/tests/integration/test_book_editions_postgres.py", line 52, in <module>
+    def advance_to(captured, book_run_id, target, *, defer_on_dispatch=False):
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/chapter_authority/scheduler.py", line 257, in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/chapter_authority/scheduler.py", line 1354, in _execute_node
+    with LeaseHeartbeatGuard(
+  File "<WORKTREE>/src/novel_forge/modules/command_kernel/lease_heartbeat.py", line 38, in __enter__
+    self._probe()
+  File "<WORKTREE>/src/novel_forge/modules/chapter_authority/scheduler.py", line 1360, in <lambda>
+    probe=lambda: probe_operation_execution(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/command_kernel/deadline_runtime.py", line 39, in probe_operation_execution
+    raise KernelError(
+novel_forge.modules.command_kernel.errors.KernelError: OPERATION_BUSINESS_TIMEOUT: frozen operation business deadline has expired

@@ -1,0 +1,80 @@
+{
+  "contract_version": "wp02-native-scope-proposal.v1",
+  "is_authorization": false,
+  "is_admission": false,
+  "provider_calls": 0,
+  "scopes": [
+    {
+      "purpose": "production",
+      "status": "PROPOSED_NOT_CREATED",
+      "project_id": "narrative-closure-02-zheng-deng-20260927",
+      "workspace_id": "ws:zheng-deng:production:20260927",
+      "book_id": "duanchao-guan-zheng-deng-01",
+      "run_key": "wp02-p0:production:20260927",
+      "project_request": {
+        "method": "POST",
+        "path": "/product/projects",
+        "body": {
+          "project_id": "narrative-closure-02-zheng-deng-20260927",
+          "workspace_id": "ws:zheng-deng:production:20260927",
+          "idempotency_key": "wp02-p0:production:20260927:project",
+          "title": "断潮关·证灯"
+        }
+      },
+      "post_creation_control": {
+        "action": "pause",
+        "project_id": "narrative-closure-02-zheng-deng-20260927",
+        "expected_version": 0,
+        "idempotency_key": "wp02-p0:production:20260927:initial-pause",
+        "reason": "Prepare exact native task scope while model dispatch is suspended"
+      },
+      "formation_run_id_deterministic_proposal": "story-formation:87dcf44782874ba1357af7cce9f268555b0864bdc014c805d5817cf533fc02c4",
+      "book_creation": "Freeze the approved brief, creation policy, Formation policy, task contracts, implementation and governed budget; call existing scripts.creation_pilot.prepare_pilot_book / book.create with exact runtime_policy.creation_pilot. Do not submit a placeholder frozen policy.",
+      "edition_status": "ORIGINAL_NATIVE_MANUSCRIPT_NOT_YET_CREATED",
+      "controlled_edition_successors": 1,
+      "samples_are_production_eligible": false
+    },
+    {
+      "purpose": "sampling",
+      "status": "PROPOSED_NOT_CREATED",
+      "project_id": "narrative-closure-02-admission-20260927",
+      "workspace_id": "ws:zheng-deng:sampling:20260927",
+      "book_id": "duanchao-guan-zheng-deng-reference-01",
+      "run_key": "wp02-p0:sampling:20260927",
+      "project_request": {
+        "method": "POST",
+        "path": "/product/projects",
+        "body": {
+          "project_id": "narrative-closure-02-admission-20260927",
+          "workspace_id": "ws:zheng-deng:sampling:20260927",
+          "idempotency_key": "wp02-p0:sampling:20260927:project",
+          "title": "断潮关·证灯—独立任务采样"
+        }
+      },
+      "post_creation_control": {
+        "action": "pause",
+        "project_id": "narrative-closure-02-admission-20260927",
+        "expected_version": 0,
+        "idempotency_key": "wp02-p0:sampling:20260927:initial-pause",
+        "reason": "Prepare exact native task scope while model dispatch is suspended"
+      },
+      "formation_run_id_deterministic_proposal": "story-formation:f5a5ccda87c568154ecf19f9e2877b931c97a13512dc12ddf7fecf0288452db7",
+      "book_creation": "Freeze the approved brief, creation policy, Formation policy, task contracts, implementation and governed budget; call existing scripts.creation_pilot.prepare_pilot_book / book.create with exact runtime_policy.creation_pilot. Do not submit a placeholder frozen policy.",
+      "edition_status": "ORIGINAL_NATIVE_MANUSCRIPT_NOT_YET_CREATED",
+      "controlled_edition_successors": 0,
+      "samples_are_production_eligible": false
+    }
+  ],
+  "production_title": "断潮关·证灯",
+  "initial_bounded_formation_policy": {
+    "contract_version": "formation-generation.v2",
+    "approval_mode": "REVIEW_PLAN",
+    "creative_candidates": 2,
+    "target_chapters": 6,
+    "title": "断潮关·证灯"
+  },
+  "chapter_count_is_acceptance_criterion": false,
+  "input_registration_entry": "scripts.run_creation_synthesis --register-input-only; exact final SHA and frozen input hash required",
+  "production_entry": "scripts.run_creation_synthesis --initialize --execute only after independent sampling admission and native production authorization",
+  "source_edition_binding": "Create original edition only from actual committed Book Acceptance; freeze returned revision+manifest digest and at most one explicit successor. Screenplay binds exact accepted revision and selected stable unit ranges."
+}

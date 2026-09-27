@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from novel_forge.workers.dispatch_pause import pause_worker_dispatch
+from novel_forge.modules.command_kernel.dispatch_control import RuntimeDispatchPaused
+
 import os
 import signal
 import time
@@ -132,6 +135,7 @@ def execute_book_coordination_claim(
                 "message": str(exc),
                 "book_run_id": claim.subject_id,
             },
+            cause=exc,
         )
         raise
 
@@ -224,6 +228,7 @@ def execute_book_projection_repair_claim(
                     "message": str(exc),
                     "repair_id": claim.input_snapshot.get("repair_id", ""),
                 },
+                cause=exc,
             )
         raise
 
@@ -300,12 +305,13 @@ def execute_story_formation_claim(
                 "formation_run_id": claim.subject_id,
                 "approval_target": approval.candidate_asset_version_id,
             }
-            formation.record_failure(
-                claim.subject_id,
-                error=failure,
-                runtime_attempt_id=claim.attempt_id,
-            )
-            runtime_jobs.fail(claim, failure)
+            if not isinstance(exc, RuntimeDispatchPaused):
+                formation.record_failure(
+                    claim.subject_id,
+                    error=failure,
+                    runtime_attempt_id=claim.attempt_id,
+                )
+            runtime_jobs.fail(claim, failure, cause=exc)
             raise
         business_committed = True
         runtime_jobs.checkpoint(
@@ -329,7 +335,7 @@ def execute_story_formation_claim(
             "message": str(exc),
             "formation_run_id": claim.subject_id,
         }
-        if not business_committed:
+        if not business_committed and not isinstance(exc, RuntimeDispatchPaused):
             formation.record_failure(
                 claim.subject_id,
                 error=failure,
@@ -338,6 +344,7 @@ def execute_story_formation_claim(
         runtime_jobs.fail(
             claim,
             failure,
+            cause=exc,
         )
         raise
 
@@ -637,6 +644,8 @@ def main() -> int:
     signal.signal(signal.SIGTERM, stop)
     try:
         while not stopping:
+            if pause_worker_dispatch(supervisor, poll_seconds):
+                continue
             if composition.formation is not None:
                 composition.formation.schedule_candidates(limit=batch_size)
                 formation_claim = runtime_jobs.claim(

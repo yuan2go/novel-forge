@@ -1,0 +1,769 @@
+{
+  "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662": {
+    "1": {
+      "mara": {
+        "proposal_ref": {
+          "asset_version_id": "2febf985-a0af-45fd-a426-c0d55304046a",
+          "content_hash": "sha256:394057d17831418608427831cfccf554cdccf90205b2c3ed6c696adabe86e839"
+        },
+        "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+          "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "preserve the witness testimony",
+              "reason": "先保住证人与证词",
+              "status": "COMPLETED",
+              "step_id": "preserve",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": {
+                "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                "outcome_ref": {
+                  "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+                  "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c"
+                },
+                "event_id": "narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+                "accepted_draft_asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1"
+              },
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "deliver the preserved witness testimony",
+              "reason": "保全以后才能交付",
+              "status": "PLANNED",
+              "step_id": "deliver",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": null,
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "ACTIVE",
+          "goal_id": "actor-intent:sha256:62c13b4235604053b:goal",
+          "actor_id": "mara",
+          "revision": 1,
+          "intent_id": "actor-intent:sha256:62c13b4235604053b",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {},
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:mara:observed"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "preserve",
+          "accepted_predecessor": {}
+        }
+      },
+      "ilya": {
+        "proposal_ref": {
+          "asset_version_id": "3aecbe1f-a083-485a-bcf8-d61d3147ac42",
+          "content_hash": "sha256:e490a2b8645b6ff259e02755cac1bc72ee5de8f41beb87f824576e67f5173136"
+        },
+        "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+          "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "protect the witnesses",
+              "reason": "先保住证人与证词",
+              "status": "PLANNED",
+              "step_id": "preserve",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:ilya:observed"
+              ],
+              "completion": null,
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "escort witnesses to sanctuary",
+              "reason": "保全以后才能交付",
+              "status": "PLANNED",
+              "step_id": "deliver",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:ilya:observed"
+              ],
+              "completion": null,
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "ACTIVE",
+          "goal_id": "actor-intent:sha256:82aac01e27dfd07a6:goal",
+          "actor_id": "ilya",
+          "revision": 1,
+          "intent_id": "actor-intent:sha256:82aac01e27dfd07a6",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {},
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:ilya:observed"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "preserve",
+          "accepted_predecessor": {}
+        }
+      }
+    },
+    "2": {
+      "mara": {
+        "proposal_ref": {
+          "asset_version_id": "097b5e48-c5da-4b91-81b9-133508854007",
+          "content_hash": "sha256:d8324f44a628c3b58458de2ed893a0e8247b573f76ac50b23c19e66614dfc219"
+        },
+        "acceptance_id": "chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.outcome:v1",
+          "content_hash": "sha256:aebea738fdc09f9bb628dc211dfa7d30eaa942fb596cecc7044fd2766e7cdd11"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "preserve the witness testimony",
+              "reason": "先保住证人与证词",
+              "status": "COMPLETED",
+              "step_id": "preserve",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": {
+                "event_id": "narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+                "outcome_ref": {
+                  "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c",
+                  "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1"
+                },
+                "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                "accepted_draft_asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1"
+              },
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "deliver the preserved witness testimony",
+              "reason": "保全以后才能交付",
+              "status": "COMPLETED",
+              "step_id": "deliver",
+              "version": 2,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": {
+                "acceptance_id": "chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+                "outcome_ref": {
+                  "asset_version_id": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.outcome:v1",
+                  "content_hash": "sha256:aebea738fdc09f9bb628dc211dfa7d30eaa942fb596cecc7044fd2766e7cdd11"
+                },
+                "event_id": "narrative-event:sha256:cb8c221a016a7ad8af99f12d70bb44e96c448464888ea0a514bd160e2d0b4f61",
+                "accepted_draft_asset_version_id": "authority-output:491b5261-d252-49b7-a90e-3851dc57e240:chapter.best_candidate:v1"
+              },
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "COMPLETED",
+          "goal_id": "actor-intent:sha256:62c13b4235604053b:goal",
+          "actor_id": "mara",
+          "revision": 2,
+          "intent_id": "actor-intent:sha256:62c13b4235604053b",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {
+            "content_hash": "sha256:394057d17831418608427831cfccf554cdccf90205b2c3ed6c696adabe86e839",
+            "asset_version_id": "2febf985-a0af-45fd-a426-c0d55304046a"
+          },
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:mara:observed",
+            "narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "deliver",
+          "accepted_predecessor": {
+            "outcome_ref": {
+              "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c",
+              "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1"
+            },
+            "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980"
+          }
+        }
+      },
+      "ilya": {
+        "proposal_ref": {
+          "asset_version_id": "74e2185d-dc00-430a-a1ec-a048a37459c6",
+          "content_hash": "sha256:d96cbfe634d4c7a09a2954b69403c85a28b5a3fd608d0623c7249b08d7622d57"
+        },
+        "acceptance_id": "chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.outcome:v1",
+          "content_hash": "sha256:aebea738fdc09f9bb628dc211dfa7d30eaa942fb596cecc7044fd2766e7cdd11"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "protect the witnesses",
+              "reason": "先保住证人与证词",
+              "status": "PLANNED",
+              "step_id": "preserve",
+              "version": 2,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:ilya:observed"
+              ],
+              "completion": null,
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "escort witnesses to sanctuary",
+              "reason": "保全以后才能交付",
+              "status": "PLANNED",
+              "step_id": "deliver",
+              "version": 2,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:ilya:observed"
+              ],
+              "completion": null,
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "ACTIVE",
+          "goal_id": "actor-intent:sha256:82aac01e27dfd07a6:goal",
+          "actor_id": "ilya",
+          "revision": 2,
+          "intent_id": "actor-intent:sha256:82aac01e27dfd07a6",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {
+            "content_hash": "sha256:e490a2b8645b6ff259e02755cac1bc72ee5de8f41beb87f824576e67f5173136",
+            "asset_version_id": "3aecbe1f-a083-485a-bcf8-d61d3147ac42"
+          },
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:ilya:observed"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "preserve",
+          "accepted_predecessor": {
+            "outcome_ref": {
+              "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c",
+              "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1"
+            },
+            "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980"
+          }
+        }
+      }
+    }
+  },
+  "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc": {
+    "1": {
+      "mara": {
+        "proposal_ref": {
+          "asset_version_id": "2febf985-a0af-45fd-a426-c0d55304046a",
+          "content_hash": "sha256:394057d17831418608427831cfccf554cdccf90205b2c3ed6c696adabe86e839"
+        },
+        "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+          "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "preserve the witness testimony",
+              "reason": "先保住证人与证词",
+              "status": "COMPLETED",
+              "step_id": "preserve",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": {
+                "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                "outcome_ref": {
+                  "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+                  "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c"
+                },
+                "event_id": "narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+                "accepted_draft_asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1"
+              },
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "deliver the preserved witness testimony",
+              "reason": "保全以后才能交付",
+              "status": "PLANNED",
+              "step_id": "deliver",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": null,
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "ACTIVE",
+          "goal_id": "actor-intent:sha256:62c13b4235604053b:goal",
+          "actor_id": "mara",
+          "revision": 1,
+          "intent_id": "actor-intent:sha256:62c13b4235604053b",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {},
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:mara:observed"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "preserve",
+          "accepted_predecessor": {}
+        }
+      },
+      "ilya": {
+        "proposal_ref": {
+          "asset_version_id": "3aecbe1f-a083-485a-bcf8-d61d3147ac42",
+          "content_hash": "sha256:e490a2b8645b6ff259e02755cac1bc72ee5de8f41beb87f824576e67f5173136"
+        },
+        "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+          "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "protect the witnesses",
+              "reason": "先保住证人与证词",
+              "status": "PLANNED",
+              "step_id": "preserve",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:ilya:observed"
+              ],
+              "completion": null,
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "escort witnesses to sanctuary",
+              "reason": "保全以后才能交付",
+              "status": "PLANNED",
+              "step_id": "deliver",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:ilya:observed"
+              ],
+              "completion": null,
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "ACTIVE",
+          "goal_id": "actor-intent:sha256:82aac01e27dfd07a6:goal",
+          "actor_id": "ilya",
+          "revision": 1,
+          "intent_id": "actor-intent:sha256:82aac01e27dfd07a6",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {},
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:ilya:observed"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "preserve",
+          "accepted_predecessor": {}
+        }
+      }
+    },
+    "2": {
+      "mara": {
+        "proposal_ref": {
+          "asset_version_id": "6d4b90c4-550a-4bbf-860f-0a8b98e63610",
+          "content_hash": "sha256:0347461a0223bea9e73c30a03e3f39696374169c0204e73babb26aa3c9550cda"
+        },
+        "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1",
+          "content_hash": "sha256:9401b069cd004ff5c7913eb2f634bee5dc13bf1b7e1c73c3ee700e03a12f9283"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "preserve the witness testimony",
+              "reason": "先保住证人与证词",
+              "status": "COMPLETED",
+              "step_id": "preserve",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": {
+                "event_id": "narrative-event:sha256:81c81c7259c629a5c646f80a568bf0dfd5585d7d77800334cbba698902ee332d",
+                "outcome_ref": {
+                  "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c",
+                  "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1"
+                },
+                "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+                "accepted_draft_asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1"
+              },
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "deliver the preserved witness testimony",
+              "reason": "保全以后才能交付",
+              "status": "COMPLETED",
+              "step_id": "deliver",
+              "version": 2,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": {
+                "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+                "outcome_ref": {
+                  "asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1",
+                  "content_hash": "sha256:9401b069cd004ff5c7913eb2f634bee5dc13bf1b7e1c73c3ee700e03a12f9283"
+                },
+                "event_id": "narrative-event:sha256:d0fd81cd11f18e77eb8153ec97a131cde6d3b53e259bbc7c4738ceb401f998dc",
+                "accepted_draft_asset_version_id": "authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1"
+              },
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "COMPLETED",
+          "goal_id": "actor-intent:sha256:62c13b4235604053b:goal",
+          "actor_id": "mara",
+          "revision": 2,
+          "intent_id": "actor-intent:sha256:62c13b4235604053b",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {
+            "content_hash": "sha256:394057d17831418608427831cfccf554cdccf90205b2c3ed6c696adabe86e839",
+            "asset_version_id": "2febf985-a0af-45fd-a426-c0d55304046a"
+          },
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:mara:observed",
+            "narrative-event:sha256:f147e3450ac60bf3197ec48fee23166e49246d8e143752437a855c7b98a3cf93"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "deliver",
+          "accepted_predecessor": {
+            "outcome_ref": {
+              "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c",
+              "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1"
+            },
+            "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980"
+          }
+        }
+      },
+      "ilya": {
+        "proposal_ref": {
+          "asset_version_id": "c2d7b64a-57e2-46d4-97c9-fd042412fbbe",
+          "content_hash": "sha256:03897aafa0a8f066649dbcdd315604aca9066e5eb9208ef0a08cd48d914e48f9"
+        },
+        "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1",
+          "content_hash": "sha256:9401b069cd004ff5c7913eb2f634bee5dc13bf1b7e1c73c3ee700e03a12f9283"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "protect the witnesses",
+              "reason": "先保住证人与证词",
+              "status": "PLANNED",
+              "step_id": "preserve",
+              "version": 2,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:ilya:observed"
+              ],
+              "completion": null,
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "escort witnesses to sanctuary",
+              "reason": "保全以后才能交付",
+              "status": "PLANNED",
+              "step_id": "deliver",
+              "version": 2,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:ilya:observed"
+              ],
+              "completion": null,
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "ACTIVE",
+          "goal_id": "actor-intent:sha256:82aac01e27dfd07a6:goal",
+          "actor_id": "ilya",
+          "revision": 2,
+          "intent_id": "actor-intent:sha256:82aac01e27dfd07a6",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {
+            "content_hash": "sha256:e490a2b8645b6ff259e02755cac1bc72ee5de8f41beb87f824576e67f5173136",
+            "asset_version_id": "3aecbe1f-a083-485a-bcf8-d61d3147ac42"
+          },
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:ilya:observed"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "preserve",
+          "accepted_predecessor": {
+            "outcome_ref": {
+              "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c",
+              "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1"
+            },
+            "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980"
+          }
+        }
+      }
+    },
+    "3": {
+      "mara": {
+        "proposal_ref": {
+          "asset_version_id": "b90fc504-cef9-4f39-b0bd-5883507af5e6",
+          "content_hash": "sha256:858fb2d2cedf2c807b578b261451bf1546cd4c31ef04062a688cdba31e473dfc"
+        },
+        "acceptance_id": "chapter-acceptance:e9fa30a63fbe088fcbff3b6309cbfde37159155952de0a9cf339403791781c76",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:6cea533f-4a24-41dd-8d74-cdba2b1d8709:chapter.outcome:v1",
+          "content_hash": "sha256:42d3d1bdb368a74b0411276643577fcd8a5ecd74281bdf742aaea6d07eebe731"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "deliver the preserved witness testimony",
+              "reason": "先保住证人与证词",
+              "status": "COMPLETED",
+              "step_id": "preserve",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": {
+                "acceptance_id": "chapter-acceptance:e9fa30a63fbe088fcbff3b6309cbfde37159155952de0a9cf339403791781c76",
+                "outcome_ref": {
+                  "asset_version_id": "authority-output:6cea533f-4a24-41dd-8d74-cdba2b1d8709:chapter.outcome:v1",
+                  "content_hash": "sha256:42d3d1bdb368a74b0411276643577fcd8a5ecd74281bdf742aaea6d07eebe731"
+                },
+                "event_id": "narrative-event:sha256:11b291399e9626c6a8a2d38eeb749f2f9ab196713eb575a8413be3c71a06e9ec",
+                "accepted_draft_asset_version_id": "authority-output:4b9c8ed9-e212-4d45-a490-a236ad9c45bd:chapter.best_candidate:v1"
+              },
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "deliver the preserved witness testimony",
+              "reason": "保全以后才能交付",
+              "status": "PLANNED",
+              "step_id": "deliver",
+              "version": 1,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:mara:observed"
+              ],
+              "completion": null,
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "ACTIVE",
+          "goal_id": "actor-intent:sha256:eafb629a6744958dd:goal",
+          "actor_id": "mara",
+          "revision": 1,
+          "intent_id": "actor-intent:sha256:eafb629a6744958dd",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {
+            "content_hash": "sha256:0347461a0223bea9e73c30a03e3f39696374169c0204e73babb26aa3c9550cda",
+            "asset_version_id": "6d4b90c4-550a-4bbf-860f-0a8b98e63610"
+          },
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:mara:observed",
+            "narrative-event:sha256:4f33856fa5dd62960002d2d891272e89bfd6a6e19db9e9b3d82e686856caaf76"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "preserve",
+          "accepted_predecessor": {
+            "outcome_ref": {
+              "content_hash": "sha256:9401b069cd004ff5c7913eb2f634bee5dc13bf1b7e1c73c3ee700e03a12f9283",
+              "asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1"
+            },
+            "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0"
+          }
+        }
+      },
+      "ilya": {
+        "proposal_ref": {
+          "asset_version_id": "5845d42d-0ae7-43dc-9a7d-dac92ec78f4a",
+          "content_hash": "sha256:3fe9e543b4cf5bba613802ff505ea3be59b442518baefd477a1c442a12cf2b7c"
+        },
+        "acceptance_id": "chapter-acceptance:e9fa30a63fbe088fcbff3b6309cbfde37159155952de0a9cf339403791781c76",
+        "outcome_ref": {
+          "asset_version_id": "authority-output:6cea533f-4a24-41dd-8d74-cdba2b1d8709:chapter.outcome:v1",
+          "content_hash": "sha256:42d3d1bdb368a74b0411276643577fcd8a5ecd74281bdf742aaea6d07eebe731"
+        },
+        "state": {
+          "goal": "护住证人，让证词安全送达",
+          "steps": [
+            {
+              "action": "protect the witnesses",
+              "reason": "先保住证人与证词",
+              "status": "PLANNED",
+              "step_id": "preserve",
+              "version": 3,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:ilya:observed"
+              ],
+              "completion": null,
+              "depends_on": [],
+              "obligation_ids": []
+            },
+            {
+              "action": "escort witnesses to sanctuary",
+              "reason": "保全以后才能交付",
+              "status": "PLANNED",
+              "step_id": "deliver",
+              "version": 3,
+              "decision": "CONTINUE",
+              "basis_refs": [
+                "fixture-initial:ilya:observed"
+              ],
+              "completion": null,
+              "depends_on": [
+                "preserve"
+              ],
+              "obligation_ids": []
+            }
+          ],
+          "reason": "根据当前所知重估承诺的下一步",
+          "status": "ACTIVE",
+          "goal_id": "actor-intent:sha256:82aac01e27dfd07a6:goal",
+          "actor_id": "ilya",
+          "revision": 3,
+          "intent_id": "actor-intent:sha256:82aac01e27dfd07a6",
+          "constraints": [
+            "不得凭空获知他人秘密"
+          ],
+          "disposition": "CONTINUE",
+          "predecessor": {
+            "content_hash": "sha256:03897aafa0a8f066649dbcdd315604aca9066e5eb9208ef0a08cd48d914e48f9",
+            "asset_version_id": "c2d7b64a-57e2-46d4-97c9-fd042412fbbe"
+          },
+          "trigger_refs": [
+            "APPROVED_SELF_TRAITS",
+            "fixture-initial:ilya:observed"
+          ],
+          "contract_version": "actor-intent-state.v1",
+          "selected_step_id": "preserve",
+          "accepted_predecessor": {
+            "outcome_ref": {
+              "content_hash": "sha256:9401b069cd004ff5c7913eb2f634bee5dc13bf1b7e1c73c3ee700e03a12f9283",
+              "asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1"
+            },
+            "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0"
+          }
+        }
+      }
+    }
+  }
+}

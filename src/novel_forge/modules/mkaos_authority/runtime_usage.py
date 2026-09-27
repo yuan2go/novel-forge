@@ -112,6 +112,7 @@ def _rows(cursor) -> list[dict[str, Any]]:
                 row["knowledge_translation"] = translation
                 if row.get("external_effect_id") and row.get("external_receipt_ids"):
                     from .craft_selection import craft_pattern_signature
+                    from .craft_context_projection import resolve_projected_craft_uses
                     chapter = int((row.get("narrative_position") or {}).get("chapter") or 0)
                     row["craft_usage"] = [{
                         "mechanism_id": use["mechanism_id"], "mechanism_version": use["mechanism_version"],
@@ -123,7 +124,7 @@ def _rows(cursor) -> list[dict[str, Any]]:
                         "external_receipt_ids": row["external_receipt_ids"], "result_asset_version_id": row.get("result_asset_version_id"),
                         "delivery_evidence_class": row.get("delivery_evidence_class"), "craft_strategy_digest": summary.get("craft_strategy_digest"),
                         "evidence_ceiling": "DELIVERY_OBSERVATION_NOT_READER_EFFECT",
-                    } for use in summary.get("craft_uses") or []]
+                    } for use in resolve_projected_craft_uses(summary, context.get("context_segments") or [])]
     return rows
 
 
@@ -272,7 +273,7 @@ def list_runtime_selections(
 
 def list_accepted_craft_usage(
     database_url: str, *, project_id: str, book_id: str, limit: int = 100,
-    include_continuing: bool = False, continuation_acceptance_limit: int = 4096,
+    include_continuing: bool = False, continuation_acceptance_limit: int = 4096, book_run_id: str = "",
 ) -> list[dict[str, Any]]:
     from novel_forge.modules.review.craft import craft_review_targets
     from novel_forge.modules.review.diagnostics import prose_hash, validate_location
@@ -280,6 +281,47 @@ def list_accepted_craft_usage(
     from .craft_selection import craft_pattern_signature
 
     with AuthorityUnitOfWork(database_url) as uow:
+        history_run_ids = None
+        history_acceptance_ids = None
+        snapshot_proofs = {}
+        history_edition_id = ""
+        if book_run_id:
+            uow.cursor.execute("SELECT book_run_id FROM authority_book_production WHERE book_run_id=%s AND project_id=%s AND book_id=%s", [book_run_id, project_id, book_id])
+            if not uow.cursor.fetchone():
+                from novel_forge.modules.command_kernel.errors import KernelError
+                raise KernelError("CRAFT_HISTORY_RUN_SCOPE_INVALID", "Accepted Craft history must bind this Book's exact frozen run")
+            history_run_ids = [book_run_id]
+        else:
+            uow.cursor.execute("""SELECT COALESCE(validated.content->>'validation_book_run_id', validated.content->>'source_book_run_id', run.book_run_id),
+                       manifest.content, manifest.content_hash, validated.content, head.selected_revision_id
+                FROM authority_book_edition_head head
+                JOIN authority_asset_version manifest ON manifest.asset_version_id=head.selected_revision_id
+                JOIN authority_book book ON book.book_id=head.book_id
+                LEFT JOIN authority_book_edition_run run ON run.revision_id=head.selected_revision_id
+                LEFT JOIN LATERAL (SELECT event.content FROM authority_book_edition_event event
+                    WHERE event.revision_id=head.selected_revision_id AND event.event_kind='VALIDATED'
+                    ORDER BY event.created_at DESC, event.event_id DESC LIMIT 1) validated ON TRUE
+                WHERE head.book_id=%s AND book.project_id=%s""", [book_id, project_id])
+            editions = uow.cursor.fetchall()
+            if len(editions) > 1:
+                from novel_forge.modules.command_kernel.errors import KernelError
+                raise KernelError("CRAFT_HISTORY_EDITION_AMBIGUOUS", "Selected edition has multiple accepted-history runs")
+            if editions:
+                from novel_forge.modules.command_kernel.errors import KernelError
+                from novel_forge.modules.book_authority.editions import require_manifest
+                source_run, manifest, manifest_hash, validation, history_edition_id = editions[0]
+                require_manifest(manifest)
+                if (manifest_hash != craft_hash(manifest) or not validation or not source_run
+                    or validation.get("manifest_digest") != manifest["manifest_digest"]):
+                    raise KernelError("CRAFT_HISTORY_EDITION_UNQUALIFIED", "Selected manuscript history needs its exact immutable validation evidence")
+                proofs = validation.get("accepted_units") if validation.get("validation_book_run_id") else manifest.get("sources")
+                if not isinstance(proofs, list) or any(not isinstance(proof, dict) or not all(proof.get(key) for key in ("acceptance_id", "asset_version_id", "asset_hash")) for proof in proofs):
+                    raise KernelError("CRAFT_HISTORY_EDITION_UNQUALIFIED", "Selected manuscript history must identify each exact accepted source")
+                snapshot_proofs = {proof["acceptance_id"]: (proof["asset_version_id"], proof["asset_hash"]) for proof in proofs}
+                if len(snapshot_proofs) != len(proofs):
+                    raise KernelError("CRAFT_HISTORY_EDITION_AMBIGUOUS", "Selected manuscript acceptance identities must be distinct")
+                history_run_ids = [source_run]
+                history_acceptance_ids = list(snapshot_proofs)
         recent_ids = None
         if include_continuing:
             from novel_forge.modules.command_kernel.errors import KernelError
@@ -300,13 +342,21 @@ def list_accepted_craft_usage(
                       ON review.asset_version_id=quality.content->>'review_asset_version_id'
                     WHERE acceptance.project_id=%s AND acceptance.status='COMMITTED'
                       AND outcome.content->>'book_id'=%s
+                      AND (%s::text[] IS NULL OR acceptance.acceptance_id IN (SELECT inherited.acceptance_id FROM unnest(%s::text[]) scope(run_id) CROSS JOIN LATERAL authority_book_acceptance_lineage(scope.run_id) inherited))
+                      AND (%s::text[] IS NULL OR acceptance.acceptance_id=ANY(%s::text[]))
                 ), recent AS (
                     SELECT acceptance_id FROM accepted
                     ORDER BY chapter_number DESC, acceptance_id LIMIT %s
                 ), latest AS (
-                    SELECT DISTINCT ON (use.value #>> '{usage,instance_id}', check_row.value->>'effect_status')
+                    SELECT DISTINCT ON (use.value #>> '{usage,instance_id}', CASE WHEN use.value #>> '{usage,type_policy,transition_policy}' IS NULL THEN check_row.value->>'effect_status'
+                                WHEN COALESCE(check_row.value #>> '{phase_transition,status}', 'UNCERTAIN')='UNCERTAIN' THEN 'UNCERTAIN'
+                                WHEN check_row.value #>> '{phase_transition,status}'='SUPPORTED' THEN check_row.value->>'effect_status'
+                                ELSE 'FAILED' END)
                            acceptance_id, chapter_number, use.value->'usage' AS usage, use.value->>'use_id' AS use_id,
-                           check_row.value->>'effect_status' AS effect_status
+                           CASE WHEN use.value #>> '{usage,type_policy,transition_policy}' IS NULL THEN check_row.value->>'effect_status'
+                                WHEN COALESCE(check_row.value #>> '{phase_transition,status}', 'UNCERTAIN')='UNCERTAIN' THEN 'UNCERTAIN'
+                                WHEN check_row.value #>> '{phase_transition,status}'='SUPPORTED' THEN check_row.value->>'effect_status'
+                                ELSE 'FAILED' END AS effect_status
                     FROM accepted
                     CROSS JOIN LATERAL jsonb_array_elements(COALESCE(draft #> '{realization_contract,craft_strategy,uses}', '[]'::jsonb)) use(value)
                     CROSS JOIN LATERAL jsonb_array_elements(COALESCE(review->'craft_checks', '[]'::jsonb)) check_row(value)
@@ -314,15 +364,22 @@ def list_accepted_craft_usage(
                       AND use.value #>> '{usage,type_policy,mode}' IN ('PERSISTENT','PHASED')
                       AND use.value #>> '{usage,type_policy,scope}' IN ('BOOK','ARC')
                       AND use.value #>> '{usage,instance_id}' IS NOT NULL
-                      AND check_row.value->>'effect_status' IN ('ACHIEVED','UNCERTAIN')
-                    ORDER BY use.value #>> '{usage,instance_id}', check_row.value->>'effect_status',
+                      AND (CASE WHEN use.value #>> '{usage,type_policy,transition_policy}' IS NULL THEN check_row.value->>'effect_status'
+                                WHEN COALESCE(check_row.value #>> '{phase_transition,status}', 'UNCERTAIN')='UNCERTAIN' THEN 'UNCERTAIN'
+                                WHEN check_row.value #>> '{phase_transition,status}'='SUPPORTED' THEN check_row.value->>'effect_status'
+                                ELSE 'FAILED' END) IN ('ACHIEVED','UNCERTAIN')
+                    ORDER BY use.value #>> '{usage,instance_id}', CASE WHEN use.value #>> '{usage,type_policy,transition_policy}' IS NULL THEN check_row.value->>'effect_status'
+                                WHEN COALESCE(check_row.value #>> '{phase_transition,status}', 'UNCERTAIN')='UNCERTAIN' THEN 'UNCERTAIN'
+                                WHEN check_row.value #>> '{phase_transition,status}'='SUPPORTED' THEN check_row.value->>'effect_status'
+                                ELSE 'FAILED' END,
                              chapter_number DESC, use.value->>'use_id' DESC, acceptance_id
                 ), continuing AS (
                     SELECT acceptance_id, use_id FROM latest observation
                     WHERE (effect_status='ACHIEVED' AND (
-                        usage #>> '{type_policy,mode}'='PERSISTENT'
+                        (usage #>> '{type_policy,transition_policy}' IS NOT NULL AND usage #>> '{transition,action}' <> 'END')
+                        OR (usage #>> '{type_policy,transition_policy}' IS NULL AND (usage #>> '{type_policy,mode}'='PERSISTENT'
                         OR usage->>'phase' <> usage #>> ARRAY['type_policy','phases',
-                            (jsonb_array_length(usage #> '{type_policy,phases}')-1)::text]))
+                            (jsonb_array_length(usage #> '{type_policy,phases}')-1)::text]))))
                        OR (effect_status='UNCERTAIN' AND NOT EXISTS (
                            SELECT 1 FROM latest achieved WHERE achieved.effect_status='ACHIEVED'
                              AND achieved.usage->>'instance_id'=observation.usage->>'instance_id'
@@ -331,7 +388,7 @@ def list_accepted_craft_usage(
                     SELECT acceptance_id, TRUE AS is_recent, NULL::text AS use_id FROM recent
                     UNION ALL SELECT acceptance_id, FALSE AS is_recent, use_id FROM continuing
                 ) identities GROUP BY acceptance_id ORDER BY acceptance_id LIMIT %s""",
-                [project_id, book_id, limit, continuation_acceptance_limit + 1],
+                [project_id, book_id, history_run_ids, history_run_ids, history_acceptance_ids, history_acceptance_ids, limit, continuation_acceptance_limit + 1],
             )
             identities = uow.cursor.fetchall()
             if len(identities) > continuation_acceptance_limit:
@@ -342,7 +399,7 @@ def list_accepted_craft_usage(
         uow.cursor.execute(
             """SELECT acceptance.acceptance_id, acceptance.chapter_number,
                       draft.asset_version_id, draft.content_hash, draft.content,
-                      review.asset_version_id, review.content_hash, review.content
+                      review.asset_version_id, review.content_hash, review.content, acceptance.book_run_id
                FROM authority_book_chapter_acceptance acceptance
                JOIN authority_asset_version outcome
                  ON outcome.asset_version_id=acceptance.chapter_outcome_asset_version_id
@@ -354,12 +411,17 @@ def list_accepted_craft_usage(
                  ON review.asset_version_id=quality.content->>'review_asset_version_id'
                WHERE acceptance.project_id=%s AND acceptance.status='COMMITTED'
                  AND outcome.content->>'book_id'=%s
+                 AND (%s::text[] IS NULL OR acceptance.acceptance_id IN (SELECT inherited.acceptance_id FROM unnest(%s::text[]) scope(run_id) CROSS JOIN LATERAL authority_book_acceptance_lineage(scope.run_id) inherited))
+                 AND (%s::text[] IS NULL OR acceptance.acceptance_id=ANY(%s::text[]))
                """ + ("AND acceptance.acceptance_id=ANY(%s) ORDER BY acceptance.chapter_number DESC, acceptance.acceptance_id" if include_continuing else "ORDER BY acceptance.chapter_number DESC, acceptance.acceptance_id LIMIT %s"),
-            [project_id, book_id, accepted_ids if include_continuing else limit],
+            [project_id, book_id, history_run_ids, history_run_ids, history_acceptance_ids, history_acceptance_ids, accepted_ids if include_continuing else limit],
         )
         rows = uow.cursor.fetchall()
     result, seen = [], set()
-    for acceptance, chapter, draft_id, draft_hash, draft, review_id, review_hash, review in rows:
+    for acceptance, chapter, draft_id, draft_hash, draft, review_id, review_hash, review, source_run in rows:
+        if snapshot_proofs and snapshot_proofs.get(acceptance) != (draft_id, draft_hash):
+            from novel_forge.modules.command_kernel.errors import KernelError
+            raise KernelError("CRAFT_HISTORY_EDITION_SOURCE_DRIFT", "Accepted Craft cannot cross the selected edition's exact source identity")
         if draft_hash != craft_hash(draft) or review_hash != craft_hash(review):
             from novel_forge.modules.command_kernel.errors import KernelError
             raise KernelError("CRAFT_ACCEPTED_EVIDENCE_DRIFT", "accepted prose and review must retain their exact hashes")
@@ -382,11 +444,13 @@ def list_accepted_craft_usage(
                 **({"usage": use["usage"]} if "usage" in use else {}),
                 "family": use["mechanism"]["family"],
                 "pattern_signature": craft_pattern_signature(use["mechanism"]),
-                "chapter": chapter, "acceptance_id": acceptance,
+                "chapter": chapter, "acceptance_id": acceptance, "book_run_id": source_run,
+                **({"edition_revision_id": history_edition_id} if history_edition_id else {}),
                 "accepted_draft_asset_version_id": draft_id, "accepted_draft_content_hash": draft_hash,
                 "review_asset_version_id": review_id, "review_content_hash": review_hash,
                 "target_text_hash": check["target_text_hash"], "evidence": evidence,
                 "effect_status": check["effect_status"], "side_effects": check["side_effects"],
+                **({"phase_transition": check["phase_transition"]} if "phase_transition" in check else {}),
                 "evidence_class": check["evidence_class"],
                 "usage_basis": "ACCEPTED_PROSE_REVIEW", "reader_effect_proven": False,
             })
@@ -396,6 +460,7 @@ def list_accepted_craft_usage(
 def _continuing_usage(rows: list[dict[str, Any]], recent_ids: set[str], continuing_ids: set[tuple[str, str]] | None = None) -> list[dict[str, Any]]:
     if continuing_ids is not None:
         rows = [row for row in rows if row["acceptance_id"] in recent_ids or (row["acceptance_id"], row["use_id"]) in continuing_ids]
+    from .craft_usage import accepted_transition_status, usage_is_open
     groups = {}
     selected = {(row["acceptance_id"], row["use_id"]) for row in rows if row["acceptance_id"] in recent_ids}
     for row in rows:
@@ -404,11 +469,11 @@ def _continuing_usage(rows: list[dict[str, Any]], recent_ids: set[str], continui
         if spec.get("mode") in {"PERSISTENT", "PHASED"} and spec.get("scope") in {"BOOK", "ARC"}:
             groups.setdefault(usage["instance_id"], []).append(row)
     for group in groups.values():
-        achieved = max((row for row in group if row["effect_status"] == "ACHIEVED"), key=lambda row: (row["chapter"], row["use_id"]), default=None)
-        uncertain = max((row for row in group if row["effect_status"] == "UNCERTAIN"), key=lambda row: (row["chapter"], row["use_id"]), default=None)
+        achieved = max((row for row in group if accepted_transition_status(row) == "ACHIEVED"), key=lambda row: (row["chapter"], row["use_id"]), default=None)
+        uncertain = max((row for row in group if accepted_transition_status(row) == "UNCERTAIN"), key=lambda row: (row["chapter"], row["use_id"]), default=None)
         if achieved is not None:
             usage = achieved["usage"]
-            if usage["type_policy"]["mode"] == "PERSISTENT" or usage["phase"] != usage["type_policy"]["phases"][-1]:
+            if usage_is_open(usage):
                 selected.add((achieved["acceptance_id"], achieved["use_id"]))
         if uncertain is not None and (achieved is None or uncertain["chapter"] >= achieved["chapter"]):
             selected.add((uncertain["acceptance_id"], uncertain["use_id"]))

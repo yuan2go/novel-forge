@@ -335,6 +335,10 @@ class AutonomousWorldTransport:
                 result["candidates"][0]["transition"] = {
                     "payload_json": json.dumps(proposed)
                 }
+            elif self.scenario == "on_camera_actor_intent":
+                proposed.update(camera="ON_CAMERA", transition_id=f"actor-step-{task['accepted_through_chapter'] + 1}")
+                proposed["changes"]["actor_step"] = task["accepted_through_chapter"] + 1
+                result["candidates"][0]["transition"] = {"payload_json": json.dumps(proposed)}
             elif task["accepted_through_chapter"]:
                 hidden = next(
                     entry
@@ -482,6 +486,9 @@ class AutonomousWorldTransport:
         self.calls[-1]["output"] = result
         return result
 
+    def on_camera_statement(self, event):
+        return event["actor_id"] + " performs preparation " + event["transition_id"] + ": " + json.dumps(event["changes"], sort_keys=True) + "."
+
     def __call__(self, stage, inputs):
         self.calls.append({"stage": stage, "input": json.loads(json.dumps(inputs))})
         result = default_chapter_fixture_response(stage, inputs)
@@ -498,20 +505,17 @@ class AutonomousWorldTransport:
                 "scheduled on-camera events require a public frozen execution contract"
             )
             for event in public["on_camera_events"]:
-                statement = (
-                    event["actor_id"]
-                    + " performs preparation "
-                    + event["transition_id"]
-                    + ": "
-                    + json.dumps(event["changes"], sort_keys=True)
-                    + "."
-                )
+                statement = self.on_camera_statement(event)
                 omitted = (
                     self.scenario == "on_camera_missing"
                     and event["transition_id"] == "verify-records"
                 )
                 if stage == "draft" and not omitted:
-                    result["scene_artifacts"][0]["text"] += " " + statement
+                    artifact = result["scene_artifacts"][0]
+                    if public["contract_version"] == "world-scene-execution.v2":
+                        slots = {slot["slot_id"] for slot in inputs["realization_contract"]["slots"] if slot["scene_id"] == event["scene_id"]}
+                        artifact = next(item for item in result["scene_artifacts"] if item["slot_id"] in slots)
+                    artifact["text"] += " " + statement
                     result["text"] = "\n\n".join(
                         item["text"] for item in result["scene_artifacts"]
                     )
@@ -531,7 +535,7 @@ class AutonomousWorldTransport:
                         if row["transition_id"] == event["transition_id"]
                     )
                     observed_transition = {
-                        key: value for key, value in event.items() if key != "scene_id"
+                        key: value for key, value in event.items() if key not in {"scene_id", "actor_step"}
                     }
                     observed_transition.update(
                         action=statement,
@@ -1023,7 +1027,7 @@ def execute_autonomous_world_vertical(
         except KernelError as exc:
             if (
                 exc.code != "MODEL_EFFECT_RETRYABLE_WORLD_PROOF"
-                or transport.scenario != "provider_recovery"
+                or transport.scenario not in {"provider_recovery", "on_camera_actor_intent"}
             ):
                 raise
             assert (
@@ -1158,6 +1162,24 @@ def execute_autonomous_world_vertical(
             else:
                 raise AssertionError("native chapter exhausted its bounded schedule")
         book = composition.authority.require(admitted.book_run_id)
+        if transport.scenario == "on_camera_actor_intent" and book["accepted_through_chapter"]:
+            reality = composition.query.narrative_reality(book_run_id=admitted.book_run_id)
+            observed = [event for event in reality["events"] if event["mutation"]["payload"].get("preparation_lineage")]
+            assert len(observed) == 1
+            assert observed[0]["provenance"]["accepted_draft_asset_version_id"]
+            assert json.loads(observed[0]["mutation"]["payload"]["world_transition"]["payload_json"])["camera"] == "ON_CAMERA"
+            if book["accepted_through_chapter"] == 1:
+                first_reality = reality
+                continue
+            from novel_forge.modules.narrative_state import NarrativeStateRebuildService
+            rebuilt = NarrativeStateRebuildService(composition.authority.database_url).rebuild(project_id=snapshot.project_id, book_id=snapshot.book_id)
+            assert rebuilt.projection["current_state"] == reality["current_state"]
+            assert composition.query.narrative_reality(book_run_id=admitted.book_run_id, chapter_number=1) == first_reality
+            assert len(transport.faults) == 1
+            return {"proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY", "book_run_id": admitted.book_run_id,
+                    "scenario": transport.scenario, "calls": transport.calls, "faults": transport.faults,
+                    "final_provider_requests": capture_final_provider_requests(composition=composition, project_id=snapshot.project_id),
+                    "reality_revision_id": reality["revision_id"]}
         if int(book["accepted_through_chapter"]) == 1 and first_reality is None:
             reality = composition.query.narrative_reality(
                 book_run_id=admitted.book_run_id

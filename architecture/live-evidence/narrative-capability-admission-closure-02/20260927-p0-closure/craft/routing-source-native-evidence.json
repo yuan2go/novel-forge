@@ -1,0 +1,43 @@
+{
+  "actual_human_reviews": 0,
+  "actual_real_model_calls": 0,
+  "cohort_scope": "EXACT_OPERATOR_APPROVED_FINITE_SUBSET; NOT_COMPLETE_CAMPAIGN_OR_RANDOM_SAMPLE_PROOF",
+  "duplicate_effects_counted_once": true,
+  "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL_SELECTED_COHORT_PROTOCOL",
+  "excluded_asset_version_id": "30c19fd9-a115-4395-8044-5b70d84cf740",
+  "expired_and_revoked_sources_rejected": true,
+  "fixture_excluded": true,
+  "imported_observation_refs": [
+    "asset-version:3ed7c117-0df9-48b8-b6d5-7a90e13e252b"
+  ],
+  "metric_sample_count": 0,
+  "permission_and_scope_checks": "PASS",
+  "qualification_status": "BLOCKED",
+  "release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "source_approval": {
+    "content_hash": "f46c8bf61dff88742bcd65c32c30383b158197011520bff5ab10b3267404e90a",
+    "operation_id": "8068b6c2-a83f-46aa-9e22-9d3192c6c11b",
+    "policy_version": "source-export"
+  },
+  "source_asset_refs": [
+    {
+      "asset_version_id": "cd0083d0-86c4-4e0f-96b8-2c0dc23b6cb9",
+      "content_hash": "sha256:071320e6f148af968a7d3fe5e258ebd5951f1c0e5bedd2bcd4934dfc19bab25b"
+    },
+    {
+      "asset_version_id": "3ed7c117-0df9-48b8-b6d5-7a90e13e252b",
+      "content_hash": "sha256:071320e6f148af968a7d3fe5e258ebd5951f1c0e5bedd2bcd4934dfc19bab25b"
+    },
+    {
+      "asset_version_id": "da1ce3c7-0e4b-4848-8ec1-fda6c3cd25ec",
+      "content_hash": "sha256:a0aca29b96a7a65c86b1624a82bad4e3caadae664693bdc8ae1881761da6a0f1"
+    }
+  ],
+  "source_assets_copied": false,
+  "source_project_id": "benchmark-source-b0cfabc9-023f-472d-a455-9f2c96887161",
+  "synthetic_model_log_fields_are_not_actual_provider_evidence": true,
+  "target_policy_operation_id": "7c4a4527-8e82-4bd8-bd48-ccbefbb3cf7f",
+  "target_project_id": "benchmark-target-55f91a96-3ce1-4adb-9f44-844283dc8b30",
+  "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+  "positive_boundary": "A synthetic native ledger exercises the real source projection and approval checks; this is not real Provider or independent-human evidence."
+}

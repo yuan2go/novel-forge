@@ -1,0 +1,71 @@
+{
+  "implementation": "WORKTREE_BEFORE_FINAL_COMMON_COMMIT",
+  "proof_ceiling": "EXECUTABLE_SCRIPTED_NATIVE_API_POSTGRES_BROWSER",
+  "real_model_calls": 0,
+  "checks": {
+    "prior_native_editor_operations": 8,
+    "review_result_capture_operations": 4,
+    "typescript": "PASS"
+  },
+  "failure_lineage": [
+    {
+      "artifact": "browser-capture-first.log",
+      "cause": "Private Python HTTP client inherited proxy; localhost request was disconnected before application access.",
+      "resolution": "Explicit no-proxy opener for private localhost evidence client.",
+      "sha256": "e9f84902d8dfba9c386c7a6e61ed16e956f0f80ebb7e68119753bb472568b08f",
+      "retention": "PRIVATE_LOCAL_EVIDENCE",
+      "absolute_path": "/tmp/novel-forge-wp02-p0-private/browser-capture-first.log",
+      "status": "FAIL_RETAINED"
+    },
+    {
+      "artifact": "browser-capture-second.log",
+      "cause": "Next dev 127.0.0.1 origin did not hydrate the Editor; project options were absent.",
+      "resolution": "Use localhost dev origin and include it in the isolated API CORS configuration.",
+      "sha256": "55af58314e75424bd62ca84ad03ef6807a90f36c55caf7cebb87dbee6ccc1229",
+      "retention": "PRIVATE_LOCAL_EVIDENCE",
+      "absolute_path": "/tmp/novel-forge-wp02-p0-private/browser-capture-second.log",
+      "status": "FAIL_RETAINED"
+    },
+    {
+      "artifact": "browser-capture-third.log",
+      "cause": "UI displayed the real native review diff, but the harness expected a descriptive placeholder instead of the exact accepted sentence.",
+      "resolution": "Assert the complete native validation diff returned by the query; capture and immutable-source assertions unchanged.",
+      "sha256": "170da63cee1ba4571cb608bd6472154ddc3fd2cf47aedc984fd9e5667ae0dbcf",
+      "retention": "PRIVATE_LOCAL_EVIDENCE",
+      "absolute_path": "/tmp/novel-forge-wp02-p0-private/browser-capture-third.log",
+      "status": "FAIL_RETAINED"
+    }
+  ],
+  "original_earlier_browser_iterations": "browser-operations-first.log through eighth.log retained under private evidence root; final eighth PASS; no previous log overwritten",
+  "native_assets_are_experimental": true,
+  "mapping_input_recovery": {
+    "status": "PASS",
+    "operations": 4,
+    "result": "browser-mapping-result.json",
+    "screenshot": "browser-mapping-recovery.png",
+    "native_mutations": 0
+  },
+  "additional_command_failures": [
+    {
+      "command": "npx tsc from repository root",
+      "result": "FAILED_BEFORE_TYPESCRIPT_CHECK",
+      "reason": "resolved npm tsc placeholder rather than installed admin TypeScript",
+      "disposition": "used existing web/admin/node_modules/.bin/tsc; passed",
+      "retained_log_sha256": "1de6c0f0ecdf254ce06ad156add088c3476a03bce95e9eba913561a75692f6c2"
+    },
+    {
+      "command": "mapping test API first launch",
+      "result": "FAILED_BEFORE_STARTUP",
+      "reason": "app-dir omitted tests root from PYTHONPATH",
+      "disposition": "explicit PYTHONPATH=src:.; native API started without dispatch",
+      "retained_log_sha256": "0ed0c8c91476bd17e185fd2e57f991283482a09af994d84657513408c61d54fa"
+    }
+  ],
+  "final_typescript": {
+    "status": "PASS",
+    "command": "./node_modules/.bin/tsc --noEmit",
+    "cwd": "web/admin",
+    "log": "types-final.log",
+    "implementation_identity": "PENDING_COMMON_CODE_FREEZE"
+  }
+}

@@ -502,6 +502,9 @@ _CHAPTER_STAGES = {
     "chapter.quality.platform.evaluate": "quality_platform",
     "reader_outcome.evaluate": "reader_outcome",
     "longform.prose_review": "longform_prose_review",
+    "screenplay_generate": "screenplay_generate",
+    "screenplay_review": "screenplay_review",
+    "screenplay_revision": "screenplay_revision",
     "story_design.semantic_evaluate": "narrative_semantic_evaluation",
 }
 _PLANNING_CAPABILITIES = {
@@ -541,7 +544,7 @@ def classify_phase(operation_name: str, capability: str, request_payload: dict[s
     if expected_stage:
         if stage != expected_stage or capability != "model." + expected_stage:
             raise failure
-        return "REPAIR" if attempt_no > 1 or stage in {"revision", "rereview"} else "CREATION"
+        return "REPAIR" if attempt_no > 1 or stage in {"revision", "rereview", "screenplay_revision"} else "CREATION"
     if operation_name == "story_planning.generate":
         if stage in {"world_candidates.generate", "world_candidates.evaluate", "world_candidates.actor_0", "world_candidates.actor_1", "world_candidates.actor_2"}:
             if capability != "planning.story_chapter.generate" or not isinstance(inputs.get("world_preparation"), dict):

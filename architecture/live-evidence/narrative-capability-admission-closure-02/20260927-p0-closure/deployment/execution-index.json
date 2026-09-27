@@ -1,0 +1,96 @@
+{
+  "evidence_ceiling": "SCRIPTED_ENGINEERING_AND_PERSISTENT_INFRASTRUCTURE_RECOVERY; NOT_REAL_MODEL_OR_HUMAN_QUALITY",
+  "runs": [
+    {
+      "file": "runtime-pause-native-recovery.log",
+      "status": "PASS",
+      "count": 4,
+      "meaning": "initial bounded native pause recovery subset; second log adds UNKNOWN/budget/ordinary-failure controls"
+    },
+    {
+      "file": "runtime-pause-native-recovery-second.log",
+      "status": "PASS",
+      "count": 8,
+      "meaning": "native dispatch, Attempt, Effect unknown and budget recovery control"
+    },
+    {
+      "file": "runtime-job-pause-native-first.log",
+      "status": "FAIL",
+      "meaning": "existing attempt_count<=max_attempts check prevented second coordinator claim after a verified no-send pause"
+    },
+    {
+      "file": "migration-0147-first.log",
+      "status": "FAIL",
+      "meaning": "proof runner initially used nonexistent budget table name; no schema mutation"
+    },
+    {
+      "file": "migration-0147-second.log",
+      "status": "FAIL",
+      "meaning": "new migration UPDATE before ALTER caused pending-trigger DDL failure; transaction rolled back"
+    },
+    {
+      "file": "migration-0147-third.log",
+      "status": "PASS",
+      "meaning": "DDL then evidenced counter backfill: fresh/clone upgrade/repeat/test DB upgrade"
+    },
+    {
+      "file": "runtime-job-pause-native-second.log",
+      "status": "PASS",
+      "count": 5,
+      "meaning": "max1 three pauses then resume; no forged pause exemption; ordinary retry/fence/lease boundaries preserved"
+    },
+    {
+      "file": "runtime-pause-final-unit.log",
+      "status": "PASS",
+      "count": 52,
+      "meaning": "focused RuntimeJob/dispatch/budget/migration unit and architecture checks"
+    },
+    {
+      "file": "entitlement-zero-priced-cap-unit.log",
+      "status": "PASS",
+      "count": 42,
+      "meaning": "campaign priced cap zero permits explicitly authorized account entitlement with unknown cost; priced spending remains forbidden"
+    },
+    {
+      "file": "entitlement-zero-priced-cap-native-first.log",
+      "status": "PASS",
+      "count": 2,
+      "meaning": "restore clone native entitlement success/UNKNOWN preserve one-call grant accounting and unknown money; scripted transport only"
+    },
+    {
+      "file": "codex-no-retry-unit.log",
+      "status": "PASS",
+      "count": 96,
+      "meaning": "legacy Codex binding preserved; opt-in actual argv disables HTTP and stream retries; replay/continuation/config freeze remain exact"
+    },
+    {
+      "file": "router-zero-priced-cap-unit.log",
+      "status": "FAIL",
+      "meaning": "Wrong checkout editable import because PYTHONPATH absent; first failure retained; current source tested in second log."
+    },
+    {
+      "file": "router-zero-priced-cap-unit-second.log",
+      "status": "PASS",
+      "count": 111,
+      "meaning": "Zero priced Router limit permits authorized account entitlement with unknown cost, rejects priced candidates, invalid money/token limits and unauthorized/no-quota accounts; previous routing and bootstrap gates preserved."
+    }
+  ],
+  "listed_failures_retained": true,
+  "all_native_regressions_database_scope": "isolated restored historical clone or disposable fresh DB, never original",
+  "real_model_calls": 0,
+  "not_run": [
+    "original upgrade",
+    "final common SHA release activation",
+    "final API web worker launch and restart verification"
+  ],
+  "local_account_configuration": {
+    "identity": "codex-account-identity-proof.json",
+    "retry_configuration_parse": "codex-no-retry-local-proof.json",
+    "remote_success": "NOT_RUN",
+    "real_model_calls": 0
+  },
+  "diagnostic_preparation": "foundation-diagnostic-preparation.json",
+  "task_input_readiness": "diagnostic-task-input-readiness.json",
+  "shared_router_configuration": "router-configuration-preflight.json",
+  "shared_router_preflight_failures": "router-configuration-preflight-failures.json"
+}

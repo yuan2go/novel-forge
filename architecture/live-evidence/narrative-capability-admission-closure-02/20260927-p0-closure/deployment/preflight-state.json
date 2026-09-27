@@ -1,0 +1,87 @@
+{
+  "observed_at": "2026-09-27T05:19:37.894939+00:00",
+  "baseline_sha": "cc6afa5e4a62eb74f7bbb17887784f16b70289c5",
+  "final_common_sha": null,
+  "deployment_state": "PREPARED_AWAITING_COMMON_IMPLEMENTATION_FREEZE",
+  "original_database": {
+    "name": "novel_forge_first_novel_pilot_test",
+    "oid": 16384,
+    "schema_head": "20260921_0142_prose_editorial_foreign_key_indexes",
+    "role": "HISTORICAL_PERSISTENT_LEDGER_NOT_A_DISPOSABLE_TEST_DATABASE",
+    "native_fingerprints": {
+      "authority_operation": {
+        "count": 538,
+        "digest": "eb5745258ad31ee2c1565e5f64ccbf94"
+      },
+      "authority_external_effect": {
+        "count": 407,
+        "digest": "4e9fe96007fccbffafaadbd26fdae88f"
+      },
+      "authority_external_effect_dispatch": {
+        "count": 407,
+        "digest": "f1b81f4e84962530b7fac5b10997ff92"
+      },
+      "authority_book_chapter_acceptance": {
+        "count": 0,
+        "digest": null
+      },
+      "authority_budget_reservation": {
+        "count": 29,
+        "digest": "33b40d23cb0b6691094739a945e073e0"
+      }
+    },
+    "same_as_pre_upgrade_backup": true
+  },
+  "restore_clone": {
+    "schema_head": "20260927_0147_runtime_job_dispatch_pause",
+    "native_regressions_add_test_operations": true,
+    "baseline_archive_proof": "restore-upgrade-proof.json",
+    "later_test_augmented_upgrade_proof": "migration-0147-proof.json",
+    "isolated_from_original_ledger": true
+  },
+  "volumes": {
+    "postgresql": "novel-forge-first-novel-pilot-data-pg16",
+    "minio": "novel-forge-first-novel-pilot-objects-data"
+  },
+  "private_launchers": {
+    "nf.pending": {
+      "sha256": "a8677db9fb4a5839cc6a9f714c720be2ddbdd7c9e39b5c21cce7b9abeeb9ff7b",
+      "installed": false
+    },
+    "nf-services.pending": {
+      "sha256": "1fc3dd708b301fe94285e915adf2e97a3cdbb4462474bd6945168205fd2deeb9",
+      "installed": false
+    },
+    "native-service.py": {
+      "sha256": "d693a7ab2574ffa84cf731b232c6e6510a8153aa22442c8f61e38c79dda6c33f",
+      "installed": false
+    }
+  },
+  "planned_native_processes": [
+    "api",
+    "web",
+    "agent",
+    "chapter",
+    "content",
+    "source",
+    "source_import",
+    "mkaos",
+    "book",
+    "book_followup",
+    "outbox",
+    "maintenance"
+  ],
+  "model_dispatch_suspended_for_deployment": true,
+  "release_activation_performed": false,
+  "current_real_model_calls": 0,
+  "human_quality_reviews": 0,
+  "production_qualification": "NOT_PROVEN",
+  "effect_benefit": "NOT_PROVEN",
+  "unknown_scope": {
+    "operation_id": "040f61c9-777d-4b2e-a008-50f62742baf5",
+    "effect_id": "ff4d2c74-67d4-4627-8a05-9e47052fb3f8",
+    "budget_reservation_id": "3665355c-991a-48e4-b6ad-da65ac62f84f",
+    "disposition": "PRESERVE_UNKNOWN_RECEIPT_AND_OCCUPANCY; reconcile exact historical scope from native evidence; do not block independent qualified authorized new scopes"
+  },
+  "credentials_copied": false
+}

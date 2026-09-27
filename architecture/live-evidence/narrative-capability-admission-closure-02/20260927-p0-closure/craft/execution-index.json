@@ -1,0 +1,681 @@
+{
+  "exported_at": "2026-09-27T06:20:19.770505+00:00",
+  "baseline_sha": "cc6afa5e4a62eb74f7bbb17887784f16b70289c5",
+  "evidence_class": "SCRIPTED_ENGINEERING_ONLY",
+  "actual_real_model_calls": 0,
+  "actual_human_evaluations": 0,
+  "production_qualification": "NOT_QUALIFIED",
+  "production_proof": "NOT_PROVEN",
+  "final_release_joint_proof": "NOT_CLAIMED_BY_THIS_ARCHIVE",
+  "publication_authorized": false,
+  "implementation_tree_policy": "Only execution-time captured trees are recorded. Missing hashes remain UNRECORDED; export-time source hashes do not retroactively identify earlier runs.",
+  "redaction": [
+    "Local account/home and private evidence paths replaced.",
+    "Credential-bearing database URLs and credential fields removed.",
+    "Operation, asset, source hashes, fixture release identity and negative outcomes retained."
+  ],
+  "runs": [
+    {
+      "id": "craft-native-first",
+      "result": "FAIL",
+      "evidence": [
+        "craft-native-first.log"
+      ],
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "failure": "Undeclared jsonschema import prevented three native cases."
+    },
+    {
+      "id": "craft-native-second",
+      "result": "PARTIAL",
+      "evidence": [
+        "craft-native-second.log"
+      ],
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [
+        "Legacy typed Craft replay passed."
+      ],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "failure": "World Context budget overflow; MappingProxy raw rejection serialization failure."
+    },
+    {
+      "id": "craft-native-third",
+      "result": "PARTIAL",
+      "evidence": [
+        "craft-native-third.log"
+      ],
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [
+        "Concrete REJECT created new bounded alternative selection through normal Planning."
+      ],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "failure": "Explicit continuation still exceeded protected Context budget."
+    },
+    {
+      "id": "craft-explicit-first",
+      "result": "FAIL",
+      "evidence": [
+        "craft-explicit-screenplay-first.log"
+      ],
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "failure": "Undefined book_run_id in realization evidence scope query."
+    },
+    {
+      "id": "craft-explicit-second",
+      "result": "PARTIAL",
+      "evidence": [
+        "craft-explicit-screenplay-second.log",
+        "craft-explicit-fourth-evidence.json",
+        "accepted-manuscript.txt"
+      ],
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [
+        "Two accepted chapters: stable instance SETUP START then same-phase CONTINUE.",
+        "Accepted-only usage and exact predecessor evidence.",
+        "Accepted-state cross-chapter review sources."
+      ],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "failure": "Subsequent screenplay helper used participant IDs absent from this source Book; source validator rejected it.",
+      "limitations": [
+        "This default fixture manuscript is mostly English; it is not the Chinese final joint chain.",
+        "This run proves START/CONTINUE, not a native ADVANCE/END transition."
+      ]
+    },
+    {
+      "id": "screenplay-sampling-resume",
+      "result": "PASS",
+      "evidence": [
+        "craft-screenplay-samples-first.log",
+        "craft-screenplay-samples-result.json",
+        "derived-screenplay.txt"
+      ],
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [
+        "Same exact edition source; native generate/review/revision/rereview and controlled acceptance.",
+        "Four scripted sampling calls including negative review lineage; sampling remains ineligible."
+      ],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "limitations": [
+        "Source-faithful private scripted fixture adaptation was used to match the protagonist-only Book.",
+        "Not real-model admission, human evaluation, or literary benefit proof."
+      ]
+    },
+    {
+      "id": "canon-support-first",
+      "result": "PASS",
+      "evidence": [
+        "canon-support-native-first.log"
+      ],
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [
+        "Positive and negative Canon support samples retained; each uses two model candidates."
+      ],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "application_build_id": "capability-pack-integrity-hardening"
+    },
+    {
+      "id": "canon-support-second",
+      "result": "PASS",
+      "evidence": [
+        "canon-support-native-second.log",
+        "canon-support-native-assets.json"
+      ],
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [
+        "Native independent-reference plumbing; positive status_accuracy=1 and negative status_accuracy=0.",
+        "All outputs INELIGIBLE, production_eligible=false, real_model_call=false, production_qualification_eligible=false.",
+        "No formal Canon or Chapter outcome mutated by sampling."
+      ],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "application_build_id": "capability-pack-integrity-hardening",
+      "limitations": [
+        "Reference participants are explicitly scripted fixtures, not actual independent humans.",
+        "Asset export contains both retained runs (eight sample Operations), not eight independent literary samples."
+      ]
+    },
+    {
+      "id": "dispatch-recovery-first",
+      "result": "FAIL",
+      "evidence": [
+        "dispatch-recovery-native-first.log"
+      ],
+      "debug_release_sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "failure": "Fixture fault injection tried to patch a read-only slotted instance; production path was not reached."
+    },
+    {
+      "id": "dispatch-recovery-second",
+      "result": "PASS_BOUNDED_SCOPE",
+      "evidence": [
+        "dispatch-recovery-native-second.log"
+      ],
+      "debug_release_sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [
+        "Before Chapter admission and before group link recovery cases passed."
+      ],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN"
+    },
+    {
+      "id": "dispatch-recovery-third",
+      "result": "PASS",
+      "evidence": [
+        "dispatch-recovery-native-third.log"
+      ],
+      "debug_release_sha": "MIXED_FIXTURE_RELEASES",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [
+        "Four cases: reservation before admission; admission before group link; explicit pause/resume then recovery; ungrouped scheduler recovery.",
+        "One request/root/delegation/group binding, duplicate recovery idempotent, zero ExternalEffects."
+      ],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "case_releases": {
+        "before_admission": "ffffffffffffffffffffffffffffffffffffffff",
+        "before_group_link": "ffffffffffffffffffffffffffffffffffffffff",
+        "reserved_pause_resume": "ffffffffffffffffffffffffffffffffffffffff",
+        "ungrouped": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "limitations": [
+        "Newly discovered pause-during-admission race is not claimed by this prior run; later Actor recheck owns that verification."
+      ]
+    },
+    {
+      "id": "actor-craft-repair-source-failure",
+      "result": "FAIL",
+      "evidence": [
+        "../editions/failure-edition-joint-third.log",
+        "repair-source-failure-execution.json",
+        "repair-input-lineage.json"
+      ],
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "sha256:9a28ddd281622b34a5de03b1710eff648d82b9f44df96391dd9e335375783ee7",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [
+        "Real scripted Actor preparation and successful Provider business REJECT reached immutable repair source guard."
+      ],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "source_tree_hash_after": "sha256:9a28ddd281622b34a5de03b1710eff648d82b9f44df96391dd9e335375783ee7",
+      "failure": "JSONB reordered role keys after process continuation; identical role/asset/hash set produced a different ordered generation snapshot hash."
+    },
+    {
+      "id": "actor-craft-repair-input-recovery",
+      "result": "PASS",
+      "evidence": [
+        "repair-input-native.log",
+        "repair-input-lineage.json"
+      ],
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "implementation_identity": "Shared uncommitted development tree; evidence is not final-release qualification.",
+      "verified_behaviors": [
+        "Same failed parent and ADMITTED child recovered through owning _record_generation after require_result_repair_source and current Authority input resolution.",
+        "Original 0131 guard accepted exact parent snapshot; duplicate recovery idempotent; changed hash rejected."
+      ],
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "limitations": [
+        "This bounded checkpoint recovery did not dispatch the child Provider; the new full Chinese joint run remains a separate proof."
+      ]
+    },
+    {
+      "id": "alternate-principal-native-recovery",
+      "result": "PASS",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL_RECOVERY",
+      "evidence_state": "EXECUTABLE",
+      "evidence": [
+        "alternate-principal-native-first.log",
+        "alternate-principal-native-execution.json"
+      ],
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "debug_release_sha": "MIXED_FIXTURE_RELEASES",
+      "case_releases": {
+        "before_admission": "ffffffffffffffffffffffffffffffffffffffff",
+        "before_group_link": "ffffffffffffffffffffffffffffffffffffffff",
+        "reserved_pause_resume": "ffffffffffffffffffffffffffffffffffffffff",
+        "before_book_link_alternate_actor": "ffffffffffffffffffffffffffffffffffffffff",
+        "ungrouped": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "implementation_tree_hash": "sha256:a9a5aec1d47ac8a9bead37c78d38c438852b1d5e56843830c3f8ff20fb786fb6",
+      "source_tree_hash_after": "sha256:a9a5aec1d47ac8a9bead37c78d38c438852b1d5e56843830c3f8ff20fb786fb6",
+      "verified_behaviors": [
+        "Five native cases pass, including original four recovery cases and admission-before-Book-link under another authorized operator.",
+        "Original Chapter root actor is preserved; current recovery permission is checked; one native request/root/delegation/group binding and zero Effects.",
+        "Book current-state/CAS controls remain active; complete immutable Chapter and group dispatch payloads and asset references are verified before reusing original Operations."
+      ],
+      "limitations": [
+        "Partial Chapter or group admission graph returns REQUIRES_RECOVERY; this change does not create missing historical graph records.",
+        "Does not claim real Provider qualification or final full-story production."
+      ]
+    },
+    {
+      "id": "craft-cumulative-budget-calls",
+      "result": "PASS",
+      "evidence_class": "SCRIPTED_NATIVE_BUDGET_PROTOCOL",
+      "evidence_state": "EXECUTABLE",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "sha256:68aba01708b84d76a8d2ba97be3be48eaac82b82cac836a298c15a3bbd664703",
+      "source_tree_hash_after": "sha256:68aba01708b84d76a8d2ba97be3be48eaac82b82cac836a298c15a3bbd664703",
+      "evidence": [
+        "craft-budget-calls-sixth.log",
+        "craft-budget-calls-execution-sixth.json",
+        "craft-budget-calls-evidence.json"
+      ],
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "production_proof": false,
+      "budget_owner": "CREATIVE_EXPERIMENT_BUDGET",
+      "verified_behaviors": [
+        "Native selected Card returned concrete BUSINESS_REJECT; raw failure, parent and repair child are preserved.",
+        "The replacement uses a different approved Card through normal Planning selection; a declared scripted hash mismatch causes the next native contract repair.",
+        "Parent and child share nonempty campaign contract_hash, policy_hash, authorization and Book/chapter business scope.",
+        "Native scripted gateway receipts settle 1000 simulated tokens per Effect; six Effects total 6000; prior 15 setup calls remain in cumulative project accounting.",
+        "The second repair is admitted but cumulative calls exhaustion prevents both a reservation and a dispatch."
+      ],
+      "limitations": [
+        "Fixture policy and receipts do not constitute user authorization, measured model tokens, paid production, independent review, or admission qualification.",
+        "Opening budget_scope_id is not the owner of this continuing Book path; nonempty frozen creative_experiment campaign proof is verified.",
+        "A successful alternative strategy is covered by the separate existing reselection test; this budget probe intentionally continues through a contract failure to test stopping."
+      ],
+      "command": "PYTHONPATH=src:. python /private/craft-budget-native.py calls",
+      "test_nodeid": "tests/integration/test_craft_planning_postgres.py::test_pg_craft_reselection_preserves_cumulative_campaign_budget[calls]"
+    },
+    {
+      "id": "craft-cumulative-budget-tokens",
+      "result": "PASS",
+      "evidence_class": "SCRIPTED_NATIVE_BUDGET_PROTOCOL",
+      "evidence_state": "EXECUTABLE",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "sha256:68aba01708b84d76a8d2ba97be3be48eaac82b82cac836a298c15a3bbd664703",
+      "source_tree_hash_after": "sha256:68aba01708b84d76a8d2ba97be3be48eaac82b82cac836a298c15a3bbd664703",
+      "evidence": [
+        "craft-budget-tokens-first.log",
+        "craft-budget-tokens-execution-first.json",
+        "craft-budget-tokens-evidence.json"
+      ],
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0,
+      "qualification": "NOT_QUALIFIED",
+      "literary_effect": "NOT_PROVEN",
+      "production_proof": false,
+      "budget_owner": "CREATIVE_EXPERIMENT_BUDGET",
+      "verified_behaviors": [
+        "Native selected Card returned concrete BUSINESS_REJECT; raw failure, parent and repair child are preserved.",
+        "The replacement uses a different approved Card through normal Planning selection; a declared scripted hash mismatch causes the next native contract repair.",
+        "Parent and child share nonempty campaign contract_hash, policy_hash, authorization and Book/chapter business scope.",
+        "Native scripted gateway receipts settle 1000 simulated tokens per Effect; six Effects total 6000; prior 15 setup calls remain in cumulative project accounting.",
+        "The second repair is admitted but cumulative tokens exhaustion prevents both a reservation and a dispatch."
+      ],
+      "limitations": [
+        "Fixture policy and receipts do not constitute user authorization, measured model tokens, paid production, independent review, or admission qualification.",
+        "Opening budget_scope_id is not the owner of this continuing Book path; nonempty frozen creative_experiment campaign proof is verified.",
+        "A successful alternative strategy is covered by the separate existing reselection test; this budget probe intentionally continues through a contract failure to test stopping."
+      ],
+      "command": "PYTHONPATH=src:. python /private/craft-budget-native.py tokens",
+      "test_nodeid": "tests/integration/test_craft_planning_postgres.py::test_pg_craft_reselection_preserves_cumulative_campaign_budget[tokens]"
+    },
+    {
+      "id": "routing-source-unit-final",
+      "status": "PASS",
+      "evidence": [
+        "routing-source-unit-final.log"
+      ],
+      "result": "126 PASS (15 new, 111 existing)",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "evidence_class": "SCRIPTED_NATIVE_SOURCE_BINDING_PROTOCOL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0
+    },
+    {
+      "id": "routing-source-native-final",
+      "status": "PASS",
+      "evidence": [
+        "routing-source-native-final.log",
+        "routing-source-native-evidence.json"
+      ],
+      "result": "PASS; exact approved selected cohort, duplicate Effect deduplication, fixture/qualification isolation, expiry and revocation",
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "evidence_class": "SCRIPTED_NATIVE_SOURCE_BINDING_PROTOCOL",
+      "actual_real_model_calls": 0,
+      "actual_human_evaluations": 0
+    }
+  ],
+  "unit_observations": [
+    {
+      "evidence": "craft-sample-unit-final.log",
+      "result": "78 passed in 2.48s",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    },
+    {
+      "command": "PYTHONPATH=src:. .venv/bin/python -m pytest -q tests/unit/test_story_planning_runtime.py",
+      "result": "124 passed in 0.80s",
+      "evidence_source": "Observed tool output in this task; no standalone original log file was recorded.",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION",
+      "scope": "Includes new raw-repair input order, role/hash/type drift, missing/extra/duplicate evidence regressions."
+    },
+    {
+      "evidence": "alternate-principal-unit-final.log",
+      "result": "35 passed in 0.58s",
+      "scope": "Frozen native admission reuse, alternate identity, exact payload/hash/scope checks, partial graph, permission, existing Book control tests.",
+      "implementation_tree_hash": "UNRECORDED_AT_EXECUTION"
+    }
+  ],
+  "files": {
+    "craft-native-first.log": {
+      "sha256": "sha256:06771ef171c29766ac2031de74105efc608ece3546223c2e693580c961e666b4",
+      "bytes": 5003,
+      "original_private_sha256": "sha256:06771ef171c29766ac2031de74105efc608ece3546223c2e693580c961e666b4"
+    },
+    "craft-native-second.log": {
+      "sha256": "sha256:d4869c0044c9aa9d7db14cbfb51e9147ac43683d58b43b291508d00d0789cf3c",
+      "bytes": 9783,
+      "original_private_sha256": "sha256:d4869c0044c9aa9d7db14cbfb51e9147ac43683d58b43b291508d00d0789cf3c"
+    },
+    "craft-native-third.log": {
+      "sha256": "sha256:68875101f9759b54adc44436626768bbe9837ec90eefae4ae818eae6a649646d",
+      "bytes": 2928,
+      "original_private_sha256": "sha256:68875101f9759b54adc44436626768bbe9837ec90eefae4ae818eae6a649646d"
+    },
+    "craft-explicit-screenplay-first.log": {
+      "sha256": "sha256:5b55fffe7cc3c64b7a49a551fd9f4277287eefc516567b2630cd85920863d502",
+      "bytes": 2498,
+      "original_private_sha256": "sha256:92db9dcfdfd8e321675971d6057aaf722f2f8b3f5d9a39da4ba5239bad563e02"
+    },
+    "craft-explicit-screenplay-second.log": {
+      "sha256": "sha256:1a1b238d4a4c2e91dd7f022dc85d356d9d2708cfb66e75ea94d82f802138abf4",
+      "bytes": 1058,
+      "original_private_sha256": "sha256:6318a73cd14a49923f299ebb93ddcd325b6291cf2b1d5086a98cd1a5a612d46d"
+    },
+    "craft-screenplay-samples-first.log": {
+      "sha256": "sha256:b610d2a2232d0e727aa19633a67aa9272ec97cd7b5c29de824498f72bcf68e4a",
+      "bytes": 7,
+      "original_private_sha256": "sha256:b610d2a2232d0e727aa19633a67aa9272ec97cd7b5c29de824498f72bcf68e4a"
+    },
+    "craft-sample-unit-final.log": {
+      "sha256": "sha256:e03d0af74e30ce1328acf02a8fd65ad629819a0756a4a8a2a901507918f0b37e",
+      "bytes": 179,
+      "original_private_sha256": "sha256:e03d0af74e30ce1328acf02a8fd65ad629819a0756a4a8a2a901507918f0b37e"
+    },
+    "canon-support-native-first.log": {
+      "sha256": "sha256:66a1a3a9942cf91bd24d8b08464d6f22ae63ae23d4fb3660cab7abd10e050f03",
+      "bytes": 45,
+      "original_private_sha256": "sha256:66a1a3a9942cf91bd24d8b08464d6f22ae63ae23d4fb3660cab7abd10e050f03"
+    },
+    "canon-support-native-second.log": {
+      "sha256": "sha256:25b550a4d592ebe9a41383c22ea289ec2860ff736b0360aa64f06703ba18a26b",
+      "bytes": 45,
+      "original_private_sha256": "sha256:25b550a4d592ebe9a41383c22ea289ec2860ff736b0360aa64f06703ba18a26b"
+    },
+    "dispatch-recovery-native-first.log": {
+      "sha256": "sha256:f8f40dce132d6e540fb31fc6fe587b5d6a9b3d249eaba1ea99999a8833f31041",
+      "bytes": 1494,
+      "original_private_sha256": "sha256:fe15b597dce462ed770f79eab2a6723611950cba6c342353f8ae10b70ad9fc57"
+    },
+    "dispatch-recovery-native-second.log": {
+      "sha256": "sha256:23b183fc4d549c6a24674eeab980a1f0a180f901ba2f34499e7e0abd1cff8bb3",
+      "bytes": 55,
+      "original_private_sha256": "sha256:23b183fc4d549c6a24674eeab980a1f0a180f901ba2f34499e7e0abd1cff8bb3"
+    },
+    "dispatch-recovery-native-third.log": {
+      "sha256": "sha256:6ae209e48f3ac72234eabba0720d8fa2b1a93c3c1366ec718aa7f9b67e38b57a",
+      "bytes": 107,
+      "original_private_sha256": "sha256:6ae209e48f3ac72234eabba0720d8fa2b1a93c3c1366ec718aa7f9b67e38b57a"
+    },
+    "repair-input-native.log": {
+      "sha256": "sha256:0b41f1c860ebfcc0310e25fc9564406c08d824c59f164c050c7aba8c5e8ac7b3",
+      "bytes": 397,
+      "original_private_sha256": "sha256:0b41f1c860ebfcc0310e25fc9564406c08d824c59f164c050c7aba8c5e8ac7b3"
+    },
+    "craft-explicit-fourth-evidence.json": {
+      "sha256": "sha256:c8a264f6d0a1436653805dadbfcd843113353a23c89bad4628d9816e26ed3c64",
+      "bytes": 44828,
+      "original_private_sha256": "sha256:f93aba206684e3c4c0ea372872e5fa41a21039215fcd156e6cec72d4ea76e147"
+    },
+    "craft-screenplay-samples-result.json": {
+      "sha256": "sha256:9a933f26c46eb540a225f5178a560bdb33de1b3c41dde5f42bb9d6f649ac886b",
+      "bytes": 47526,
+      "original_private_sha256": "sha256:7e31ddd22e20ddc9735dbc5487f15cb1c1b201328cb8a76de1ab519f69d7aab2"
+    },
+    "canon-support-native-assets.json": {
+      "sha256": "sha256:fd3e01119501eb522731a64bee9a2b36a6b0687e72bdc18cc1e27946a2f8002f",
+      "bytes": 36487,
+      "original_private_sha256": "sha256:1116ec640eafb1f82d6b99d13c18d54953a5081a873da9abb46cac1a7a66e66d"
+    },
+    "accepted-manuscript.txt": {
+      "sha256": "sha256:898287b2757e85c312e14cd11bb7c735281d90918a3cf1b495eb45a4ba1cc09f",
+      "bytes": 1105
+    },
+    "derived-screenplay.txt": {
+      "sha256": "sha256:a92b473a11d43aa796499acc9dee44fa5dabc5f0248a7c3c8ec812250e5c0f11",
+      "bytes": 651
+    },
+    "repair-input-lineage.json": {
+      "sha256": "sha256:d7597a64d518adc7407f384e24369bfd508ca802b50c65260405d468d11ef597",
+      "bytes": 14149
+    },
+    "repair-source-failure-execution.json": {
+      "sha256": "sha256:38f6d25573819dc0cd3e128edc1a46c33f811c2756c7437d5cbf7478ed4067fb",
+      "bytes": 377
+    },
+    "failure-index.json": {
+      "sha256": "sha256:ec135b671993d56919e847df02556c714c2ce9cf09c0ecf6db48483c819fc1e2",
+      "bytes": 7658
+    },
+    "alternate-principal-unit-second.log": {
+      "sha256": "sha256:fc050cb0739bb7960ec6b608e8c710b9c9b88ff823c462215842771b0a4b5a2a",
+      "bytes": 4772,
+      "original_private_sha256": "sha256:fc050cb0739bb7960ec6b608e8c710b9c9b88ff823c462215842771b0a4b5a2a"
+    },
+    "alternate-principal-unit-final.log": {
+      "sha256": "sha256:5cf74d460f1242c6a1169d9fbd585ce4333d2c49627c34b7f81e8340cdbe015b",
+      "bytes": 99,
+      "original_private_sha256": "sha256:5cf74d460f1242c6a1169d9fbd585ce4333d2c49627c34b7f81e8340cdbe015b"
+    },
+    "alternate-principal-native-first.log": {
+      "sha256": "sha256:41697d947c95ddfe7e9548c0c4950bc33ef6d49d4433d8c4687cae80822c4ea8",
+      "bytes": 660,
+      "original_private_sha256": "sha256:41697d947c95ddfe7e9548c0c4950bc33ef6d49d4433d8c4687cae80822c4ea8"
+    },
+    "alternate-principal-native-execution.json": {
+      "sha256": "sha256:385118a948a0879c19646842a23a23e9ad41098af8049218550dc3cc70e150c9",
+      "bytes": 1173,
+      "original_private_sha256": "sha256:385118a948a0879c19646842a23a23e9ad41098af8049218550dc3cc70e150c9"
+    },
+    "craft-budget-calls-first.log": {
+      "sha256": "sha256:b65084c27bfa73c09e89c563b3c1169979630d76a0256e227bd1154802fcd01b",
+      "bytes": 1078,
+      "original_private_sha256": "sha256:6e42535c463397f3fc9977417bd315fcafd7a8c64871c185f7df97ed7497736f"
+    },
+    "craft-budget-calls-second.log": {
+      "sha256": "sha256:44dd3b45d39a576a4a4428f401201aa54bf9056f39df8cec6a5b1bced200f224",
+      "bytes": 1900,
+      "original_private_sha256": "sha256:9129793b1c60ce42cd51244c0d7174d50482338b28610a2f2cfcfb41761091f3"
+    },
+    "craft-budget-calls-third.log": {
+      "sha256": "sha256:b8bfb40f21acd0c47b3000a7354a273f51235aca40a4c332891a4434a3825846",
+      "bytes": 1868,
+      "original_private_sha256": "sha256:6015998c593047718dca0d932e7d08bce9bc42eda453b56280a486a893aa0598"
+    },
+    "craft-budget-calls-fourth.log": {
+      "sha256": "sha256:e9168bd2cf553b517036fa6e70016f1f00d09b52b33fdd146fc541bf8ef9cd8e",
+      "bytes": 1909,
+      "original_private_sha256": "sha256:25e7ac8ee296b154f89a4b66fff920291053e9f3405f0eef130d54d523a5c41a"
+    },
+    "craft-budget-calls-fifth.log": {
+      "sha256": "sha256:ba3fbe66a2e8562e032c96cf5219aa880d17f2db339baad5d3aa8e2ef8bd5139",
+      "bytes": 1873,
+      "original_private_sha256": "sha256:7ee7a984f902bbecc603f005c5ba0ac7b114d7ffdf841708b5ec8c047e4ab66a"
+    },
+    "craft-budget-calls-sixth.log": {
+      "sha256": "sha256:afe9358c76c5faf163d8b7e7b446bf285b489df41cd360da5ebe88f95c0d5512",
+      "bytes": 30,
+      "original_private_sha256": "sha256:afe9358c76c5faf163d8b7e7b446bf285b489df41cd360da5ebe88f95c0d5512"
+    },
+    "craft-budget-tokens-first.log": {
+      "sha256": "sha256:d1cfcb3a698dc99cf23bdef8f0f0d5687eb3c7427a06fe3596947c544ff9cbe1",
+      "bytes": 31,
+      "original_private_sha256": "sha256:d1cfcb3a698dc99cf23bdef8f0f0d5687eb3c7427a06fe3596947c544ff9cbe1"
+    },
+    "craft-budget-calls-evidence.json": {
+      "sha256": "sha256:faf519b2314d2c686876bc613d62752a5a45118e8e9b24b89b635b10b1913bee",
+      "bytes": 34239,
+      "original_private_sha256": "sha256:faf519b2314d2c686876bc613d62752a5a45118e8e9b24b89b635b10b1913bee"
+    },
+    "craft-budget-tokens-evidence.json": {
+      "sha256": "sha256:00fac098dd8b2d5e0e39e9abcfadcfe205b7df0439a95529eba92c64a191360c",
+      "bytes": 34240,
+      "original_private_sha256": "sha256:00fac098dd8b2d5e0e39e9abcfadcfe205b7df0439a95529eba92c64a191360c"
+    },
+    "craft-budget-calls-execution-third.json": {
+      "sha256": "sha256:139304aaf88efa293913584b3b224b3ee52f172337a2ebf919a7128e9a71ce13",
+      "bytes": 433,
+      "original_private_sha256": "sha256:139304aaf88efa293913584b3b224b3ee52f172337a2ebf919a7128e9a71ce13"
+    },
+    "craft-budget-calls-execution-fourth.json": {
+      "sha256": "sha256:d1936b03544cd56e524607023c05e5599d7556d789200d2451ca945e35e89476",
+      "bytes": 432,
+      "original_private_sha256": "sha256:d1936b03544cd56e524607023c05e5599d7556d789200d2451ca945e35e89476"
+    },
+    "craft-budget-calls-execution-fifth.json": {
+      "sha256": "sha256:8d2dea34bf6ac5edcb733231ef5dc8aa19bd51cd0cbe3e5214b01736afb7dcad",
+      "bytes": 433,
+      "original_private_sha256": "sha256:8d2dea34bf6ac5edcb733231ef5dc8aa19bd51cd0cbe3e5214b01736afb7dcad"
+    },
+    "craft-budget-calls-execution-sixth.json": {
+      "sha256": "sha256:7b8e3b6c3967973821086a87e0229fb88abb61145f405211f85c9b66ff682a4c",
+      "bytes": 433,
+      "original_private_sha256": "sha256:7b8e3b6c3967973821086a87e0229fb88abb61145f405211f85c9b66ff682a4c"
+    },
+    "craft-budget-tokens-execution-first.json": {
+      "sha256": "sha256:d70cec74425cecfde10c16bc19f9a2846a11b84850e40532b493dc9a024f9919",
+      "bytes": 434,
+      "original_private_sha256": "sha256:d70cec74425cecfde10c16bc19f9a2846a11b84850e40532b493dc9a024f9919"
+    },
+    "routing-source-existing-unit.log": {
+      "sha256": "sha256:f3afc8468e5f53ce7a09b31f220572fbf5a701035f344c72b4a2e630e0c36072",
+      "bytes": 180
+    },
+    "routing-source-unit-first.log": {
+      "sha256": "sha256:69e043f9ba21d12ae673c11ad9cb5400289ad16833e2016b2510eb4245b8f507",
+      "bytes": 4431
+    },
+    "routing-source-unit-second.log": {
+      "sha256": "sha256:8713bf4f0121067551b9a6ee2450f5b5f26a4ad717f39b24cdd3f367d389fcf1",
+      "bytes": 99
+    },
+    "routing-source-unit-final.log": {
+      "sha256": "sha256:03892363c4cfdc6b2533fd893886ca1a0bd9736c07979826859a0927b22536ec",
+      "bytes": 180
+    },
+    "routing-source-native-first.log": {
+      "sha256": "sha256:70c1e73484c0248c1fba2a9ccf4f79450c88277ec79472365f942a5f861a6338",
+      "bytes": 688
+    },
+    "routing-source-native-second.log": {
+      "sha256": "sha256:e9bea92f3959e1332fed605165aa6d2dd18bdfa042c9cc1c6152ee3a9cdbb4c0",
+      "bytes": 33
+    },
+    "routing-source-native-final.log": {
+      "sha256": "sha256:5616424350b8968cd78b64abca8de7b8bca857ff2a0007d4f9273b10c8dbc70c",
+      "bytes": 1720
+    },
+    "routing-source-native-evidence.json": {
+      "sha256": "sha256:afc4f58476e84b2125b930bfc0286ad1c5475538f698e931b5dc13e0831094ce",
+      "bytes": 2023
+    }
+  }
+}

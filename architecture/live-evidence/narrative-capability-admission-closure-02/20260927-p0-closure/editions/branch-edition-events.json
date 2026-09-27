@@ -1,0 +1,141 @@
+[
+  {
+    "kind": "CREATED",
+    "revision_id": "5eb46853-356f-43f4-90e4-698c69e374a1",
+    "content": {
+      "base_revision_id": ""
+    }
+  },
+  {
+    "kind": "VALIDATED",
+    "revision_id": "5eb46853-356f-43f4-90e4-698c69e374a1",
+    "content": {
+      "kind": "ORIGINAL_ACCEPTED_MANUSCRIPT",
+      "manifest_digest": "sha256:c300264e840f59aa9f6710cac5ceeabbd59083d53cd0c762a6bff27ca7794679",
+      "source_book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662"
+    }
+  },
+  {
+    "kind": "SELECTED",
+    "revision_id": "5eb46853-356f-43f4-90e4-698c69e374a1",
+    "content": {
+      "reason": "original native accepted manuscript",
+      "version": 1
+    }
+  },
+  {
+    "kind": "SAVED",
+    "revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f",
+    "content": {
+      "impact": {
+        "fact_reuse": "REQUIRES_EXACT_NATIVE_VALIDATION",
+        "changed_unit_ids": [
+          "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097"
+        ],
+        "review_signatures": "INVALIDATED",
+        "publication_candidates": "INVALIDATED",
+        "earliest_affected_position": 2,
+        "required_revalidation_unit_ids": [
+          "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097"
+        ]
+      },
+      "predecessor_revision_id": "17971f8f-bb32-47dc-819e-9939bfe330ec"
+    }
+  },
+  {
+    "kind": "VALIDATION_BOUND",
+    "revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f",
+    "content": {
+      "manifest_digest": "sha256:7cd1000a08fbf8a2ea2af6d620687a6bad94a6fcf561dc717e0e427ce4be993a",
+      "validation_book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc"
+    }
+  },
+  {
+    "kind": "CREATED",
+    "revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+    "content": {
+      "base_revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f"
+    }
+  },
+  {
+    "kind": "VALIDATED",
+    "revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+    "content": {
+      "reason": "保留作者原候选，显式保存原生审改后已接纳正文供版本选择",
+      "status": "VALIDATED",
+      "revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+      "accepted_units": [
+        {
+          "unit_id": "chapter:chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+          "text_hash": "sha256:8f34cb81b8885702a2af84a88bc5c83e1bc753a264325574120ad61938910b50",
+          "asset_hash": "sha256:47f565fbf591e76547e563a603db4956d8fd672d89b057099af5f5cc56bc050b",
+          "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+          "asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+          "projection_set_id": "longform-projection:b9ddfa2aa9bb2c1098c47d1bdf50a7e6962e4d453e366c6be79ace8d96de11dc",
+          "outcome_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+          "story_state_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1",
+          "canon_snapshot_asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+        },
+        {
+          "unit_id": "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+          "text_hash": "sha256:8a14674bf545c2563a8779a0dacdb097fd6aeced609bf14346e3e65aa1671a68",
+          "asset_hash": "sha256:70845356bc9dbe9ae583b88efd04d9ee9d2bc8833d017d52ea78a0436bceefe9",
+          "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+          "asset_version_id": "authority-output:51d81be2-a31b-4680-96ce-5b5bc772d0ab:chapter.best_candidate:v1",
+          "projection_set_id": "longform-projection:954d2621a124d24ff0284c5b302bb1c0c327d819c03cabc0a0a51cc826ff2b8e",
+          "outcome_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1",
+          "story_state_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.story_state:v1",
+          "canon_snapshot_asset_version_id": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.canon.current:v1"
+        }
+      ],
+      "manifest_digest": "sha256:82dc773b9b321364702f42b4eb1d10eec777997b496329544a28708060bd7c40",
+      "validation_basis": "CAPTURED_NATIVE_REVIEW_RESULT",
+      "exact_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "review_qualification": "NATIVE_BUSINESS_ACCEPTANCE_ONLY",
+      "validation_book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+      "source_validation_revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f"
+    }
+  },
+  {
+    "kind": "SELECTED",
+    "revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+    "content": {
+      "reason": "已重验正文与事实，切换至显式保存的审改稿",
+      "status": "SELECTED",
+      "revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+      "head_version": 2,
+      "old_inflight_policy": "SETTLE_ONLY_IN_ORIGINAL_BOOK_RUN",
+      "previous_revision_id": "5eb46853-356f-43f4-90e4-698c69e374a1",
+      "continuation_book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc"
+    }
+  },
+  {
+    "kind": "CREATED",
+    "revision_id": "74ab7bf6-ae69-4ff5-bcf7-ed09aa54b085",
+    "content": {
+      "base_revision_id": ""
+    }
+  },
+  {
+    "kind": "VALIDATED",
+    "revision_id": "74ab7bf6-ae69-4ff5-bcf7-ed09aa54b085",
+    "content": {
+      "kind": "ORIGINAL_ACCEPTED_MANUSCRIPT",
+      "manifest_digest": "sha256:1bc86d01e19d10ea7a70c4f93a39e359643bface2f593013b8ee1d07cf78de6b",
+      "source_book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc"
+    }
+  },
+  {
+    "kind": "SELECTED",
+    "revision_id": "74ab7bf6-ae69-4ff5-bcf7-ed09aa54b085",
+    "content": {
+      "reason": "冻结所选稿件后续新增的接纳章节",
+      "status": "SELECTED",
+      "revision_id": "74ab7bf6-ae69-4ff5-bcf7-ed09aa54b085",
+      "head_version": 3,
+      "old_inflight_policy": "SETTLE_ONLY_IN_ORIGINAL_BOOK_RUN",
+      "previous_revision_id": "84a9c3fe-c6cf-415b-b469-8099f98f9357",
+      "continuation_book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc"
+    }
+  }
+]

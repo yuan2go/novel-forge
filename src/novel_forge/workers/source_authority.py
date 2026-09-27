@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.workers.dispatch_pause import pause_worker_dispatch
+
 import os
 import signal
 import time
@@ -70,6 +72,8 @@ def main() -> int:
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
     while not stopping:
+        if pause_worker_dispatch(supervisor, poll_seconds):
+            continue
         scan_expired_operation_deadlines(
             settings.database_url,
             actor_id=principal.principal_id,

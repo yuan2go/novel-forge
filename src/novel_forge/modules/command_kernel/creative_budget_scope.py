@@ -97,6 +97,15 @@ def classify_business_scope(identity: dict[str, Any], *, dispatch_generation: in
                         add_chapter(projected_realization.get("chapter_number"), "request.planning_command.narrative_realization.chapter_number")
             else:
                 origin_phase = "DESIGN"
+        elif operation in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
+            scope = identity.get("native_screenplay_scope")
+            if not isinstance(scope, dict) or not scope.get("units") or not scope.get("source_revision_id"):
+                raise _unknown("screenplay requires its verified exact edition source range")
+            first, last = (_number(scope.get(key), minimum=1) for key in ("chapter_start", "chapter_end"))
+            if first > last or metadata.get("chapter", 0) not in {0, last}:
+                raise _unknown("screenplay range differs from its frozen source")
+            add_chapter(last, "native_screenplay_source.chapter_end")
+            sources.append({"path": "native_screenplay_source", "value": deepcopy(scope)})
         elif operation == "longform.prose_review":
             scope = identity.get("native_prose_scope")
             if not isinstance(scope, dict) or not scope.get("spans") or not scope.get("manifest_digest"):

@@ -169,7 +169,7 @@ def _load_source(
         JOIN authority_asset_version AS story ON story.asset_version_id=accepted.story_state_asset_version_id
         LEFT JOIN authority_asset_version AS canon ON canon.asset_version_id=accepted.canon_snapshot_asset_version_id
         JOIN authority_operation AS accepted_operation ON accepted_operation.operation_id=accepted.acceptance_operation_id
-        WHERE accepted.project_id=%s AND accepted.book_run_id=%s
+        WHERE accepted.project_id=%s AND accepted.book_run_id=authority_book_source_run(%s,accepted.chapter_number)
         ORDER BY accepted.chapter_number,accepted.acceptance_id
         FOR SHARE OF accepted,outcome,story,accepted_operation
         """,

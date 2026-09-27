@@ -24,12 +24,15 @@ def require_reference_subject(
     if (not isinstance(binding, Mapping) or set(binding) != {"asset_version_id", "content_hash"}
         or any(not isinstance(value, str) or not value for value in binding.values())):
         raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "reference annotation requires one exact sample version")
-    if {"planning_generation_candidate", "longform_prose_review_sample"}.intersection(allowed_types):
+    if {"planning_generation_candidate", "longform_prose_review_sample", "screenplay_provider_sample"}.intersection(allowed_types):
         cursor.execute("SELECT asset_type FROM authority_asset JOIN authority_asset_version USING(asset_id) WHERE project_id=%s AND asset_version_id=%s",
             [project_id, binding["asset_version_id"]])
         kind = cursor.fetchone()
         if kind and kind[0] == "planning_generation_candidate" and kind[0] in allowed_types:
             return require_planning_reference_subject(cursor, project_id=project_id, binding=binding)
+        if kind and kind[0] == "screenplay_provider_sample" and kind[0] in allowed_types:
+            from novel_forge.modules.book_followup_authority.screenplay_sample_feedback import require_screenplay_reference_subject
+            return require_screenplay_reference_subject(cursor, project_id=project_id, binding=binding)
         if kind and kind[0] == "longform_prose_review_sample" and kind[0] in allowed_types:
             from novel_forge.modules.book_followup_authority.prose_sample_feedback import require_prose_reference_subject
 
@@ -103,6 +106,9 @@ def require_reference_annotation(
     author_field = "evaluator_id" if key == "evaluation" else "adjudicator_id"
     if annotation.get("subject_asset_version_id") != subject["asset_version_id"] or annotation.get(author_field) != actor_id:
         raise KernelError("QUALITY_REFERENCE_ANNOTATION_INVALID", "reference annotation must retain the exact target and authenticated author")
+    if subject["asset_type"] == "screenplay_provider_sample":
+        from novel_forge.modules.book_followup_authority.screenplay_sample_feedback import validate_screenplay_annotation
+        validate_screenplay_annotation(subject=subject, annotation=annotation, human=key == "evaluation")
     if subject["asset_type"] == "longform_prose_review_sample":
         from novel_forge.modules.book_followup_authority.prose_sample_feedback import validate_prose_annotation
 

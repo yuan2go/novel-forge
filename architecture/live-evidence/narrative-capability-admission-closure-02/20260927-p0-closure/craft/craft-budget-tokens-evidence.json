@@ -1,0 +1,992 @@
+{
+  "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
+  "budget_evidence_class": "SCRIPTED_NATIVE_BUDGET_PROTOCOL_ONLY",
+  "project_id": "project-ea77b6bbe964468b98105c50e3df9144",
+  "book_run_id": "book-run:7345db78-1f75-4b6b-9c7d-c8ec646ca21b",
+  "budget_exhaustion": "tokens",
+  "generations": [
+    [
+      "88f9e5af-acab-4135-81d1-e057d1ee0272",
+      null,
+      0,
+      null
+    ],
+    [
+      "639d53e9-4b09-4ef4-bf6b-b6532280217b",
+      "88f9e5af-acab-4135-81d1-e057d1ee0272",
+      1,
+      "3d52eae6-a410-4881-a09d-9507c61b4b01"
+    ],
+    [
+      "9aaaa769-3c62-450f-bf95-5f96b590baf3",
+      "639d53e9-4b09-4ef4-bf6b-b6532280217b",
+      2,
+      "592c8832-bf7c-470a-b9dd-71a8439d05ce"
+    ]
+  ],
+  "reservations": [
+    {
+      "reservation_id": "e2ea5983-1a22-4a28-a26a-add8bea8824c",
+      "operation_id": "88f9e5af-acab-4135-81d1-e057d1ee0272",
+      "estimated_tokens": 32000,
+      "actual_tokens": 1000,
+      "status": "SETTLED",
+      "evidence": {
+        "phase": "pre_dispatch",
+        "fixture": true,
+        "work_id": "",
+        "model_id": "scripted-planning-fixture",
+        "call_caps": {},
+        "token_caps": {},
+        "cost_status": "KNOWN",
+        "provider_id": "scripted_provider_v2",
+        "reservation_id": "e2ea5983-1a22-4a28-a26a-add8bea8824c",
+        "budget_scope_id": "",
+        "real_model_call": false,
+        "accounting_basis": "PRICED",
+        "creative_experiment": {
+          "owner": "CREATIVE_EXPERIMENT_BUDGET",
+          "phase": "PRODUCTION",
+          "subject_id": "effect:21310fa9-d27e-4df0-8d9f-bcfb7386d65f",
+          "policy_hash": "f10e81deb865e53efb877b8778f0d5b919580b3e14ca1c018f86cba9465ca3b6",
+          "authorization": {
+            "book_id": "book:project-ea77b6bbe964468b98105c50e3df9144",
+            "project_id": "project-ea77b6bbe964468b98105c50e3df9144",
+            "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "business_scope": {
+              "design_allowed": true,
+              "source_allowed": true,
+              "max_chapter_number": 12
+            },
+            "authorization_ref": "fixture-campaign-approval",
+            "authorized_cumulative_caps": {
+              "DESIGN": {
+                "calls": 15,
+                "tokens": 15000,
+                "priced_usd": "0.00000000"
+              },
+              "REPAIR": {
+                "calls": 4,
+                "tokens": 34000,
+                "priced_usd": "3"
+              },
+              "SOURCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "HOLDOUT": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "REFERENCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "SCREENING": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "PRODUCTION": {
+                "calls": 3,
+                "tokens": 96000,
+                "priced_usd": "3"
+              },
+              "CALIBRATION": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              }
+            }
+          },
+          "contract_hash": "sha256:6bdfba7f08836e92217c1c9009d42cea358278b7da6a94f4cf5cc8d7be2aee65",
+          "business_scope": {
+            "phase": "PRODUCTION",
+            "stage": "world_candidates.generate",
+            "capability": "planning.story_chapter.generate",
+            "origin_phase": "PRODUCTION",
+            "scope_sources": [
+              {
+                "path": "operation.repair_number",
+                "value": 0
+              },
+              {
+                "path": "operation.narrative_realization.chapter_number",
+                "value": 1
+              },
+              {
+                "path": "request.world_preparation.accepted_through_chapter+1",
+                "value": 1
+              },
+              {
+                "path": "operation.world_preparation_request.accepted_through_chapter+1",
+                "value": 1
+              }
+            ],
+            "chapter_number": 1,
+            "operation_name": "story_planning.generate",
+            "dispatch_generation": 1,
+            "source_operation_id": "88f9e5af-acab-4135-81d1-e057d1ee0272",
+            "provider_request_hash": "sha256:d56f405a4b147da471ebcd64967194b1e43bbe765958c02e9a12ab031f37e871",
+            "generator_operation_name": "chapter_plan.generate"
+          },
+          "policy_version": "campaign-fixture-v1"
+        },
+        "budget_scope_revision": null,
+        "cost_settlement_basis": "FIXTURE_RECEIPT",
+        "estimated_cost_status": "KNOWN",
+        "cost_authorization_ref": "",
+        "usage_settlement_basis": "FIXTURE_RECEIPT",
+        "entitlement_usage_reconciled": false,
+        "provider_reported_cost_amount": "0"
+      },
+      "effect_id": "21310fa9-d27e-4df0-8d9f-bcfb7386d65f",
+      "stage": "world_candidates.generate"
+    },
+    {
+      "reservation_id": "71383473-38e8-4b51-acef-0eb0634031e9",
+      "operation_id": "88f9e5af-acab-4135-81d1-e057d1ee0272",
+      "estimated_tokens": 32000,
+      "actual_tokens": 1000,
+      "status": "SETTLED",
+      "evidence": {
+        "phase": "pre_dispatch",
+        "fixture": true,
+        "work_id": "",
+        "model_id": "scripted-planning-fixture",
+        "call_caps": {},
+        "token_caps": {},
+        "cost_status": "KNOWN",
+        "provider_id": "scripted_provider_v2",
+        "reservation_id": "71383473-38e8-4b51-acef-0eb0634031e9",
+        "budget_scope_id": "",
+        "real_model_call": false,
+        "accounting_basis": "PRICED",
+        "creative_experiment": {
+          "owner": "CREATIVE_EXPERIMENT_BUDGET",
+          "phase": "PRODUCTION",
+          "subject_id": "effect:78207ed3-e7ef-4ea5-99ab-44acdd575745",
+          "policy_hash": "f10e81deb865e53efb877b8778f0d5b919580b3e14ca1c018f86cba9465ca3b6",
+          "authorization": {
+            "book_id": "book:project-ea77b6bbe964468b98105c50e3df9144",
+            "project_id": "project-ea77b6bbe964468b98105c50e3df9144",
+            "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "business_scope": {
+              "design_allowed": true,
+              "source_allowed": true,
+              "max_chapter_number": 12
+            },
+            "authorization_ref": "fixture-campaign-approval",
+            "authorized_cumulative_caps": {
+              "DESIGN": {
+                "calls": 15,
+                "tokens": 15000,
+                "priced_usd": "0.00000000"
+              },
+              "REPAIR": {
+                "calls": 4,
+                "tokens": 34000,
+                "priced_usd": "3"
+              },
+              "SOURCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "HOLDOUT": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "REFERENCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "SCREENING": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "PRODUCTION": {
+                "calls": 3,
+                "tokens": 96000,
+                "priced_usd": "3"
+              },
+              "CALIBRATION": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              }
+            }
+          },
+          "contract_hash": "sha256:6bdfba7f08836e92217c1c9009d42cea358278b7da6a94f4cf5cc8d7be2aee65",
+          "business_scope": {
+            "phase": "PRODUCTION",
+            "stage": "world_candidates.evaluate",
+            "capability": "planning.story_chapter.generate",
+            "origin_phase": "PRODUCTION",
+            "scope_sources": [
+              {
+                "path": "operation.repair_number",
+                "value": 0
+              },
+              {
+                "path": "operation.narrative_realization.chapter_number",
+                "value": 1
+              },
+              {
+                "path": "request.world_preparation.accepted_through_chapter+1",
+                "value": 1
+              },
+              {
+                "path": "operation.world_preparation_request.accepted_through_chapter+1",
+                "value": 1
+              }
+            ],
+            "chapter_number": 1,
+            "operation_name": "story_planning.generate",
+            "dispatch_generation": 1,
+            "source_operation_id": "88f9e5af-acab-4135-81d1-e057d1ee0272",
+            "provider_request_hash": "sha256:8f314636426a10df073cb5f86aed3c713df8f6014d8a3b90c90e0ec468c4a1f4",
+            "generator_operation_name": "chapter_plan.generate"
+          },
+          "policy_version": "campaign-fixture-v1"
+        },
+        "budget_scope_revision": null,
+        "cost_settlement_basis": "FIXTURE_RECEIPT",
+        "estimated_cost_status": "KNOWN",
+        "cost_authorization_ref": "",
+        "usage_settlement_basis": "FIXTURE_RECEIPT",
+        "entitlement_usage_reconciled": false,
+        "provider_reported_cost_amount": "0"
+      },
+      "effect_id": "78207ed3-e7ef-4ea5-99ab-44acdd575745",
+      "stage": "world_candidates.evaluate"
+    },
+    {
+      "reservation_id": "41a23492-609c-4631-8f0c-9a5a5212a820",
+      "operation_id": "88f9e5af-acab-4135-81d1-e057d1ee0272",
+      "estimated_tokens": 32000,
+      "actual_tokens": 1000,
+      "status": "SETTLED",
+      "evidence": {
+        "phase": "pre_dispatch",
+        "fixture": true,
+        "work_id": "",
+        "model_id": "scripted-planning-fixture",
+        "call_caps": {},
+        "token_caps": {},
+        "cost_status": "KNOWN",
+        "provider_id": "scripted_provider_v2",
+        "reservation_id": "41a23492-609c-4631-8f0c-9a5a5212a820",
+        "budget_scope_id": "",
+        "real_model_call": false,
+        "accounting_basis": "PRICED",
+        "creative_experiment": {
+          "owner": "CREATIVE_EXPERIMENT_BUDGET",
+          "phase": "PRODUCTION",
+          "subject_id": "effect:943be31e-0df7-47e8-baf2-80272a729773",
+          "policy_hash": "f10e81deb865e53efb877b8778f0d5b919580b3e14ca1c018f86cba9465ca3b6",
+          "authorization": {
+            "book_id": "book:project-ea77b6bbe964468b98105c50e3df9144",
+            "project_id": "project-ea77b6bbe964468b98105c50e3df9144",
+            "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "business_scope": {
+              "design_allowed": true,
+              "source_allowed": true,
+              "max_chapter_number": 12
+            },
+            "authorization_ref": "fixture-campaign-approval",
+            "authorized_cumulative_caps": {
+              "DESIGN": {
+                "calls": 15,
+                "tokens": 15000,
+                "priced_usd": "0.00000000"
+              },
+              "REPAIR": {
+                "calls": 4,
+                "tokens": 34000,
+                "priced_usd": "3"
+              },
+              "SOURCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "HOLDOUT": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "REFERENCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "SCREENING": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "PRODUCTION": {
+                "calls": 3,
+                "tokens": 96000,
+                "priced_usd": "3"
+              },
+              "CALIBRATION": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              }
+            }
+          },
+          "contract_hash": "sha256:6bdfba7f08836e92217c1c9009d42cea358278b7da6a94f4cf5cc8d7be2aee65",
+          "business_scope": {
+            "phase": "PRODUCTION",
+            "stage": "chapter_plan.generate",
+            "capability": "planning.story_chapter.generate",
+            "origin_phase": "PRODUCTION",
+            "scope_sources": [
+              {
+                "path": "operation.repair_number",
+                "value": 0
+              },
+              {
+                "path": "operation.narrative_realization.chapter_number",
+                "value": 1
+              },
+              {
+                "path": "request.planning_command.narrative_realization.chapter_number",
+                "value": 1
+              }
+            ],
+            "chapter_number": 1,
+            "operation_name": "story_planning.generate",
+            "dispatch_generation": 1,
+            "source_operation_id": "88f9e5af-acab-4135-81d1-e057d1ee0272",
+            "provider_request_hash": "sha256:775b86a4969564cacac5c375ff754153421bc55343a110feffc1869f0765f267",
+            "generator_operation_name": "chapter_plan.generate"
+          },
+          "policy_version": "campaign-fixture-v1"
+        },
+        "budget_scope_revision": null,
+        "cost_settlement_basis": "FIXTURE_RECEIPT",
+        "estimated_cost_status": "KNOWN",
+        "cost_authorization_ref": "",
+        "usage_settlement_basis": "FIXTURE_RECEIPT",
+        "entitlement_usage_reconciled": false,
+        "provider_reported_cost_amount": "0"
+      },
+      "effect_id": "943be31e-0df7-47e8-baf2-80272a729773",
+      "stage": "chapter_plan.generate"
+    },
+    {
+      "reservation_id": "6debac78-e0da-49f8-9f07-a035d38b84f5",
+      "operation_id": "639d53e9-4b09-4ef4-bf6b-b6532280217b",
+      "estimated_tokens": 32000,
+      "actual_tokens": 1000,
+      "status": "SETTLED",
+      "evidence": {
+        "phase": "pre_dispatch",
+        "fixture": true,
+        "work_id": "",
+        "model_id": "scripted-planning-fixture",
+        "call_caps": {},
+        "token_caps": {},
+        "cost_status": "KNOWN",
+        "provider_id": "scripted_provider_v2",
+        "reservation_id": "6debac78-e0da-49f8-9f07-a035d38b84f5",
+        "budget_scope_id": "",
+        "real_model_call": false,
+        "accounting_basis": "PRICED",
+        "creative_experiment": {
+          "owner": "CREATIVE_EXPERIMENT_BUDGET",
+          "phase": "REPAIR",
+          "subject_id": "effect:9fd2068b-84b1-4dff-a936-ec372c85acd6",
+          "policy_hash": "f10e81deb865e53efb877b8778f0d5b919580b3e14ca1c018f86cba9465ca3b6",
+          "authorization": {
+            "book_id": "book:project-ea77b6bbe964468b98105c50e3df9144",
+            "project_id": "project-ea77b6bbe964468b98105c50e3df9144",
+            "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "business_scope": {
+              "design_allowed": true,
+              "source_allowed": true,
+              "max_chapter_number": 12
+            },
+            "authorization_ref": "fixture-campaign-approval",
+            "authorized_cumulative_caps": {
+              "DESIGN": {
+                "calls": 15,
+                "tokens": 15000,
+                "priced_usd": "0.00000000"
+              },
+              "REPAIR": {
+                "calls": 4,
+                "tokens": 34000,
+                "priced_usd": "3"
+              },
+              "SOURCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "HOLDOUT": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "REFERENCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "SCREENING": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "PRODUCTION": {
+                "calls": 3,
+                "tokens": 96000,
+                "priced_usd": "3"
+              },
+              "CALIBRATION": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              }
+            }
+          },
+          "contract_hash": "sha256:6bdfba7f08836e92217c1c9009d42cea358278b7da6a94f4cf5cc8d7be2aee65",
+          "business_scope": {
+            "phase": "REPAIR",
+            "stage": "world_candidates.generate",
+            "capability": "planning.story_chapter.generate",
+            "origin_phase": "PRODUCTION",
+            "scope_sources": [
+              {
+                "path": "operation.repair_number",
+                "value": 1
+              },
+              {
+                "path": "operation.narrative_realization.chapter_number",
+                "value": 1
+              },
+              {
+                "path": "request.world_preparation.accepted_through_chapter+1",
+                "value": 1
+              },
+              {
+                "path": "operation.world_preparation_request.accepted_through_chapter+1",
+                "value": 1
+              }
+            ],
+            "chapter_number": 1,
+            "operation_name": "story_planning.generate",
+            "dispatch_generation": 1,
+            "source_operation_id": "639d53e9-4b09-4ef4-bf6b-b6532280217b",
+            "provider_request_hash": "sha256:0b23b92db5266c2b7661705dcbca9f41c1c347570136ac1b800c7e176da1116a",
+            "generator_operation_name": "chapter_plan.generate"
+          },
+          "policy_version": "campaign-fixture-v1"
+        },
+        "budget_scope_revision": null,
+        "cost_settlement_basis": "FIXTURE_RECEIPT",
+        "estimated_cost_status": "KNOWN",
+        "cost_authorization_ref": "",
+        "usage_settlement_basis": "FIXTURE_RECEIPT",
+        "entitlement_usage_reconciled": false,
+        "provider_reported_cost_amount": "0"
+      },
+      "effect_id": "9fd2068b-84b1-4dff-a936-ec372c85acd6",
+      "stage": "world_candidates.generate"
+    },
+    {
+      "reservation_id": "6e284435-c926-4c06-97cf-7b917298a4bb",
+      "operation_id": "639d53e9-4b09-4ef4-bf6b-b6532280217b",
+      "estimated_tokens": 32000,
+      "actual_tokens": 1000,
+      "status": "SETTLED",
+      "evidence": {
+        "phase": "pre_dispatch",
+        "fixture": true,
+        "work_id": "",
+        "model_id": "scripted-planning-fixture",
+        "call_caps": {},
+        "token_caps": {},
+        "cost_status": "KNOWN",
+        "provider_id": "scripted_provider_v2",
+        "reservation_id": "6e284435-c926-4c06-97cf-7b917298a4bb",
+        "budget_scope_id": "",
+        "real_model_call": false,
+        "accounting_basis": "PRICED",
+        "creative_experiment": {
+          "owner": "CREATIVE_EXPERIMENT_BUDGET",
+          "phase": "REPAIR",
+          "subject_id": "effect:ac5159bc-2c2e-47d3-9ddc-5a64d6aef38d",
+          "policy_hash": "f10e81deb865e53efb877b8778f0d5b919580b3e14ca1c018f86cba9465ca3b6",
+          "authorization": {
+            "book_id": "book:project-ea77b6bbe964468b98105c50e3df9144",
+            "project_id": "project-ea77b6bbe964468b98105c50e3df9144",
+            "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "business_scope": {
+              "design_allowed": true,
+              "source_allowed": true,
+              "max_chapter_number": 12
+            },
+            "authorization_ref": "fixture-campaign-approval",
+            "authorized_cumulative_caps": {
+              "DESIGN": {
+                "calls": 15,
+                "tokens": 15000,
+                "priced_usd": "0.00000000"
+              },
+              "REPAIR": {
+                "calls": 4,
+                "tokens": 34000,
+                "priced_usd": "3"
+              },
+              "SOURCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "HOLDOUT": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "REFERENCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "SCREENING": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "PRODUCTION": {
+                "calls": 3,
+                "tokens": 96000,
+                "priced_usd": "3"
+              },
+              "CALIBRATION": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              }
+            }
+          },
+          "contract_hash": "sha256:6bdfba7f08836e92217c1c9009d42cea358278b7da6a94f4cf5cc8d7be2aee65",
+          "business_scope": {
+            "phase": "REPAIR",
+            "stage": "world_candidates.evaluate",
+            "capability": "planning.story_chapter.generate",
+            "origin_phase": "PRODUCTION",
+            "scope_sources": [
+              {
+                "path": "operation.repair_number",
+                "value": 1
+              },
+              {
+                "path": "operation.narrative_realization.chapter_number",
+                "value": 1
+              },
+              {
+                "path": "request.world_preparation.accepted_through_chapter+1",
+                "value": 1
+              },
+              {
+                "path": "operation.world_preparation_request.accepted_through_chapter+1",
+                "value": 1
+              }
+            ],
+            "chapter_number": 1,
+            "operation_name": "story_planning.generate",
+            "dispatch_generation": 1,
+            "source_operation_id": "639d53e9-4b09-4ef4-bf6b-b6532280217b",
+            "provider_request_hash": "sha256:543862db9e2a0ba1120997b2c5f571c8e22512be5332a58a8eb617a581a32707",
+            "generator_operation_name": "chapter_plan.generate"
+          },
+          "policy_version": "campaign-fixture-v1"
+        },
+        "budget_scope_revision": null,
+        "cost_settlement_basis": "FIXTURE_RECEIPT",
+        "estimated_cost_status": "KNOWN",
+        "cost_authorization_ref": "",
+        "usage_settlement_basis": "FIXTURE_RECEIPT",
+        "entitlement_usage_reconciled": false,
+        "provider_reported_cost_amount": "0"
+      },
+      "effect_id": "ac5159bc-2c2e-47d3-9ddc-5a64d6aef38d",
+      "stage": "world_candidates.evaluate"
+    },
+    {
+      "reservation_id": "19e57d32-7871-4541-8f21-0989f9e49e20",
+      "operation_id": "639d53e9-4b09-4ef4-bf6b-b6532280217b",
+      "estimated_tokens": 32000,
+      "actual_tokens": 1000,
+      "status": "SETTLED",
+      "evidence": {
+        "phase": "pre_dispatch",
+        "fixture": true,
+        "work_id": "",
+        "model_id": "scripted-planning-fixture",
+        "call_caps": {},
+        "token_caps": {},
+        "cost_status": "KNOWN",
+        "provider_id": "scripted_provider_v2",
+        "reservation_id": "19e57d32-7871-4541-8f21-0989f9e49e20",
+        "budget_scope_id": "",
+        "real_model_call": false,
+        "accounting_basis": "PRICED",
+        "creative_experiment": {
+          "owner": "CREATIVE_EXPERIMENT_BUDGET",
+          "phase": "REPAIR",
+          "subject_id": "effect:83865ba2-6948-4743-9afb-e32b12c76864",
+          "policy_hash": "f10e81deb865e53efb877b8778f0d5b919580b3e14ca1c018f86cba9465ca3b6",
+          "authorization": {
+            "book_id": "book:project-ea77b6bbe964468b98105c50e3df9144",
+            "project_id": "project-ea77b6bbe964468b98105c50e3df9144",
+            "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "business_scope": {
+              "design_allowed": true,
+              "source_allowed": true,
+              "max_chapter_number": 12
+            },
+            "authorization_ref": "fixture-campaign-approval",
+            "authorized_cumulative_caps": {
+              "DESIGN": {
+                "calls": 15,
+                "tokens": 15000,
+                "priced_usd": "0.00000000"
+              },
+              "REPAIR": {
+                "calls": 4,
+                "tokens": 34000,
+                "priced_usd": "3"
+              },
+              "SOURCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "HOLDOUT": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "REFERENCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "SCREENING": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "PRODUCTION": {
+                "calls": 3,
+                "tokens": 96000,
+                "priced_usd": "3"
+              },
+              "CALIBRATION": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              }
+            }
+          },
+          "contract_hash": "sha256:6bdfba7f08836e92217c1c9009d42cea358278b7da6a94f4cf5cc8d7be2aee65",
+          "business_scope": {
+            "phase": "REPAIR",
+            "stage": "chapter_plan.generate",
+            "capability": "planning.story_chapter.generate",
+            "origin_phase": "PRODUCTION",
+            "scope_sources": [
+              {
+                "path": "operation.repair_number",
+                "value": 1
+              },
+              {
+                "path": "operation.narrative_realization.chapter_number",
+                "value": 1
+              },
+              {
+                "path": "request.planning_command.narrative_realization.chapter_number",
+                "value": 1
+              }
+            ],
+            "chapter_number": 1,
+            "operation_name": "story_planning.generate",
+            "dispatch_generation": 1,
+            "source_operation_id": "639d53e9-4b09-4ef4-bf6b-b6532280217b",
+            "provider_request_hash": "sha256:3174199f1ca255653f70e35fed8c47990a18d5936bf6665b2366f073e6bb02a3",
+            "generator_operation_name": "chapter_plan.generate"
+          },
+          "policy_version": "campaign-fixture-v1"
+        },
+        "budget_scope_revision": null,
+        "cost_settlement_basis": "FIXTURE_RECEIPT",
+        "estimated_cost_status": "KNOWN",
+        "cost_authorization_ref": "",
+        "usage_settlement_basis": "FIXTURE_RECEIPT",
+        "entitlement_usage_reconciled": false,
+        "provider_reported_cost_amount": "0"
+      },
+      "effect_id": "83865ba2-6948-4743-9afb-e32b12c76864",
+      "stage": "chapter_plan.generate"
+    }
+  ],
+  "policy": {
+    "policy_version": "campaign-fixture-v1",
+    "comparison_budget": {
+      "contract_version": "creative-provider-campaign-budget.v4",
+      "experiment_id": "craft-budget:project-ea77b6bbe964468b98105c50e3df9144",
+      "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "expires_at": "2026-09-27T07:18:55.712522+00:00",
+      "accounting_basis": "MIXED",
+      "shared_total": {
+        "calls": 22,
+        "tokens": 145000,
+        "priced_usd": "6.00000000"
+      },
+      "arms": [
+        {
+          "arm": "SINGLE",
+          "project_id": "project-ea77b6bbe964468b98105c50e3df9144",
+          "book_id": "book:project-ea77b6bbe964468b98105c50e3df9144",
+          "project_total": {
+            "calls": 22,
+            "tokens": 145000,
+            "priced_usd": "6.00000000"
+          },
+          "chapter_ranges": {
+            "PRODUCTION": [
+              1,
+              12
+            ]
+          },
+          "reference_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "screening_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "calibration_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "holdout_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "source_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "design_allocation": {
+            "calls": 15,
+            "tokens": 15000,
+            "priced_usd": "0.00000000"
+          },
+          "production_allocation": {
+            "calls": 3,
+            "tokens": 96000,
+            "priced_usd": "3"
+          },
+          "repair_allocation": {
+            "calls": 4,
+            "tokens": 34000,
+            "priced_usd": "3"
+          }
+        }
+      ],
+      "entitlements": []
+    },
+    "authorization": {
+      "authorization_ref": "fixture-campaign-approval",
+      "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "project_id": "project-ea77b6bbe964468b98105c50e3df9144",
+      "book_id": "book:project-ea77b6bbe964468b98105c50e3df9144",
+      "authorized_cumulative_caps": {
+        "REFERENCE": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "SCREENING": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "CALIBRATION": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "HOLDOUT": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "SOURCE": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "DESIGN": {
+          "calls": 15,
+          "tokens": 15000,
+          "priced_usd": "0.00000000"
+        },
+        "PRODUCTION": {
+          "calls": 3,
+          "tokens": 96000,
+          "priced_usd": "3"
+        },
+        "REPAIR": {
+          "calls": 4,
+          "tokens": 34000,
+          "priced_usd": "3"
+        }
+      },
+      "business_scope": {
+        "source_allowed": true,
+        "design_allowed": true,
+        "max_chapter_number": 12
+      }
+    }
+  },
+  "usage": {
+    "contract_hash": "sha256:6bdfba7f08836e92217c1c9009d42cea358278b7da6a94f4cf5cc8d7be2aee65",
+    "project_id": "project-ea77b6bbe964468b98105c50e3df9144",
+    "book_id": "book:project-ea77b6bbe964468b98105c50e3df9144",
+    "phases": {
+      "REFERENCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "SCREENING": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "CALIBRATION": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "HOLDOUT": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "SOURCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "DESIGN": {
+        "calls_used_or_reserved": 15,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0E-8",
+        "unpriced_calls": 0
+      },
+      "PRODUCTION": {
+        "calls_used_or_reserved": 3,
+        "conservative_tokens": 3000,
+        "recorded_actual_tokens": 3000,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0E-8",
+        "unpriced_calls": 0
+      },
+      "REPAIR": {
+        "calls_used_or_reserved": 3,
+        "conservative_tokens": 3000,
+        "recorded_actual_tokens": 3000,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0E-8",
+        "unpriced_calls": 0
+      }
+    },
+    "project_total": {
+      "calls_used_or_reserved": 21,
+      "conservative_tokens": 6000,
+      "recorded_actual_tokens": 6000,
+      "unmeasured_reserved_tokens": 0,
+      "priced_usd": "0E-8",
+      "unpriced_calls": 0
+    },
+    "shared_total": {
+      "calls_used_or_reserved": 21,
+      "conservative_tokens": 6000,
+      "recorded_actual_tokens": 6000,
+      "unmeasured_reserved_tokens": 0,
+      "priced_usd": "0E-8",
+      "unpriced_calls": 0
+    },
+    "reservation_ids": [
+      "08330fad-663f-49a9-ac87-2fd424e6addb",
+      "63d413db-4ab7-45e6-b253-7c8436ef6075",
+      "0dde1cdc-c99d-4734-8e42-6377013fdeb6",
+      "25e47082-d043-4ce8-9053-33c7bffc97e0",
+      "8a708362-a74a-4ff9-adf8-d212bdcb846a",
+      "7350c78b-4860-46b4-ad38-23314e5fe608",
+      "bbc96b2d-4c30-408d-88d1-4043f236242e",
+      "7a884614-e6d9-4561-ad61-553d12d94eff",
+      "ca25b5c5-a733-4e5c-94c1-5c7868a4b57b",
+      "0b7c7386-1406-4f48-a6ce-923758257ee0",
+      "f6d59543-0e5c-4895-9d4e-236d6135f472",
+      "e499fa13-f5e3-4782-8306-93b37dc1945f",
+      "d4674de1-5a90-4bbc-a146-31fddb3b0436",
+      "c72878ef-badf-47d0-a195-a5a4ce29cd15",
+      "f8c7e5a4-4180-499b-8afc-8f3d28055bb6",
+      "e2ea5983-1a22-4a28-a26a-add8bea8824c",
+      "71383473-38e8-4b51-acef-0eb0634031e9",
+      "41a23492-609c-4631-8f0c-9a5a5212a820",
+      "6debac78-e0da-49f8-9f07-a035d38b84f5",
+      "6e284435-c926-4c06-97cf-7b917298a4bb",
+      "19e57d32-7871-4541-8f21-0989f9e49e20"
+    ],
+    "evidence_class": "POSTGRESQL_BUDGET_LEDGER",
+    "creation_opportunity": null,
+    "entitlements": [],
+    "entitlement_usd": null,
+    "invoice_status": "NOT_VERIFIED"
+  },
+  "actual_real_model_calls": 0,
+  "actual_billed_cost": 0,
+  "token_cost_basis": "SIMULATED_RECEIPTS_ONLY"
+}

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.workers.dispatch_pause import pause_worker_dispatch
+
 import signal
 import time
 from dataclasses import dataclass
@@ -52,6 +54,8 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
     signal.signal(signal.SIGTERM, request_shutdown)
     signal.signal(signal.SIGINT, request_shutdown)
     while not shutdown.requested:
+        if pause_worker_dispatch(supervisor, poll_seconds):
+            continue
         scan_expired_operation_deadlines(
             settings.database_url, actor_id=worker.principal_id, limit=batch_size
         )

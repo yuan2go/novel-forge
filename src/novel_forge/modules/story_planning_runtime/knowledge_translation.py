@@ -110,8 +110,21 @@ def add_translation_contract(
             "intended_reader_effect": text,
         })
         site["required"].extend(["craft_role", "craft_sequence", "intended_reader_effect"])
-        if selection.get("craft_policy", {}).get("schema_version") == "narrative-craft-budget.v3":
+        if selection.get("craft_policy", {}).get("schema_version") in {"narrative-craft-budget.v3", "narrative-craft-budget.v4"}:
             site["properties"]["craft_usage"] = obj({"instance_id": {"type": "string", "maxLength": 256}, "phase": text, "predecessor_use_id": {"type": "string", "maxLength": 256}, "scope_id": text})
+            if selection.get("craft_policy", {}).get("schema_version") == "narrative-craft-budget.v4":
+                usage = site["properties"]["craft_usage"]
+                usage["properties"]["transition"] = obj({
+                    "action": {"type": "string", "enum": ["START", "CONTINUE", "ADVANCE", "DEFER", "END"]},
+                    "condition": {"type": "string", "minLength": 1, "maxLength": 512},
+                    "progress": {"type": "string", "minLength": 1, "maxLength": 512},
+                })
+                usage["required"].append("transition")
+                fields = contract["items"]["properties"]
+                fields["rejected_scene_ids"] = {"type": "array", "items": text}
+                fields["failure_condition"] = {"type": "string", "maxLength": 512}
+                contract["items"]["required"].extend(["rejected_scene_ids", "failure_condition"])
+                contract["description"] += " Explicit transition policy: START first phase; CONTINUE sustains the same phase; ADVANCE moves exactly one declared phase when its condition holds; DEFER preserves phase while explaining delay; END closes an existing instance. Describe proposed progress, never claim accepted progress. A final located review and Book acceptance decide realization. A REJECT must identify rejected_scene_ids and failure_condition; other decisions use an empty rejection list and condition. Preserve scene identities during a repair, obey exact scoped exclusions, and freshly explain every new combination."
             site["required"].append("craft_usage")
             site["properties"]["craft_combination"] = obj({key: {"type": "string", "minLength": 1, "maxLength": 512} for key in (
                 "narrative_problem", "selection_reason", "role_and_order_reason", "combined_effect", "interference_risk", "preservation_constraint", "abstain_condition")})

@@ -34,7 +34,7 @@ class PlanningResultValidationError(KernelError):
         execution_evidence: Mapping[str, Any],
     ) -> None:
         super().__init__("PLANNING_GENERATION_RESULT_INVALID", error.message)
-        self.raw_result = raw_result
+        self.raw_result = dict(raw_result) if isinstance(raw_result, Mapping) else raw_result
         self.execution_evidence = dict(execution_evidence)
         self.diagnostic = {
             "status": "FAIL",
@@ -42,6 +42,8 @@ class PlanningResultValidationError(KernelError):
             "error_code": error.code,
             "message": error.message,
             "fields": list(getattr(error, "diagnostics", ())),
+            **({"failure_class": "BUSINESS_REJECT" if error.code == "CRAFT_CONCRETE_REJECTED" else "CONTRACT_INVALID"}
+               if error.code.startswith(("CRAFT_", "PLANNING_KNOWLEDGE_")) else {}),
         }
 
 
@@ -258,6 +260,17 @@ def require_result_repair_source(
             if command.generator_operation_name == "world.design.generate"
             else None,
         )
+        if source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"]["error_code"].startswith(("CRAFT_", "PLANNING_KNOWLEDGE_")):
+            from .knowledge_translation import validate_knowledge_translations
+            from novel_forge.modules.mkaos_authority.craft_reselection import validate_concrete_selection
+            from novel_forge.modules.mkaos_authority.craft_selection import build_craft_strategy
+            context = AuthorityAssetQuery(database_url).require(project_id=command.project_id, asset_version_id=evidence["context_bundle_asset_version_id"])
+            selection = context.content["narrative_intelligence"]
+            if (context.content_hash != evidence["context_bundle_hash"] or selection["selection_digest"] != evidence["narrative_intelligence_selection_digest"]):
+                raise KernelError("PLANNING_RESULT_REPAIR_CONTEXT_DRIFT", "Concrete failure must retain its exact frozen selection")
+            validate_knowledge_translations(raw, selection)
+            validate_concrete_selection(raw, selection)
+            build_craft_strategy(raw, selection)
     except KernelError as error:
         diagnostic = PlanningResultValidationError(
             error, raw_result=raw, execution_evidence=evidence
@@ -267,6 +280,8 @@ def require_result_repair_source(
             "PLANNING_RESULT_REPAIR_NOT_REQUIRED",
             "retained Provider result is valid; recover the original persistence failure without regenerating",
         )
+    if source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"] != diagnostic:
+        raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "A replayed failure must match the recorded diagnosis exactly")
     return {
         "asset_version_id": source.asset_version_id,
         "content_hash": source.content_hash,

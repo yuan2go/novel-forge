@@ -1,0 +1,55 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-True] _
+tests/integration/test_craft_planning_postgres.py:343: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1671: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    composition = build_book_production_composition(
+src/novel_forge/api/authority_dependencies.py:1897: in build_book_production_composition
+    authority = build_book_authority_application(
+src/novel_forge/api/authority_dependencies.py:1762: in build_book_authority_application
+    followup = build_book_followup_authority_application(
+src/novel_forge/api/authority_dependencies.py:1796: in build_book_followup_authority_application
+    from novel_forge.modules.book_followup_authority.screenplay_execution import build_screenplay_model_ports
+src/novel_forge/modules/book_followup_authority/screenplay_execution.py:10: in <module>
+    from .screenplay import CANDIDATE_TYPE, REVIEW_TYPE, SOURCE_TYPE, SCREENPLAY_STAGES
+src/novel_forge/modules/book_followup_authority/screenplay.py:6: in <module>
+    import jsonschema
+E   ModuleNotFoundError: No module named 'jsonschema'
+_ test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-explicit] _
+tests/integration/test_craft_planning_postgres.py:343: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1671: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    composition = build_book_production_composition(
+src/novel_forge/api/authority_dependencies.py:1897: in build_book_production_composition
+    authority = build_book_authority_application(
+src/novel_forge/api/authority_dependencies.py:1762: in build_book_authority_application
+    followup = build_book_followup_authority_application(
+src/novel_forge/api/authority_dependencies.py:1796: in build_book_followup_authority_application
+    from novel_forge.modules.book_followup_authority.screenplay_execution import build_screenplay_model_ports
+src/novel_forge/modules/book_followup_authority/screenplay_execution.py:10: in <module>
+    from .screenplay import CANDIDATE_TYPE, REVIEW_TYPE, SOURCE_TYPE, SCREENPLAY_STAGES
+src/novel_forge/modules/book_followup_authority/screenplay.py:6: in <module>
+    import jsonschema
+E   ModuleNotFoundError: No module named 'jsonschema'
+_ test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[False-reselection] _
+tests/integration/test_craft_planning_postgres.py:343: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1671: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    composition = build_book_production_composition(
+src/novel_forge/api/authority_dependencies.py:1897: in build_book_production_composition
+    authority = build_book_authority_application(
+src/novel_forge/api/authority_dependencies.py:1762: in build_book_authority_application
+    followup = build_book_followup_authority_application(
+src/novel_forge/api/authority_dependencies.py:1796: in build_book_followup_authority_application
+    from novel_forge.modules.book_followup_authority.screenplay_execution import build_screenplay_model_ports
+src/novel_forge/modules/book_followup_authority/screenplay_execution.py:10: in <module>
+    from .screenplay import CANDIDATE_TYPE, REVIEW_TYPE, SOURCE_TYPE, SCREENPLAY_STAGES
+src/novel_forge/modules/book_followup_authority/screenplay.py:6: in <module>
+    import jsonschema
+E   ModuleNotFoundError: No module named 'jsonschema'
+=========================== short test summary info ============================
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-True]
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-explicit]
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[False-reselection]
+3 failed, 3 deselected in 19.11s

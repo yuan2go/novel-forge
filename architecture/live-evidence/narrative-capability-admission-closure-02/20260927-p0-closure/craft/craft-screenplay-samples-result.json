@@ -1,0 +1,874 @@
+{
+  "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL_INTEGRATION",
+  "actual_real_model_calls": 0,
+  "actual_human_evaluations": 0,
+  "source_asset_version_id": "43e86df8-8807-4bea-99e3-5acec9122f6a",
+  "source_revision_id": "a6542250-9968-4123-80d3-98e7f6a3e3af",
+  "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+  "sampling": {
+    "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL_INTEGRATION",
+    "actual_real_model_calls": 0,
+    "actual_human_evaluations": 0,
+    "coldstart_source_operation_id": "e590502c-2420-499c-bc5a-dba780695382",
+    "samples": [
+      {
+        "stage": "screenplay_generate",
+        "operation_id": "d294132b-078d-4ec1-9eb5-33e7481a089c",
+        "effect_id": "c05855d2-94a5-4ff7-ab6a-b4244c31f116",
+        "target": {
+          "asset_version_id": "authority-output:d294132b-078d-4ec1-9eb5-33e7481a089c:book.screenplay.sample.generate:v1",
+          "content_hash": "sha256:d87a2a3cd922700e8c7931a8b2fe6695b5e91140f147f955581bc06b2dc54ef6"
+        },
+        "producer_contract_hash": "sha256:4236c9ee6bdc1b34e15816bf131373a43e8644a2adf83ba7d79430b76c34a483",
+        "scope": {
+          "phase": "CALIBRATION",
+          "origin_phase": "PRODUCTION",
+          "chapter_number": 2,
+          "generator_operation_name": "",
+          "operation_name": "screenplay_generate",
+          "capability": "model.screenplay_generate",
+          "stage": "screenplay_generate",
+          "dispatch_generation": 1,
+          "provider_request_hash": "sha256:c5cdfa785a5a1d0e95fa4d918e50189cb5070e620ce7840a6a0b2afe3534c693",
+          "scope_sources": [
+            {
+              "path": "native_screenplay_source.chapter_end",
+              "value": 2
+            },
+            {
+              "path": "native_screenplay_source",
+              "value": {
+                "source_revision_id": "a6542250-9968-4123-80d3-98e7f6a3e3af",
+                "manifest_digest": "sha256:890536573288f9f9a62d40ec9786e36eb64be82a14b10f81fdecf101306344f2",
+                "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+                "source_asset": {
+                  "asset_version_id": "43e86df8-8807-4bea-99e3-5acec9122f6a",
+                  "content_hash": "sha256:73bbfec3e7c4077cbc2cde50d4214da46940701ee224bc69dae7064bc6dcdbe9"
+                },
+                "chapter_start": 1,
+                "chapter_end": 2,
+                "units": [
+                  {
+                    "known": {},
+                    "unit_id": "chapter:chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                    "fact_ids": [
+                      "character_id=protagonist|arc_id=character-arc:accountability",
+                      "disclosure_id=disclosure:hidden-cost:chapter:1",
+                      "fact:hidden-cost",
+                      "fact_id=fact:hidden-cost",
+                      "subject=chapter:1|predicate=accepted_revision_digest",
+                      "subject=protagonist|predicate=gave_up"
+                    ],
+                    "characters": [
+                      "protagonist"
+                    ],
+                    "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                    "reader_known": [],
+                    "acceptance_id": "chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                    "chapter_number": 1,
+                    "projection_set_id": "longform-projection:1df09f81020f1941313424d02af27774a7ff0063f3211e4458215a678dea20fb",
+                    "reality_revision_id": "reality:sha256:39fc0c489d5faeb76603a6906d1e9e321ad49467adc6a0f47dd77d66c09fde2b",
+                    "outcome_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.outcome:v1",
+                    "story_state_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.story_state:v1",
+                    "canon_snapshot_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.canon.current:v1"
+                  },
+                  {
+                    "known": {},
+                    "unit_id": "chapter:chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                    "fact_ids": [
+                      "character_id=protagonist|arc_id=character-arc:accountability",
+                      "disclosure_id=disclosure:hidden-cost:chapter:1",
+                      "disclosure_id=disclosure:hidden-cost:chapter:2",
+                      "fact:hidden-cost",
+                      "fact_id=fact:hidden-cost",
+                      "subject=chapter:1|predicate=accepted_revision_digest",
+                      "subject=chapter:2|predicate=accepted_revision_digest",
+                      "subject=protagonist|predicate=gave_up"
+                    ],
+                    "characters": [
+                      "protagonist"
+                    ],
+                    "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                    "reader_known": [
+                      "fact:hidden-cost"
+                    ],
+                    "acceptance_id": "chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                    "chapter_number": 2,
+                    "projection_set_id": "longform-projection:a21b338de1eca8d700e53fa12ddf06002122c535d4c646aadcf8df07cacba294",
+                    "reality_revision_id": "reality:sha256:94fb82e9f5378957828cc9541ac4e93848a57fbd84e3b50aacc4a2b5e2b9de5c",
+                    "outcome_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.outcome:v1",
+                    "story_state_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.story_state:v1",
+                    "canon_snapshot_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.canon.current:v1"
+                  }
+                ],
+                "novel_canon_mutation_allowed": false
+              }
+            }
+          ],
+          "source_operation_id": "e590502c-2420-499c-bc5a-dba780695382",
+          "campaign_sample": {
+            "group_id": "e590502c-2420-499c-bc5a-dba780695382:screenplay_generate:0",
+            "partition": "CALIBRATION",
+            "sample_id": "screenplay-43e86df8-8807-4bea-99e3-5acec9122f6a:0",
+            "expires_at": "2026-09-27T05:38:32.889310+00:00",
+            "campaign_id": "project-b81faf135d454fc182ccfaef15d5797d",
+            "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "maximum_calls": 4,
+            "maximum_amount": "4",
+            "maximum_tokens": 800000
+          }
+        }
+      },
+      {
+        "stage": "screenplay_review",
+        "operation_id": "2e9be4f6-14b7-4e1b-935b-b67dbec18f3c",
+        "effect_id": "3dd74ab1-61cf-4723-854e-35c2c15a48ff",
+        "target": {
+          "asset_version_id": "authority-output:2e9be4f6-14b7-4e1b-935b-b67dbec18f3c:book.screenplay.sample.review:v1",
+          "content_hash": "sha256:6868a6a777767da274af849bd9021d387b6fef32191a7593d4493abb2b6a4c20"
+        },
+        "producer_contract_hash": "sha256:f2ac10048593714e77dca8c3465eff5bc64e087e84d5c0bda5904b107350e8a5",
+        "scope": {
+          "phase": "REFERENCE",
+          "origin_phase": "PRODUCTION",
+          "chapter_number": 2,
+          "generator_operation_name": "",
+          "operation_name": "screenplay_review",
+          "capability": "model.screenplay_review",
+          "stage": "screenplay_review",
+          "dispatch_generation": 1,
+          "provider_request_hash": "sha256:edcc537228ef2e3c7c26db4e81c7b17cb0e400dd90942f3f6e3ee7bba8b77313",
+          "scope_sources": [
+            {
+              "path": "native_screenplay_source.chapter_end",
+              "value": 2
+            },
+            {
+              "path": "native_screenplay_source",
+              "value": {
+                "source_revision_id": "a6542250-9968-4123-80d3-98e7f6a3e3af",
+                "manifest_digest": "sha256:890536573288f9f9a62d40ec9786e36eb64be82a14b10f81fdecf101306344f2",
+                "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+                "source_asset": {
+                  "asset_version_id": "43e86df8-8807-4bea-99e3-5acec9122f6a",
+                  "content_hash": "sha256:73bbfec3e7c4077cbc2cde50d4214da46940701ee224bc69dae7064bc6dcdbe9"
+                },
+                "chapter_start": 1,
+                "chapter_end": 2,
+                "units": [
+                  {
+                    "known": {},
+                    "unit_id": "chapter:chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                    "fact_ids": [
+                      "character_id=protagonist|arc_id=character-arc:accountability",
+                      "disclosure_id=disclosure:hidden-cost:chapter:1",
+                      "fact:hidden-cost",
+                      "fact_id=fact:hidden-cost",
+                      "subject=chapter:1|predicate=accepted_revision_digest",
+                      "subject=protagonist|predicate=gave_up"
+                    ],
+                    "characters": [
+                      "protagonist"
+                    ],
+                    "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                    "reader_known": [],
+                    "acceptance_id": "chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                    "chapter_number": 1,
+                    "projection_set_id": "longform-projection:1df09f81020f1941313424d02af27774a7ff0063f3211e4458215a678dea20fb",
+                    "reality_revision_id": "reality:sha256:39fc0c489d5faeb76603a6906d1e9e321ad49467adc6a0f47dd77d66c09fde2b",
+                    "outcome_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.outcome:v1",
+                    "story_state_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.story_state:v1",
+                    "canon_snapshot_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.canon.current:v1"
+                  },
+                  {
+                    "known": {},
+                    "unit_id": "chapter:chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                    "fact_ids": [
+                      "character_id=protagonist|arc_id=character-arc:accountability",
+                      "disclosure_id=disclosure:hidden-cost:chapter:1",
+                      "disclosure_id=disclosure:hidden-cost:chapter:2",
+                      "fact:hidden-cost",
+                      "fact_id=fact:hidden-cost",
+                      "subject=chapter:1|predicate=accepted_revision_digest",
+                      "subject=chapter:2|predicate=accepted_revision_digest",
+                      "subject=protagonist|predicate=gave_up"
+                    ],
+                    "characters": [
+                      "protagonist"
+                    ],
+                    "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                    "reader_known": [
+                      "fact:hidden-cost"
+                    ],
+                    "acceptance_id": "chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                    "chapter_number": 2,
+                    "projection_set_id": "longform-projection:a21b338de1eca8d700e53fa12ddf06002122c535d4c646aadcf8df07cacba294",
+                    "reality_revision_id": "reality:sha256:94fb82e9f5378957828cc9541ac4e93848a57fbd84e3b50aacc4a2b5e2b9de5c",
+                    "outcome_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.outcome:v1",
+                    "story_state_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.story_state:v1",
+                    "canon_snapshot_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.canon.current:v1"
+                  }
+                ],
+                "novel_canon_mutation_allowed": false
+              }
+            }
+          ],
+          "source_operation_id": "e590502c-2420-499c-bc5a-dba780695382",
+          "campaign_sample": {
+            "group_id": "e590502c-2420-499c-bc5a-dba780695382:screenplay_review:1",
+            "partition": "CALIBRATION",
+            "sample_id": "screenplay-43e86df8-8807-4bea-99e3-5acec9122f6a:1",
+            "expires_at": "2026-09-27T05:38:32.889310+00:00",
+            "campaign_id": "project-b81faf135d454fc182ccfaef15d5797d",
+            "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "maximum_calls": 4,
+            "maximum_amount": "4",
+            "maximum_tokens": 800000
+          }
+        }
+      },
+      {
+        "stage": "screenplay_revision",
+        "operation_id": "ffc9b977-8828-4ebb-8dba-4ca51181cced",
+        "effect_id": "0214e687-dded-47c9-b344-f296df2cf331",
+        "target": {
+          "asset_version_id": "authority-output:ffc9b977-8828-4ebb-8dba-4ca51181cced:book.screenplay.sample.revision:v1",
+          "content_hash": "sha256:a60f3c4641b09f6059473ac9e6bed35e8868af9525e1ad29b8c7bcfae4da25a1"
+        },
+        "producer_contract_hash": "sha256:43ab515ea53b55facbc27a115a0d4745d773cd3a2093025451df774745968e4e",
+        "scope": {
+          "phase": "CALIBRATION",
+          "origin_phase": "PRODUCTION",
+          "chapter_number": 2,
+          "generator_operation_name": "",
+          "operation_name": "screenplay_revision",
+          "capability": "model.screenplay_revision",
+          "stage": "screenplay_revision",
+          "dispatch_generation": 1,
+          "provider_request_hash": "sha256:ada4ecf0176b72c8622076ede41e215bb422f9b987dd0aceb340b4b9442e86f2",
+          "scope_sources": [
+            {
+              "path": "native_screenplay_source.chapter_end",
+              "value": 2
+            },
+            {
+              "path": "native_screenplay_source",
+              "value": {
+                "source_revision_id": "a6542250-9968-4123-80d3-98e7f6a3e3af",
+                "manifest_digest": "sha256:890536573288f9f9a62d40ec9786e36eb64be82a14b10f81fdecf101306344f2",
+                "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+                "source_asset": {
+                  "asset_version_id": "43e86df8-8807-4bea-99e3-5acec9122f6a",
+                  "content_hash": "sha256:73bbfec3e7c4077cbc2cde50d4214da46940701ee224bc69dae7064bc6dcdbe9"
+                },
+                "chapter_start": 1,
+                "chapter_end": 2,
+                "units": [
+                  {
+                    "known": {},
+                    "unit_id": "chapter:chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                    "fact_ids": [
+                      "character_id=protagonist|arc_id=character-arc:accountability",
+                      "disclosure_id=disclosure:hidden-cost:chapter:1",
+                      "fact:hidden-cost",
+                      "fact_id=fact:hidden-cost",
+                      "subject=chapter:1|predicate=accepted_revision_digest",
+                      "subject=protagonist|predicate=gave_up"
+                    ],
+                    "characters": [
+                      "protagonist"
+                    ],
+                    "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                    "reader_known": [],
+                    "acceptance_id": "chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                    "chapter_number": 1,
+                    "projection_set_id": "longform-projection:1df09f81020f1941313424d02af27774a7ff0063f3211e4458215a678dea20fb",
+                    "reality_revision_id": "reality:sha256:39fc0c489d5faeb76603a6906d1e9e321ad49467adc6a0f47dd77d66c09fde2b",
+                    "outcome_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.outcome:v1",
+                    "story_state_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.story_state:v1",
+                    "canon_snapshot_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.canon.current:v1"
+                  },
+                  {
+                    "known": {},
+                    "unit_id": "chapter:chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                    "fact_ids": [
+                      "character_id=protagonist|arc_id=character-arc:accountability",
+                      "disclosure_id=disclosure:hidden-cost:chapter:1",
+                      "disclosure_id=disclosure:hidden-cost:chapter:2",
+                      "fact:hidden-cost",
+                      "fact_id=fact:hidden-cost",
+                      "subject=chapter:1|predicate=accepted_revision_digest",
+                      "subject=chapter:2|predicate=accepted_revision_digest",
+                      "subject=protagonist|predicate=gave_up"
+                    ],
+                    "characters": [
+                      "protagonist"
+                    ],
+                    "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                    "reader_known": [
+                      "fact:hidden-cost"
+                    ],
+                    "acceptance_id": "chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                    "chapter_number": 2,
+                    "projection_set_id": "longform-projection:a21b338de1eca8d700e53fa12ddf06002122c535d4c646aadcf8df07cacba294",
+                    "reality_revision_id": "reality:sha256:94fb82e9f5378957828cc9541ac4e93848a57fbd84e3b50aacc4a2b5e2b9de5c",
+                    "outcome_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.outcome:v1",
+                    "story_state_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.story_state:v1",
+                    "canon_snapshot_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.canon.current:v1"
+                  }
+                ],
+                "novel_canon_mutation_allowed": false
+              }
+            }
+          ],
+          "source_operation_id": "e590502c-2420-499c-bc5a-dba780695382",
+          "campaign_sample": {
+            "group_id": "e590502c-2420-499c-bc5a-dba780695382:screenplay_revision:2",
+            "partition": "CALIBRATION",
+            "sample_id": "screenplay-43e86df8-8807-4bea-99e3-5acec9122f6a:2",
+            "expires_at": "2026-09-27T05:38:32.889310+00:00",
+            "campaign_id": "project-b81faf135d454fc182ccfaef15d5797d",
+            "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "maximum_calls": 4,
+            "maximum_amount": "4",
+            "maximum_tokens": 800000
+          }
+        }
+      },
+      {
+        "stage": "screenplay_review",
+        "operation_id": "27c0f416-4e5b-4809-8b90-d166dd39f56c",
+        "effect_id": "0907b5ee-91cc-4530-abb2-deb08ac5012b",
+        "target": {
+          "asset_version_id": "authority-output:27c0f416-4e5b-4809-8b90-d166dd39f56c:book.screenplay.sample.review:v1",
+          "content_hash": "sha256:d5448e83c63dec81a3e87eeda18a65fc870cd827df645aa47ecd7c02728544bf"
+        },
+        "producer_contract_hash": "sha256:f2ac10048593714e77dca8c3465eff5bc64e087e84d5c0bda5904b107350e8a5",
+        "scope": {
+          "phase": "REFERENCE",
+          "origin_phase": "PRODUCTION",
+          "chapter_number": 2,
+          "generator_operation_name": "",
+          "operation_name": "screenplay_review",
+          "capability": "model.screenplay_review",
+          "stage": "screenplay_review",
+          "dispatch_generation": 1,
+          "provider_request_hash": "sha256:19efe9d08e3b986852a0628a4327d17a333ca3b2d49329fcbc5cbcce888aff70",
+          "scope_sources": [
+            {
+              "path": "native_screenplay_source.chapter_end",
+              "value": 2
+            },
+            {
+              "path": "native_screenplay_source",
+              "value": {
+                "source_revision_id": "a6542250-9968-4123-80d3-98e7f6a3e3af",
+                "manifest_digest": "sha256:890536573288f9f9a62d40ec9786e36eb64be82a14b10f81fdecf101306344f2",
+                "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+                "source_asset": {
+                  "asset_version_id": "43e86df8-8807-4bea-99e3-5acec9122f6a",
+                  "content_hash": "sha256:73bbfec3e7c4077cbc2cde50d4214da46940701ee224bc69dae7064bc6dcdbe9"
+                },
+                "chapter_start": 1,
+                "chapter_end": 2,
+                "units": [
+                  {
+                    "known": {},
+                    "unit_id": "chapter:chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                    "fact_ids": [
+                      "character_id=protagonist|arc_id=character-arc:accountability",
+                      "disclosure_id=disclosure:hidden-cost:chapter:1",
+                      "fact:hidden-cost",
+                      "fact_id=fact:hidden-cost",
+                      "subject=chapter:1|predicate=accepted_revision_digest",
+                      "subject=protagonist|predicate=gave_up"
+                    ],
+                    "characters": [
+                      "protagonist"
+                    ],
+                    "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                    "reader_known": [],
+                    "acceptance_id": "chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                    "chapter_number": 1,
+                    "projection_set_id": "longform-projection:1df09f81020f1941313424d02af27774a7ff0063f3211e4458215a678dea20fb",
+                    "reality_revision_id": "reality:sha256:39fc0c489d5faeb76603a6906d1e9e321ad49467adc6a0f47dd77d66c09fde2b",
+                    "outcome_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.outcome:v1",
+                    "story_state_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.story_state:v1",
+                    "canon_snapshot_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.canon.current:v1"
+                  },
+                  {
+                    "known": {},
+                    "unit_id": "chapter:chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                    "fact_ids": [
+                      "character_id=protagonist|arc_id=character-arc:accountability",
+                      "disclosure_id=disclosure:hidden-cost:chapter:1",
+                      "disclosure_id=disclosure:hidden-cost:chapter:2",
+                      "fact:hidden-cost",
+                      "fact_id=fact:hidden-cost",
+                      "subject=chapter:1|predicate=accepted_revision_digest",
+                      "subject=chapter:2|predicate=accepted_revision_digest",
+                      "subject=protagonist|predicate=gave_up"
+                    ],
+                    "characters": [
+                      "protagonist"
+                    ],
+                    "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                    "reader_known": [
+                      "fact:hidden-cost"
+                    ],
+                    "acceptance_id": "chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                    "chapter_number": 2,
+                    "projection_set_id": "longform-projection:a21b338de1eca8d700e53fa12ddf06002122c535d4c646aadcf8df07cacba294",
+                    "reality_revision_id": "reality:sha256:94fb82e9f5378957828cc9541ac4e93848a57fbd84e3b50aacc4a2b5e2b9de5c",
+                    "outcome_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.outcome:v1",
+                    "story_state_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.story_state:v1",
+                    "canon_snapshot_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.canon.current:v1"
+                  }
+                ],
+                "novel_canon_mutation_allowed": false
+              }
+            }
+          ],
+          "source_operation_id": "e590502c-2420-499c-bc5a-dba780695382",
+          "campaign_sample": {
+            "group_id": "e590502c-2420-499c-bc5a-dba780695382:screenplay_review:3",
+            "partition": "CALIBRATION",
+            "sample_id": "screenplay-43e86df8-8807-4bea-99e3-5acec9122f6a:3",
+            "expires_at": "2026-09-27T05:38:32.889310+00:00",
+            "campaign_id": "project-b81faf135d454fc182ccfaef15d5797d",
+            "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "maximum_calls": 4,
+            "maximum_amount": "4",
+            "maximum_tokens": 800000
+          }
+        }
+      }
+    ],
+    "scripted_call_count": 4,
+    "qualification": "NOT_PROVEN"
+  },
+  "first_candidate_asset_version_id": "authority-output:11efca80-c780-40c4-abd4-75aadb5522ca:screenplay_generate.result:v1",
+  "first_review_asset_version_id": "authority-output:190ebede-2a6a-437a-8cbe-439e0ed5990d:screenplay_review.result:v1",
+  "candidate_asset_version_id": "authority-output:16d774cf-1d56-4d13-b221-579fd8a7c22a:screenplay_revision.result:v1",
+  "review_asset_version_id": "authority-output:a4f38723-202e-46ba-bf57-1060409c8180:screenplay_review.result:v1",
+  "operation_id": "47b5446d-337a-4541-9056-2731afd3e341",
+  "status": "ACCEPTED",
+  "accepted_asset_version_id": "1d574840-8819-4c61-8d1d-79bbdd7968a4",
+  "publication_authorized": false,
+  "replayed": false,
+  "operations": [
+    {
+      "operation_id": "11efca80-c780-40c4-abd4-75aadb5522ca",
+      "status": "SUCCEEDED",
+      "outputs": [
+        "authority-output:11efca80-c780-40c4-abd4-75aadb5522ca:screenplay_generate.result:v1"
+      ]
+    },
+    {
+      "operation_id": "190ebede-2a6a-437a-8cbe-439e0ed5990d",
+      "status": "SUCCEEDED",
+      "outputs": [
+        "authority-output:190ebede-2a6a-437a-8cbe-439e0ed5990d:screenplay_review.result:v1"
+      ]
+    },
+    {
+      "operation_id": "16d774cf-1d56-4d13-b221-579fd8a7c22a",
+      "status": "SUCCEEDED",
+      "outputs": [
+        "authority-output:16d774cf-1d56-4d13-b221-579fd8a7c22a:screenplay_revision.result:v1"
+      ]
+    },
+    {
+      "operation_id": "a4f38723-202e-46ba-bf57-1060409c8180",
+      "status": "SUCCEEDED",
+      "outputs": [
+        "authority-output:a4f38723-202e-46ba-bf57-1060409c8180:screenplay_review.result:v1"
+      ]
+    }
+  ],
+  "business_scopes": [
+    {
+      "phase": "CREATION_EARLY",
+      "origin_phase": "CREATION_EARLY",
+      "chapter_number": 2,
+      "generator_operation_name": "",
+      "operation_name": "screenplay_generate",
+      "capability": "model.screenplay_generate",
+      "stage": "screenplay_generate",
+      "dispatch_generation": 1,
+      "provider_request_hash": "sha256:817d53b0c1af37a1fc3a1c35be84ea6678e47b6932a6846d98dd8adf93ccd787",
+      "scope_sources": [
+        {
+          "path": "native_screenplay_source.chapter_end",
+          "value": 2
+        },
+        {
+          "path": "native_screenplay_source",
+          "value": {
+            "source_revision_id": "a6542250-9968-4123-80d3-98e7f6a3e3af",
+            "manifest_digest": "sha256:890536573288f9f9a62d40ec9786e36eb64be82a14b10f81fdecf101306344f2",
+            "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+            "source_asset": {
+              "asset_version_id": "43e86df8-8807-4bea-99e3-5acec9122f6a",
+              "content_hash": "sha256:73bbfec3e7c4077cbc2cde50d4214da46940701ee224bc69dae7064bc6dcdbe9"
+            },
+            "chapter_start": 1,
+            "chapter_end": 2,
+            "units": [
+              {
+                "known": {},
+                "unit_id": "chapter:chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                "fact_ids": [
+                  "character_id=protagonist|arc_id=character-arc:accountability",
+                  "disclosure_id=disclosure:hidden-cost:chapter:1",
+                  "fact:hidden-cost",
+                  "fact_id=fact:hidden-cost",
+                  "subject=chapter:1|predicate=accepted_revision_digest",
+                  "subject=protagonist|predicate=gave_up"
+                ],
+                "characters": [
+                  "protagonist"
+                ],
+                "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                "reader_known": [],
+                "acceptance_id": "chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                "chapter_number": 1,
+                "projection_set_id": "longform-projection:1df09f81020f1941313424d02af27774a7ff0063f3211e4458215a678dea20fb",
+                "reality_revision_id": "reality:sha256:39fc0c489d5faeb76603a6906d1e9e321ad49467adc6a0f47dd77d66c09fde2b",
+                "outcome_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.outcome:v1",
+                "story_state_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.story_state:v1",
+                "canon_snapshot_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.canon.current:v1"
+              },
+              {
+                "known": {},
+                "unit_id": "chapter:chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                "fact_ids": [
+                  "character_id=protagonist|arc_id=character-arc:accountability",
+                  "disclosure_id=disclosure:hidden-cost:chapter:1",
+                  "disclosure_id=disclosure:hidden-cost:chapter:2",
+                  "fact:hidden-cost",
+                  "fact_id=fact:hidden-cost",
+                  "subject=chapter:1|predicate=accepted_revision_digest",
+                  "subject=chapter:2|predicate=accepted_revision_digest",
+                  "subject=protagonist|predicate=gave_up"
+                ],
+                "characters": [
+                  "protagonist"
+                ],
+                "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                "reader_known": [
+                  "fact:hidden-cost"
+                ],
+                "acceptance_id": "chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                "chapter_number": 2,
+                "projection_set_id": "longform-projection:a21b338de1eca8d700e53fa12ddf06002122c535d4c646aadcf8df07cacba294",
+                "reality_revision_id": "reality:sha256:94fb82e9f5378957828cc9541ac4e93848a57fbd84e3b50aacc4a2b5e2b9de5c",
+                "outcome_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.outcome:v1",
+                "story_state_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.story_state:v1",
+                "canon_snapshot_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.canon.current:v1"
+              }
+            ],
+            "novel_canon_mutation_allowed": false
+          }
+        }
+      ]
+    },
+    {
+      "phase": "CREATION_EARLY",
+      "origin_phase": "CREATION_EARLY",
+      "chapter_number": 2,
+      "generator_operation_name": "",
+      "operation_name": "screenplay_review",
+      "capability": "model.screenplay_review",
+      "stage": "screenplay_review",
+      "dispatch_generation": 1,
+      "provider_request_hash": "sha256:a825cbcc2ac2ff816d3a4f95eb29c804ffd87208296806fda5dc878c88cd9c38",
+      "scope_sources": [
+        {
+          "path": "native_screenplay_source.chapter_end",
+          "value": 2
+        },
+        {
+          "path": "native_screenplay_source",
+          "value": {
+            "source_revision_id": "a6542250-9968-4123-80d3-98e7f6a3e3af",
+            "manifest_digest": "sha256:890536573288f9f9a62d40ec9786e36eb64be82a14b10f81fdecf101306344f2",
+            "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+            "source_asset": {
+              "asset_version_id": "43e86df8-8807-4bea-99e3-5acec9122f6a",
+              "content_hash": "sha256:73bbfec3e7c4077cbc2cde50d4214da46940701ee224bc69dae7064bc6dcdbe9"
+            },
+            "chapter_start": 1,
+            "chapter_end": 2,
+            "units": [
+              {
+                "known": {},
+                "unit_id": "chapter:chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                "fact_ids": [
+                  "character_id=protagonist|arc_id=character-arc:accountability",
+                  "disclosure_id=disclosure:hidden-cost:chapter:1",
+                  "fact:hidden-cost",
+                  "fact_id=fact:hidden-cost",
+                  "subject=chapter:1|predicate=accepted_revision_digest",
+                  "subject=protagonist|predicate=gave_up"
+                ],
+                "characters": [
+                  "protagonist"
+                ],
+                "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                "reader_known": [],
+                "acceptance_id": "chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                "chapter_number": 1,
+                "projection_set_id": "longform-projection:1df09f81020f1941313424d02af27774a7ff0063f3211e4458215a678dea20fb",
+                "reality_revision_id": "reality:sha256:39fc0c489d5faeb76603a6906d1e9e321ad49467adc6a0f47dd77d66c09fde2b",
+                "outcome_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.outcome:v1",
+                "story_state_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.story_state:v1",
+                "canon_snapshot_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.canon.current:v1"
+              },
+              {
+                "known": {},
+                "unit_id": "chapter:chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                "fact_ids": [
+                  "character_id=protagonist|arc_id=character-arc:accountability",
+                  "disclosure_id=disclosure:hidden-cost:chapter:1",
+                  "disclosure_id=disclosure:hidden-cost:chapter:2",
+                  "fact:hidden-cost",
+                  "fact_id=fact:hidden-cost",
+                  "subject=chapter:1|predicate=accepted_revision_digest",
+                  "subject=chapter:2|predicate=accepted_revision_digest",
+                  "subject=protagonist|predicate=gave_up"
+                ],
+                "characters": [
+                  "protagonist"
+                ],
+                "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                "reader_known": [
+                  "fact:hidden-cost"
+                ],
+                "acceptance_id": "chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                "chapter_number": 2,
+                "projection_set_id": "longform-projection:a21b338de1eca8d700e53fa12ddf06002122c535d4c646aadcf8df07cacba294",
+                "reality_revision_id": "reality:sha256:94fb82e9f5378957828cc9541ac4e93848a57fbd84e3b50aacc4a2b5e2b9de5c",
+                "outcome_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.outcome:v1",
+                "story_state_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.story_state:v1",
+                "canon_snapshot_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.canon.current:v1"
+              }
+            ],
+            "novel_canon_mutation_allowed": false
+          }
+        }
+      ]
+    },
+    {
+      "phase": "REPAIR",
+      "origin_phase": "CREATION_EARLY",
+      "chapter_number": 2,
+      "generator_operation_name": "",
+      "operation_name": "screenplay_revision",
+      "capability": "model.screenplay_revision",
+      "stage": "screenplay_revision",
+      "dispatch_generation": 1,
+      "provider_request_hash": "sha256:28eaa85eb637cb536172795987e5dfef64c82035cb383a5f4dfd036421f32858",
+      "scope_sources": [
+        {
+          "path": "native_screenplay_source.chapter_end",
+          "value": 2
+        },
+        {
+          "path": "native_screenplay_source",
+          "value": {
+            "source_revision_id": "a6542250-9968-4123-80d3-98e7f6a3e3af",
+            "manifest_digest": "sha256:890536573288f9f9a62d40ec9786e36eb64be82a14b10f81fdecf101306344f2",
+            "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+            "source_asset": {
+              "asset_version_id": "43e86df8-8807-4bea-99e3-5acec9122f6a",
+              "content_hash": "sha256:73bbfec3e7c4077cbc2cde50d4214da46940701ee224bc69dae7064bc6dcdbe9"
+            },
+            "chapter_start": 1,
+            "chapter_end": 2,
+            "units": [
+              {
+                "known": {},
+                "unit_id": "chapter:chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                "fact_ids": [
+                  "character_id=protagonist|arc_id=character-arc:accountability",
+                  "disclosure_id=disclosure:hidden-cost:chapter:1",
+                  "fact:hidden-cost",
+                  "fact_id=fact:hidden-cost",
+                  "subject=chapter:1|predicate=accepted_revision_digest",
+                  "subject=protagonist|predicate=gave_up"
+                ],
+                "characters": [
+                  "protagonist"
+                ],
+                "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                "reader_known": [],
+                "acceptance_id": "chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                "chapter_number": 1,
+                "projection_set_id": "longform-projection:1df09f81020f1941313424d02af27774a7ff0063f3211e4458215a678dea20fb",
+                "reality_revision_id": "reality:sha256:39fc0c489d5faeb76603a6906d1e9e321ad49467adc6a0f47dd77d66c09fde2b",
+                "outcome_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.outcome:v1",
+                "story_state_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.story_state:v1",
+                "canon_snapshot_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.canon.current:v1"
+              },
+              {
+                "known": {},
+                "unit_id": "chapter:chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                "fact_ids": [
+                  "character_id=protagonist|arc_id=character-arc:accountability",
+                  "disclosure_id=disclosure:hidden-cost:chapter:1",
+                  "disclosure_id=disclosure:hidden-cost:chapter:2",
+                  "fact:hidden-cost",
+                  "fact_id=fact:hidden-cost",
+                  "subject=chapter:1|predicate=accepted_revision_digest",
+                  "subject=chapter:2|predicate=accepted_revision_digest",
+                  "subject=protagonist|predicate=gave_up"
+                ],
+                "characters": [
+                  "protagonist"
+                ],
+                "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                "reader_known": [
+                  "fact:hidden-cost"
+                ],
+                "acceptance_id": "chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                "chapter_number": 2,
+                "projection_set_id": "longform-projection:a21b338de1eca8d700e53fa12ddf06002122c535d4c646aadcf8df07cacba294",
+                "reality_revision_id": "reality:sha256:94fb82e9f5378957828cc9541ac4e93848a57fbd84e3b50aacc4a2b5e2b9de5c",
+                "outcome_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.outcome:v1",
+                "story_state_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.story_state:v1",
+                "canon_snapshot_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.canon.current:v1"
+              }
+            ],
+            "novel_canon_mutation_allowed": false
+          }
+        }
+      ]
+    },
+    {
+      "phase": "CREATION_EARLY",
+      "origin_phase": "CREATION_EARLY",
+      "chapter_number": 2,
+      "generator_operation_name": "",
+      "operation_name": "screenplay_review",
+      "capability": "model.screenplay_review",
+      "stage": "screenplay_review",
+      "dispatch_generation": 1,
+      "provider_request_hash": "sha256:a093808c111e23c6e003dbd390fd31be78ea1a8ccf3424f81e7568f12b0b586b",
+      "scope_sources": [
+        {
+          "path": "native_screenplay_source.chapter_end",
+          "value": 2
+        },
+        {
+          "path": "native_screenplay_source",
+          "value": {
+            "source_revision_id": "a6542250-9968-4123-80d3-98e7f6a3e3af",
+            "manifest_digest": "sha256:890536573288f9f9a62d40ec9786e36eb64be82a14b10f81fdecf101306344f2",
+            "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+            "source_asset": {
+              "asset_version_id": "43e86df8-8807-4bea-99e3-5acec9122f6a",
+              "content_hash": "sha256:73bbfec3e7c4077cbc2cde50d4214da46940701ee224bc69dae7064bc6dcdbe9"
+            },
+            "chapter_start": 1,
+            "chapter_end": 2,
+            "units": [
+              {
+                "known": {},
+                "unit_id": "chapter:chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                "fact_ids": [
+                  "character_id=protagonist|arc_id=character-arc:accountability",
+                  "disclosure_id=disclosure:hidden-cost:chapter:1",
+                  "fact:hidden-cost",
+                  "fact_id=fact:hidden-cost",
+                  "subject=chapter:1|predicate=accepted_revision_digest",
+                  "subject=protagonist|predicate=gave_up"
+                ],
+                "characters": [
+                  "protagonist"
+                ],
+                "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                "reader_known": [],
+                "acceptance_id": "chapter-acceptance:2cb3f86cbf867dcad5668f3eb3df778e08d5071fb54008d428e00638b62a6ed2",
+                "chapter_number": 1,
+                "projection_set_id": "longform-projection:1df09f81020f1941313424d02af27774a7ff0063f3211e4458215a678dea20fb",
+                "reality_revision_id": "reality:sha256:39fc0c489d5faeb76603a6906d1e9e321ad49467adc6a0f47dd77d66c09fde2b",
+                "outcome_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.outcome:v1",
+                "story_state_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.story_state:v1",
+                "canon_snapshot_asset_version_id": "authority-output:b29f4223-9acd-4b61-bf54-079611df69e7:chapter.canon.current:v1"
+              },
+              {
+                "known": {},
+                "unit_id": "chapter:chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                "fact_ids": [
+                  "character_id=protagonist|arc_id=character-arc:accountability",
+                  "disclosure_id=disclosure:hidden-cost:chapter:1",
+                  "disclosure_id=disclosure:hidden-cost:chapter:2",
+                  "fact:hidden-cost",
+                  "fact_id=fact:hidden-cost",
+                  "subject=chapter:1|predicate=accepted_revision_digest",
+                  "subject=chapter:2|predicate=accepted_revision_digest",
+                  "subject=protagonist|predicate=gave_up"
+                ],
+                "characters": [
+                  "protagonist"
+                ],
+                "book_run_id": "book-run:e7905552-74bb-4c1d-969d-cbc51a727c61",
+                "reader_known": [
+                  "fact:hidden-cost"
+                ],
+                "acceptance_id": "chapter-acceptance:2764e261a4b29b0d1e76f9d03f479cebacadea447ef2bcce0ed1b7af014d9e28",
+                "chapter_number": 2,
+                "projection_set_id": "longform-projection:a21b338de1eca8d700e53fa12ddf06002122c535d4c646aadcf8df07cacba294",
+                "reality_revision_id": "reality:sha256:94fb82e9f5378957828cc9541ac4e93848a57fbd84e3b50aacc4a2b5e2b9de5c",
+                "outcome_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.outcome:v1",
+                "story_state_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.story_state:v1",
+                "canon_snapshot_asset_version_id": "authority-output:86481213-bb42-4ab5-8179-a595fa838b30:chapter.canon.current:v1"
+              }
+            ],
+            "novel_canon_mutation_allowed": false
+          }
+        }
+      ]
+    }
+  ],
+  "scripted_calls": [
+    {
+      "stage": "screenplay_generate",
+      "inputs": {
+        "book_id": "book:project-b81faf135d454fc182ccfaef15d5797d",
+        "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+        "candidate_digest": "",
+        "screenplay_source_contract": "screenplay-source.v2"
+      }
+    },
+    {
+      "stage": "screenplay_review",
+      "inputs": {
+        "book_id": "book:project-b81faf135d454fc182ccfaef15d5797d",
+        "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+        "candidate_digest": "sha256:0159179f6c686ecf2a59c1e28b8250831173090693d29644cf5f35bfdc34c298",
+        "screenplay_source_contract": "screenplay-source.v2"
+      }
+    },
+    {
+      "stage": "screenplay_revision",
+      "inputs": {
+        "book_id": "book:project-b81faf135d454fc182ccfaef15d5797d",
+        "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+        "candidate_digest": "sha256:0159179f6c686ecf2a59c1e28b8250831173090693d29644cf5f35bfdc34c298",
+        "screenplay_source_contract": "screenplay-source.v2"
+      }
+    },
+    {
+      "stage": "screenplay_review",
+      "inputs": {
+        "book_id": "book:project-b81faf135d454fc182ccfaef15d5797d",
+        "source_digest": "sha256:c9343d898237c124fdcbb45b1468d168c67dcfdd98f1529d7d51f17041abe377",
+        "candidate_digest": "sha256:9b39fe2f548900adc74332126dea7b73b80b4f1815d3c8bb9779ed253d7a3824",
+        "screenplay_source_contract": "screenplay-source.v2"
+      }
+    }
+  ],
+  "export": "<PRIVATE_EVIDENCE_ROOT>/craft-screenplay/screenplay-a6542250-9968-4123-80d3-98e7f6a3e3af.txt"
+}

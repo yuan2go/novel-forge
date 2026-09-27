@@ -122,6 +122,12 @@ def prepare_provider_sample(
         **({"reference_evaluation": command.reference_evaluation} if reference else {}),
     }
     validate_chapter_sample_origin(payload, source[:4], project_id=command.project_id)
+    if stage == "canon_support" and command.reference_evaluation is None:
+        from novel_forge.modules.chapter_quality_authority.canon_support_reference import source_contract
+        with AuthorityUnitOfWork(app.database_url) as uow:
+            contract = source_contract(uow.cursor, project_id=command.project_id, input_versions=inputs)
+        return {"status": "REFERENCE_LABELS_REQUIRED_NO_PROVIDER_CALL", "provider_calls": 0,
+            "source_operation_id": command.source_operation_id, "reference_contract": contract}
     if reference:
         from novel_forge.modules.chapter_quality_authority.reference_sampling import require_chapter_reference
         from novel_forge.modules.chapter_quality_authority.reference_subject import require_chapter_sample_target
@@ -243,6 +249,8 @@ def admit_provider_sample(
     app: Any, command: ChapterProviderSampleCommand, *, principal: Principal
 ) -> dict[str, Any]:
     prepared = prepare_provider_sample(app, command, principal=principal)
+    if prepared["status"] != "PREPARED_NO_PROVIDER_CALL":
+        raise KernelError("QUALITY_REFERENCE_REQUIRED", "complete the exact independent reference contract before sample admission")
     binder = app._model_port.capability_binder
     snapshot = freeze_bootstrap_authorization(
         database_url=app.database_url,

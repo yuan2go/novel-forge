@@ -588,7 +588,10 @@ def select_narrative_intelligence(
     )
     selected, composition_rejected = compose_craft_candidates(
         ranked, limit=limit, required_ids=required_ids, policy=craft_policy,
+        placement_scope=need.craft_context.get("reselection"),
     )
+    if need.craft_context.get("reselection") and not any(item.get("selected_content", {}).get("craft_mechanism") for item in selected) and not craft_policy["reselection_policy"]["optional_abstention"]:
+        raise KernelError("CRAFT_OPTIONAL_ABSTENTION_NOT_AUTHORIZED", "Concrete exclusions leave no Craft; the frozen policy requires an explicit author decision")
     rejected.extend(composition_rejected)
     result: dict[str, Any] = {
         "schema_version": "mkaos-narrative-intelligence-selection.v1",

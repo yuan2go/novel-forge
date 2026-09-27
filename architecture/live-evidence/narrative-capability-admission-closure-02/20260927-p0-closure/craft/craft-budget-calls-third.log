@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "$PRIVATE_EVIDENCE/craft-budget-native.py", line 16, in <module>
+    test_pg_craft_reselection_preserves_cumulative_campaign_budget(request,monkeypatch,stop)
+  File "$WORKTREE/tests/integration/test_craft_planning_postgres.py", line 356, in test_pg_craft_reselection_preserves_cumulative_campaign_budget
+    test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(
+  File "$WORKTREE/tests/integration/test_craft_planning_postgres.py", line 350, in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+  File "$WORKTREE/tests/integration/test_core_functional_loops_postgres.py", line 1997, in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    native_evidence = execute_native_reality_vertical(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$WORKTREE/tests/integration/test_craft_planning_postgres.py", line 179, in drive_native_planning
+    state["native_proof"] = run_reselection_budget_probe(composition=composition, snapshot=snapshot,
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$WORKTREE/tests/integration/craft_reselection_budget_support.py", line 73, in run_reselection_budget_probe
+    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
+  File "$PRIMARY_CHECKOUT/.venv/lib/python3.12/site-packages/_pytest/raises.py", line 711, in __exit__
+    raise AssertionError(self._fail_reason) from None
+AssertionError: Regex pattern did not match.
+  Expected regex: 'CREATIVE_BUDGET_EXHAUSTED'
+  Actual message: 'CREATIVE_BUDGET_CONTRACT_INVALID: priced USD requires a decimal string'

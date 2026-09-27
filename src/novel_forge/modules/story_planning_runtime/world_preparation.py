@@ -33,7 +33,7 @@ class PlanningProviderStage:
 
     @property
     def output_schema_ref(self) -> str:
-        version = "v2" if self.task.get("contract_version") == "world-actor-task.v2" else "v1"
+        version = {"world-actor-task.v2": "v2", "world-actor-task.v3": "v3"}.get(self.task.get("contract_version"), "v1")
         suffix = ":actor-isolation-v1" if self.task.get("actor_proposals") else ""
         return f"schema:{self.name}:{version}{suffix}"
 
@@ -57,13 +57,13 @@ class PlanningProviderStage:
         )
         estimated_tokens = (
             ConservativeTokenEstimator().estimate(serialized)
-            if self.task["policy"].get("version") == "world-production-policy.v2"
+            if self.task["policy"].get("version") in {"world-production-policy.v2", "world-production-policy.v3"}
             else (len(serialized) + 3) // 4
         )
         if estimated_tokens > self.task["policy"]["context_token_budget"]:
             raise KernelError(
                 "WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
-                "complete world role input exceeds the frozen Context budget; compile a smaller scope",
+                f"{self.name} requires {estimated_tokens} estimated tokens but its frozen Context budget is {self.task['policy']['context_token_budget']}; resume with an explicitly approved smaller scope or new bounded policy",
             )
         object.__setattr__(self, "task", projected["world_preparation"])
 
@@ -314,6 +314,11 @@ class PlanningWorldPreparation:
             **({"actor_experiment": source["actor_experiment"], "actor_proposals": actor_refs,
                 "actor_intervention": "ISOLATED_ACTORS_AND_WORLD_JUDGE", "creative_benefit_proven": False} if actor_proposals else {}),
         }
+        if source.get("actor_experiment", {}).get("execution_contract_version") == "world-scene-execution.v2":
+            from novel_forge.modules.worldbuilding.actor_execution import compile_current_actor_steps
+
+            action["execution_contract_version"] = "world-scene-execution.v2"
+            action["current_actor_steps"] = compile_current_actor_steps(action, actor_proposals, actor_refs)
         action_document = self._store(
             command,
             operation_id,
@@ -346,6 +351,8 @@ class PlanningWorldPreparation:
             task["actor_judgment_contract"] = "Adjudicate every exact proposal hash. Accept or reject each action and determine conflicts and consequences. Preserve actor_id and intended action verbatim in an executable transition. Do not replace intentions to satisfy the outline. No preparation branches, new actors or missing adjudications. Director may select or reorder feasible proposals but cannot change them."
             if source.get("provider_projection_version") == "world-role-delivery.v2":
                 task["actor_judgment_contract"] += " For every CONTINUE commitment disposition, retain source_event_id in transition cause_refs and obligation_id in candidate obligation_refs. DEFER preserves the accepted commitment; it cannot cancel or fulfill it."
+            if source.get("actor_experiment", {}).get("version") == "world-actor-experiment.v2":
+                task["actor_judgment_contract"] += " Future intent steps are private proposals, not facts or executable prerequisites. Judge only the selected current action and do not mark intention steps complete. A deferred or abandoned intent with no selected_step_id must be REJECTED and cannot produce a transition."
         return PlanningProviderStage(
             "world_candidates.generate",
             task,

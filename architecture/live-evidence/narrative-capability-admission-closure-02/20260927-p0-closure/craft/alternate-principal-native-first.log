@@ -1,0 +1,5 @@
+{"case": "before_admission", "status": "PASS", "seconds": 0.91, "debug_release_sha": "ffffffffffffffffffffffffffffffffffffffff"}
+{"case": "before_group_link", "status": "PASS", "seconds": 0.82, "debug_release_sha": "ffffffffffffffffffffffffffffffffffffffff"}
+{"case": "reserved_pause_resume", "status": "PASS", "seconds": 1.04, "debug_release_sha": "ffffffffffffffffffffffffffffffffffffffff"}
+{"case": "before_book_link_alternate_actor", "status": "PASS", "seconds": 0.76, "debug_release_sha": "ffffffffffffffffffffffffffffffffffffffff"}
+{"case": "ungrouped", "status": "PASS", "seconds": 0.35, "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"}

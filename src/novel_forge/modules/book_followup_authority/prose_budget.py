@@ -48,7 +48,7 @@ def frozen_prose_budget_scope(cursor: Any, identity: dict[str, Any], *, project_
     if not spans or any(type(span.get("chapter_number")) is not int or span["chapter_number"] < 1 for span in spans):
         raise failure
     for span in spans:
-        cursor.execute("SELECT acceptance.chapter_number,draft.asset_version_id,draft.content_hash,draft.content FROM authority_book_chapter_acceptance acceptance JOIN authority_asset_version outcome ON outcome.asset_version_id=acceptance.chapter_outcome_asset_version_id JOIN authority_asset_version draft ON draft.asset_version_id=outcome.content->>'accepted_draft_asset_version_id' WHERE acceptance.project_id=%s AND acceptance.book_run_id=%s AND acceptance.acceptance_id=%s AND acceptance.status='COMMITTED'", [project_id, frozen["book_run_id"], span["acceptance_id"]])
+        cursor.execute("SELECT acceptance.chapter_number,draft.asset_version_id,draft.content_hash,draft.content FROM authority_book_chapter_acceptance acceptance JOIN authority_asset_version outcome ON outcome.asset_version_id=acceptance.chapter_outcome_asset_version_id JOIN authority_asset_version draft ON draft.asset_version_id=outcome.content->>'accepted_draft_asset_version_id' WHERE acceptance.project_id=%s AND acceptance.book_run_id=authority_book_source_run(%s,acceptance.chapter_number) AND acceptance.acceptance_id=%s AND acceptance.status='COMMITTED'", [project_id, frozen["book_run_id"], span["acceptance_id"]])
         accepted = cursor.fetchone()
         if (not accepted or accepted[:3] != (span["chapter_number"], span["asset_version_id"], span["asset_hash"])
             or completion_digest(accepted[3]) != accepted[2] or text_digest(accepted[3]["text"]) != span["text_hash"]

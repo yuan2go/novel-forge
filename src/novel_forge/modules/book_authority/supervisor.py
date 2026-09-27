@@ -89,6 +89,7 @@ class PostgresBookProductionSupervisor:
         narrative_search: PostgresNarrativeSearchApplication | None = None,
         context_token_budget: int = 16_000,
         quality_context_token_budget: int | None = None,
+        draft_context_profile_version: str = "draft-context-profile-v2",
     ) -> None:
         if context_token_budget <= 0:
             raise ValueError("context_token_budget must be positive")
@@ -97,6 +98,9 @@ class PostgresBookProductionSupervisor:
             and quality_context_token_budget <= 0
         ):
             raise ValueError("quality_context_token_budget must be positive")
+        if draft_context_profile_version not in {"draft-context-profile-v2", "draft-context-profile-v3"}:
+            raise ValueError("unsupported draft Context profile version")
+        self.draft_context_profile_version = draft_context_profile_version
         self.authority = authority
         self.planning = planning
         self.chapter_groups = chapter_groups
@@ -242,6 +246,12 @@ class PostgresBookProductionSupervisor:
                     str(closed.get("root_operation_id") or ""),
                     str(closed["group_run_id"]),
                 )
+            if (group_run is not None and group_run["state"] == ChapterGroupState.READY.value
+                and not group_run.get("active_chapter_request_id") and book.get("active_chapter_request_id")):
+                recovered = self.chapter_groups.recover_dispatch(str(group_run["group_run_id"]), principal=self.principal)
+                request = self.authority.require_chapter_request(str(recovered["active_chapter_request_id"]))
+                return self._result(book_run_id, before, SupervisorAction.DISPATCH_CHAPTER,
+                    str(request["chapter_root_operation_id"]), str(recovered["group_run_id"]))
             if (
                 group_run is not None
                 and group_run["active_chapter_request_id"] is not None
@@ -506,9 +516,7 @@ class PostgresBookProductionSupervisor:
                 "BOOK_SUPERVISOR_CHAPTER_PLAN_NOT_EXECUTABLE",
                 "ChapterPlan must be Frozen before Chapter dispatch",
             )
-        execution_plan = self.query.require_chapter_execution_plan(
-            str(chapter_plan["asset_version_id"])
-        )
+        execution_plan = self._require_chapter_execution_plan(book, chapter_plan)
         chapter_admission = self.query.require_chapter_production_admission(
             book_run_id=str(book["book_run_id"]),
             snapshot_id=str(book["input_snapshot_id"]),
@@ -546,10 +554,7 @@ class PostgresBookProductionSupervisor:
                 "BOOK_SUPERVISOR_ARC_WORKING_SET_MISSING",
                 "Chapter preparation requires the selected ArcPlan versions",
             )
-        # INVARIANT: The Working Set chooses a bounded subset, while Planning Authority
-        # remains the owner of the immutable ArcPlan contracts.  Freeze those
-        # exact selected versions into the existing production manifest so
-        # Mission/Context and accepted evidence share one completion identity.
+        # INVARIANT: Freeze the Working Set's exact Planning-owned Arc versions into the production manifest.
         explicit_overrides["arc_plan"] = selected_arc_versions
         if next_chapter > 1:
             previous_story_state = str(book.get("active_story_state_version_id") or "")
@@ -646,6 +651,24 @@ class PostgresBookProductionSupervisor:
             str(dispatched["chapter_request_id"]),
         )
 
+    def _require_chapter_execution_plan(
+        self, book: dict[str, Any], chapter_plan: dict[str, Any]
+    ) -> dict[str, Any]:
+        candidate_id = str(chapter_plan["asset_version_id"])
+        projection = self.query.require_chapter_execution_plan(candidate_id, allow_missing=True)
+        if projection is not None:
+            return projection
+        if str(book.get("active_chapter_request_id") or ""):
+            raise KernelError("BOOK_SUPERVISOR_CHAPTER_PLAN_PROJECTION_INVALID", "a frozen Chapter request must recover its own existing execution projection")
+        self.planning.materialize_activated_chapter_plan_projection(
+            candidate_id,
+            principal=self.principal,
+            idempotency_key=f"book:{book['book_run_id']}:active-chapter-projection:{candidate_id}",
+            trace_id=f"{book['book_run_id']}:active-chapter-projection",
+            correlation_id=str(book["book_run_id"]),
+        )
+        return self.query.require_chapter_execution_plan(candidate_id)
+
     def _chapter_preparation_request(
         self,
         *,
@@ -740,6 +763,9 @@ class PostgresBookProductionSupervisor:
             "draft": int(prepared.context_token_budget),
             "quality": self.quality_context_token_budget,
         }
+        if self.draft_context_profile_version != "draft-context-profile-v2":
+            report["stage_context_profile_versions"] = {**dict(report.get("stage_context_profile_versions") or {}),
+                "draft": self.draft_context_profile_version}
         return report
 
     def _generate_plan(
@@ -784,7 +810,10 @@ class PostgresBookProductionSupervisor:
             controls = PostgresBookControlApplication(self.authority.database_url, application_build_id=self.authority.application_build_id, commit_sha=self.authority.commit_sha)
             for version in causal_versions:
                 controls.require_causal_approval(project_id=str(book["project_id"]), book_run_id=str(book["book_run_id"]), chapter_number=chapter_number, actor_id=self.principal.principal_id, subject_version_id=version)
+        from .edition_planning import edition_plan_scope
+        edition_scope = edition_plan_scope(self.authority.database_url, book=book, chapter=chapter_number, generator=generator)
         generation = StoryPlanningGenerationCommand(
+            edition_execution=edition_scope,
             world_preparation_request={
                 "book_run_id": str(book["book_run_id"]),
                 "input_snapshot_id": str(book["input_snapshot_id"]),
@@ -801,9 +830,8 @@ class PostgresBookProductionSupervisor:
             logical_key=(
                 str(replacement_plan["content"]["logical_key"])
                 if replacement_plan is not None
-                else f"chapter-group:containing:{chapter_number}"
-                if generator == "chapter_group_plan.generate"
-                else f"chapter:{chapter_number}"
+                else (f"edition:{book['book_run_id']}:{edition_scope['revision_id']}:" if edition_scope else "") + (
+                    f"chapter-group:containing:{chapter_number}" if generator == "chapter_group_plan.generate" else f"chapter:{chapter_number}")
             ),
             input_versions=inputs,
             parent_version_id=parent,
@@ -820,6 +848,7 @@ class PostgresBookProductionSupervisor:
                 f"{book['stable_idempotency_key']}:{generator}:{chapter_number}:"
                 f"snapshot:{book['input_snapshot_id']}:"
                 f"working-set:{arc_working_set['working_set_digest']}"
+                + (f":edition:{edition_scope['revision_id']}" if edition_scope else "")
             ),
             trace_id=f"{book['root_operation_id']}:{generator}:{chapter_number}",
             correlation_id=str(book["root_operation_id"]),
@@ -1035,16 +1064,16 @@ class PostgresBookProductionSupervisor:
             "quality_trend": snapshot["quality_trend_version"],
             "reward_ledger": snapshot["reward_ledger_version"],
             "promise_ledger": snapshot["promise_ledger_version"],
+            "story_state": book.get("active_story_state_version_id") or snapshot.get("initial_story_state_version"),
+            "canon_snapshot": book.get("active_canon_snapshot_version_id") or snapshot.get("initial_canon_snapshot_version"),
+            "previous_chapter_outcome": book.get("last_chapter_outcome_version_id"),
         }
         group = self._active_plan(
             book, "CHAPTER_GROUP", int(book["accepted_through_chapter"]) + 1
         )
         if group:
             fixed["chapter_group_plan"] = group["asset_version_id"]
-            # INVARIANT: Planning Authority accepts the frozen ChapterGroupPlan itself as
-            # the source for this role and validates/extracts the unique row
-            # for the requested Chapter.  Reuse that exact Active version so a
-            # stale standalone matrix asset can never outrank the current plan.
+            # INVARIANT: The frozen ChapterGroup row outranks any stale standalone matrix asset.
             fixed["chapter_function_matrix_row"] = group["asset_version_id"]
         result: dict[str, str] = {}
         for role in GENERATOR_INPUT_ROLES[generator]:
@@ -1058,6 +1087,11 @@ class PostgresBookProductionSupervisor:
         return result
 
     def _latest_role_asset(self, book: dict[str, Any], role: str) -> str:
+        if role == "reader_state":
+            observed = self.query.previous_reader_state(book_run_id=str(book["book_run_id"]),
+                chapter_number=int(book["accepted_through_chapter"]) + 1)
+            if observed != "NONE":
+                return observed
         aliases = {
             "story_state": ("story_state_snapshot", "story_state"),
             "canon_snapshot": ("canon_snapshot",),
@@ -1065,7 +1099,7 @@ class PostgresBookProductionSupervisor:
                 "previous_chapter_group_outcome",
                 "chapter_group_outcome",
             ),
-            "reader_state": ("reader_state", "reader_state_transition"),
+            "reader_state": ("reader_state",),
             "chapter_function_matrix_row": (
                 "chapter_function_matrix_row",
                 "chapter_function_matrix",
@@ -1089,6 +1123,7 @@ class PostgresBookProductionSupervisor:
             book_id=str(book["book_id"]),
             contract_type=contract_type,
             chapter_number=chapter_number,
+            book_run_id=str(book["book_run_id"]),
         )
 
     def _freeze_plan(
@@ -1171,6 +1206,7 @@ class PostgresBookProductionSupervisor:
     def _scheduler_action(action: str) -> SupervisorAction:
         return {
             "RECONCILE_CHAPTER": SupervisorAction.RECONCILE_CHAPTER,
+            "DISPATCH_CHAPTER": SupervisorAction.DISPATCH_CHAPTER,
             "ACCEPT_CHAPTER": SupervisorAction.ACCEPT_CHAPTER,
             "RECOVER_LEGACY_ACCEPTANCE": SupervisorAction.ACCEPT_CHAPTER,
             "ABORT_TERMINAL_CHAPTER": SupervisorAction.ABORT_TERMINAL_CHAPTER,

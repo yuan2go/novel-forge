@@ -28,6 +28,7 @@ def disclosed_fact_projection(entry: Mapping[str, Any]) -> dict[str, Any]:
                 "retirement_evidence",
                 "target_retirement_evidence",
                 "preparation_lineage",
+                "actor_step_execution",
             }
         }
     return projected
@@ -97,6 +98,7 @@ _DISCLOSURE_PRIVATE_FIELDS = frozenset(
         "causal_batch",
         "causality",
         "preparation_lineage",
+        "actor_step_execution",
         "preparation_schedule",
         "dependencies",
         "expected_payoff",

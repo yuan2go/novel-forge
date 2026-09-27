@@ -66,6 +66,9 @@ def book_followup_operation_definitions(
             120,
         ),
     )
+    from .screenplay import SCREENPLAY_STAGES, CANDIDATE_TYPE, REVIEW_TYPE
+    specifications += tuple((stage, REVIEW_TYPE if stage == "screenplay_review" else CANDIDATE_TYPE,
+                             stage + ".result", (), ("model." + stage,), 300) for stage in SCREENPLAY_STAGES)
     definitions: list[dict[str, Any]] = []
     for (
         name,

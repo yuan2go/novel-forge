@@ -56,6 +56,7 @@ class BookFollowupAuthorityApplication:
         commit_sha: str,
         model_port: ReaderOutcomeModelPort | None = None,
         prose_model_port: ReaderOutcomeModelPort | None = None,
+        screenplay_model_ports: dict[str, ReaderOutcomeModelPort] | None = None,
         reader_judge_resolver: ReaderJudgeRuntimeResolver | None = None,
         worker_id: str = "book-followup-authority-worker",
     ) -> None:
@@ -65,10 +66,12 @@ class BookFollowupAuthorityApplication:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.prose_model_port = prose_model_port
+        self.screenplay_model_ports = screenplay_model_ports or {}
         self.registry = BookFollowupHandlerRegistry(
             model_port,
             reader_judge_resolver or ReaderJudgeRuntimeResolver(database_url),
             prose_model_port,
+            screenplay_model_ports,
         )
         self.worker_id = worker_id
         self.reader_policies = PostgresReaderProxyPolicyAuthority(
@@ -82,7 +85,9 @@ class BookFollowupAuthorityApplication:
     ) -> BookFollowupAdmission:
         from .prose_sampling import PROSE_SAMPLE_DEFINITION
 
-        if request.definition_name == PROSE_SAMPLE_DEFINITION:
+        from .screenplay_sampling import sample_definition_name
+        from .screenplay import SCREENPLAY_STAGES
+        if request.definition_name == PROSE_SAMPLE_DEFINITION or request.definition_name in {sample_definition_name(stage) for stage in SCREENPLAY_STAGES}:
             from novel_forge.modules.command_kernel.errors import KernelError
 
             raise KernelError("PROSE_SAMPLE_COMMAND_REQUIRED", "use the native authorized prose sampling command")
@@ -91,7 +96,7 @@ class BookFollowupAuthorityApplication:
         principal.require(permission, request.project_id)
         if request.actor_id != principal.principal_id:
             raise PermissionError("Book follow-up actor must be the trusted Principal")
-        policy_snapshot = self.reader_policies.freeze_for_admission(
+        policy_snapshot = {} if request.definition_name.startswith("screenplay_") else self.reader_policies.freeze_for_admission(
             project_id=request.project_id,
             idempotency_key=request.idempotency_key,
             actor_id=principal.principal_id,
@@ -190,6 +195,14 @@ class BookFollowupAuthorityApplication:
             operation_id=admission.operation_id,
             project_id=admission.project_id,
         )
+
+    def prepare_screenplay_sample(self, command: Any, *, principal: Principal) -> dict[str, Any]:
+        from .screenplay_sampling import prepare_screenplay_sample
+        return prepare_screenplay_sample(self, command, principal=principal)
+
+    def admit_screenplay_sample(self, command: Any, *, principal: Principal) -> dict[str, Any]:
+        from .screenplay_sampling import admit_screenplay_sample
+        return admit_screenplay_sample(self, command, principal=principal)
 
     def prepare_prose_sample(self, command: Any, *, principal: Principal) -> dict[str, Any]:
         from .prose_sampling import prepare_prose_sample

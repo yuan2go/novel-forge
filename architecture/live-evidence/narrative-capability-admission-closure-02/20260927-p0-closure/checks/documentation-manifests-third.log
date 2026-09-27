@@ -1,0 +1,21 @@
+.....F.......................                        [100%]
+=================================== FAILURES ===================================
+_ DocumentationRealityTests.test_current_repository_satisfies_its_own_reality_contract _
+
+self = <tests.unit.test_documentation_reality.DocumentationRealityTests testMethod=test_current_repository_satisfies_its_own_reality_contract>
+
+    def test_current_repository_satisfies_its_own_reality_contract(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+    
+        report = check_repository(root)
+    
+>       self.assertEqual(report["status"], "PASS", report)
+E       AssertionError: 'FAIL' != 'PASS'
+E       - FAIL
+E       + PASS
+E        : {'schema_version': 'novel-forge.documentation-reality-check.v1', 'evidence_class': 'reality_inventory', 'status': 'FAIL', 'tested_sha': 'cc6afa5e4a62eb74f7bbb17887784f16b70289c5', 'inventory_sha256': 'sha256:da4c59502575b118cb8f65ff91ae2b9d86cbcc9bc42f281585dce93c0b7052b2', 'canonical_document_count': 5, 'capability_count': 25, 'source_comment_count': 508, 'script_comment_count': 13, 'web_comment_count': 5, 'module_docstring_count': 35, 'source_docstring_count': 122, 'comment_ratchet': {'status': 'FAIL', 'base_sha': 'cc6afa5e4a62eb74f7bbb17887784f16b70289c5', 'base_source_comment_count': 505, 'base_script_comment_count': 13, 'base_source_docstring_count': 122, 'base_web_comment_count': 5}, 'errors': ['comment ratchet increased source comments: 508 > 505']}
+
+tests/unit/test_documentation_reality.py:852: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_documentation_reality.py::DocumentationRealityTests::test_current_repository_satisfies_its_own_reality_contract
+1 failed, 28 passed, 20 subtests passed in 43.84s

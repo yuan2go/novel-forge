@@ -62,6 +62,10 @@ def require_chapter_reference(
             target_id=subject["asset_version_id"], target_hash=subject["content_hash"],
             generators=[subject["generation_actor_id"]], evaluator_actor_id=evaluator_actor_id, chapter=chapter,
             expected_dimensions=reference_dimensions(stage), allowed_statuses={"PASSED", "NEEDS_REVISION", "BLOCKED"})
+    if stage == "canon_support":
+        from .canon_support_reference import require_reference
+        return require_reference(cursor, project_id=project_id, input_versions=input_versions,
+            binding=binding, evaluator_actor_id=evaluator_actor_id, chapter=chapter)
     target_type = {"review": "draft_chapter", "rereview": "draft_version"}.get(stage, "best_draft_candidate")
     cursor.execute("""SELECT version.asset_version_id,version.content_hash,
         ARRAY(SELECT operation.actor_id FROM authority_operation_output_asset output
@@ -138,7 +142,10 @@ def require_adjudicated_reference(
 
 
 def chapter_reference_agreement(reference: Mapping[str, Any], *, stage: str, result: Mapping[str, Any]) -> dict[str, Any]:
-    if stage in {"review", "rereview"}:
+    if stage == "canon_support":
+        from .canon_support_reference import observed_dimensions
+        observed = observed_dimensions(reference, result)
+    elif stage in {"review", "rereview"}:
         observed = {stage + "_decision": {"gate_status": result.get("decision"), "score": None}}
     else:
         entries = result.get("dimensions")
@@ -153,7 +160,7 @@ def chapter_reference_agreement(reference: Mapping[str, Any], *, stage: str, res
         score = actual.get("score")
         comparisons.append({**label, "observed_status": actual.get("gate_status"), "observed_score": score,
             "status_agrees": actual.get("gate_status") == label["status"],
-            "score_in_range": None if stage in {"review", "rereview"} else
+            "score_in_range": None if stage in {"review", "rereview", "canon_support"} else
                 isinstance(score, (int, float)) and not isinstance(score, bool) and label["score_range"][0] <= score <= label["score_range"][1]})
     return {**reference, "schema_version": "chapter-reference-agreement.v1", "comparisons": comparisons,
             "status_accuracy": sum(row["status_agrees"] for row in comparisons) / len(comparisons),
@@ -190,7 +197,7 @@ def reference_label_classes(cursor: Any, *, project_id: str, reference: Mapping[
     statuses = {"PASSED": "PASS", "PASSED_WITH_WARNINGS": "PASS", "NEEDS_REVISION": "FAIL", "FAILED": "FAIL", "BLOCKED": "FAIL"}
     for label in reference["labels"]:
         status = statuses.get(label["status"])
-        if status is None or (stage not in {"review", "rereview"} and label["score_range"][1] - label["score_range"][0] > 20):
+        if status is None or (stage not in {"review", "rereview", "canon_support"} and label["score_range"][1] - label["score_range"][0] > 20):
             return ()
         classes.add(status)
         adjudication, _, _ = _native_label(cursor, project_id=project_id,
@@ -257,11 +264,11 @@ def chapter_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list
                 [reference["target_asset_version_id"], reference["target_content_hash"]])
             target = cursor.fetchone()[0]
             prose = (target.get("sampled_output") or target).get("text")
-            if not isinstance(prose, str) or not prose.strip():
+            if stage != "canon_support" and (not isinstance(prose, str) or not prose.strip()):
                 continue
         except (KernelError, ValueError, TypeError, KeyError):
             continue
-        agreed = all(item["status_agrees"] and (stage in {"review", "rereview"} or item["score_in_range"] is True)
+        agreed = all(item["status_agrees"] and (stage in {"review", "rereview", "canon_support"} or item["score_in_range"] is True)
             for item in agreement["comparisons"])
         outcomes[effect_id] = {"accepted": None, "metric": "REFERENCE_AGREEMENT.v1", "reference_agreed": agreed,
             "generator_assessment": {"target_asset_version_id": reference["target_asset_version_id"],
@@ -270,8 +277,8 @@ def chapter_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list
             "reference_label_classes": classes,
             "reference_protocol_hash": authorization_hash({"protocol_version": reference["binding"]["protocol_version"],
                 "evaluation_versions": sorted({item["evaluation_version"] for item in reference["labels"]}),
-                "dimensions": sorted(item["dimension"] for item in reference["labels"]), "agreement_contract": "REFERENCE_AGREEMENT.v1"}),
-            "reference_sample_identity": authorization_hash({"task_type": stage, "text": " ".join(prose.split())}),
+                "dimensions": ["canon_support_claim", "canon_no_change"] if stage == "canon_support" else sorted(item["dimension"] for item in reference["labels"]), "agreement_contract": "REFERENCE_AGREEMENT.v1"}),
+            "reference_sample_identity": reference["canon_reference_sample_identity"] if stage == "canon_support" else authorization_hash({"task_type": stage, "text": " ".join(prose.split())}),
             "failure_class": "" if agreed else "QUALITY_FAILURE",
             "evidence_refs": ["asset-version:" + asset_id, "asset-version:" + provider["model_call_asset_version_id"],
                 *("asset-version:" + item["adjudication_asset_version_id"] for item in agreement["comparisons"])]}
@@ -358,7 +365,8 @@ def reference_decision_qualifies(decision: Mapping[str, Any], *, evidence: Mappi
     route = execution.get("route_snapshot") or {}
     process = execution.get("process_evidence") or {}
     strata = benchmark.get("reference_label_strata") or {}
-    if (stage not in REFERENCE_TASKS or decision.get("schema_version") != POLICY_VERSION
+    compatible_versions = {POLICY_VERSION} | ({"quality-constrained-routing.v10"} if stage != "canon_support" else set())
+    if (stage not in REFERENCE_TASKS or decision.get("schema_version") not in compatible_versions
         or decision.get("status") != "SELECTED" or decision.get("bootstrap_authorization")
         or decision.get("production_eligible") is False or selected.get("rejected_reasons")
         or candidate.get("provider") not in {"deepseek", "codex-cli"}

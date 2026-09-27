@@ -494,6 +494,110 @@ class PostgresChapterGroupAuthority:
             uow.commit()
         return self.require(group_run_id)
 
+    def recover_dispatch(self, group_run_id: str, *, principal: Principal) -> dict[str, Any]:
+        group = self.require(group_run_id)
+        principal.require("book.authority.execute", group["project_id"])
+        with AuthorityUnitOfWork(self.database_url) as guard:
+            guard.cursor.execute("SELECT pg_try_advisory_xact_lock(hashtextextended(%s,0))",
+                ["chapter-group-dispatch-recovery:" + group["book_run_id"]])
+            if not guard.cursor.fetchone()[0]:
+                raise KernelError("CHAPTER_GROUP_DISPATCH_RECOVERY_CONFLICT", "another recovery owns this Book dispatch")
+            group = self.require(group_run_id)
+            book = self.book.require(group["book_run_id"])
+            request_id = str(book.get("active_chapter_request_id") or "")
+            if not request_id:
+                raise KernelError("CHAPTER_GROUP_DISPATCH_RECOVERY_STALE", "Book no longer has the reserved Chapter request")
+            request = self.book.require_chapter_request(request_id)
+            self._require_recoverable_dispatch(group, book, request)
+            if group.get("active_chapter_request_id"):
+                self._require_dispatch_link(guard.cursor, group, request)
+                return group
+            chapter = int(request["chapter_number"])
+            payload = request["command_payload"]
+            self._chapter_plan(group["project_id"], request["chapter_plan_version"], group["group_plan_version_id"], chapter)
+            if not self._existing_dispatch_step(guard.cursor, group, request):
+                self._run_step(group, definition="chapter_group.chapter.dispatch", suffix=f"chapter:{chapter}",
+                    ordinal=100 + chapter * 10, payload={"chapter_number": chapter},
+                    input_assets=({"asset_version_id": request["chapter_plan_version"],
+                        "content_hash": payload["chapter_plan_content_hash"]},), principal=principal)
+            recovered = self.book.recover_chapter_submission(request_id, principal=principal)
+            if not recovered.get("chapter_root_operation_id") or not recovered.get("delegation_id"):
+                raise KernelError("CHAPTER_GROUP_DELEGATION_MISSING", "recovered Chapter requires its native root and delegation")
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("SELECT to_jsonb(book) FROM authority_book_production book WHERE book_run_id=%s FOR UPDATE",
+                    [group["book_run_id"]])
+                current_book = uow.cursor.fetchone()[0]
+                uow.cursor.execute("SELECT group_run_id FROM authority_chapter_group_production WHERE group_run_id=%s FOR UPDATE",
+                    [group_run_id])
+                current_group = uow.repositories.chapter_group.require(group_run_id)
+                self._require_recoverable_dispatch(current_group, current_book, recovered)
+                if current_group.get("active_chapter_request_id"):
+                    self._require_dispatch_link(uow.cursor, current_group, recovered)
+                else:
+                    uow.repositories.chapter_group.link_chapter(group_run_id=group_run_id,
+                        project_id=group["project_id"], chapter_number=chapter,
+                        chapter_plan_version_id=request["chapter_plan_version"], chapter_request_id=request_id,
+                        child_root_operation_id=recovered["chapter_root_operation_id"], child_delegation_id=recovered["delegation_id"])
+                    self._require_dispatch_link(uow.cursor, current_group, recovered)
+                uow.commit()
+        return self.require(group_run_id)
+
+    @staticmethod
+    def _existing_dispatch_step(cursor: Any, group: dict[str, Any], request: dict[str, Any]) -> bool:
+        chapter = int(request["chapter_number"])
+        definition = "chapter_group.chapter.dispatch"
+        cursor.execute("""SELECT to_jsonb(operation),to_jsonb(step) FROM authority_operation operation
+            LEFT JOIN authority_saga_step step ON step.operation_id=operation.operation_id
+            WHERE operation.project_id=%s AND operation.idempotency_scope='project:chapter-group-step'
+              AND operation.idempotency_key=%s""",
+            [group["project_id"], f"{group['stable_idempotency_key']}:{definition}:chapter:{chapter}"])
+        row = cursor.fetchone()
+        if row is None:
+            return False
+        operation, step = row
+        if operation["status"] != "SUCCEEDED" or not step:
+            raise KernelError("CHAPTER_GROUP_DISPATCH_REQUIRES_RECOVERY", "The existing dispatch step must finish native recovery before linkage")
+        expected = {"project_id": group["project_id"], "input_asset_version_ids": [request["chapter_plan_version"]],
+            "payload": {"group_run_id": group["group_run_id"], "chapter_number": chapter}}
+        refs = operation.get("input_asset_snapshot") or []
+        if (operation["definition_name"] != definition or operation["command_payload"] != expected
+            or any(operation.get(key) != group["root_operation_id"] for key in ("root_operation_id", "parent_operation_id", "causation_operation_id"))
+            or operation.get("saga_id") != group["saga_id"] or step["saga_id"] != group["saga_id"]
+            or step["step_key"] != f"{definition}:chapter:{chapter}" or step["ordinal"] != 100 + chapter * 10
+            or [(item.get("asset_version_id"), item.get("content_hash")) for item in refs]
+                != [(request["chapter_plan_version"], request["command_payload"]["chapter_plan_content_hash"])]
+            or any(item.get("project_id", group["project_id"]) != group["project_id"] for item in refs)):
+            raise KernelError("CHAPTER_GROUP_DISPATCH_RECOVERY_CONFLICT", "Existing dispatch step differs from its frozen group and Chapter inputs")
+        return True
+
+    @staticmethod
+    def _require_recoverable_dispatch(group: dict[str, Any], book: dict[str, Any], request: dict[str, Any]) -> None:
+        payload = request.get("command_payload") or {}
+        if (group["book_run_id"] != book["book_run_id"] or request["book_run_id"] != book["book_run_id"]
+            or group["project_id"] != book["project_id"] or request["project_id"] != book["project_id"]
+            or request["chapter_request_id"] != book.get("active_chapter_request_id")
+            or request.get("parent_group_version_id") != group["group_plan_version_id"]
+            or payload.get("parent_group_version_id") != group["group_plan_version_id"]
+            or payload.get("book_run_id") != group["book_run_id"]
+            or int(request["chapter_number"]) != int(group["accepted_through_chapter"]) + 1
+            or int(request["chapter_number"]) != int(book["accepted_through_chapter"]) + 1
+            or not int(group["chapter_start"]) <= int(request["chapter_number"]) <= int(group["chapter_end"])
+            or book["state"] in {"PAUSED", "ABORTED", "COMPLETED"}):
+            raise KernelError("CHAPTER_GROUP_DISPATCH_RECOVERY_STALE", "reserved Chapter differs from the exact active Book and group boundary")
+        active = group.get("active_chapter_request_id")
+        if (active and (active != request["chapter_request_id"] or group["state"] != ChapterGroupState.CHAPTER_RUNNING.value)
+            or not active and group["state"] != ChapterGroupState.READY.value):
+            raise KernelError("CHAPTER_GROUP_DISPATCH_RECOVERY_CONFLICT", "ChapterGroup cannot recover this reserved dispatch")
+
+    @staticmethod
+    def _require_dispatch_link(cursor: Any, group: dict[str, Any], request: dict[str, Any]) -> None:
+        cursor.execute("""SELECT project_id,chapter_plan_version_id,chapter_request_id,child_root_operation_id,child_delegation_id
+            FROM authority_chapter_group_chapter WHERE group_run_id=%s AND chapter_number=%s""",
+            [group["group_run_id"], request["chapter_number"]])
+        if cursor.fetchone() != (group["project_id"], request["chapter_plan_version"], request["chapter_request_id"],
+                                request["chapter_root_operation_id"], request["delegation_id"]):
+            raise KernelError("CHAPTER_GROUP_DISPATCH_RECOVERY_CONFLICT", "existing group dispatch has a different immutable child binding")
+
     def reconcile_and_accept(
         self, group_run_id: str, *, principal: Principal
     ) -> dict[str, Any]:
@@ -649,12 +753,12 @@ class PostgresChapterGroupAuthority:
             reason=reason or "operator resumed ChapterGroup",
         )
         self._control_step(group, "resume", reason, principal)
-        book = self.book.resume(
+        self.book.resume(
             group["book_run_id"], reason=reason, principal=principal
         )
         target = (
             ChapterGroupState.CHAPTER_RUNNING.value
-            if book["active_chapter_request_id"]
+            if group["active_chapter_request_id"]
             else ChapterGroupState.READY.value
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -838,100 +942,111 @@ class PostgresChapterGroupAuthority:
         book: dict[str, Any],
     ) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:
+            from novel_forge.storage.book_edition_repositories import BookEditionRepository
+            uow.cursor.execute("SELECT book_id FROM authority_book WHERE book_id=%s FOR UPDATE", [group["book_id"]])
+            editions = BookEditionRepository(uow.cursor)
+            head = editions.head(group["book_id"])
+            advances_selected_scope = True
+            if head["version"]:
+                proofs = [event["content"] for event in editions.events(head["selected_revision_id"]) if event["event_kind"] == "VALIDATED"]
+                selected_run = (proofs[-1].get("validation_book_run_id") or proofs[-1].get("source_book_run_id")) if proofs else ""
+                advances_selected_scope = selected_run == group["book_run_id"]
             uow.repositories.chapter_group.close(
                 group_run_id=group["group_run_id"],
             )
-            uow.cursor.execute(
-                """
-                UPDATE planning_horizon
-                SET status='SUPERSEDED', updated_at=NOW()
-                WHERE project_id=%s AND book_id=%s AND status='CURRENT'
-                """,
-                [group["project_id"], group["book_id"]],
-            )
-            uow.cursor.execute(
-                """
-                SELECT COALESCE(MAX(window_version), 0) + 1
-                FROM planning_horizon
-                WHERE project_id=%s AND book_id=%s
-                """,
-                [group["project_id"], group["book_id"]],
-            )
-            window_version = int(uow.cursor.fetchone()[0])
-            end = int(group["chapter_end"])
-            uow.cursor.execute(
-                """
-                SELECT binding.asset_version_id
-                FROM story_plan_binding AS binding
-                JOIN active_story_plan_version AS active
-                  ON active.binding_id=binding.binding_id
-                WHERE binding.project_id=%s AND binding.book_id=%s
-                  AND binding.contract_type='CHAPTER'
-                ORDER BY binding.created_at DESC LIMIT 1
-                """,
-                [group["project_id"], group["book_id"]],
-            )
-            chapter = uow.cursor.fetchone()
-            uow.cursor.execute(
-                """
-                SELECT jsonb_agg(source_asset_version_id)
-                FROM asset_dependency_edge
-                WHERE project_id=%s AND book_id=%s
-                  AND dependent_asset_version_id=%s
-                  AND dependency_type='ARC_CONTRIBUTION'
-                """,
-                [
-                    group["project_id"],
-                    group["book_id"],
-                    str(chapter[0]) if chapter else group["group_plan_version_id"],
-                ],
-            )
-            arcs = uow.cursor.fetchone()[0] or []
-            horizon_id = (
-                "planning-horizon:"
-                + hashlib.sha256(
-                    (
-                        f"{group['project_id']}:{group['book_id']}:{window_version}"
-                    ).encode()
-                ).hexdigest()
-            )
-            uow.cursor.execute(
-                """
-                INSERT INTO planning_horizon(
-                    planning_horizon_id, project_id, book_id,
-                    executed_through_chapter, frozen_through_chapter,
-                    planned_through_chapter, speculative_through_chapter,
-                    active_book_plan_version_id,
-                    active_volume_plan_version_id,
-                    active_group_plan_version_id,
-                    active_chapter_plan_version_id, active_arc_ids,
-                    window_version, based_on_canon_version,
-                    based_on_story_state_version, policy_version, status,
-                    updated_by_operation_id
-                ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, 'rolling-horizon-v1', 'CURRENT', %s
+            horizon_id = None
+            if advances_selected_scope:
+                uow.cursor.execute(
+                    """
+                    UPDATE planning_horizon
+                    SET status='SUPERSEDED', updated_at=NOW()
+                    WHERE project_id=%s AND book_id=%s AND status='CURRENT'
+                    """,
+                    [group["project_id"], group["book_id"]],
                 )
-                """,
-                [
-                    horizon_id,
-                    group["project_id"],
-                    group["book_id"],
-                    end,
-                    end,
-                    end + 7,
-                    end + 20,
-                    book["book_plan_version"],
-                    group["volume_plan_version_id"],
-                    group["group_plan_version_id"],
-                    str(chapter[0]) if chapter else None,
-                    Jsonb(list(arcs)),
-                    window_version,
-                    book["active_canon_snapshot_version_id"],
-                    book["active_story_state_version_id"],
-                    close_operation_id,
-                ],
-            )
+                uow.cursor.execute(
+                    """
+                    SELECT COALESCE(MAX(window_version), 0) + 1
+                    FROM planning_horizon
+                    WHERE project_id=%s AND book_id=%s
+                    """,
+                    [group["project_id"], group["book_id"]],
+                )
+                window_version = int(uow.cursor.fetchone()[0])
+                end = int(group["chapter_end"])
+                uow.cursor.execute(
+                    """
+                    SELECT binding.asset_version_id
+                    FROM story_plan_binding AS binding
+                    JOIN active_story_plan_version AS active
+                      ON active.binding_id=binding.binding_id
+                    WHERE binding.project_id=%s AND binding.book_id=%s
+                      AND binding.contract_type='CHAPTER'
+                    ORDER BY binding.created_at DESC LIMIT 1
+                    """,
+                    [group["project_id"], group["book_id"]],
+                )
+                chapter = uow.cursor.fetchone()
+                uow.cursor.execute(
+                    """
+                    SELECT jsonb_agg(source_asset_version_id)
+                    FROM asset_dependency_edge
+                    WHERE project_id=%s AND book_id=%s
+                      AND dependent_asset_version_id=%s
+                      AND dependency_type='ARC_CONTRIBUTION'
+                    """,
+                    [
+                        group["project_id"],
+                        group["book_id"],
+                        str(chapter[0]) if chapter else group["group_plan_version_id"],
+                    ],
+                )
+                arcs = uow.cursor.fetchone()[0] or []
+                horizon_id = (
+                    "planning-horizon:"
+                    + hashlib.sha256(
+                        (
+                            f"{group['project_id']}:{group['book_id']}:{window_version}"
+                        ).encode()
+                    ).hexdigest()
+                )
+                uow.cursor.execute(
+                    """
+                    INSERT INTO planning_horizon(
+                        planning_horizon_id, project_id, book_id,
+                        executed_through_chapter, frozen_through_chapter,
+                        planned_through_chapter, speculative_through_chapter,
+                        active_book_plan_version_id,
+                        active_volume_plan_version_id,
+                        active_group_plan_version_id,
+                        active_chapter_plan_version_id, active_arc_ids,
+                        window_version, based_on_canon_version,
+                        based_on_story_state_version, policy_version, status,
+                        updated_by_operation_id
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, 'rolling-horizon-v1', 'CURRENT', %s
+                    )
+                    """,
+                    [
+                        horizon_id,
+                        group["project_id"],
+                        group["book_id"],
+                        end,
+                        end,
+                        end + 7,
+                        end + 20,
+                        book["book_plan_version"],
+                        group["volume_plan_version_id"],
+                        group["group_plan_version_id"],
+                        str(chapter[0]) if chapter else None,
+                        Jsonb(list(arcs)),
+                        window_version,
+                        book["active_canon_snapshot_version_id"],
+                        book["active_story_state_version_id"],
+                        close_operation_id,
+                    ],
+                )
             event_id = str(uuid4())
             uow.repositories.operation_graph.record_event(
                 {
@@ -950,6 +1065,7 @@ class PostgresChapterGroupAuthority:
                         "production_correctness_committed": True,
                         "retrospective_completion_required": False,
                         "planning_horizon_id": horizon_id,
+                        "planning_horizon_advanced": advances_selected_scope,
                     },
                 }
             )

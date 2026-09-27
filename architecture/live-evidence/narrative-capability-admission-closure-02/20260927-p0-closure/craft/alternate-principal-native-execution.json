@@ -1,0 +1,39 @@
+{
+  "source_tree_hash_before": "a9a5aec1d47ac8a9bead37c78d38c438852b1d5e56843830c3f8ff20fb786fb6",
+  "source_tree_hash_after": "a9a5aec1d47ac8a9bead37c78d38c438852b1d5e56843830c3f8ff20fb786fb6",
+  "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL_RECOVERY",
+  "actual_real_model_calls": 0,
+  "actual_human_evaluations": 0,
+  "results": [
+    {
+      "case": "before_admission",
+      "status": "PASS",
+      "seconds": 0.91,
+      "debug_release_sha": "ffffffffffffffffffffffffffffffffffffffff"
+    },
+    {
+      "case": "before_group_link",
+      "status": "PASS",
+      "seconds": 0.82,
+      "debug_release_sha": "ffffffffffffffffffffffffffffffffffffffff"
+    },
+    {
+      "case": "reserved_pause_resume",
+      "status": "PASS",
+      "seconds": 1.04,
+      "debug_release_sha": "ffffffffffffffffffffffffffffffffffffffff"
+    },
+    {
+      "case": "before_book_link_alternate_actor",
+      "status": "PASS",
+      "seconds": 0.76,
+      "debug_release_sha": "ffffffffffffffffffffffffffffffffffffffff"
+    },
+    {
+      "case": "ungrouped",
+      "status": "PASS",
+      "seconds": 0.35,
+      "debug_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    }
+  ]
+}

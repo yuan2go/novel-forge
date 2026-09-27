@@ -44,6 +44,7 @@ from novel_forge.modules.story_planning_runtime.execution import (
 )
 from novel_forge.modules.story_planning_runtime.application import (
     _AUTHORITY_INPUT_ASSET_TYPES,
+    _replay_generation_input_snapshot,
     _validate_frozen_arc_references,
     _validate_narrative_search_horizon,
     StoryPlanningGenerationApplication,
@@ -55,6 +56,51 @@ from novel_forge.modules.story_planning_runtime import (
 
 
 HASH = "sha256:" + "a" * 64
+
+
+def test_result_repair_preserves_parent_snapshot_order_and_shared_asset_roles():
+    frozen = [
+        {"role": role, "asset_version_id": "shared-group-plan:v1",
+         "asset_type": "planning_generation_candidate", "content_hash": HASH}
+        for role in ("chapter_group_plan", "chapter_function_matrix_row")
+    ]
+    resolved = list(reversed(deepcopy(frozen)))
+    replay = _replay_generation_input_snapshot(resolved, frozen, canonical_hash(frozen))
+    assert replay == frozen
+    assert replay is not frozen and replay[0] is not frozen[0]
+    assert canonical_hash(replay) == canonical_hash(frozen)
+    assert canonical_hash(resolved) != canonical_hash(frozen)
+
+
+@pytest.mark.parametrize("field", ["role", "asset_version_id", "asset_type", "content_hash"])
+def test_result_repair_rejects_any_frozen_input_identity_drift(field):
+    frozen = [{"role": "book_plan", "asset_version_id": "plan:v1",
+               "asset_type": "planning_generation_candidate", "content_hash": HASH}]
+    resolved = deepcopy(frozen)
+    resolved[0][field] += "-changed"
+    with pytest.raises(KernelError) as error:
+        _replay_generation_input_snapshot(resolved, frozen, canonical_hash(frozen))
+    assert error.value.code == "PLANNING_GENERATION_INPUT_SNAPSHOT_DRIFT"
+
+
+@pytest.mark.parametrize("damage", ["missing", "extra", "duplicate_role", "bad_hash"])
+def test_result_repair_rejects_incomplete_or_corrupt_frozen_input_evidence(damage):
+    frozen = [{"role": "book_plan", "asset_version_id": "plan:v1",
+               "asset_type": "planning_generation_candidate", "content_hash": HASH}]
+    resolved = deepcopy(frozen)
+    if damage == "missing":
+        resolved.clear()
+    elif damage == "extra":
+        resolved.append({**resolved[0], "role": "volume_plan"})
+    elif damage == "duplicate_role":
+        resolved.append(dict(resolved[0]))
+    with pytest.raises(KernelError) as error:
+        _replay_generation_input_snapshot(
+            resolved, frozen, HASH if damage == "bad_hash" else canonical_hash(frozen)
+        )
+    assert error.value.code in {
+        "PLANNING_GENERATION_INPUT_SNAPSHOT_DRIFT", "PLANNING_GENERATION_INPUT_SNAPSHOT_INVALID",
+    }
 
 
 def _routing_lineage_runtime(rows):

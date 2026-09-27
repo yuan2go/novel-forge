@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "scope": {
+    "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+    "workspace_id": "workspace-91d6d7a2d32c4e90b106c12793a93616",
+    "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616",
+    "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662"
+  },
+  "revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f",
+  "checks": [
+    "unapplied invalid structure mapping blocks version switch and silently ignoring save",
+    "raw mapping and reason survive reload at exact manifest",
+    "applied mapping updates local units and clears unapplied buffer",
+    "unsaved mapped units still block validation or selection; no native mutation sent"
+  ],
+  "native_mutations": 0,
+  "actual_model_calls": 0,
+  "proof_ceiling": "NATIVE_QUERY_UI_DRAFT_RECOVERY"
+}

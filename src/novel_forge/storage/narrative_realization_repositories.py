@@ -813,6 +813,7 @@ class NarrativeRealizationRepository:
         self._require_accepted_boundary_values(
             project_id=contract.project_id,
             book_id=contract.book_id,
+            book_run_id=self._group_run_scope(contract.chapter_group_plan_version_id, contract.chapter_group_content_hash),
             expected=(
                 boundary.accepted_through_chapter,
                 boundary.story_state_version_id,
@@ -822,12 +823,22 @@ class NarrativeRealizationRepository:
             ),
         )
 
+    def _group_run_scope(self, plan_version_id: str, content_hash: str) -> str:
+        self.cursor.execute("""SELECT COALESCE(content#>>'{constraint_envelope,edition_execution,book_run_id}','')
+            FROM authority_asset_version WHERE asset_version_id=%s AND content_hash=%s""",
+            [plan_version_id, content_hash])
+        source = self.cursor.fetchone()
+        if source is None:
+            raise KernelError("NARRATIVE_REALIZATION_GROUP_STALE", "Realization requires its exact frozen ChapterGroup")
+        return str(source[0])
+
     def _require_accepted_boundary_values(
         self,
         *,
         project_id: str,
         book_id: str,
         expected: tuple[int, str, str, str, str],
+        book_run_id: str = "",
     ) -> None:
         self.cursor.execute(
             """
@@ -851,10 +862,13 @@ class NarrativeRealizationRepository:
                    snapshot.initial_canon_snapshot_version)
             WHERE production.project_id=%s AND production.book_id=%s
               AND production.state NOT IN ('COMPLETED','ABORTED')
+              AND ((%s<>'' AND production.book_run_id=%s) OR (%s='' AND NOT EXISTS (
+                  SELECT 1 FROM authority_book_edition_run edition
+                  WHERE edition.book_run_id=production.book_run_id AND edition.role='VALIDATION')))
             ORDER BY production.created_at DESC
             LIMIT 2
             """,
-            [project_id, book_id],
+            [project_id, book_id, book_run_id, book_run_id, book_run_id],
         )
         rows = self.cursor.fetchall()
         row = rows[0] if len(rows) == 1 else None
@@ -942,6 +956,7 @@ class NarrativeRealizationRepository:
                     "NARRATIVE_REALIZATION_ARC_STALE",
                     "persisted realization Arc binding is no longer current",
                 )
+        book_run_id = self._group_run_scope(str(row[0]), str(row[1]))
         self.cursor.execute(
             """
             SELECT production.accepted_through_chapter,
@@ -954,10 +969,13 @@ class NarrativeRealizationRepository:
               ON snapshot.snapshot_id=production.input_snapshot_id
             WHERE production.project_id=%s AND production.book_id=%s
               AND production.state NOT IN ('COMPLETED','ABORTED')
+              AND ((%s<>'' AND production.book_run_id=%s) OR (%s='' AND NOT EXISTS (
+                  SELECT 1 FROM authority_book_edition_run edition
+                  WHERE edition.book_run_id=production.book_run_id AND edition.role='VALIDATION')))
             ORDER BY production.created_at DESC
             LIMIT 2
             """,
-            [project_id, book_id],
+            [project_id, book_id, book_run_id, book_run_id, book_run_id],
         )
         boundaries = self.cursor.fetchall()
         if len(boundaries) != 1 or int(boundaries[0][0]) != chapter_number - 1:

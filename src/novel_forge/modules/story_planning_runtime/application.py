@@ -3,6 +3,7 @@ from __future__ import annotations
 from .foundation_generation import FOUNDATION_GENERATORS, validate_foundation_payload
 
 from collections.abc import Callable, Mapping
+from copy import deepcopy
 from dataclasses import asdict, replace
 import re
 from typing import Any
@@ -244,11 +245,19 @@ class _PlanningGenerationHandler:
             author_projection = dict(context.content.get("author_design_projection") or {})
             validate_author_decisions(candidate.candidate_payload, author_projection)
             if selection.get("policy_version") == "knowledge-grounded-selection-v2":
-                validate_knowledge_translations(candidate.candidate_payload, selection)
-                knowledge_policy = selection["policy_version"]
-                if command.generator_operation_name == "chapter_plan.generate":
-                    from novel_forge.modules.mkaos_authority.craft_selection import build_craft_strategy
-                    craft_strategy = build_craft_strategy(candidate.candidate_payload, selection)
+                try:
+                    validate_knowledge_translations(candidate.candidate_payload, selection)
+                    knowledge_policy = selection["policy_version"]
+                    if command.generator_operation_name == "chapter_plan.generate":
+                        from novel_forge.modules.mkaos_authority.craft_selection import build_craft_strategy
+                        from novel_forge.modules.mkaos_authority.craft_reselection import validate_concrete_selection
+                        validate_concrete_selection(candidate.candidate_payload, selection)
+                        craft_strategy = build_craft_strategy(candidate.candidate_payload, selection)
+                except KernelError as error:
+                    if selection.get("craft_policy", {}).get("schema_version") != "narrative-craft-budget.v4":
+                        raise
+                    from .result_recovery import PlanningResultValidationError
+                    raise PlanningResultValidationError(error, raw_result=candidate.candidate_payload, execution_evidence=evidence) from error
             knowledge_refs = tuple(
                 item["knowledge_card_asset_version_id"] for item in selection.get("selected") or ()
             )
@@ -322,6 +331,20 @@ class _PlanningGenerationHandler:
                 }
             )
             world_refs = (action.asset_version_id,)
+        if command.edition_execution:
+            from novel_forge.modules.book_authority.edition_planning import validate_edition_plan_scope
+            validate_edition_plan_scope(self.database_url, project_id=command.project_id, book_id=command.book_id, scope=dict(command.edition_execution))
+            target_scenes = command.edition_execution.get("target_scene_ids") or []
+            if target_scenes and [scene["scene_id"] for scene in candidate.candidate_payload.get("scene_plan", [])] != list(target_scenes):
+                raise KernelError("EDITION_SCENE_MAPPING_DRIFT", "Edition planning must preserve the mapped source Scene identities and order")
+            target_slots = command.edition_execution.get("target_slot_ids") or []
+            if target_slots:
+                from novel_forge.modules.chapter_authority.realization_composition import compile_realization_contract
+                slots = compile_realization_contract(candidate.candidate_payload, {})["slots"]
+                if [slot["slot_id"] for slot in slots] != list(target_slots):
+                    raise KernelError("EDITION_SLOT_MAPPING_DRIFT", "The new plan must realize every submitted Scene slot in frozen order")
+            envelope["edition_execution"] = deepcopy(dict(command.edition_execution))
+            envelope["envelope_digest"] = canonical_hash({key: value for key, value in envelope.items() if key != "envelope_digest"})
         content = candidate.authority_content(
             project_id=command.project_id,
             book_id=command.book_id,
@@ -529,6 +552,12 @@ class StoryPlanningGenerationApplication:
             }
             for item in frozen_change_evidence
         )
+        if command.edition_execution:
+            from novel_forge.modules.book_authority.edition_planning import require_edition_planning_request, validate_edition_plan_scope
+            require_edition_planning_request(self.database_url, project_id=command.project_id, book_id=command.book_id,
+                scope=dict(command.edition_execution), definition_name=STORY_PLANNING_GENERATION_DEFINITION, idempotency_key=command.idempotency_key)
+            input_assets.extend(validate_edition_plan_scope(self.database_url, project_id=command.project_id,
+                book_id=command.book_id, scope=dict(command.edition_execution)))
         if command.narrative_realization:
             self._require_frozen_realization_slice(command)
             proof = self._require_asset(
@@ -1341,6 +1370,14 @@ class StoryPlanningGenerationApplication:
             operation_id: str,
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
+            existing = self._lock_chapter_projection_source(
+                uow,
+                generation=generation,
+                candidate_asset_version_id=candidate_asset_version_id,
+                content_hash=candidate["content_hash"],
+            )
+            if existing is not None:
+                return existing
             self._require_frozen_realization_slice(generation_command)
             binding = (candidate["content"].get("constraint_envelope") or {}).get(
                 "world_preparation"
@@ -1479,6 +1516,81 @@ class StoryPlanningGenerationApplication:
             )
         )
 
+    @staticmethod
+    def _lock_chapter_projection_source(
+        uow: AuthorityUnitOfWork,
+        *,
+        generation: dict[str, Any],
+        candidate_asset_version_id: str,
+        content_hash: str,
+    ) -> dict[str, Any] | None:
+        # INVARIANT: Match plan activation's Book-first lock order, including distinct command keys.
+        uow.cursor.execute(
+            "SELECT book_id FROM authority_book WHERE project_id=%s AND book_id=%s FOR UPDATE",
+            [generation["project_id"], generation["book_id"]],
+        )
+        if uow.cursor.fetchone() is None:
+            raise KernelError("BOOK_NOT_FOUND", "Chapter projection requires its exact Book owner")
+        uow.cursor.execute(
+            """
+            SELECT version.content_hash, version.lifecycle, version.eligibility,
+                   version.governance, state.lifecycle,
+                   EXISTS (
+                       SELECT 1 FROM authority_story_design_active_version AS active
+                       WHERE active.project_id=state.project_id
+                         AND active.logical_key=state.logical_key
+                         AND active.asset_version_id=state.asset_version_id
+                   )
+            FROM authority_asset_version AS version
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            JOIN authority_story_design_version_state AS state
+              ON state.project_id=asset.project_id
+             AND state.asset_version_id=version.asset_version_id
+            WHERE asset.project_id=%s AND version.asset_version_id=%s
+            FOR UPDATE OF state, version
+            """,
+            [generation["project_id"], candidate_asset_version_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None or tuple(row) != (content_hash, "ACTIVE", "ELIGIBLE", "CLEAR", "ACTIVE", True):
+            raise KernelError(
+                "PLANNING_CHAPTER_PROJECTION_ACTIVATION_REQUIRED",
+                "Chapter projection requires the exact current eligible Active candidate",
+            )
+        uow.cursor.execute(
+            """
+            SELECT projection.asset_version_id, projection.content_hash,
+                   projection.lifecycle, projection.eligibility, projection.governance,
+                   operation.status, operation.project_id,
+                   projection.content->>'source_planning_generation_operation_id'
+            FROM authority_operation_output_asset AS output
+            JOIN authority_operation AS operation ON operation.operation_id=output.operation_id
+            JOIN authority_asset_version AS projection
+              ON projection.asset_version_id=output.asset_version_id
+            WHERE output.output_key='story_planning.chapter_plan_projection'
+              AND projection.content->>'source_planning_candidate_asset_version_id'=%s
+            ORDER BY projection.created_at
+            FOR UPDATE OF projection
+            """,
+            [candidate_asset_version_id],
+        )
+        rows = tuple(uow.cursor.fetchall())
+        if not rows:
+            return None
+        if len(rows) != 1 or tuple(rows[0][2:]) != (
+            "ACTIVE", "ELIGIBLE", "CLEAR", "SUCCEEDED", generation["project_id"],
+            generation["generation_operation_id"],
+        ):
+            raise KernelError(
+                "BOOK_SUPERVISOR_CHAPTER_PLAN_PROJECTION_INVALID",
+                "Existing Chapter projection history cannot be replaced or reactivated",
+            )
+        return {
+            "asset_version_id": str(rows[0][0]),
+            "content_hash": str(rows[0][1]),
+            "source_planning_candidate_asset_version_id": candidate_asset_version_id,
+        }
+
     def materialize_activated_chapter_plan_projection(
         self,
         candidate_asset_version_id: str,
@@ -1490,6 +1602,7 @@ class StoryPlanningGenerationApplication:
     ) -> dict[str, Any]:
 
         generation = self.require_candidate(candidate_asset_version_id)
+        principal.require("story_planning.authority.activate", generation["project_id"])
         if generation["planning_scope"].value != PlanContractType.CHAPTER.value:
             raise KernelError(
                 "PLANNING_CHAPTER_PROJECTION_SCOPE_INVALID",
@@ -2660,10 +2773,13 @@ class StoryPlanningGenerationApplication:
             row = by_id[asset_version_id]
             asset_type = str(row[1])
             content = dict(row[3])
-            if asset_type not in {"longform_recap", "replan_request"}:
+            if asset_type == "longform_prose_review_report":
+                from novel_forge.modules.book_followup_authority.prose_change_evidence import require_prose_planning_evidence
+                require_prose_planning_evidence(self.database_url, command=command, asset_version_id=asset_version_id, commit_sha=self.commit_sha)
+            elif asset_type not in {"longform_recap", "replan_request"}:
                 raise KernelError(
                     "PLANNING_GENERATION_CHANGE_EVIDENCE_TYPE_INVALID",
-                    "Planning change evidence must be a Recap or ReplanRequest",
+                    "Planning change evidence requires a governed Recap, ReplanRequest or current native prose review",
                 )
             declared_book = str(content.get("book_id") or "")
             if declared_book and declared_book != command.book_id:
@@ -2689,12 +2805,31 @@ class StoryPlanningGenerationApplication:
         inputs: tuple[FrozenPlanningInput, ...],
     ) -> None:
         snapshot = [asdict(item) for item in inputs]
-        snapshot_hash = canonical_hash(snapshot)
         repair_fields = (
             ("repair_of_operation_id", "repair_result_asset_version_id")
             if command.repair_of_operation_id else ()
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
+            if command.repair_of_operation_id:
+                uow.cursor.execute(
+                    """
+                    SELECT input_snapshot, input_snapshot_hash
+                    FROM authority_story_planning_generation
+                    WHERE operation_id=%s AND project_id=%s AND workspace_id=%s
+                      AND book_id=%s AND generator_operation_name=%s AND logical_key=%s
+                    """,
+                    [command.repair_of_operation_id, command.project_id,
+                     command.workspace_id, command.book_id,
+                     command.generator_operation_name, command.logical_key],
+                )
+                source = uow.cursor.fetchone()
+                if source is None:
+                    raise KernelError(
+                        "PLANNING_RESULT_REPAIR_SOURCE_INVALID",
+                        "result repair requires its exact frozen Planning Generation",
+                    )
+                snapshot = _replay_generation_input_snapshot(snapshot, source[0], source[1])
+            snapshot_hash = canonical_hash(snapshot)
             uow.cursor.execute(
                 sql.SQL("""
                 INSERT INTO authority_story_planning_generation(
@@ -3360,6 +3495,7 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         "narrative_realization": dict(command.narrative_realization or {}),
         "opening_execution_binding": dict(command.opening_execution_binding or {}),
         **({"world_preparation_request": dict(command.world_preparation_request)} if command.world_preparation_request else {}),
+        **({"edition_execution": dict(command.edition_execution)} if command.edition_execution else {}),
     }
 
 
@@ -3367,6 +3503,7 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
     return StoryPlanningGenerationCommand(
         execution_contract_version=str(payload.get("execution_contract_version") or "1.11.0"),
         world_preparation_request=dict(payload.get("world_preparation_request") or {}) or None,
+        edition_execution=dict(payload.get("edition_execution") or {}) or None,
         project_id=str(payload.get("project_id") or ""),
         workspace_id=str(payload.get("workspace_id") or ""),
         book_id=str(payload.get("book_id") or ""),
@@ -3435,6 +3572,38 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
             dict(payload.get("opening_execution_binding") or {}) or None
         ),
     )
+
+
+def _replay_generation_input_snapshot(
+    resolved: list[dict[str, str]], frozen: Any, frozen_hash: str,
+) -> list[dict[str, str]]:
+    fields = {"role", "asset_version_id", "asset_type", "content_hash"}
+    if not isinstance(frozen, list) or canonical_hash(frozen) != frozen_hash:
+        raise KernelError(
+            "PLANNING_GENERATION_INPUT_SNAPSHOT_INVALID",
+            "frozen Planning Generation input snapshot is invalid",
+        )
+    indexes = []
+    for items in (resolved, frozen):
+        by_role = {}
+        for item in items:
+            if (
+                not isinstance(item, dict) or set(item) != fields
+                or any(not isinstance(value, str) or not value for value in item.values())
+                or item["role"] in by_role
+            ):
+                raise KernelError(
+                    "PLANNING_GENERATION_INPUT_SNAPSHOT_INVALID",
+                    "Planning Generation inputs require unique, complete role evidence",
+                )
+            by_role[item["role"]] = item
+        indexes.append(by_role)
+    if indexes[0] != indexes[1]:
+        raise KernelError(
+            "PLANNING_GENERATION_INPUT_SNAPSHOT_DRIFT",
+            "result repair inputs differ from its frozen parent Planning Generation",
+        )
+    return [dict(item) for item in frozen]
 
 
 def _authority_role_versions(

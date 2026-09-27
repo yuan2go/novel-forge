@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.workers.dispatch_pause import pause_worker_dispatch
+
 import os
 import signal
 import time
@@ -466,6 +468,8 @@ def main() -> int:
     signal.signal(signal.SIGTERM, stop)
     try:
         while not stopping:
+            if pause_worker_dispatch(supervisor, poll_seconds):
+                continue
             claims = dispatcher.claim(limit=batch_size)
             if not claims:
                 supervisor.polled(idle=True)

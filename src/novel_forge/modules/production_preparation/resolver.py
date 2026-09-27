@@ -134,6 +134,7 @@ class PostgresProductionAssetResolver:
         book_id: str,
         asset_type: str,
         accepted_chapter: int,
+        book_run_id: str = "",
     ) -> tuple[ResolvedProductionAsset, ...]:
 
         if (
@@ -149,6 +150,7 @@ class PostgresProductionAssetResolver:
             limit=2,
             book_id=book_id,
             accepted_chapter=accepted_chapter,
+            book_run_id=book_run_id,
         )
         if len(candidates) > 1:
             raise KernelError(
@@ -292,12 +294,12 @@ class PostgresProductionAssetResolver:
 
     def _accepted_snapshot_scope(
         self, *, project_id: str, asset_version_id: str
-    ) -> tuple[str, int, str] | None:
+    ) -> tuple[str, int, str, str] | None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
                 SELECT production.book_id, acceptance.chapter_number,
-                       acceptance.acceptance_id
+                       acceptance.acceptance_id,acceptance.book_run_id
                 FROM authority_book_chapter_acceptance AS acceptance
                 JOIN authority_book_production AS production
                   ON production.book_run_id=acceptance.book_run_id
@@ -315,7 +317,7 @@ class PostgresProductionAssetResolver:
             )
             row = uow.cursor.fetchone()
         return (
-            (str(row[0]), int(row[1]), str(row[2]))
+            (str(row[0]), int(row[1]), str(row[2]), str(row[3]))
             if row is not None
             else None
         )
@@ -355,6 +357,7 @@ class PostgresProductionAssetResolver:
         book_id: str,
         accepted_chapter: int,
         acceptance_id: str,
+        book_run_id: str = "",
     ) -> ResolvedProductionAsset:
         content = dict(asset.content)
         declared = content.get("chapter", content.get("chapter_number"))
@@ -370,6 +373,7 @@ class PostgresProductionAssetResolver:
                 "accepted_through_chapter": accepted_chapter,
                 "book_id": book_id,
                 "acceptance_id": acceptance_id,
+                "book_run_id": book_run_id,
                 "_authority_acceptance_bound": True,
             }
         )
@@ -413,8 +417,23 @@ class PostgresProductionAssetResolver:
         limit: int,
         book_id: str = "",
         accepted_chapter: int | None = None,
+        book_run_id: str = "",
     ) -> tuple[ResolvedProductionAsset, ...]:
         with AuthorityUnitOfWork(self.database_url) as uow:
+            from novel_forge.storage.book_edition_repositories import BookEditionRepository
+            if book_id:
+                books = [book_id]
+            else:
+                uow.cursor.execute("""SELECT DISTINCT production.book_id FROM authority_book_production production
+                    JOIN authority_book_chapter_acceptance acceptance USING(book_run_id)
+                    WHERE production.project_id=%s AND acceptance.status='COMMITTED'""", [project_id])
+                books = [str(row[0]) for row in uow.cursor.fetchall()]
+            scopes = [BookEditionRepository(uow.cursor).accepted_scope(project_id=project_id, book_id=identity, book_run_id=book_run_id) for identity in books]
+            if accepted_chapter is not None and any(ids is not None and accepted_chapter > len(ids) for _, ids in scopes):
+                raise KernelError("EDITION_ACCEPTANCE_BOUNDARY_EXCEEDED", "Accepted facts cannot extend beyond the selected immutable manuscript; supply the exact ongoing Book run")
+            runs = [run for run, _ in scopes]
+            unbounded_runs = [run for run, ids in scopes if ids is None]
+            allowed_acceptances = [identity for _, ids in scopes for identity in (ids or ())]
             uow.cursor.execute(
                 """
                 SELECT asset.project_id, asset.asset_id, version.asset_version_id,
@@ -424,8 +443,10 @@ class PostgresProductionAssetResolver:
                        acceptance_operation.definition_name,
                        acceptance_operation.status,
                        production.book_id, acceptance.chapter_number,
-                       acceptance.acceptance_id
-                FROM authority_book_chapter_acceptance AS acceptance
+                       acceptance.acceptance_id,scope.book_run_id
+                FROM unnest(%s::text[]) AS scope(book_run_id)
+                CROSS JOIN LATERAL authority_book_acceptance_lineage(scope.book_run_id) AS lineage
+                JOIN authority_book_chapter_acceptance AS acceptance ON acceptance.acceptance_id=lineage.acceptance_id
                 JOIN authority_book_production AS production
                   ON production.book_run_id=acceptance.book_run_id
                  AND production.project_id=acceptance.project_id
@@ -452,6 +473,7 @@ class PostgresProductionAssetResolver:
                     LIMIT 1
                 ) AS qualification ON TRUE
                 WHERE acceptance.project_id=%s
+                  AND (scope.book_run_id=ANY(%s::text[]) OR acceptance.acceptance_id=ANY(%s::text[]))
                   AND acceptance.status='COMMITTED'
                   AND (%s='' OR production.book_id=%s)
                   AND (%s::integer IS NULL OR acceptance.chapter_number=%s)
@@ -464,9 +486,12 @@ class PostgresProductionAssetResolver:
                 LIMIT %s
                 """,
                 [
+                    runs,
                     asset_type,
                     asset_type,
                     project_id,
+                    unbounded_runs,
+                    allowed_acceptances,
                     book_id,
                     book_id,
                     accepted_chapter,
@@ -481,6 +506,7 @@ class PostgresProductionAssetResolver:
                 str(row[10]),
                 int(row[11]),
                 str(row[12]),
+                str(row[13]),
             )
             for row in rows
         )
@@ -497,6 +523,7 @@ class PostgresProductionAssetResolver:
                     accepted_through_chapter=int(
                         content["accepted_through_chapter"]
                     ),
+                    book_run_id=str(content["book_run_id"]),
                 )
             )
             enriched.append(replace(asset, content=content))

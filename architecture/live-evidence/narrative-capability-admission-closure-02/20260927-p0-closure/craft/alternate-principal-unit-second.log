@@ -1,0 +1,68 @@
+..........F...................                                           [100%]
+=================================== FAILURES ===================================
+_ test_alternate_authorized_actor_reuses_frozen_admission_without_actor_rewrite _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106fa9460>
+
+    def test_alternate_authorized_actor_reuses_frozen_admission_without_actor_rewrite(monkeypatch):
+        request, row = frozen_chapter_admission()
+        before = deepcopy(row)
+>       result = recover_frozen(monkeypatch, replace(request, actor_id="recovery-operator"), row)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_chapter_dispatch_recovery.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/unit/test_chapter_dispatch_recovery.py:102: in recover_frozen
+    result = orchestrator.recover_single_chapter_admission("unused", request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_url = 'unused'
+request = SingleChapterRequest(project_id='project', workspace_id='workspace', actor_id='recovery-operator', chapter=2, title='承...ne, context_token_budget=6000, preparation_report=None, accepted_prose_snapshot=None, idempotency_key='stable-chapter')
+
+    def recover_single_chapter_admission(
+        database_url: str, *, request: SingleChapterRequest,
+    ) -> ChapterSagaAdmission | None:
+        request = _bind_context_candidate_scope(request)
+        _validate_request(request)
+        if not request.idempotency_key:
+            raise KernelError("CHAPTER_ADMISSION_RECOVERY_KEY_REQUIRED", "Recovery requires the frozen Chapter key")
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute(
+                """SELECT to_jsonb(root),to_jsonb(saga),to_jsonb(step),to_jsonb(plan)
+                FROM authority_operation root
+                LEFT JOIN authority_saga saga ON saga.root_operation_id=root.operation_id
+                LEFT JOIN authority_saga_step step ON step.saga_id=saga.saga_id AND step.step_key=%s
+                LEFT JOIN authority_operation plan ON plan.operation_id=step.operation_id
+                WHERE root.project_id=%s AND root.idempotency_scope='project:chapter-slice'
+                  AND root.idempotency_key=%s""",
+                [ChapterNode.PLAN.value, request.project_id, request.idempotency_key],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        root, saga, step, plan = row
+        if (root["definition_name"] != CHAPTER_SLICE_ROOT_DEFINITION_NAME
+            or root["workspace_id"] != request.workspace_id
+            or root["root_operation_id"] != root["operation_id"]
+            or root.get("parent_operation_id") or root.get("causation_operation_id")):
+            raise KernelError("CHAPTER_ADMISSION_RECOVERY_SCOPE_DRIFT", "Frozen Chapter root belongs to another request scope")
+        if not saga or not step or not plan or root["status"] == "ADMITTED":
+            raise KernelError("CHAPTER_ADMISSION_REQUIRES_RECOVERY", "Existing Chapter admission has an incomplete native saga or PLAN step")
+        root_id, saga_id = root["operation_id"], saga["saga_id"]
+        if (saga["project_id"] != request.project_id or root.get("saga_id") != saga_id
+            or saga["root_operation_id"] != root_id or step["ordinal"] != 1
+            or plan["project_id"] != request.project_id or plan["workspace_id"] != request.workspace_id
+            or plan["definition_name"] != ChapterNode.PLAN.definition_name
+            or plan["root_operation_id"] != root_id or plan["parent_operation_id"] != root_id
+            or plan.get("causation_operation_id") != root_id or plan.get("saga_id") != saga_id
+            or plan.get("step_key") != ChapterNode.PLAN.value or plan["actor_id"] != root["actor_id"]
+            or plan["idempotency_scope"] != "project:chapter-slice"
+            or plan["idempotency_key"] != request.idempotency_key + ":" + ChapterNode.PLAN.value):
+>           raise KernelError("CHAPTER_ADMISSION_RECOVERY_SCOPE_DRIFT", "Frozen Chapter saga and PLAN lineage disagree")
+E           novel_forge.modules.command_kernel.errors.KernelError: CHAPTER_ADMISSION_RECOVERY_SCOPE_DRIFT: Frozen Chapter saga and PLAN lineage disagree
+
+src/novel_forge/modules/chapter_authority/orchestrator.py:148: KernelError
+=========================== short test summary info ============================
+FAILED tests/unit/test_chapter_dispatch_recovery.py::test_alternate_authorized_actor_reuses_frozen_admission_without_actor_rewrite
+1 failed, 29 passed in 0.57s

@@ -1,0 +1,795 @@
+{
+  "contract_version": "wp02-diagnostic-task-input-readiness.v1",
+  "checked_at": "2026-09-27T06:26:39.155203+00:00",
+  "implementation_release": "COMMON_RELEASE_NOT_YET_FROZEN",
+  "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+  "scope": {
+    "sampling_project_id": "narrative-closure-02-admission-20260927",
+    "sampling_workspace_id": "ws:zheng-deng:sampling:20260927",
+    "sampling_book_id": "duanchao-guan-zheng-deng-reference-01"
+  },
+  "scope_state": "APPROVED_BUT_NOT_NATIVE_CREATED",
+  "immediately_input_ready": [
+    "creative.candidates.generate"
+  ],
+  "common_native_preparation_remaining": [
+    "final common release",
+    "native Project/Book/Content and current Pack",
+    "exact producer preflight zero-dispatch proof and cancellation",
+    "unexpired task-scoped grant and cumulative CALIBRATION policy",
+    "one-dispatch no-retry policy"
+  ],
+  "not_a_common_blocker": [
+    "Other unrelated feature development is not a task input dependency.",
+    "Human labels are not required to create permitted generator or prose/screenplay reviewer diagnostic samples; they are required for qualification."
+  ],
+  "historical_input_inventory": {
+    "historical_candidates": [
+      [
+        "authority-output:6caa82a5-d1ea-4a02-9876-cfb019a7b712:story_planning.candidate:v1",
+        "creative.candidates.generate",
+        "first-novel-pilot-a",
+        null,
+        "ACTIVE",
+        "ELIGIBLE",
+        "sha256:421534ed85cd5c17c6807b6a39005f334e592962bb0fe418f9ec18b89c979e82"
+      ],
+      [
+        "authority-output:93516014-93a9-45ed-8911-12a6410acf7f:story_planning.candidate:v1",
+        "creative.candidates.generate",
+        "first-novel-pilot-a",
+        null,
+        "CANDIDATE",
+        "ELIGIBLE",
+        "sha256:89925fd2a04a486fd3aa420109c37f858e800235b44d788d04e2aa51965e3e50"
+      ],
+      [
+        "authority-output:0c39694b-6aa0-4f43-854d-17a8859d1621:story_planning.candidate:v1",
+        "theme.candidates.generate",
+        "first-novel-pilot-a",
+        null,
+        "ACTIVE",
+        "ELIGIBLE",
+        "sha256:1d7d637daae5f0687034387cd27e18b704384d236a8ecb8a6fa563a6007eda90"
+      ],
+      [
+        "authority-output:0353ce66-51d7-4f6a-9792-9a38c886eb45:story_planning.candidate:v1",
+        "ending.intent.generate",
+        "first-novel-pilot-a",
+        null,
+        "ACTIVE",
+        "ELIGIBLE",
+        "sha256:4e5131ec911cddbed49e82a9fa0c1a4a993c55fe7bcf21378cd189cc52c7b485"
+      ],
+      [
+        "authority-output:4c25311f-c3c2-4379-8caf-251d26b5d5c2:story_planning.candidate:v1",
+        "reader.promise.generate",
+        "first-novel-pilot-a",
+        null,
+        "ACTIVE",
+        "ELIGIBLE",
+        "sha256:adff41a0526cc1e692ba236b9e17b1ac2af881b8a1004ad812a4f4c613745bf8"
+      ],
+      [
+        "authority-output:58320be8-f7a1-4508-bca0-06383f8f4c37:story_planning.candidate:v1",
+        "creative.candidates.generate",
+        "guofeng-xuanhuan-01",
+        null,
+        "ACTIVE",
+        "ELIGIBLE",
+        "sha256:5298654c77ac53016de06d25e643edce3f890b827fda4bce0e7bd47c78815ad6"
+      ],
+      [
+        "authority-output:d6f70986-b171-47f8-9f04-3134aa74a740:story_planning.candidate:v1",
+        "creative.candidates.generate",
+        "guofeng-xuanhuan-01",
+        null,
+        "CANDIDATE",
+        "ELIGIBLE",
+        "sha256:57412de395dbf62ad92aa1a27f86fe5dc8ca1c8a113a90236b3ac81236fcf843"
+      ],
+      [
+        "authority-output:f7fdb3b8-2d72-451c-a06d-20f8e399e05d:story_planning.candidate:v1",
+        "theme.candidates.generate",
+        "guofeng-xuanhuan-01",
+        null,
+        "ACTIVE",
+        "ELIGIBLE",
+        "sha256:9626eab9632c9d2d5db533024c1abf2ad46266f7fe655f23ec0802917d83e6a2"
+      ],
+      [
+        "authority-output:e7226485-ce85-44af-acfb-32b5902c8715:story_planning.candidate:v1",
+        "ending.intent.generate",
+        "guofeng-xuanhuan-01",
+        null,
+        "ACTIVE",
+        "ELIGIBLE",
+        "sha256:d8c97a3c2d10c8fcf06c92e383d7ec5c3dbbb0c09b97f39f2bcf7e208e3a5b57"
+      ],
+      [
+        "authority-output:bdb13fe9-9444-4be0-9bee-9f1733216c42:story_planning.candidate:v1",
+        "reader.promise.generate",
+        "guofeng-xuanhuan-01",
+        null,
+        "ACTIVE",
+        "ELIGIBLE",
+        "sha256:d46a2a07f8f84193870765ac294745fd20070977b23f81ae2af1f8a22745f787"
+      ],
+      [
+        "authority-output:63f8d2dc-c959-4f3c-b4a8-70d08a51a5de:story_planning.candidate:v1",
+        "world.design.generate",
+        "guofeng-xuanhuan-01",
+        null,
+        "ACTIVE",
+        "ELIGIBLE",
+        "sha256:79d8fb41755ef21b38462b0215ea9d37aca416bf8abae5a6cea4c3534f229b96"
+      ],
+      [
+        "authority-output:8dac1874-4710-4a5f-acdc-6fbe142713fb:story_planning.candidate:v1",
+        "character.cast.generate",
+        "guofeng-xuanhuan-01",
+        null,
+        "ACTIVE",
+        "ELIGIBLE",
+        "sha256:b3596d41ec89deb9a8359548a92e59767dd354250e2016d3902442e489fcbb4e"
+      ]
+    ],
+    "historical_accepted_chapters": 0,
+    "story_design_state_columns": []
+  },
+  "historical_reuse_decision": "Actual old Foundation assets exist, but are outside the approved new Project/Book. No cross-scope asset import/adoption has been authorized and natively frozen; no old qualification is transplanted. Old ineligible/fixture content cannot be made eligible by copying.",
+  "tasks": [
+    {
+      "task_type": "creative.candidates.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": true,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "StoryPlanningGenerationApplication.generate(PlanningGenerationCommand, routing_bootstrap_authorization_id)",
+      "input_roles": [
+        "creative_brief"
+      ],
+      "human_reference_required_before_diagnostic": false,
+      "status": "ORIGINAL_INPUTS_READY_NATIVE_FREEZE_PENDING",
+      "available_input": "config/production/narrative-closure/diagnostic-foundation-inputs.json",
+      "next_action": "Register the two exact original briefs through Content, create Book scope, freeze common release/current Pack/producer, cancel zero-dispatch producer probe, register two one-call grants, then run A once and B only if A succeeds.",
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py:FOUNDATION_INPUT_ROLES",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_freeze_inputs",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_require_qualified_foundation_for_book_plan"
+      ]
+    },
+    {
+      "task_type": "theme.candidates.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "StoryPlanningGenerationApplication.generate(PlanningGenerationCommand, routing_bootstrap_authorization_id)",
+      "input_roles": [
+        "creative_brief",
+        "creative_foundation"
+      ],
+      "human_reference_required_before_diagnostic": false,
+      "status": "MISSING_SCOPE_MATCHED_ACTIVE_CREATIVE_FOUNDATION",
+      "missing": "New approved sampling Project and Book have no ACTIVE/QUALIFIED/APPROVED/CURRENT creative Foundation. A creative BENCHMARK_ONLY sample cannot be promoted or consumed as a formal Foundation parent.",
+      "next_action": "Once a legally authored or genuinely qualified and activated Foundation exists in the exact scope, these three tasks can prepare independently in parallel; they do not depend on edition/Actor/screenplay completion.",
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py:FOUNDATION_INPUT_ROLES",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_freeze_inputs",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_require_qualified_foundation_for_book_plan"
+      ]
+    },
+    {
+      "task_type": "ending.intent.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "StoryPlanningGenerationApplication.generate(PlanningGenerationCommand, routing_bootstrap_authorization_id)",
+      "input_roles": [
+        "creative_brief",
+        "creative_foundation"
+      ],
+      "human_reference_required_before_diagnostic": false,
+      "status": "MISSING_SCOPE_MATCHED_ACTIVE_CREATIVE_FOUNDATION",
+      "missing": "New approved sampling Project and Book have no ACTIVE/QUALIFIED/APPROVED/CURRENT creative Foundation. A creative BENCHMARK_ONLY sample cannot be promoted or consumed as a formal Foundation parent.",
+      "next_action": "Once a legally authored or genuinely qualified and activated Foundation exists in the exact scope, these three tasks can prepare independently in parallel; they do not depend on edition/Actor/screenplay completion.",
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py:FOUNDATION_INPUT_ROLES",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_freeze_inputs",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_require_qualified_foundation_for_book_plan"
+      ]
+    },
+    {
+      "task_type": "reader.promise.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "StoryPlanningGenerationApplication.generate(PlanningGenerationCommand, routing_bootstrap_authorization_id)",
+      "input_roles": [
+        "creative_brief",
+        "creative_foundation"
+      ],
+      "human_reference_required_before_diagnostic": false,
+      "status": "MISSING_SCOPE_MATCHED_ACTIVE_CREATIVE_FOUNDATION",
+      "missing": "New approved sampling Project and Book have no ACTIVE/QUALIFIED/APPROVED/CURRENT creative Foundation. A creative BENCHMARK_ONLY sample cannot be promoted or consumed as a formal Foundation parent.",
+      "next_action": "Once a legally authored or genuinely qualified and activated Foundation exists in the exact scope, these three tasks can prepare independently in parallel; they do not depend on edition/Actor/screenplay completion.",
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py:FOUNDATION_INPUT_ROLES",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_freeze_inputs",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_require_qualified_foundation_for_book_plan"
+      ]
+    },
+    {
+      "task_type": "world.design.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "StoryPlanningGenerationApplication.generate(PlanningGenerationCommand, routing_bootstrap_authorization_id)",
+      "input_roles": [
+        "creative_brief",
+        "creative_foundation",
+        "theme_contract",
+        "ending_intent",
+        "reader_promise"
+      ],
+      "human_reference_required_before_diagnostic": false,
+      "status": "MISSING_SCOPE_MATCHED_FOUR_ACTIVE_FOUNDATION_PARENTS",
+      "missing": "creative_foundation, theme_contract, ending_intent, reader_promise in the exact approved sampling scope.",
+      "next_action": "Freeze this task as soon as its four native parent versions exist; do not wait for character generation or edition work.",
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py:FOUNDATION_INPUT_ROLES",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_freeze_inputs",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_require_qualified_foundation_for_book_plan"
+      ]
+    },
+    {
+      "task_type": "character.cast.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "StoryPlanningGenerationApplication.generate(PlanningGenerationCommand, routing_bootstrap_authorization_id)",
+      "input_roles": [
+        "creative_brief",
+        "creative_foundation",
+        "theme_contract",
+        "ending_intent",
+        "reader_promise",
+        "world_bible"
+      ],
+      "human_reference_required_before_diagnostic": false,
+      "status": "MISSING_SCOPE_MATCHED_ACTIVE_WORLD_AND_FOUNDATION_PARENTS",
+      "missing": "The four creative contracts plus native active world_bible, with preserved exact parent hashes.",
+      "next_action": "Freeze after these parents become lawful; the task does not require accepted prose.",
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py:FOUNDATION_INPUT_ROLES",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_freeze_inputs",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_require_qualified_foundation_for_book_plan"
+      ]
+    },
+    {
+      "task_type": "book_plan.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "StoryPlanningGenerationApplication.generate(PlanningGenerationCommand, routing_bootstrap_authorization_id)",
+      "input_roles": [
+        "creative_foundation",
+        "book_design",
+        "world_bible",
+        "character_cast",
+        "theme_contract",
+        "ending_intent",
+        "reader_promise",
+        "platform_profile",
+        "production_profile"
+      ],
+      "human_reference_required_before_diagnostic": false,
+      "status": "MISSING_SCOPE_MATCHED_NATIVE_TYPED_PLANNING_INPUTS",
+      "missing": "The declared exact input_roles are not created in the newly approved sampling Project/Book. Plans must be current active typed bindings; book_plan additionally requires the qualified Foundation set and approved Book design.",
+      "next_action": "Use normal Book/Planning operations to prepare only after each listed prerequisite is lawful; isolate the resulting bootstrap sample from production.",
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py:FOUNDATION_INPUT_ROLES",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_freeze_inputs",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_require_qualified_foundation_for_book_plan"
+      ]
+    },
+    {
+      "task_type": "volume_plan.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "StoryPlanningGenerationApplication.generate(PlanningGenerationCommand, routing_bootstrap_authorization_id)",
+      "input_roles": [
+        "book_plan",
+        "previous_volume_outcome",
+        "story_state",
+        "canon_snapshot",
+        "arc_portfolio",
+        "ending_reachability"
+      ],
+      "human_reference_required_before_diagnostic": false,
+      "status": "MISSING_SCOPE_MATCHED_NATIVE_TYPED_PLANNING_INPUTS",
+      "missing": "The declared exact input_roles are not created in the newly approved sampling Project/Book. Plans must be current active typed bindings; book_plan additionally requires the qualified Foundation set and approved Book design.",
+      "next_action": "Use normal Book/Planning operations to prepare only after each listed prerequisite is lawful; isolate the resulting bootstrap sample from production.",
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py:FOUNDATION_INPUT_ROLES",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_freeze_inputs",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_require_qualified_foundation_for_book_plan"
+      ]
+    },
+    {
+      "task_type": "arc_plan.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "StoryPlanningGenerationApplication.generate(PlanningGenerationCommand, routing_bootstrap_authorization_id)",
+      "input_roles": [
+        "book_plan",
+        "volume_plan",
+        "character_arc_portfolio",
+        "conflict_state",
+        "promise_ledger",
+        "foreshadowing_ledger"
+      ],
+      "human_reference_required_before_diagnostic": false,
+      "status": "MISSING_SCOPE_MATCHED_NATIVE_TYPED_PLANNING_INPUTS",
+      "missing": "The declared exact input_roles are not created in the newly approved sampling Project/Book. Plans must be current active typed bindings; book_plan additionally requires the qualified Foundation set and approved Book design.",
+      "next_action": "Use normal Book/Planning operations to prepare only after each listed prerequisite is lawful; isolate the resulting bootstrap sample from production.",
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py:FOUNDATION_INPUT_ROLES",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_freeze_inputs",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_require_qualified_foundation_for_book_plan"
+      ]
+    },
+    {
+      "task_type": "chapter_group_plan.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "StoryPlanningGenerationApplication.generate(PlanningGenerationCommand, routing_bootstrap_authorization_id)",
+      "input_roles": [
+        "book_plan",
+        "volume_plan",
+        "arc_plans",
+        "story_state",
+        "canon_snapshot",
+        "previous_chapter_group_outcome",
+        "quality_trend",
+        "reader_state"
+      ],
+      "human_reference_required_before_diagnostic": false,
+      "status": "MISSING_SCOPE_MATCHED_NATIVE_TYPED_PLANNING_INPUTS",
+      "missing": "The declared exact input_roles are not created in the newly approved sampling Project/Book. Plans must be current active typed bindings; book_plan additionally requires the qualified Foundation set and approved Book design.",
+      "next_action": "Use normal Book/Planning operations to prepare only after each listed prerequisite is lawful; isolate the resulting bootstrap sample from production.",
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py:FOUNDATION_INPUT_ROLES",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_freeze_inputs",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_require_qualified_foundation_for_book_plan"
+      ]
+    },
+    {
+      "task_type": "chapter_plan.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "StoryPlanningGenerationApplication.generate(PlanningGenerationCommand, routing_bootstrap_authorization_id)",
+      "input_roles": [
+        "book_plan",
+        "volume_plan",
+        "arc_plans",
+        "chapter_group_plan",
+        "chapter_function_matrix_row",
+        "previous_chapter_outcome",
+        "story_state",
+        "canon_snapshot",
+        "quality_trend",
+        "reader_state"
+      ],
+      "human_reference_required_before_diagnostic": false,
+      "status": "MISSING_SCOPE_MATCHED_NATIVE_TYPED_PLANNING_INPUTS",
+      "missing": "The declared exact input_roles are not created in the newly approved sampling Project/Book. Plans must be current active typed bindings; book_plan additionally requires the qualified Foundation set and approved Book design.",
+      "next_action": "Use normal Book/Planning operations to prepare only after each listed prerequisite is lawful; isolate the resulting bootstrap sample from production.",
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py:FOUNDATION_INPUT_ROLES",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_freeze_inputs",
+        "src/novel_forge/modules/story_planning_runtime/application.py:_require_qualified_foundation_for_book_plan"
+      ]
+    },
+    {
+      "task_type": "world_candidates.generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "prepare_world_sample / admit_world_sample / run_world_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_PLAN_WORLD_SOURCE",
+      "missing": "An original (not bootstrap/repair) story_planning.generate@1.16.0 chapter_plan task, unchanged typed inputs, stage Context and source owned by that native Operation.",
+      "human_reference_required_before_diagnostic": false,
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py:_require_world_sample_source",
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py:prepare_world_sample"
+      ]
+    },
+    {
+      "task_type": "world_candidates.actor_0",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "prepare_world_sample / admit_world_sample / run_world_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_PLAN_WORLD_SOURCE",
+      "missing": "An original (not bootstrap/repair) story_planning.generate@1.16.0 chapter_plan task, unchanged typed inputs, stage Context and source owned by that native Operation.",
+      "human_reference_required_before_diagnostic": false,
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py:_require_world_sample_source",
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py:prepare_world_sample"
+      ],
+      "additional_missing": "The exact actor slot must exist in the frozen actor policy and its private-knowledge/persistent-intent task must be available."
+    },
+    {
+      "task_type": "world_candidates.actor_1",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "prepare_world_sample / admit_world_sample / run_world_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_PLAN_WORLD_SOURCE",
+      "missing": "An original (not bootstrap/repair) story_planning.generate@1.16.0 chapter_plan task, unchanged typed inputs, stage Context and source owned by that native Operation.",
+      "human_reference_required_before_diagnostic": false,
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py:_require_world_sample_source",
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py:prepare_world_sample"
+      ],
+      "additional_missing": "The exact actor slot must exist in the frozen actor policy and its private-knowledge/persistent-intent task must be available."
+    },
+    {
+      "task_type": "world_candidates.actor_2",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "prepare_world_sample / admit_world_sample / run_world_sample",
+      "status": "CONDITIONAL_THIRD_ACTOR_NOT_ENABLED_OR_FUNDED",
+      "missing": "The approved scenario has two actor slots; requested and approved third-slot task ceilings are zero. Enabling a third actor is not needed for this package.",
+      "human_reference_required_before_diagnostic": false,
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py:_require_world_sample_source",
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py:prepare_world_sample"
+      ],
+      "additional_missing": "The exact actor slot must exist in the frozen actor policy and its private-knowledge/persistent-intent task must be available.",
+      "permitted_diagnostic_calls": 0
+    },
+    {
+      "task_type": "memo",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.memo.generate@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": false,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ]
+    },
+    {
+      "task_type": "draft",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.draft.generate@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": false,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ]
+    },
+    {
+      "task_type": "revision",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.revision.apply@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": false,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ]
+    },
+    {
+      "task_type": "canon_extraction",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.canon.extract@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": false,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ]
+    },
+    {
+      "task_type": "screenplay_generate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "BookEditionApplication.query exact revision -> ScreenplayApplication.prepare -> native formal generate admission -> prepare_screenplay_sample / run_screenplay_sample",
+      "status": "MISSING_ACCEPTED_EDITION_SOURCE",
+      "missing": "An exact accepted or natively validated edition and immutable source range/knowledge/Craft/adaptation-policy binding in the approved scope. No real source edition exists yet.",
+      "human_reference_required_before_diagnostic": false,
+      "human_reference_required_for_benchmark": true,
+      "enforced_by": [
+        "src/novel_forge/modules/book_followup_authority/screenplay_sampling.py:validate_screenplay_sample_origin",
+        "src/novel_forge/modules/book_followup_authority/screenplay_handler.py:require_validated_source"
+      ]
+    },
+    {
+      "task_type": "screenplay_revision",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "BookEditionApplication.query exact revision -> ScreenplayApplication.prepare -> native formal generate admission -> prepare_screenplay_sample / run_screenplay_sample",
+      "status": "MISSING_ACCEPTED_EDITION_SOURCE",
+      "missing": "An exact accepted or natively validated edition and immutable source range/knowledge/Craft/adaptation-policy binding in the approved scope. No real source edition exists yet.",
+      "human_reference_required_before_diagnostic": false,
+      "human_reference_required_for_benchmark": true,
+      "enforced_by": [
+        "src/novel_forge/modules/book_followup_authority/screenplay_sampling.py:validate_screenplay_sample_origin",
+        "src/novel_forge/modules/book_followup_authority/screenplay_handler.py:require_validated_source"
+      ],
+      "additional_missing": "An exact successful authorized native screenplay review sample whose actual verdict is REVISE. Do not manufacture REVISE or consume experimental output as formal Canon."
+    },
+    {
+      "task_type": "review",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [
+        "An authorized native draft/revision sample may be evaluated by the explicit reference_samples@1.1.0 branch; it remains INELIGIBLE and is never used as a formal production parent."
+      ],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.review.evaluate@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": true,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ],
+      "additional_missing": "Native independent human evaluations and distinct adjudication must cover the exact stage reference dimensions before reference sample admission."
+    },
+    {
+      "task_type": "rereview",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [
+        "An authorized native draft/revision sample may be evaluated by the explicit reference_samples@1.1.0 branch; it remains INELIGIBLE and is never used as a formal production parent."
+      ],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.revision.review@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": true,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ],
+      "additional_missing": "Native independent human evaluations and distinct adjudication must cover the exact stage reference dimensions before reference sample admission."
+    },
+    {
+      "task_type": "quality_structural",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.quality.structural.evaluate@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": true,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ],
+      "additional_missing": "Native independent human evaluations and distinct adjudication must cover the exact stage reference dimensions before reference sample admission."
+    },
+    {
+      "task_type": "quality_commercial",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.quality.commercial.evaluate@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": true,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ],
+      "additional_missing": "Native independent human evaluations and distinct adjudication must cover the exact stage reference dimensions before reference sample admission."
+    },
+    {
+      "task_type": "quality_source_originality",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.quality.source_originality.evaluate@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": true,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ],
+      "additional_missing": "Native independent human evaluations and distinct adjudication must cover the exact stage reference dimensions before reference sample admission."
+    },
+    {
+      "task_type": "quality_platform",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.quality.platform.evaluate@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": true,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ],
+      "additional_missing": "Native independent human evaluations and distinct adjudication must cover the exact stage reference dimensions before reference sample admission."
+    },
+    {
+      "task_type": "world_candidates.evaluate",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "prepare_world_sample / admit_world_sample / run_world_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_PLAN_WORLD_SOURCE",
+      "missing": "An original (not bootstrap/repair) story_planning.generate@1.16.0 chapter_plan task, unchanged typed inputs, stage Context and source owned by that native Operation.",
+      "human_reference_required_before_diagnostic": true,
+      "enforced_by": [
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py:_require_world_sample_source",
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py:prepare_world_sample"
+      ],
+      "additional_missing": "Exact original World candidate or an explicitly supported native World generator sample, plus independent adjudicated reference dimensions. A generator sample is allowed only through the separate reference-sampling branch."
+    },
+    {
+      "task_type": "quality_longform",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.quality.longform.evaluate@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": true,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ],
+      "additional_missing": "Native independent human evaluations and distinct adjudication must cover the exact stage reference dimensions before reference sample admission."
+    },
+    {
+      "task_type": "narrative_semantic_evaluation",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [
+        "A successful creative diagnostic sample can supply this target before any production Foundation is activated. No need to wait for later Planning/edition tasks."
+      ],
+      "freeze_entry": "StoryDesign semantic evaluation with routing_bootstrap_authorization_id and exact reference_evaluation",
+      "status": "MISSING_ACTUAL_SAMPLE_AND_INDEPENDENT_REFERENCE",
+      "missing": "A native Planning BENCHMARK_ONLY sample with its retained generation Operation plus a separately authored native exact-candidate operator review; the approved real-reference protocol additionally needs actual independent participants and adjudicated evidence.",
+      "human_reference_required_before_diagnostic": true,
+      "enforced_by": [
+        "src/novel_forge/modules/story_design_authority/evaluation_reference.py:reference_execution_gate",
+        "src/novel_forge/modules/story_design_authority/evaluation_reference.py:_require_reference_review"
+      ]
+    },
+    {
+      "task_type": "longform_prose_review",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "BookProseReviewCoordinator.start / prepare_prose_sample / run_prose_sample",
+      "status": "MISSING_ACCEPTED_MANUSCRIPT_WINDOW",
+      "missing": "An exact eligible accepted manuscript window and native WINDOW_ADMITTED event. The historical ledger has zero accepted chapters; fixture manuscripts are not real qualification inputs.",
+      "human_reference_required_before_diagnostic": false,
+      "human_reference_required_for_benchmark": true,
+      "enforced_by": [
+        "src/novel_forge/modules/book_followup_authority/prose_sampling.py:validate_prose_sample_origin"
+      ]
+    },
+    {
+      "task_type": "screenplay_review",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "BookEditionApplication.query exact revision -> ScreenplayApplication.prepare -> native formal generate admission -> prepare_screenplay_sample / run_screenplay_sample",
+      "status": "MISSING_ACCEPTED_EDITION_SOURCE",
+      "missing": "An exact accepted or natively validated edition and immutable source range/knowledge/Craft/adaptation-policy binding in the approved scope. No real source edition exists yet.",
+      "human_reference_required_before_diagnostic": false,
+      "human_reference_required_for_benchmark": true,
+      "enforced_by": [
+        "src/novel_forge/modules/book_followup_authority/screenplay_sampling.py:validate_screenplay_sample_origin",
+        "src/novel_forge/modules/book_followup_authority/screenplay_handler.py:require_validated_source"
+      ],
+      "additional_missing": "A successful authorized native screenplay generation/revision sample, frozen under the same formal source. This branch does not require generator production admission."
+    },
+    {
+      "task_type": "canon_support",
+      "candidate": "codex-cli:gpt-6-sol:high",
+      "inputs_ready": false,
+      "real_provider_calls": 0,
+      "independent_input_branches": [],
+      "freeze_entry": "ChapterAuthorityApplication.prepare_provider_sample / admit_provider_sample / run_provider_sample",
+      "status": "MISSING_NATIVE_FROZEN_CHAPTER_STAGE",
+      "native_source_definition": "chapter.canon.propose_changes@3.4.1",
+      "missing": "No exact native Chapter stage exists in the approved sampling Project/Book. The original historical ledger has zero Chapter acceptance and no Chapter Provider Operations.",
+      "human_reference_required_before_diagnostic": true,
+      "enforced_by": [
+        "src/novel_forge/modules/chapter_authority/sampling.py:prepare_provider_sample",
+        "src/novel_forge/modules/command_kernel/routing_bootstrap.py:validate_chapter_sample_origin"
+      ],
+      "additional_missing": "Exact native grounded canon_extraction and best_draft_candidate hashes, every claim/no-change reference label, at least two independent blind readers and a distinct adjudicator. prepare without labels exports the claim contract with zero calls."
+    }
+  ],
+  "totals": {
+    "tasks": 33,
+    "immediately_input_ready": 1,
+    "conditional_disabled": 1,
+    "other_missing_explicit_input_or_reference": 31,
+    "real_provider_calls": 0
+  },
+  "evidence_ceiling": "READ_ONLY_SOURCE_AND_LEDGER_INPUT_READINESS; NOT_NATIVE_SAMPLE_OR_MODEL_QUALIFICATION",
+  "cross_project_admission_path": {
+    "state": "EXECUTABLE_SCRIPTED_NATIVE_NOT_REAL_QUALIFIED",
+    "source": "explicit finite PROVIDER_ROUTING benchmark_exports",
+    "target": "benchmark_source_bindings to exact source policy version/hash/operation and export",
+    "source_evidence": "Original source Project model-call log, native outcome and real independent reference remain owned and read at the source; no copied statistics or sample promotion",
+    "requirements": [
+      "Same trusted operator permissions in both Projects",
+      "Current source export present, unexpired and exact producer/task/candidate cohort compatible",
+      "Actual real Provider and independent reference outcomes still absent; current scripted bridge PASS supplies no model qualification"
+    ],
+    "budget_boundary": "Original two Projects and independent purpose budgets remain unchanged"
+  }
+}

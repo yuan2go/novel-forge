@@ -1,0 +1,786 @@
+[
+  {
+    "operation_id": "95031cdb-08cd-43d2-90b5-acf09c8b89fa",
+    "project_id": "project-ce2d25805351441a87cf5d20244fca69",
+    "definition_name": "chapter.provider.sample.canon_support",
+    "asset_version_id": "authority-output:95031cdb-08cd-43d2-90b5-acf09c8b89fa:chapter.provider.sample:v1",
+    "eligibility": "INELIGIBLE",
+    "content": {
+      "stage": "canon_support",
+      "campaign": {
+        "group_id": "45e17314-5af0-4368-9d7c-b6f3a9f5e288",
+        "partition": "CALIBRATION",
+        "sample_id": "canon_support",
+        "expires_at": "2026-09-27T05:50:24.929365+00:00",
+        "campaign_id": "project-ce2d25805351441a87cf5d20244fca69",
+        "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "maximum_calls": 2,
+        "maximum_amount": "2",
+        "maximum_tokens": 400000
+      },
+      "sampled_output": {
+        "claims": [
+          {
+            "reason": "Scripted transport evidence only; no model entailment proof.",
+            "claim_id": "sha256:db08a389d073bcc8849b460f62b61f33b575fcf81e4a7f72c0fa93a63f18cd79",
+            "assessment": "UNSUPPORTED",
+            "observed_kind": "OBJECTIVE_EVENT"
+          }
+        ],
+        "coverage": "COMPLETE",
+        "no_change_supported": false
+      },
+      "schema_version": "chapter-provider-sample.v1",
+      "authorization_id": "sample:deepseek:deepseek-v4-pro:high",
+      "sampled_asset_type": "canon_support_review",
+      "production_eligible": false,
+      "routing_eligibility": "BENCHMARK_ONLY",
+      "source_operation_id": "45e17314-5af0-4368-9d7c-b6f3a9f5e288",
+      "reference_evaluation": {
+        "labels": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:db08a389d073bcc8849b460f62b61f33b575fcf81e4a7f72c0fa93a63f18cd79",
+            "score_range": [
+              78,
+              82
+            ],
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "9ee4b3f1-7c19-410f-9704-cccef9679df3",
+            "adjudication_asset_version_id": "authority-output:9ee4b3f1-7c19-410f-9704-cccef9679df3:quality.adjudication:v1"
+          }
+        ],
+        "binding": {
+          "adjudications": [
+            {
+              "content_hash": "sha256:9b3251fac9c8afdf530e277584d5b882e6e8c9b2dfa8043be850f7abc9e58af5",
+              "asset_version_id": "authority-output:9ee4b3f1-7c19-410f-9704-cccef9679df3:quality.adjudication:v1"
+            }
+          ],
+          "protocol_version": "canon-support-independent-reference.v1"
+        },
+        "comparisons": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:db08a389d073bcc8849b460f62b61f33b575fcf81e4a7f72c0fa93a63f18cd79",
+            "score_range": [
+              78,
+              82
+            ],
+            "status_agrees": false,
+            "observed_score": null,
+            "score_in_range": null,
+            "observed_status": "FAILED",
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "9ee4b3f1-7c19-410f-9704-cccef9679df3",
+            "adjudication_asset_version_id": "authority-output:9ee4b3f1-7c19-410f-9704-cccef9679df3:quality.adjudication:v1"
+          }
+        ],
+        "schema_version": "chapter-reference-agreement.v1",
+        "real_model_call": false,
+        "reference_basis": "ADJUDICATED_SUBJECTIVE_EVIDENCE",
+        "status_accuracy": 0.0,
+        "target_content_hash": "sha256:57ff0a6ebe83dc9bd3f6a710e81a9bc27a612f8a2fa1676199f421a06dcb55cf",
+        "model_call_content_hash": "sha256:4625cac6e0b42d0c728da802f7993e4f05331462c4b6d7635030035969f71183",
+        "target_asset_version_id": "authority-output:2f3b8d73-8bc5-4eb2-995a-6b768791e8ce:chapter.canon_extraction:v1",
+        "reader_preference_proven": false,
+        "calibration_claim_allowed": false,
+        "canon_support_claim_kinds": {
+          "sha256:db08a389d073bcc8849b460f62b61f33b575fcf81e4a7f72c0fa93a63f18cd79": "OBJECTIVE_EVENT"
+        },
+        "human_preference_evidence": false,
+        "model_call_asset_version_id": "b01f963b-9a30-4999-ac16-faf169421f79",
+        "canon_source_asset_version_id": "authority-output:a36a78b5-47e1-45be-a11c-67bcc4a35702:chapter.best_candidate:v1",
+        "canon_reference_sample_identity": "sha256:72aafce407e84a508dbbd79b77e4c0716e368d4ebdf01dfbb9a0b6a1190a7253",
+        "production_qualification_eligible": false
+      },
+      "uncommitted_auxiliary_candidates": []
+    }
+  },
+  {
+    "operation_id": "18bba3e3-6446-46a8-b82d-815186e2facb",
+    "project_id": "project-ce2d25805351441a87cf5d20244fca69",
+    "definition_name": "chapter.provider.sample.canon_support",
+    "asset_version_id": "authority-output:18bba3e3-6446-46a8-b82d-815186e2facb:chapter.provider.sample:v1",
+    "eligibility": "INELIGIBLE",
+    "content": {
+      "stage": "canon_support",
+      "campaign": {
+        "group_id": "45e17314-5af0-4368-9d7c-b6f3a9f5e288",
+        "partition": "CALIBRATION",
+        "sample_id": "canon_support",
+        "expires_at": "2026-09-27T05:50:24.929365+00:00",
+        "campaign_id": "project-ce2d25805351441a87cf5d20244fca69",
+        "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "maximum_calls": 2,
+        "maximum_amount": "2",
+        "maximum_tokens": 400000
+      },
+      "sampled_output": {
+        "claims": [
+          {
+            "reason": "Scripted transport evidence only; no model entailment proof.",
+            "claim_id": "sha256:db08a389d073bcc8849b460f62b61f33b575fcf81e4a7f72c0fa93a63f18cd79",
+            "assessment": "UNSUPPORTED",
+            "observed_kind": "OBJECTIVE_EVENT"
+          }
+        ],
+        "coverage": "COMPLETE",
+        "no_change_supported": false
+      },
+      "schema_version": "chapter-provider-sample.v1",
+      "authorization_id": "sample:deepseek:deepseek-flash:low",
+      "sampled_asset_type": "canon_support_review",
+      "production_eligible": false,
+      "routing_eligibility": "BENCHMARK_ONLY",
+      "source_operation_id": "45e17314-5af0-4368-9d7c-b6f3a9f5e288",
+      "reference_evaluation": {
+        "labels": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:db08a389d073bcc8849b460f62b61f33b575fcf81e4a7f72c0fa93a63f18cd79",
+            "score_range": [
+              78,
+              82
+            ],
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "9ee4b3f1-7c19-410f-9704-cccef9679df3",
+            "adjudication_asset_version_id": "authority-output:9ee4b3f1-7c19-410f-9704-cccef9679df3:quality.adjudication:v1"
+          }
+        ],
+        "binding": {
+          "adjudications": [
+            {
+              "content_hash": "sha256:9b3251fac9c8afdf530e277584d5b882e6e8c9b2dfa8043be850f7abc9e58af5",
+              "asset_version_id": "authority-output:9ee4b3f1-7c19-410f-9704-cccef9679df3:quality.adjudication:v1"
+            }
+          ],
+          "protocol_version": "canon-support-independent-reference.v1"
+        },
+        "comparisons": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:db08a389d073bcc8849b460f62b61f33b575fcf81e4a7f72c0fa93a63f18cd79",
+            "score_range": [
+              78,
+              82
+            ],
+            "status_agrees": false,
+            "observed_score": null,
+            "score_in_range": null,
+            "observed_status": "FAILED",
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "9ee4b3f1-7c19-410f-9704-cccef9679df3",
+            "adjudication_asset_version_id": "authority-output:9ee4b3f1-7c19-410f-9704-cccef9679df3:quality.adjudication:v1"
+          }
+        ],
+        "schema_version": "chapter-reference-agreement.v1",
+        "real_model_call": false,
+        "reference_basis": "ADJUDICATED_SUBJECTIVE_EVIDENCE",
+        "status_accuracy": 0.0,
+        "target_content_hash": "sha256:57ff0a6ebe83dc9bd3f6a710e81a9bc27a612f8a2fa1676199f421a06dcb55cf",
+        "model_call_content_hash": "sha256:f54a9848cf818e9072f255bd4cc8e7dffa8ad463f82d755985c7e3b23835c271",
+        "target_asset_version_id": "authority-output:2f3b8d73-8bc5-4eb2-995a-6b768791e8ce:chapter.canon_extraction:v1",
+        "reader_preference_proven": false,
+        "calibration_claim_allowed": false,
+        "canon_support_claim_kinds": {
+          "sha256:db08a389d073bcc8849b460f62b61f33b575fcf81e4a7f72c0fa93a63f18cd79": "OBJECTIVE_EVENT"
+        },
+        "human_preference_evidence": false,
+        "model_call_asset_version_id": "0c487aee-aef7-4a60-b17e-e0277d7f4874",
+        "canon_source_asset_version_id": "authority-output:a36a78b5-47e1-45be-a11c-67bcc4a35702:chapter.best_candidate:v1",
+        "canon_reference_sample_identity": "sha256:72aafce407e84a508dbbd79b77e4c0716e368d4ebdf01dfbb9a0b6a1190a7253",
+        "production_qualification_eligible": false
+      },
+      "uncommitted_auxiliary_candidates": []
+    }
+  },
+  {
+    "operation_id": "19f19488-0e3a-46dc-b93a-606b40f72090",
+    "project_id": "project-bfce8e9aeda3454495fd6a491fd10a12",
+    "definition_name": "chapter.provider.sample.canon_support",
+    "asset_version_id": "authority-output:19f19488-0e3a-46dc-b93a-606b40f72090:chapter.provider.sample:v1",
+    "eligibility": "INELIGIBLE",
+    "content": {
+      "stage": "canon_support",
+      "campaign": {
+        "group_id": "29459790-d687-4b04-87df-2924ab6c8e5d",
+        "partition": "CALIBRATION",
+        "sample_id": "canon_support",
+        "expires_at": "2026-09-27T05:50:18.307180+00:00",
+        "campaign_id": "project-bfce8e9aeda3454495fd6a491fd10a12",
+        "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "maximum_calls": 2,
+        "maximum_amount": "2",
+        "maximum_tokens": 400000
+      },
+      "sampled_output": {
+        "claims": [
+          {
+            "reason": "Scripted transport evidence only; no model entailment proof.",
+            "claim_id": "sha256:99e54b6621bce6b443b4feb71a6b526b6c5e01a5a203aa703f3840d984723025",
+            "assessment": "SUPPORTED",
+            "observed_kind": "OBJECTIVE_EVENT"
+          }
+        ],
+        "coverage": "COMPLETE",
+        "no_change_supported": false
+      },
+      "schema_version": "chapter-provider-sample.v1",
+      "authorization_id": "sample:deepseek:deepseek-v4-pro:high",
+      "sampled_asset_type": "canon_support_review",
+      "production_eligible": false,
+      "routing_eligibility": "BENCHMARK_ONLY",
+      "source_operation_id": "29459790-d687-4b04-87df-2924ab6c8e5d",
+      "reference_evaluation": {
+        "labels": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:99e54b6621bce6b443b4feb71a6b526b6c5e01a5a203aa703f3840d984723025",
+            "score_range": [
+              78,
+              82
+            ],
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "41e8e593-57b3-40bf-bafa-0f658a88f2ae",
+            "adjudication_asset_version_id": "authority-output:41e8e593-57b3-40bf-bafa-0f658a88f2ae:quality.adjudication:v1"
+          }
+        ],
+        "binding": {
+          "adjudications": [
+            {
+              "content_hash": "sha256:59572bba559d6ac7f748b147335b77b38c3cfebe3f62e47b60129e00168ffa7b",
+              "asset_version_id": "authority-output:41e8e593-57b3-40bf-bafa-0f658a88f2ae:quality.adjudication:v1"
+            }
+          ],
+          "protocol_version": "canon-support-independent-reference.v1"
+        },
+        "comparisons": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:99e54b6621bce6b443b4feb71a6b526b6c5e01a5a203aa703f3840d984723025",
+            "score_range": [
+              78,
+              82
+            ],
+            "status_agrees": true,
+            "observed_score": null,
+            "score_in_range": null,
+            "observed_status": "PASSED",
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "41e8e593-57b3-40bf-bafa-0f658a88f2ae",
+            "adjudication_asset_version_id": "authority-output:41e8e593-57b3-40bf-bafa-0f658a88f2ae:quality.adjudication:v1"
+          }
+        ],
+        "schema_version": "chapter-reference-agreement.v1",
+        "real_model_call": false,
+        "reference_basis": "ADJUDICATED_SUBJECTIVE_EVIDENCE",
+        "status_accuracy": 1.0,
+        "target_content_hash": "sha256:cb95e324a8f9764d9fb2e4ed008aab92aa436677e217977527c0ed87bf6a28af",
+        "model_call_content_hash": "sha256:9f5ac2b7a0ff9f5f87e12ebeabe7e0e80aef7dccf706c3bae6ed1fb6fe0351ad",
+        "target_asset_version_id": "authority-output:cfa9dfd4-e24d-4abe-b258-3623c4e575d6:chapter.canon_extraction:v1",
+        "reader_preference_proven": false,
+        "calibration_claim_allowed": false,
+        "canon_support_claim_kinds": {
+          "sha256:99e54b6621bce6b443b4feb71a6b526b6c5e01a5a203aa703f3840d984723025": "OBJECTIVE_EVENT"
+        },
+        "human_preference_evidence": false,
+        "model_call_asset_version_id": "a60f15d6-e246-47e6-9605-de885b9fcf99",
+        "canon_source_asset_version_id": "authority-output:09845030-0e0d-4d77-9f6f-af3808b5dcbf:chapter.best_candidate:v1",
+        "canon_reference_sample_identity": "sha256:72aafce407e84a508dbbd79b77e4c0716e368d4ebdf01dfbb9a0b6a1190a7253",
+        "production_qualification_eligible": false
+      },
+      "uncommitted_auxiliary_candidates": []
+    }
+  },
+  {
+    "operation_id": "07ee7264-078e-46e6-8bb7-6cf9a9de16f7",
+    "project_id": "project-bfce8e9aeda3454495fd6a491fd10a12",
+    "definition_name": "chapter.provider.sample.canon_support",
+    "asset_version_id": "authority-output:07ee7264-078e-46e6-8bb7-6cf9a9de16f7:chapter.provider.sample:v1",
+    "eligibility": "INELIGIBLE",
+    "content": {
+      "stage": "canon_support",
+      "campaign": {
+        "group_id": "29459790-d687-4b04-87df-2924ab6c8e5d",
+        "partition": "CALIBRATION",
+        "sample_id": "canon_support",
+        "expires_at": "2026-09-27T05:50:18.307180+00:00",
+        "campaign_id": "project-bfce8e9aeda3454495fd6a491fd10a12",
+        "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "maximum_calls": 2,
+        "maximum_amount": "2",
+        "maximum_tokens": 400000
+      },
+      "sampled_output": {
+        "claims": [
+          {
+            "reason": "Scripted transport evidence only; no model entailment proof.",
+            "claim_id": "sha256:99e54b6621bce6b443b4feb71a6b526b6c5e01a5a203aa703f3840d984723025",
+            "assessment": "SUPPORTED",
+            "observed_kind": "OBJECTIVE_EVENT"
+          }
+        ],
+        "coverage": "COMPLETE",
+        "no_change_supported": false
+      },
+      "schema_version": "chapter-provider-sample.v1",
+      "authorization_id": "sample:deepseek:deepseek-flash:low",
+      "sampled_asset_type": "canon_support_review",
+      "production_eligible": false,
+      "routing_eligibility": "BENCHMARK_ONLY",
+      "source_operation_id": "29459790-d687-4b04-87df-2924ab6c8e5d",
+      "reference_evaluation": {
+        "labels": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:99e54b6621bce6b443b4feb71a6b526b6c5e01a5a203aa703f3840d984723025",
+            "score_range": [
+              78,
+              82
+            ],
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "41e8e593-57b3-40bf-bafa-0f658a88f2ae",
+            "adjudication_asset_version_id": "authority-output:41e8e593-57b3-40bf-bafa-0f658a88f2ae:quality.adjudication:v1"
+          }
+        ],
+        "binding": {
+          "adjudications": [
+            {
+              "content_hash": "sha256:59572bba559d6ac7f748b147335b77b38c3cfebe3f62e47b60129e00168ffa7b",
+              "asset_version_id": "authority-output:41e8e593-57b3-40bf-bafa-0f658a88f2ae:quality.adjudication:v1"
+            }
+          ],
+          "protocol_version": "canon-support-independent-reference.v1"
+        },
+        "comparisons": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:99e54b6621bce6b443b4feb71a6b526b6c5e01a5a203aa703f3840d984723025",
+            "score_range": [
+              78,
+              82
+            ],
+            "status_agrees": true,
+            "observed_score": null,
+            "score_in_range": null,
+            "observed_status": "PASSED",
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "41e8e593-57b3-40bf-bafa-0f658a88f2ae",
+            "adjudication_asset_version_id": "authority-output:41e8e593-57b3-40bf-bafa-0f658a88f2ae:quality.adjudication:v1"
+          }
+        ],
+        "schema_version": "chapter-reference-agreement.v1",
+        "real_model_call": false,
+        "reference_basis": "ADJUDICATED_SUBJECTIVE_EVIDENCE",
+        "status_accuracy": 1.0,
+        "target_content_hash": "sha256:cb95e324a8f9764d9fb2e4ed008aab92aa436677e217977527c0ed87bf6a28af",
+        "model_call_content_hash": "sha256:125ce30017f817156d0088346cadaac251d90fc05a05fb6629c5a00c94d16085",
+        "target_asset_version_id": "authority-output:cfa9dfd4-e24d-4abe-b258-3623c4e575d6:chapter.canon_extraction:v1",
+        "reader_preference_proven": false,
+        "calibration_claim_allowed": false,
+        "canon_support_claim_kinds": {
+          "sha256:99e54b6621bce6b443b4feb71a6b526b6c5e01a5a203aa703f3840d984723025": "OBJECTIVE_EVENT"
+        },
+        "human_preference_evidence": false,
+        "model_call_asset_version_id": "763c5497-1b2f-4eab-85a0-24d301d78ef5",
+        "canon_source_asset_version_id": "authority-output:09845030-0e0d-4d77-9f6f-af3808b5dcbf:chapter.best_candidate:v1",
+        "canon_reference_sample_identity": "sha256:72aafce407e84a508dbbd79b77e4c0716e368d4ebdf01dfbb9a0b6a1190a7253",
+        "production_qualification_eligible": false
+      },
+      "uncommitted_auxiliary_candidates": []
+    }
+  },
+  {
+    "operation_id": "47789751-f27e-4e70-b38d-f473522c7db5",
+    "project_id": "project-163c17ee80294367a5487e6fb7a2c56a",
+    "definition_name": "chapter.provider.sample.canon_support",
+    "asset_version_id": "authority-output:47789751-f27e-4e70-b38d-f473522c7db5:chapter.provider.sample:v1",
+    "eligibility": "INELIGIBLE",
+    "content": {
+      "stage": "canon_support",
+      "campaign": {
+        "group_id": "a9228a52-7be6-4fb2-9235-9cb2733e5e49",
+        "partition": "CALIBRATION",
+        "sample_id": "canon_support",
+        "expires_at": "2026-09-27T05:48:40.781122+00:00",
+        "campaign_id": "project-163c17ee80294367a5487e6fb7a2c56a",
+        "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "maximum_calls": 2,
+        "maximum_amount": "2",
+        "maximum_tokens": 400000
+      },
+      "sampled_output": {
+        "claims": [
+          {
+            "reason": "Scripted transport evidence only; no model entailment proof.",
+            "claim_id": "sha256:f3d535e8f262c12dfc5145570462fcc6d146461602da168ef0bcf109bc8d007d",
+            "assessment": "UNSUPPORTED",
+            "observed_kind": "OBJECTIVE_EVENT"
+          }
+        ],
+        "coverage": "COMPLETE",
+        "no_change_supported": false
+      },
+      "schema_version": "chapter-provider-sample.v1",
+      "authorization_id": "sample:deepseek:deepseek-v4-pro:high",
+      "sampled_asset_type": "canon_support_review",
+      "production_eligible": false,
+      "routing_eligibility": "BENCHMARK_ONLY",
+      "source_operation_id": "a9228a52-7be6-4fb2-9235-9cb2733e5e49",
+      "reference_evaluation": {
+        "labels": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:f3d535e8f262c12dfc5145570462fcc6d146461602da168ef0bcf109bc8d007d",
+            "score_range": [
+              78,
+              82
+            ],
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "29aefeb5-6d69-41fe-b495-bf79e9ecaccf",
+            "adjudication_asset_version_id": "authority-output:29aefeb5-6d69-41fe-b495-bf79e9ecaccf:quality.adjudication:v1"
+          }
+        ],
+        "binding": {
+          "adjudications": [
+            {
+              "content_hash": "sha256:9a2510445ee980b3dd3655e63b1cb00d4d219e4df111a1dec90a43676205e2e0",
+              "asset_version_id": "authority-output:29aefeb5-6d69-41fe-b495-bf79e9ecaccf:quality.adjudication:v1"
+            }
+          ],
+          "protocol_version": "canon-support-independent-reference.v1"
+        },
+        "comparisons": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:f3d535e8f262c12dfc5145570462fcc6d146461602da168ef0bcf109bc8d007d",
+            "score_range": [
+              78,
+              82
+            ],
+            "status_agrees": false,
+            "observed_score": null,
+            "score_in_range": null,
+            "observed_status": "FAILED",
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "29aefeb5-6d69-41fe-b495-bf79e9ecaccf",
+            "adjudication_asset_version_id": "authority-output:29aefeb5-6d69-41fe-b495-bf79e9ecaccf:quality.adjudication:v1"
+          }
+        ],
+        "schema_version": "chapter-reference-agreement.v1",
+        "real_model_call": false,
+        "reference_basis": "ADJUDICATED_SUBJECTIVE_EVIDENCE",
+        "status_accuracy": 0.0,
+        "target_content_hash": "sha256:434871e5abf15a578b6faa9f225d9e2eed63adeefcf356e36cbe8db4d660c1fa",
+        "model_call_content_hash": "sha256:01c696347f71b508183696ca7d93da22e9eccceb1f736930032743bc6fc06fe2",
+        "target_asset_version_id": "authority-output:7e563db1-54ad-4b18-b1b6-d4b83d3d35c3:chapter.canon_extraction:v1",
+        "reader_preference_proven": false,
+        "calibration_claim_allowed": false,
+        "canon_support_claim_kinds": {
+          "sha256:f3d535e8f262c12dfc5145570462fcc6d146461602da168ef0bcf109bc8d007d": "OBJECTIVE_EVENT"
+        },
+        "human_preference_evidence": false,
+        "model_call_asset_version_id": "699ca724-3c33-43fb-b232-bf5709d572d4",
+        "canon_source_asset_version_id": "authority-output:1530e0a8-ca2a-48f0-9728-a30b97dedb19:chapter.best_candidate:v1",
+        "canon_reference_sample_identity": "sha256:854d14102ca9854c4fa9de043e9572f954273bcf29028254519cc4079944b821",
+        "production_qualification_eligible": false
+      },
+      "uncommitted_auxiliary_candidates": []
+    }
+  },
+  {
+    "operation_id": "045593d6-b1db-4775-a368-d5c2c33f943b",
+    "project_id": "project-163c17ee80294367a5487e6fb7a2c56a",
+    "definition_name": "chapter.provider.sample.canon_support",
+    "asset_version_id": "authority-output:045593d6-b1db-4775-a368-d5c2c33f943b:chapter.provider.sample:v1",
+    "eligibility": "INELIGIBLE",
+    "content": {
+      "stage": "canon_support",
+      "campaign": {
+        "group_id": "a9228a52-7be6-4fb2-9235-9cb2733e5e49",
+        "partition": "CALIBRATION",
+        "sample_id": "canon_support",
+        "expires_at": "2026-09-27T05:48:40.781122+00:00",
+        "campaign_id": "project-163c17ee80294367a5487e6fb7a2c56a",
+        "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "maximum_calls": 2,
+        "maximum_amount": "2",
+        "maximum_tokens": 400000
+      },
+      "sampled_output": {
+        "claims": [
+          {
+            "reason": "Scripted transport evidence only; no model entailment proof.",
+            "claim_id": "sha256:f3d535e8f262c12dfc5145570462fcc6d146461602da168ef0bcf109bc8d007d",
+            "assessment": "UNSUPPORTED",
+            "observed_kind": "OBJECTIVE_EVENT"
+          }
+        ],
+        "coverage": "COMPLETE",
+        "no_change_supported": false
+      },
+      "schema_version": "chapter-provider-sample.v1",
+      "authorization_id": "sample:deepseek:deepseek-flash:low",
+      "sampled_asset_type": "canon_support_review",
+      "production_eligible": false,
+      "routing_eligibility": "BENCHMARK_ONLY",
+      "source_operation_id": "a9228a52-7be6-4fb2-9235-9cb2733e5e49",
+      "reference_evaluation": {
+        "labels": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:f3d535e8f262c12dfc5145570462fcc6d146461602da168ef0bcf109bc8d007d",
+            "score_range": [
+              78,
+              82
+            ],
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "29aefeb5-6d69-41fe-b495-bf79e9ecaccf",
+            "adjudication_asset_version_id": "authority-output:29aefeb5-6d69-41fe-b495-bf79e9ecaccf:quality.adjudication:v1"
+          }
+        ],
+        "binding": {
+          "adjudications": [
+            {
+              "content_hash": "sha256:9a2510445ee980b3dd3655e63b1cb00d4d219e4df111a1dec90a43676205e2e0",
+              "asset_version_id": "authority-output:29aefeb5-6d69-41fe-b495-bf79e9ecaccf:quality.adjudication:v1"
+            }
+          ],
+          "protocol_version": "canon-support-independent-reference.v1"
+        },
+        "comparisons": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:f3d535e8f262c12dfc5145570462fcc6d146461602da168ef0bcf109bc8d007d",
+            "score_range": [
+              78,
+              82
+            ],
+            "status_agrees": false,
+            "observed_score": null,
+            "score_in_range": null,
+            "observed_status": "FAILED",
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "29aefeb5-6d69-41fe-b495-bf79e9ecaccf",
+            "adjudication_asset_version_id": "authority-output:29aefeb5-6d69-41fe-b495-bf79e9ecaccf:quality.adjudication:v1"
+          }
+        ],
+        "schema_version": "chapter-reference-agreement.v1",
+        "real_model_call": false,
+        "reference_basis": "ADJUDICATED_SUBJECTIVE_EVIDENCE",
+        "status_accuracy": 0.0,
+        "target_content_hash": "sha256:434871e5abf15a578b6faa9f225d9e2eed63adeefcf356e36cbe8db4d660c1fa",
+        "model_call_content_hash": "sha256:0678c2630523b56e1d62f1715413adadc85f98881ab9eede1d80afc76281f086",
+        "target_asset_version_id": "authority-output:7e563db1-54ad-4b18-b1b6-d4b83d3d35c3:chapter.canon_extraction:v1",
+        "reader_preference_proven": false,
+        "calibration_claim_allowed": false,
+        "canon_support_claim_kinds": {
+          "sha256:f3d535e8f262c12dfc5145570462fcc6d146461602da168ef0bcf109bc8d007d": "OBJECTIVE_EVENT"
+        },
+        "human_preference_evidence": false,
+        "model_call_asset_version_id": "d2591b83-0081-4e3a-a6c5-5bb4096d200d",
+        "canon_source_asset_version_id": "authority-output:1530e0a8-ca2a-48f0-9728-a30b97dedb19:chapter.best_candidate:v1",
+        "canon_reference_sample_identity": "sha256:854d14102ca9854c4fa9de043e9572f954273bcf29028254519cc4079944b821",
+        "production_qualification_eligible": false
+      },
+      "uncommitted_auxiliary_candidates": []
+    }
+  },
+  {
+    "operation_id": "3f495287-9a81-4e08-81eb-fcd28ba8a856",
+    "project_id": "project-bd397341d8bb497183771fe9de9e58ee",
+    "definition_name": "chapter.provider.sample.canon_support",
+    "asset_version_id": "authority-output:3f495287-9a81-4e08-81eb-fcd28ba8a856:chapter.provider.sample:v1",
+    "eligibility": "INELIGIBLE",
+    "content": {
+      "stage": "canon_support",
+      "campaign": {
+        "group_id": "cb0e9d83-854c-4e41-a968-979fe85659b0",
+        "partition": "CALIBRATION",
+        "sample_id": "canon_support",
+        "expires_at": "2026-09-27T05:48:34.302220+00:00",
+        "campaign_id": "project-bd397341d8bb497183771fe9de9e58ee",
+        "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "maximum_calls": 2,
+        "maximum_amount": "2",
+        "maximum_tokens": 400000
+      },
+      "sampled_output": {
+        "claims": [
+          {
+            "reason": "Scripted transport evidence only; no model entailment proof.",
+            "claim_id": "sha256:7ea31185d72990e661ecdb2d7cb0317a78ce4b92a7dbfd7ece067fa0f6751420",
+            "assessment": "SUPPORTED",
+            "observed_kind": "OBJECTIVE_EVENT"
+          }
+        ],
+        "coverage": "COMPLETE",
+        "no_change_supported": false
+      },
+      "schema_version": "chapter-provider-sample.v1",
+      "authorization_id": "sample:deepseek:deepseek-v4-pro:high",
+      "sampled_asset_type": "canon_support_review",
+      "production_eligible": false,
+      "routing_eligibility": "BENCHMARK_ONLY",
+      "source_operation_id": "cb0e9d83-854c-4e41-a968-979fe85659b0",
+      "reference_evaluation": {
+        "labels": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:7ea31185d72990e661ecdb2d7cb0317a78ce4b92a7dbfd7ece067fa0f6751420",
+            "score_range": [
+              78,
+              82
+            ],
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "8a9807cb-91f2-43ad-aff4-4c27ec592252",
+            "adjudication_asset_version_id": "authority-output:8a9807cb-91f2-43ad-aff4-4c27ec592252:quality.adjudication:v1"
+          }
+        ],
+        "binding": {
+          "adjudications": [
+            {
+              "content_hash": "sha256:d3a5776a76d9444c9f17e31cc0dd19ba027ed2c4696e94df0f09ef915df40a8d",
+              "asset_version_id": "authority-output:8a9807cb-91f2-43ad-aff4-4c27ec592252:quality.adjudication:v1"
+            }
+          ],
+          "protocol_version": "canon-support-independent-reference.v1"
+        },
+        "comparisons": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:7ea31185d72990e661ecdb2d7cb0317a78ce4b92a7dbfd7ece067fa0f6751420",
+            "score_range": [
+              78,
+              82
+            ],
+            "status_agrees": true,
+            "observed_score": null,
+            "score_in_range": null,
+            "observed_status": "PASSED",
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "8a9807cb-91f2-43ad-aff4-4c27ec592252",
+            "adjudication_asset_version_id": "authority-output:8a9807cb-91f2-43ad-aff4-4c27ec592252:quality.adjudication:v1"
+          }
+        ],
+        "schema_version": "chapter-reference-agreement.v1",
+        "real_model_call": false,
+        "reference_basis": "ADJUDICATED_SUBJECTIVE_EVIDENCE",
+        "status_accuracy": 1.0,
+        "target_content_hash": "sha256:7c5f13e5ce010438afad2a784a2c44ed5be6d824437121332ddc0a11931f9e34",
+        "model_call_content_hash": "sha256:13c5a80dc593868ae7f4abe81dd2d51344b76f622b28d2ae39731da6e0ae12bb",
+        "target_asset_version_id": "authority-output:5d704af1-6e35-49a6-9d56-3c51fa96d59b:chapter.canon_extraction:v1",
+        "reader_preference_proven": false,
+        "calibration_claim_allowed": false,
+        "canon_support_claim_kinds": {
+          "sha256:7ea31185d72990e661ecdb2d7cb0317a78ce4b92a7dbfd7ece067fa0f6751420": "OBJECTIVE_EVENT"
+        },
+        "human_preference_evidence": false,
+        "model_call_asset_version_id": "70e5234b-9458-44a0-8dee-9ea1d85b9f60",
+        "canon_source_asset_version_id": "authority-output:154360e1-058e-475e-888b-d52236228cef:chapter.best_candidate:v1",
+        "canon_reference_sample_identity": "sha256:b3ff3963972ce62eb6759d9141020e998d0742c236672635fa72db21a7cea239",
+        "production_qualification_eligible": false
+      },
+      "uncommitted_auxiliary_candidates": []
+    }
+  },
+  {
+    "operation_id": "13178080-ea2a-4775-8bd2-7af44fcf19e6",
+    "project_id": "project-bd397341d8bb497183771fe9de9e58ee",
+    "definition_name": "chapter.provider.sample.canon_support",
+    "asset_version_id": "authority-output:13178080-ea2a-4775-8bd2-7af44fcf19e6:chapter.provider.sample:v1",
+    "eligibility": "INELIGIBLE",
+    "content": {
+      "stage": "canon_support",
+      "campaign": {
+        "group_id": "cb0e9d83-854c-4e41-a968-979fe85659b0",
+        "partition": "CALIBRATION",
+        "sample_id": "canon_support",
+        "expires_at": "2026-09-27T05:48:34.302220+00:00",
+        "campaign_id": "project-bd397341d8bb497183771fe9de9e58ee",
+        "manifest_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "maximum_calls": 2,
+        "maximum_amount": "2",
+        "maximum_tokens": 400000
+      },
+      "sampled_output": {
+        "claims": [
+          {
+            "reason": "Scripted transport evidence only; no model entailment proof.",
+            "claim_id": "sha256:7ea31185d72990e661ecdb2d7cb0317a78ce4b92a7dbfd7ece067fa0f6751420",
+            "assessment": "SUPPORTED",
+            "observed_kind": "OBJECTIVE_EVENT"
+          }
+        ],
+        "coverage": "COMPLETE",
+        "no_change_supported": false
+      },
+      "schema_version": "chapter-provider-sample.v1",
+      "authorization_id": "sample:deepseek:deepseek-flash:low",
+      "sampled_asset_type": "canon_support_review",
+      "production_eligible": false,
+      "routing_eligibility": "BENCHMARK_ONLY",
+      "source_operation_id": "cb0e9d83-854c-4e41-a968-979fe85659b0",
+      "reference_evaluation": {
+        "labels": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:7ea31185d72990e661ecdb2d7cb0317a78ce4b92a7dbfd7ece067fa0f6751420",
+            "score_range": [
+              78,
+              82
+            ],
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "8a9807cb-91f2-43ad-aff4-4c27ec592252",
+            "adjudication_asset_version_id": "authority-output:8a9807cb-91f2-43ad-aff4-4c27ec592252:quality.adjudication:v1"
+          }
+        ],
+        "binding": {
+          "adjudications": [
+            {
+              "content_hash": "sha256:d3a5776a76d9444c9f17e31cc0dd19ba027ed2c4696e94df0f09ef915df40a8d",
+              "asset_version_id": "authority-output:8a9807cb-91f2-43ad-aff4-4c27ec592252:quality.adjudication:v1"
+            }
+          ],
+          "protocol_version": "canon-support-independent-reference.v1"
+        },
+        "comparisons": [
+          {
+            "status": "PASSED",
+            "dimension": "canon_support:sha256:7ea31185d72990e661ecdb2d7cb0317a78ce4b92a7dbfd7ece067fa0f6751420",
+            "score_range": [
+              78,
+              82
+            ],
+            "status_agrees": true,
+            "observed_score": null,
+            "score_in_range": null,
+            "observed_status": "PASSED",
+            "evaluation_version": "canon-support-independent-reference.v1",
+            "adjudication_operation_id": "8a9807cb-91f2-43ad-aff4-4c27ec592252",
+            "adjudication_asset_version_id": "authority-output:8a9807cb-91f2-43ad-aff4-4c27ec592252:quality.adjudication:v1"
+          }
+        ],
+        "schema_version": "chapter-reference-agreement.v1",
+        "real_model_call": false,
+        "reference_basis": "ADJUDICATED_SUBJECTIVE_EVIDENCE",
+        "status_accuracy": 1.0,
+        "target_content_hash": "sha256:7c5f13e5ce010438afad2a784a2c44ed5be6d824437121332ddc0a11931f9e34",
+        "model_call_content_hash": "sha256:9326ff156a9ae3d2d4eff25ab9b601711083157beda0afcc4a21900019723225",
+        "target_asset_version_id": "authority-output:5d704af1-6e35-49a6-9d56-3c51fa96d59b:chapter.canon_extraction:v1",
+        "reader_preference_proven": false,
+        "calibration_claim_allowed": false,
+        "canon_support_claim_kinds": {
+          "sha256:7ea31185d72990e661ecdb2d7cb0317a78ce4b92a7dbfd7ece067fa0f6751420": "OBJECTIVE_EVENT"
+        },
+        "human_preference_evidence": false,
+        "model_call_asset_version_id": "f94143ee-0071-44e3-ad91-b8cae5ada496",
+        "canon_source_asset_version_id": "authority-output:154360e1-058e-475e-888b-d52236228cef:chapter.best_candidate:v1",
+        "canon_reference_sample_identity": "sha256:b3ff3963972ce62eb6759d9141020e998d0742c236672635fa72db21a7cea239",
+        "production_qualification_eligible": false
+      },
+      "uncommitted_auxiliary_candidates": []
+    }
+  }
+]

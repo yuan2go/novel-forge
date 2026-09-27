@@ -9,6 +9,7 @@ import { loadEditorProjects, loadEditorDrafts, loadDraftEditor, submitEditorComm
   type EditorDraft, type DraftEditorState, type EditorCommand } from "./api";
 import { ProseReviewPanel, type ReviewSource } from "./ProseReviewPanel";
 import { exactOffset, retainExactLineEndings } from "./text";
+import { EditionPanel } from "./EditionPanel";
 
 const EDITOR_COMMANDS = ["保存候选", "采用候选", "拒绝候选", "提交章节复核"];
 const storageKey = (draft: EditorDraft) => `novel-forge:author-input:${draft.project_id}:${draft.asset_version_id}`;
@@ -206,6 +207,7 @@ export function EditorPage() {
         <a href="/manuscript">前往章节生产工作台查看后续接纳门控</a>
       </> : null}
     </section>
+    {state ? <EditionPanel key={`edition:${state.project_id}:${state.book_id}`} state={state} /> : null}
     {state ? <ProseReviewPanel key={`${state.project_id}:${state.book_id}`} state={state} onSelect={(source) => {
       setReviewSource(source); setNotice("已选定审读问题；编辑正文并保存后，可显式关联修改候选。"); editor.current?.focus();
     }} /> : null}

@@ -1,0 +1,46 @@
+{
+  "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662": [
+    {
+      "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+      "chapter_number": 1,
+      "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+      "outcome_ref": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+      "state_ref": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1",
+      "canon_ref": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+    },
+    {
+      "acceptance_id": "chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097",
+      "chapter_number": 2,
+      "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+      "outcome_ref": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.outcome:v1",
+      "state_ref": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.story_state:v1",
+      "canon_ref": "authority-output:881aa3f4-c8b7-4d23-8d1f-b4f0eace2451:chapter.canon.current:v1"
+    }
+  ],
+  "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc": [
+    {
+      "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+      "chapter_number": 1,
+      "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+      "outcome_ref": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1",
+      "state_ref": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1",
+      "canon_ref": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+    },
+    {
+      "acceptance_id": "chapter-acceptance:fae92b9973f78f19f3ad758a00fe6df94f07827df7f22f662a68b09b81de65d0",
+      "chapter_number": 2,
+      "book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+      "outcome_ref": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.outcome:v1",
+      "state_ref": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.story_state:v1",
+      "canon_ref": "authority-output:54d85b63-738b-4a75-93c5-f9602da099d5:chapter.canon.current:v1"
+    },
+    {
+      "acceptance_id": "chapter-acceptance:e9fa30a63fbe088fcbff3b6309cbfde37159155952de0a9cf339403791781c76",
+      "chapter_number": 3,
+      "book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+      "outcome_ref": "authority-output:6cea533f-4a24-41dd-8d74-cdba2b1d8709:chapter.outcome:v1",
+      "state_ref": "authority-output:6cea533f-4a24-41dd-8d74-cdba2b1d8709:chapter.story_state:v1",
+      "canon_ref": "authority-output:6cea533f-4a24-41dd-8d74-cdba2b1d8709:chapter.canon.current:v1"
+    }
+  ]
+}

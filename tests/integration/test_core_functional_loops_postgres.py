@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from copy import deepcopy
 from dataclasses import replace
 import json
+import os
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -133,7 +134,7 @@ import tests.integration.authority_postgres_support as authority_postgres_suppor
 import tests.integration.capability_pack_postgres_support as capability_pack_support
 
 
-RELEASE_SHA = "e" * 40
+RELEASE_SHA = os.environ.get("NOVEL_FORGE_TEST_RELEASE_SHA", "e" * 40)
 
 
 @pytest.fixture()
@@ -1413,7 +1414,8 @@ def _activate_plan_chain(
     ],
 )
 def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
-    request: pytest.FixtureRequest, autonomous_world: bool | str, craft_budget_policy: dict | None = None
+    request: pytest.FixtureRequest, autonomous_world: bool | str, craft_budget_policy: dict | None = None,
+    runtime_environment_overrides: dict[str, str] | None = None,
 ) -> None:
     test_case = request.node
     harness = CapabilityPackPostgresHarness("narrative-evolution-opening", production_profile={"craft_budget_policy": craft_budget_policy} if craft_budget_policy else None)
@@ -1425,6 +1427,14 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
         chapter_pack.pack_id = f"world-chapter-{uuid4().hex}"
         chapter_pack._base_manifest = deepcopy(harness._base_manifest)
         chapter_pack._base_catalog = deepcopy(harness._base_catalog)
+        if runtime_environment_overrides:
+            chapter_pack._base_manifest["context_sources"]["max_tokens"] = int(runtime_environment_overrides.get("NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET", "16000"))
+            chapter_pack._base_manifest["context_sources"]["policy_id"] = "context-policy:wp02-joint-scripted:v1"
+            policy_artifact = deepcopy(next(item for item in chapter_pack._base_catalog["artifacts"] if item["kind"] == "CONTEXT_POLICY" and item["ref"] == "context-policy:chapter-generation-pack:v1"))
+            policy_artifact["ref"] = policy_artifact["content"]["policy_id"] = "context-policy:wp02-joint-scripted:v1"
+            policy_artifact["content"]["max_tokens"] = chapter_pack._base_manifest["context_sources"]["max_tokens"]
+            policy_artifact["content_hash"] = canonical_hash(policy_artifact["content"])
+            chapter_pack._base_catalog["artifacts"].append(policy_artifact)
         approved = chapter_pack.register_compile_approve(
             "1.0.0",
             generation=1,
@@ -1633,6 +1643,9 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
             "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": chapter_pack_id
             or "chapter_generation_pack",
         }
+        if runtime_environment_overrides:
+            assert set(runtime_environment_overrides) <= {"NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET", "NOVEL_FORGE_BOOK_QUALITY_CONTEXT_TOKEN_BUDGET", "NOVEL_FORGE_BOOK_DRAFT_CONTEXT_PROFILE_VERSION"}
+            env.update(runtime_environment_overrides)
         from tests.integration.narrative_reality_vertical_support import (
             NativeRealityTransportFixture,
             execute_native_reality_vertical,

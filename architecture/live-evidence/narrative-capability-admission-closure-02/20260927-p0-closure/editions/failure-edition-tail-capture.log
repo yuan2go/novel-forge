@@ -1,0 +1,24 @@
+[]
+Traceback (most recent call last):
+  File "<PRIVATE_EVIDENCE>/debug-edition-tail.py", line 26, in <module>
+    text=Path(test.__file__).read_text();tail=text[text.index('    with pytest.raises(KernelError, match="EDITION_VALIDATION_INCOMPLETE")') :];tail='\n'.join(line[4:] if line.startswith('    ') else line for line in tail.splitlines());exec(compile(tail,test.__file__,'exec'),ns)
+                                                                                                                                                                                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/tests/integration/test_book_editions_postgres.py", line 9, in <module>
+    
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/edition_application.py", line 144, in execute
+    return execute_transaction_command(self.database_url, {
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/command_kernel/service.py", line 91, in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/edition_application.py", line 199, in _handle
+    result = self._create(uow, repo, book, head, data, operation_id, trace_id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/src/novel_forge/modules/book_authority/edition_application.py", line 272, in _create
+    repo.event(revision_id=result["revision_id"], kind="VALIDATION_RESULT_CAPTURED", content={
+  File "<WORKTREE>/src/novel_forge/storage/book_edition_repositories.py", line 57, in event
+    self.cursor.execute("INSERT INTO authority_book_edition_event(event_id,revision_id,event_kind,content,created_by_operation_id) VALUES(%s,%s,%s,%s,%s)",
+  File "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.CheckViolation: new row for relation "authority_book_edition_event" violates check constraint "authority_book_edition_event_event_kind_check"
+DETAIL:  Failing row contains (05e45247-5ef4-4a6c-94ef-f2c1032fd8c4, af0f76e9-af71-45f7-908a-5119bc8d1688, VALIDATION_RESULT_CAPTURED, {"reason": "保留作者原候选，显式保存原生审改后..., 108a424d-68a5-43c5-ac7f-0181ee6b2b37, 2026-09-27 05:01:01.768123+00).

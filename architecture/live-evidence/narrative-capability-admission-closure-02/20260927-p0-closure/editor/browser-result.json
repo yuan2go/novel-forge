@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "proof_ceiling": "SCRIPTED_NATIVE_API_POSTGRES_BROWSER",
+  "actual_model_calls": 0,
+  "steps": [
+    "native accepted manuscript snapshot remains readable",
+    "reload retains unsaved edition input by exact revision",
+    "lost response after database commit replays immutable save using same idempotency key",
+    "version diff and revalidation boundary visible",
+    "unvalidated edition selection denied by native API",
+    "original exact accepted edition remains unchanged",
+    "screenplay source knowledge loaded from exact accepted edition",
+    "native screenplay source preparation freezes exact edition and typed scene policy without model dispatch"
+  ],
+  "scope": {
+    "project_id": "project-a94224815a594310b6d6a28dc4fa4dc6",
+    "workspace_id": "workspace-a94224815a594310b6d6a28dc4fa4dc6",
+    "book_id": "book:project-a94224815a594310b6d6a28dc4fa4dc6",
+    "book_run_id": "book-run:723bed3b-ac77-42a3-84b2-28431e70749d"
+  }
+}

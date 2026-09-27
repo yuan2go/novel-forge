@@ -33,8 +33,8 @@ def freeze_accepted_prose(
     uow.cursor.execute(
         """
         SELECT chapter_number, chapter_outcome_asset_version_id, acceptance_operation_id
-        FROM authority_book_chapter_acceptance
-        WHERE book_run_id=%s AND project_id=%s AND status='COMMITTED'
+        FROM authority_book_acceptance_lineage(%s)
+        WHERE project_id=%s AND status='COMMITTED'
           AND chapter_number >= %s AND chapter_number < %s
         ORDER BY chapter_number
         """,

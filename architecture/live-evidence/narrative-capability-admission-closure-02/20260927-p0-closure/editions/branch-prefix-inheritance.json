@@ -1,0 +1,73 @@
+{
+  "source": {
+    "book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+    "project_id": "project-91d6d7a2d32c4e90b106c12793a93616",
+    "workspace_id": "workspace-91d6d7a2d32c4e90b106c12793a93616",
+    "book_id": "book:project-91d6d7a2d32c4e90b106c12793a93616"
+  },
+  "candidate": {
+    "operation_id": "bc8afbb3-0036-4e64-83ed-f00e2a3d37a3",
+    "status": "REVALIDATION_REQUIRED",
+    "edition_id": "edition:b190a047-bc71-4d3f-bc63-6848defd4af0",
+    "revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f",
+    "version": 2,
+    "manifest_digest": "sha256:7cd1000a08fbf8a2ea2af6d620687a6bad94a6fcf561dc717e0e427ce4be993a",
+    "impact": {
+      "earliest_affected_position": 2,
+      "changed_unit_ids": [
+        "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097"
+      ],
+      "required_revalidation_unit_ids": [
+        "chapter:chapter-acceptance:caaeafc1fba0637cd6fb930e62165e886cfe06d1044b902b29217df7d8a9a097"
+      ],
+      "fact_reuse": "REQUIRES_EXACT_NATIVE_VALIDATION",
+      "review_signatures": "INVALIDATED",
+      "publication_candidates": "INVALIDATED"
+    },
+    "publication_authorized": false,
+    "replayed": false
+  },
+  "admission": {
+    "revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f",
+    "validation_book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+    "replayed": false,
+    "authority": "NORMAL_BOOK_PRODUCTION_GATES",
+    "publication_authorized": false
+  },
+  "proof": {
+    "authority": "REUSE_ORIGINAL_ACCEPTANCE_NO_NEW_ACCEPTANCE",
+    "book_run_id": "book-run:fe2aa89f-1931-4ad8-970b-1d2dfde3e6cc",
+    "revision_id": "030e3eae-0e70-4c4f-bfce-2785d04eb18f",
+    "proof_digest": "sha256:15aaec86c9b3fa92cc7db3cf8a02c8a61ed09a651810cfdc29cd32aa23b12c2d",
+    "manifest_digest": "sha256:7cd1000a08fbf8a2ea2af6d620687a6bad94a6fcf561dc717e0e427ce4be993a",
+    "through_chapter": 1,
+    "accepted_sources": [
+      {
+        "unit_id": "chapter:chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+        "position": 1,
+        "text_hash": "sha256:8f34cb81b8885702a2af84a88bc5c83e1bc753a264325574120ad61938910b50",
+        "asset_hash": "sha256:47f565fbf591e76547e563a603db4956d8fd672d89b057099af5f5cc56bc050b",
+        "acceptance_id": "chapter-acceptance:a8ee352db5c6e8d7f8c66384775644c3f331dc5dc502c6c1a09ac8d5be9ba980",
+        "projection_hash": "sha256:1f588dc635f3b14e0b598dcec48a22424122f06d1f4dd08eefb50a416f36dff4",
+        "asset_version_id": "authority-output:6fb443bf-1033-4587-823f-6f658c1dd203:chapter.best_candidate:v1",
+        "projection_set_id": "longform-projection:b9ddfa2aa9bb2c1098c47d1bdf50a7e6962e4d453e366c6be79ace8d96de11dc",
+        "source_book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+        "outcome_asset_version_id": {
+          "content_hash": "sha256:8daeb13a4a8f5138ada20a379f211a92be5e584e21378574b4b86fe48fd1145c",
+          "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.outcome:v1"
+        },
+        "story_state_asset_version_id": {
+          "content_hash": "sha256:83d2b401dbda1945a6e54edf99043f56b279a397c1b3f212110d30abf616fa6b",
+          "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.story_state:v1"
+        },
+        "canon_snapshot_asset_version_id": {
+          "content_hash": "sha256:46d05d1e08712a4b5e14b80bd3ee939eade19ff3d4b9896a3db20f2976b6cbfa",
+          "asset_version_id": "authority-output:0e955354-ebf9-4ddc-bb6b-113f6e929a5b:chapter.canon.current:v1"
+        }
+      }
+    ],
+    "contract_version": "book-edition-prefix-inheritance.v1",
+    "source_book_run_id": "book-run:ce15221a-a89d-46b2-862a-d1b50d8d1662",
+    "publication_authorized": false
+  }
+}

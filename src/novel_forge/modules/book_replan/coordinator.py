@@ -1902,8 +1902,16 @@ class BookReplanCoordinator:
             "reward_ledger": snapshot["reward_ledger_version"],
             "promise_ledger": snapshot["promise_ledger_version"],
             "quality_trend": snapshot["quality_trend_version"],
+            "story_state": book.get("active_story_state_version_id") or snapshot.get("initial_story_state_version"),
+            "canon_snapshot": book.get("active_canon_snapshot_version_id") or snapshot.get("initial_canon_snapshot_version"),
+            "previous_chapter_outcome": book.get("last_chapter_outcome_version_id"),
             **overrides,
         }
+        from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+        observed_reader = PostgresBookProductionQuery(self.database_url).previous_reader_state(
+            book_run_id=str(book["book_run_id"]), chapter_number=int(book["accepted_through_chapter"]) + 1)
+        if observed_reader != "NONE":
+            fixed["reader_state"] = observed_reader
         aliases = {
             "previous_chapter_outcome": (
                 "previous_chapter_outcome",
@@ -1911,7 +1919,7 @@ class BookReplanCoordinator:
             ),
             "story_state": ("story_state_snapshot", "story_state"),
             "canon_snapshot": ("canon_snapshot",),
-            "reader_state": ("reader_state", "reader_state_transition"),
+            "reader_state": ("reader_state",),
         }
         result: dict[str, str] = {}
         for role in GENERATOR_INPUT_ROLES[generator]:

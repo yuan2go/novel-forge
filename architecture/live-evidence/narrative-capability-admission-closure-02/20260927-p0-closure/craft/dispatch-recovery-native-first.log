@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py", line 1564, in __enter__
+    setattr(self.target, self.attribute, new_attr)
+AttributeError: 'ChapterAuthorityCommandAdapter' object attribute 'submit' is read-only
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<PRIVATE_EVIDENCE_ROOT>/dispatch-recovery-native.py", line 6, in <module>
+    started=time.time();test_native_reserved_group_dispatch_recovers_same_request_root_and_delegation(boundary)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKTREE>/tests/integration/test_chapter_dispatch_recovery_postgres.py", line 32, in test_native_reserved_group_dispatch_recovers_same_request_root_and_delegation
+    with injection, pytest.raises(RuntimeError, match="reserved before"):
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py", line 1577, in __enter__
+    if not self.__exit__(*sys.exc_info()):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py", line 1585, in __exit__
+    delattr(self.target, self.attribute)
+AttributeError: 'ChapterAuthorityCommandAdapter' object attribute 'submit' is read-only

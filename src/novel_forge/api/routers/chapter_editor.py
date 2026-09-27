@@ -49,6 +49,52 @@ class AuthorBookReviewRequest(BaseModel):
     idempotency_key: str = Field(min_length=1)
 
 
+class EditionCommandRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    book_run_id: str = Field(min_length=1)
+    action: Literal["create", "save", "bind-validation", "validate", "reject", "select"]
+    data: dict[str, Any]
+    idempotency_key: str = Field(min_length=1)
+
+
+class EditionValidationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    book_run_id: str = Field(min_length=1)
+    revision_id: str = Field(min_length=1)
+    input_snapshot_id: str = ""
+
+
+class ScreenplayCommandRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    book_run_id: str = Field(min_length=1)
+    action: Literal["prepare", "accept", "update"]
+    data: dict[str, Any]
+    idempotency_key: str = Field(min_length=1)
+
+
+class ScreenplayStageRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    stage: Literal["screenplay_generate", "screenplay_review", "screenplay_revision"]
+    source_asset_version_id: str = Field(min_length=1)
+    candidate_asset_version_id: str = ""
+    review_asset_version_id: str = ""
+    idempotency_key: str = Field(min_length=1)
+
+
+class ScreenplayResumeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1)
+    operation_id: str = Field(min_length=1)
+
+
 def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(prefix="/product/editor", tags=["chapter-author-editor"])
 
@@ -63,8 +109,74 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             raise HTTPException(status_code=403, detail=str(error)) from error
         except KernelError as error:
             raise HTTPException(status_code=409, detail={"code": error.code, "message": error.message}) from error
-        except (ValueError, TypeError) as error:
+        except (ValueError, TypeError, KeyError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
+
+    def editions():
+        from novel_forge.modules.book_authority.edition_application import BookEditionApplication
+        build_id, sha = authority_release_identity()
+        return BookEditionApplication(ctx.services.chapter_query.database_url, application_build_id=build_id, commit_sha=sha)
+
+    def screenplays():
+        from novel_forge.modules.book_followup_authority.screenplay_application import ScreenplayApplication
+        build_id, sha = authority_release_identity()
+        return ScreenplayApplication(ctx.services.chapter_query.database_url, application_build_id=build_id,
+            commit_sha=sha, followup=ctx.services.book_production.followup)
+
+    @router.get("/editions/knowledge")
+    def edition_knowledge(project_id: str, workspace_id: str, book_run_id: str, revision_id: str,
+                          selected_unit_ids: list[str] = Query(min_length=1, max_length=100)):
+        return execute(lambda principal: screenplays().source_knowledge(project_id=project_id, workspace_id=workspace_id,
+            book_run_id=book_run_id, revision_id=revision_id, selected_unit_ids=selected_unit_ids, principal=principal))
+
+    @router.get("/screenplays")
+    def screenplay_query(project_id: str, operation_id: str = "", asset_version_id: str = ""):
+        return execute(lambda principal: screenplays().query(project_id=project_id, operation_id=operation_id,
+            asset_version_id=asset_version_id, principal=principal))
+
+    @router.post("/screenplays/commands")
+    def screenplay_command(request: ScreenplayCommandRequest):
+        return execute(lambda principal: screenplays().command(**request.model_dump(), principal=principal))
+
+    @router.post("/screenplays/stages", status_code=202)
+    def screenplay_stage(request: ScreenplayStageRequest):
+        return execute(lambda principal: screenplays().admit(**request.model_dump(), principal=principal))
+
+    @router.post("/screenplays/resume")
+    def screenplay_resume(request: ScreenplayResumeRequest):
+        return execute(lambda principal: screenplays().run(**request.model_dump(), principal=principal))
+
+    @router.get("/screenplays/export")
+    def screenplay_export(project_id: str, asset_version_id: str):
+        from fastapi.responses import PlainTextResponse
+        result = execute(lambda principal: screenplays().query(project_id=project_id,
+            asset_version_id=asset_version_id, principal=principal))
+        if "text" not in result:
+            raise HTTPException(status_code=422, detail="Choose a screenplay candidate or accepted version")
+        return PlainTextResponse(result["text"], headers={"X-Screenplay-Hash": result["content_hash"]})
+
+    @router.get("/editions")
+    def edition_query(project_id: str, workspace_id: str, book_run_id: str, revision_id: str = ""):
+        return execute(lambda principal: editions().query(project_id=project_id, workspace_id=workspace_id,
+            book_run_id=book_run_id, revision_id=revision_id, principal=principal))
+
+    @router.post("/editions/commands")
+    def edition_command(request: EditionCommandRequest):
+        return execute(lambda principal: editions().execute(**request.model_dump(), principal=principal))
+
+    @router.post("/editions/validation-start", status_code=202)
+    def edition_validation_start(request: EditionValidationRequest):
+        return execute(lambda principal: editions().start_validation(authority=ctx.services.book_production.authority,
+            **request.model_dump(), principal=principal))
+
+    @router.get("/editions/export")
+    def edition_export(project_id: str, workspace_id: str, book_run_id: str, revision_id: str):
+        from fastapi.responses import PlainTextResponse
+        result = execute(lambda principal: editions().query(project_id=project_id, workspace_id=workspace_id,
+            book_run_id=book_run_id, revision_id=revision_id, principal=principal))
+        manifest = result["revision"]["manifest"]
+        return PlainTextResponse("\n\n".join(unit["title"] + "\n" + unit["text"] for unit in manifest["units"]),
+                                 headers={"X-Manuscript-Digest": manifest["manifest_digest"]})
 
     @router.get("/drafts")
     def list_drafts(project_id: str = Query(min_length=1)):

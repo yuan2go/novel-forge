@@ -1,0 +1,116 @@
+..FF.......................................F............................ [ 64%]
+.......................................                                  [100%]
+=================================== FAILURES ===================================
+_ test_zero_router_money_cap_retains_entitlement_identity_quota_and_unknown_cost _
+
+    def test_zero_router_money_cap_retains_entitlement_identity_quota_and_unknown_cost():
+        from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+    
+>       router = ProductionProviderRouter("unused", candidates=(), task_money_limit="0", task_token_limit=4096)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_routing_bootstrap.py:180: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.modules.production_execution.routing_runtime.ProductionProviderRouter object at 0x1090ed250>
+database_url = 'unused', candidates = (), task_money_limit = '0'
+task_token_limit = 4096, soft_money_limit = None, money_caps = None
+token_caps = None, call_caps = None, outcome_projection = None
+execution_environment = 'production'
+
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        candidates: Sequence[ModelCandidate],
+        task_money_limit: str,
+        task_token_limit: int,
+        soft_money_limit: str | None = None,
+        money_caps: Mapping[str, str] | None = None,
+        token_caps: Mapping[str, int] | None = None,
+        call_caps: Mapping[str, int] | None = None,
+        outcome_projection: Callable[..., dict[str, dict[str, Any]]] | None = None,
+        execution_environment: str = "production",
+    ) -> None:
+        self.registry = PostgresRoutingRegistry(
+            database_url, outcome_projection=outcome_projection
+        )
+        self.candidates = tuple(candidates)
+        self.task_money_limit = task_money_limit
+        self.task_token_limit = task_token_limit
+        self.soft_money_limit = soft_money_limit
+        self.money_caps = dict(money_caps or {})
+        self.token_caps = dict(token_caps or {})
+        self.call_caps = dict(call_caps or {})
+        self.execution_environment = execution_environment
+        if self.task_token_limit <= 0 or Decimal(task_money_limit) <= 0:
+>           raise ValueError("ROUTING_POSITIVE_TASK_BUDGET_REQUIRED")
+E           ValueError: ROUTING_POSITIVE_TASK_BUDGET_REQUIRED
+
+../../narrative-closure-02-continuation/novel-forge/src/novel_forge/modules/production_execution/routing_runtime.py:733: ValueError
+____ test_zero_router_money_cap_rejects_priced_spending_and_invalid_limits _____
+
+    def test_zero_router_money_cap_rejects_priced_spending_and_invalid_limits():
+        from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+    
+        _, _, snapshot = contract()
+        ordinary = ordinary_decision(task_overrides={"remaining_money": "0"})
+        blocked = benchmark_decision(ordinary, snapshot, environment="validation").to_dict()
+        assert blocked["status"] == "BLOCKED"
+        assert "BUDGET_HARD_LIMIT" in blocked["candidates"][0]["rejected_reasons"]
+        assert ProductionProviderRouter("unused", candidates=(), task_money_limit="1", task_token_limit=4096).task_money_limit == "1"
+        for money, tokens in (("-1", 4096), ("NaN", 4096), ("Infinity", 4096), ("0", 0)):
+>           with pytest.raises(ValueError, match="ROUTING_NONNEGATIVE_MONEY_AND_POSITIVE_TOKEN_BUDGET_REQUIRED"):
+E           AssertionError: Regex pattern did not match.
+E             Expected regex: 'ROUTING_NONNEGATIVE_MONEY_AND_POSITIVE_TOKEN_BUDGET_REQUIRED'
+E             Actual message: 'ROUTING_POSITIVE_TASK_BUDGET_REQUIRED'
+
+tests/unit/test_routing_bootstrap.py:202: AssertionError
+_ test_zero_priced_campaign_cap_allows_authorized_entitlement_but_never_priced_spend _
+
+    def test_zero_priced_campaign_cap_allows_authorized_entitlement_but_never_priced_spend():
+        from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_authorization
+        grant = entitlement_grant()
+        grant["campaign"] = {**grant["campaign"], "maximum_amount": "0"}
+>       validate_bootstrap_authorization(grant)
+
+tests/unit/test_routing_bootstrap.py:610: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../narrative-closure-02-continuation/novel-forge/src/novel_forge/modules/command_kernel/routing_bootstrap.py:160: in validate_bootstrap_authorization
+    validate_bootstrap_campaign(grant["campaign"])
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+campaign = {'campaign_id': 'campaign-one', 'manifest_hash': 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc', 'sample_id': 'sample-one', 'group_id': 'work-one', ...}
+
+    def validate_bootstrap_campaign(campaign: Mapping[str, Any]) -> None:
+        if not isinstance(campaign, Mapping) or set(campaign) != {
+            "campaign_id", "manifest_hash", "sample_id", "group_id", "partition",
+            "maximum_calls", "maximum_tokens", "maximum_amount", "expires_at",
+        }:
+            raise ValueError("ROUTING_CAMPAIGN_CONTRACT_INVALID")
+        for key in ("campaign_id", "sample_id", "group_id", "manifest_hash", "expires_at", "maximum_amount"):
+            if not isinstance(campaign[key], str) or not campaign[key].strip():
+                raise ValueError("ROUTING_CAMPAIGN_IDENTITY_REQUIRED")
+        digest = campaign["manifest_hash"]
+        if len(digest) != 71 or not digest.startswith("sha256:") or any(
+            char not in "0123456789abcdef" for char in digest[7:]
+        ):
+            raise ValueError("ROUTING_CAMPAIGN_MANIFEST_IDENTITY_INVALID")
+        if campaign["partition"] not in {"DEVELOPMENT", "CALIBRATION", "HOLDOUT"}:
+            raise ValueError("ROUTING_CAMPAIGN_PARTITION_INVALID")
+        if any(type(campaign[key]) is not int or campaign[key] <= 0
+               for key in ("maximum_calls", "maximum_tokens")):
+            raise ValueError("ROUTING_CAMPAIGN_QUOTA_INVALID")
+        amount = Decimal(campaign["maximum_amount"])
+        if not amount.is_finite() or amount <= 0 or datetime.fromisoformat(
+            campaign["expires_at"]
+        ).tzinfo is None:
+>           raise ValueError("ROUTING_CAMPAIGN_LIMIT_INVALID")
+E           ValueError: ROUTING_CAMPAIGN_LIMIT_INVALID
+
+../../narrative-closure-02-continuation/novel-forge/src/novel_forge/modules/command_kernel/routing_bootstrap.py:263: ValueError
+=========================== short test summary info ============================
+FAILED tests/unit/test_routing_bootstrap.py::test_zero_router_money_cap_retains_entitlement_identity_quota_and_unknown_cost
+FAILED tests/unit/test_routing_bootstrap.py::test_zero_router_money_cap_rejects_priced_spending_and_invalid_limits
+FAILED tests/unit/test_routing_bootstrap.py::test_zero_priced_campaign_cap_allows_authorized_entitlement_but_never_priced_spend
+3 failed, 108 passed in 0.75s

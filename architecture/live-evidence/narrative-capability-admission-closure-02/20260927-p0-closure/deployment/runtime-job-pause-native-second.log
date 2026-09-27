@@ -1,0 +1,10 @@
+test_runtime_job_pause_preserves_monotonic_history_without_exhausting_limit PASS
+test_runtime_job_plain_or_forged_pause_failure_consumes_normal_retry_limit PASS
+test_retry_becomes_dead_letter_at_max_attempts (tests.integration.test_authority_runtime_job_postgres.AuthorityRuntimeJobPostgresTests.test_retry_becomes_dead_letter_at_max_attempts) ... ok
+test_expired_lease_takeover_increments_fence_and_rejects_stale_worker (tests.integration.test_authority_runtime_job_postgres.AuthorityRuntimeJobPostgresTests.test_expired_lease_takeover_increments_fence_and_rejects_stale_worker) ... ok
+test_final_attempt_lease_expiry_dead_letters_instead_of_stranding (tests.integration.test_authority_runtime_job_postgres.AuthorityRuntimeJobPostgresTests.test_final_attempt_lease_expiry_dead_letters_instead_of_stranding) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.085s
+
+OK
