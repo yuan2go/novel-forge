@@ -1,0 +1,19 @@
+{
+  "kind": "READ_ONLY_EXACT_FROZEN_REQUEST_PREFLIGHT",
+  "implementation_sha": "218fb167add04c3f577565c7d6bdf01a3b8ecfbd",
+  "effect_id": "3417657c-2ea5-4d5a-8cb7-fdbe6229d62c",
+  "effect_status": "READY",
+  "request_hash": "sha256:59954ba94694fb0c9a27835842e0fc7aad0220778c3edbe1630d22f5832d48f5",
+  "components": {
+    "provider_input": 20617,
+    "request_framing": 16,
+    "output_reserve": 10000,
+    "safety_margin": 8192
+  },
+  "total_reserved": 38825,
+  "result": "ROUTING_RESERVATION_BUDGET_EXCEEDED",
+  "message": "complete Provider reservation tokens=38825 exceeds available limit=32768",
+  "database_writes": 0,
+  "model_dispatches": 0,
+  "claim": "Rematerialized frozen exact request using native prompt/component/reservation functions; no Operation retry or Effect creation."
+}

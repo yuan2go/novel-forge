@@ -61,5 +61,6 @@
     "passed": 8,
     "subtests": 10
   },
-  "model_calls": 0
+  "model_calls": 0,
+  "durable_private_evidence_root": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928"
 }

@@ -1,0 +1,96 @@
+{
+  "release_sha": "218fb167add04c3f577565c7d6bdf01a3b8ecfbd",
+  "release_root": "/tmp/novel-forge-s0-20260928/release-218fb167add0",
+  "database_identity": "novel_forge_first_novel_pilot_test",
+  "historical_database_is_not_disposable": true,
+  "postgres_container": "novel-forge-first-novel-pilot-data",
+  "postgres_port": 61959,
+  "minio_container": "novel-forge-first-novel-pilot-objects",
+  "minio_port": 61961,
+  "migration_head": "20260927_0147_runtime_job_dispatch_pause",
+  "planning_pack": {
+    "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+    "pack_version": "2.3.7",
+    "compilation_id": "compilation:diagnostic-handoff:218fb167add0:wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+    "release_sha": "218fb167add04c3f577565c7d6bdf01a3b8ecfbd",
+    "state": "ACTIVE"
+  },
+  "live_sampling_slice": {
+    "api": "http://127.0.0.1:8139",
+    "cli_release": "218fb167add04c3f577565c7d6bdf01a3b8ecfbd",
+    "scope": "narrative-closure-02-admission-20260927",
+    "book": "duanchao-guan-zheng-deng-reference-01",
+    "process_no_model_dispatch": true,
+    "project_state": "PAUSED",
+    "historical_scope_api_probe": 403,
+    "selected_task_execution": "Native synchronous Planning application; no RuntimeJob worker needed for this diagnostic invocation",
+    "production_workers": "Not launched against historical queues; no global queue replay"
+  },
+  "isolated_service_assembly": {
+    "api": "http://127.0.0.1:8137",
+    "author_ui": "http://127.0.0.1:3138/production",
+    "database": "nf_p0_5f1dcf0babed4c7fa1b20e6d27276d6a_test",
+    "workers": [
+      {
+        "worker_id": "wp02-p0-book-authority",
+        "worker_kind": "book",
+        "status": "READY",
+        "fresh": true,
+        "database_status": "READY",
+        "active_operation_id": null,
+        "active_attempts": 0
+      },
+      {
+        "worker_id": "wp02-p0-book-followup",
+        "worker_kind": "book_followup",
+        "status": "READY",
+        "fresh": true,
+        "database_status": "READY",
+        "active_operation_id": null,
+        "active_attempts": 0
+      },
+      {
+        "worker_id": "chapter-authority-api",
+        "worker_kind": "chapter",
+        "status": "READY",
+        "fresh": true,
+        "database_status": "READY",
+        "active_operation_id": null,
+        "active_attempts": 0
+      },
+      {
+        "worker_id": "wp02-p0-chapter-authority",
+        "worker_kind": "chapter",
+        "status": "STOPPED",
+        "fresh": false,
+        "database_status": "UNAVAILABLE",
+        "active_operation_id": null,
+        "active_attempts": 0
+      },
+      {
+        "worker_id": "wp02-p0-content-authority",
+        "worker_kind": "content",
+        "status": "READY",
+        "fresh": true,
+        "database_status": "READY",
+        "active_operation_id": null,
+        "active_attempts": 0
+      }
+    ],
+    "model_dispatch_brake": true,
+    "evidence_ceiling": "EXECUTABLE_ENGINEERING_ONLY",
+    "required_worker_checks": {
+      "content": true,
+      "book": true,
+      "chapter": true,
+      "book_followup": true
+    }
+  },
+  "global_health": {
+    "liveness": 200,
+    "readiness": 503,
+    "reason": "Chapter Pack is not activated for production; unrelated/full-profile worker readiness not forced green",
+    "production_qualified": false
+  },
+  "frozen_request": "Earlier operation/attempt snapshots retain 4ccc/768 identities and original 32768 grant; final Pack does not rewrite those snapshots."
+}

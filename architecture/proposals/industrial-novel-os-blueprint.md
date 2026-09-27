@@ -396,17 +396,21 @@ with S0 first; no new production or literary evidence is inferred from compilati
 
 | Issue | Current evidence / trigger | Owner | Action | Acceptance / remaining condition |
 | --- | --- | --- | --- | --- |
-| S0 | Keyword DSN and a pytest repr exposed the live PostgreSQL role password; previous no-credentials statement was incorrect | Private deployment and existing execution security filter | Rotated through trusted local admin, updated 12 private consumers, sanitized shared evidence with hashes; reject/redact keyword DSNs | New connection succeeds; new SCRAM matches and old does not; no old-secret login attempted. Reachable Git history retains revoked bytes; no history rewrite authorized |
-| A2 | Existing local operator has Pack approval permission but historical project scope differs; old compiled Pack binds release 45c95af1 | Capability Pack / trusted principal / Router / Kernel | Verify genuine scope delegation, immutable release and native approval/activation; required providers only | In progress; compilation is not approval or admission |
-| A3 | Export isolation/recovery implementation merged unchanged | Chapter / Kernel Blob | Reuse compatible evidence, focused increment regression | Prior isolated proof; final increment check pending |
-| A4 / A8 | REVIEW_PLAN exposes only resume; frozen selection returns to first candidate | Formation / Planning / existing author page | Persist author candidate decision and bind downstream selection | In progress |
-| A5 | Profile policies partly consumed; Context still comes from process defaults | Content profile / Book supervisor / author page | Explicit versioned strategy choices and frozen Context consumption | In progress |
-| A1 / A6 / A7 | No complete same-book prose/edit/acceptance/edition/successor pair | Existing native production/editorial chain | Advance eligible diagnostics and real production; retain all versions | NOT_PROVEN; missing text is not an engineering PASS |
-| A9 | No sufficient real long-form input corpus | Context / qualification compatibility | Inspect actual task views as produced; repair demonstrated gaps only | Long-range effect NOT_PROVEN |
+| S0 | Keyword DSN leaked live PostgreSQL password | Private deployment / execution security | Rotated through trusted admin; updated 12 private consumers; corrected filter and shared evidence | Replacement connects; revoked bytes remain in Git history; no unauthorized history rewrite |
+| A1 | Same Book/campaign retained, no real model output | Native production / Book acceptance | Prepared exact bounded diagnostic inputs and preserved failures | INCOMPLETE: no manuscript, acceptance, edition or successor |
+| A2 | Codex route selected; complete reservation 38825 exceeds original 32768 grant | Pack / Router / Kernel | Explicit enabled providers; Pack 2.3.7 genuinely approved and activated on `218fb167`; aligned request accounting | API/CLI and isolated worker assembly executable; model amendment pending, qualification absent; no dispatch |
+| A3 | Merged export identity unchanged | Chapter export / Kernel Blob | Revalidated isolation and receipt recovery on isolated PostgreSQL/MinIO | 6 focused tests pass; no actual manuscript export claimed |
+| A4 | Author confirmation, async response loss and failed tasks needed normal operations | Formation / Content / existing author page | Persist decisions, restore original key, query conflicts, safely cancel never-dispatched tasks; bind diagnostic annotation API | Real API/browser configuration subset passes; full production/editor journey and human annotation form incomplete |
+| A5 | Process-default Context could diverge from author selection | Content profile / Book supervisor | Version explicit Context/Craft/World/Actor choice and consume frozen profile | New choice and old frozen-request regression pass; actual prose Provider view not produced |
+| A6 | No real text or finding | Existing editorial / Plan Change / edition | Keep original candidate/acceptance/edition boundaries | Proposed-asset collaboration and real editorial loop not exercised |
+| A7 | No exact real-text comparison | Existing review / independent editor | Define issue, preservation and overrevision denominators | NOT_PROVEN; zero denominators reported as null rates |
+| A8 | Manual selection returned to first candidate | Formation / Planning | Persist hash, reason and SELECT/APPROVE/REJECT/REQUEST_CHANGES; consume nonfirst choice | Native nonfirst-candidate regression passes; real comparison absent, AUTO compatibility remains first-qualified |
+| A9 | Actual full-request accounting diverged before dispatch | Context / Router / Provider admission | Share complete component calculation; retain facts and safety margin | Exact 38825 preflight reproduced read-only; long-range recall and literary effect unproven |
 
 [S0 evidence](../live-evidence/narrative-capability-admission-closure-02/20260928-security-handoff/security.json)
 records the original/redacted hashes and rotation verification. Original private evidence is
 protected; business history, UNKNOWN Effects and occupied budgets are retained.
+The [current execution status](../live-evidence/narrative-capability-admission-closure-02/20260928-security-handoff/status.json) binds the final implementation and deployed release, native Pack records, task dependencies, focused tests, and unresolved author/model conditions. This is a partial engineering delivery, not a real-prose closure.
 
 ### Same-Book real prose and author entry continuation (2026-09-27)
 

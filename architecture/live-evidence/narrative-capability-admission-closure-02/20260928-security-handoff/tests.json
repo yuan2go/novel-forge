@@ -1,0 +1,123 @@
+{
+  "results": [
+    {
+      "path": "tests/architecture/test_production_execution_security_boundaries.py",
+      "command": "PYTHONPATH=src python -m pytest tests/architecture/test_production_execution_security_boundaries.py -q",
+      "result": "8 passed, 10 subtests",
+      "implementation": "9ef62745",
+      "scope": "keyword DSN rejection/redaction"
+    },
+    {
+      "path": "tests/integration/test_chapter_export_isolation_postgres.py",
+      "command": "python /tmp/novel-forge-real-prose-20260927/test-run.py tests/integration/test_chapter_export_isolation_postgres.py -q",
+      "result": "6 passed",
+      "log": "logs/export-regression.log",
+      "scope": "isolated PostgreSQL/MinIO, unchanged export code"
+    },
+    {
+      "path": "tests/unit/test_chapter_authority_dependencies.py + tests/unit/test_provider_adapter_v2.py",
+      "result": "10 focused passed, 8 subtests; broader 28 passed, 1 existing dependency skip, 60 deselected",
+      "implementation": "4ccc3aa5",
+      "scope": "explicit Codex-only closure and enabled-provider credential failure",
+      "existing_skip": "Codex application dependency absent for that existing adapter test; not new skip or qualification"
+    },
+    {
+      "path": "tests/unit/test_provider_token_admission.py + tests/unit/test_routing_bootstrap.py",
+      "command": "PYTHONPATH=src python -m pytest tests/unit/test_provider_token_admission.py tests/unit/test_routing_bootstrap.py -q",
+      "result": "61 passed",
+      "implementation": "94f78d77",
+      "scope": "shared final request accounting, exact diagnostic identity, quota rejection"
+    },
+    {
+      "path": "tests/unit/test_content_reference_api.py + tests/unit/test_content_authority_definitions.py",
+      "command": "PYTHONPATH=src python -m pytest tests/unit/test_content_reference_api.py tests/unit/test_content_authority_definitions.py -q",
+      "result": "12 passed",
+      "log": "logs/reference-api-final-tests.log",
+      "scope": "API binder to actual Content admission; storage/native sample lookup are test stubs"
+    },
+    {
+      "path": "tests/integration/test_synthesis_formation_postgres.py",
+      "result": "1 passed, 5 deselected",
+      "log": "logs/formation-tests-final.log",
+      "scope": "manual second candidate activation, downstream Theme input, frozen membership/hash, response replay"
+    },
+    {
+      "path": "tests/unit/test_author_production_policy.py + tests/unit/test_book_production_supervisor.py + tests/unit/test_content_authority_production_inputs.py",
+      "result": "77 passed",
+      "implementation": "364d0485",
+      "scope": "explicit strategy normalization and frozen Context; agent tool result"
+    },
+    {
+      "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+      "result": "targeted author workspace/old-new control tests passed",
+      "logs": [
+        "logs/config-tests.log",
+        "logs/config-tests-control.log",
+        "logs/config-tests-actors-v2.log"
+      ],
+      "scope": "current accepted cast and frozen editorial mode"
+    },
+    {
+      "path": "tests/integration/test_content_authority_runtime_postgres.py",
+      "result": "1 passed, 2 deselected for profile native path; 1 passed for final idempotency/query scope path",
+      "logs": [
+        "logs/config-tests-native.log",
+        "logs/config-tests-idempotency-query.log"
+      ],
+      "scope": "native profile materialization, supervisor consumption, exact key and project scope"
+    },
+    {
+      "path": "tests/integration/test_command_kernel_cancellation_postgres.py",
+      "command": "python /tmp/novel-forge-real-prose-20260927/test-run.py tests/integration/test_command_kernel_cancellation_postgres.py -k 'control_cancel or no_effect_resolution or two_concurrent_cancel' -q",
+      "result": "4 passed, 10 deselected, 2 subtests",
+      "log": "logs/cancellation-tests-final.log",
+      "retained_failure": "logs/cancellation-tests-1.log: new test incorrectly assumed plan result included request_hash; fixed by reading pre-cancellation persisted hash, assertions retained"
+    },
+    {
+      "path": "tests/unit/test_planning_runtime_continuation.py",
+      "command": "PYTHONPATH=src python -m pytest tests/unit/test_planning_runtime_continuation.py -k cancel_never_dispatched -q",
+      "result": "5 passed, 29 deselected",
+      "log": "logs/cancellation-negative-tests.log",
+      "scope": "held/occupied budgets, dispatched and UNKNOWN effects stay protected"
+    },
+    {
+      "path": "author-policy-browser.mjs (private preserved script)",
+      "command": "node /tmp/novel-forge-s0-20260928/author-policy-browser.mjs",
+      "result": "PASS real API/browser subset",
+      "evidence": "author-policy-browser.json",
+      "scope": "isolated clone, native exact non-model Content operation only; model dispatch delta 0",
+      "retained_failure": "author-policy-browser-cors-first-failure.json"
+    },
+    {
+      "path": "web/admin/tests/formation-review-browser.mjs",
+      "command": "node web/admin/tests/formation-review-browser.mjs",
+      "result": "PASS",
+      "log": "logs/formation-browser-2.log",
+      "scope": "real browser with isolated API response doubles, not real Provider"
+    },
+    {
+      "path": "web/admin/tests/author-policy-recovery-browser.mjs",
+      "command": "node web/admin/tests/author-policy-recovery-browser.mjs",
+      "result": "7 recovery scenarios PASS",
+      "log": "logs/author-policy-recovery-browser-3.log",
+      "scope": "real browser with controlled API responses; error recovery only",
+      "retained_failure": "first two test-harness failures preserved in logs; unrelated health double corrected"
+    },
+    {
+      "path": "TypeScript/ruff/git diff checks",
+      "result": "PASS",
+      "scope": "changed frontend/backend paths; no full UI/backend collection"
+    },
+    {
+      "path": "OpenAPI actual service",
+      "result": "5 POST routes registered; legacy paths absent",
+      "evidence": "api-route-check.json",
+      "scope": "registered entrypoints, not real downstream production"
+    }
+  ],
+  "counts_are_not_summed": "Overlapping focused collections and different release identities are explicit; no combined final-chain PASS",
+  "test_database": "nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test",
+  "production_database_never_used_for_pytest": true,
+  "migration": "No migrations changed; fresh/upgrade not run",
+  "full_qualification": "NOT_RUN"
+}

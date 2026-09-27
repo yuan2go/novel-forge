@@ -1,0 +1,310 @@
+{
+  "health": {
+    "status": 200,
+    "body": {
+      "provider_dispatch_suspended": true,
+      "status": "alive",
+      "storage_authority": "postgresql"
+    }
+  },
+  "readiness": {
+    "status": 503,
+    "body": {
+      "detail": {
+        "status": "not_ready",
+        "api_ready": false,
+        "runtime_ready": false,
+        "fixture_only": false,
+        "real_provider_qualified": false,
+        "real_provider_proven": false,
+        "longform_proven": false,
+        "production_verified": false,
+        "runtime_profile": "full",
+        "postgresql": {
+          "authority": true,
+          "reachable": true,
+          "migration_head": "20260927_0147_runtime_job_dispatch_pause",
+          "migration_chain_current": true,
+          "pool": {
+            "status": "ready",
+            "role": "api",
+            "service": "novel-forge-api",
+            "latency_ms": 2.268,
+            "pool_size": 1,
+            "pool_available": 0,
+            "pool_in_use": 0,
+            "pool_waiting": 0,
+            "pool_max_size": 8,
+            "session": {
+              "application_name": "novel-forge-api",
+              "statement_timeout": "30s",
+              "lock_timeout": "5s",
+              "idle_in_transaction_session_timeout": "30s"
+            },
+            "metrics": {
+              "connection_acquire_count": 1.0,
+              "connection_acquire_latency_ms": 0.4259169945726171,
+              "transaction_count": 0,
+              "transaction_duration_ms": 0.0,
+              "transaction_rollback_count": 0,
+              "database_retry_count": 0,
+              "statement_timeout_count": 0,
+              "deadlock_count": 0,
+              "serialization_failure_count": 0,
+              "idle_in_transaction_detected": 0,
+              "long_transaction_count": 0,
+              "query_failure_count": 0,
+              "rollback_count": 0,
+              "retry_count": 0,
+              "timeout_count": 0
+            }
+          },
+          "connection_budget": {
+            "postgres_max_connections": 100,
+            "management_reserve": 10,
+            "migration_reserve": 2,
+            "emergency_reserve": 5,
+            "application_capacity": 83,
+            "allocations": {
+              "api": 8,
+              "agent": 4,
+              "chapter": 4,
+              "content": 4,
+              "source": 3,
+              "mkaos": 3,
+              "book": 3,
+              "book_followup": 3,
+              "outbox": 2,
+              "maintenance": 2
+            },
+            "application_max_connections": 36,
+            "within_budget": true
+          },
+          "error": ""
+        },
+        "object_store": {
+          "configured": true,
+          "reachable": true,
+          "error": ""
+        },
+        "operation_definitions": {
+          "chapter_handler_count": 22,
+          "content_definition_count": 68,
+          "agent_runtime_definition_count": 4
+        },
+        "runtime_groups": {
+          "registered": [
+            "agent",
+            "chapter",
+            "content",
+            "source",
+            "source_import",
+            "mkaos",
+            "book",
+            "book_followup",
+            "outbox",
+            "maintenance"
+          ],
+          "registration_status": "REGISTERED",
+          "heartbeat_status_endpoint": "/runtime/readiness"
+        },
+        "provider": {
+          "status": "ROUTE_BUILT",
+          "route_buildable": true,
+          "runtime_classes": [
+            "LOCAL_CLI_REMOTE_INFERENCE"
+          ],
+          "real_provider_qualified": false,
+          "real_provider_proven": false
+        },
+        "capability_pack": {
+          "ok": true,
+          "pack_id": "chapter_generation_pack",
+          "pack_version": "2.3.3",
+          "manifest_hash": "sha256:9a97f5eb361306be4ac6af6c3938d17b96e3f0530e1f6c06c1f626c5a2194f33",
+          "compilation_hash": "sha256:afac93e1e7930d641c6147ea68f80bfe77e797603e9d707349e75884f3a491d4",
+          "errors": [],
+          "compilable": true,
+          "activation_required": true,
+          "activation_checked": true,
+          "activation_ready": false,
+          "activation_error": ""
+        },
+        "provider_dispatch_suspended": true
+      }
+    }
+  },
+  "workspace": {
+    "status": 200,
+    "body": {
+      "books": [
+        {
+          "book_id": "duanchao-guan-zheng-deng-reference-01",
+          "workspace_id": "ws:zheng-deng:sampling:20260927",
+          "version": 1,
+          "status": "DESIGN_PENDING",
+          "title": "断潮关·证灯—独立任务诊断输入",
+          "production_profile": {
+            "platform": "independent-task-sampling",
+            "environment": "validation"
+          },
+          "runtime_policy": {
+            "execution_fallback": "FAIL_CLOSED"
+          }
+        }
+      ],
+      "runs": [],
+      "profiles": [],
+      "snapshots": [],
+      "budget_scopes": [],
+      "approved_characters": [],
+      "editorial_control": null,
+      "release_identity": "git:218fb167add04c3f577565c7d6bdf01a3b8ecfbd@218fb167add04c3f577565c7d6bdf01a3b8ecfbd",
+      "dispatch_control": {
+        "schema_version": "runtime-dispatch-control.v1",
+        "project_id": "narrative-closure-02-admission-20260927",
+        "state": "PAUSED",
+        "version": 9,
+        "updated_at": "2026-09-27T17:02:15.925934Z",
+        "process_dispatch_suspended": true,
+        "new_dispatch_allowed_by_control": false,
+        "authorization": "CONTROL_IS_NOT_BUDGET_OR_TASK_ADMISSION",
+        "events": [
+          {
+            "event_id": "65a6450d-426f-431b-8381-2c4e1ad2164e",
+            "version": 1,
+            "idempotency_key": "wp02-p0:sampling:20260927:initial-pause",
+            "state": "PAUSED",
+            "previous_version": 0,
+            "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+            "reason": "Prepare exact native task scope while model dispatch is suspended",
+            "release_identity": {
+              "commit_sha": "637bcfa8026646e947b4c6850538c46d242a91ca",
+              "application_build_id": "real-prose-637bcfa80266"
+            },
+            "created_at": "2026-09-27T15:14:47.030020Z"
+          },
+          {
+            "event_id": "eba644ca-789b-47a5-9f3d-dda4dd9a8891",
+            "version": 2,
+            "idempotency_key": "narrative-closure-02-admission-20260927:producer-preflight-enable:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+            "state": "RUNNING",
+            "previous_version": 1,
+            "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+            "reason": "Zero-dispatch Router producer preparation; no native entitlement budget or sample grants exist",
+            "release_identity": {
+              "commit_sha": "4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+              "application_build_id": "git:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4"
+            },
+            "created_at": "2026-09-27T16:50:56.465155Z"
+          },
+          {
+            "event_id": "86e1c630-ac80-4f0c-bd94-ce3aa86c7f22",
+            "version": 3,
+            "idempotency_key": "narrative-closure-02-admission-20260927:producer-preflight-pause:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+            "state": "PAUSED",
+            "previous_version": 2,
+            "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+            "reason": "Producer preparation ends with no enabled Provider scope",
+            "release_identity": {
+              "commit_sha": "4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+              "application_build_id": "git:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4"
+            },
+            "created_at": "2026-09-27T16:50:56.932182Z"
+          },
+          {
+            "event_id": "f3557113-06b7-47e6-976a-4adcb6a0961d",
+            "version": 4,
+            "idempotency_key": "narrative-closure-02-admission-20260927:producer-preflight-output10000-enable:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+            "state": "RUNNING",
+            "previous_version": 3,
+            "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+            "reason": "Zero-dispatch Router producer preparation; no native entitlement budget or sample grants exist",
+            "release_identity": {
+              "commit_sha": "4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+              "application_build_id": "git:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4"
+            },
+            "created_at": "2026-09-27T16:56:50.803262Z"
+          },
+          {
+            "event_id": "a4f7819d-d11d-4cd8-a8db-8f286c8fb41c",
+            "version": 5,
+            "idempotency_key": "narrative-closure-02-admission-20260927:producer-preflight-output10000-pause:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+            "state": "PAUSED",
+            "previous_version": 4,
+            "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+            "reason": "Producer preparation ends with no enabled Provider scope",
+            "release_identity": {
+              "commit_sha": "4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+              "application_build_id": "git:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4"
+            },
+            "created_at": "2026-09-27T16:56:51.163163Z"
+          },
+          {
+            "event_id": "dae644ef-7d2b-4f76-95ef-40e5a642feaa",
+            "version": 6,
+            "idempotency_key": "narrative-closure-02-admission-20260927:two-sample-enable:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+            "state": "RUNNING",
+            "previous_version": 5,
+            "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+            "reason": "User-approved first two exact native one-call grants; workers retain process brake; stop batch on first failure or unknown",
+            "release_identity": {
+              "commit_sha": "4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+              "application_build_id": "git:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4"
+            },
+            "created_at": "2026-09-27T16:57:32.070335Z"
+          },
+          {
+            "event_id": "94e2e961-4ba2-4359-a4fd-51ecb4a84116",
+            "version": 7,
+            "idempotency_key": "narrative-closure-02-admission-20260927:two-sample-pause:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+            "state": "PAUSED",
+            "previous_version": 6,
+            "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+            "reason": "Diagnostic batch stopped; preserve all original receipts and budget, await independent reference and task admission",
+            "release_identity": {
+              "commit_sha": "4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+              "application_build_id": "git:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4"
+            },
+            "created_at": "2026-09-27T16:57:32.277485Z"
+          },
+          {
+            "event_id": "d122f8f9-d5ad-470a-9e13-4ffaa4958dee",
+            "version": 8,
+            "idempotency_key": "narrative-closure-02-admission-20260927:two-sample-enable:768fe8a3d1dfd0c0d439114cbc2124819d8b84ea",
+            "state": "RUNNING",
+            "previous_version": 7,
+            "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+            "reason": "User-approved first two exact native one-call grants; workers retain process brake; stop batch on first failure or unknown",
+            "release_identity": {
+              "commit_sha": "768fe8a3d1dfd0c0d439114cbc2124819d8b84ea",
+              "application_build_id": "git:768fe8a3d1dfd0c0d439114cbc2124819d8b84ea"
+            },
+            "created_at": "2026-09-27T17:02:15.674027Z"
+          },
+          {
+            "event_id": "c1fe5908-6678-43f0-8308-2bf9d2191c38",
+            "version": 9,
+            "idempotency_key": "narrative-closure-02-admission-20260927:two-sample-pause:768fe8a3d1dfd0c0d439114cbc2124819d8b84ea",
+            "state": "PAUSED",
+            "previous_version": 8,
+            "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+            "reason": "Diagnostic batch stopped; preserve all original receipts and budget, await independent reference and task admission",
+            "release_identity": {
+              "commit_sha": "768fe8a3d1dfd0c0d439114cbc2124819d8b84ea",
+              "application_build_id": "git:768fe8a3d1dfd0c0d439114cbc2124819d8b84ea"
+            },
+            "created_at": "2026-09-27T17:02:15.925934Z"
+          }
+        ],
+        "waiting_for_dispatch_control": []
+      }
+    }
+  },
+  "historical_scope": {
+    "status": 403,
+    "body": {
+      "detail": "principal ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02 cannot book.authority.query in project first-novel-pilot-20260912"
+    }
+  }
+}

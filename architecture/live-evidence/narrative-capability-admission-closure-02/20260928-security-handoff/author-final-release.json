@@ -1,0 +1,11 @@
+{
+  "status": "PASS_READ_ONLY_SMOKE",
+  "release": "git:218fb167add04c3f577565c7d6bdf01a3b8ecfbd@218fb167add04c3f577565c7d6bdf01a3b8ecfbd",
+  "author_url": "http://127.0.0.1:3138/production",
+  "api_url": "http://127.0.0.1:8137",
+  "isolated_clone": true,
+  "model_dispatch_brake": true,
+  "profile_controls_visible": true,
+  "profiles_returned": 1,
+  "scope": "Read-only final immutable UI/API assembly; previous scoped action evidence retained separately"
+}

@@ -1,0 +1,40 @@
+{
+  "model_authorization_pending": {
+    "scope": "Only current first two Codex creative.candidates.generate diagnostics; existing sampling campaign/account/expiry and stop rules",
+    "requested_per_call_tokens": 40960,
+    "requested_two_call_tokens": 81920,
+    "existing_per_call_tokens": 32768,
+    "request_minimum_observed": 38825,
+    "existing_sampling_total_tokens": 40108032,
+    "expires_at": "2026-09-28T05:28:24Z",
+    "reply_received": false,
+    "deepseek": "Disabled; explicit USD cumulative limit and price freeze still pending; not a Codex-only dependency"
+  },
+  "legal_continuation_after_authorization": [
+    "Keep the old frozen request/grant/hash intact. Use native POST /product/tasks/cancel for zero-dispatch/zero-reservation request; latest code records budget_disposition NONE and retains original intent. Do not use the unrelated runtime-continuation contract.",
+    "Freeze versioned successor command and grant for the same Book/campaign/sample/input/Producer, new authorization ID and idempotency key, within amended per-call and unchanged parent pool. Do not reset historical cumulative usage or retry UNKNOWN.",
+    "Use latest exact approved Pack in validation and preflight before enabling only the exact diagnostic caller; stop on first failure/UNKNOWN/exhaustion. Keep unrelated projects and workers paused.",
+    "Save real output/receipt immediately. Only then arrange exact-sample independent labels/adjudication through existing Content Authority and compare authorized independent evaluator; diagnostics remain INELIGIBLE."
+  ],
+  "human_reference_entry": {
+    "command": "POST /product/content-authority/commands",
+    "definitions": [
+      "quality.human_evaluation.record",
+      "quality.adjudication.record"
+    ],
+    "required": "Exact native sample asset/hash; real authenticated evaluator/adjudicator; 2 blind human records and separate adjudicator when protocol requires; matching protocol/scope/version and source positions",
+    "normal_form": "NOT_IMPLEMENTED; API binder repaired, dedicated author annotation form remains an engineering boundary",
+    "does_not_block_first_diagnostic": true
+  },
+  "runtime_access": "Local endpoints in deployment.json. All model dispatch and both historical/sampling project pauses retained. Existing normal author UI currently targets isolated clone, not a live production Book.",
+  "no_auto_publication": true,
+  "no_history_rewrite": true,
+  "durable_private_evidence_root": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928",
+  "restart_commands": {
+    "live_sampling_api_braked": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python /Users/yuan/novel-runtime/wp02-security-handoff-20260928/start_local.py live-api",
+    "isolated_api_braked": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python /Users/yuan/novel-runtime/wp02-security-handoff-20260928/start_local.py clone-api",
+    "isolated_worker_braked": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python /Users/yuan/novel-runtime/wp02-security-handoff-20260928/start_local.py <content|book|chapter|book_followup>"
+  },
+  "stop": "Ctrl+C the exact owned API/worker process; PostgreSQL/MinIO and project control records remain. Do not release historical pauses or replay queues.",
+  "private_restart_archive": "release-218fb167add0.tar.gz; immutable tracked implementation, directories0700/files0600, replacements only in private configuration"
+}

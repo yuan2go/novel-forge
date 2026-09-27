@@ -1,0 +1,22 @@
+{
+  "checked_at": "2026-09-27T16:55:00Z",
+  "exact_binary_sha256": "sha256:8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+  "cli_checks": {
+    "--version": "codex-cli 0.155.1",
+    "login status": "Logged in using ChatGPT"
+  },
+  "candidate_model": "gpt-6-sol",
+  "reasoning": "high",
+  "configuration_ref": "wp02-p0-controlled-no-dispatch-20260927",
+  "account_identity_ref": "codex-chatgpt-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+  "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+  "authorization_expires_at": "2026-09-28T05:28:24Z",
+  "billing": "EXISTING_CHATGPT_ACCOUNT_ENTITLEMENT",
+  "monetary_actual": "UNKNOWN",
+  "official_sources": [
+    "https://learn.chatgpt.com/docs/models",
+    "https://learn.chatgpt.com/docs/pricing"
+  ],
+  "official_checked": "Current official model documentation lists gpt-6-sol and CLI high effort. Availability remains account-specific until actual receipt. Subscription allowance is shared; credit rates are not actual monetary consumption.",
+  "native_retry_policy": "codex-no-transport-retry.v1"
+}

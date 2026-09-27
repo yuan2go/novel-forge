@@ -1,0 +1,74 @@
+{
+  "kind": "REAL_API_BROWSER_ENGINEERING_ONLY",
+  "release": "364d0485291c60983f32efef6b66bfbc356d70ba",
+  "project_id": "first-novel-pilot-20260912",
+  "book_id": "book:90cab4a2-42f1-406a-900c-9c365f8c23ed",
+  "profiles": [
+    {
+      "operation_id": "e827104f-5257-47ba-bde3-e887c1df158a",
+      "execution": {
+        "operation_id": "e827104f-5257-47ba-bde3-e887c1df158a",
+        "native_exact_content_only": true,
+        "model_dispatch_delta": 0
+      },
+      "asset_id": "authority-output:e827104f-5257-47ba-bde3-e887c1df158a:book.bootstrap.production_profile",
+      "asset_version_id": "authority-output:e827104f-5257-47ba-bde3-e887c1df158a:book.bootstrap.production_profile:v1",
+      "output_key": "book.bootstrap.production_profile",
+      "role": "primary",
+      "content_hash": "sha256:42b17498fce494162820aa76549344527bd32812d3f97db9af7ca638bf74e403",
+      "policy": {
+        "version": "book-chapter-context.v1",
+        "draft_profile": "draft-context-profile-v3",
+        "draft_token_budget": 18000,
+        "quality_token_budget": 16000
+      }
+    }
+  ],
+  "model_dispatch_delta": 0,
+  "checks": [
+    "unsaved_strategy_survives_reload",
+    "committed_response_loss_replays_exact_body_and_idempotency_key",
+    "native_content_materializes_normalized_config_and_ui_selects_persisted_version",
+    "native_project_editorial_policy_configuration",
+    "incomplete_design_reports_native_snapshot_blocker_without_dispatch"
+  ],
+  "control_result": {
+    "operation_id": "caad7f9d-0a95-4bd2-b1d0-79a0399e5080",
+    "status": "SUCCEEDED",
+    "owner": "BOOK_CONTROL",
+    "policy": {
+      "policy_version": "book-control:author:ca2598e5-ab66-4586-9860-a79018dddd86",
+      "mode": "REVIEW_CHAPTER"
+    },
+    "policy_hash": "5407c7c206fb4bcb0a334cc3fe715bdb7c5438f9b0d39db2888d09c363e10a36",
+    "replayed": false
+  },
+  "control": {
+    "policy": {
+      "mode": "REVIEW_CHAPTER",
+      "policy_version": "book-control:author:ca2598e5-ab66-4586-9860-a79018dddd86"
+    },
+    "content_hash": "5407c7c206fb4bcb0a334cc3fe715bdb7c5438f9b0d39db2888d09c363e10a36",
+    "selected_by_operation_id": "caad7f9d-0a95-4bd2-b1d0-79a0399e5080",
+    "scope": "PROJECT_FUTURE_SUBJECTS"
+  },
+  "snapshot": {
+    "status": 409,
+    "body": {
+      "detail": {
+        "code": "BOOK_DESIGN_ACTIVE_REQUIRED",
+        "message": "Book Production requires an Active Book Design"
+      }
+    }
+  },
+  "result": "PASS",
+  "observed_release_identity": "git:364d0485291c60983f32efef6b66bfbc356d70ba@364d0485291c60983f32efef6b66bfbc356d70ba",
+  "dispatch_control_after": {
+    "state": "PAUSED",
+    "version": 1,
+    "process_dispatch_suspended": true,
+    "new_dispatch_allowed_by_control": false
+  },
+  "screenshot_sha256": "sha256:b2b1979190b20290941e543bc2065c626aa2b9c1a1a92d3be0dd9e9d8856a258",
+  "boundary": "Real local API and browser against isolated restored database; exact non-model Content task execution under retained global pause. No model, manuscript, production snapshot or production qualification is claimed."
+}

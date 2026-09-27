@@ -1,0 +1,117 @@
+{
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "observed_at": "2026-09-27T17:24:56.601212+00:00",
+  "status": "INCOMPLETE",
+  "baseline_sha": "e9e6e2980f744ff69ac608d4ccce0ea6122441d3",
+  "final_implementation_sha": "218fb167add04c3f577565c7d6bdf01a3b8ecfbd",
+  "deployed_sha": "218fb167add04c3f577565c7d6bdf01a3b8ecfbd",
+  "delivery_commit": "The enclosing evidence-only Git commit; implementation SHA above is immutable and explicitly approved by Pack",
+  "branch": "codex/real-prose-security-handoff",
+  "worktree": "/Users/yuan/.codex/worktrees/real-prose-author-entry/novel-forge",
+  "changes_pushed": false,
+  "rows": [
+    {
+      "id": "S0",
+      "category": "FIXED_WITH_HISTORY_BOUNDARY",
+      "evidence": "security.json",
+      "action": "Rotated exposed PostgreSQL role through trusted local admin; updated 12 private consumers; fixed keyword-DSN filter and sanitized shared artifacts",
+      "acceptance": "Replacement connection works, old verifier no longer matches; revoked bytes remain in shared Git history/older worktrees, no unauthorized history rewrite; remote cache/archive copies not comprehensively inspected"
+    },
+    {
+      "id": "A1",
+      "category": "REAL_PROSE_NOT_PROVEN",
+      "evidence": "editorial-outcomes.json",
+      "action": "Reused same Book/campaign/briefs and preserved native failed diagnostic attempts",
+      "acceptance": "No actual model output, accepted chapter, edition or successor; package INCOMPLETE"
+    },
+    {
+      "id": "A2",
+      "category": "ENGINEERING_EXECUTABLE_CALL_AUTHORIZATION_BLOCKED",
+      "evidence": "reviewable-pack.json + exact-request-preflight.json",
+      "action": "Explicit enabled-provider closure, genuine scoped Pack approval/activation, exact diagnostic route reason and shared final-request token preflight",
+      "acceptance": "Pack 2.3.7 ACTIVE on exact release; original 32768 grant cannot cover 38825 reservation; amendment unanswered; formal production qualification absent"
+    },
+    {
+      "id": "A3",
+      "category": "FIXED_FOCUSED_REVERIFIED",
+      "evidence": "logs/export-regression.log",
+      "action": "Merged export implementation unchanged; targeted PostgreSQL/MinIO regression",
+      "acceptance": "6 passed, cross Book/run identity and reservation/receipt recovery; no new manuscript export claimed"
+    },
+    {
+      "id": "A4",
+      "category": "AUTHOR_SUBSET_EXECUTABLE_END_TO_END_INCOMPLETE",
+      "evidence": "author-policy-browser.json + logs/author-policy-recovery-browser-3.log",
+      "action": "Formation candidate decisions, policy controls, failed/lost-response/409 recovery and native never-dispatched cancellation; diagnostic human annotation API binder",
+      "acceptance": "Real API/browser policy subset and isolated Formation path pass. No complete production/editor/edition journey. Human reference annotation has normal Content API but no dedicated author form"
+    },
+    {
+      "id": "A5",
+      "category": "ENGINEERING_EXECUTABLE",
+      "evidence": "logs/config-tests-native.log + author-policy-browser.json",
+      "action": "Versioned author Context/Craft/World/Actor choices; freeze exact profile for Chapter preparation, display actual editorial control provenance",
+      "acceptance": "New v3/18000 Craft v4 config persisted through native Content; old frozen requests remain unchanged in targeted regression. No real Provider prose view exists yet"
+    },
+    {
+      "id": "A6",
+      "category": "REAL_EDITORIAL_FLOW_NOT_EXERCISED",
+      "evidence": "editorial-outcomes.json",
+      "action": "Retained existing global review/disposition/Plan Change/edition ownership; no fabricated proposed asset",
+      "acceptance": "No real draft/finding; candidate generation collaboration and actual editorial closure still unverified"
+    },
+    {
+      "id": "A7",
+      "category": "EFFECT_NOT_PROVEN",
+      "evidence": "editorial-outcomes.json",
+      "action": "Defined exact-text issue/improvement/preservation denominators and separated model/human/reader evidence",
+      "acceptance": "All effect rates null with denominator 0; no local or causal benefit claim"
+    },
+    {
+      "id": "A8",
+      "category": "MANUAL_SELECTION_EXECUTABLE_REAL_COMPARISON_NOT_PROVEN",
+      "evidence": "logs/formation-tests-final.log + logs/formation-browser-2.log",
+      "action": "SELECT/APPROVE/REJECT/REQUEST_CHANGES persist same-Book candidate hash and reason; downstream stage consumes nonfirst selection",
+      "acceptance": "Native PG nonfirst candidate and isolated browser comparison pass; no real candidate comparison. AUTO first-qualified compatibility behavior unchanged"
+    },
+    {
+      "id": "A9",
+      "category": "OBSERVED_COST_GAP_FIXED_LONG_RANGE_NOT_PROVEN",
+      "evidence": "exact-request-preflight.json",
+      "action": "Complete exact request accounting shared by Router and admission; no needed facts or safety margin removed",
+      "acceptance": "20617 input+16 framing+10000 output+8192 safety=38825; no long-range recall or literary realization evidence"
+    }
+  ],
+  "evidence_ceiling": {
+    "code": "CODE_EXISTS",
+    "changed_entry_points": "WIRED",
+    "focused_engineering_paths": "EXECUTABLE",
+    "model_task_admission": "NOT_PROVEN",
+    "real_production": "NOT_PROVEN",
+    "literary_benefit": "NOT_PROVEN",
+    "long_form": "NOT_PROVEN"
+  },
+  "runtime_usage": {
+    "codex_calls": 0,
+    "deepseek_calls": 0,
+    "provider_tokens": 0,
+    "native_dispatch_delta": 0,
+    "invoice_or_subscription_debit": "NOT_VERIFIED",
+    "developer_codex_tokens": "UNKNOWN",
+    "developer_codex_cost": "UNKNOWN"
+  },
+  "migration_changes": false,
+  "historical_pause_unknown_and_budget": "UNCHANGED_READ_ONLY_COMPARISON",
+  "omitted_checks": "Full P0/backend/PostgreSQL/UI matrix, remote CI, migrations fresh/upgrade (no migration), real literary/long-form qualification NOT_RUN",
+  "constraint_classification": {
+    "32768_per_call_grant": "CONFIGURABLE_POLICY_REQUIRES_EXPLICIT_AUTHORIZATION_TO_CHANGE",
+    "8192_safety_margin": "CONFIGURABLE_POLICY_NOT_REMOVED",
+    "old_request_identity_hash_and_append_only_recovery": "CURRENT_PROVEN_INVARIANT_WITH_FOCUSED_TESTS",
+    "trusted_local_operator_pack_scope": "CURRENT_RUNTIME_FACT",
+    "old_implicit_profile_defaults": "HISTORICAL_COMPATIBILITY",
+    "human_reference_protocol": "CONFIGURABLE_POLICY_NO_FABRICATED_LABELS",
+    "literary_benefit_and_long_form_recall": "UNRESOLVED_DESIGN_CONSTRAINT_NOT_ESTABLISHED_BY_IMPLEMENTATION"
+  },
+  "origin_main_rechecked": "e9e6e2980f744ff69ac608d4ccce0ea6122441d3",
+  "other_local_branches_unmerged_into_origin_main": [],
+  "original_main_worktree_clean": true
+}

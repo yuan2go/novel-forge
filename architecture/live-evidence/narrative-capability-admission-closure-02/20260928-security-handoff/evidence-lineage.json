@@ -1,0 +1,210 @@
+{
+  "observed_at": "2026-09-27T17:23:28.385714+00:00",
+  "artifacts": [
+    {
+      "source": "pack-handoff-768.json",
+      "original_hash": "sha256:ee6909045f22aa66fbba7e0a09f60db92773b20c95295643b8258b335bb07713",
+      "shared": "pack-before-preflight-fix.json",
+      "shared_hash": "sha256:84c619a6e99d9851b4d9fd9377ade782cbcace54d4a5e5c7c0a7b475ca60caea",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "pack-handoff-final.json",
+      "original_hash": "sha256:7c9053a16ac62b395de78abff10fc4c94f54e04bd2bb0d23eef5b52e8976fb51",
+      "shared": "reviewable-pack.json",
+      "shared_hash": "sha256:deae28e0db0de50be06a693bd6fea94e72c39184ec5a4e7f4084e8e496b8d8b0",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "exact-request-preflight.json",
+      "original_hash": "sha256:29ca3fe3ea2b420d225bc7e048d0c5ac19fa9696a43abaeb577aae08ccc7ab5b",
+      "shared": "exact-request-preflight.json",
+      "shared_hash": "sha256:feb55794157c89554b6b249b3e226070df02e685c7d5326aba1da0b4b46e2221",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "deployment-final-probes.json",
+      "original_hash": "sha256:94ecac57e3f33697ea2a79958264dfacb0dbcfd66a3c2f7379a5cc22fbd16df5",
+      "shared": "deployment-final-probes.json",
+      "shared_hash": "sha256:146701cb56c67632f1a734645ceaf1b696f5c9089491dc7e640724918a70cfe9",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "live-api-probes.json",
+      "original_hash": "sha256:03d08b9836c94e633da04a7ffaad15987f4ecb74b76d745abc248aee3b1693c2",
+      "shared": "live-api-probes.json",
+      "shared_hash": "sha256:a46aca659e51400dd8e5c456620064649d5e27b588aa06688e217d82ddddd020",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "model-verification.json",
+      "original_hash": "sha256:a29416569fc71336705e7a85af57ea32f9745da35af97bdd6073f27408d7c10e",
+      "shared": "model-verification.json",
+      "shared_hash": "sha256:4340eed116fc90f9992c4556e09d16023217d82cd6270b45bd4fbae9dbf774d7",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "author-policy-browser.json",
+      "original_hash": "sha256:f772c6174931c484aeb4221a27e7cb0b07f7e085d0d7e42bd09e16761b9264dd",
+      "shared": "author-policy-browser.json",
+      "shared_hash": "sha256:f772c6174931c484aeb4221a27e7cb0b07f7e085d0d7e42bd09e16761b9264dd",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "author-policy-browser-cors-first-failure.json",
+      "original_hash": "sha256:f4c991a2e58d3ee281eb6b96c93b1e9ff9463566ee930175b9373ca7e6c12fa2",
+      "shared": "author-policy-browser-cors-first-failure.json",
+      "shared_hash": "sha256:ff06b49b64927ed05d359602f65e3bd5b06a8f116e067789aacb0138e3f36b34",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "live-final.json",
+      "original_hash": "sha256:038a6bc4ce7166bedf2bd55a6cb7eebc7303376be83dd089724f71035b1a0821",
+      "shared": "ledger-preservation.json",
+      "shared_hash": "sha256:b3841b6a2d5dfeec2bdfab84e124e5fb7b7e5e537d7f3381e5930f006ecc7e2d",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "frozen.json",
+      "original_hash": "sha256:e8bb6bffc7b807bd526718400144b92f52052b3eb95aeea15fd0706b1c5271cb",
+      "shared": "authorization-and-grants.json",
+      "shared_hash": "sha256:250c361fe2b83abbe04cc74d2a9583dce65d438e7dcef3e9bf5b8bdde40fd91f",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "prepared-output-10000.json",
+      "original_hash": "sha256:c22fc83772dba7b0608cb10ff647a41d24badbe3baa1e6a0bd21d51b9a588118",
+      "shared": "diagnostic-inputs.json",
+      "shared_hash": "sha256:6d1984e0a39769ee46b4aa15f339ead66429bb80056ecafb3c196dd4154232af",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "diagnostic-results.json",
+      "original_hash": "sha256:7a1d2a2de9f24f6eb14ad3bfabb754be7c81295e4c75ff28761cea9567acfe74",
+      "shared": "diagnostic-first-attempt.json",
+      "shared_hash": "sha256:d4a931ff67a820a66befee40948ddf9d4538ad2e8ce26eb33716e03b2cb5d071",
+      "transformation": "METADATA_PROJECTION"
+    },
+    {
+      "source": "diagnostic-recovery-results.json",
+      "original_hash": "sha256:26b59273d1fc162a38c4d4d14b05aef0ca4181eba36d5a152917808ecebc02ad",
+      "shared": "diagnostic-recovery.json",
+      "shared_hash": "sha256:6aef43d84358f296ec4c5601d26a0b6e15ccd67ec2f1daceaa4bfe4c6022e9da",
+      "transformation": "METADATA_PROJECTION"
+    },
+    {
+      "source": "export-regression.log",
+      "original_hash": "sha256:354c712e5fe9bce3325e7408d0e2392e4e4a3787b1c04ee89ca568f72de4c2a2",
+      "shared": "logs/export-regression.log",
+      "shared_hash": "sha256:354c712e5fe9bce3325e7408d0e2392e4e4a3787b1c04ee89ca568f72de4c2a2",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "formation-tests-final.log",
+      "original_hash": "sha256:f27f39afec5aaf64e73f367362378395d2e659abd94d4e01b6d71eb03cd75141",
+      "shared": "logs/formation-tests-final.log",
+      "shared_hash": "sha256:f27f39afec5aaf64e73f367362378395d2e659abd94d4e01b6d71eb03cd75141",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "formation-browser-2.log",
+      "original_hash": "sha256:0f8e1ea755e373defc0f782bba7496ecf47d1789b02f67fa54e229cd5ca7bba6",
+      "shared": "logs/formation-browser-2.log",
+      "shared_hash": "sha256:0f8e1ea755e373defc0f782bba7496ecf47d1789b02f67fa54e229cd5ca7bba6",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "config-tests.log",
+      "original_hash": "sha256:b8850b9972be79776b7e9c6b7031c4357f13c0f8380616a3852e2a3c1007d23f",
+      "shared": "logs/config-tests.log",
+      "shared_hash": "sha256:b8850b9972be79776b7e9c6b7031c4357f13c0f8380616a3852e2a3c1007d23f",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "config-tests-actors-v2.log",
+      "original_hash": "sha256:088e768b23cfdcc6d2f413ff379b6ff96143be4dcf837a0e0433a5a849dda9d6",
+      "shared": "logs/config-tests-actors-v2.log",
+      "shared_hash": "sha256:088e768b23cfdcc6d2f413ff379b6ff96143be4dcf837a0e0433a5a849dda9d6",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "config-tests-control.log",
+      "original_hash": "sha256:19068db436dd70717c74fc83a38756d3dc670301c2b0fdb18eac9281473a7ec0",
+      "shared": "logs/config-tests-control.log",
+      "shared_hash": "sha256:19068db436dd70717c74fc83a38756d3dc670301c2b0fdb18eac9281473a7ec0",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "config-tests-native.log",
+      "original_hash": "sha256:ca45f3522598e47ef2fd968a656a1f8c35a9cd7fc816b4ac4fbfdef6ac1c19a8",
+      "shared": "logs/config-tests-native.log",
+      "shared_hash": "sha256:ca45f3522598e47ef2fd968a656a1f8c35a9cd7fc816b4ac4fbfdef6ac1c19a8",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "author-policy-browser-cors-first-failure.log",
+      "original_hash": "sha256:b3efc0ddfd6c7371579957a4d512c267e94573a97502b4be2fa120950c254ebf",
+      "shared": "logs/author-policy-browser-cors-first-failure.log",
+      "shared_hash": "sha256:b3efc0ddfd6c7371579957a4d512c267e94573a97502b4be2fa120950c254ebf",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "author-policy-recovery-browser-3.log",
+      "original_hash": "sha256:e47cedd26777b9f83ae11129e972fd8752b3293564375557903c94657ebe9882",
+      "shared": "logs/author-policy-recovery-browser-3.log",
+      "shared_hash": "sha256:e47cedd26777b9f83ae11129e972fd8752b3293564375557903c94657ebe9882",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "author-policy-recovery-browser-first-failure.log",
+      "original_hash": "sha256:cec518a5039384beb547ec386b6ecf3aa509ad04545376b5c2df361b3e3c99ae",
+      "shared": "logs/author-policy-recovery-browser-first-failure.log",
+      "shared_hash": "sha256:cec518a5039384beb547ec386b6ecf3aa509ad04545376b5c2df361b3e3c99ae",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "author-policy-recovery-browser-2.log",
+      "original_hash": "sha256:54e0f48e77f3a332affcc94662b35843b028681d7b8ab45a84907df44f10505b",
+      "shared": "logs/author-policy-recovery-browser-2.log",
+      "shared_hash": "sha256:54e0f48e77f3a332affcc94662b35843b028681d7b8ab45a84907df44f10505b",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "config-tests-idempotency-query.log",
+      "original_hash": "sha256:1f6bf7e278d754d3ddf2dca00045688fade7286fbc070e443e5e53f28754232f",
+      "shared": "logs/config-tests-idempotency-query.log",
+      "shared_hash": "sha256:1f6bf7e278d754d3ddf2dca00045688fade7286fbc070e443e5e53f28754232f",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "cancellation-tests-1.log",
+      "original_hash": "sha256:d436ef9f6a60c0ca061d5ef57c17c396dd35e5a7f9c08a65e368881ba77d5d70",
+      "shared": "logs/cancellation-tests-1.log",
+      "shared_hash": "sha256:d436ef9f6a60c0ca061d5ef57c17c396dd35e5a7f9c08a65e368881ba77d5d70",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "cancellation-tests-final.log",
+      "original_hash": "sha256:8abc45a07f50b8afd80f941bb8840316c280f15db23836661b25d8d612cd22d4",
+      "shared": "logs/cancellation-tests-final.log",
+      "shared_hash": "sha256:8abc45a07f50b8afd80f941bb8840316c280f15db23836661b25d8d612cd22d4",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "cancellation-negative-tests.log",
+      "original_hash": "sha256:8d69b39640b9b6e9be08901d2282fc8009601407e847344e86d43fe4b78c26ed",
+      "shared": "logs/cancellation-negative-tests.log",
+      "shared_hash": "sha256:8d69b39640b9b6e9be08901d2282fc8009601407e847344e86d43fe4b78c26ed",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    },
+    {
+      "source": "reference-api-final-tests.log",
+      "original_hash": "sha256:6cce73b87880e32e1639cc60e981e4468418a527b3a543f93b3a482b2f37598c",
+      "shared": "logs/reference-api-final-tests.log",
+      "shared_hash": "sha256:6cce73b87880e32e1639cc60e981e4468418a527b3a543f93b3a482b2f37598c",
+      "transformation": "EXACT_COPY_AFTER_SECRET_SCAN"
+    }
+  ],
+  "private_originals_retained": true,
+  "secret_scan": "No known live/revoked database password or configured MinIO secret in these exported bytes; metadata projections retain native identifiers and historical failures."
+}

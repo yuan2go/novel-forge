@@ -1,0 +1,1143 @@
+{
+  "state": "NATIVE_GRANTS_FROZEN_SCOPE_PAUSED",
+  "commit_sha": "4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+  "application_build_id": "git:4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+  "prepared_path": "/tmp/novel-forge-s0-20260928/prepared-output-10000.json",
+  "probes_path": "/tmp/novel-forge-s0-20260928/probes-output-10000.json",
+  "manifest": {
+    "contract_version": "wp02-bounded-task-sampling.v1",
+    "purpose": "INDEPENDENT_TASK_SAMPLING",
+    "project_id": "narrative-closure-02-admission-20260927",
+    "book_id": "duanchao-guan-zheng-deng-reference-01",
+    "commit_sha": "4ccc3aa530447fb9ce3e45a4cb275ee199b442e4",
+    "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+    "approval_hash": "sha256:201a10e6be91177bc9b8d648699cbb6041c4b3a044cc4a06265d1ac4aff8884a",
+    "approved_request_hash": "sha256:e8c5a3fcae552d38eef8ba2a5cbf70040d3a9fc32c60028ebfe2949acc4e604a",
+    "expires_at": "2026-09-28T05:28:24Z",
+    "task_ceilings": [
+      {
+        "task_type": "creative.candidates.generate",
+        "group": "foundation",
+        "required_contract": "existing governed foundation contract; exact final producer",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "HIGH",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 36,
+        "maximum_tokens_per_call": 32768,
+        "sampling_tokens_ceiling": 1179648,
+        "production_calls_ceiling": 1,
+        "production_tokens_ceiling": 32768,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "theme.candidates.generate",
+        "group": "foundation",
+        "required_contract": "existing governed foundation contract; exact final producer",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "HIGH",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 36,
+        "maximum_tokens_per_call": 32768,
+        "sampling_tokens_ceiling": 1179648,
+        "production_calls_ceiling": 1,
+        "production_tokens_ceiling": 32768,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "ending.intent.generate",
+        "group": "foundation",
+        "required_contract": "existing governed foundation contract; exact final producer",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "HIGH",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 36,
+        "maximum_tokens_per_call": 32768,
+        "sampling_tokens_ceiling": 1179648,
+        "production_calls_ceiling": 1,
+        "production_tokens_ceiling": 32768,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "reader.promise.generate",
+        "group": "foundation",
+        "required_contract": "existing governed foundation contract; exact final producer",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "HIGH",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 36,
+        "maximum_tokens_per_call": 32768,
+        "sampling_tokens_ceiling": 1179648,
+        "production_calls_ceiling": 1,
+        "production_tokens_ceiling": 32768,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "world.design.generate",
+        "group": "foundation",
+        "required_contract": "existing governed foundation contract; exact final producer",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "HIGH",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 36,
+        "maximum_tokens_per_call": 32768,
+        "sampling_tokens_ceiling": 1179648,
+        "production_calls_ceiling": 1,
+        "production_tokens_ceiling": 32768,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "character.cast.generate",
+        "group": "foundation",
+        "required_contract": "existing governed foundation contract; exact final producer",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "HIGH",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 36,
+        "maximum_tokens_per_call": 32768,
+        "sampling_tokens_ceiling": 1179648,
+        "production_calls_ceiling": 1,
+        "production_tokens_ceiling": 32768,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "book_plan.generate",
+        "group": "hierarchical_planning",
+        "required_contract": "existing typed planning contract; exact final producer",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "HIGH",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 36,
+        "maximum_tokens_per_call": 32768,
+        "sampling_tokens_ceiling": 1179648,
+        "production_calls_ceiling": 1,
+        "production_tokens_ceiling": 32768,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "volume_plan.generate",
+        "group": "hierarchical_planning",
+        "required_contract": "existing typed planning contract; exact final producer",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "HIGH",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 36,
+        "maximum_tokens_per_call": 32768,
+        "sampling_tokens_ceiling": 1179648,
+        "production_calls_ceiling": 1,
+        "production_tokens_ceiling": 32768,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "arc_plan.generate",
+        "group": "hierarchical_planning",
+        "required_contract": "existing typed planning contract; exact final producer",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "HIGH",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 36,
+        "maximum_tokens_per_call": 32768,
+        "sampling_tokens_ceiling": 1179648,
+        "production_calls_ceiling": 1,
+        "production_tokens_ceiling": 32768,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "chapter_group_plan.generate",
+        "group": "hierarchical_planning",
+        "required_contract": "narrative-craft-budget.v4 / narrative-craft-strategy.v3 / accepted-phase-transitions.v1; book-edition-planning.v1 where enabled",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "chapter_plan.generate",
+        "group": "hierarchical_planning",
+        "required_contract": "narrative-craft-budget.v4 / narrative-craft-strategy.v3 / accepted-phase-transitions.v1; book-edition-planning.v1 where enabled; execution contract 1.16.0 exact-native longform_prose_review_report feedback branch (review judgment, not accepted fact)",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN",
+        "input_coverage_required": [
+          "normal accepted continuation",
+          "Craft business REJECT followed by bounded legal replacement",
+          "approved future replan using exact native prose review evidence",
+          "edition scene/source mapping"
+        ]
+      },
+      {
+        "task_type": "world_candidates.generate",
+        "group": "world_and_actor",
+        "required_contract": "world-actor-task.v3 for actors; exact World v4 selected Knowledge projection and persistent intent contract",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 8,
+        "production_tokens_ceiling": 524288,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "world_candidates.actor_0",
+        "group": "world_and_actor",
+        "required_contract": "world-actor-task.v3 for actors; exact World v4 selected Knowledge projection and persistent intent contract",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 8,
+        "production_tokens_ceiling": 524288,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "world_candidates.actor_1",
+        "group": "world_and_actor",
+        "required_contract": "world-actor-task.v3 for actors; exact World v4 selected Knowledge projection and persistent intent contract",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 8,
+        "production_tokens_ceiling": 524288,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "world_candidates.actor_2",
+        "group": "world_and_actor",
+        "required_contract": "world-actor-task.v3 for actors; exact World v4 selected Knowledge projection and persistent intent contract",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 0,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 0,
+        "production_calls_ceiling": 0,
+        "production_tokens_ceiling": 0,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN",
+        "activation_condition": "ONLY_IF_AN_APPROVED_FROZEN_ACTOR_POLICY_ACTUALLY_HAS_A_THIRD_SLOT",
+        "enabled_for_proposed_two_actor_path": false,
+        "conditional_calls_not_authorized": true
+      },
+      {
+        "task_type": "memo",
+        "group": "chapter_production",
+        "required_contract": "exact accepted edition/run Context; Craft strategy.v3; draft/accepted fact separation",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "draft",
+        "group": "chapter_production",
+        "required_contract": "exact accepted edition/run Context; Craft strategy.v3; draft/accepted fact separation",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "revision",
+        "group": "chapter_production",
+        "required_contract": "exact accepted edition/run Context; Craft strategy.v3; draft/accepted fact separation",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "canon_extraction",
+        "group": "chapter_production",
+        "required_contract": "exact accepted edition/run Context; Craft strategy.v3; draft/accepted fact separation",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "screenplay_generate",
+        "group": "screenplay",
+        "required_contract": "screenplay-source.v2 / scene-screenplay.v2 / exact approved scene Craft",
+        "native_source": "eligible native screenplay source; authorized INELIGIBLE upstream samples for sampling only",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 2,
+        "production_tokens_ceiling": 131072,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "screenplay_revision",
+        "group": "screenplay",
+        "required_contract": "screenplay-source.v2 / scene-screenplay.v2 / exact approved scene Craft",
+        "native_source": "eligible native screenplay source; authorized INELIGIBLE upstream samples for sampling only",
+        "risk": "MEDIUM",
+        "metric": "GENERATOR_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 2,
+        "production_tokens_ceiling": 131072,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "review",
+        "group": "chapter_evaluation",
+        "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "REFERENCE_AGREEMENT",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 22,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 1441792,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "rereview",
+        "group": "chapter_evaluation",
+        "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "REFERENCE_AGREEMENT",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 22,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 1441792,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "quality_structural",
+        "group": "chapter_evaluation",
+        "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "REFERENCE_AGREEMENT",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 22,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 1441792,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "quality_commercial",
+        "group": "chapter_evaluation",
+        "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "REFERENCE_AGREEMENT",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 22,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 1441792,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "quality_source_originality",
+        "group": "chapter_evaluation",
+        "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "REFERENCE_AGREEMENT",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 22,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 1441792,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "quality_platform",
+        "group": "chapter_evaluation",
+        "required_contract": "native independent adjudicated reference; Craft review.v2 where applicable; exact versioned facts",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "REFERENCE_AGREEMENT",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 22,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 1441792,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "world_candidates.evaluate",
+        "group": "world_evaluation",
+        "required_contract": "native World Director contract and actual adjudicated reference",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "REFERENCE_AGREEMENT",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 22,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 1441792,
+        "production_calls_ceiling": 8,
+        "production_tokens_ceiling": 524288,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "quality_longform",
+        "group": "longform_evaluation",
+        "required_contract": "native independent adjudicated longform reference",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "HIGH",
+        "metric": "REFERENCE_AGREEMENT",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 46,
+        "maximum_tokens_per_call": 131072,
+        "sampling_tokens_ceiling": 6029312,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 524288,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "narrative_semantic_evaluation",
+        "group": "planning_evaluation",
+        "required_contract": "exact typed Planning candidate and canonical dependency contract; separate profile/producer compatibility",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "HIGH",
+        "metric": "REFERENCE_AGREEMENT",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 46,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 3014656,
+        "production_calls_ceiling": 16,
+        "production_tokens_ceiling": 1048576,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "longform_prose_review",
+        "group": "prose_evaluation",
+        "required_contract": "prose-reviewer-independent-quality.v1 and exact final producer",
+        "native_source": "exact native admitted task and qualified source artifacts",
+        "risk": "MEDIUM",
+        "metric": "INDEPENDENT_REVIEWER_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 131072,
+        "sampling_tokens_ceiling": 1048576,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 524288,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "screenplay_review",
+        "group": "screenplay_evaluation",
+        "required_contract": "screenplay-review.v2 / screenplay-independent-quality.v1",
+        "native_source": "native authorized screenplay generation/revision sample and exact source, separate independent labels",
+        "risk": "MEDIUM",
+        "metric": "INDEPENDENT_REVIEWER_SCORE",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 8,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 524288,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "NO_COMPATIBLE_REAL_PROVIDER_AND_INDEPENDENT_HUMAN_EVIDENCE_VERIFIED_IN_THIS_RUN"
+      },
+      {
+        "task_type": "canon_support",
+        "group": "canon_grounding_evaluation",
+        "required_contract": "grounded-canon.v1 + canon-support-independent-reference.v1; exact extraction and exact final draft hashes, one adjudicated label per claim or no-change coverage",
+        "native_source": "chapter.canon.propose_changes → chapter.provider.sample.canon_support@1.0.0; prepare without labels returns exact source/claim reference contract; sample never commits Canon",
+        "risk": "HIGH",
+        "metric": "REFERENCE_AGREEMENT",
+        "candidate_id": "configured-codex-cli:gpt-6-astra",
+        "sampling_calls_ceiling": 46,
+        "maximum_tokens_per_call": 65536,
+        "sampling_tokens_ceiling": 3014656,
+        "production_calls_ceiling": 4,
+        "production_tokens_ceiling": 262144,
+        "compatibility_status": "REQUIRES_EXACT_FINAL_PRODUCER_PROTOCOL_CONTEXT_BUCKET_CHECK",
+        "existing_evidence": "EXECUTABLE: scripted native positive and negative references, independent-author checks, idempotency/recovery and fixture exclusion PASS; no real Provider/human qualification verified",
+        "reference_participant_work": "Each sample needs 2 independent blind readers covering every extracted claim with exact quoted final-draft evidence, plus a distinct adjudicator. Uncertain labels remain evidence but do not count as binary pass/fail admission coverage."
+      }
+    ],
+    "phase_allocations": {
+      "REFERENCE": {
+        "calls": 308,
+        "tokens": 23724032,
+        "priced_usd": "0"
+      },
+      "SCREENING": {
+        "calls": 0,
+        "tokens": 0,
+        "priced_usd": "0"
+      },
+      "CALIBRATION": {
+        "calls": 412,
+        "tokens": 16384000,
+        "priced_usd": "0"
+      },
+      "HOLDOUT": {
+        "calls": 0,
+        "tokens": 0,
+        "priced_usd": "0"
+      },
+      "SOURCE": {
+        "calls": 0,
+        "tokens": 0,
+        "priced_usd": "0"
+      },
+      "DESIGN": {
+        "calls": 0,
+        "tokens": 0,
+        "priced_usd": "0"
+      },
+      "PRODUCTION": {
+        "calls": 0,
+        "tokens": 0,
+        "priced_usd": "0"
+      },
+      "REPAIR": {
+        "calls": 0,
+        "tokens": 0,
+        "priced_usd": "0"
+      }
+    },
+    "total": {
+      "calls": 720,
+      "tokens": 40108032,
+      "priced_usd": "0"
+    },
+    "priced_spend_authorized": false,
+    "account_cost_status": "UNKNOWN",
+    "production_eligible": false,
+    "first_diagnostics": [
+      {
+        "sample_id": "creative-zheng-deng-a",
+        "data_group": "zheng-deng-original-family",
+        "asset_version_id": "authority-output:2cfc1861-e772-4a5c-94b8-0b1753a8d852:creative.brief:v1",
+        "content_hash": "sha256:7573df7ad0c752581168b60bdc608d4523a91be29f4d7b6b328112b53ece999d",
+        "command": {
+          "execution_contract_version": "1.16.0",
+          "project_id": "narrative-closure-02-admission-20260927",
+          "workspace_id": "ws:zheng-deng:sampling:20260927",
+          "book_id": "duanchao-guan-zheng-deng-reference-01",
+          "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+          "generator_operation_name": "creative.candidates.generate",
+          "logical_key": "diagnostic:creative-zheng-deng-a",
+          "input_versions": {
+            "creative_brief": "authority-output:2cfc1861-e772-4a5c-94b8-0b1753a8d852:creative.brief:v1"
+          },
+          "idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-zheng-deng-a",
+          "trace_id": "creative-zheng-deng-a",
+          "correlation_id": "narrative-closure-02-admission-20260927",
+          "parent_version_id": "",
+          "arc_scope_volume_plan_version_ids": [],
+          "related_arc_plan_version_ids": [],
+          "dependent_arc_plan_version_ids": [],
+          "change_evidence_version_ids": [],
+          "governance_action_version_ids": [],
+          "repair_of_candidate_id": "",
+          "repair_reason": "",
+          "repair_number": 0,
+          "auto_approve_low_risk": false,
+          "routing_bootstrap_authorization_id": "grant:narrative-closure-02-admission-20260927:creative-zheng-deng-a",
+          "parent_agent_session_operation_id": "",
+          "arc_working_set": {},
+          "narrative_search_id": "",
+          "narrative_search_branch_key": "",
+          "narrative_search_parent_state_asset_version_id": "",
+          "narrative_search_accepted_through_chapter": 0,
+          "narrative_search_strategy_directive": "",
+          "narrative_search_planning_horizon": {},
+          "narrative_search_desired_transformation": {},
+          "narrative_search_hard_constraints": [],
+          "narrative_realization": {},
+          "opening_execution_binding": {}
+        }
+      },
+      {
+        "sample_id": "creative-xue-zhan-b",
+        "data_group": "xue-zhan-original-family",
+        "asset_version_id": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1",
+        "content_hash": "sha256:ebfddd724398905b4132643ec32e202c0660bf0dbffab99234fb74fc84a4fe67",
+        "command": {
+          "execution_contract_version": "1.16.0",
+          "project_id": "narrative-closure-02-admission-20260927",
+          "workspace_id": "ws:zheng-deng:sampling:20260927",
+          "book_id": "duanchao-guan-zheng-deng-reference-01",
+          "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+          "generator_operation_name": "creative.candidates.generate",
+          "logical_key": "diagnostic:creative-xue-zhan-b",
+          "input_versions": {
+            "creative_brief": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+          },
+          "idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b",
+          "trace_id": "creative-xue-zhan-b",
+          "correlation_id": "narrative-closure-02-admission-20260927",
+          "parent_version_id": "",
+          "arc_scope_volume_plan_version_ids": [],
+          "related_arc_plan_version_ids": [],
+          "dependent_arc_plan_version_ids": [],
+          "change_evidence_version_ids": [],
+          "governance_action_version_ids": [],
+          "repair_of_candidate_id": "",
+          "repair_reason": "",
+          "repair_number": 0,
+          "auto_approve_low_risk": false,
+          "routing_bootstrap_authorization_id": "grant:narrative-closure-02-admission-20260927:creative-xue-zhan-b",
+          "parent_agent_session_operation_id": "",
+          "arc_working_set": {},
+          "narrative_search_id": "",
+          "narrative_search_branch_key": "",
+          "narrative_search_parent_state_asset_version_id": "",
+          "narrative_search_accepted_through_chapter": 0,
+          "narrative_search_strategy_directive": "",
+          "narrative_search_planning_horizon": {},
+          "narrative_search_desired_transformation": {},
+          "narrative_search_hard_constraints": [],
+          "narrative_realization": {},
+          "opening_execution_binding": {}
+        }
+      }
+    ],
+    "future_samples": "Each requires a separate exact native producer/input/one-call grant within this frozen manifest and original task ceiling. No automatic continuation past two diagnostic samples.",
+    "stop_conditions": [
+      "Run at most two diagnostic samples for each task first. Any failed sample, UNKNOWN outcome, exhausted limit or changed contract stops that task; no automatic repeat or additional samples.",
+      "Missing or expired scoped authorization/account identity; no dispatch.",
+      "Producer/schema/Pack/contract drift: freeze the changed task only after compatibility recheck; do not copy qualification.",
+      "Unknown external outcome or unknown cost holds its original task/campaign budget until native reconciliation; unrelated authorized scopes remain independent.",
+      "Any task, campaign, token, amount, entitlement or expiry ceiling reached: stop that scope; no automatic top-up.",
+      "Source/edition mismatch, knowledge leak, Canon contamination or permission bypass: stop affected production.",
+      "Reference disagreement, poor quality, no measured benefit or insufficient coverage: retain negative evidence and report; do not manufacture labels or seek PASS with more samples."
+    ]
+  },
+  "budget_policy": {
+    "policy_version": "wp02-sampling-diagnostic-2-v1",
+    "comparison_budget": {
+      "contract_version": "creative-provider-campaign-budget.v4",
+      "experiment_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+      "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+      "expires_at": "2026-09-28T05:28:24Z",
+      "accounting_basis": "MIXED",
+      "shared_total": {
+        "calls": 720,
+        "tokens": 40108032,
+        "priced_usd": "0"
+      },
+      "arms": [
+        {
+          "arm": "SINGLE",
+          "project_id": "narrative-closure-02-admission-20260927",
+          "book_id": "duanchao-guan-zheng-deng-reference-01",
+          "project_total": {
+            "calls": 720,
+            "tokens": 40108032,
+            "priced_usd": "0"
+          },
+          "chapter_ranges": {
+            "PRODUCTION": [
+              1,
+              6
+            ]
+          },
+          "reference_allocation": {
+            "calls": 308,
+            "tokens": 23724032,
+            "priced_usd": "0"
+          },
+          "screening_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "calibration_allocation": {
+            "calls": 412,
+            "tokens": 16384000,
+            "priced_usd": "0"
+          },
+          "holdout_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "source_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "design_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "production_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "repair_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          }
+        }
+      ],
+      "entitlements": [
+        {
+          "provider": "codex-cli",
+          "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+          "calls": 720,
+          "tokens": 40108032
+        }
+      ]
+    },
+    "authorization": {
+      "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+      "evidence_hash": "sha256:201a10e6be91177bc9b8d648699cbb6041c4b3a044cc4a06265d1ac4aff8884a",
+      "project_id": "narrative-closure-02-admission-20260927",
+      "book_id": "duanchao-guan-zheng-deng-reference-01",
+      "authorized_cumulative_caps": {
+        "REFERENCE": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "SCREENING": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "CALIBRATION": {
+          "calls": 2,
+          "tokens": 65536,
+          "priced_usd": "0"
+        },
+        "HOLDOUT": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "SOURCE": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "DESIGN": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "PRODUCTION": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "REPAIR": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        }
+      },
+      "business_scope": {
+        "source_allowed": false,
+        "design_allowed": true,
+        "max_chapter_number": 0
+      }
+    }
+  },
+  "routing_policy": {
+    "policy_version": "wp02-first-foundation-diagnostics-v1",
+    "reason": "Exact gpt-6-sol existing entitlement, two independent native one-call grants; task eligibility remains unproven",
+    "task_overrides": [],
+    "bootstrap_authorizations": [
+      {
+        "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-zheng-deng-a",
+        "reason": "User-approved first two independent task diagnostics; no retry, repair, fallback, purchase or production promotion",
+        "environment": "validation",
+        "book_id": "duanchao-guan-zheng-deng-reference-01",
+        "task_type": "creative.candidates.generate",
+        "logical_key": "diagnostic:creative-zheng-deng-a",
+        "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-zheng-deng-a",
+        "input_versions_hash": "sha256:53c1acde850c08f0199cf88e24ea12454675f31a15afc7ce87f660d9a7f156c8",
+        "command_hash": "sha256:0a9d9c34dc14da750dc3bc5ba1ebe89615ac4c07e7db2b9bafb17be00030763a",
+        "producer_contract_hash": "sha256:fc3f556be4e1a7e0ce27b949d3724b5dce036d6ca5439edcb8c7cfc2f02d63d1",
+        "candidate_id": "codex-cli:gpt-6-sol:high",
+        "model_revision": "wp02-p0-controlled-no-dispatch-20260927",
+        "expires_at": "2026-09-28T05:28:24Z",
+        "maximum_calls": 1,
+        "maximum_tokens": 32768,
+        "maximum_amount": null,
+        "currency": "UNKNOWN",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "cost_authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+        "purpose": "BENCHMARK_CHALLENGER",
+        "production_eligible": false,
+        "campaign": {
+          "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+          "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+          "sample_id": "creative-zheng-deng-a",
+          "group_id": "zheng-deng-original-family",
+          "partition": "CALIBRATION",
+          "maximum_calls": 720,
+          "maximum_tokens": 40108032,
+          "maximum_amount": "0",
+          "expires_at": "2026-09-28T05:28:24Z"
+        }
+      },
+      {
+        "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-xue-zhan-b",
+        "reason": "User-approved first two independent task diagnostics; no retry, repair, fallback, purchase or production promotion",
+        "environment": "validation",
+        "book_id": "duanchao-guan-zheng-deng-reference-01",
+        "task_type": "creative.candidates.generate",
+        "logical_key": "diagnostic:creative-xue-zhan-b",
+        "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b",
+        "input_versions_hash": "sha256:fc2935f3bb7fdf2933ac287d7840fbdcbd0ff528f75228e3e8abed5decdc79a9",
+        "command_hash": "sha256:86285077e65a7e2837b9ad2f8ce2947e0ac14b473c223824b5f2a1198efa8337",
+        "producer_contract_hash": "sha256:fc3f556be4e1a7e0ce27b949d3724b5dce036d6ca5439edcb8c7cfc2f02d63d1",
+        "candidate_id": "codex-cli:gpt-6-sol:high",
+        "model_revision": "wp02-p0-controlled-no-dispatch-20260927",
+        "expires_at": "2026-09-28T05:28:24Z",
+        "maximum_calls": 1,
+        "maximum_tokens": 32768,
+        "maximum_amount": null,
+        "currency": "UNKNOWN",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "cost_authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+        "purpose": "BENCHMARK_CHALLENGER",
+        "production_eligible": false,
+        "campaign": {
+          "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+          "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+          "sample_id": "creative-xue-zhan-b",
+          "group_id": "xue-zhan-original-family",
+          "partition": "CALIBRATION",
+          "maximum_calls": 720,
+          "maximum_tokens": 40108032,
+          "maximum_amount": "0",
+          "expires_at": "2026-09-28T05:28:24Z"
+        }
+      }
+    ]
+  },
+  "dispatch_count_before": 407,
+  "real_provider_calls": 0,
+  "budget_registration": {
+    "operation_id": "d4275707-fc9b-40f4-b815-b42654b70fa0",
+    "status": "SUCCEEDED",
+    "owner": "CREATIVE_EXPERIMENT_BUDGET",
+    "policy": {
+      "policy_version": "wp02-sampling-diagnostic-2-v1",
+      "comparison_budget": {
+        "contract_version": "creative-provider-campaign-budget.v4",
+        "experiment_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+        "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+        "expires_at": "2026-09-28T05:28:24Z",
+        "accounting_basis": "MIXED",
+        "shared_total": {
+          "calls": 720,
+          "tokens": 40108032,
+          "priced_usd": "0"
+        },
+        "arms": [
+          {
+            "arm": "SINGLE",
+            "project_id": "narrative-closure-02-admission-20260927",
+            "book_id": "duanchao-guan-zheng-deng-reference-01",
+            "project_total": {
+              "calls": 720,
+              "tokens": 40108032,
+              "priced_usd": "0"
+            },
+            "chapter_ranges": {
+              "PRODUCTION": [
+                1,
+                6
+              ]
+            },
+            "reference_allocation": {
+              "calls": 308,
+              "tokens": 23724032,
+              "priced_usd": "0"
+            },
+            "screening_allocation": {
+              "calls": 0,
+              "tokens": 0,
+              "priced_usd": "0"
+            },
+            "calibration_allocation": {
+              "calls": 412,
+              "tokens": 16384000,
+              "priced_usd": "0"
+            },
+            "holdout_allocation": {
+              "calls": 0,
+              "tokens": 0,
+              "priced_usd": "0"
+            },
+            "source_allocation": {
+              "calls": 0,
+              "tokens": 0,
+              "priced_usd": "0"
+            },
+            "design_allocation": {
+              "calls": 0,
+              "tokens": 0,
+              "priced_usd": "0"
+            },
+            "production_allocation": {
+              "calls": 0,
+              "tokens": 0,
+              "priced_usd": "0"
+            },
+            "repair_allocation": {
+              "calls": 0,
+              "tokens": 0,
+              "priced_usd": "0"
+            }
+          }
+        ],
+        "entitlements": [
+          {
+            "provider": "codex-cli",
+            "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+            "calls": 720,
+            "tokens": 40108032
+          }
+        ]
+      },
+      "authorization": {
+        "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+        "evidence_hash": "sha256:201a10e6be91177bc9b8d648699cbb6041c4b3a044cc4a06265d1ac4aff8884a",
+        "project_id": "narrative-closure-02-admission-20260927",
+        "book_id": "duanchao-guan-zheng-deng-reference-01",
+        "authorized_cumulative_caps": {
+          "REFERENCE": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "SCREENING": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "CALIBRATION": {
+            "calls": 2,
+            "tokens": 65536,
+            "priced_usd": "0"
+          },
+          "HOLDOUT": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "SOURCE": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "DESIGN": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "PRODUCTION": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "REPAIR": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          }
+        },
+        "business_scope": {
+          "source_allowed": false,
+          "design_allowed": true,
+          "max_chapter_number": 0
+        }
+      }
+    },
+    "policy_hash": "b4b2e717cca68d1d6c7b250a05f4b3f32dae36dde3e35460ae1c89def6fbf066",
+    "replayed": false
+  },
+  "routing_registration": {
+    "operation_id": "d7834a77-c444-4a7c-ba59-0e18dd586ef3",
+    "status": "SUCCEEDED",
+    "owner": "PROVIDER_ROUTING",
+    "policy": {
+      "policy_version": "wp02-first-foundation-diagnostics-v1",
+      "reason": "Exact gpt-6-sol existing entitlement, two independent native one-call grants; task eligibility remains unproven",
+      "task_overrides": [],
+      "bootstrap_authorizations": [
+        {
+          "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-zheng-deng-a",
+          "reason": "User-approved first two independent task diagnostics; no retry, repair, fallback, purchase or production promotion",
+          "environment": "validation",
+          "book_id": "duanchao-guan-zheng-deng-reference-01",
+          "task_type": "creative.candidates.generate",
+          "logical_key": "diagnostic:creative-zheng-deng-a",
+          "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-zheng-deng-a",
+          "input_versions_hash": "sha256:53c1acde850c08f0199cf88e24ea12454675f31a15afc7ce87f660d9a7f156c8",
+          "command_hash": "sha256:0a9d9c34dc14da750dc3bc5ba1ebe89615ac4c07e7db2b9bafb17be00030763a",
+          "producer_contract_hash": "sha256:fc3f556be4e1a7e0ce27b949d3724b5dce036d6ca5439edcb8c7cfc2f02d63d1",
+          "candidate_id": "codex-cli:gpt-6-sol:high",
+          "model_revision": "wp02-p0-controlled-no-dispatch-20260927",
+          "expires_at": "2026-09-28T05:28:24Z",
+          "maximum_calls": 1,
+          "maximum_tokens": 32768,
+          "maximum_amount": null,
+          "currency": "UNKNOWN",
+          "accounting_basis": "ACCOUNT_ENTITLEMENT",
+          "cost_authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+          "purpose": "BENCHMARK_CHALLENGER",
+          "production_eligible": false,
+          "campaign": {
+            "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+            "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+            "sample_id": "creative-zheng-deng-a",
+            "group_id": "zheng-deng-original-family",
+            "partition": "CALIBRATION",
+            "maximum_calls": 720,
+            "maximum_tokens": 40108032,
+            "maximum_amount": "0",
+            "expires_at": "2026-09-28T05:28:24Z"
+          }
+        },
+        {
+          "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-xue-zhan-b",
+          "reason": "User-approved first two independent task diagnostics; no retry, repair, fallback, purchase or production promotion",
+          "environment": "validation",
+          "book_id": "duanchao-guan-zheng-deng-reference-01",
+          "task_type": "creative.candidates.generate",
+          "logical_key": "diagnostic:creative-xue-zhan-b",
+          "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b",
+          "input_versions_hash": "sha256:fc2935f3bb7fdf2933ac287d7840fbdcbd0ff528f75228e3e8abed5decdc79a9",
+          "command_hash": "sha256:86285077e65a7e2837b9ad2f8ce2947e0ac14b473c223824b5f2a1198efa8337",
+          "producer_contract_hash": "sha256:fc3f556be4e1a7e0ce27b949d3724b5dce036d6ca5439edcb8c7cfc2f02d63d1",
+          "candidate_id": "codex-cli:gpt-6-sol:high",
+          "model_revision": "wp02-p0-controlled-no-dispatch-20260927",
+          "expires_at": "2026-09-28T05:28:24Z",
+          "maximum_calls": 1,
+          "maximum_tokens": 32768,
+          "maximum_amount": null,
+          "currency": "UNKNOWN",
+          "accounting_basis": "ACCOUNT_ENTITLEMENT",
+          "cost_authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+          "purpose": "BENCHMARK_CHALLENGER",
+          "production_eligible": false,
+          "campaign": {
+            "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+            "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+            "sample_id": "creative-xue-zhan-b",
+            "group_id": "xue-zhan-original-family",
+            "partition": "CALIBRATION",
+            "maximum_calls": 720,
+            "maximum_tokens": 40108032,
+            "maximum_amount": "0",
+            "expires_at": "2026-09-28T05:28:24Z"
+          }
+        }
+      ]
+    },
+    "policy_hash": "c4dc975e50144e1747aa994953e87464b45653ba4b228a0c6157c9fe5a7fed74",
+    "replayed": false
+  },
+  "dispatch_count_after": 407
+}
