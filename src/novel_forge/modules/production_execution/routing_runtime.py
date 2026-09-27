@@ -973,16 +973,20 @@ class ProductionProviderRouter:
             policy_snapshot=policy_snapshot,
             **requirements,
         )
-        decision = CostAwareRouter().explain(task, candidates, observations, now=now)
         from novel_forge.modules.command_kernel.routing_bootstrap import (
             load_bootstrap_authorization,
         )
-        from .routing_bootstrap import benchmark_decision
+        from .routing_bootstrap import benchmark_decision, bind_diagnostic_escalation_reason
 
         with AuthorityUnitOfWork(self.registry.database_url) as uow:
             bootstrap = load_bootstrap_authorization(
                 uow.cursor, project_id=project_id, operation_id=operation_id
             )
+        if bootstrap:
+            task = bind_diagnostic_escalation_reason(
+                task, candidates, bootstrap, environment=self.execution_environment
+            )
+        decision = CostAwareRouter().explain(task, candidates, observations, now=now)
         if bootstrap:
             decision = benchmark_decision(
                 decision, bootstrap, environment=self.execution_environment
