@@ -617,3 +617,32 @@ def test_reader_planning_uses_effective_run_history_before_initial_profile():
     supervisor.query.latest_eligible_role_asset = lambda **kwargs: calls.append(kwargs) or "reader-initial"
     assert supervisor._latest_role_asset({**book, "project_id": "project", "book_id": "book"}, "reader_state") == "reader-initial"
     assert calls[-1]["asset_types"] == ("reader_state",)
+
+
+def test_explicit_profile_context_survives_process_defaults_and_new_profile_selection() -> None:
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.context_token_budget = 6000
+    supervisor.quality_context_token_budget = 7000
+    supervisor.draft_context_profile_version = "draft-context-profile-v2"
+    policies = {
+        "profile:old": {"chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v2", "draft_token_budget": 12000, "quality_token_budget": 18000}},
+        "profile:new": {"chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v3", "draft_token_budget": 20000, "quality_token_budget": 28000}},
+    }
+    supervisor.production_preparation = SimpleNamespace(resolver=SimpleNamespace(resolve_override=lambda **values: SimpleNamespace(asset_type="production_profile", content=policies[values["asset_version_id"]])))
+    book = {"project_id": "p", "workspace_id": "w", "book_id": "b", "stable_idempotency_key": "run:1", "production_profile_version": "profile:old"}
+    old_request = supervisor._chapter_preparation_request(book=book, next_chapter=1, explicit_overrides={})
+    old_report = supervisor._stage_budgeted_preparation_report(SimpleNamespace(preparation_report={}, context_token_budget=old_request.context_token_budget), book=book)
+    new_book = {**book, "production_profile_version": "profile:new", "stable_idempotency_key": "run:2"}
+    new_request = supervisor._chapter_preparation_request(book=new_book, next_chapter=1, explicit_overrides={})
+    new_report = supervisor._stage_budgeted_preparation_report(SimpleNamespace(preparation_report={}, context_token_budget=new_request.context_token_budget), book=new_book)
+    supervisor.context_token_budget = 24000
+    supervisor.draft_context_profile_version = "draft-context-profile-v3"
+    restored = supervisor._chapter_preparation_request(book=book, next_chapter=1, explicit_overrides={})
+    assert restored == old_request
+    assert old_request.context_token_budget == 12000
+    assert old_report["stage_context_profile_versions"]["draft"] == "draft-context-profile-v2"
+    assert old_report["stage_context_token_budgets"]["quality"] == 18000
+    assert new_request.context_token_budget == 20000
+    assert new_report["chapter_context_policy"]["production_profile_version"] == "profile:new"
+    assert new_report["stage_context_profile_versions"]["draft"] == "draft-context-profile-v3"
+    assert new_report["stage_context_token_budgets"]["quality"] == 28000

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { EditorialControlPanel, controlModes } from "./EditorialControlPanel";
+import { ProductionPolicyPanel, PolicySummary } from "./ProductionPolicyPanel";
 import { CreativeInputPanel } from "./CreativeInputPanel";
 import { useEffect, useRef, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
@@ -102,6 +104,8 @@ export function ProductionChainPage() {
       {snapshot && <p>快照校验：{snapshot.snapshot_hash} · 冻结版本：{snapshot.release_sha}</p>}
     </section>
     {(!bookId || book) && <CreativeInputPanel key={`${project}:${bookId}`} project={projects.find(p => p.project_id === project)} book={book} release={workspace.release_identity} onBook={setBookId} onRefresh={refresh} />}
+    {book && <ProductionPolicyPanel key={`${project}:${bookId}:${profileId}`} project={project} book={book} profile={profile} characters={workspace.approved_characters} onRefresh={refresh} onSelect={id => {setProfileId(id); setSnapshotId("");}} />}
+    {book && <EditorialControlPanel key={project} project={project} book={book} current={workspace.editorial_control} onRefresh={refresh} />}
     <section className="panel">
       <h2>进度与恢复</h2>
       <label>生产记录<select aria-label="生产记录" value={runId} onChange={e => setRunId(e.target.value)}><option value="">选择生产记录</option>{workspace.runs.map(r => <option key={r.book_run_id} value={r.book_run_id}>{r.state} · 已接纳 {r.accepted_through_chapter}/{r.target_chapter_count} · {r.book_run_id.slice(-8)}</option>)}</select></label>
@@ -118,7 +122,8 @@ export function ProductionChainPage() {
     <section className="panel">
       <h2>{run ? "本次生产的冻结配置" : "新请求待选择的配置"}</h2>
       <p>{run ? `来源：${run.production_profile_version} · ${run.profile_hash}。恢复沿用此版本。` : "选择配置后解析快照；尚未冻结的设置不表示已用于正文。"}</p>
-      {effectiveProfile && <dl>{Object.entries(effectiveProfile).map(([name,value]) => <div key={name}><dt>{name}</dt><dd style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{typeof value === "object" ? JSON.stringify(value, null, 2) : String(value)}</dd></div>)}</dl>}
+      {effectiveProfile && <><PolicySummary content={effectiveProfile} /><details><summary>完整冻结配置与来源</summary><pre>{JSON.stringify(effectiveProfile, null, 2)}</pre></details></>}
+      {run && <p>当前后继章节审阅确认：{run.frozen_editorial_control ? `${controlModes[run.frozen_editorial_control.policy.mode] || run.frozen_editorial_control.policy.mode} · ${run.frozen_editorial_control.policy.policy_version} · ${run.frozen_editorial_control.content_hash}` : "尚未冻结；不能把当前项目选择当作已执行配置"}</p>}
       {run && <details><summary>章节实际冻结配置与版次来源</summary><p>Context、Craft、World／Actor、审读和版次只以该章节冻结的准备记录为依据。未形成章节请求时，尚无这一级配置证据。</p><pre>{JSON.stringify(run.chapter_configuration || {}, null, 2)}</pre></details>}
       {run && !run.frozen_profile && <p>此历史生产记录未解析到配置资产，不能从当前选择推断其实际配置。</p>}
       {book && <details><summary>作品策略来源</summary><pre>{JSON.stringify(book.runtime_policy, null, 2)}</pre></details>}

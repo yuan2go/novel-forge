@@ -612,7 +612,7 @@ class PostgresBookProductionSupervisor:
             ],
             "chapter_production_admission_hash": chapter_admission["admission_hash"],
         }
-        preparation_report = self._stage_budgeted_preparation_report(prepared)
+        preparation_report = self._stage_budgeted_preparation_report(prepared, book=book)
         preparation_report["chapter_production_admission"] = chapter_admission
         dispatched_group = self.chapter_groups.dispatch(
             str(group_run["group_run_id"]),
@@ -690,6 +690,8 @@ class PostgresBookProductionSupervisor:
             project_id=str(book["project_id"]),
             book_id=str(book["book_id"]),
         )
+        from .production_policy import chapter_context_policy
+        context_policy = chapter_context_policy(profile.content)
         return ProductionPreparationRequest(
             project_id=str(book["project_id"]),
             workspace_id=str(book["workspace_id"]),
@@ -700,7 +702,7 @@ class PostgresBookProductionSupervisor:
             ),
             explicit_asset_version_overrides=explicit_overrides,
             capability_required_asset_types=("character_cast", "reader_promise"),
-            context_token_budget=self.context_token_budget,
+            context_token_budget=context_policy["draft_token_budget"] if context_policy else self.context_token_budget,
             knowledge_access_policy=knowledge_access_policy,
         )
 
@@ -755,15 +757,25 @@ class PostgresBookProductionSupervisor:
             result[asset_type] = version
         return result
 
-    def _stage_budgeted_preparation_report(self, prepared: Any) -> dict[str, Any]:
+    def _stage_budgeted_preparation_report(self, prepared: Any, *, book: dict[str, Any] | None = None) -> dict[str, Any]:
+        from .production_policy import chapter_context_policy
+        context_policy = None
+        if book is not None:
+            profile = self.production_preparation.resolver.resolve_override(
+                project_id=str(book["project_id"]), asset_version_id=str(book["production_profile_version"]),
+            )
+            context_policy = chapter_context_policy(profile.content)
         report = dict(prepared.preparation_report)
         stage_budgets = dict(report.get("stage_context_token_budgets") or {})
         report["stage_context_token_budgets"] = {
             **stage_budgets,
             "draft": int(prepared.context_token_budget),
-            "quality": self.quality_context_token_budget,
+            "quality": context_policy["quality_token_budget"] if context_policy else self.quality_context_token_budget,
         }
-        if self.draft_context_profile_version != "draft-context-profile-v2":
+        if context_policy:
+            report["chapter_context_policy"] = {**context_policy, "production_profile_version": book["production_profile_version"]}
+            report["stage_context_profile_versions"] = {**dict(report.get("stage_context_profile_versions") or {}), "draft": context_policy["draft_profile"]}
+        elif self.draft_context_profile_version != "draft-context-profile-v2":
             report["stage_context_profile_versions"] = {**dict(report.get("stage_context_profile_versions") or {}),
                 "draft": self.draft_context_profile_version}
         return report

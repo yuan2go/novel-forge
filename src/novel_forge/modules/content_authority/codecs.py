@@ -795,6 +795,9 @@ def _author_book_bootstrap_input(
             "operator-authored reader_state must be an empty Reader Outcome v3 advisory genesis"
         )
     if asset_type == "production_profile":
+        if "author_configuration_version" in content:
+            from novel_forge.modules.book_authority.production_policy import validate_author_configuration
+            content = validate_author_configuration(content)
         target = content.get("target_chapter_count")
         if not isinstance(target, int) or isinstance(target, bool) or target <= 0:
             raise ValueError("production profile target_chapter_count must be positive")

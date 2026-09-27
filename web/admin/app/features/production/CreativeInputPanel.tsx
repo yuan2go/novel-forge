@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { FormationReviewPanel } from "./FormationReviewPanel";
 import type { ProjectRow } from "../../shared/types";
 import { createAuthorBook, createAuthorWorkspace, loadProductionProjects, saveCreativeInput, loadCreativeInput, startFormation, loadFormation, resumeFormation, type Book, type ContentOperation, type Formation } from "./api";
 
@@ -100,7 +101,7 @@ export function CreativeInputPanel({project, book, release, onBook, onRefresh}: 
         <label>比较候选数<select aria-label="比较候选数" value={saved.candidates} disabled={disabled} onChange={e => change("candidates", Number(e.target.value))}>{[2,3,4].map(n => <option key={n}>{n}</option>)}</select></label>
         <button disabled={disabled || operation?.status !== "SUCCEEDED" || !operation.outputs.length || !!saved.formationId || saved.target < 1 || saved.target > 10000} onClick={form}>启动设计准备（确认计划后推进）</button>
       </div>
-      {formation && <div><p>设计状态：{formation.lifecycle} · {formation.current_stage}</p><p>{JSON.stringify(formation.failure || formation.recovery_instruction || "等待原生任务更新")}</p>
+      {formation && <div><FormationReviewPanel formation={formation} onChange={setFormation} /><p>设计状态：{formation.lifecycle} · {formation.current_stage}</p><p>{JSON.stringify(formation.failure || formation.recovery_instruction || "等待原生任务更新")}</p>
         <button disabled={disabled || !["FAILED", "WAITING_APPROVAL"].includes(formation.lifecycle)} onClick={async () => {setBusy(true); try {setFormation(await resumeFormation(formation));} catch(e) {setError(String(e));} finally {setBusy(false);}}}>核对停点后恢复设计</button>
         {formation.book_design_asset_version_id && <a href={`/assets?path=${encodeURIComponent(`authority://asset-version/${formation.book_design_asset_version_id}`)}`}>查看设计版本与依据</a>}
       </div>}

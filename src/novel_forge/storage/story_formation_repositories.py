@@ -563,6 +563,75 @@ class StoryFormationRepository:
             ],
         )
 
+    def record_author_decision(
+        self, formation_run_id: str, *, expected_version: int,
+        candidate_asset_version_id: str, candidate_content_hash: str,
+        decision: str, reason: str, actor_id: str, operation_id: str,
+    ) -> dict[str, Any]:
+        """INVARIANT: Author selection only retargets the frozen candidate set.
+
+        Story Design still owns qualification and approval. Rejected candidates
+        remain immutable evidence; a comment never grants production eligibility.
+        """
+        self.cursor.execute(
+            "SELECT version,lifecycle,current_stage,recovery_instruction FROM "
+            "authority_story_formation_run WHERE formation_run_id=%s FOR UPDATE",
+            [formation_run_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None or int(row[0]) != expected_version or row[1] != "WAITING_APPROVAL":
+            raise KernelError("STORY_FORMATION_REVIEW_CONFLICT", "Formation review version changed")
+        approval = dict(row[3] or {})
+        if candidate_asset_version_id not in approval.get("candidate_asset_version_ids", []):
+            raise KernelError("STORY_FORMATION_REVIEW_SCOPE", "Candidate is outside the frozen comparison")
+        if decision not in {"SELECT", "APPROVE", "REJECT", "REQUEST_CHANGES"} or not reason.strip():
+            raise ValueError("Author decision and content-based reason are required")
+        self.cursor.execute(
+            "SELECT version.content_hash FROM authority_asset_version version "
+            "JOIN authority_asset asset ON asset.asset_id=version.asset_id "
+            "JOIN authority_story_formation_run run ON run.project_id=asset.project_id "
+            "WHERE run.formation_run_id=%s AND version.asset_version_id=%s",
+            [formation_run_id, candidate_asset_version_id],
+        )
+        asset = self.cursor.fetchone()
+        if asset is None or str(asset[0]) != candidate_content_hash:
+            raise KernelError("STORY_FORMATION_REVIEW_HASH_DRIFT", "Review target content changed")
+        entry = dict(candidate_asset_version_id=candidate_asset_version_id,
+                     candidate_content_hash=candidate_content_hash, decision=decision,
+                     reason=reason, actor_id=actor_id, operation_id=operation_id)
+        if decision in {"SELECT", "APPROVE"}:
+            approval.update(candidate_asset_version_id=candidate_asset_version_id,
+                            candidate_content_hash=candidate_content_hash,
+                            author_selection=entry)
+        elif candidate_asset_version_id == approval.get("candidate_asset_version_id"):
+            approval["author_selection"] = entry
+        self.cursor.execute(
+            "UPDATE authority_story_formation_stage SET candidate_asset_version_id=%s, "
+            "candidate_content_hash=%s, checkpoint=checkpoint || %s || "
+            "jsonb_build_object('author_decisions', COALESCE(checkpoint->'author_decisions','[]'::jsonb) || %s), "
+            "updated_at=NOW() WHERE formation_run_id=%s AND stage=%s AND attempt_ordinal=1 "
+            "AND status='WAITING_APPROVAL'",
+            [approval["candidate_asset_version_id"], approval["candidate_content_hash"],
+             Jsonb({"approval_wait": approval}), Jsonb([entry]), formation_run_id, str(row[2])],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError("STORY_FORMATION_REVIEW_CONFLICT", "Formation stage changed")
+        self.cursor.execute(
+            "UPDATE authority_story_formation_run SET recovery_instruction=%s, version=version+1, "
+            "updated_at=NOW() WHERE formation_run_id=%s AND version=%s",
+            [Jsonb(approval), formation_run_id, expected_version],
+        )
+        return self.require(formation_run_id)
+
+    def author_selection(self, formation_run_id: str, stage: str) -> dict[str, Any]:
+        self.cursor.execute(
+            "SELECT checkpoint->'approval_wait'->'author_selection' FROM "
+            "authority_story_formation_stage WHERE formation_run_id=%s AND stage=%s AND attempt_ordinal=1",
+            [formation_run_id, stage],
+        )
+        row = self.cursor.fetchone()
+        return dict(row[0] or {}) if row else {}
+
     def resume(self, formation_run_id: str, expected_version: int) -> dict[str, Any]:
         self.cursor.execute(
             """
@@ -584,6 +653,8 @@ class StoryFormationRepository:
             candidate_id = str(approval.get("candidate_asset_version_id") or "")
             candidate_hash = str(approval.get("candidate_content_hash") or "")
             authority = str(approval.get("authority") or "")
+            if dict(approval.get("author_selection") or {}).get("decision") in {"REJECT", "REQUEST_CHANGES"}:
+                raise KernelError("STORY_FORMATION_AUTHOR_CHANGES_PENDING", "Select and approve an acceptable candidate before resuming")
             if authority == "STORY_PLANNING_AUTHORITY":
                 self.cursor.execute(
                     """
