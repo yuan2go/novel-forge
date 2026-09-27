@@ -1,0 +1,76 @@
+F
+=================================== FAILURES ===================================
+___________ test_same_project_chapter_exports_are_independent[True] ____________
+
+objects = <novel_forge.modules.command_kernel.external_effect_adapters.MinioObjectStoreExternalEffectAdapter object at 0x10b45bfe0>
+other_book = True
+
+    @pytest.mark.parametrize('other_book', [True, False])
+    def test_same_project_chapter_exports_are_independent(objects, other_book):
+        project = identifier('project')
+        first, _, _ = manuscript(project, 'book-a', 'run-a', '第一份稿：门外传来三声叩击。')
+        second, _, _ = manuscript(project, 'book-b' if other_book else 'book-a', 'run-b', '第二份稿：他把钥匙沉进井里。')
+>       one = export(first, objects)
+              ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_chapter_export_isolation_postgres.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_export_isolation_postgres.py:38: in export
+    return deliver_export(DATABASE_URL, request=request, adapter=objects, exercise_unknown_reconciliation=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/export_delivery.py:128: in deliver_export
+    evidence = _deliver_synchronously(
+src/novel_forge/modules/chapter_authority/export_delivery.py:179: in _deliver_synchronously
+    dispatched = dispatch_external_effect(
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:535: in dispatch_external_effect
+    assert_legacy_execution_allowed(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+component = 'ExternalEffect adapter', gateway_backed = False, environment = ''
+recorder = None
+
+    def assert_legacy_execution_allowed(
+        *,
+        component: str,
+        gateway_backed: bool,
+        environment: str = "",
+        recorder: Callable[[LegacyUsageEvent], None] | None = None,
+    ) -> LegacyUsageEvent:
+    
+        normalized = execution_environment(environment)
+        blocked = (
+            normalized.controlled
+            and not gateway_backed
+        )
+        event = LegacyUsageEvent(
+            schema_version="legacy-usage-event.v1",
+            event_id=f"legacy-usage:{uuid.uuid4()}",
+            occurred_at=datetime.now(UTC).isoformat(),
+            component=component,
+            environment=normalized,
+            decision=(
+                "GATEWAY_BACKED"
+                if gateway_backed
+                else "BLOCKED_CONTROLLED"
+                if blocked
+                else "ALLOWED_DEVELOPMENT_ONLY"
+            ),
+            gateway_backed=gateway_backed,
+        )
+        if recorder is not None:
+            recorder(event)
+        _LEGACY_USAGE_LOGGER.info(
+            json.dumps(event.to_dict(), sort_keys=True, separators=(",", ":"))
+        )
+        if blocked:
+>           raise RuntimeError(
+                f"{component} legacy execution is blocked and disabled in {normalized}; "
+                "use ProductionExecutionGateway through an Authority-bound request"
+            )
+E           RuntimeError: ExternalEffect adapter legacy execution is blocked and disabled in validation; use ProductionExecutionGateway through an Authority-bound request
+
+src/novel_forge/modules/production_execution/security.py:239: RuntimeError
+=========================== short test summary info ============================
+FAILED tests/integration/test_chapter_export_isolation_postgres.py::test_same_project_chapter_exports_are_independent[True]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 3.20s

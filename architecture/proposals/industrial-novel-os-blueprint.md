@@ -387,14 +387,43 @@ coverage and issue dispositions. Public release is separately authorized.
 
 ## WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02
 
-The current execution baseline is fetched `origin/main`
-`cc6afa5e4a62eb74f7bbb17887784f16b70289c5`. The main checkout and the two recent
-continuation worktrees are clean; work proceeds in the isolated
-`codex/narrative-closure-02-p0` worktree. Earlier immutable experiment records retain their
+### Same-Book real prose and author entry continuation (2026-09-27)
+
+Execution baseline: fetched `origin/main` `c616bc7a1d249a6cada0106414d1b679bd1f4a12`.
+All registered checkouts were clean and all local branches were ancestors of that baseline.
+Work is isolated in `codex/real-prose-author-entry`. The audit's historical observations
+are leads; current conclusions require the implementation and live ledger below.
+
+| Problem | Current evidence / trigger | Existing owner | Repair or operation | Acceptance result |
+| --- | --- | --- | --- | --- |
+| Ordinary export identity collision | Same-project Books/runs exporting the same chapter number reproduced PostgreSQL `authority_blob_object_key_key` rejection; no overwrite was observed | Chapter export; Kernel Blob reservation/Effect | Version-scoped immutable keys and stable reservations; retain frozen old keys; reconcile lost receipts without resend | EXECUTABLE in isolated PostgreSQL/MinIO: two-book/two-run exports, hashes, replay and ordinary/edition/adoption old reservations pass |
+| Registry, Content admission and degraded health startup defects | Effective Router selected DeepSeek outside the initial registry; unrelated `story_design.review.author@2.1.1` semantic drift blocked brief admission; datetime in degraded readiness raised 500 | Provider composition; Content Authority; API | Register effective provider closure; register requested Content contract only, version changed review policy as 2.1.2; encode degraded health response | EXECUTABLE: actual braked API and four necessary workers on immutable code `45c95af102d16241a4329c39ae1f3e56b744d35d`; readiness remains 503 for missing exact Pack activation, not a false PASS |
+| Five author requests pointed at removed routes | Latest OpenAPI contains none of the old `chapter-run` mutation paths | Existing Book/Chapter APIs and author UI | Native resolve/start/pause/resume/cancel/recover; create separate Workspace per Book; persist pending input and idempotency; read frozen profiles and same-book Editor | EXECUTABLE for the tested author subset: actual clone API/browser, lost-response replay and Content input; complete Formation approval/configuration/real editorial path remains open |
+| Task authorization and selected Pack were not frozen | Old project PAUSED, old scopes expired; new sampling scope remains PAUSED with zero Provider dispatches. Lowered Pack retries conflicted with native Authority policy | Router/Pack/Kernel and approved purpose budgets | Retain failed compilation; compile native-contract successor without activation, new Agents or new grants | Trusted compilation `compilation:author-entry:wp02-planning-diagnostic-45c95af102d1-native-retry`; independent authenticated approval still missing. Configured Codex executable/hash/login verified; DeepSeek amount and current price/route not frozen |
+| Real prose and editorial benefit absent | No new manuscript, acceptance, edition or successor Provider input; diagnostic briefs and Pack compilation are not chapters | Formation; Book/Chapter; Review; Edition | Resume only after applicable Pack approval and exact diagnostic grants; retain actual text and exact-version finding/revision evidence | NOT_PROVEN: package INCOMPLETE. No literary benefit denominator, human labels or causal Craft/Actor gain claimed |
+
+The [continuation evidence](../live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/status.json)
+binds the implementation SHA, private deployment identities without credentials, scoped tests,
+real compilation record, failure lineage, actual zero runtime usage and remaining engineering
+and external inputs. The [compiled Pack](../live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/reviewable-pack.json)
+is reviewable; compilation does not authorize activation or model calls. Historical Book records,
+UNKNOWN Effects, reservations, budget scopes and production cursors were compared unchanged.
+
+Implement P0 export and startup repairs first, with focused reproductions. Then connect the
+author surface to existing domain commands and display their actual frozen inputs. Resolve
+necessary diagnostic tasks as soon as their inputs and valid native grants exist; do not
+wait for unrelated P2 work. Historical pause, UNKNOWN, original objects and budgets remain
+unchanged. No new Authority, fallback, automatic budget renewal or qualification exemption
+is part of this continuation. Only affected unit, isolated integration and author-path checks
+are selected; full qualification is NOT_RUN.
+
+The preceding P0 execution used `origin/main`
+`cc6afa5e4a62eb74f7bbb17887784f16b70289c5` and the isolated
+`codex/narrative-closure-02-p0` worktree. Those checkout observations are historical. Earlier immutable experiment records retain their
 recorded SHA, results and failures. Implementation changes are accepted by behavior and
 state transition, not chapter count.
 
-The current bounded engineering, deployment and external-input states are retained in the
+The preceding bounded engineering, deployment and external-input states are retained in the
 [P0 execution evidence](../live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/status.json).
 This package remains incomplete until its same-version joint run, authorized real task
 qualification, production and independently evaluated effects are separately evidenced.

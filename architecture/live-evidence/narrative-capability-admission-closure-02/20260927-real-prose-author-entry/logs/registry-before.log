@@ -1,0 +1,98 @@
+.                                                                      [100%]
+=================================== FAILURES ===================================
+_ ProviderAdapterV2Tests.test_router_templates_register_their_backend_before_api_composition (environment='validation') _
+
+self = <novel_forge.modules.provider_control.registry.ProviderAdapterRegistry object at 0x1099c6ba0>
+provider_id = 'deepseek'
+
+    def resolve(self, provider_id: str) -> ProviderAdapterV2:
+        normalized = provider_id.strip().lower()
+        try:
+>           return self._adapters[normalized]
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'deepseek'
+
+src/novel_forge/modules/provider_control/registry.py:105: KeyError
+
+The above exception was the direct cause of the following exception:
+
+self = <tests.unit.test_provider_adapter_v2.ProviderAdapterV2Tests testMethod=test_router_templates_register_their_backend_before_api_composition>
+
+    def test_router_templates_register_their_backend_before_api_composition(self) -> None:
+        for environment, values in (
+            ('validation', {'NOVEL_FORGE_PROVIDER_ROUTER': 'quality-cost-v1'}),
+            ('production', {}),
+        ):
+            with self.subTest(environment=environment):
+                registry = build_provider_adapter_registry(
+                    environment=environment, provider_ids={'codex-cli'},
+                    env={**values, 'DEEPSEEK_API_KEY': 'test-not-a-real-credential'},
+                )
+>               self.assertEqual(registry.resolve('deepseek').provider, 'deepseek')
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_provider_adapter_v2.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.modules.provider_control.registry.ProviderAdapterRegistry object at 0x1099c6ba0>
+provider_id = 'deepseek'
+
+    def resolve(self, provider_id: str) -> ProviderAdapterV2:
+        normalized = provider_id.strip().lower()
+        try:
+            return self._adapters[normalized]
+        except KeyError as exc:
+>           raise ValueError(f"provider v2 adapter is not registered: {normalized}") from exc
+E           ValueError: provider v2 adapter is not registered: deepseek
+
+src/novel_forge/modules/provider_control/registry.py:107: ValueError
+_ ProviderAdapterV2Tests.test_router_templates_register_their_backend_before_api_composition (environment='production') _
+
+self = <novel_forge.modules.provider_control.registry.ProviderAdapterRegistry object at 0x10998eb40>
+provider_id = 'deepseek'
+
+    def resolve(self, provider_id: str) -> ProviderAdapterV2:
+        normalized = provider_id.strip().lower()
+        try:
+>           return self._adapters[normalized]
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'deepseek'
+
+src/novel_forge/modules/provider_control/registry.py:105: KeyError
+
+The above exception was the direct cause of the following exception:
+
+self = <tests.unit.test_provider_adapter_v2.ProviderAdapterV2Tests testMethod=test_router_templates_register_their_backend_before_api_composition>
+
+    def test_router_templates_register_their_backend_before_api_composition(self) -> None:
+        for environment, values in (
+            ('validation', {'NOVEL_FORGE_PROVIDER_ROUTER': 'quality-cost-v1'}),
+            ('production', {}),
+        ):
+            with self.subTest(environment=environment):
+                registry = build_provider_adapter_registry(
+                    environment=environment, provider_ids={'codex-cli'},
+                    env={**values, 'DEEPSEEK_API_KEY': 'test-not-a-real-credential'},
+                )
+>               self.assertEqual(registry.resolve('deepseek').provider, 'deepseek')
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_provider_adapter_v2.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.modules.provider_control.registry.ProviderAdapterRegistry object at 0x10998eb40>
+provider_id = 'deepseek'
+
+    def resolve(self, provider_id: str) -> ProviderAdapterV2:
+        normalized = provider_id.strip().lower()
+        try:
+            return self._adapters[normalized]
+        except KeyError as exc:
+>           raise ValueError(f"provider v2 adapter is not registered: {normalized}") from exc
+E           ValueError: provider v2 adapter is not registered: deepseek
+
+src/novel_forge/modules/provider_control/registry.py:107: ValueError
+=========================== short test summary info ============================
+SUBFAILED(environment='validation') tests/unit/test_provider_adapter_v2.py::ProviderAdapterV2Tests::test_router_templates_register_their_backend_before_api_composition
+SUBFAILED(environment='production') tests/unit/test_provider_adapter_v2.py::ProviderAdapterV2Tests::test_router_templates_register_their_backend_before_api_composition
+2 failed, 1 passed, 10 deselected in 0.14s

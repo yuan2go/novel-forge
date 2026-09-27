@@ -101,6 +101,33 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         self.assertIsNotNone(row)
         return dict(row[0])
 
+    def test_unrelated_historical_definition_drift_does_not_block_brief(self) -> None:
+        from copy import deepcopy
+        from unittest.mock import patch
+        from novel_forge.modules.content_authority.definitions import content_operation_definitions
+        from novel_forge.storage.authority_repositories import definition_hash
+
+        definitions = content_operation_definitions(application_build_id="test", commit_sha="d" * 40)
+        historical = deepcopy(definitions[0])
+        historical["name"] = identifier("unrelated-historical-content")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.repositories.definitions.register(historical)
+            uow.commit()
+        drifted = deepcopy(historical)
+        drifted["policy"] = {**drifted["policy"], "unrelated_changed_contract": True}
+        brief = {"creative_brief_contract_version": "creative-brief-v2",
+                 "idea": "A witness must choose whether to reveal a costly truth.",
+                 "genre": "fantasy", "audience": "adult",
+                 "constraints": ["Original characters"], "source_boundaries": ["No source text"]}
+        with patch("novel_forge.modules.content_authority.application.content_operation_definitions",
+                   return_value=(*definitions, drifted)):
+            result = self.run_op("creative.brief.create", payload={"brief": brief})
+        self.assertEqual(self.read_content(result["asset_version_id"])["idea"], brief["idea"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT definition_hash FROM authority_operation_definition WHERE name=%s AND definition_version=%s",
+                               [historical["name"], historical["definition_version"]])
+            self.assertEqual(uow.cursor.fetchone()[0], definition_hash(historical))
+
     def test_all_registered_codecs_execute_through_postgresql_authority(self) -> None:
         brief_payload = {
             "target_genre": "fantasy",

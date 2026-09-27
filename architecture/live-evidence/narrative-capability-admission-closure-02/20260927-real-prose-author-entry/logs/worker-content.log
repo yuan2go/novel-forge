@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-real-prose-20260927/run.py", line 16, in <module>
+    runpy.run_path(sys.argv[0], run_name='__main__')
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/novel-forge-real-prose-20260927/service.py", line 17, in <module>
+    raise SystemExit(module.run_worker(poll_seconds=0.5))
+                     ^^^^^^^^^^^^^^^^^
+AttributeError: module 'novel_forge.workers.content_authority' has no attribute 'run_worker'

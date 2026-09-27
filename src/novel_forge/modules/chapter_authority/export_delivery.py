@@ -64,16 +64,9 @@ def deliver_export(
     content = _asset_version_content(database_url, request.asset_version_id)
     rendered = str(content["rendered_text"]).encode("utf-8")
     expected_hash = "sha256:" + hashlib.sha256(rendered).hexdigest()
-    object_key = f"chapters/{request.project_id}/{request.chapter}/chapter.txt"
-    with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute("""SELECT root.command_payload FROM authority_operation child
-            JOIN authority_operation root ON root.operation_id=child.root_operation_id
-            WHERE child.operation_id=%s AND child.project_id=%s""", [request.operation_id,request.project_id])
-        root = uow.cursor.fetchone()
-    preparation = (root[0].get("preparation_report") or {}) if root is not None else {}
-    versioned = bool(preparation.get("author_draft_adoption") or preparation.get("book_edition"))
-    if versioned:
-        object_key = f"chapters/{request.project_id}/{request.chapter}/versions/{request.asset_version_id}/chapter.txt"
+    # INVARIANT: an immutable export asset separates Books and runs that share
+    # a project/chapter number; recovery below preserves already frozen keys.
+    object_key = f"chapters/{request.project_id}/{request.chapter}/versions/{request.asset_version_id}/chapter.txt"
     asset_context = AssetCommandContext(
         operation_id=request.operation_id,
         project_id=request.project_id,
@@ -95,7 +88,7 @@ def deliver_export(
             expected_hash=expected_hash,
             expected_size=len(rendered),
             media_type="text/plain",
-            stable_identity=f"chapter-export:{request.operation_id}:{request.asset_version_id}" if versioned else "",
+            stable_identity=f"chapter-export:{request.operation_id}:{request.asset_version_id}",
         )
     effect_id = request_blob_upload(
         database_url,
@@ -176,28 +169,43 @@ def _deliver_synchronously(
     effect_id: str,
     asset_version_id: str,
 ) -> ExportDeliveryEvidence:
-    dispatched = dispatch_external_effect(
-        database_url,
-        effect_context,
-        effect_id=effect_id,
-        worker_id="chapter-export-effect-worker",
-        lease_seconds=30,
-        adapter=adapter,
+    dispatched = _retained_delivery_receipt(
+        database_url, effect_context, effect_id=effect_id
     )
+    if dispatched is None:
+        with AuthorityUnitOfWork(database_url) as uow:
+            effect = uow.repositories.external_effects.get_for_update(effect_id)
+        if effect["status"] in {"UNKNOWN", "RECONCILIATION_REQUIRED"}:
+            reconcile_external_effect(database_url, effect_context, effect_id=effect_id, adapter=adapter)
+            dispatched = _retained_delivery_receipt(database_url, effect_context, effect_id=effect_id)
+    if dispatched is None:
+        dispatched = dispatch_external_effect(
+            database_url,
+            effect_context,
+            effect_id=effect_id,
+            worker_id="chapter-export-effect-worker",
+            lease_seconds=30,
+            adapter=adapter,
+        )
     if dispatched["outcome"] != "success" or dispatched["receipt"] is None:
         raise KernelError(
             "CHAPTER_EXPORT_DELIVERY_INCOMPLETE",
             "Export adapter did not produce a synchronous verified receipt",
         )
-    verify_blob(database_url, asset_context, blob_id=blob_id)
-    bind_blob_to_asset_version(
-        database_url,
-        asset_context,
-        asset_version_id=asset_version_id,
-        blob_id=blob_id,
-        role="content",
-        ordinal=0,
-    )
+    with AuthorityUnitOfWork(database_url) as uow:
+        blob = uow.repositories.asset_blobs.blob_for_update(blob_id)
+        uow.cursor.execute("""SELECT blob_id FROM authority_asset_version_blob_reference
+            WHERE asset_version_id=%s AND role='content' AND ordinal=0""", [asset_version_id])
+        bound = uow.cursor.fetchone()
+    if blob["status"] != "AVAILABLE":
+        verify_blob(database_url, asset_context, blob_id=blob_id)
+    if bound is not None and bound[0] != blob_id:
+        raise KernelError("CHAPTER_EXPORT_RESERVATION_DRIFT", "Export is bound to another Blob")
+    if bound is None:
+        bind_blob_to_asset_version(
+            database_url, asset_context, asset_version_id=asset_version_id,
+            blob_id=blob_id, role="content", ordinal=0,
+        )
     return ExportDeliveryEvidence(
         blob_id=blob_id,
         external_effect_id=effect_id,
@@ -205,8 +213,32 @@ def _deliver_synchronously(
         retry_blocked_before_reconciliation=False,
         stale_fencing_rejected=False,
         reconciliation_outcome="not_exercised",
-        duplicate_receipt_replayed=False,
+        duplicate_receipt_replayed=bool(dispatched.get("replayed")),
     )
+
+
+def _retained_delivery_receipt(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
+    with AuthorityUnitOfWork(database_url) as uow:
+        effect = uow.repositories.external_effects.get_for_update(effect_id)
+        if (effect["project_id"], effect["operation_id"], effect["effect_type"]) != (context.project_id, context.operation_id, "blob.upload"):
+            raise KernelError("CHAPTER_EXPORT_RESERVATION_DRIFT", "Export Effect belongs to another scope")
+        if effect["status"] != "SUCCEEDED":
+            return None
+        uow.cursor.execute("""SELECT d.dispatch_id,d.evidence,r.payload_hash,r.payload
+            FROM authority_external_effect_dispatch d JOIN authority_external_receipt r USING(dispatch_id)
+            WHERE d.external_effect_id=%s AND d.status='SUCCEEDED' AND r.status='VERIFIED'
+            ORDER BY d.generation DESC LIMIT 1""", [effect_id])
+        row = uow.cursor.fetchone()
+    evidence = row[3].get("evidence") if row is not None else None
+    if (
+        not isinstance(evidence, dict) or not evidence
+        or _json_hash(evidence) != row[2]
+        or any(row[1].get(key) != value for key, value in evidence.items())
+        or any(evidence.get(actual) != effect["request_payload"].get(expected)
+               for actual, expected in (("object_key", "object_key"), ("actual_hash", "expected_hash"), ("actual_size", "expected_size")))
+    ):
+        raise KernelError("EFFECT_SUCCESS_RECEIPT_INVALID", "Export success lacks an intact verified receipt")
+    return {"dispatch_id": row[0], "outcome": "success", "receipt": row[3], "replayed": True}
 
 
 def _exercise_unknown_delivery(

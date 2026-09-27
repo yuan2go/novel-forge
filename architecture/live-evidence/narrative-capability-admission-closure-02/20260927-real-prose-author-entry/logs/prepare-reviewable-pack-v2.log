@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-real-prose-20260927/diagnostic-run-final.py", line 16, in <module>
+    runpy.run_path(sys.argv[0], run_name='__main__')
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/novel-forge-real-prose-20260927/prepare-reviewable-pack.py", line 29, in <module>
+    compiled=_pack_command(app,compiler,action='capability_pack.compile',pack_version='1.0.0',compilation_id=compilation_id,payload={'target_runtime_profile':'validation','novel_forge_version':'6.0.0','release_sha':sha,'release_channel':'VALIDATION'},**common)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-45c95af1/src/novel_forge/modules/capability_packs/validation_deployment.py", line 528, in _pack_command
+    return app.execute(
+           ^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-45c95af1/src/novel_forge/modules/capability_pack_authority/application.py", line 494, in execute
+    prepared = self._prepare(command)
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-45c95af1/src/novel_forge/modules/capability_pack_authority/application.py", line 565, in _prepare
+    return self._prepare_compilation(command)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-45c95af1/src/novel_forge/modules/capability_pack_authority/application.py", line 580, in _prepare_compilation
+    version = uow.repositories.capability_packs.require_version(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-45c95af1/src/novel_forge/storage/capability_pack_authority_repositories.py", line 256, in require_version
+    raise KernelError(
+novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_VERSION_NOT_FOUND: Capability Pack version does not exist: wp02-planning-diagnostic-45c95af102d1@1.0.0

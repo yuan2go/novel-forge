@@ -9,7 +9,6 @@ from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.content_authority.definitions import (
-    CONTENT_DEFINITION_VERSION,
     content_operation_definitions,
 )
 from novel_forge.modules.content_authority.registry import ContentHandlerRegistry
@@ -105,10 +104,9 @@ class ContentAuthorityApplication:
             prose_reference_annotations=prose_reference_annotation,
             screenplay_reference_annotations=screenplay_reference_annotation,
         )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            for definition in definitions:
-                uow.repositories.definitions.register(definition)
-            uow.commit()
+        definition = next((item for item in definitions if item["name"] == request.definition_name), None)
+        if definition is None:
+            raise ValueError("Unknown Content operation")
         if self.trusted_only and principal is None:
             raise PermissionError("trusted Principal is required for Content admission")
         actor_id = request.actor_id
@@ -118,7 +116,11 @@ class ContentAuthorityApplication:
             principal.require("content.authority.execute", request.project_id)
             principal.require(definition_permission, request.project_id)
             actor_id = principal.principal_id
-        definition_version = CONTENT_DEFINITION_VERSION
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            # WHY: unrelated task-contract drift must not block this admission.
+            uow.repositories.definitions.register(definition)
+            uow.commit()
+        definition_version = definition["definition_version"]
         if reference_annotation:
             from novel_forge.modules.book_followup_authority.prose_sample_feedback import PROSE_ANNOTATION_VERSION
             from novel_forge.modules.book_followup_authority.screenplay_sample_feedback import SCREENPLAY_ANNOTATION_VERSION

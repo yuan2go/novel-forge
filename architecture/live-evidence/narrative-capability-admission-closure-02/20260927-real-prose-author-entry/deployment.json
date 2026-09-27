@@ -1,0 +1,59 @@
+{
+  "implementation_sha": "45c95af102d16241a4329c39ae1f3e56b744d35d",
+  "immutable_release": "/tmp/novel-forge-real-prose-20260927/release-45c95af1",
+  "application_build_id": "real-prose-45c95af102d16241a4329c39ae1f3e56b744d35d",
+  "api": "http://127.0.0.1:8137",
+  "web": "http://127.0.0.1:3137",
+  "historical_database": "novel_forge_REDACTED_PRIVATE_IDENTIFIER_test",
+  "isolated_restore_database": "user=novel_forge password=CDMb3wg1azFQEWtYYeSMcgpEWX6HcdN5 dbname=nf_p0_5f1dcf0babed4c7fa1b20e6d27276d6a_test host=127.0.0.1 port=61959",
+  "disposable_test_database": "user=novel_forge password=CDMb3wg1azFQEWtYYeSMcgpEWX6HcdN5 dbname=nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test host=127.0.0.1 port=61959",
+  "historical_postgres_container": "novel-forge-first-novel-pilot-data",
+  "historical_postgres_volume": "novel-forge-first-novel-pilot-data-pg16",
+  "minio_container": "novel-forge-first-novel-pilot-objects",
+  "minio_volume": "novel-forge-first-novel-pilot-objects-data",
+  "isolated_minio_bucket": "real-prose-5ba79a6e3b65487d8e741b869389b509",
+  "schema_head": "20260927_0147_runtime_job_dispatch_pause",
+  "schema_migrations_added": 0,
+  "fresh_existing_migrations": "PASS",
+  "backup_restore": "pg_dump -Fc and pg_restore --no-owner --no-acl into owned nf_p0_*_test",
+  "provider_dispatch_suspended": true,
+  "necessary_started_workers": [
+    {
+      "worker_id": "wp02-p0-book-authority",
+      "worker_kind": "book",
+      "status": "READY",
+      "last_poll_at": "2026-09-27T15:41:58.453380+00:00",
+      "database_status": "READY",
+      "fresh": true
+    },
+    {
+      "worker_id": "wp02-p0-book-followup",
+      "worker_kind": "book_followup",
+      "status": "READY",
+      "last_poll_at": "2026-09-27T15:41:58.624188+00:00",
+      "database_status": "READY",
+      "fresh": true
+    },
+    {
+      "worker_id": "wp02-p0-chapter-authority",
+      "worker_kind": "chapter",
+      "status": "READY",
+      "last_poll_at": "2026-09-27T15:41:58.449274+00:00",
+      "database_status": "READY",
+      "fresh": true
+    },
+    {
+      "worker_id": "wp02-p0-content-authority",
+      "worker_kind": "content",
+      "status": "READY",
+      "last_poll_at": "2026-09-27T15:41:57.980523+00:00",
+      "database_status": "READY",
+      "fresh": true
+    }
+  ],
+  "readiness": "NOT_READY: Chapter Pack activation absent for exact compilation; unrelated fleet workers not started",
+  "api_readiness_http": 503,
+  "runtime_readiness_http": 503,
+  "degraded_datetime_serialization": "FIXED: response is JSON with actual timestamps, no 500",
+  "process_lifecycle": "Owned isolated services are stopped after evidence collection; historical services and queues are untouched"
+}

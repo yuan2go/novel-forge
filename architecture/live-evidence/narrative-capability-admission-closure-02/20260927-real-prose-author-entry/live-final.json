@@ -1,0 +1,230 @@
+{
+  "observed_at": "2026-09-27T15:45:38.179712+00:00",
+  "read_only": true,
+  "historical_invariants_unchanged": {
+    "book_production": true,
+    "effect_counts": true,
+    "unresolved_effects": true,
+    "budget_reservations": true,
+    "budget_scopes": true,
+    "provider_dispatches": true,
+    "book_records": true
+  },
+  "books": [
+    {
+      "project_id": "first-novel-pilot-20260912",
+      "book_id": "first-novel-pilot-a",
+      "status": "DESIGN_PENDING",
+      "version": 1
+    },
+    {
+      "project_id": "first-novel-pilot-20260912",
+      "book_id": "guofeng-xuanhuan-01",
+      "status": "DESIGN_ACTIVE",
+      "version": 2
+    },
+    {
+      "project_id": "narrative-closure-02-admission-20260927",
+      "book_id": "duanchao-guan-zheng-deng-reference-01",
+      "status": "DESIGN_PENDING",
+      "version": 1
+    }
+  ],
+  "accepted_chapters": 0,
+  "sampling_assets": [
+    {
+      "asset_type": "book_record",
+      "count": 1
+    },
+    {
+      "asset_type": "capability_pack_artifact_catalog",
+      "count": 2
+    },
+    {
+      "asset_type": "capability_pack_manifest",
+      "count": 2
+    },
+    {
+      "asset_type": "compiled_capability_pack",
+      "count": 1
+    },
+    {
+      "asset_type": "creative_brief",
+      "count": 2
+    },
+    {
+      "asset_type": "project_record",
+      "count": 1
+    },
+    {
+      "asset_type": "workspace_record",
+      "count": 1
+    }
+  ],
+  "ledgers": [
+    {
+      "schema_version": "runtime-ledger-inspection.v1",
+      "database_identity": {
+        "database": "novel_forge_REDACTED_PRIVATE_IDENTIFIER_test",
+        "role": "novel_forge",
+        "address": "172.17.0.2/32",
+        "port": 5432,
+        "server_started_at": "2026-09-26 16:10:04.899810+00:00",
+        "database_oid": 16384
+      },
+      "project_id": "first-novel-pilot-20260912",
+      "migration_head_expected": "20260927_0147_runtime_job_dispatch_pause",
+      "migration_head_present": true,
+      "applied_migration_count": 148,
+      "books": [
+        "first-novel-pilot-a",
+        "guofeng-xuanhuan-01"
+      ],
+      "book_production": [],
+      "effect_counts": {
+        "CANCELLED": 1,
+        "FAILED_RETRYABLE": 1,
+        "SUCCEEDED": 405
+      },
+      "unresolved_effects": [
+        {
+          "external_effect_id": "ff4d2c74-67d4-4627-8a05-9e47052fb3f8",
+          "status": "FAILED_RETRYABLE",
+          "effect_type": "model.invoke",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-astra",
+          "manual_resolution_required": false
+        }
+      ],
+      "unresolved_list_truncated": false,
+      "budget_reservations": [
+        {
+          "status": "RELEASED",
+          "accounting_basis": "ACCOUNT_ENTITLEMENT",
+          "cost_status": "PENDING",
+          "count": 1,
+          "actual_tokens": "0",
+          "reserved_amount": null,
+          "settled_amount": null
+        },
+        {
+          "status": "SETTLED",
+          "accounting_basis": "ACCOUNT_ENTITLEMENT",
+          "cost_status": "UNKNOWN",
+          "count": 28,
+          "actual_tokens": "1174027",
+          "reserved_amount": null,
+          "settled_amount": null
+        }
+      ],
+      "budget_scopes": [
+        {
+          "budget_scope_id": "budget-scope:4461cc6e9bc9234d811c15c9d0b45c6542f5e7e0bb582d3ef6bf9dd25e27fb0b",
+          "owner_kind": "BOOK_OPENING",
+          "owner_id": "book-opening:4994aeb19cb23b1074699125212a822e24c7e5971b522e27c5e5c5c13fb9bfa8",
+          "deadline_at": "2026-09-14 07:37:04.858880+00:00",
+          "expired": true,
+          "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913:unused-balance-reallocation-v2",
+          "provider_call_limit": "60",
+          "token_limit": "7680000"
+        },
+        {
+          "budget_scope_id": "budget-scope:8b247175810b0ce483e697100caf4964d78def77a97929701de3868255212a10",
+          "owner_kind": "BOOK_OPENING",
+          "owner_id": "book-opening:8dc0b40e8bb8661026e140f4e78c09babf5949340eba07d7767b2d568b8707df",
+          "deadline_at": "2026-09-14 08:29:16.310543+00:00",
+          "expired": true,
+          "authorization_ref": "user:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01:20260913:unused-balance-reallocation-v2",
+          "provider_call_limit": "60",
+          "token_limit": "10464000"
+        }
+      ],
+      "production_authorization": "NOT_ESTABLISHED_BY_INSPECTION",
+      "provider_dispatches": 0,
+      "recovery": "Use the existing owner-specific recovery and Effect reconciliation commands; inspection never resends or releases reservations."
+    },
+    {
+      "schema_version": "runtime-ledger-inspection.v1",
+      "database_identity": {
+        "database": "novel_forge_REDACTED_PRIVATE_IDENTIFIER_test",
+        "role": "novel_forge",
+        "address": "172.17.0.2/32",
+        "port": 5432,
+        "server_started_at": "2026-09-26 16:10:04.899810+00:00",
+        "database_oid": 16384
+      },
+      "project_id": "narrative-closure-02-admission-20260927",
+      "migration_head_expected": "20260927_0147_runtime_job_dispatch_pause",
+      "migration_head_present": true,
+      "applied_migration_count": 148,
+      "books": [
+        "duanchao-guan-zheng-deng-reference-01"
+      ],
+      "book_production": [],
+      "effect_counts": {},
+      "unresolved_effects": [],
+      "unresolved_list_truncated": false,
+      "budget_reservations": [],
+      "budget_scopes": [],
+      "production_authorization": "NOT_ESTABLISHED_BY_INSPECTION",
+      "provider_dispatches": 0,
+      "recovery": "Use the existing owner-specific recovery and Effect reconciliation commands; inspection never resends or releases reservations."
+    }
+  ],
+  "controls": {
+    "first-novel-pilot-20260912": {
+      "schema_version": "runtime-dispatch-control.v1",
+      "project_id": "first-novel-pilot-20260912",
+      "state": "PAUSED",
+      "version": 1,
+      "updated_at": "2026-09-27 07:17:53.571671+00:00",
+      "process_dispatch_suspended": true,
+      "new_dispatch_allowed_by_control": false,
+      "authorization": "CONTROL_IS_NOT_BUDGET_OR_TASK_ADMISSION",
+      "events": [
+        {
+          "event_id": "4a01f361-fad9-403c-972e-e8912499da47",
+          "version": 1,
+          "idempotency_key": "wp02:c1c497b6:historical-pause",
+          "state": "PAUSED",
+          "previous_version": 0,
+          "actor_id": "ai:codex:WP-GUOFENG-VOLUME-ONE-PRODUCTION-01",
+          "reason": "Controlled release deployment; preserve historical unknown Effect and prohibit queued model dispatch",
+          "release_identity": {
+            "commit_sha": "c1c497b69ebc06a12431ab7242a354a31cd1e434",
+            "application_build_id": "wp02-p0-c1c497b69ebc"
+          },
+          "created_at": "2026-09-27 07:17:53.571671+00:00"
+        }
+      ],
+      "waiting_for_dispatch_control": []
+    },
+    "narrative-closure-02-admission-20260927": {
+      "schema_version": "runtime-dispatch-control.v1",
+      "project_id": "narrative-closure-02-admission-20260927",
+      "state": "PAUSED",
+      "version": 1,
+      "updated_at": "2026-09-27 15:14:47.030020+00:00",
+      "process_dispatch_suspended": true,
+      "new_dispatch_allowed_by_control": false,
+      "authorization": "CONTROL_IS_NOT_BUDGET_OR_TASK_ADMISSION",
+      "events": [
+        {
+          "event_id": "65a6450d-426f-431b-8381-2c4e1ad2164e",
+          "version": 1,
+          "idempotency_key": "wp02-p0:sampling:20260927:initial-pause",
+          "state": "PAUSED",
+          "previous_version": 0,
+          "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+          "reason": "Prepare exact native task scope while model dispatch is suspended",
+          "release_identity": {
+            "commit_sha": "637bcfa8026646e947b4c6850538c46d242a91ca",
+            "application_build_id": "real-prose-637bcfa80266"
+          },
+          "created_at": "2026-09-27 15:14:47.030020+00:00"
+        }
+      ],
+      "waiting_for_dispatch_control": []
+    }
+  }
+}

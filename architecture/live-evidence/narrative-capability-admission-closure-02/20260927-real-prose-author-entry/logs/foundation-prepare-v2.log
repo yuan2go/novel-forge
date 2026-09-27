@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-real-prose-20260927/diagnostic-run-v2.py", line 16, in <module>
+    runpy.run_path(sys.argv[0], run_name='__main__')
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/novel-forge-real-prose-20260927/foundation-prepare-v2.py", line 88, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/foundation-prepare-v2.py", line 74, in main
+    installed=install_longform_validation_pack(settings.database_url,profile=profile,pack_version='1.0.0',agent_generation=1,
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-a4a5b184/src/novel_forge/modules/capability_packs/validation_deployment.py", line 296, in install_longform_validation_pack
+    return _install_validation_manifest(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novel-forge-real-prose-20260927/release-a4a5b184/src/novel_forge/modules/capability_packs/validation_deployment.py", line 350, in _install_validation_manifest
+    raise PermissionError("Pack compiler and approver must be independent")
+PermissionError: Pack compiler and approver must be independent

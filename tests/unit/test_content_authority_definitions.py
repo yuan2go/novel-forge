@@ -80,7 +80,7 @@ class ContentAuthorityDefinitionTests(unittest.TestCase):
             "quality.human_evaluation.record", "quality.adjudication.record"})
         self.assertTrue(all(item["definition_version"] == "2.2.0" and
                             item["policy"]["reference_sample_annotation_input_allowed"] for item in references))
-        self.assertTrue(all(item["definition_version"] == "2.1.1" and
+        self.assertTrue(all(item["definition_version"] == ("2.1.2" if item["name"] == "story_design.review.author" else "2.1.1") and
                             "reference_sample_annotation_input_allowed" not in item["policy"] for item in ordinary))
         world = content_operation_definitions(application_build_id="test", commit_sha="a" * 40,
             reference_annotations=True, world_reference_annotations=True)

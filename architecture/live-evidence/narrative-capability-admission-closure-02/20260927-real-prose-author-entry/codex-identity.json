@@ -1,0 +1,16 @@
+{
+  "configured_executable": "/Users/yuan/.local/share/fnm/node-versions/v22.22.2/installation/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+  "sha256": "sha256:8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+  "expected_hash_matches": true,
+  "checks": {
+    "--version": {
+      "exit_code": 0,
+      "output": "codex-cli 0.155.1"
+    },
+    "login status": {
+      "exit_code": 0,
+      "output": "Logged in using ChatGPT"
+    }
+  },
+  "model_dispatches": 0
+}

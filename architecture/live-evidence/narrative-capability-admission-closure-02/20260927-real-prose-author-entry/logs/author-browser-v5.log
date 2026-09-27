@@ -1,0 +1,74 @@
+CONSOLE Failed to load resource: the server responded with a status of 404 (Not Found)
+CONSOLE Failed to load resource: the server responded with a status of 403 (Forbidden)
+CONSOLE Failed to load resource: the server responded with a status of 403 (Forbidden)
+FAILED http://127.0.0.1:8137/authority/books { errorText: 'net::ERR_FAILED' }
+CONSOLE Failed to load resource: net::ERR_FAILED
+CONSOLE Failed to load resource: the server responded with a status of 403 (Forbidden)
+Traceback (most recent call last):
+  File "/tmp/novel-forge-real-prose-20260927/run.py", line 16, in <module>
+    runpy.run_path(sys.argv[0], run_name='__main__')
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/novel-forge-real-prose-20260927/execute-isolated-content.py", line 16, in <module>
+    result=ContentAuthorityScheduler(private['NOVEL_FORGE_DATABASE_URL']).run_or_recover(operation_id=operation_id,project_id=project)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: ContentAuthorityScheduler.__init__() missing 1 required keyword-only argument: 'registry'
+node:internal/errors:998
+  const err = new Error(message);
+              ^
+
+Error: Command failed: /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python /tmp/novel-forge-real-prose-20260927/run.py /tmp/novel-forge-real-prose-20260927/execute-isolated-content.py 51debb5e-0ac6-4e0f-8775-47233fa24cdf
+Traceback (most recent call last):
+  File "/tmp/novel-forge-real-prose-20260927/run.py", line 16, in <module>
+    runpy.run_path(sys.argv[0], run_name='__main__')
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/novel-forge-real-prose-20260927/execute-isolated-content.py", line 16, in <module>
+    result=ContentAuthorityScheduler(private['NOVEL_FORGE_DATABASE_URL']).run_or_recover(operation_id=operation_id,project_id=project)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: ContentAuthorityScheduler.__init__() missing 1 required keyword-only argument: 'registry'
+
+    at genericNodeError (node:internal/errors:998:15)
+    at wrappedFn (node:internal/errors:543:14)
+    at checkExecSyncError (node:child_process:926:11)
+    at execFileSync (node:child_process:962:15)
+    at file:///private/tmp/novel-forge-real-prose-20260927/author-browser.mjs:35:2
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at process.processImmediate (node:internal/timers:472:9) {
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    Buffer(0) [Uint8Array] [],
+    Buffer(717) [Uint8Array] [
+       84, 114,  97,  99, 101,  98,  97,  99, 107,  32,  40, 109,
+      111, 115, 116,  32, 114, 101,  99, 101, 110, 116,  32,  99,
+       97, 108, 108,  32, 108,  97, 115, 116,  41,  58,  10,  32,
+       32,  70, 105, 108, 101,  32,  34,  47, 116, 109, 112,  47,
+      110, 111, 118, 101, 108,  45, 102, 111, 114, 103, 101,  45,
+      114, 101,  97, 108,  45, 112, 114, 111, 115, 101,  45,  50,
+       48,  50,  54,  48,  57,  50,  55,  47, 114, 117, 110,  46,
+      112, 121,  34,  44,  32, 108, 105, 110, 101,  32,  49,  54,
+       44,  32, 105, 110,
+      ... 617 more items
+    ]
+  ],
+  pid: 75667,
+  stdout: Buffer(0) [Uint8Array] [],
+  stderr: Buffer(717) [Uint8Array] [
+     84, 114,  97,  99, 101,  98,  97,  99, 107,  32,  40, 109,
+    111, 115, 116,  32, 114, 101,  99, 101, 110, 116,  32,  99,
+     97, 108, 108,  32, 108,  97, 115, 116,  41,  58,  10,  32,
+     32,  70, 105, 108, 101,  32,  34,  47, 116, 109, 112,  47,
+    110, 111, 118, 101, 108,  45, 102, 111, 114, 103, 101,  45,
+    114, 101,  97, 108,  45, 112, 114, 111, 115, 101,  45,  50,
+     48,  50,  54,  48,  57,  50,  55,  47, 114, 117, 110,  46,
+    112, 121,  34,  44,  32, 108, 105, 110, 101,  32,  49,  54,
+     44,  32, 105, 110,
+    ... 617 more items
+  ]
+}
+
+Node.js v26.3.1

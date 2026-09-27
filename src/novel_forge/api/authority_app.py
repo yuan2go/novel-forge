@@ -741,8 +741,9 @@ def create_authority_app(settings: IndustrialSettings):
         }
         if not runtime_ready:
             from fastapi import HTTPException
+            from fastapi.encoders import jsonable_encoder
 
-            raise HTTPException(status_code=503, detail=result)
+            raise HTTPException(status_code=503, detail=jsonable_encoder(result))
         return result
 
     @app.on_event("shutdown")

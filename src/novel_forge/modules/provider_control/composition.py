@@ -51,6 +51,14 @@ def build_provider_adapter_registry(
     runtime_environment = RuntimeEnvironment.parse(environment)
     values = os.environ if env is None else env
     normalized_ids = {normalize_provider_id(item) for item in provider_ids if item}
+    if runtime_environment is RuntimeEnvironment.PRODUCTION or str(
+        values.get("NOVEL_FORGE_PROVIDER_ROUTER") or ""
+    ).strip() == "quality-cost-v1":
+        # WHY: the Router's execution templates require these adapters even when
+        # the caller's legacy stage configuration selects only Codex CLI.
+        from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
+
+        normalized_ids.update(candidate.provider for candidate in deepseek_candidates(available=True))
     adapter_ids = normalized_ids - {"codex-cli"}
     factory = ProviderAdapterFactory()
     if runtime_environment.fixture_allowed:

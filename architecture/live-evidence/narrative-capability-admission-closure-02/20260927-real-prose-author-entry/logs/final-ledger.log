@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-real-prose-20260927/diagnostic-run-final.py", line 16, in <module>
+    runpy.run_path(sys.argv[0], run_name='__main__')
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/novel-forge-real-prose-20260927/final-ledger.py", line 19, in <module>
+    preserved['book_records']=all(nowbooks[k]==v for k,v in oldbooks.items());assert all(preserved.values()),preserved
+                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'book_production': True, 'effect_counts': True, 'unresolved_effects': True, 'budget_reservations': False, 'budget_scopes': False, 'provider_dispatches': True, 'book_records': True}

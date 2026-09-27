@@ -1,0 +1,23 @@
+node:internal/process/promises:324
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+AssertionError [ERR_ASSERTION]: {"detail":{"code":"BOOK_SCOPE_CONFLICT","message":"BOOK_SCOPE_CONFLICT: workspace is already bound to another book"}}
+
+409 !== 200
+
+    at file:///private/tmp/novel-forge-real-prose-20260927/author-browser.mjs:17:164
+    at async Promise.all (index 1)
+    at async RouteHandler._handleInternal (/Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/playwright-core/lib/coreBundle.js:59784:27)
+    at async RouteHandler._handleImpl (/Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/playwright-core/lib/coreBundle.js:59753:18)
+    at async RouteHandler.handle (/Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/playwright-core/lib/coreBundle.js:59747:16)
+    at async _Page._onRoute (/Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/playwright-core/lib/coreBundle.js:61037:27) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 409,
+  expected: 200,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v26.3.1

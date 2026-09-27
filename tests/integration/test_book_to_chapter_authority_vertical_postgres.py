@@ -1111,6 +1111,33 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 all(item["chapters"] == [] for item in unrelated_pacing["aggregates"])
             )
 
+    def test_author_workspace_keeps_frozen_profile_and_project_book_scope(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=2)
+        project = fixture["project_id"]
+        book_id = f"book:{project}"
+        query = PostgresBookProductionQuery(DATABASE_URL)
+        missing = query.author_workspace(project_id=project, book_id=book_id)
+        self.assertEqual(len(missing["runs"]), 1)
+        self.assertIsNone(missing["runs"][0]["frozen_profile"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            asset_id = identifier("production-profile")
+            uow.cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'production_profile')", [asset_id, project])
+            for version, state, content in ((1, 'SUPERSEDED', {"book_id": book_id, "context_profile": "v2"}),
+                                            (2, 'ACTIVE', {"book_id": book_id, "context_profile": "v3"}),
+                                            (3, 'ACTIVE', {"book_id": "another-book", "context_profile": "unrelated"})):
+                if version == 3:
+                    unrelated_asset = identifier("other-book-profile")
+                    uow.cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'production_profile')", [unrelated_asset, project])
+                uow.cursor.execute("INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version) VALUES (%s,%s,%s,%s,'ELIGIBLE','CLEAR',%s,%s,'fixture.v1')",
+                    ['production-profile:v1' if version == 1 else f'{asset_id}:v{version}', unrelated_asset if version == 3 else asset_id, version, state, json.dumps(content), 'sha256:' + hashlib.sha256(json.dumps(content).encode()).hexdigest()])
+            uow.commit()
+        current = query.author_workspace(project_id=project, book_id=book_id)
+        self.assertEqual(current["runs"][0]["frozen_profile"]["context_profile"], "v2")
+        self.assertEqual([p["content"]["context_profile"] for p in current["profiles"]], ["v3"])
+        self.assertEqual(current["runs"][0]["book_run_id"], fixture["book"].book_run_id)
+        with self.assertRaisesRegex(KernelError, "BOOK_NOT_FOUND"):
+            query.author_workspace(project_id=identifier("other-project"), book_id=book_id)
+
     def test_book_chapter_dispatch_idempotency(self) -> None:
         fixture = self._new_book_fixture(target_chapter_count=2)
         command = self._chapter_command(fixture, chapter_number=1)
