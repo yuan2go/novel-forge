@@ -1,0 +1,57 @@
+{
+  "audit_main_sha": "d69053557e5dd16ccfa4217fde234245a90fdc50",
+  "observed_at_utc": "2026-09-27T09:47:46.604474+00:00",
+  "scope": "Two explicitly referenced local runtime codex-executions directories; retained September 13 records, not a current main run or a full account ledger",
+  "process_receipts": 28,
+  "unique_external_effect_ids": 27,
+  "effects_with_multiple_process_receipts": {
+    "47ddae96-5824-4f78-bc2a-afc4cd855767": [
+      "planning-execution:47ddae96-5824-4f78-bc2a-afc4cd855767:f2a22d65-6d38-42f9-badc-3af938e9e3f1",
+      "planning-execution:47ddae96-5824-4f78-bc2a-afc4cd855767:52c82596-6eb1-4bda-8e34-f1a938f8ad9d"
+    ]
+  },
+  "process_status_counts": {
+    "SUCCEEDED": 26,
+    "TIMED_OUT": 2
+  },
+  "result_kind_counts": {
+    "DESIGN_SEMANTIC_EVALUATION": 13,
+    "DESIGN_GENERATION": 13,
+    "NO_FINAL_RESULT": 2
+  },
+  "observable_input_plus_output_tokens": 841708,
+  "raw_usage_missing_processes": 2,
+  "reasoning_tokens_not_added_twice": true,
+  "historical_ledger_conservative_total": 1174027,
+  "historical_ledger_unknown_ceiling_total": 332319,
+  "ledger_source": "novels/guofeng-xuanhuan-01/output/00_导航与进度/progress.json:131-152",
+  "monetary_cost": null,
+  "cost_basis": "ACCOUNT_ENTITLEMENT; not zero-dollar paid inference",
+  "elapsed_process_sum_ms": 5079701,
+  "elapsed_process_median_ms": 118342.5,
+  "by_book": {
+    "guofeng-xuanhuan-01": {
+      "process_receipts": 17,
+      "status_counts": {
+        "SUCCEEDED": 15,
+        "TIMED_OUT": 2
+      },
+      "observable_input_plus_output_tokens": 521673,
+      "process_elapsed_median_ms": 122644
+    },
+    "yu-xian-zhi-wai": {
+      "process_receipts": 11,
+      "status_counts": {
+        "SUCCEEDED": 11
+      },
+      "observable_input_plus_output_tokens": 320035,
+      "process_elapsed_median_ms": 114041
+    }
+  },
+  "qualification_note": "Process SUCCEEDED is not schema/domain accepted; the Rain world process succeeded but the native business operation failed. No chapter task exists in these receipts; chapter-execution prefix is also used for semantic evaluators.",
+  "unique_novel_chapter_texts_from_these_receipts": 0,
+  "evaluation_criteria_counts": {
+    "PASS": 70
+  },
+  "unknown_outcome_note": "Two timeout process receipts, one world Effect has a separate later succeeded attempt. Do not call these 28 independent business targets or equate timeout with proven remote failure."
+}

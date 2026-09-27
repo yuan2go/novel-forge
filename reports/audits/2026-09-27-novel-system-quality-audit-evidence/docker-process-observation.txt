@@ -1,0 +1,2 @@
+novel-forge-first-novel-pilot-objects	minio/minio:RELEASE.2024-07-16T23-46-41Z	Up 18 hours	127.0.0.1:61961->9000/tcp
+novel-forge-first-novel-pilot-data	pgvector/pgvector:pg16	Up 18 hours	127.0.0.1:61959->5432/tcp

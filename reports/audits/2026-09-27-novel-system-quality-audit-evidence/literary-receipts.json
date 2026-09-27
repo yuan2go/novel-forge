@@ -1,0 +1,2099 @@
+{
+  "schema_version": "novel-system-audit.receipt-inventory.v1",
+  "audit_main_sha": "d69053557e5dd16ccfa4217fde234245a90fdc50",
+  "records": [
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-3c180f6a-806c-48a5-a7c9-cb965f-794a345d239d31b1/process-receipt.json",
+        "sha256": "d39c47b86b5ef28e700b237f586c8802c2b297c4627435df1163825010ec56e7",
+        "bytes": 2340
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-3c180f6a-806c-48a5-a7c9-cb965f-794a345d239d31b1/stdout.log",
+        "sha256": "53ae22640721331152aaa1ef00b3420b6100705050772a781ad141b87dec79f6",
+        "bytes": 7629
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-3c180f6a-806c-48a5-a7c9-cb965f-794a345d239d31b1/execution-metadata.json",
+        "sha256": "2d97ccff745ba1853d7bf082f9549799087620366cc92399b1ba7a219febe20c",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-3c180f6a-806c-48a5-a7c9-cb965f-794a345d239d31b1/last-message.json",
+        "sha256": "0390c0823b582716c057f390cc4c27b63cf0bc9e65ff5e784c2bbe2d0400c201",
+        "bytes": 6737
+      },
+      "receipt_id": "process-receipt:e1ac0b5c72c940380ca3836e",
+      "execution_id": "chapter-execution:3c180f6a-806c-48a5-a7c9-cb965fd2a109",
+      "external_effect_id_from_execution_id": "3c180f6a-806c-48a5-a7c9-cb965fd2a109",
+      "operation_id": "87fc4229-d596-4db3-bb61-161866403c95",
+      "attempt_id": "29a88933-2008-479a-ac3f-5b1d7b0a64fe",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "world-foundation-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T18:24:56.279831Z",
+      "completed_at": "2026-09-13T18:26:20.906579Z",
+      "elapsed_ms": 84625,
+      "local_termination_only": false,
+      "input_sha256": "50d1dcec9f6f8fde2f5a920343f9047af23d3a1c8165dda36f1c32be7645cecb",
+      "command_sha256": "b8e974551db3d1689f3778139fbb3d3bc5d39c1bb7e9956973d00504332956d2",
+      "request_digest": "e1ac0b5c72c940380ca3836e7b0ae597c95a254d72a3cc7bf93f4b38289b56f4",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 30622,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2570,
+        "reasoning_output_tokens": 294
+      },
+      "observable_input_plus_output_tokens": 33192,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "world-foundation-semantic-v1",
+          "criterion": "WORLD_RULE_COHERENCE",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "world-foundation-semantic-v1",
+          "criterion": "RULE_COST_AND_LIMIT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "world-foundation-semantic-v1",
+          "criterion": "CONFLICT_GENERATION_CAPACITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "world-foundation-semantic-v1",
+          "criterion": "CHARACTER_AGENCY_SUPPORT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "world-foundation-semantic-v1",
+          "criterion": "LONGFORM_EVOLUTION_CAPACITY",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-59e1dff6-18d6-4977-b81c-e9c360-d1d212d66f3f7002/process-receipt.json",
+        "sha256": "e873913fa319b3efc748c02fa3ca2624177d42ea65b72e2b5522e6cd67c714c0",
+        "bytes": 2340
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-59e1dff6-18d6-4977-b81c-e9c360-d1d212d66f3f7002/stdout.log",
+        "sha256": "a8b6e98d6327c31d03e34dcb25473a64936b25cdf5fb675e9198b3a11b0b3880",
+        "bytes": 6008
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-59e1dff6-18d6-4977-b81c-e9c360-d1d212d66f3f7002/execution-metadata.json",
+        "sha256": "0d5c1b02a57f24e7882942dce8cf6b5dba05647d300d29bc7f9d34e73788b1da",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-59e1dff6-18d6-4977-b81c-e9c360-d1d212d66f3f7002/last-message.json",
+        "sha256": "92c07d97a637c91374e35712b438b1f52cab96a686298ebab4b554cfc78720a4",
+        "bytes": 5134
+      },
+      "receipt_id": "process-receipt:3ca670c91a25ab92a3ad617c",
+      "execution_id": "chapter-execution:59e1dff6-18d6-4977-b81c-e9c360de72f9",
+      "external_effect_id_from_execution_id": "59e1dff6-18d6-4977-b81c-e9c360de72f9",
+      "operation_id": "32e206a6-02d6-4fe9-a82d-cd69becf4319",
+      "attempt_id": "a0769077-feca-4ac8-a59c-10ead30394e2",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "creative-foundation-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T17:47:21.319873Z",
+      "completed_at": "2026-09-13T17:48:29.421506Z",
+      "elapsed_ms": 68100,
+      "local_termination_only": false,
+      "input_sha256": "6257bc752366f25108b962fe35f14e3aad1e2583d84b50f017038ae32e00ec57",
+      "command_sha256": "66dc473189430a61d5ff0fbfd42d999f88f6629ac364751ead1cad30dc6245e9",
+      "request_digest": "3ca670c91a25ab92a3ad617c27955fdd6abda877ba31bb9c6032e7fd1b0c94a2",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 20942,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1959,
+        "reasoning_output_tokens": 335
+      },
+      "observable_input_plus_output_tokens": 22901,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "CORE_CONFLICT_CLARITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "READER_FIT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "DIFFERENTIATION",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "SERIALIZATION_CAPACITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "EMOTIONAL_CONTRACT",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-a0c61619-2aa7-451e-b798-ec19fe-70bc08f16ac51b80/process-receipt.json",
+        "sha256": "35e30022a49635d73d376e36eb4a528bb97d751166e8afb1d75f8f948d202103",
+        "bytes": 2341
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-a0c61619-2aa7-451e-b798-ec19fe-70bc08f16ac51b80/stdout.log",
+        "sha256": "05fd1c0dcadf74621fdb24c1756748347535f76fe2ce0eb7b5f4d1f580405295",
+        "bytes": 13351
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-a0c61619-2aa7-451e-b798-ec19fe-70bc08f16ac51b80/execution-metadata.json",
+        "sha256": "6e20afc5a9b70e95f1634bfa9571fa900e77453c199568b7d137224f47820ce8",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-a0c61619-2aa7-451e-b798-ec19fe-70bc08f16ac51b80/last-message.json",
+        "sha256": "1143816b022881cb68480be16ce29987e3bedf828f6ca2459e08a57a5055af8e",
+        "bytes": 12260
+      },
+      "receipt_id": "process-receipt:6c6e51029c9c8776361fcda5",
+      "execution_id": "chapter-execution:a0c61619-2aa7-451e-b798-ec19fef726a3",
+      "external_effect_id_from_execution_id": "a0c61619-2aa7-451e-b798-ec19fef726a3",
+      "operation_id": "13a5df41-9a27-4704-9a7b-2cf0b555e4ba",
+      "attempt_id": "30cc072a-3f9e-40da-85c9-380a7950d0b1",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "story-intent-semantic-v1,story-foundation-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T19:33:50.160216Z",
+      "completed_at": "2026-09-13T19:36:08.921338Z",
+      "elapsed_ms": 138759,
+      "local_termination_only": false,
+      "input_sha256": "4e31a91b6cb2cf0b6345e7f117541e648e8d5539bb1cda4b04d7b565cf7694fb",
+      "command_sha256": "11f6a3e154c97b983b455bfa00b3728f2f4bf465dcd5408c134e66d1015243dc",
+      "request_digest": "6c6e51029c9c8776361fcda5540411985749d2a8f37a8051f5d13fa911b836e1",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 68872,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 4227,
+        "reasoning_output_tokens": 270
+      },
+      "observable_input_plus_output_tokens": 73099,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "story-intent-semantic-v1",
+          "criterion": "PREMISE_COHERENCE",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "story-intent-semantic-v1",
+          "criterion": "THEME_CONFLICT_ALIGNMENT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "story-intent-semantic-v1",
+          "criterion": "GENRE_READER_PROMISE_ALIGNMENT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "story-intent-semantic-v1",
+          "criterion": "ENDING_INTENT_REACHABILITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "story-intent-semantic-v1",
+          "criterion": "CORE_CONFLICT_CLARITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "story-foundation-semantic-v1",
+          "criterion": "WORLD_RULE_COHERENCE",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "story-foundation-semantic-v1",
+          "criterion": "CHARACTER_CONFLICT_FIT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "story-foundation-semantic-v1",
+          "criterion": "OPPOSITION_CAPACITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "story-foundation-semantic-v1",
+          "criterion": "NARRATIVE_DNA_DISTINCTNESS",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "story-foundation-semantic-v1",
+          "criterion": "LONGFORM_FOUNDATION_CAPACITY",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-bd7f4d85-267e-4313-bec8-81f9d8-11d756a25f9ece58/process-receipt.json",
+        "sha256": "3a13a75c469b0663fb5f2655a600df66c06b267a63ba236e185379882cde3a6d",
+        "bytes": 2340
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-bd7f4d85-267e-4313-bec8-81f9d8-11d756a25f9ece58/stdout.log",
+        "sha256": "d5005de58b837ccae56e9378d0a9ba6299202d30e9f9696af41d613c2b6bb8bc",
+        "bytes": 5508
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-bd7f4d85-267e-4313-bec8-81f9d8-11d756a25f9ece58/execution-metadata.json",
+        "sha256": "61b9a746847b9aee23ee825a88463c5d206091069c52ba3c645a4b8526a07843",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-bd7f4d85-267e-4313-bec8-81f9d8-11d756a25f9ece58/last-message.json",
+        "sha256": "1d6923cdb4ec6fc2a8ae6f66b84c4f16650996fe5bd3284413d33d281e178578",
+        "bytes": 4622
+      },
+      "receipt_id": "process-receipt:c79b563aa96419ae9fb9dcf8",
+      "execution_id": "chapter-execution:bd7f4d85-267e-4313-bec8-81f9d8c678a6",
+      "external_effect_id_from_execution_id": "bd7f4d85-267e-4313-bec8-81f9d8c678a6",
+      "operation_id": "6b4f306a-9364-4f02-9a96-b66a542b7e8e",
+      "attempt_id": "db1b42a8-7f44-499b-b773-3f62102d1248",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "ending-intent-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T17:57:23.296570Z",
+      "completed_at": "2026-09-13T17:58:17.051404Z",
+      "elapsed_ms": 53753,
+      "local_termination_only": false,
+      "input_sha256": "6b4dca188299abc1d8d336ab0ca712346682a56d2679efc241cd89aca02e4082",
+      "command_sha256": "a78db590cef22bc032038a950f8c9ee835c7ae63d6d9106ab10bc119bf856943",
+      "request_digest": "c79b563aa96419ae9fb9dcf8d33bce9c970dee52d757b76be8b4bd5ca0e7118f",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 18743,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1482,
+        "reasoning_output_tokens": 213
+      },
+      "observable_input_plus_output_tokens": 20225,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "ending-intent-semantic-v1",
+          "criterion": "ENDING_DIRECTION_CLARITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "ending-intent-semantic-v1",
+          "criterion": "PROTAGONIST_COST",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "ending-intent-semantic-v1",
+          "criterion": "TRANSFORMATION_REACHABILITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "ending-intent-semantic-v1",
+          "criterion": "THEME_CLOSURE_ALIGNMENT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "ending-intent-semantic-v1",
+          "criterion": "LONGFORM_REACHABILITY",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-c0324929-af28-4735-8ecd-c5c1dd-bfe0238d56726496/process-receipt.json",
+        "sha256": "cb00cbb70b25dadeaf0d3c96ad8b44ada848ab04dfa2f77a165ce5599f75d72c",
+        "bytes": 2340
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-c0324929-af28-4735-8ecd-c5c1dd-bfe0238d56726496/stdout.log",
+        "sha256": "cfcce56bbaf77bed947d15324e9f48f2407a1cdc963f1574ec1c14f3d04c7be9",
+        "bytes": 5724
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-c0324929-af28-4735-8ecd-c5c1dd-bfe0238d56726496/execution-metadata.json",
+        "sha256": "f5bc77d0e3223a60a7598d336348a5626a9eec8a948b15121a722e2adaa5d4d3",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-c0324929-af28-4735-8ecd-c5c1dd-bfe0238d56726496/last-message.json",
+        "sha256": "0f801240ec447627f74b45a615d8069ebb267f1301aa5c6aa26c40329dd8bc20",
+        "bytes": 4829
+      },
+      "receipt_id": "process-receipt:201d3dbcb28cde89596a8a73",
+      "execution_id": "chapter-execution:c0324929-af28-4735-8ecd-c5c1dd195535",
+      "external_effect_id_from_execution_id": "c0324929-af28-4735-8ecd-c5c1dd195535",
+      "operation_id": "45036a6d-b538-44e9-aab2-344f6d708beb",
+      "attempt_id": "e9eb79ab-5f28-4cef-939b-018d16bdb0e5",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "theme-contract-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T17:53:24.677351Z",
+      "completed_at": "2026-09-13T17:54:23.347233Z",
+      "elapsed_ms": 58668,
+      "local_termination_only": false,
+      "input_sha256": "07ebb72eed540676e863f524e2a466a2944c9de54bd432054db04cabe6f6f24c",
+      "command_sha256": "7d2b054706b035130523af4da85dc5b4a1ea8c511d6c68c70d399a4b74bbc3bf",
+      "request_digest": "201d3dbcb28cde89596a8a73755d8f0d1bac7bbed7933d49fabec85f0e1d9526",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 19191,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1714,
+        "reasoning_output_tokens": 245
+      },
+      "observable_input_plus_output_tokens": 20905,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "theme-contract-semantic-v1",
+          "criterion": "THEMATIC_QUESTION_CLARITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "theme-contract-semantic-v1",
+          "criterion": "CONFLICT_PRESSURE",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "theme-contract-semantic-v1",
+          "criterion": "CHARACTER_CHOICE_RELEVANCE",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "theme-contract-semantic-v1",
+          "criterion": "ENDING_ALIGNMENT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "theme-contract-semantic-v1",
+          "criterion": "ANTI_PREACHING_CAPACITY",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-cf98c9fb-c69b-4577-9140-a73200-96d4d028514cd704/process-receipt.json",
+        "sha256": "2198adc4ab8ef4cf83a7e1b30ad6699399739b56bd6a316955ef21a82c475297",
+        "bytes": 2340
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-cf98c9fb-c69b-4577-9140-a73200-96d4d028514cd704/stdout.log",
+        "sha256": "f2249d5621c0b2d32124652aee474e80a449946a6830708352f827eb50439e5d",
+        "bytes": 7247
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-cf98c9fb-c69b-4577-9140-a73200-96d4d028514cd704/execution-metadata.json",
+        "sha256": "809e0cd78852009ba6290b897f514dc8e38f5da91ac2d4b8e5ca09a9d95fa470",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-cf98c9fb-c69b-4577-9140-a73200-96d4d028514cd704/last-message.json",
+        "sha256": "e0551e7dd3712ae218a331fd6bf8de0b7ba122608b35aafeb2e2f339fe102550",
+        "bytes": 6337
+      },
+      "receipt_id": "process-receipt:71d3b027d95445f609348a0f",
+      "execution_id": "chapter-execution:cf98c9fb-c69b-4577-9140-a73200578e73",
+      "external_effect_id_from_execution_id": "cf98c9fb-c69b-4577-9140-a73200578e73",
+      "operation_id": "1a02299b-bcea-4bb6-bf34-5bd8825780da",
+      "attempt_id": "30151833-7d6f-4041-8f53-d5309d850731",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "character-cast-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T18:34:24.175491Z",
+      "completed_at": "2026-09-13T18:35:40.568729Z",
+      "elapsed_ms": 76392,
+      "local_termination_only": false,
+      "input_sha256": "6d586c7cc05faae8f5f1f414dfd5c8e73cd541fc86e2076d20d56a59c7efc3c8",
+      "command_sha256": "e562409e310570186cfc9f9a016f77f9e21fbb90575653ce7b394fc9a02d33db",
+      "request_digest": "71d3b027d95445f609348a0fa2e04b538b2d36463ed873d2855cde08683202f2",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 27916,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2282,
+        "reasoning_output_tokens": 388
+      },
+      "observable_input_plus_output_tokens": 30198,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "character-cast-semantic-v1",
+          "criterion": "CHARACTER_AGENCY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "character-cast-semantic-v1",
+          "criterion": "DESIRE_NEED_CONFLICT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "character-cast-semantic-v1",
+          "criterion": "VOICE_DIFFERENTIATION",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "character-cast-semantic-v1",
+          "criterion": "RELATIONSHIP_FUNCTION",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "character-cast-semantic-v1",
+          "criterion": "ARC_REACHABILITY",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e2705267-8685-4b7e-8c61-295b12-18ed4c4150803b41/process-receipt.json",
+        "sha256": "c891951eb089fbe620a344c8509600abcfa23c990c489b520b4e204bbb6abc5b",
+        "bytes": 2340
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e2705267-8685-4b7e-8c61-295b12-18ed4c4150803b41/stdout.log",
+        "sha256": "64c8c1e57cd53c114952cd083955fa814f971599c8e6ec3c8b431c417f598c3f",
+        "bytes": 6734
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e2705267-8685-4b7e-8c61-295b12-18ed4c4150803b41/execution-metadata.json",
+        "sha256": "c08a3a4751314bfafe1d2de0b9a6104228bc48fd5f7e9925894e21afb55a7b62",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e2705267-8685-4b7e-8c61-295b12-18ed4c4150803b41/last-message.json",
+        "sha256": "e0ff5ec1e1cd50d6043cbb8bc398f1a636a21e839a8b4391715d13a4cf458ad3",
+        "bytes": 5824
+      },
+      "receipt_id": "process-receipt:e3af2758faee7c0c9eb47f3c",
+      "execution_id": "chapter-execution:e2705267-8685-4b7e-8c61-295b126079cd",
+      "external_effect_id_from_execution_id": "e2705267-8685-4b7e-8c61-295b126079cd",
+      "operation_id": "fc429018-c9c2-4c03-9dde-0232c1bec6e8",
+      "attempt_id": "66435dc8-618b-4cd8-8f30-37daa1d0b50f",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "reader-promise-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T18:01:00.593844Z",
+      "completed_at": "2026-09-13T18:02:04.420983Z",
+      "elapsed_ms": 63825,
+      "local_termination_only": false,
+      "input_sha256": "ab7257918e26ab1e2a72c19ffbbd1e445badec6ac4c6aa50af373de7edb13f3c",
+      "command_sha256": "0d3e2493fd5627db824d3b2bd8847c59676b8262130e2d1ff2613182606a601b",
+      "request_digest": "e3af2758faee7c0c9eb47f3c4e3de634906b478643368b9bc2d6e55ea35bae04",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 19838,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1909,
+        "reasoning_output_tokens": 162
+      },
+      "observable_input_plus_output_tokens": 21747,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "reader-promise-semantic-v1",
+          "criterion": "PROMISE_SPECIFICITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "reader-promise-semantic-v1",
+          "criterion": "GENRE_ALIGNMENT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "reader-promise-semantic-v1",
+          "criterion": "REWARD_REACHABILITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "reader-promise-semantic-v1",
+          "criterion": "PAYOFF_EXPECTATION_CLARITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "reader-promise-semantic-v1",
+          "criterion": "SUSTAINABLE_CADENCE",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e37cfbba-0132-47b8-a04b-450434-e082af94f3236151/process-receipt.json",
+        "sha256": "9d7696dcdc1bc5a93a517c106ed124a9dce7af3b40e5f46637b344ae63eb92ba",
+        "bytes": 2340
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e37cfbba-0132-47b8-a04b-450434-e082af94f3236151/stdout.log",
+        "sha256": "b28ce565a7324aac49c1520b7beb2b52c575b4fd58437ada4ee05a3e427e632e",
+        "bytes": 5743
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e37cfbba-0132-47b8-a04b-450434-e082af94f3236151/execution-metadata.json",
+        "sha256": "15e537fc4bda7089155e75929b15beae794b66e6b780241a8aa3d3f14536906b",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/chapter-execution-e37cfbba-0132-47b8-a04b-450434-e082af94f3236151/last-message.json",
+        "sha256": "8e1f00df6ea71140f2c3844d18fbc7ad830b02733f2d958746e1cc82ad712146",
+        "bytes": 4860
+      },
+      "receipt_id": "process-receipt:07c56f5a8d413b438da4a57f",
+      "execution_id": "chapter-execution:e37cfbba-0132-47b8-a04b-45043430f1ba",
+      "external_effect_id_from_execution_id": "e37cfbba-0132-47b8-a04b-45043430f1ba",
+      "operation_id": "757fcb14-3ab8-4bd7-b56d-28196e8802f9",
+      "attempt_id": "ac2d4a64-0dd2-4c3c-a8e9-d9a738832c60",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "creative-foundation-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T17:43:14.671479Z",
+      "completed_at": "2026-09-13T17:44:10.988118Z",
+      "elapsed_ms": 56315,
+      "local_termination_only": false,
+      "input_sha256": "1a3b464573e5c84fc55d44f5b0d320def3b5d5963b85f4c43739f0f4641a671a",
+      "command_sha256": "61cdcc985c31111ee433581d7fe60b6d42f1e3530ef4c450ce95411d76fb93e1",
+      "request_digest": "07c56f5a8d413b438da4a57fd323a351106e3611621a4dc3b702e270f85889dd",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 20671,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1626,
+        "reasoning_output_tokens": 218
+      },
+      "observable_input_plus_output_tokens": 22297,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "CORE_CONFLICT_CLARITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "READER_FIT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "DIFFERENTIATION",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "SERIALIZATION_CAPACITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "EMOTIONAL_CONTRACT",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-01c8181a-c950-4b8b-b850-e3974-142f81f4249d51f5/process-receipt.json",
+        "sha256": "2d224adb2ac44b56199fad1b0788d2f20f841f4e5d280a777b450c4a8897e3e3",
+        "bytes": 2379
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-01c8181a-c950-4b8b-b850-e3974-142f81f4249d51f5/stdout.log",
+        "sha256": "c19f7195298c29092ec9be11c005ac759f914394512c8a3965fc833137b4a752",
+        "bytes": 19424
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-01c8181a-c950-4b8b-b850-e3974-142f81f4249d51f5/execution-metadata.json",
+        "sha256": "aaf93804ab1199633b653aad6a9f4717388bc3665f3351b93e4c961f829d9275",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-01c8181a-c950-4b8b-b850-e3974-142f81f4249d51f5/last-message.json",
+        "sha256": "7cbfead44bf64f2d9dbe75b8551f95ee8c77a1a6b49fadac81c56b203da8bff1",
+        "bytes": 18334
+      },
+      "receipt_id": "process-receipt:f37b91c5b84681d456a8a2be",
+      "execution_id": "planning-execution:01c8181a-c950-4b8b-b850-e3974dd577eb:ef40f521-684e-4964-a7e8-603e0bc4772d",
+      "external_effect_id_from_execution_id": "01c8181a-c950-4b8b-b850-e3974dd577eb",
+      "operation_id": "58320be8-f7a1-4508-bca0-06383f8f4c37",
+      "attempt_id": "ef40f521-684e-4964-a7e8-603e0bc4772d",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "creative.proposal.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T17:39:36.133894Z",
+      "completed_at": "2026-09-13T17:43:06.028649Z",
+      "elapsed_ms": 209913,
+      "local_termination_only": false,
+      "input_sha256": "c50adb0084c347c2d6b4e2a10d0452ccd154bee59dabf76038c75d4964088266",
+      "command_sha256": "7db24dc985392c47e05df5cc8bcac6e0a3f36ab90471d3865ab430ddce91bf17",
+      "request_digest": "f37b91c5b84681d456a8a2be92a8bff65d7835df6e52c25543a40ee2fd7dfa58",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 19730,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 5454,
+        "reasoning_output_tokens": 343
+      },
+      "observable_input_plus_output_tokens": 25184,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-3d3ba024-121b-4bce-8b05-48663-49a482ba940e9f4a/process-receipt.json",
+        "sha256": "301634f1dc9abc3ce2bdefaa4999ae6c44e6c22f90e9d265e6b6d3669d04214d",
+        "bytes": 2379
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-3d3ba024-121b-4bce-8b05-48663-49a482ba940e9f4a/stdout.log",
+        "sha256": "df3ca04878349398e3056bfe630261bd3884257967ba78f44a542d21c6906af0",
+        "bytes": 12001
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-3d3ba024-121b-4bce-8b05-48663-49a482ba940e9f4a/execution-metadata.json",
+        "sha256": "a040bcdca6588541cf988fc25b7be9cfd4dd52aab99dfdcc83547e6f1dafea40",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-3d3ba024-121b-4bce-8b05-48663-49a482ba940e9f4a/last-message.json",
+        "sha256": "b33d35f8dda8cdbb9074e00cedf8926d9bb500d4682580a5368de12394769a58",
+        "bytes": 11157
+      },
+      "receipt_id": "process-receipt:eae96ccd4ba2a462462d8064",
+      "execution_id": "planning-execution:3d3ba024-121b-4bce-8b05-4866362e4e65:83ed07bb-e605-421c-b8de-6548adb72896",
+      "external_effect_id_from_execution_id": "3d3ba024-121b-4bce-8b05-4866362e4e65",
+      "operation_id": "e7226485-ce85-44af-acfb-32b5902c8715",
+      "attempt_id": "83ed07bb-e605-421c-b8de-6548adb72896",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "ending.intent.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T17:55:22.006270Z",
+      "completed_at": "2026-09-13T17:57:13.716514Z",
+      "elapsed_ms": 111700,
+      "local_termination_only": false,
+      "input_sha256": "7b08cd8ee6f814cc6c0894b84654ce114bcbc11c797362eb94fbbfb4d39e0d97",
+      "command_sha256": "364843bb0ad0c4af7c60535f00ed3ce62e76d2ca64e0522c3c963b376de8191d",
+      "request_digest": "eae96ccd4ba2a462462d80646adb364780cd25f9f441233e8bbd11b2e285bf70",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 26943,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3269,
+        "reasoning_output_tokens": 219
+      },
+      "observable_input_plus_output_tokens": 30212,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-a30a43e5ca7162ce/process-receipt.json",
+        "sha256": "9e584dafd7883f3031eec1cb587b0c76a5732a60aa166ff8c07f5b130bc96fec",
+        "bytes": 2419
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-a30a43e5ca7162ce/stdout.log",
+        "sha256": "0d7db0369997934b5931a9cf90bb34bbdb0be04cb85fd8550011226e8e60fa5b",
+        "bytes": 428
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-a30a43e5ca7162ce/execution-metadata.json",
+        "sha256": "7e7030391e965072ac88bdc1a16c9dd6a95ee0def15d639d1f257a5c241cdc55",
+        "bytes": 252
+      },
+      "result": null,
+      "receipt_id": "process-receipt:e154eb85f17906fc671d7dc2",
+      "execution_id": "planning-execution:47ddae96-5824-4f78-bc2a-afc4cd855767:f2a22d65-6d38-42f9-badc-3af938e9e3f1",
+      "external_effect_id_from_execution_id": "47ddae96-5824-4f78-bc2a-afc4cd855767",
+      "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+      "attempt_id": "f2a22d65-6d38-42f9-badc-3af938e9e3f1",
+      "status": "TIMED_OUT",
+      "result_kind": "NO_FINAL_RESULT",
+      "task": "world.design.generate",
+      "schema_version": null,
+      "result_integrity": "MISSING",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T18:02:17.700452Z",
+      "completed_at": "2026-09-13T18:11:48.114997Z",
+      "elapsed_ms": 570412,
+      "local_termination_only": true,
+      "input_sha256": "7742449e44828034b919d0c543cdc3f31b156576f3d17205112e1c011e896939",
+      "command_sha256": "884de797ede36323987659825973c2844387a03533c35b8766da3dbe3d7a3739",
+      "request_digest": "e154eb85f17906fc671d7dc2ee06fcf041a2f41a0304cebf0001bfa77c3adf7e",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": null,
+      "observable_input_plus_output_tokens": null,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-f4072b332670c396/process-receipt.json",
+        "sha256": "6e318e0d219b7b3854fd6f8e54e9092a253db32a0b7d5645162e6ba56d8f5f94",
+        "bytes": 2379
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-f4072b332670c396/stdout.log",
+        "sha256": "635acde09723f91ab08963453f4ad75912463e420e0dd882f3460f1639669b28",
+        "bytes": 60959
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-f4072b332670c396/execution-metadata.json",
+        "sha256": "7caa37bfaab6591d037efc036d289aa27ff4b033fd6d6c08e3c2f373e0392faf",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-47ddae96-5824-4f78-bc2a-afc4c-f4072b332670c396/last-message.json",
+        "sha256": "b06a60670974ee47dbc56052fe846b90bf84a1d210d1c07b341c4100f357143c",
+        "bytes": 56822
+      },
+      "receipt_id": "process-receipt:b6a3d3463e668722fd0258f6",
+      "execution_id": "planning-execution:47ddae96-5824-4f78-bc2a-afc4cd855767:52c82596-6eb1-4bda-8e34-f1a938f8ad9d",
+      "external_effect_id_from_execution_id": "47ddae96-5824-4f78-bc2a-afc4cd855767",
+      "operation_id": "63f8d2dc-c959-4f3c-b4a8-70d08a51a5de",
+      "attempt_id": "52c82596-6eb1-4bda-8e34-f1a938f8ad9d",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "world.design.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T18:16:17.635953Z",
+      "completed_at": "2026-09-13T18:24:45.220795Z",
+      "elapsed_ms": 507583,
+      "local_termination_only": false,
+      "input_sha256": "7742449e44828034b919d0c543cdc3f31b156576f3d17205112e1c011e896939",
+      "command_sha256": "c3de84519d025f0b9a53cdd8b11c96cdc0dbf907d805cb11856e45e3ef98ac25",
+      "request_digest": "b6a3d3463e668722fd0258f6a4da187a06ae793969baf92e2c906d54465f6af8",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 44500,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 16612,
+        "reasoning_output_tokens": 1326
+      },
+      "observable_input_plus_output_tokens": 61112,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-8e252887-ff1f-45e5-b845-1a8e2-8ddb0c0d273885ea/process-receipt.json",
+        "sha256": "142b096a31d4310a1bc83d45906837831ebb8f5e7d888e23dd8228b4ba9f5b68",
+        "bytes": 2379
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-8e252887-ff1f-45e5-b845-1a8e2-8ddb0c0d273885ea/stdout.log",
+        "sha256": "69cee5d5453e70a8eef954263a267889a9a704c59197df964b70b9e4aa6eed65",
+        "bytes": 20312
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-8e252887-ff1f-45e5-b845-1a8e2-8ddb0c0d273885ea/execution-metadata.json",
+        "sha256": "f6ffe3a0096925d779649234bf69fa1d251287d12f90375af7299e8e32d34bf3",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-8e252887-ff1f-45e5-b845-1a8e2-8ddb0c0d273885ea/last-message.json",
+        "sha256": "a2ca4cd9c69adef5a107486db2b4f38bbc31b9388bb2efe8427b240f10b2cef8",
+        "bytes": 19340
+      },
+      "receipt_id": "process-receipt:57bdf5fe52e167d2dec56b38",
+      "execution_id": "planning-execution:8e252887-ff1f-45e5-b845-1a8e2ccc5129:f0dbcb64-1803-45e9-83f4-0a68bd202d8e",
+      "external_effect_id_from_execution_id": "8e252887-ff1f-45e5-b845-1a8e2ccc5129",
+      "operation_id": "d6f70986-b171-47f8-9f04-3134aa74a740",
+      "attempt_id": "f0dbcb64-1803-45e9-83f4-0a68bd202d8e",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "creative.proposal.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T17:44:12.423533Z",
+      "completed_at": "2026-09-13T17:47:18.635907Z",
+      "elapsed_ms": 186211,
+      "local_termination_only": false,
+      "input_sha256": "5a7425ca78464a859fff9c0474344d7ba9d70eaa981336be1198e54b1c05ce2e",
+      "command_sha256": "7ce82b2db67a807a7e1903f608e0c9df8053d381fa4b41a304168e6b8e561638",
+      "request_digest": "57bdf5fe52e167d2dec56b38c47d501f26f9d2707dc0fd04027a55a8f2c24f0d",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 19726,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 5907,
+        "reasoning_output_tokens": 516
+      },
+      "observable_input_plus_output_tokens": 25633,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-d241afbc-f126-4bf3-9b71-03c72-1c8f49454c205e9c/process-receipt.json",
+        "sha256": "418039c2d12a1048e9dc47fddda4b865f158fb627703a3ecb1ec3b92cdbda86b",
+        "bytes": 2379
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-d241afbc-f126-4bf3-9b71-03c72-1c8f49454c205e9c/stdout.log",
+        "sha256": "33c3d4f15b055e23fb9af25a5e109eeddbb5fe19908f92b7adb987ba86f60dac",
+        "bytes": 13981
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-d241afbc-f126-4bf3-9b71-03c72-1c8f49454c205e9c/execution-metadata.json",
+        "sha256": "e4d69934bb4caad5b7d659babed419c1192b527d217846b6f157296ab5be7d0a",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-d241afbc-f126-4bf3-9b71-03c72-1c8f49454c205e9c/last-message.json",
+        "sha256": "7b16d0103beb8aa3bd3463d555e43a8753a5bff9d2690961cc33c24793035845",
+        "bytes": 13054
+      },
+      "receipt_id": "process-receipt:0a2112647e24d6d325aa3753",
+      "execution_id": "planning-execution:d241afbc-f126-4bf3-9b71-03c722c697ae:7fbe33a7-ed73-488f-a97d-3fa3e259c0cf",
+      "external_effect_id_from_execution_id": "d241afbc-f126-4bf3-9b71-03c722c697ae",
+      "operation_id": "f7fdb3b8-2d72-451c-a06d-20f8e399e05d",
+      "attempt_id": "7fbe33a7-ed73-488f-a97d-3fa3e259c0cf",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "theme.question.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T17:51:14.029276Z",
+      "completed_at": "2026-09-13T17:53:16.675269Z",
+      "elapsed_ms": 122644,
+      "local_termination_only": false,
+      "input_sha256": "2290e65dbc90c31a73c8a52d5ac48d2e3a69e974f039fe72f72c69f6c456ed39",
+      "command_sha256": "fa4833b9a1f73036177cada716643ca2734164484bdf0e923760b4f74e9a5974",
+      "request_digest": "0a2112647e24d6d325aa37533ce93b808f560e3705c8456e37226db9a7129c53",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 27106,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3846,
+        "reasoning_output_tokens": 334
+      },
+      "observable_input_plus_output_tokens": 30952,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e411fdbb-1c14-4117-acb1-37690-8d5bcf72de680783/process-receipt.json",
+        "sha256": "c4f03e8debbce09e149f134e801ea26820cb5a4237eb109be579653091cee65d",
+        "bytes": 2379
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e411fdbb-1c14-4117-acb1-37690-8d5bcf72de680783/stdout.log",
+        "sha256": "93a0fc8b78288e59463ed1f1497582dbbde4a013a60800adede1f0fcf0ce35df",
+        "bytes": 16420
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e411fdbb-1c14-4117-acb1-37690-8d5bcf72de680783/execution-metadata.json",
+        "sha256": "e06d8450a354dfc0f6f559a7f9657a445b6110bf6fc1d34c00339ea1da1e1532",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e411fdbb-1c14-4117-acb1-37690-8d5bcf72de680783/last-message.json",
+        "sha256": "8ffaa64349ac24cf396dbcbd4ac631b29a75c5f986ace6e914cf420047278ea7",
+        "bytes": 15423
+      },
+      "receipt_id": "process-receipt:c545133d91c43706bcf25778",
+      "execution_id": "planning-execution:e411fdbb-1c14-4117-acb1-376901cf15e6:35ee6034-24eb-407c-a821-8f5f6bea9588",
+      "external_effect_id_from_execution_id": "e411fdbb-1c14-4117-acb1-376901cf15e6",
+      "operation_id": "bdb13fe9-9444-4be0-9bee-9f1733216c42",
+      "attempt_id": "35ee6034-24eb-407c-a821-8f5f6bea9588",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "reader.promise.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T17:58:31.253888Z",
+      "completed_at": "2026-09-13T18:00:50.997377Z",
+      "elapsed_ms": 139742,
+      "local_termination_only": false,
+      "input_sha256": "aeb752987f7981fe00a94125ac20579895b495f6f6c7cee1708f61c8d21ab693",
+      "command_sha256": "f57847f73f63923097c024061f2339600428cfc50ec07380e971b0c1c712e49c",
+      "request_digest": "c545133d91c43706bcf257787385da7854e9a3f000aaf58fe2c5bf762b7ce375",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 26544,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 4351,
+        "reasoning_output_tokens": 143
+      },
+      "observable_input_plus_output_tokens": 30895,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e9e2fe5a-21dd-4390-942c-1db3f-4e91794507b111a2/process-receipt.json",
+        "sha256": "779b9d6dc8cce0896a046ef317931779c9a7b1291b156f7269fda59a4c7d2407",
+        "bytes": 2379
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e9e2fe5a-21dd-4390-942c-1db3f-4e91794507b111a2/stdout.log",
+        "sha256": "cc96ba8c7838275293e7a93f738e7527997966b9c8f5de6d4c494b0100c2842f",
+        "bytes": 47395
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e9e2fe5a-21dd-4390-942c-1db3f-4e91794507b111a2/execution-metadata.json",
+        "sha256": "41e89fdf449bf19a626950c481d9d23b324bcf75bde37c866fa5c620b81d22ee",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-e9e2fe5a-21dd-4390-942c-1db3f-4e91794507b111a2/last-message.json",
+        "sha256": "ce674a6abf3cca996367be409ab7aee10d35f351497960f9255c3311ebf95837",
+        "bytes": 45450
+      },
+      "receipt_id": "process-receipt:39bf883aad1df138d0a5ad28",
+      "execution_id": "planning-execution:e9e2fe5a-21dd-4390-942c-1db3f38cb096:61c88e21-3f1d-4845-aa33-5032f9e9ac1c",
+      "external_effect_id_from_execution_id": "e9e2fe5a-21dd-4390-942c-1db3f38cb096",
+      "operation_id": "8dac1874-4710-4a5f-acdc-6fbe142713fb",
+      "attempt_id": "61c88e21-3f1d-4845-aa33-5032f9e9ac1c",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "character.cast.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T18:27:36.656834Z",
+      "completed_at": "2026-09-13T18:34:13.980684Z",
+      "elapsed_ms": 397331,
+      "local_termination_only": false,
+      "input_sha256": "ca39ea88f7999c068aa33a28d2428d41e207a6b317520d5e99227a142ccba539",
+      "command_sha256": "c42542e8fc9785c37aba9738fd32af3a686c31b6544ebb7fe2fbac9356ec7b6f",
+      "request_digest": "39bf883aad1df138d0a5ad28a000b379067d88b8bbcfd2bdd0c0a8ee3a9cd834",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 60165,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 12956,
+        "reasoning_output_tokens": 468
+      },
+      "observable_input_plus_output_tokens": 73121,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "guofeng-xuanhuan-01",
+      "book_id": "guofeng-xuanhuan-01",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-ff4d2c74-67d4-4627-8a05-9e470-7f6742d8aa9289d2/process-receipt.json",
+        "sha256": "bdf58c7222c968d03bb7cd8402cf6af084656486355b9fdc2ec59bac8b6301e9",
+        "bytes": 2419
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-ff4d2c74-67d4-4627-8a05-9e470-7f6742d8aa9289d2/stdout.log",
+        "sha256": "d2d96930c185115882b709466330fa58e24ce492576df5782fbd242acf1c1ac2",
+        "bytes": 428
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/codex-executions/planning-execution-ff4d2c74-67d4-4627-8a05-9e470-7f6742d8aa9289d2/execution-metadata.json",
+        "sha256": "5f36e42b36b51fe04552bdd3361d2796f29f1e6603e5c429c15576fb9663f199",
+        "bytes": 252
+      },
+      "result": null,
+      "receipt_id": "process-receipt:3a92da817bbe49f1e2822b3e",
+      "execution_id": "planning-execution:ff4d2c74-67d4-4627-8a05-9e47052fb3f8:07e9a281-0dcf-4ac4-b613-d7bcae244e0b",
+      "external_effect_id_from_execution_id": "ff4d2c74-67d4-4627-8a05-9e47052fb3f8",
+      "operation_id": "040f61c9-777d-4b2e-a008-50f62742baf5",
+      "attempt_id": "07e9a281-0dcf-4ac4-b613-d7bcae244e0b",
+      "status": "TIMED_OUT",
+      "result_kind": "NO_FINAL_RESULT",
+      "task": "planning.book.generate",
+      "schema_version": null,
+      "result_integrity": "MISSING",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T20:29:45.938583Z",
+      "completed_at": "2026-09-13T20:39:16.335898Z",
+      "elapsed_ms": 570393,
+      "local_termination_only": true,
+      "input_sha256": "bed69e1bb50d2f9b18384e7d3a512243f189be277825fa1c57f23f38ca6ea94a",
+      "command_sha256": "4e14f816ecf2642ea00ffa7771b85b61833e0e93c05e80f5aca822204d68cac5",
+      "request_digest": "3a92da817bbe49f1e2822b3e2e28d56e1b43606ac8657c285d00126ff76520f5",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": null,
+      "observable_input_plus_output_tokens": null,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "yu-xian-zhi-wai",
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-023e2008-c925-4720-918c-9797a8-7e67521f42df7dd4/process-receipt.json",
+        "sha256": "a889e1f0f3fe6cb6aabe4fe66c1f59a3f936a51db3922e4e71f7ac6fd6b2fc2a",
+        "bytes": 2320
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-023e2008-c925-4720-918c-9797a8-7e67521f42df7dd4/stdout.log",
+        "sha256": "04e596faea65bd4f411e28d411e827aca1eef927d5a14efe433ce939c28a4113",
+        "bytes": 6180
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-023e2008-c925-4720-918c-9797a8-7e67521f42df7dd4/execution-metadata.json",
+        "sha256": "b4e543981b4c45fd82484b95fc69d983327a4ebc48543640fc309a81260c3b31",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-023e2008-c925-4720-918c-9797a8-7e67521f42df7dd4/last-message.json",
+        "sha256": "60254c724d7128f4f06912b55466692017118d42d0c942bf2bf3e7bc5f4acbb1",
+        "bytes": 5285
+      },
+      "receipt_id": "process-receipt:017d78570181cd8a215f7671",
+      "execution_id": "chapter-execution:023e2008-c925-4720-918c-9797a8df8dbb",
+      "external_effect_id_from_execution_id": "023e2008-c925-4720-918c-9797a8df8dbb",
+      "operation_id": "e354b9a9-4fe4-4a60-96e8-afe90de0f6ef",
+      "attempt_id": "7721ab4a-f064-42f5-a15b-f2426c2e47f4",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "reader-promise-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T05:52:32.680806Z",
+      "completed_at": "2026-09-13T05:53:37.150399Z",
+      "elapsed_ms": 64467,
+      "local_termination_only": false,
+      "input_sha256": "b9d0ca4b7e969ec448401b600c72d1f387165141d0533d1e48b7b216aabed906",
+      "command_sha256": "aa78956f448c5c1254ac91285bb2d349050385d4d451194d8ea1644040aaafa5",
+      "request_digest": "017d78570181cd8a215f767160fde2c59b308bc666673418e4d5bfe465eefd0a",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 21077,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1855,
+        "reasoning_output_tokens": 266
+      },
+      "observable_input_plus_output_tokens": 22932,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "reader-promise-semantic-v1",
+          "criterion": "PROMISE_SPECIFICITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "reader-promise-semantic-v1",
+          "criterion": "GENRE_ALIGNMENT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "reader-promise-semantic-v1",
+          "criterion": "REWARD_REACHABILITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "reader-promise-semantic-v1",
+          "criterion": "PAYOFF_EXPECTATION_CLARITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "reader-promise-semantic-v1",
+          "criterion": "SUSTAINABLE_CADENCE",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "yu-xian-zhi-wai",
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-6e2aea63-e62e-4cc7-abd4-202500-c168c852478dca06/process-receipt.json",
+        "sha256": "25c29ec29bf6dd5a71a5ff3f0de4f5a6f67ce8015f20671eb407038b9641799e",
+        "bytes": 2320
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-6e2aea63-e62e-4cc7-abd4-202500-c168c852478dca06/stdout.log",
+        "sha256": "d5697109fae4cdd0d64ce5a52edf303d75eff85cda0c2d0a96e06ea04a30925b",
+        "bytes": 6269
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-6e2aea63-e62e-4cc7-abd4-202500-c168c852478dca06/execution-metadata.json",
+        "sha256": "43e03f7b6a1a0c0b47352d1756005abd2bbbd5ab3fc7ca93a09e6d06a47e66f2",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-6e2aea63-e62e-4cc7-abd4-202500-c168c852478dca06/last-message.json",
+        "sha256": "4655a66eae80665e09df227f67da91d7d70da9810f0779afa16f831809a92532",
+        "bytes": 5377
+      },
+      "receipt_id": "process-receipt:e55c62b353fd2b73b5f620b7",
+      "execution_id": "chapter-execution:6e2aea63-e62e-4cc7-abd4-202500afd264",
+      "external_effect_id_from_execution_id": "6e2aea63-e62e-4cc7-abd4-202500afd264",
+      "operation_id": "66d0ce22-e8c0-426d-94ad-af7d0c39b51c",
+      "attempt_id": "b187034d-fd1d-4863-8c4a-71f438182333",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "creative-foundation-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T05:35:09.161286Z",
+      "completed_at": "2026-09-13T05:36:17.471467Z",
+      "elapsed_ms": 68308,
+      "local_termination_only": false,
+      "input_sha256": "a7b0eac3de1436063f5257b13350177569e29d06a573c5605de01da6598dc387",
+      "command_sha256": "76d87c5e25c7b72cc92b96dc836ec132c48b9909ac9764b5a526a5e8ce78d3d8",
+      "request_digest": "e55c62b353fd2b73b5f620b7644d02f89d20bc3f22ab2fd607ddf274feeae2fb",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 22967,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1923,
+        "reasoning_output_tokens": 376
+      },
+      "observable_input_plus_output_tokens": 24890,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "CORE_CONFLICT_CLARITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "READER_FIT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "DIFFERENTIATION",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "SERIALIZATION_CAPACITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "EMOTIONAL_CONTRACT",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "yu-xian-zhi-wai",
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-71d7c81d-1961-453d-bec1-e39c57-a5ae05eeb9fb7b92/process-receipt.json",
+        "sha256": "8b633cb2f1d6510a4403066174ea7654dd72ee1c05e64b9e0d2ea3630d3f1e5f",
+        "bytes": 2320
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-71d7c81d-1961-453d-bec1-e39c57-a5ae05eeb9fb7b92/stdout.log",
+        "sha256": "bccc5031c1970078ffacd738f5ddd794c2480434cda7a3c898270a06a6c84fab",
+        "bytes": 6274
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-71d7c81d-1961-453d-bec1-e39c57-a5ae05eeb9fb7b92/execution-metadata.json",
+        "sha256": "bb7f8026fb7ae2f366fd2456578e2e7b4f7e75f9b74d6e030fa26551b76bd182",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-71d7c81d-1961-453d-bec1-e39c57-a5ae05eeb9fb7b92/last-message.json",
+        "sha256": "0865a4dfce4474a51b3e91c9ec7d7bd58cde2118879fc083c919c3ffd832f3b8",
+        "bytes": 5376
+      },
+      "receipt_id": "process-receipt:8ce0479a5f0672b139c7d5b0",
+      "execution_id": "chapter-execution:71d7c81d-1961-453d-bec1-e39c57702c43",
+      "external_effect_id_from_execution_id": "71d7c81d-1961-453d-bec1-e39c57702c43",
+      "operation_id": "7b35fb1a-1e92-4d72-8c8a-45f5773b3144",
+      "attempt_id": "7d7b3578-3440-4a81-80ab-2901ffba0855",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "ending-intent-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T05:47:50.175686Z",
+      "completed_at": "2026-09-13T05:48:52.739813Z",
+      "elapsed_ms": 62562,
+      "local_termination_only": false,
+      "input_sha256": "c5d83f8abddc77b4205f0527bb2cebf3e9736a80583f1380c1c3d29d4313d1df",
+      "command_sha256": "0a4ff3f014ce6e939ffd1543c4306183a796136aaad349a397f3e5038a3d93dd",
+      "request_digest": "8ce0479a5f0672b139c7d5b080bebd23ce359a4ee4cb173f6f8c04022a1638c2",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 18779,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1763,
+        "reasoning_output_tokens": 174
+      },
+      "observable_input_plus_output_tokens": 20542,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "ending-intent-semantic-v1",
+          "criterion": "ENDING_DIRECTION_CLARITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "ending-intent-semantic-v1",
+          "criterion": "PROTAGONIST_COST",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "ending-intent-semantic-v1",
+          "criterion": "TRANSFORMATION_REACHABILITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "ending-intent-semantic-v1",
+          "criterion": "THEME_CLOSURE_ALIGNMENT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "ending-intent-semantic-v1",
+          "criterion": "LONGFORM_REACHABILITY",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "yu-xian-zhi-wai",
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-85e459cc-27e0-4f1b-addd-8b3d71-75af29bfa1d6ca54/process-receipt.json",
+        "sha256": "3ae53c21f224983ce65d8dce704d343231ca4087ed22f85e81e9edea4be62218",
+        "bytes": 2320
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-85e459cc-27e0-4f1b-addd-8b3d71-75af29bfa1d6ca54/stdout.log",
+        "sha256": "0c2a96629f6e0638c98624702002f99b23f2f06b56796195d9bef2d982f634e0",
+        "bytes": 6113
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-85e459cc-27e0-4f1b-addd-8b3d71-75af29bfa1d6ca54/execution-metadata.json",
+        "sha256": "48c1d74d23b65280596abd6023db05a33ff18782c65c60ad0e5ba0f768ae5a92",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-85e459cc-27e0-4f1b-addd-8b3d71-75af29bfa1d6ca54/last-message.json",
+        "sha256": "5503e16149c1b703f2f213ae6e1912febc299f5209681a5bf84e7bbecbd94984",
+        "bytes": 5236
+      },
+      "receipt_id": "process-receipt:729e09845e9f7152494983e3",
+      "execution_id": "chapter-execution:85e459cc-27e0-4f1b-addd-8b3d71bd38ec",
+      "external_effect_id_from_execution_id": "85e459cc-27e0-4f1b-addd-8b3d71bd38ec",
+      "operation_id": "d78eec9e-e9e1-4779-ba81-724dbeb36b6f",
+      "attempt_id": "21058480-7725-415c-b0b0-bff772062652",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "creative-foundation-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T05:30:31.165682Z",
+      "completed_at": "2026-09-13T05:31:40.213730Z",
+      "elapsed_ms": 69046,
+      "local_termination_only": false,
+      "input_sha256": "16edf3598ce8a19658a7e0ac5e7732346cd58f54275d7eb4f238fef0ce28b27f",
+      "command_sha256": "e695701f59a87d142cb3b7ece1a1b6175d5636b427e5820b4662bd1be7a1c26b",
+      "request_digest": "729e09845e9f7152494983e333a20b6ee065de6a7b718935ee1b8f36e9e013ee",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 22580,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2028,
+        "reasoning_output_tokens": 349
+      },
+      "observable_input_plus_output_tokens": 24608,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "CORE_CONFLICT_CLARITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "READER_FIT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "DIFFERENTIATION",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "SERIALIZATION_CAPACITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "creative-foundation-semantic-v1",
+          "criterion": "EMOTIONAL_CONTRACT",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "yu-xian-zhi-wai",
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-af74acf8-d335-42d1-9eeb-8ba43a-5fbd03a97552a7b0/process-receipt.json",
+        "sha256": "fd1f64cb5e347bd5f1b1438288ddf849f8ef0a7ab6f0a7607d6cce0f598d374e",
+        "bytes": 2320
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-af74acf8-d335-42d1-9eeb-8ba43a-5fbd03a97552a7b0/stdout.log",
+        "sha256": "ded4619a41e7d56dc03f387d870ebf7f569b5cc3efe62fb9bbaffc0e7cc16844",
+        "bytes": 6258
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-af74acf8-d335-42d1-9eeb-8ba43a-5fbd03a97552a7b0/execution-metadata.json",
+        "sha256": "68093ea4ddf97cac2ac15997e97c75455b73a791477a261bb7c8a4bef5be5fc8",
+        "bytes": 214
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/chapter-execution-af74acf8-d335-42d1-9eeb-8ba43a-5fbd03a97552a7b0/last-message.json",
+        "sha256": "3eaac65fe051c97e60dda988b86579bdecc0568d19b8f0790bf190fc5ddac464",
+        "bytes": 5360
+      },
+      "receipt_id": "process-receipt:bc0cf6603a40825eafbb9747",
+      "execution_id": "chapter-execution:af74acf8-d335-42d1-9eeb-8ba43a0c20fc",
+      "external_effect_id_from_execution_id": "af74acf8-d335-42d1-9eeb-8ba43a0c20fc",
+      "operation_id": "91731023-7e05-4d6f-86a2-c664a76f6076",
+      "attempt_id": "e67700e4-bddb-4252-8139-0dcac43db90f",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_SEMANTIC_EVALUATION",
+      "task": "theme-contract-semantic-v1",
+      "schema_version": "progressive-narrative-qualification.v1",
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T05:40:06.848503Z",
+      "completed_at": "2026-09-13T05:41:10.428685Z",
+      "elapsed_ms": 63579,
+      "local_termination_only": false,
+      "input_sha256": "0aa39f69a0f20cacd9abea6e41da8e681a912440b4582aa53a3377b3177c1e78",
+      "command_sha256": "7ea20395a7c914b883249901e5b5e8daad0d18838660742d948be239d3f239af",
+      "request_digest": "bc0cf6603a40825eafbb97476d860dd8d17189e29cc307392942c46ceb8279aa",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 20018,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1859,
+        "reasoning_output_tokens": 253
+      },
+      "observable_input_plus_output_tokens": 21877,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "evaluation_criteria": [
+        {
+          "profile_id": "theme-contract-semantic-v1",
+          "criterion": "THEMATIC_QUESTION_CLARITY",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "theme-contract-semantic-v1",
+          "criterion": "CONFLICT_PRESSURE",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "theme-contract-semantic-v1",
+          "criterion": "CHARACTER_CHOICE_RELEVANCE",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "theme-contract-semantic-v1",
+          "criterion": "ENDING_ALIGNMENT",
+          "verdict": "PASS"
+        },
+        {
+          "profile_id": "theme-contract-semantic-v1",
+          "criterion": "ANTI_PREACHING_CAPACITY",
+          "verdict": "PASS"
+        }
+      ],
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "yu-xian-zhi-wai",
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-3513911c-896b-4244-8211-098fb-5e79250fdc472585/process-receipt.json",
+        "sha256": "4b15270c8709a25e250dd0cfd871aaab5700ec3fc098c60d7ce7f6eadd7c1878",
+        "bytes": 2359
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-3513911c-896b-4244-8211-098fb-5e79250fdc472585/stdout.log",
+        "sha256": "f0cdb835605717d1e0a249edb700d2a77b4b72a86bca5373418ae03afe41db70",
+        "bytes": 18693
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-3513911c-896b-4244-8211-098fb-5e79250fdc472585/execution-metadata.json",
+        "sha256": "ba71e01c82b6fbd3e654eaff302d86e2dc4d511708918de1a35b3c5dd73138b6",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-3513911c-896b-4244-8211-098fb-5e79250fdc472585/last-message.json",
+        "sha256": "c81a582c0ca809fea58736c0246fb62111d4c82fe7391966d2b99c326643b2da",
+        "bytes": 17663
+      },
+      "receipt_id": "process-receipt:c2a8f364d647c027a579e24e",
+      "execution_id": "planning-execution:3513911c-896b-4244-8211-098fb64b09e8:e1279420-0c6b-4ba5-a672-26f9a30b58a2",
+      "external_effect_id_from_execution_id": "3513911c-896b-4244-8211-098fb64b09e8",
+      "operation_id": "4c25311f-c3c2-4379-8caf-251d26b5d5c2",
+      "attempt_id": "e1279420-0c6b-4ba5-a672-26f9a30b58a2",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "reader.promise.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T05:49:33.032993Z",
+      "completed_at": "2026-09-13T05:52:24.866241Z",
+      "elapsed_ms": 171831,
+      "local_termination_only": false,
+      "input_sha256": "55e777927abfbbf1c889877962d858cbcfc1534abd5b0b40598189e02ccc6ed7",
+      "command_sha256": "e3b4aae7103dea20bcb613425a8e6d45bc8fe6f73583836824867a2ce3576f1a",
+      "request_digest": "c2a8f364d647c027a579e24e660f50e2cba13a6e1143dc4e2b1202e364f7895c",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 26450,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 5067,
+        "reasoning_output_tokens": 205
+      },
+      "observable_input_plus_output_tokens": 31517,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "yu-xian-zhi-wai",
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-a6a320a0-4dd8-4b0c-aad2-d84f3-8f243de944ae5151/process-receipt.json",
+        "sha256": "2053a88989b9d010a54576b67e11bd97a7839dd32df7b887003f9d2600941aae",
+        "bytes": 2359
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-a6a320a0-4dd8-4b0c-aad2-d84f3-8f243de944ae5151/stdout.log",
+        "sha256": "d2f8a932fd5db0cee132d8730b0da2967e33f0256fc64e88de16d71876fcdc02",
+        "bytes": 53211
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-a6a320a0-4dd8-4b0c-aad2-d84f3-8f243de944ae5151/execution-metadata.json",
+        "sha256": "fa1392cde3cfc712969660bcb2684677fe73b47d478e3832902402b7b9bb92d8",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-a6a320a0-4dd8-4b0c-aad2-d84f3-8f243de944ae5151/last-message.json",
+        "sha256": "8e60370373ec1c7e153f590dd297f798a888c432d5e70c7d95af0cadecc23f33",
+        "bytes": 49265
+      },
+      "receipt_id": "process-receipt:1e94048e5450801fc5f6528e",
+      "execution_id": "planning-execution:a6a320a0-4dd8-4b0c-aad2-d84f388292d0:94c5422b-a682-4f7a-88de-c4dbbb969359",
+      "external_effect_id_from_execution_id": "a6a320a0-4dd8-4b0c-aad2-d84f388292d0",
+      "operation_id": "2dee5716-5c8d-4b28-94e0-9b4fe56ffc87",
+      "attempt_id": "94c5422b-a682-4f7a-88de-c4dbbb969359",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "world.design.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T14:03:15.466224Z",
+      "completed_at": "2026-09-13T14:10:58.922203Z",
+      "elapsed_ms": 463453,
+      "local_termination_only": false,
+      "input_sha256": "f5310665ce1af1303e216c397fe525da80ba75e2e3ad547e42e778decc29ef32",
+      "command_sha256": "8e48c416847190a461897bffd590240f35338c71b67def253efa68827c6f5df3",
+      "request_digest": "1e94048e5450801fc5f6528ec08dba355bf5479c561ace1db45f27a6215f5bb9",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 45094,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 14589,
+        "reasoning_output_tokens": 1314
+      },
+      "observable_input_plus_output_tokens": 59683,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "yu-xian-zhi-wai",
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-c4a82256-08a0-4952-8bc3-b5e54-f63a55c05cdcb0a8/process-receipt.json",
+        "sha256": "00c50ea103d3b16e13fa0c906c9f4669ad472f07651d5efc1a6f30ec40263e84",
+        "bytes": 2359
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-c4a82256-08a0-4952-8bc3-b5e54-f63a55c05cdcb0a8/stdout.log",
+        "sha256": "eebd2e4be89a018e2e28b560cd72244a974ad47274f8edb57afc554ae366992a",
+        "bytes": 15732
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-c4a82256-08a0-4952-8bc3-b5e54-f63a55c05cdcb0a8/execution-metadata.json",
+        "sha256": "17123837b8ff96bc0ae6d1bee1589a8a96e3c50afc89cc11db69b201c6eedb8f",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-c4a82256-08a0-4952-8bc3-b5e54-f63a55c05cdcb0a8/last-message.json",
+        "sha256": "2b502a84950b98ffe794c68c005c9da405673aeba6f6d56291db3cb448f4fc29",
+        "bytes": 14788
+      },
+      "receipt_id": "process-receipt:094a4d00c61aba50fe4e4743",
+      "execution_id": "planning-execution:c4a82256-08a0-4952-8bc3-b5e54def2e06:13d0a8b9-70b4-44e2-9acd-6b50edcbd89a",
+      "external_effect_id_from_execution_id": "c4a82256-08a0-4952-8bc3-b5e54def2e06",
+      "operation_id": "0c39694b-6aa0-4f43-854d-17a8859d1621",
+      "attempt_id": "13d0a8b9-70b4-44e2-9acd-6b50edcbd89a",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "theme.question.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T05:37:16.035178Z",
+      "completed_at": "2026-09-13T05:39:55.882575Z",
+      "elapsed_ms": 159846,
+      "local_termination_only": false,
+      "input_sha256": "d9f8b15c7b4da37fa7b0fcdfe9633c0c766923f7ec2089dbd21e53b5e9f5bd85",
+      "command_sha256": "643d9c132a4a03551e7241373eaf833cc3d85c8ae4864f9c623a1647e10ab38d",
+      "request_digest": "094a4d00c61aba50fe4e4743e109643df129ae40509b4a76ba672b4c9cd66af6",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 26738,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 4158,
+        "reasoning_output_tokens": 185
+      },
+      "observable_input_plus_output_tokens": 30896,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "yu-xian-zhi-wai",
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-df66d7a1-185d-4eda-be80-86eeb-54159e2bf8e2e4a0/process-receipt.json",
+        "sha256": "add7e5e19e98ccda4d28fb30a3269945812f567cd73d4122ae3bdec98f22afcb",
+        "bytes": 2359
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-df66d7a1-185d-4eda-be80-86eeb-54159e2bf8e2e4a0/stdout.log",
+        "sha256": "6d062233145bc29632cc39734bff22e70b3d4971ac1d20e9de7c1f698604e0c6",
+        "bytes": 10929
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-df66d7a1-185d-4eda-be80-86eeb-54159e2bf8e2e4a0/execution-metadata.json",
+        "sha256": "7861dd25e9e8681d08233091337f029bcccd7039d3908c78a172a117b32bc49c",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-df66d7a1-185d-4eda-be80-86eeb-54159e2bf8e2e4a0/last-message.json",
+        "sha256": "c1be99b9508d9bbb7cba5f418468641b4aa0594f03e6c1281831ed0bc26d479a",
+        "bytes": 10076
+      },
+      "receipt_id": "process-receipt:a0b8334776df2279f691a631",
+      "execution_id": "planning-execution:df66d7a1-185d-4eda-be80-86eeb28095b7:cbff5cc5-9e10-4077-8df3-a4e3bfc3ac2a",
+      "external_effect_id_from_execution_id": "df66d7a1-185d-4eda-be80-86eeb28095b7",
+      "operation_id": "0353ce66-51d7-4f6a-9792-9a38c886eb45",
+      "attempt_id": "cbff5cc5-9e10-4077-8df3-a4e3bfc3ac2a",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "ending.intent.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T05:45:47.744960Z",
+      "completed_at": "2026-09-13T05:47:41.787350Z",
+      "elapsed_ms": 114041,
+      "local_termination_only": false,
+      "input_sha256": "601ecbd7db240454b2306172dcd683580f54e094d3093a712cb49e28b9e43f60",
+      "command_sha256": "daf8fc6c5971354ddf54e572c0de98ee10aa7b62aa49b8c38d49e0c4897f6bae",
+      "request_digest": "a0b8334776df2279f691a631ebb08996e329bda05184a2cc291e72fd6aded2f9",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 26558,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2865,
+        "reasoning_output_tokens": 156
+      },
+      "observable_input_plus_output_tokens": 29423,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "yu-xian-zhi-wai",
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-ed93c442-382f-49b7-b923-55b27-597c19f90b2ca838/process-receipt.json",
+        "sha256": "56d44d3df87dbcd460c8be02b2b8dd949a0e6b689bf499f92379ecf5ddb2160d",
+        "bytes": 2359
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-ed93c442-382f-49b7-b923-55b27-597c19f90b2ca838/stdout.log",
+        "sha256": "ecaf44a95475ed45f597b267d6fdb93f3ba206f003aaf53e59738b7f3c99b948",
+        "bytes": 20865
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-ed93c442-382f-49b7-b923-55b27-597c19f90b2ca838/execution-metadata.json",
+        "sha256": "528a2289168a9d8bb0cc667672ec23bcf3c8f9c2f5db955ac840d7b033e07b8a",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-ed93c442-382f-49b7-b923-55b27-597c19f90b2ca838/last-message.json",
+        "sha256": "56e3efdf148248b8fad652d987f76c4cb602009a59b27f0774cfb9062397147b",
+        "bytes": 19777
+      },
+      "receipt_id": "process-receipt:375c5817bc2c3c45dea0e9b9",
+      "execution_id": "planning-execution:ed93c442-382f-49b7-b923-55b2756d0a81:8084674d-b758-4564-8953-4b50c12d506d",
+      "external_effect_id_from_execution_id": "ed93c442-382f-49b7-b923-55b2756d0a81",
+      "operation_id": "6caa82a5-d1ea-4a02-9876-cfb019a7b712",
+      "attempt_id": "8084674d-b758-4564-8953-4b50c12d506d",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "creative.proposal.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T05:26:37.197484Z",
+      "completed_at": "2026-09-13T05:30:17.745996Z",
+      "elapsed_ms": 220564,
+      "local_termination_only": false,
+      "input_sha256": "a168daa7f26e2131ec51450ed886ab0ed579da43a6dedc8eb39d43b60a96617f",
+      "command_sha256": "6f2aaea577330ae772abd1c5d5fbc6281520a591dc1aad80f097bf755982475f",
+      "request_digest": "375c5817bc2c3c45dea0e9b924d98ae03d694476cd219b4ef80e15f934b7b0cd",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 20771,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 5928,
+        "reasoning_output_tokens": 422
+      },
+      "observable_input_plus_output_tokens": 26699,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    },
+    {
+      "book_directory": "yu-xian-zhi-wai",
+      "book_id": "first-novel-pilot-a",
+      "project_id": "first-novel-pilot-20260912",
+      "receipt": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-fd4ab03e-e3d6-4216-936c-b2f64-cb6e81cc7e14cb2f/process-receipt.json",
+        "sha256": "6a0db0a88227009b1ec5ec4515d0393c582e4a1fad2ee7fddd32a001a5c23e8e",
+        "bytes": 2359
+      },
+      "stdout": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-fd4ab03e-e3d6-4216-936c-b2f64-cb6e81cc7e14cb2f/stdout.log",
+        "sha256": "7815f433e349e24385fa4abacf64a1cc26c08637f3959c7d149ab869c7f1aeba",
+        "bytes": 22731
+      },
+      "execution_metadata": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-fd4ab03e-e3d6-4216-936c-b2f64-cb6e81cc7e14cb2f/execution-metadata.json",
+        "sha256": "d7e1c7f6c0db384be2ffae6155b0274ee1fe3e269d83420d616688e88c4ae1c9",
+        "bytes": 252
+      },
+      "result": {
+        "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/codex-executions/planning-execution-fd4ab03e-e3d6-4216-936c-b2f64-cb6e81cc7e14cb2f/last-message.json",
+        "sha256": "2d2a5b6411534b228f51af80ba3487e82fd2c1d392ff7dc5d2621c63b80ffc9d",
+        "bytes": 21631
+      },
+      "receipt_id": "process-receipt:7cb74e81d3c3bf9306ae60a8",
+      "execution_id": "planning-execution:fd4ab03e-e3d6-4216-936c-b2f643272013:9f5ffed5-293b-41dc-a373-46584709e935",
+      "external_effect_id_from_execution_id": "fd4ab03e-e3d6-4216-936c-b2f643272013",
+      "operation_id": "93516014-93a9-45ed-8911-12a6410acf7f",
+      "attempt_id": "9f5ffed5-293b-41dc-a373-46584709e935",
+      "status": "SUCCEEDED",
+      "result_kind": "DESIGN_GENERATION",
+      "task": "creative.proposal.generate",
+      "schema_version": null,
+      "result_integrity": "VALID",
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "process_started_at": "2026-09-13T05:31:41.077079Z",
+      "completed_at": "2026-09-13T05:35:06.718093Z",
+      "elapsed_ms": 205638,
+      "local_termination_only": false,
+      "input_sha256": "ae5b7970ce2166423b94ded3737deab32a349c15cd41df422ef41c49c5ded8a0",
+      "command_sha256": "cbfaa8f5850e05da7195e486ac70347b0e1ae91dd04a2d902ab6c1d0f05afd9d",
+      "request_digest": "7cb74e81d3c3bf9306ae60a83a00727fa1c7f1dbd50471a6f52bf8f37e3bfa19",
+      "requested_model": "gpt-6-astra",
+      "requested_reasoning_effort": "high",
+      "requested_identity_source": "retained route configuration/native model authority evidence; not a server model attestation",
+      "provider_served_model": null,
+      "provider_served_revision": null,
+      "provider_served_identity_status": "NOT_REPORTED",
+      "raw_cli_usage": {
+        "input_tokens": 20778,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 6190,
+        "reasoning_output_tokens": 283
+      },
+      "observable_input_plus_output_tokens": 26968,
+      "monetary_cost": null,
+      "monetary_cost_status": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+      "accepted_chapter_evidence": "NONE_IN_THIS_RESULT",
+      "full_transmitted_prompt_text": "NOT_FOUND_IN_SCOPED_RETAINED_FILES",
+      "task_label_status": "AUDIT_INFERRED_NOT_ROUTER_TASK_ID"
+    }
+  ],
+  "classification_method": "result_kind is based on readable final JSON; task labels are audit-inferred from output keys/profile IDs or known failed Effect identity, not an attested current Router task name. Requested model is retained route configuration, not served-model attestation."
+}

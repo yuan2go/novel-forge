@@ -1,0 +1,711 @@
+{
+  "observed_at_utc": "2026-09-27T09:45:42.159807+00:00",
+  "rows": [
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge",
+      "sha": "cc6afa5e4a62eb74f7bbb17887784f16b70289c5",
+      "branch": "refs/heads/main",
+      "ancestor_of_audit_main": true,
+      "status": [
+        "?? reports/"
+      ],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/all-branch-convergence-20260920/novel-forge",
+      "sha": "bf60377848266fd3e42da85f09ffe7ced6089ea8",
+      "branch": "refs/heads/codex/all-branch-convergence-20260920",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/narrative-capability-admission-closure-02/novel-forge",
+      "sha": "105385db9b50b6c7a19ad23ccb209b5d1383d915",
+      "branch": "refs/heads/codex/narrative-capability-admission-closure-02",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/narrative-closure-02-continuation/novel-forge",
+      "sha": "df0a38e199c7f5ce6bbf410732e8fbcfd87d45dd",
+      "branch": "refs/heads/codex/narrative-closure-02-continuation",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/narrative-closure-02-p0/novel-forge",
+      "sha": "f329915b6954e09a1917983b137285b8af114ce2",
+      "branch": "refs/heads/codex/narrative-closure-02-p0",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/narrative-craft-20260920/novel-forge",
+      "sha": "8928f97e0e817a911985ca2d9ab989ae51cfaeb6",
+      "branch": "refs/heads/codex/narrative-craft-20260920",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/narrative-feedback-closure/novel-forge",
+      "sha": "46d8bff188f9fd3f43aac5475f6198fa5c9a701d",
+      "branch": "refs/heads/codex/narrative-feedback-closure",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/real-provider-benchmark-scope-20260920/novel-forge",
+      "sha": "8f502267a1df9d1aff52880079891ace5d18b9fd",
+      "branch": "refs/heads/codex/real-provider-benchmark-scope-20260920",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/real-provider-campaign-20260920/novel-forge",
+      "sha": "22cf0354c897fa383fa7def58cd8969e5cf02e88",
+      "branch": "refs/heads/codex/real-provider-campaign-20260920",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/real-provider-campaign-delivery-20260920/novel-forge",
+      "sha": "a908f0dd88dc1607b31fba61de630f6a162ac63e",
+      "branch": "refs/heads/codex/real-provider-campaign-delivery-20260920",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/real-provider-campaign-final-20260920/novel-forge",
+      "sha": "2be11a564f376d064d89b58e23c5e147f7db82b3",
+      "branch": "refs/heads/codex/real-provider-campaign-final-20260920",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/real-provider-native-stage-sampling-20260920/novel-forge",
+      "sha": "66a64ce68b93a3d2b974a8a76c2120b5c80e96c1",
+      "branch": "refs/heads/codex/real-provider-source-recovery-20260920",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/real-provider-reference-20260920/novel-forge",
+      "sha": "fc25159d1b0d4ef59e5c0d63f295800afd96844e",
+      "branch": "refs/heads/codex/real-provider-reference-20260920",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/real-provider-reference-kernel-20260920/novel-forge",
+      "sha": "bf77e0892c0bbc4cb06f13d00beae1805b7a4a05",
+      "branch": "refs/heads/codex/real-provider-reference-kernel-20260920",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/.codex/worktrees/real-provider-source-bootstrap-20260920/novel-forge",
+      "sha": "bbca0e7a4a0ed61381d0175272e9fe1763d7137a",
+      "branch": "refs/heads/codex/real-provider-source-bootstrap-20260920",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-13d15702",
+      "sha": "13d1570284b87631a76d75b83f37a3b57563c7b4",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-2fda12e3",
+      "sha": "2fda12e3ff6c1adb99919c85d4f07f11378e4c74",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-3345ffb5",
+      "sha": "3345ffb5d214c4518a21aacf3e9c388fbecb1654",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-5eb5a26e",
+      "sha": "5eb5a26ee25021e6ca56add0842e5830872b2a95",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-6bc55ffe",
+      "sha": "6bc55ffe18c61b0755eb780e43a8cb03eb25503c",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-90543b35",
+      "sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-9a7d0222",
+      "sha": "9a7d022248a14b004a6fe8a7388cf7bfc84ac951",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-b2541ecd",
+      "sha": "b2541ecdc314de38aeee34d606047e1e04ed0b15",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-b2fcbd20",
+      "sha": "b2fcbd20a9ee4681ed755c2c12a44da7523adb8e",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-c1c497b6",
+      "sha": "c1c497b69ebc06a12431ab7242a354a31cd1e434",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-c667eb73",
+      "sha": "c667eb73b652af079c516d79c36c7543c15dc0f6",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-d5c3dd3c",
+      "sha": "d5c3dd3c7a5e2233d36cecd5aac9142fa626dc40",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/guofeng-xuanhuan-01/release-fa190e44",
+      "sha": "fa190e4490dfc0d9d219b30bb7cf9f536ed00e25",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/release-49941cd2",
+      "sha": "49941cd2bb410ba53a59ae52eb2670b6bf96d82d",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/all-local-branches-convergence-20260824",
+      "sha": "c86836714cdd6c72cbc9d0a5dbc4e9be9189e4da",
+      "branch": "refs/heads/codex/all-local-branches-convergence-20260824",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/book-opening-semantic-runtime-hardening-01",
+      "sha": "a5401d8ac3b05d97044ed489a6884df95e83d417",
+      "branch": "refs/heads/codex/book-opening-semantic-runtime-hardening-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/context-governance-closure-01",
+      "sha": "de1a0c262dea236710aadb28776c0462499d741f",
+      "branch": "refs/heads/codex/context-governance-closure-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/hierarchy-closure-01",
+      "sha": "476090195e6718d9a2585f5b2ddd51dc88efd415",
+      "branch": "refs/heads/codex/hierarchy-closure-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/industrial-convergence-20260905",
+      "sha": "80ffd047c1450c8cd1042e099569ced08ed6b720",
+      "branch": "refs/heads/codex/industrial-convergence-20260905",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/inkos-creative-engineering-convergence",
+      "sha": "ccc853a4b7b78088e93efe1aae83dad32a35f6a2",
+      "branch": "refs/heads/codex/inkos-creative-engineering-convergence",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/longform-proof-quality-preservation",
+      "sha": "004190d51710ceb4bb5b6e2ec2051dde8726cc3c",
+      "branch": "refs/heads/codex/longform-proof-quality-preservation",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/longform-retrieval-context-01",
+      "sha": "f9df22a49a66bb934f5f82b5d9e595080e0cd541",
+      "branch": "refs/heads/codex/longform-retrieval-context-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/narrative-evolution-engine",
+      "sha": "3cc6d8a5b78cb4f33001d9c4af64fe6ce3ebdc29",
+      "branch": "refs/heads/codex/narrative-evolution-engine",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/narrative-memory-lifecycle-closure",
+      "sha": "4b061bfbeeddf24a60b0337c66e76b25cea9166b",
+      "branch": "refs/heads/codex/narrative-memory-lifecycle-closure",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/p0-backend-qualification-ci-closure-01",
+      "sha": "d49ff214cd7f841f0a9705cfd78672df78882bc4",
+      "branch": "refs/heads/codex/p0-backend-qualification-ci-closure-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/p0-backend-qualification-ci-implementation-01",
+      "sha": "481c8572afbb953d13f144d8130fcfd23ae20360",
+      "branch": "refs/heads/codex/p0-backend-qualification-ci-implementation-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/repository-historical-reality-closure-01",
+      "sha": "d06a446952d53168ef1db9ab91cbc1a685448d37",
+      "branch": "refs/heads/codex/repository-historical-reality-closure-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/verify-12fcfae-0102",
+      "sha": "12fcfae04a37122e91e70adcc8b625408c888d21",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-book-opening-recovery-closure-01",
+      "sha": "1da46286e110a5e337a59a2f21d6f1f788553659",
+      "branch": "refs/heads/codex/wp-book-opening-recovery-closure-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-book-opening-recovery-closure-01-audit",
+      "sha": "611f92264af7ca143ba365a3746e53cea5976606",
+      "branch": null,
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-canonical-narrative-blueprint-01",
+      "sha": "55a0041ce2e10b326f1933d24e0f8d97752c28b2",
+      "branch": "refs/heads/codex/wp-canonical-narrative-blueprint-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-code-reality-and-knowledge-reconstruction-01",
+      "sha": "e3e1413b5488177a7b8e04a475f0d7bc6d51b064",
+      "branch": "refs/heads/codex/wp-code-reality-and-knowledge-reconstruction-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-documentation-reality-reset-01",
+      "sha": "1de27e3633370fa25f9592516c23382874745824",
+      "branch": "refs/heads/codex/wp-documentation-reality-reset-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-industrial-novel-os-convergence-01",
+      "sha": "4c6ebdb774052e1d46f72d0cfbc0541aed22fc52",
+      "branch": "refs/heads/codex/wp-industrial-novel-os-convergence-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-live-01",
+      "sha": "85705f3021b52ee907d0667a7522b38fd4898a61",
+      "branch": "refs/heads/codex/wp-live-01-liveness-closure",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-live-02",
+      "sha": "3969e25460aa0da88dc07805e20818eb5f00f7b8",
+      "branch": "refs/heads/codex/wp-live-02-qualification",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-post-merge-reality-qualification-closure-01",
+      "sha": "3d9d59ad2e107807b371081e23bb9ea4b03bf096",
+      "branch": "refs/heads/codex/wp-post-merge-reality-qualification-closure-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-quality-proof-01",
+      "sha": "d2023705bef6d00b5927fb4c09f4b3a856c72f3a",
+      "branch": "refs/heads/codex/wp-quality-proof-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-real-provider-qualification-01",
+      "sha": "475ab8d586037e0f60bace48eda511f09e6caf0e",
+      "branch": "refs/heads/codex/wp-real-provider-qualification-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-worktrees/wp-test-reality-reset-01",
+      "sha": "1192b6951593e36cc67a5214a0383f85312211df",
+      "branch": "refs/heads/codex/wp-test-reality-reset-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-wp-narrative-orchestration-01",
+      "sha": "0619acf731c2542c45b122369d66e9395ec1829f",
+      "branch": "refs/heads/codex/wp-narrative-orchestration-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Users/yuan/projects/novel-forge-wp-narrative-orchestration-qualification-01",
+      "sha": "164fe60ebdac162591b330ee9a2be854443015ee",
+      "branch": "refs/heads/codex/wp-narrative-orchestration-qualification-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-author-guided-twelve",
+      "sha": "70f36cefd903af4af92406400be1750bf37cd89b",
+      "branch": "refs/heads/codex/author-guided-twelve-chapter-production-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-creative-execution",
+      "sha": "a179f481392c5f754c3a14c12d2179d4675ec13a",
+      "branch": "refs/heads/codex/first-novel-creative-execution-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot",
+      "sha": "085eceaaa1311ef8a4c80e75a4d75421293b7c8f",
+      "branch": "refs/heads/codex/real-corpus-first-novel-pilot-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-guofeng-foundation-repair",
+      "sha": "b2541ecdc314de38aeee34d606047e1e04ed0b15",
+      "branch": "refs/heads/codex/guofeng-foundation-evaluation-repair",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-guofeng-profile-repair",
+      "sha": "90543b35173b84af91d9933086b749df2df65cab",
+      "branch": "refs/heads/codex/guofeng-execution-profile-repair",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-guofeng-volume-one",
+      "sha": "38eb7b96ee16ed1f45f327fa8353ee6035a2cecb",
+      "branch": "refs/heads/codex/wp-guofeng-volume-one-production-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-guofeng-workspace-repair",
+      "sha": "d5c3dd3c7a5e2233d36cecd5aac9142fa626dc40",
+      "branch": "refs/heads/codex/guofeng-workspace-repair",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-knowledge-closure",
+      "sha": "f5ef91d86962ba093a79df15d66994ec60a0ecb7",
+      "branch": "refs/heads/codex/knowledge-grounded-creative-closure-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/classical-corpus-codex-20260908",
+      "sha": "5dc6e4caa70357a247d9bd748e8663f8dc6cc8bb",
+      "branch": "refs/heads/codex/classical-corpus-codex-20260908",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-deconstruction-20260910",
+      "sha": "e948bdf52ac33248f383ae002b7f65e08b856658",
+      "branch": "refs/heads/codex/corpus-deconstruction-20260910",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-exact-main-qualification-20260908",
+      "sha": "563a98c1678cb5217fe5348d3847982548c19852",
+      "branch": "refs/heads/codex/corpus-exact-main-qualification-20260908",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-foundation-20260908",
+      "sha": "194ff8e8edd7bff6f0ca2d3b0ee1b8ec3a37c7fa",
+      "branch": "refs/heads/codex/corpus-foundation-20260908",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909",
+      "sha": "0d515923704871176571d963db0b11d4871f7225",
+      "branch": "refs/heads/codex/corpus-normalization-20260909",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-operations-closure-20260910",
+      "sha": "93932182c6e20e920c8b8ab413064db85a4ff324",
+      "branch": "refs/heads/codex/corpus-operations-closure-20260910",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909",
+      "sha": "217e1563d735e3e76dcc3fee0bf9ebdc8b98cc19",
+      "branch": "refs/heads/codex/corpus-quality-closure-20260909",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/creative-grounded-canon-20260907",
+      "sha": "ff531096a8965d75648339403c65f1ba727a1b90",
+      "branch": "refs/heads/codex/creative-grounded-canon-20260907",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/industrial-os-convergence-20260905-run",
+      "sha": "f299b1ef1c0ffc6ee45b60b599812a579d421a7b",
+      "branch": "refs/heads/codex/industrial-os-convergence-20260905-run",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/narrative-production-closure-01",
+      "sha": "8e92e946c7ded9aaeba2c37fd78786d06a97c802",
+      "branch": "refs/heads/codex/narrative-production-closure-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/narrative-reality-causal-20260906",
+      "sha": "8ba679c08d5481f7bd5c64bd950848ec00900a23",
+      "branch": "refs/heads/codex/narrative-reality-causal-20260906",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/novel-production-synthesis-20260907",
+      "sha": "6e36cd0e85a07c754a82ccc0bf5568af4971b31c",
+      "branch": "refs/heads/codex/novel-production-synthesis-20260907",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/post-merge-exact-sha-p0-20260905",
+      "sha": "29ecb095e378ad24a61b770bacec805b5d967840",
+      "branch": "refs/heads/codex/post-merge-exact-sha-p0-20260905",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/provider-routing-closure-20260916",
+      "sha": "7d5bef20af107f447d1fca2f5e6fc98da4941b43",
+      "branch": "refs/heads/codex/provider-routing-closure-20260916",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/publish-all-and-yuxian-20260912",
+      "sha": "7dd516d528c600ac36faf3478d57c67766ede571",
+      "branch": "refs/heads/codex/all-local-and-yuxian-publication-20260912",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/real-creative-pilot-20260908",
+      "sha": "05124a8edf03f630157c5b409047004bb20ddf81",
+      "branch": "refs/heads/codex/real-creative-pilot-20260908",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909",
+      "sha": "02d6f7f9e60355ceb88634d4b2214931219b75f6",
+      "branch": "refs/heads/codex/universal-corpus-ingestion-20260909",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/world-causal-production-closure-20260906",
+      "sha": "e0c56640986a984bd86c71e191d5c27314b492a6",
+      "branch": "refs/heads/codex/world-causal-production-closure-20260906",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/world-causal-resume-20260907",
+      "sha": "f5d4e0231482aa2fbffe0b8840407f086b33c969",
+      "branch": "refs/heads/codex/world-causal-resume-20260907",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/wp01-creative-assimilation-audit",
+      "sha": "07ea4e543e8e54d67c3914d05d61b70efaa883e4",
+      "branch": "refs/heads/codex/wp01-creative-assimilation-audit",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/wp02-cross-chapter-prose-repair",
+      "sha": "6f6ef62e40cff93b5a6b93a2bbe06ddc98695271",
+      "branch": "refs/heads/codex/wp02-cross-chapter-prose-repair",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-wp-corpus-real-analysis-01",
+      "sha": "0551b8b412b2ec6c50749da64f125f88e8c30f8a",
+      "branch": "refs/heads/wp-corpus-real-analysis-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-wp-corpus-real-execution-01",
+      "sha": "570548bbb6f7e279b7b78a1e03568de9ad03d44d",
+      "branch": "refs/heads/wp-corpus-real-execution-01",
+      "ancestor_of_audit_main": true,
+      "status": [],
+      "status_error": ""
+    }
+  ]
+}

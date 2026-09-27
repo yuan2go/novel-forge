@@ -1,0 +1,1782 @@
+{
+  "audit_sha": "d69053557e5dd16ccfa4217fde234245a90fdc50",
+  "method": "AST decorator/prefix inventory plus exact full source substring search; static, not a live HTTP test",
+  "ui_file": "web/admin/app/features/production/api.ts:51-125",
+  "unregistered_legacy_requests": [
+    {
+      "path": "/product/production/versions",
+      "source_matches": [],
+      "registered_route_matches": []
+    },
+    {
+      "path": "/product/production/chapter-runs",
+      "source_matches": [],
+      "registered_route_matches": []
+    },
+    {
+      "path": "/product/production/macro-plans",
+      "source_matches": [],
+      "registered_route_matches": []
+    },
+    {
+      "path": "/product/production/chapter-run/start",
+      "source_matches": [],
+      "registered_route_matches": []
+    },
+    {
+      "path": "/product/production/macro-plan",
+      "source_matches": [],
+      "registered_route_matches": []
+    }
+  ],
+  "routers": [
+    {
+      "file": "src/novel_forge/api/routers/book_completion.py",
+      "prefixes": [
+        "/api/book-completion"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/cases",
+          "function": "assess",
+          "line": 56
+        },
+        {
+          "method": "POST",
+          "relative_route": "/decisions",
+          "function": "decide",
+          "line": 62
+        },
+        {
+          "method": "GET",
+          "relative_route": "/cases/{case_id}",
+          "function": "require_case",
+          "line": 68
+        },
+        {
+          "method": "POST",
+          "relative_route": "/editorial-events",
+          "function": "editorial_event",
+          "line": 82
+        },
+        {
+          "method": "GET",
+          "relative_route": "/editorial-history",
+          "function": "editorial_history",
+          "line": 87
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/chapter_authority.py",
+      "prefixes": [
+        "/product/production/chapter-authority"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/provider-samples",
+          "function": "provider_sample",
+          "line": 49
+        },
+        {
+          "method": "GET",
+          "relative_route": "/provider-samples/{operation_id}",
+          "function": "provider_sample_result",
+          "line": 67
+        },
+        {
+          "method": "POST",
+          "relative_route": "/commands",
+          "function": "admit_authoritative_chapter",
+          "line": 78
+        },
+        {
+          "method": "POST",
+          "relative_route": "/run",
+          "function": "run_authoritative_chapter",
+          "line": 184
+        },
+        {
+          "method": "GET",
+          "relative_route": "/runs",
+          "function": "list_authoritative_chapters",
+          "line": 224
+        },
+        {
+          "method": "POST",
+          "relative_route": "/operations/{root_operation_id}/cancel",
+          "function": "cancel_authoritative_chapter",
+          "line": 239
+        },
+        {
+          "method": "GET",
+          "relative_route": "/run",
+          "function": "authoritative_chapter_detail",
+          "line": 292
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/authority_projects.py",
+      "prefixes": [],
+      "routes": [
+        {
+          "method": "GET",
+          "relative_route": "/product/projects",
+          "function": "projects",
+          "line": 34
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/projects/operating-dashboard",
+          "function": "operating_dashboard",
+          "line": 43
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/series",
+          "function": "series",
+          "line": 78
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/projects",
+          "function": "create_project",
+          "line": 102
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/projects/{project_id}/workspaces",
+          "function": "create_workspace",
+          "line": 121
+        },
+        {
+          "method": "PATCH",
+          "relative_route": "/product/projects/{project_id}/config",
+          "function": "update_project",
+          "line": 134
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/projects/{project_id}/duplicate",
+          "function": "duplicate_project",
+          "line": 160
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/projects/{project_id}/archive",
+          "function": "archive_project",
+          "line": 200
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/projects/{project_id}/pause",
+          "function": "pause_project",
+          "line": 204
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/projects/{project_id}/restore",
+          "function": "restore_project",
+          "line": 208
+        },
+        {
+          "method": "DELETE",
+          "relative_route": "/product/projects/{project_id}",
+          "function": "delete_project",
+          "line": 212
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/projects/{project_id}/assets",
+          "function": "project_assets",
+          "line": 216
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/projects/{project_id}/bindings",
+          "function": "project_bindings",
+          "line": 233
+        },
+        {
+          "method": "PUT",
+          "relative_route": "/product/projects/{project_id}/bindings/{binding_type}",
+          "function": "assign_project_binding",
+          "line": 238
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/projects/{project_id}/bindings/{binding_type}/remove",
+          "function": "remove_project_binding",
+          "line": 280
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/projects/{project_id}",
+          "function": "project_detail",
+          "line": 320
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/projects/audit/scope",
+          "function": "scope_audit",
+          "line": 325
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/projects/audit/scope",
+          "function": "repair_scope",
+          "line": 330
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/temporal_query.py",
+      "prefixes": [
+        "/product/temporal-query"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "",
+          "function": "temporal_query",
+          "line": 92
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/agent_runtime.py",
+      "prefixes": [
+        "/product/production/agent-runtime"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/agent-sessions",
+          "function": "admit_agent_session",
+          "line": 87
+        },
+        {
+          "method": "GET",
+          "relative_route": "/agent-sessions/{agent_session_id}",
+          "function": "require_agent_session",
+          "line": 151
+        },
+        {
+          "method": "GET",
+          "relative_route": "/migration/agent-runs",
+          "function": "list_agent_runs",
+          "line": 168
+        },
+        {
+          "method": "GET",
+          "relative_route": "/health/recovery",
+          "function": "agent_runtime_recovery_health",
+          "line": 183
+        },
+        {
+          "method": "GET",
+          "relative_route": "/migration/agent-runs/{agent_run_id}",
+          "function": "require_agent_run",
+          "line": 190
+        },
+        {
+          "method": "POST",
+          "relative_route": "/migration/agent-runs/{agent_run_id}/cancel",
+          "function": "cancel_agent_run",
+          "line": 203
+        },
+        {
+          "method": "POST",
+          "relative_route": "/migration/agent-runs/{agent_run_id}/retry",
+          "function": "retry_agent_run",
+          "line": 243
+        },
+        {
+          "method": "GET",
+          "relative_route": "/agents",
+          "function": "list_agents",
+          "line": 271
+        },
+        {
+          "method": "GET",
+          "relative_route": "/agents/{agent_id}/versions",
+          "function": "list_agent_versions",
+          "line": 280
+        },
+        {
+          "method": "POST",
+          "relative_route": "/agents/commands",
+          "function": "execute_agent_admin",
+          "line": 289
+        },
+        {
+          "method": "GET",
+          "relative_route": "/agent-collaborations/{session_id}",
+          "function": "require_collaboration",
+          "line": 313
+        },
+        {
+          "method": "GET",
+          "relative_route": "/asset-lineage/{asset_version_id}",
+          "function": "require_asset_lineage",
+          "line": 327
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/content_intelligence.py",
+      "prefixes": [
+        "/product/content-intelligence"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "relative_route": "/pacing",
+          "function": "pacing",
+          "line": 21
+        },
+        {
+          "method": "GET",
+          "relative_route": "/hooks",
+          "function": "hooks",
+          "line": 32
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/authority_assets.py",
+      "prefixes": [],
+      "routes": [
+        {
+          "method": "GET",
+          "relative_route": "/assets",
+          "function": "all_assets",
+          "line": 76
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/analysis/reports",
+          "function": "analysis_reports",
+          "line": 90
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/context/assets",
+          "function": "context_assets",
+          "line": 99
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/feedback/assets",
+          "function": "feedback_assets",
+          "line": 106
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/publishing/assets",
+          "function": "publishing_assets",
+          "line": 113
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/review-issues",
+          "function": "review_assets",
+          "line": 120
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/mkaos/assets",
+          "function": "mkaos_assets",
+          "line": 127
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/planning/assets",
+          "function": "planning_assets",
+          "line": 134
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/agents/runs",
+          "function": "agent_runs",
+          "line": 141
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/agents/events",
+          "function": "agent_events",
+          "line": 162
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/runtime/trace-timeline",
+          "function": "runtime_trace_timeline",
+          "line": 187
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/runtime/cost-dashboard",
+          "function": "runtime_cost_dashboard",
+          "line": 216
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/libraries/creative",
+          "function": "creative_libraries",
+          "line": 246
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/manuscript/workbench",
+          "function": "manuscript_workbench",
+          "line": 266
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/provider_callback_authority.py",
+      "prefixes": [
+        "/product/provider-callback-authority"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/{provider}/callbacks",
+          "function": "accept_callback",
+          "line": 20
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/authority_tasks.py",
+      "prefixes": [],
+      "routes": [
+        {
+          "method": "GET",
+          "relative_route": "/product/tasks",
+          "function": "tasks",
+          "line": 33
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/tasks/timeline",
+          "function": "timeline",
+          "line": 53
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/tasks/recovery-workbench",
+          "function": "recovery_workbench",
+          "line": 64
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/tasks/control",
+          "function": "task_control",
+          "line": 71
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/tasks/dead-letters",
+          "function": "dead_letters",
+          "line": 89
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/tasks/cancel",
+          "function": "cancel",
+          "line": 124
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/tasks/{operation_id}/recover",
+          "function": "recover",
+          "line": 144
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/tasks/outbox/{outbox_id}/requeue",
+          "function": "requeue_outbox",
+          "line": 184
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/system/health",
+          "function": "system_health",
+          "line": 218
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/system/authority-health",
+          "function": "authority_health",
+          "line": 226
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/tasks/{operation_id}",
+          "function": "task",
+          "line": 231
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/source_authority.py",
+      "prefixes": [],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/product/source-governance/corpus/commands",
+          "function": "corpus_command",
+          "line": 37
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/corpus/imports/{import_job_id}",
+          "function": "corpus_import",
+          "line": 51
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/corpus/lineage/{edition_id}",
+          "function": "corpus_lineage",
+          "line": 59
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/corpus/records/{kind}",
+          "function": "corpus_records",
+          "line": 67
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/corpus/operations/{operation_id}",
+          "function": "corpus_operation",
+          "line": 75
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/source-governance/documents",
+          "function": "register",
+          "line": 83
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/documents",
+          "function": "documents",
+          "line": 120
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/documents/{source_document_id}",
+          "function": "document",
+          "line": 133
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/source-governance/documents/{source_document_id}/transforms",
+          "function": "commit_transform",
+          "line": 147
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/documents/{source_document_id}/transforms",
+          "function": "transforms",
+          "line": 189
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/transforms/{source_transform_id}/chunks",
+          "function": "chunks",
+          "line": 202
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/source-governance/deconstruction-observations",
+          "function": "commit_observation",
+          "line": 218
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/deconstruction-observations",
+          "function": "observations",
+          "line": 252
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/source-governance/reprocessing-plans",
+          "function": "plan_reprocessing",
+          "line": 266
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/reprocessing-plans",
+          "function": "reprocessing_plans",
+          "line": 297
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/invalidations",
+          "function": "invalidations",
+          "line": 305
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/source-governance/data-import-admission",
+          "function": "data_import_admission",
+          "line": 323
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/prose_review.py",
+      "prefixes": [
+        "/product/production/book-authority/runs/{book_run_id}/prose-reviews"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/provider-samples",
+          "function": "provider_sample",
+          "line": 83
+        },
+        {
+          "method": "POST",
+          "relative_route": "",
+          "function": "start",
+          "line": 97
+        },
+        {
+          "method": "GET",
+          "relative_route": "",
+          "function": "list_runs",
+          "line": 105
+        },
+        {
+          "method": "GET",
+          "relative_route": "/{run_id}",
+          "function": "report",
+          "line": 125
+        },
+        {
+          "method": "POST",
+          "relative_route": "/{run_id}/advance",
+          "function": "advance",
+          "line": 139
+        },
+        {
+          "method": "POST",
+          "relative_route": "/{run_id}/findings/{lineage_id}/disposition",
+          "function": "disposition",
+          "line": 150
+        },
+        {
+          "method": "POST",
+          "relative_route": "/{run_id}/control",
+          "function": "control",
+          "line": 164
+        },
+        {
+          "method": "POST",
+          "relative_route": "/{run_id}/findings/{lineage_id}/plan-change",
+          "function": "plan_change",
+          "line": 175
+        },
+        {
+          "method": "POST",
+          "relative_route": "/{run_id}/findings/{lineage_id}/impact-preview",
+          "function": "impact_preview",
+          "line": 190
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/__init__.py",
+      "prefixes": [],
+      "routes": []
+    },
+    {
+      "file": "src/novel_forge/api/routers/book_authority.py",
+      "prefixes": [
+        "/product/production/book-authority"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/planning-generations",
+          "function": "generate_plan",
+          "line": 180
+        },
+        {
+          "method": "GET",
+          "relative_route": "/books/{book_id}/planning-generations/{operation_id}",
+          "function": "planning_generation",
+          "line": 192
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/world-provider-samples",
+          "function": "sample_world",
+          "line": 205
+        },
+        {
+          "method": "GET",
+          "relative_route": "/books/{book_id}/world-provider-samples/{operation_id}",
+          "function": "world_sample",
+          "line": 219
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/planning-generations/{operation_id}/runtime-continuation",
+          "function": "continue_planning_runtime",
+          "line": 232
+        },
+        {
+          "method": "GET",
+          "relative_route": "/books/{book_id}/planning-candidates/{asset_version_id}",
+          "function": "planning_candidate",
+          "line": 250
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/planning-evaluations",
+          "function": "evaluate_plan",
+          "line": 264
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/plan-changes",
+          "function": "propose_plan_change",
+          "line": 288
+        },
+        {
+          "method": "GET",
+          "relative_route": "/books/{book_id}/plan-changes/{proposal_id}",
+          "function": "plan_change_detail",
+          "line": 299
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/plan-changes/{proposal_id}/decisions",
+          "function": "decide_plan_change",
+          "line": 312
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/plan-changes/{proposal_id}/activate",
+          "function": "activate_plan_change",
+          "line": 330
+        },
+        {
+          "method": "POST",
+          "relative_route": "/runs/{book_run_id}/plan-changes/{proposal_id}/resume",
+          "function": "resume_plan_change",
+          "line": 343
+        },
+        {
+          "method": "PUT",
+          "relative_route": "/policies/book-control",
+          "function": "configure_book_control",
+          "line": 357
+        },
+        {
+          "method": "POST",
+          "relative_route": "/runs/{book_run_id}/control-decisions",
+          "function": "decide_book_control",
+          "line": 368
+        },
+        {
+          "method": "PUT",
+          "relative_route": "/policies/creative-experiment-budget",
+          "function": "configure_experiment_budget",
+          "line": 379
+        },
+        {
+          "method": "GET",
+          "relative_route": "/projects/{project_id}/creative-experiment-budget",
+          "function": "query_experiment_budget",
+          "line": 394
+        },
+        {
+          "method": "PUT",
+          "relative_route": "/policies/chapter-group-execution",
+          "function": "configure_execution_policy",
+          "line": 406
+        },
+        {
+          "method": "PUT",
+          "relative_route": "/policies/reader-proxy",
+          "function": "configure_reader_policy",
+          "line": 428
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/opening-runs",
+          "function": "start_book_opening",
+          "line": 448
+        },
+        {
+          "method": "GET",
+          "relative_route": "/opening-runs/{opening_run_id}",
+          "function": "book_opening_detail",
+          "line": 486
+        },
+        {
+          "method": "GET",
+          "relative_route": "/opening-runs/{opening_run_id}/progress",
+          "function": "book_opening_progress",
+          "line": 503
+        },
+        {
+          "method": "POST",
+          "relative_route": "/opening-runs/{opening_run_id}/resume",
+          "function": "resume_book_opening",
+          "line": 522
+        },
+        {
+          "method": "POST",
+          "relative_route": "/opening-runs/{opening_run_id}/reconcile-legacy-budget-scope",
+          "function": "reconcile_legacy_book_opening_budget_scope",
+          "line": 548
+        },
+        {
+          "method": "POST",
+          "relative_route": "/opening-runs/{opening_run_id}/reconcile-legacy-execution",
+          "function": "reconcile_legacy_book_opening_execution",
+          "line": 592
+        },
+        {
+          "method": "POST",
+          "relative_route": "/opening-runs/{opening_run_id}/assess-execution-loss",
+          "function": "assess_book_opening_execution_loss",
+          "line": 620
+        },
+        {
+          "method": "POST",
+          "relative_route": "/opening-runs/{opening_run_id}/converge-execution-loss",
+          "function": "converge_book_opening_execution_loss",
+          "line": 648
+        },
+        {
+          "method": "POST",
+          "relative_route": "/opening-runs/{opening_run_id}/continue-unstarted-capacity",
+          "function": "continue_unstarted_book_opening",
+          "line": 678
+        },
+        {
+          "method": "POST",
+          "relative_route": "/opening-runs/{opening_run_id}/assess-recovery",
+          "function": "assess_book_opening_recovery",
+          "line": 696
+        },
+        {
+          "method": "POST",
+          "relative_route": "/opening-runs/{opening_run_id}/recover",
+          "function": "recover_book_opening",
+          "line": 721
+        },
+        {
+          "method": "POST",
+          "relative_route": "/opening-runs/{opening_run_id}/assess-checkpoint-reconciliation",
+          "function": "assess_book_opening_checkpoint_reconciliation",
+          "line": 755
+        },
+        {
+          "method": "POST",
+          "relative_route": "/opening-runs/{opening_run_id}/reconcile-checkpoint",
+          "function": "reconcile_book_opening_checkpoint",
+          "line": 789
+        },
+        {
+          "method": "POST",
+          "relative_route": "/opening-runs/{opening_run_id}/abort",
+          "function": "abort_book_opening",
+          "line": 814
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/formation-runs",
+          "function": "start_story_formation",
+          "line": 837
+        },
+        {
+          "method": "GET",
+          "relative_route": "/formation-runs/{formation_run_id}",
+          "function": "story_formation_detail",
+          "line": 888
+        },
+        {
+          "method": "POST",
+          "relative_route": "/formation-runs/{formation_run_id}/resume",
+          "function": "resume_story_formation",
+          "line": 906
+        },
+        {
+          "method": "POST",
+          "relative_route": "/formation-runs/{formation_run_id}/approve-book-design",
+          "function": "approve_story_formation_book_design",
+          "line": 933
+        },
+        {
+          "method": "POST",
+          "relative_route": "/formation-runs/{formation_run_id}/abort",
+          "function": "abort_story_formation",
+          "line": 960
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/production-inputs/resolve",
+          "function": "resolve_production_inputs",
+          "line": 984
+        },
+        {
+          "method": "POST",
+          "relative_route": "/commands",
+          "function": "start_book",
+          "line": 1013
+        },
+        {
+          "method": "POST",
+          "relative_route": "/runs/{book_run_id}/chapters",
+          "function": "submit_chapter",
+          "line": 1086
+        },
+        {
+          "method": "POST",
+          "relative_route": "/chapter-requests/{chapter_request_id}/reconcile",
+          "function": "reconcile_chapter",
+          "line": 1156
+        },
+        {
+          "method": "POST",
+          "relative_route": "/chapter-requests/{chapter_request_id}/accept",
+          "function": "accept_chapter",
+          "line": 1168
+        },
+        {
+          "method": "POST",
+          "relative_route": "/chapter-requests/{chapter_request_id}/recover",
+          "function": "recover_chapter",
+          "line": 1182
+        },
+        {
+          "method": "POST",
+          "relative_route": "/runs/{book_run_id}/tick",
+          "function": "tick_book",
+          "line": 1196
+        },
+        {
+          "method": "GET",
+          "relative_route": "/runs/{book_run_id}",
+          "function": "book_detail",
+          "line": 1216
+        },
+        {
+          "method": "POST",
+          "relative_route": "/runs/{book_run_id}/causal-plans",
+          "function": "propose_causal_plan",
+          "line": 1228
+        },
+        {
+          "method": "GET",
+          "relative_route": "/runs/{book_run_id}/control-readiness",
+          "function": "book_control_readiness",
+          "line": 1238
+        },
+        {
+          "method": "GET",
+          "relative_route": "/runs/{book_run_id}/reality/context",
+          "function": "reality_context",
+          "line": 1250
+        },
+        {
+          "method": "GET",
+          "relative_route": "/runs/{book_run_id}/reality/views/{view}",
+          "function": "narrative_reality_view",
+          "line": 1262
+        },
+        {
+          "method": "GET",
+          "relative_route": "/runs/{book_run_id}/reality",
+          "function": "narrative_reality",
+          "line": 1274
+        },
+        {
+          "method": "GET",
+          "relative_route": "/runs/{book_run_id}/progress",
+          "function": "book_progress",
+          "line": 1286
+        },
+        {
+          "method": "GET",
+          "relative_route": "/runs/{book_run_id}/chapter-groups",
+          "function": "chapter_group_lineage",
+          "line": 1298
+        },
+        {
+          "method": "GET",
+          "relative_route": "/runs/{book_run_id}/corrective-actions",
+          "function": "corrective_actions",
+          "line": 1312
+        },
+        {
+          "method": "POST",
+          "relative_route": "/runs/{book_run_id}/replans/{replan_id}/approve",
+          "function": "approve_replan",
+          "line": 1334
+        },
+        {
+          "method": "POST",
+          "relative_route": "/runs/{book_run_id}/replans/{replan_id}/reevaluate",
+          "function": "reevaluate_replan",
+          "line": 1358
+        },
+        {
+          "method": "POST",
+          "relative_route": "/runs/{book_run_id}/pause",
+          "function": "pause_book",
+          "line": 1386
+        },
+        {
+          "method": "POST",
+          "relative_route": "/runs/{book_run_id}/resume",
+          "function": "resume_book",
+          "line": 1402
+        },
+        {
+          "method": "POST",
+          "relative_route": "/runs/{book_run_id}/cancel",
+          "function": "cancel_book",
+          "line": 1418
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/quality_qualification.py",
+      "prefixes": [
+        "/api/quality-qualification"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/campaigns",
+          "function": "admit_campaign",
+          "line": 112
+        },
+        {
+          "method": "GET",
+          "relative_route": "/campaigns/{campaign_id}",
+          "function": "campaign",
+          "line": 125
+        },
+        {
+          "method": "POST",
+          "relative_route": "/campaigns/{campaign_id}/freeze",
+          "function": "freeze",
+          "line": 131
+        },
+        {
+          "method": "POST",
+          "relative_route": "/campaigns/{campaign_id}/start",
+          "function": "start",
+          "line": 141
+        },
+        {
+          "method": "POST",
+          "relative_route": "/campaigns/{campaign_id}/resume",
+          "function": "resume",
+          "line": 151
+        },
+        {
+          "method": "POST",
+          "relative_route": "/campaigns/{campaign_id}/subjects",
+          "function": "bind_subject",
+          "line": 161
+        },
+        {
+          "method": "POST",
+          "relative_route": "/campaigns/{campaign_id}/evidence",
+          "function": "bind_evidence",
+          "line": 184
+        },
+        {
+          "method": "POST",
+          "relative_route": "/campaigns/{campaign_id}/evaluate",
+          "function": "evaluate",
+          "line": 204
+        },
+        {
+          "method": "GET",
+          "relative_route": "/campaigns/{campaign_id}/blind-packs",
+          "function": "blind_pack_status",
+          "line": 214
+        },
+        {
+          "method": "GET",
+          "relative_route": "/blind-packs/{pack_id}",
+          "function": "reviewer_pack",
+          "line": 220
+        },
+        {
+          "method": "POST",
+          "relative_route": "/blind-decisions",
+          "function": "record_blind_decision",
+          "line": 233
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/chapter_editor.py",
+      "prefixes": [
+        "/product/editor"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "relative_route": "/editions/knowledge",
+          "function": "edition_knowledge",
+          "line": 127
+        },
+        {
+          "method": "GET",
+          "relative_route": "/screenplays",
+          "function": "screenplay_query",
+          "line": 133
+        },
+        {
+          "method": "POST",
+          "relative_route": "/screenplays/commands",
+          "function": "screenplay_command",
+          "line": 138
+        },
+        {
+          "method": "POST",
+          "relative_route": "/screenplays/stages",
+          "function": "screenplay_stage",
+          "line": 142
+        },
+        {
+          "method": "POST",
+          "relative_route": "/screenplays/resume",
+          "function": "screenplay_resume",
+          "line": 146
+        },
+        {
+          "method": "GET",
+          "relative_route": "/screenplays/export",
+          "function": "screenplay_export",
+          "line": 150
+        },
+        {
+          "method": "GET",
+          "relative_route": "/editions",
+          "function": "edition_query",
+          "line": 159
+        },
+        {
+          "method": "POST",
+          "relative_route": "/editions/commands",
+          "function": "edition_command",
+          "line": 164
+        },
+        {
+          "method": "POST",
+          "relative_route": "/editions/validation-start",
+          "function": "edition_validation_start",
+          "line": 168
+        },
+        {
+          "method": "GET",
+          "relative_route": "/editions/export",
+          "function": "edition_export",
+          "line": 173
+        },
+        {
+          "method": "GET",
+          "relative_route": "/drafts",
+          "function": "list_drafts",
+          "line": 182
+        },
+        {
+          "method": "GET",
+          "relative_route": "/draft",
+          "function": "require_draft",
+          "line": 207
+        },
+        {
+          "method": "POST",
+          "relative_route": "/commands",
+          "function": "command",
+          "line": 213
+        },
+        {
+          "method": "POST",
+          "relative_route": "/book-reviews",
+          "function": "book_review",
+          "line": 219
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/context.py",
+      "prefixes": [],
+      "routes": []
+    },
+    {
+      "file": "src/novel_forge/api/routers/authoring.py",
+      "prefixes": [
+        "/product/authoring"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "relative_route": "/books/{book_id}/recent-trail",
+          "function": "recent_trail",
+          "line": 16
+        },
+        {
+          "method": "GET",
+          "relative_route": "/books/{book_id}/hook-debt",
+          "function": "hook_debt",
+          "line": 34
+        },
+        {
+          "method": "GET",
+          "relative_route": "/chapters/{root_operation_id}/workspace",
+          "function": "chapter_workspace",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/screenplay_sampling.py",
+      "prefixes": [
+        "/product/production/book-authority/runs/{book_run_id}/screenplay/provider-samples"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "",
+          "function": "sample",
+          "line": 38
+        },
+        {
+          "method": "GET",
+          "relative_route": "/{operation_id}",
+          "function": "query",
+          "line": 63
+        },
+        {
+          "method": "POST",
+          "relative_route": "/{operation_id}/run",
+          "function": "run",
+          "line": 68
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/mkaos_authority.py",
+      "prefixes": [],
+      "routes": [
+        {
+          "method": "GET",
+          "relative_route": "/product/mkaos/craft-catalog",
+          "function": "craft_catalog",
+          "line": 32
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/mkaos/craft-candidates",
+          "function": "author_core_craft",
+          "line": 40
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/mkaos/knowledge-candidates",
+          "function": "commit_candidate",
+          "line": 55
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/mkaos/knowledge-candidates",
+          "function": "candidates",
+          "line": 92
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/mkaos/knowledge-candidates/{candidate_asset_version_id}/approve",
+          "function": "approve_candidate",
+          "line": 104
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/mkaos/knowledge-cards",
+          "function": "cards",
+          "line": 130
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/mkaos/knowledge-cards/{asset_version_id}/trace",
+          "function": "knowledge_trace",
+          "line": 139
+        },
+        {
+          "method": "POST",
+          "relative_route": "/product/mkaos/knowledge-packs",
+          "function": "build_pack",
+          "line": 154
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/mkaos/knowledge-packs",
+          "function": "packs",
+          "line": 192
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/mkaos/knowledge-packs/{knowledge_pack_id}",
+          "function": "pack",
+          "line": 205
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/mkaos/knowledge-packs/{knowledge_pack_id}/diff",
+          "function": "pack_diff",
+          "line": 215
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/mkaos/runtime-usage",
+          "function": "runtime_usage",
+          "line": 231
+        },
+        {
+          "method": "GET",
+          "relative_route": "/product/mkaos/runtime-selections",
+          "function": "runtime_selections",
+          "line": 248
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/canon_authority.py",
+      "prefixes": [
+        "/product/canon-authority"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "relative_route": "/approvals",
+          "function": "approvals",
+          "line": 48
+        },
+        {
+          "method": "GET",
+          "relative_route": "/approvals/{approval_id}",
+          "function": "approval",
+          "line": 57
+        },
+        {
+          "method": "POST",
+          "relative_route": "/approvals/{approval_id}/decisions",
+          "function": "decide",
+          "line": 69
+        },
+        {
+          "method": "POST",
+          "relative_route": "/approvals/{approval_id}/reopen",
+          "function": "reopen",
+          "line": 90
+        },
+        {
+          "method": "POST",
+          "relative_route": "/operations/{operation_id}/resume",
+          "function": "resume",
+          "line": 115
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/content_authority.py",
+      "prefixes": [
+        "/product/content-authority"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/commands",
+          "function": "admit_content_operation",
+          "line": 38
+        },
+        {
+          "method": "GET",
+          "relative_route": "/operations",
+          "function": "list_operations",
+          "line": 95
+        },
+        {
+          "method": "GET",
+          "relative_route": "/operations/{operation_id}",
+          "function": "operation_detail",
+          "line": 104
+        },
+        {
+          "method": "POST",
+          "relative_route": "/operations/{operation_id}/cancel",
+          "function": "cancel_operation",
+          "line": 110
+        },
+        {
+          "method": "POST",
+          "relative_route": "/operations/{operation_id}/recover",
+          "function": "recover_operation",
+          "line": 135
+        },
+        {
+          "method": "POST",
+          "relative_route": "/external-effects/{external_effect_id}/resolve",
+          "function": "resolve_external_effect",
+          "line": 166
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/capability_pack_authority.py",
+      "prefixes": [
+        "/api/capability-packs"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/register",
+          "function": "register",
+          "line": 101
+        },
+        {
+          "method": "POST",
+          "relative_route": "/{pack_id}/{pack_version}/validate",
+          "function": "validate",
+          "line": 105
+        },
+        {
+          "method": "POST",
+          "relative_route": "/{pack_id}/{pack_version}/compile",
+          "function": "compile_pack",
+          "line": 116
+        },
+        {
+          "method": "POST",
+          "relative_route": "/compilations/{compilation_id}/approve",
+          "function": "approve",
+          "line": 127
+        },
+        {
+          "method": "POST",
+          "relative_route": "/deployments",
+          "function": "create_deployment",
+          "line": 137
+        },
+        {
+          "method": "POST",
+          "relative_route": "/deployments/{deployment_id}/activate",
+          "function": "activate",
+          "line": 143
+        },
+        {
+          "method": "POST",
+          "relative_route": "/deployments/{deployment_id}/disable",
+          "function": "disable",
+          "line": 153
+        },
+        {
+          "method": "POST",
+          "relative_route": "/rollouts",
+          "function": "start_rollout",
+          "line": 163
+        },
+        {
+          "method": "POST",
+          "relative_route": "/rollouts/{rollout_id}/{control}",
+          "function": "control_rollout",
+          "line": 167
+        },
+        {
+          "method": "POST",
+          "relative_route": "/deployments/{deployment_id}/rollback",
+          "function": "rollback",
+          "line": 179
+        },
+        {
+          "method": "POST",
+          "relative_route": "/{pack_id}/{pack_version}/{lifecycle_action}",
+          "function": "lifecycle",
+          "line": 189
+        },
+        {
+          "method": "GET",
+          "relative_route": "/versions",
+          "function": "list_versions",
+          "line": 205
+        },
+        {
+          "method": "GET",
+          "relative_route": "/versions/{pack_id}/{pack_version}",
+          "function": "version_detail",
+          "line": 214
+        },
+        {
+          "method": "GET",
+          "relative_route": "/deployments/list",
+          "function": "list_deployments",
+          "line": 227
+        },
+        {
+          "method": "GET",
+          "relative_route": "/deployments/{deployment_id}",
+          "function": "deployment_detail",
+          "line": 244
+        },
+        {
+          "method": "GET",
+          "relative_route": "/rollouts/{rollout_id}",
+          "function": "rollout_detail",
+          "line": 255
+        },
+        {
+          "method": "GET",
+          "relative_route": "/deployments/{deployment_id}/drift",
+          "function": "drift",
+          "line": 264
+        },
+        {
+          "method": "GET",
+          "relative_route": "/deployments/{deployment_id}/usage",
+          "function": "usage",
+          "line": 273
+        },
+        {
+          "method": "GET",
+          "relative_route": "/usage",
+          "function": "usage_by_dimensions",
+          "line": 302
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/book_design_authority.py",
+      "prefixes": [
+        "/authority"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/books",
+          "function": "create_book",
+          "line": 84
+        },
+        {
+          "method": "GET",
+          "relative_route": "/books/{book_id}",
+          "function": "book_detail",
+          "line": 110
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/design-candidates",
+          "function": "propose",
+          "line": 115
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/design-candidates/{asset_version_id}/decisions",
+          "function": "decide",
+          "line": 137
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/design-candidates/{asset_version_id}/semantic-evaluations",
+          "function": "evaluate",
+          "line": 164
+        },
+        {
+          "method": "POST",
+          "relative_route": "/books/{book_id}/design-candidates/{asset_version_id}/activations",
+          "function": "activate",
+          "line": 196
+        },
+        {
+          "method": "GET",
+          "relative_route": "/books/{book_id}/design-versions",
+          "function": "versions",
+          "line": 221
+        },
+        {
+          "method": "GET",
+          "relative_route": "/books/{book_id}/outbox",
+          "function": "outbox",
+          "line": 226
+        }
+      ]
+    },
+    {
+      "file": "src/novel_forge/api/routers/source_import.py",
+      "prefixes": [
+        "/product/source-imports"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "relative_route": "/provider-samples",
+          "function": "provider_sample",
+          "line": 80
+        },
+        {
+          "method": "GET",
+          "relative_route": "/corpus/jobs/{job_id}/reading-targets",
+          "function": "reading_targets",
+          "line": 92
+        },
+        {
+          "method": "GET",
+          "relative_route": "/corpus/jobs/{job_id}/reading-evidence",
+          "function": "reading_evidence",
+          "line": 108
+        },
+        {
+          "method": "POST",
+          "relative_route": "/corpus/reading-preview",
+          "function": "reading_preview",
+          "line": 136
+        },
+        {
+          "method": "GET",
+          "relative_route": "/corpus/processing/{processing_id}/chapters",
+          "function": "reading_chapters",
+          "line": 162
+        },
+        {
+          "method": "POST",
+          "relative_route": "/corpus/analyze",
+          "function": "analyze_curated",
+          "line": 178
+        },
+        {
+          "method": "GET",
+          "relative_route": "/corpus/catalog/{kind}/{identity}",
+          "function": "inspect_catalog",
+          "line": 186
+        },
+        {
+          "method": "POST",
+          "relative_route": "/corpus/reprocess",
+          "function": "reprocess_corpus",
+          "line": 202
+        },
+        {
+          "method": "GET",
+          "relative_route": "/corpus/processing/{identity}",
+          "function": "corpus_processing",
+          "line": 222
+        },
+        {
+          "method": "POST",
+          "relative_route": "/corpus",
+          "function": "import_corpus",
+          "line": 249
+        },
+        {
+          "method": "POST",
+          "relative_route": "/corpus/preview",
+          "function": "preview_corpus",
+          "line": 253
+        },
+        {
+          "method": "POST",
+          "relative_route": "",
+          "function": "create_import",
+          "line": 275
+        },
+        {
+          "method": "POST",
+          "relative_route": "/preview",
+          "function": "preview_import",
+          "line": 279
+        },
+        {
+          "method": "GET",
+          "relative_route": "",
+          "function": "list_imports",
+          "line": 345
+        },
+        {
+          "method": "GET",
+          "relative_route": "/{import_job_id}",
+          "function": "import_status",
+          "line": 367
+        },
+        {
+          "method": "GET",
+          "relative_route": "/{import_job_id}/analysis-results",
+          "function": "analysis_results",
+          "line": 379
+        },
+        {
+          "method": "GET",
+          "relative_route": "/{import_job_id}/corpus-lineage",
+          "function": "corpus_lineage",
+          "line": 400
+        },
+        {
+          "method": "GET",
+          "relative_route": "/{import_job_id}/preview",
+          "function": "preview_status",
+          "line": 419
+        },
+        {
+          "method": "GET",
+          "relative_route": "/{import_job_id}/files",
+          "function": "import_files",
+          "line": 431
+        },
+        {
+          "method": "GET",
+          "relative_route": "/{import_job_id}/work",
+          "function": "import_work",
+          "line": 443
+        },
+        {
+          "method": "GET",
+          "relative_route": "/{import_job_id}/source-work",
+          "function": "source_work_manifest",
+          "line": 455
+        },
+        {
+          "method": "GET",
+          "relative_route": "/{import_job_id}/downstream",
+          "function": "downstream",
+          "line": 467
+        },
+        {
+          "method": "POST",
+          "relative_route": "/{import_job_id}/resume",
+          "function": "resume",
+          "line": 479
+        },
+        {
+          "method": "POST",
+          "relative_route": "/reprocessing/apply",
+          "function": "apply_reprocessing",
+          "line": 491
+        },
+        {
+          "method": "GET",
+          "relative_route": "/reprocessing/{plan_asset_version_id}",
+          "function": "reprocessing_status",
+          "line": 520
+        }
+      ]
+    }
+  ]
+}

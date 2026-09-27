@@ -1,0 +1,281 @@
+{
+  "audit_main_sha": "d69053557e5dd16ccfa4217fde234245a90fdc50",
+  "runtime_source_sha": "49941cd2bb410ba53a59ae52eb2670b6bf96d82d",
+  "records": [
+    {
+      "operation_id": "6caa82a5-d1ea-4a02-9876-cfb019a7b712",
+      "model_call_file": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/evidence/native-design-v11/model_call_log.json",
+      "model_call_file_sha256": "fae498e8042db1e08b2a788d9fa4646fb8db1d48054057f90849d94954138817",
+      "model_call_asset_version_id": "e0f994de-3f6a-4282-abf4-7c6c22f0d4b7",
+      "model_call_content_hash": "sha256:7376f9f3506ca917c6be94994f977d9fb9e7b02731d45c8c830467752747d96d",
+      "stage": "creative.candidates.generate",
+      "input_sha256_from_receipt": "a168daa7f26e2131ec51450ed886ab0ed579da43a6dedc8eb39d43b60a96617f",
+      "rendered_prompt_hash_from_call": "sha256:a168daa7f26e2131ec51450ed886ab0ed579da43a6dedc8eb39d43b60a96617f",
+      "hash_matches_receipt": true,
+      "provider_view": {
+        "component_hashes": {
+          "tool_policy": "sha256:058abd5cdd33e9f20fec97de618920cae3f9b93617df642ebcd1dfc737d1e547",
+          "output_schema": "sha256:e28a5380e8590a8f069e6f13e9093ca47169052d271a406c0e1d7d94d640de6c",
+          "governed_skill": "sha256:34d9235996a0b45808e3183204954a13db0601ef8d7eac7eeb12c7be01f1261e",
+          "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+          "provider_task_view": "sha256:f373a4128acd4b5b1696ade171438845639f45454082b83a8d00c4f547451a2f",
+          "system_instruction": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+          "fully_rendered_prompt": "sha256:a168daa7f26e2131ec51450ed886ab0ed579da43a6dedc8eb39d43b60a96617f",
+          "provider_context_view": "sha256:c60c04ea557efcbc0745121fc38e9cba0fb42fa2f8709444b30bcf3e0e12e065",
+          "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+        },
+        "component_characters": {
+          "tool_policy": 258,
+          "output_schema": 3262,
+          "governed_skill": 1766,
+          "provider_knowledge": 437,
+          "provider_task_view": 4449,
+          "system_instruction": 5867,
+          "fully_rendered_prompt": 22977,
+          "provider_context_view": 5972,
+          "stage_semantic_contract": 65
+        },
+        "representation_policy": "authority-projection-task-provider-v1",
+        "selection_explanation": {
+          "policy": "minimum-sufficient-planning-context-v2",
+          "loss_receipt": {
+            "audit_hash": "sha256:1b419e072ec8ddc80f76874146a517d31d75bc285e4bd510e8e2d1668fa1f709",
+            "json_pointer": "/context_manifest/projection_audit",
+            "loss_record_count": 0,
+            "source_input_hash": "sha256:f09755fed12d51670dc5e366f0cd56c23eaff757cb3e52d9e6add16b284542b7"
+          },
+          "field_classes": {
+            "invariants": "HARD_CONSTRAINT",
+            "constraints": "HARD_CONSTRAINT",
+            "inspiration": "OPTIONAL_GUIDANCE",
+            "required_facts": "REQUIRED_FACT",
+            "due_obligations": "DUE_OBLIGATION",
+            "forbidden_events": "PROHIBITION",
+            "hard_constraints": "HARD_CONSTRAINT",
+            "required_payoffs": "DUE_OBLIGATION",
+            "soft_suggestions": "OPTIONAL_GUIDANCE",
+            "forbidden_payoffs": "PROHIBITION",
+            "optional_guidance": "OPTIONAL_GUIDANCE",
+            "required_fact_ids": "REQUIRED_FACT",
+            "story_constraints": "HARD_CONSTRAINT",
+            "style_suggestions": "OPTIONAL_GUIDANCE",
+            "prohibited_outcomes": "PROHIBITION",
+            "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+            "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+            "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+            "required_obligation_ids": "DUE_OBLIGATION",
+            "unresolved_obligation_ids": "DUE_OBLIGATION"
+          },
+          "compiler_version": "scope-preserving-planning-context-v1",
+          "maximum_segments": 24,
+          "omitted_fact_count": 0,
+          "omitted_item_count": 0,
+          "included_fact_count": 0,
+          "omitted_segment_count": 0,
+          "included_segment_count": 1,
+          "maximum_facts_per_segment": 32,
+          "truncated_character_count": 0,
+          "maximum_serialized_characters": 65536
+        },
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v2",
+        "context_projection_ratio": 1.006065,
+        "component_estimated_tokens": {
+          "tool_policy": 64,
+          "output_schema": 815,
+          "governed_skill": 441,
+          "provider_knowledge": 109,
+          "provider_task_view": 1112,
+          "system_instruction": 1466,
+          "fully_rendered_prompt": 5744,
+          "provider_context_view": 1493,
+          "stage_semantic_contract": 16
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+        "component_utf8_byte_upper_bounds": {
+          "tool_policy": 258,
+          "output_schema": 3262,
+          "governed_skill": 3118,
+          "provider_knowledge": 437,
+          "provider_task_view": 5493,
+          "system_instruction": 5867,
+          "fully_rendered_prompt": 29357,
+          "provider_context_view": 9956,
+          "stage_semantic_contract": 65
+        },
+        "provider_context_estimated_tokens": 1493,
+        "authority_context_estimated_tokens": 1484,
+        "rendered_prompt_to_semantic_input_ratio": 2.116433,
+        "provider_admission_uses_component_estimates": false
+      },
+      "skill": {
+        "ref": "topic-development",
+        "version": "topic-development-qualification-v1",
+        "content_hash": "sha256:9766801ae782b1c3561e0dfc3604571c66882c6584011f957f4c4ad99a8b5893"
+      },
+      "system_instruction": {
+        "ref": "prompt-system:story-planning-pack",
+        "version": "v7",
+        "content_hash": "sha256:f91f8afd14743544f35690e45f079accd7eecfd3516ac16107b8aaf357c8cd5a"
+      },
+      "prompt_template": {
+        "ref": "prompt-template:story-planning-pack",
+        "version": "v1",
+        "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+      },
+      "output_schema_ref": "schema:foundation-provider-output:creative_foundation:v1:author-input-v1",
+      "context_bundle_file": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/evidence/native-design-v11/context_bundle.json",
+      "context_bundle_file_sha256": "be563e910d276686e27a916beb45e3351a0627e1068ae2b2d32cc79e3c2502e3",
+      "context_bundle_asset_version_id": "bd1886ed-2244-4235-bc74-c23bf34d719a",
+      "context_bundle_content_hash": "sha256:8054d93f09307221d7e0bf94e441bf3b35fb63c8bbc7ecb3f7e17716bebd1971",
+      "source_isolation": "ABSTRACT_ASSETS_ONLY",
+      "readable_original_stdin": "NOT_FOUND; complete transmitted text not claimed read",
+      "actual_accepted_prose_in_scope": false,
+      "input_roles": [
+        "creative_brief"
+      ],
+      "brief_selected_constraints": [
+        "全书方向180章、三卷，约45万至60万汉字，可随真实结果调整；首弧约24章。当前试生产连续12章、每章2000–3500汉字，四个真实三章组；停止游标不是全书完成。",
+        "第三人称限知，固定岑禾视角。未知、传闻、作者幕后预案、未来计划、客观已发生事实、角色所知和读者所知分别表达。",
+        "资源变化必须有来源、成本、行动、授权与接收；角色不可代别人签收，不能为了查账拖延已有合法救助。",
+        "前六章完成首批交付及其去向承诺；后六章由实际后果继续，不能重复揭晓已解决的谜底。",
+        "角色通过自己的欲望、误解、有代价的选择改变局面；允许主角犯错与别人保留异议，不用术语说明代替剧情。",
+        "每个章组读完接纳正文及相关前文，定位问题并复核修订；第六章全段审阅后才继续第七章。独立人工评审缺席时保持NOT_REVIEWED。",
+        "前三章接纳后仅依据真实已接纳证据更新未来规划。有触发才通过原生PlanChange变更未执行行动，保留接纳历史、资源及未完成义务；无触发则暂停说明，不能捏造此前计划。",
+        "第十二章完成一个具体阶段变化并保留可追的未满足需求；不结束首弧或全书，不预先穷举180章场景。",
+        "作者输入必须在对应原生设计中明确采用、改造、拒绝或按权限保留私密意图；硬约束不能静默裁掉。作者草案不能自动变为Canon。",
+        "本次单书原创，不运行B组，不把作者参与与知识使用混成知识因果增益。"
+      ],
+      "knowledge_access_policy": {
+        "mode": "DENY_ALL",
+        "book_id": "first-novel-pilot-a",
+        "policy_id": "yu-xian-zhi-wai-author-guided-original-v1",
+        "project_id": "first-novel-pilot-20260912",
+        "policy_hash": "sha256:0d581602810665f426f738e1562153a4c972a4c80f8a0a9f0abfe996155fba94",
+        "policy_version": 1,
+        "schema_version": "book-knowledge-access-policy.v1",
+        "configured_explicitly": true,
+        "allowed_knowledge_card_asset_version_ids": []
+      },
+      "author_projection_keys": [
+        "target",
+        "authority",
+        "fragments",
+        "exclusions",
+        "chapter_range",
+        "binding_digest",
+        "design_version",
+        "evidence_class",
+        "contract_version",
+        "brief_content_hash",
+        "brief_asset_version_id"
+      ],
+      "input_scope_note": "Author-provided creation intent and role-filtered author design; not accepted Canon or chapter state"
+    },
+    {
+      "operation_id": "d78eec9e-e9e1-4779-ba81-724dbeb36b6f",
+      "model_call_file": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/evidence/native-design-v11/model_call_log.json",
+      "model_call_file_sha256": "fae498e8042db1e08b2a788d9fa4646fb8db1d48054057f90849d94954138817",
+      "model_call_asset_version_id": "70a30d4a-3a22-4c6b-8337-da16260c8070",
+      "model_call_content_hash": "sha256:a08ec9df5e1a38b5385010ee4b3dbdfec71ee625f4405c44c8375f56b155b71f",
+      "stage": "narrative_semantic_evaluation",
+      "input_sha256_from_receipt": "16edf3598ce8a19658a7e0ac5e7732346cd58f54275d7eb4f238fef0ce28b27f",
+      "rendered_prompt_hash_from_call": "sha256:16edf3598ce8a19658a7e0ac5e7732346cd58f54275d7eb4f238fef0ce28b27f",
+      "hash_matches_receipt": true,
+      "provider_view": {
+        "component_hashes": {
+          "tool_policy": "sha256:1f8d7e69795efc8ce1b6d33729c765c002c35701b02097e607403e9f2213e0e4",
+          "output_schema": "sha256:b200da8641a37df7670fb6ee343b5ef42346a1e64a411885f772dcbc5edca642",
+          "governed_skill": "sha256:d8ada86b028cbc5e921d0aed88cd691884cc89fd0799b36d86e1c3b24d868496",
+          "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+          "provider_task_view": "sha256:77343b0011861708ec45d8b03dd9df7f181bb2f3a4df18789e8749b54fa90e36",
+          "system_instruction": "sha256:cf69cace3ae3dcf856c05b9fd413e954b0d5215240444624e4ca7dfec52ad7b2",
+          "fully_rendered_prompt": "sha256:16edf3598ce8a19658a7e0ac5e7732346cd58f54275d7eb4f238fef0ce28b27f",
+          "provider_context_view": "sha256:ee489b7b70d7eed65ef2ed415d1a9fb704fb0d006ba986cf21e7710bec22620e",
+          "stage_semantic_contract": "sha256:c35d00249b0e295657a2808d655113365dd6d5315a07dd1ad79aa653db83e679"
+        },
+        "component_characters": {
+          "tool_policy": 258,
+          "output_schema": 1385,
+          "governed_skill": 2404,
+          "provider_knowledge": 437,
+          "provider_task_view": 846,
+          "system_instruction": 1992,
+          "fully_rendered_prompt": 20840,
+          "provider_context_view": 11499,
+          "stage_semantic_contract": 1160
+        },
+        "representation_policy": "authority-projection-task-provider-v1",
+        "selection_explanation": {
+          "policy": "exact-immutable-candidate-only",
+          "omitted_count": 0,
+          "selected_count": 1
+        },
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v2",
+        "context_projection_ratio": 2874.0,
+        "component_estimated_tokens": {
+          "tool_policy": 64,
+          "output_schema": 346,
+          "governed_skill": 601,
+          "provider_knowledge": 109,
+          "provider_task_view": 211,
+          "system_instruction": 498,
+          "fully_rendered_prompt": 5210,
+          "provider_context_view": 2874,
+          "stage_semantic_contract": 290
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+        "component_utf8_byte_upper_bounds": {
+          "tool_policy": 258,
+          "output_schema": 1385,
+          "governed_skill": 3964,
+          "provider_knowledge": 437,
+          "provider_task_view": 846,
+          "system_instruction": 1992,
+          "fully_rendered_prompt": 36108,
+          "provider_context_view": 25207,
+          "stage_semantic_contract": 1160
+        },
+        "provider_context_estimated_tokens": 2874,
+        "authority_context_estimated_tokens": 0,
+        "rendered_prompt_to_semantic_input_ratio": 1.631183,
+        "provider_admission_uses_component_estimates": false
+      },
+      "skill": {
+        "ref": "quality-review",
+        "version": "quality-review-narrative-evaluator-v1",
+        "content_hash": "sha256:27d5dbd40de81ddcefc90d20a2ead047903e7ca29eebef6a9ab3f28dfd156e23"
+      },
+      "system_instruction": {
+        "ref": "prompt-system:narrative-semantic-evaluation-pack",
+        "version": "v3",
+        "content_hash": "sha256:889b3035419c44316b502d0f45339b3b43acec5b12f0745bcf6c83839d9e1c8e"
+      },
+      "prompt_template": {
+        "ref": "prompt-template:narrative-semantic-evaluation-pack",
+        "version": "v1",
+        "content_hash": "sha256:92841e45a0b7b22b3b91d8003c016ae6fd82cf54631e4927d2829ed43892839d"
+      },
+      "output_schema_ref": "schema:narrative-semantic-evaluation:creative.candidates.generate:v1:b200da8641a37df7",
+      "context_bundle_file": "/Users/yuan/novel-runtime/yu-xian-zhi-wai/evidence/native-design-v11/context_bundle.json",
+      "context_bundle_file_sha256": "be563e910d276686e27a916beb45e3351a0627e1068ae2b2d32cc79e3c2502e3",
+      "context_bundle_asset_version_id": "0d33e3f8-3efc-4bf5-9411-87e26d5614ad",
+      "context_bundle_content_hash": "sha256:31e2b4d5ab2caac692294868e70c7082d9db7f8b1dd0e45bd3962ac5d94eb478",
+      "source_isolation": "EXACT_CANDIDATE_ONLY",
+      "readable_original_stdin": "NOT_FOUND; complete transmitted text not claimed read",
+      "actual_accepted_prose_in_scope": false,
+      "selected_input_count": 1,
+      "dependency_resolution": "NOT_APPLICABLE",
+      "input_scope_note": "Exact immutable creation candidate only; no later chapters or independent reader observation",
+      "selected_input_keys": [
+        [
+          "candidate",
+          "asset_type",
+          "content_hash",
+          "asset_version_id"
+        ]
+      ]
+    }
+  ]
+}

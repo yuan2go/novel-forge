@@ -1,0 +1,247 @@
+{
+  "audit_main_sha": "d69053557e5dd16ccfa4217fde234245a90fdc50",
+  "plain_txt_inventory": [
+    "architecture/live-evidence/corpus-ingestion-d93453177658ac2f345f7f46d8e00142d60cf2a9/dependencies.txt",
+    "architecture/live-evidence/corpus-normalization-8632e1a9ee779c3261c93e84ea744f9cd25d2d66/bound-cli-help.txt",
+    "architecture/live-evidence/creative-pilot-20260908/export-replay-check/chapter-1-baseline.txt",
+    "architecture/live-evidence/creative-pilot-20260908/export-replay-check/chapter-1-candidate.txt",
+    "architecture/live-evidence/creative-pilot-20260908/export-replay-check/chapter-2-baseline.txt",
+    "architecture/live-evidence/creative-pilot-20260908/export-replay-check/chapter-2-candidate.txt",
+    "architecture/live-evidence/creative-pilot-20260908/export-replay-check/chapter-3-baseline.txt",
+    "architecture/live-evidence/creative-pilot-20260908/export-replay-check/chapter-3-candidate.txt",
+    "architecture/live-evidence/creative-pilot-20260908/scripted-native/accepted-chapter-1.txt",
+    "architecture/live-evidence/creative-pilot-20260908/scripted-native/accepted-chapter-2.txt",
+    "architecture/live-evidence/creative-pilot-20260908/scripted-native/accepted-chapter-3.txt",
+    "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/craft/accepted-manuscript.txt",
+    "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/craft/derived-screenplay.txt",
+    "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/branch-continued-manuscript.txt",
+    "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/branch-original-manuscript.txt",
+    "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/branch-reviewed-manuscript.txt",
+    "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/branch-submitted-manuscript.txt",
+    "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/branch-updated-screenplay.txt",
+    "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/joint14-accepted-chinese-source.txt",
+    "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/joint14-partial-edition-manuscript.txt",
+    "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/joint14-partial-original-manuscript.txt",
+    "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-p0-closure/editions/joint14-source-screenplay.txt",
+    "examples/sample_inputs/corpus-chinese-structure.txt",
+    "examples/sample_inputs/sample_novel.txt",
+    "novels/yu-xian-zhi-wai/backup/pg-archive-contents.txt",
+    "novels/yu-xian-zhi-wai/corpus/first-import-admission.txt",
+    "novels/yu-xian-zhi-wai/corpus/first-import-lineage.txt",
+    "novels/yu-xian-zhi-wai/corpus/first-import-run.txt",
+    "novels/yu-xian-zhi-wai/corpus/raw/railway-children.txt",
+    "novels/yu-xian-zhi-wai/corpus/raw/study-in-scarlet.txt",
+    "novels/yu-xian-zhi-wai/corpus/raw/thirty-nine-steps.txt",
+    "novels/yu-xian-zhi-wai/development/catalogue-query/corpus-help.txt",
+    "novels/yu-xian-zhi-wai/development/catalogue-query/green.txt",
+    "novels/yu-xian-zhi-wai/development/catalogue-query/red.txt",
+    "novels/yu-xian-zhi-wai/development/catalogue-query/ruff.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/accepted-chapter-1.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/accepted-chapter-2.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/accepted-chapter-3.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/accepted-chapter-4.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/accepted-chapter-5.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/accepted-chapter-6.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/book-run_103532dd-4777-427e-92fc-defd00487412/accepted-chapter-1.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/book-run_103532dd-4777-427e-92fc-defd00487412/accepted-chapter-2.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/book-run_103532dd-4777-427e-92fc-defd00487412/accepted-chapter-3.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/book-run_103532dd-4777-427e-92fc-defd00487412/accepted-chapter-4.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/book-run_103532dd-4777-427e-92fc-defd00487412/accepted-chapter-5.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/bounded-native/book-run_103532dd-4777-427e-92fc-defd00487412/accepted-chapter-6.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/accepted-chapter-1.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/accepted-chapter-2.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/accepted-chapter-3.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/accepted-chapter-4.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/accepted-chapter-5.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/accepted-chapter-6.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/book-run_b07a6a55-704f-40ee-a2c3-0a2b09f62928/accepted-chapter-1.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/book-run_b07a6a55-704f-40ee-a2c3-0a2b09f62928/accepted-chapter-2.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/book-run_b07a6a55-704f-40ee-a2c3-0a2b09f62928/accepted-chapter-3.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/book-run_b07a6a55-704f-40ee-a2c3-0a2b09f62928/accepted-chapter-4.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/book-run_b07a6a55-704f-40ee-a2c3-0a2b09f62928/accepted-chapter-5.txt",
+    "novels/yu-xian-zhi-wai/development/group-pilot/long-novel-native/book-run_b07a6a55-704f-40ee-a2c3-0a2b09f62928/accepted-chapter-6.txt",
+    "novels/yu-xian-zhi-wai/development/nonbody-review/native-green.txt",
+    "novels/yu-xian-zhi-wai/development/nonbody-review/red.txt",
+    "novels/yu-xian-zhi-wai/development/nonbody-review/regression-postgres.txt",
+    "novels/yu-xian-zhi-wai/development/nonbody-review/ruff.txt",
+    "novels/yu-xian-zhi-wai/development/nonbody-review/unit-green.txt",
+    "novels/yu-xian-zhi-wai/development/source-purpose/cli-help.txt",
+    "novels/yu-xian-zhi-wai/development/source-purpose/green-dispatch.txt",
+    "novels/yu-xian-zhi-wai/development/source-purpose/green-first.txt",
+    "novels/yu-xian-zhi-wai/development/source-purpose/green-preview-scope.txt",
+    "novels/yu-xian-zhi-wai/development/source-purpose/red.txt",
+    "tests/fixtures/long_project/clockverse_long_fixture.txt"
+  ],
+  "compressed_provenance_checks": [
+    {
+      "path": "architecture/live-evidence/creative-pilot-20260908/historical-native-5ec8b271.tar.gz",
+      "file_sha256": "09e0c1d950ae1b802df8f34e5ad5eb297de71ce6c12eaf5b49f901d60d95bfe0",
+      "model_log_members": [
+        {
+          "member": "historical-native-5ec8b271/model_call_log.json",
+          "bytes": 1797625,
+          "sha256": "0238a02c3c83514dc33ce854fc32c9f2b95f123735a2c1456005720ed81ce04c",
+          "scripted_provider_mentions": 206,
+          "real_model_call_true_mentions": 0
+        }
+      ]
+    },
+    {
+      "path": "architecture/live-evidence/creative-pilot-20260908/historical-native-db10f97c.tar.gz",
+      "file_sha256": "7e0598aaa0aa5869d4b587e2496d0fad89dc38a658a96e3c9647c3ed400c97c8",
+      "model_log_members": [
+        {
+          "member": "historical-native-db10f97c/model_call_log.json",
+          "bytes": 1797625,
+          "sha256": "476101e6f7a2e6cfc508eefeea0ff805c2a7bc96cc08203789cd9719ce94cffa",
+          "scripted_provider_mentions": 206,
+          "real_model_call_true_mentions": 0
+        }
+      ]
+    },
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/development/provider-input-retry-postgres.log.gz",
+      "file_sha256": "95588eb82b0a22fe0a06419481a45d216c9eae5dd1c19c7f9735e2ea8d3d14ae",
+      "uncompressed_characters": 98,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 0,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/development/provider-retry-final-regression.log.gz",
+      "file_sha256": "fb7f8eca4e999793809300e0188b02e40c1be9492622b4e7484bc5099f4697d3",
+      "uncompressed_characters": 99,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 0,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/development/provider-retry-heldout-final-regression.log.gz",
+      "file_sha256": "40934f4b6d650edd275c9f6c8b8521a3bbb75859c9ba34a18e9fe088e82fb2b1",
+      "uncompressed_characters": 99,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 0,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/development/provider-retry-projection-initial-failure.log.gz",
+      "file_sha256": "936fb22bfaf352e8c8a4391163d822717679df03fba236a2687b2483b0f24fdf",
+      "uncompressed_characters": 4829,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 0,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/development/provider-retry-projection-postgres.log.gz",
+      "file_sha256": "96eae1b3942e89c8d85f234b880928970d8736f28d95dda0c443b971dad62bd3",
+      "uncompressed_characters": 98,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 0,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/development/provider-retry-projection-regression.log.gz",
+      "file_sha256": "c08dc16b6a2008ff76a8cf4ef2a2cbffe90499f47589ba105d3833fe11e7b2d2",
+      "uncompressed_characters": 6909,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 0,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/development/router-provider-unit-2.log.gz",
+      "file_sha256": "15c29bcacfce804c0890f422bba7fe297a589041c04a1b3fdbda67e49ea011fa",
+      "uncompressed_characters": 180,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 0,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/development/router-provider-unit-3.log.gz",
+      "file_sha256": "9f05b49e72b10172abba1fe7b525a9a4107709487391e0a29658b20d3db08db5",
+      "uncompressed_characters": 180,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 0,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/development/router-provider-unit-4.log.gz",
+      "file_sha256": "f964084bb241563f9286629262050b2a9bf63f3ab4e0322508c2b6d269f7cf65",
+      "uncompressed_characters": 180,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 0,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260926-native-continuation/development/router-provider-unit.log.gz",
+      "file_sha256": "ee3de1eee003cc7a2b18714e9b21173c87a0a606dc2fa6be40522a6023197481",
+      "uncompressed_characters": 180,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 0,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/production-synthesis-4b8f74a2b7f6e0221df99c525a634bdf83e62cd2/development/final-b9875-tmp-provider-transcript.json.gz",
+      "file_sha256": "7472e6e9d5003f73897be00b2bc0416090522aca133f6febdd00bfe30a65b598",
+      "uncompressed_characters": 42366,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 1,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/production-synthesis-4b8f74a2b7f6e0221df99c525a634bdf83e62cd2/development/synthesis-vertical-3-provider.json.gz",
+      "file_sha256": "1caf5decfb8c5d0cf9f7a8c332e38df59a3fcce0fa377bc35447ed075c3fd8fb",
+      "uncompressed_characters": 4097614,
+      "scripted_provider_mentions": 448,
+      "scripted_uppercase_mentions": 67,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/production-synthesis-4b8f74a2b7f6e0221df99c525a634bdf83e62cd2/development/vertical-4-tmp-provider-transcript.json.gz",
+      "file_sha256": "47bef4ed00a09207004d3bf7fea307fc01ae6b30766e203d1473ccfe51bb5fc6",
+      "uncompressed_characters": 4055216,
+      "scripted_provider_mentions": 444,
+      "scripted_uppercase_mentions": 67,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/production-synthesis-4b8f74a2b7f6e0221df99c525a634bdf83e62cd2/development/vertical-5-tmp-provider-transcript.json.gz",
+      "file_sha256": "d98328e907f37f6d20631856598d99ddfa3495ec9064d2b107870d91ca058023",
+      "uncompressed_characters": 42366,
+      "scripted_provider_mentions": 0,
+      "scripted_uppercase_mentions": 1,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/production-synthesis-4b8f74a2b7f6e0221df99c525a634bdf83e62cd2/development/vertical-6-tmp-provider-transcript.json.gz",
+      "file_sha256": "62897e49969901e217393b3a902ae2493e84af4156ce5bbecb6ea01f87fd3eb3",
+      "uncompressed_characters": 4055216,
+      "scripted_provider_mentions": 444,
+      "scripted_uppercase_mentions": 67,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/production-synthesis-4b8f74a2b7f6e0221df99c525a634bdf83e62cd2/native/model_call_log.json.gz",
+      "file_sha256": "b0634c4d50892e0a61b65ef527af05d1ef89711e2a6ce236df890ecfc9922a11",
+      "uncompressed_characters": 1797625,
+      "scripted_provider_mentions": 206,
+      "scripted_uppercase_mentions": 67,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/production-synthesis-4b8f74a2b7f6e0221df99c525a634bdf83e62cd2/native/provider-transcript.json.gz",
+      "file_sha256": "3eb2065919895c5656d39c46c9e4181beae84f536a0599314e7b6fcf478ef9b4",
+      "uncompressed_characters": 4055231,
+      "scripted_provider_mentions": 444,
+      "scripted_uppercase_mentions": 67,
+      "real_model_call_true_mentions": 0
+    },
+    {
+      "path": "architecture/live-evidence/production-synthesis-4b8f74a2b7f6e0221df99c525a634bdf83e62cd2/native/provider_request_admission_manifest.json.gz",
+      "file_sha256": "76fda48300fe1efb019461caf0b3effe40c774db931c00bdb04b2b6d959b20ac",
+      "uncompressed_characters": 1531675,
+      "scripted_provider_mentions": 503,
+      "scripted_uppercase_mentions": 67,
+      "real_model_call_true_mentions": 0
+    }
+  ]
+}
