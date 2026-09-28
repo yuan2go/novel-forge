@@ -422,6 +422,26 @@ def test_terminal_response_failure_retains_billable_usage(
     assert "unretained reasoning" not in json.dumps(result.evidence)
 
 
+
+def test_two_top_level_objects_remain_failed_with_exact_parser_location_and_cost():
+    raw = '{"type":"json_object"}\n{"classification":"fiction"}'
+    result = adapter(
+        lambda *args, **kwargs: BytesIO(json.dumps(response(raw)).encode())
+    ).invoke(invocation())
+    assert result.outcome == "final_failure"
+    assert result.evidence["failure_class"] == "MALFORMED_STRUCTURED_OUTPUT"
+    assert result.evidence["result"] == {}
+    assert result.evidence["structured_output_error"] == {
+        "code": "JSON_SYNTAX_ERROR", "message": "Extra data",
+        "line": 2, "column": 1, "offset": 23,
+    }
+    assert result.evidence["rejected_output"]["text"] == raw
+    assert result.evidence["rejected_output"]["accepted"] is False
+    assert result.evidence["usage"]["total_tokens"] == 100
+    assert result.evidence["cost"]["amount"] == "0.000014592"
+    assert "unretained reasoning" not in json.dumps(result.evidence)
+
+
 def test_malformed_message_shape_is_an_ambiguous_receipt():
     malformed = response()
     malformed["choices"][0]["message"] = []

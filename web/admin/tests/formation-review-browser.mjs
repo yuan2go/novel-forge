@@ -4,7 +4,10 @@ import { chromium } from 'playwright';
 const base = process.env.NOVEL_FORGE_WEB_BASE_URL;
 if (!base) throw new Error('NOVEL_FORGE_WEB_BASE_URL must identify the isolated author UI');
 const browser = await chromium.launch({headless: true, channel: process.env.NOVEL_FORGE_BROWSER_CHANNEL || 'chrome'});
-const page = await browser.newPage();
+const checks = [];
+for (const scenario of ["NETWORK", "AMBIGUOUS_CONFLICT", "FORBIDDEN_AFTER_DECISION", "VERSION_CONFLICT"]) {
+const context = await browser.newContext();
+const page = await context.newPage();
 const hash = digit => `sha256:${digit.repeat(64)}`;
 const candidates = [
   {asset_version_id: 'candidate-first', content_hash: hash('1'), content: {candidate_payload: {core_conflict: '重复追逐同一个证人', reader_promise: '追查证词'}}, state: {qualification: 'QUALIFIED', approval: 'PENDING'}},
@@ -28,8 +31,14 @@ try {
     const body = route.request().postDataJSON(); requests.push(body);
     if (!lost) {
       run = {...run, version: 4, recovery_instruction: {candidate_asset_version_id: body.candidate_asset_version_id, author_selection: {decision: body.decision, reason: body.reason}}};
-      lost = true; await route.abort('failed');
-    } else { assert.deepEqual(body, requests[0]); await route.fulfill({json: run}); }
+      lost = true;
+      if (scenario === 'NETWORK') await route.abort('failed');
+      else await route.fulfill({status: scenario === 'FORBIDDEN_AFTER_DECISION' ? 403 : 409, json: {detail: {code: scenario === 'VERSION_CONFLICT' ? 'STORY_FORMATION_REVIEW_CONFLICT' : 'UNRESOLVED_SUBMISSION'}}});
+    } else {
+      if (scenario === 'VERSION_CONFLICT') {assert.notEqual(body.idempotency_key, requests[0].idempotency_key); assert.equal(body.expected_version, 4);}
+      else assert.deepEqual(body, requests[0]);
+      await route.fulfill({json: run});
+    }
   });
   await page.goto(`${base}/production`);
   const review = page.getByRole('region', {name: '设计候选确认'});
@@ -39,13 +48,23 @@ try {
   await page.reload();
   await page.waitForFunction(text => document.querySelector('textarea[aria-label="选择理由 / 修改意见"]')?.value === text, note);
   await review.getByRole('article').nth(1).getByRole('button', {name: '批准此候选', exact: true}).click();
-  await review.getByRole('button', {name: '恢复候选决定（原幂等键）', exact: true}).waitFor();
-  await page.reload();
-  await review.getByRole('button', {name: '恢复候选决定（原幂等键）', exact: true}).click();
+  if (scenario === 'VERSION_CONFLICT') {
+    await page.waitForFunction(() => document.querySelector('[aria-label="选择理由 / 修改意见"]')?.disabled === false);
+    assert.equal(await review.getByRole('button', {name: '恢复候选决定（原幂等键）', exact: true}).count(), 0);
+    await page.reload();
+    await review.getByRole('article').nth(1).getByRole('button', {name: '批准此候选', exact: true}).click();
+  } else {
+    await review.getByRole('button', {name: '恢复候选决定（原幂等键）', exact: true}).waitFor();
+    await page.reload();
+    await review.getByRole('button', {name: '恢复候选决定（原幂等键）', exact: true}).click();
+  }
   await review.getByText('候选 2 · 当前选择', {exact: true}).waitFor();
   assert.equal(requests.length, 2);
   assert.equal(requests[0].candidate_asset_version_id, 'candidate-second');
   assert.equal(requests[0].reason, note);
   await page.waitForFunction(() => !document.querySelector('[aria-label="设计候选确认"]')?.textContent.includes('恢复候选决定（原幂等键）'));
-  process.stdout.write(JSON.stringify({status: 'PASS', evidence_kind: 'BROWSER_WITH_ISOLATED_API_DOUBLES', checks: ['actual candidate comparison text', 'unsaved decision survives reload', 'second candidate approval', 'lost response uses identical body and idempotency key after reload']}) + '\n');
-} finally { await browser.close(); }
+  checks.push(scenario);
+} finally { await context.close(); }
+}
+await browser.close();
+process.stdout.write(JSON.stringify({status: 'PASS', evidence_kind: 'BROWSER_WITH_ISOLATED_API_DOUBLES', checks}) + '\n');

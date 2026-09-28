@@ -57,7 +57,8 @@ export function ReferenceReviewPanel({project, book}: {project: string; book: Bo
       retain({...draft, pending: null, confirmed: false}); setNotice(`评阅已保存：${result.status} · ${result.asset_version_id}。仍需独立评阅和裁决，样本未被接纳。`);
     } catch (e) {
       setError(String(e));
-      if (e instanceof ApiError && [403, 422].includes(e.status)) {
+      if (e instanceof ApiError && ([403, 422].includes(e.status) ||
+        (e.status === 409 && ["QUALITY_REFERENCE_QUOTE_MISMATCH", "QUALITY_REFERENCE_TARGET_INVALID", "QUALITY_REFERENCE_ANNOTATION_INVALID"].includes(e.code || "")))) {
         localStorage.setItem(`${storageKey}:history:${body.idempotency_key}`, JSON.stringify({request: body, reason: String(e)}));
         retain({...draft, pending: null});
       }
@@ -68,7 +69,8 @@ export function ReferenceReviewPanel({project, book}: {project: string; book: Bo
     lock.current = true; setBusy(true); setError("");
     try {
       const rows = await fetchJson<Array<{operation_id: string; status: string}>>(`/product/content-authority/operations?${new URLSearchParams({project_id: project, idempotency_key: `author-reference:${draft.pending.idempotency_key}`})}`);
-      if (!rows.length) {setCanCorrect(true); setNotice("未找到已接收的原评阅任务。可保留原请求记录后更正，或恢复原请求。");}
+      if (!rows.length) {setCanCorrect(false); setNotice("暂未查到原评阅任务，提交可能仍在处理中。保留原幂等键，可查询或恢复原请求。");}
+      else if (rows.length !== 1) {setCanCorrect(false); setError("原幂等键对应多个任务，结果尚未确定。请保留原请求并核对任务。");}
       else {
         setNotice(`原评阅任务：${rows[0].status} · ${rows[0].operation_id}`);
         if (rows[0].status === "SUCCEEDED") archive({...draft, pending: null, confirmed: false}, "Native operation confirms success");
@@ -110,7 +112,7 @@ export function ReferenceReviewPanel({project, book}: {project: string; book: Bo
         <button className="primaryButton" disabled={!valid} onClick={submit}>保存本人评阅</button>
       </fieldset>
     </>}
-    {draft.pending && <div className="actions"><button disabled={busy} onClick={() => send(draft.pending!)}>恢复评阅提交（原幂等键）</button><button disabled={busy} onClick={lookup}>查询原评阅任务</button>{canCorrect && <button disabled={busy} onClick={() => archive({...draft, pending: null}, "No admitted operation found; author chose to correct")}>保留原请求后更正</button>}</div>}
+    {draft.pending && <div className="actions"><button disabled={busy} onClick={() => send(draft.pending!)}>恢复评阅提交（原幂等键）</button><button disabled={busy} onClick={lookup}>查询原评阅任务</button>{canCorrect && <button disabled={busy} onClick={() => archive({...draft, pending: null}, "Native operation confirmed terminal failure; author chose to correct")}>保留原请求后更正</button>}</div>}
     {notice && <p role="status">{notice}</p>}{error && <p role="alert" className="errorLine">{error}</p>}
   </section>;
 }

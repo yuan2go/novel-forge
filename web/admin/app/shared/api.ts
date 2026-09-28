@@ -1,6 +1,12 @@
 export const API_BASE = process.env.NEXT_PUBLIC_NOVEL_FORGE_API_URL ?? "http://localhost:8000";
 
 export class ApiError extends Error {
+  get code(): string | undefined {
+    try {
+      const detail = JSON.parse(this.message)?.detail;
+      return typeof detail?.code === "string" ? detail.code : undefined;
+    } catch { return undefined; }
+  }
   constructor(message: string, readonly status: number) { super(message); }
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../../shared/api";
 import { loadFormation, submitFormationDecision, type Formation, type FormationCandidate } from "./api";
 
@@ -19,18 +19,23 @@ export function FormationReviewPanel({formation, onChange}: {formation: Formatio
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const lock = useRef(false);
   useEffect(() => {
     try { const saved = JSON.parse(localStorage.getItem(storageKey) || "{}"); setNote(saved.note || ""); setPending(saved.pending || null); }
     catch { setError("未能读取上次候选确认，请保留本机记录。"); }
   }, [storageKey]);
-  function retain(nextNote: string, nextPending: Pending | null) { localStorage.setItem(storageKey, JSON.stringify({note: nextNote, pending: nextPending})); setNote(nextNote); setPending(nextPending); }
+  function retain(nextNote: string, nextPending: Pending | null) {
+    try { localStorage.setItem(storageKey, JSON.stringify({note: nextNote, pending: nextPending})); setNote(nextNote); setPending(nextPending); return true; }
+    catch { setError("未能保存候选决定。请先复制输入并恢复浏览器存储；原请求仍需核对。"); return false; }
+  }
   async function send(body: Pending) {
-    if (busy) return;
-    retain(body.reason, body); setBusy(true); setError("");
+    if (lock.current || !retain(body.reason, body)) return;
+    lock.current = true; setBusy(true); setError("");
     try { onChange(await submitFormationDecision(formation.formation_run_id, body)); retain(body.reason, null); }
     catch (e) {
       setError(String(e));
-      if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
+      if (e instanceof ApiError && (e.status === 422 ||
+        (e.status === 409 && ["STORY_FORMATION_REVIEW_CONFLICT", "STORY_FORMATION_REVIEW_SCOPE", "STORY_FORMATION_REVIEW_HASH_DRIFT"].includes(e.code || "")))) {
         try {
           const current = await loadFormation(formation.formation_run_id);
           localStorage.setItem(`${storageKey}:rejected:${body.idempotency_key}`, JSON.stringify(body));
@@ -38,7 +43,7 @@ export function FormationReviewPanel({formation, onChange}: {formation: Formatio
         } catch { /* WHY: Without authoritative state, keep the original replay request. */ }
       }
     }
-    finally {setBusy(false);}
+    finally {lock.current = false; setBusy(false);}
   }
   function decide(candidate: FormationCandidate, decision: Decision) {
     void send({candidate_asset_version_id: candidate.asset_version_id, candidate_content_hash: candidate.content_hash, expected_version: formation.version, idempotency_key: crypto.randomUUID(), reason: note.trim(), decision});

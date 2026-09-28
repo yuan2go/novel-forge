@@ -292,14 +292,20 @@ class DeepSeekProviderAdapter:
         }.get(finish_reason)
         if failure is None:
             raise ValueError("DEEPSEEK_FINISH_REASON_INVALID")
+        structured_output_error = None
         try:
             output = json.loads(text)
             if not isinstance(output, dict):
                 output = {}
+                structured_output_error = {"code": "JSON_OBJECT_REQUIRED"}
                 if not failure:
                     failure = "MALFORMED_STRUCTURED_OUTPUT"
-        except ValueError:
+        except json.JSONDecodeError as exc:
             output = {}
+            structured_output_error = {
+                "code": "JSON_SYNTAX_ERROR", "message": exc.msg,
+                "line": exc.lineno, "column": exc.colno, "offset": exc.pos,
+            }
             if not failure:
                 failure = "MALFORMED_STRUCTURED_OUTPUT"
         reservation_ceiling = price.amount(input_tokens, output_tokens, cached)
@@ -333,6 +339,8 @@ class DeepSeekProviderAdapter:
         )
         evidence = {
             "result": output,
+            **({"structured_output_error": structured_output_error}
+               if structured_output_error else {}),
             "provider_id": self.provider,
             "model_id": request.model,
             "model_revision": requested_model_revision,

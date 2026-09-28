@@ -1,0 +1,41 @@
+{
+  "contract_version": "narrative-closure-user-approval-amendment.v1",
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "authorization_ref": "user:WP02:20260928:completion-continuation:v1",
+  "parent_authorization_ref": "user:WP02:20260928:deepseek-100cny:v1",
+  "user_instruction": "完成整包任务",
+  "recorded_at": "2026-09-28T01:30:29.668829+00:00",
+  "expires_at": "2026-09-28T05:28:24Z",
+  "scope": "One diagnostic continuation after renewed user execution instruction, same failed input, Book, sample group and campaign; no production promotion",
+  "predecessor_operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+  "predecessor_effect_id": "4bb43443-0f31-4175-9056-c58c823a1c8f",
+  "failure": "MALFORMED_STRUCTURED_OUTPUT; old final message not retained; exact syntax cause unresolved",
+  "remediation": "Deployed fb360dfc retains rejected final content and fixes campaign reader and provider authentication provenance; no model-output rewrite",
+  "release_sha": "fb360dfc6d94b4458eed990e606911bf74d9f39d",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "model_revision": "DeepSeek-V4.1-Flash",
+  "reasoning_effort": "low",
+  "maximum_additional_calls": 1,
+  "maximum_tokens_per_call": 100000,
+  "maximum_additional_priced_usd": "0.15",
+  "maximum_cumulative_cny": "100",
+  "native_campaign_usd_ceiling": "1",
+  "calibration_cumulative_caps": {
+    "calls": 5,
+    "tokens": 500000,
+    "priced_usd": "0.45"
+  },
+  "retain_prior_usage": true,
+  "new_independent_observation": false,
+  "fallback_allowed": false,
+  "global_workers_dispatch_enabled": false,
+  "stop_conditions": [
+    "Stop after this one call regardless of outcome.",
+    "Any failure or UNKNOWN holds scope; no further automatic retry.",
+    "Original expiry, campaign and purpose totals unchanged.",
+    "No promotion of diagnostic samples, no invented human judgments."
+  ],
+  "official_model_and_price_rechecked_at": "2026-09-28T01:30:29.668942+00:00",
+  "official_source": "https://api-docs.deepseek.com/quick_start/pricing/"
+}

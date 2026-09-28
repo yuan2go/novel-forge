@@ -5,7 +5,7 @@ const project = 'reference-form-fixture', book = 'book:reference-form';
 const browser = await chromium.launch({channel: 'chrome', headless: true});
 const checks = [];
 try {
-  for (const scenario of ['NETWORK', '422', '409', 'FAILED_FINAL']) {
+  for (const scenario of ['NETWORK', '422', '409', 'FAILED_FINAL', 'ABSENT', 'AMBIGUOUS', 'QUOTE_MISMATCH']) {
     const context = await browser.newContext(), page = await context.newPage();
     const sent = [], sample = {asset_version_id: 'sample:fixture', content_hash: 'sha256:' + 'a'.repeat(64), content: {core_conflict: '证人与证词争夺最后一段渡河时间。'}, reference_contract: {dimensions: ['GATE:CORE_CONFLICT_CLARITY']}};
     await page.route(`${api}/**`, async route => {
@@ -20,13 +20,16 @@ try {
       if (url.pathname.endsWith('/reference-evaluations')) {
         sent.push(request.postDataJSON());
         if (sent.length === 1) {
-          if (scenario === 'NETWORK') return route.abort('failed');
+          if (['NETWORK', 'ABSENT', 'AMBIGUOUS'].includes(scenario)) return route.abort('failed');
+          if (scenario === 'QUOTE_MISMATCH') return respond({detail: {code: 'QUALITY_REFERENCE_QUOTE_MISMATCH'}}, 409);
           return respond({detail: 'Controlled fixture rejection'}, scenario === 'FAILED_FINAL' ? 409 : Number(scenario));
         }
         return respond({operation_id: 'annotation:fixture', asset_version_id: 'evaluation:fixture', status: 'SUCCEEDED'});
       }
       if (url.pathname.endsWith('/content-authority/operations')) {
         assert.equal(url.searchParams.get('idempotency_key'), `author-reference:${sent[0].idempotency_key}`);
+        if (scenario === 'ABSENT') return respond([]);
+        if (scenario === 'AMBIGUOUS') return respond([{operation_id: 'one', status: 'SUCCEEDED'}, {operation_id: 'two', status: 'FAILED_FINAL'}]);
         return respond([{operation_id: 'annotation:fixture', status: scenario === 'FAILED_FINAL' ? 'FAILED_FINAL' : 'SUCCEEDED'}]);
       }
       return respond([]);
@@ -48,14 +51,21 @@ try {
     assert.equal(await panel.getByLabel('原文依据', {exact: true}).inputValue(), '最后一段渡河时间');
     await panel.getByRole('button', {name: '保存本人评阅', exact: true}).click();
     await panel.getByRole('alert').waitFor();
-    if (scenario === '422') {
+    if (['422', 'QUOTE_MISMATCH'].includes(scenario)) {
       assert.equal(await panel.getByLabel('判断理由', {exact: true}).isEnabled(), true);
       await panel.getByLabel('判断理由', {exact: true}).fill('更正后的隔离测试意见');
       assert.equal(await panel.getByRole('button', {name: '恢复评阅提交（原幂等键）', exact: true}).count(), 0);
     } else {
       assert.equal(await panel.getByLabel('判断理由', {exact: true}).isDisabled(), true);
       await page.reload();
-      if (scenario === 'NETWORK') {
+      if (['ABSENT', 'AMBIGUOUS'].includes(scenario)) {
+        await panel.getByRole('button', {name: '查询原评阅任务', exact: true}).click();
+        await panel.getByText(scenario === 'ABSENT' ? '暂未查到原评阅任务' : '原幂等键对应多个任务', {exact: false}).waitFor();
+        assert.equal(await panel.getByRole('button', {name: '保留原请求后更正', exact: true}).count(), 0);
+        assert.equal(await panel.getByLabel('判断理由', {exact: true}).isDisabled(), true);
+        await page.reload();
+      }
+      if (['NETWORK', 'ABSENT', 'AMBIGUOUS'].includes(scenario)) {
         await panel.getByRole('button', {name: '恢复评阅提交（原幂等键）', exact: true}).click();
         await panel.getByText('评阅已保存', {exact: false}).waitFor(); assert.deepEqual(sent[0], sent[1]);
       } else {
