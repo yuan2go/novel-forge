@@ -1,0 +1,257 @@
+{
+  "pre_dispatch_failures": [
+    {
+      "source_private_file": "results.json",
+      "source_sha256": "e8c7ccb82ae8420190b7c93ad43ca8af254fa01b304444666295113ec06f912c",
+      "state": "STOPPED_FIRST_FAILURE_OR_UNKNOWN",
+      "native_dispatches": 0,
+      "error": {
+        "type": "KernelError",
+        "message": "ROUTING_BOOTSTRAP_PRODUCER_DRIFT: sampling requires the producer contract frozen before authorization",
+        "code": "ROUTING_BOOTSTRAP_PRODUCER_DRIFT"
+      }
+    },
+    {
+      "source_private_file": "results-producer218.json",
+      "source_sha256": "284601889b99f763c172f7c7924af3ee9a1dd865653ab5e4a0e40e54b43e7dde",
+      "state": "STOPPED_FIRST_FAILURE_OR_UNKNOWN",
+      "native_dispatches": 0,
+      "error": {
+        "type": "KernelError",
+        "message": "ROUTING_BUDGET_CONTRACT_REQUIRED: routed effect has invalid frozen limits",
+        "code": "ROUTING_BUDGET_CONTRACT_REQUIRED"
+      }
+    },
+    {
+      "source_private_file": "results-f827.json",
+      "source_sha256": "88cc35ed33c6e3f5aca1230e00357fc475c274fc404d96354743f6856c8c440c",
+      "state": "STOPPED_FIRST_FAILURE_OR_UNKNOWN",
+      "native_dispatches": 0,
+      "error": {
+        "type": "KernelError",
+        "message": "CAPABILITY_PACK_RUNTIME_ADMISSION_DRIFT: runtime contract differs from Pack execution snapshot: release_sha",
+        "code": "CAPABILITY_PACK_RUNTIME_ADMISSION_DRIFT"
+      }
+    }
+  ],
+  "release_successor": {
+    "release_sha": "f8271c54f9e9466b0d1f8a25c2e3e0001bf7932f",
+    "model_dispatches": 0,
+    "same_campaign": true,
+    "new_books": 0,
+    "new_input_assets": 0,
+    "new_independent_groups": 0,
+    "predecessors": [
+      {
+        "operation_id": "89d0558d-a962-435f-b5dd-e699d5588eb5",
+        "sample_id": "creative-zheng-deng-a:producer218:v3",
+        "cancellation": {
+          "cancel_command_id": "5c16e78f-cba6-4986-9392-a839325307ed",
+          "replayed": false,
+          "status": "CANCELLED",
+          "version": 8
+        },
+        "original_effects": [
+          [
+            "92aaefa1-04d4-4b28-93c2-0e3befb50365",
+            "READY",
+            "sha256:f4f8436f41fa7f897b10766a2bd637ade5f34dd597d4476ce7591efe1ca3ad35"
+          ]
+        ],
+        "native_known_zero_dispatch_budget_resolution": [
+          {
+            "reservation_id": "07d233ac-7b77-4fbd-ad0e-5d9f9cffce8f",
+            "status": "RELEASED",
+            "replayed": false,
+            "budget_scope_id": "",
+            "budget_scope_revision": null
+          }
+        ]
+      }
+    ],
+    "routing_registration": {
+      "operation_id": "9f6e3510-9ec9-457c-8a4e-e799a32fa9f9",
+      "status": "SUCCEEDED",
+      "owner": "PROVIDER_ROUTING",
+      "policy": {
+        "policy_version": "wp02-first-foundation-release-f827-v4",
+        "reason": "Same exact Producer, campaign samples and inputs; release successor after zero-dispatch old snapshot cancellation; existing two calls only",
+        "task_overrides": [],
+        "bootstrap_authorizations": [
+          {
+            "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-zheng-deng-a:producer218:v3:release-f827",
+            "reason": "Same sample and Producer; release f827 successor of never-dispatched 218 request. No additional diagnostic count, budget or independent group.",
+            "environment": "validation",
+            "book_id": "duanchao-guan-zheng-deng-reference-01",
+            "task_type": "creative.candidates.generate",
+            "logical_key": "diagnostic:creative-zheng-deng-a",
+            "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-zheng-deng-a:producer218:v3:release-f827",
+            "input_versions_hash": "sha256:53c1acde850c08f0199cf88e24ea12454675f31a15afc7ce87f660d9a7f156c8",
+            "command_hash": "sha256:cdf2fcedbc9929c0990ce56b4ede861228b1e2e75e25c58e8360dbb763d15112",
+            "producer_contract_hash": "sha256:1d4272af184206c237ae993fb169a5e620b50810eac05bc1dc5c6d36c4d2e2a9",
+            "candidate_id": "codex-cli:gpt-6-sol:high",
+            "model_revision": "wp02-p0-controlled-no-dispatch-20260927",
+            "expires_at": "2026-09-28T05:28:24Z",
+            "maximum_calls": 1,
+            "maximum_tokens": 100000,
+            "maximum_amount": null,
+            "currency": "UNKNOWN",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "cost_authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+            "purpose": "BENCHMARK_CHALLENGER",
+            "production_eligible": false,
+            "campaign": {
+              "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+              "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+              "sample_id": "creative-zheng-deng-a:producer218:v3",
+              "group_id": "zheng-deng-original-family",
+              "partition": "CALIBRATION",
+              "maximum_calls": 720,
+              "maximum_tokens": 40108032,
+              "maximum_amount": "0",
+              "expires_at": "2026-09-28T05:28:24Z"
+            }
+          },
+          {
+            "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-xue-zhan-b:producer218:v3:release-f827",
+            "reason": "Same sample and Producer; release f827 successor of never-dispatched 218 request. No additional diagnostic count, budget or independent group.",
+            "environment": "validation",
+            "book_id": "duanchao-guan-zheng-deng-reference-01",
+            "task_type": "creative.candidates.generate",
+            "logical_key": "diagnostic:creative-xue-zhan-b",
+            "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b:producer218:v3:release-f827",
+            "input_versions_hash": "sha256:fc2935f3bb7fdf2933ac287d7840fbdcbd0ff528f75228e3e8abed5decdc79a9",
+            "command_hash": "sha256:0d00c33ee752346c1ca725ec5d4a485fd7a367920996230471e5aed96ea5e067",
+            "producer_contract_hash": "sha256:1d4272af184206c237ae993fb169a5e620b50810eac05bc1dc5c6d36c4d2e2a9",
+            "candidate_id": "codex-cli:gpt-6-sol:high",
+            "model_revision": "wp02-p0-controlled-no-dispatch-20260927",
+            "expires_at": "2026-09-28T05:28:24Z",
+            "maximum_calls": 1,
+            "maximum_tokens": 100000,
+            "maximum_amount": null,
+            "currency": "UNKNOWN",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "cost_authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+            "purpose": "BENCHMARK_CHALLENGER",
+            "production_eligible": false,
+            "campaign": {
+              "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+              "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+              "sample_id": "creative-xue-zhan-b:producer218:v3",
+              "group_id": "xue-zhan-original-family",
+              "partition": "CALIBRATION",
+              "maximum_calls": 720,
+              "maximum_tokens": 40108032,
+              "maximum_amount": "0",
+              "expires_at": "2026-09-28T05:28:24Z"
+            }
+          }
+        ]
+      },
+      "policy_hash": "7ce60ee1a830a869a9e16436f23f36d24738cc3b0539aa50c956357409e4e816",
+      "replayed": false
+    }
+  },
+  "producer_comparison": {
+    "old_hash": "sha256:fc3f556be4e1a7e0ce27b949d3724b5dce036d6ca5439edcb8c7cfc2f02d63d1",
+    "current_hash": "sha256:1d4272af184206c237ae993fb169a5e620b50810eac05bc1dc5c6d36c4d2e2a9",
+    "differences": {
+      "output_schema": {
+        "old": {
+          "ref": "schema:foundation-provider-output:creative_foundation:v1",
+          "shape_hash": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+          "factory_hash": "sha256:c76a0ec38fe23118c1af37c803917c353b533a7c04f36f0883f7d0f11bc9b92a",
+          "binding_policy": "CONST_AND_ENUM_VALUES_ARE_FROZEN_PER_REQUEST;_TYPES_CARDINALITY_AND_FACTORY_ARE_SHARED",
+          "identity_version": "planning-schema-factory-and-shape.v1"
+        },
+        "current": {
+          "ref": "schema:foundation-provider-output:creative_foundation:v1",
+          "identity_version": "planning-schema-factory-and-shape.v1",
+          "factory_hash": "sha256:e2bb151afe7556af01f149c388eaf3431dde393d4a0e5f64e8aa9bdd29fd9007",
+          "shape_hash": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+          "binding_policy": "CONST_AND_ENUM_VALUES_ARE_FROZEN_PER_REQUEST;_TYPES_CARDINALITY_AND_FACTORY_ARE_SHARED"
+        }
+      }
+    },
+    "current_contract": {
+      "schema_version": "routing-producer-contract.v1",
+      "materialization_schema": "novelos.planning_capability_materialization.v1",
+      "stage": "creative.candidates.generate",
+      "output_schema": {
+        "ref": "schema:foundation-provider-output:creative_foundation:v1",
+        "identity_version": "planning-schema-factory-and-shape.v1",
+        "factory_hash": "sha256:e2bb151afe7556af01f149c388eaf3431dde393d4a0e5f64e8aa9bdd29fd9007",
+        "shape_hash": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+        "binding_policy": "CONST_AND_ENUM_VALUES_ARE_FROZEN_PER_REQUEST;_TYPES_CARDINALITY_AND_FACTORY_ARE_SHARED"
+      },
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "provider_prompt_projection_version": "authority-projection-task-provider-v1",
+      "required_reader_facing_language": null,
+      "provider_view_versions": {
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v2"
+      },
+      "source_isolation": {},
+      "system_instruction": {
+        "ref": "prompt-system:story-planning-pack",
+        "version": "v7",
+        "content_hash": "sha256:f91f8afd14743544f35690e45f079accd7eecfd3516ac16107b8aaf357c8cd5a"
+      },
+      "prompt_template": {
+        "ref": "prompt-template:story-planning-pack",
+        "version": "v1",
+        "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+      },
+      "skill": {
+        "ref": "topic-development",
+        "version": "topic-development-qualification-v1",
+        "content_hash": "sha256:9766801ae782b1c3561e0dfc3604571c66882c6584011f957f4c4ad99a8b5893"
+      },
+      "context_policy": {
+        "ref": "context-policy:wp02-diagnostic-budget-10000:v1",
+        "version": "v1",
+        "content_hash": "sha256:bbbc31fadb0acabe28dbb8da5f659c6e75485f80d9b95026aae27eecac5fb5e5"
+      },
+      "tool_policy": {
+        "ref": "tools:chapter-generation-pack:v1",
+        "version": "v1",
+        "content_hash": "sha256:c020231fac59435d00b3bd2094f4642d79434994cb85f56aaccaa7ce2a5fc1f1"
+      },
+      "input_schema": {
+        "ref": "schema:execution-input:creative-proposal-generate:v1",
+        "version": "v1",
+        "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+      },
+      "pack_output_schema": {
+        "ref": "schema:execution-output:creative-proposal-generate:v1",
+        "version": "v1",
+        "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+      }
+    },
+    "method": "Pure rematerialization of exact persisted output schema and current Pack; previous frozen input used only for stable language/view contract extraction; no dispatch"
+  },
+  "external_failure": {
+    "receipt": "deepseek-failed-receipt.json",
+    "raw_text": "NOT_RETAINED",
+    "calls": 1,
+    "charged_usage_retained": true
+  },
+  "post_call_projection_failure": {
+    "code": "ROUTING_CAMPAIGN_REDEFINED",
+    "original_result_retained_hash": "sha256:0fb35b440b86e5cb4e18055be6cbccb8a0c09140afc9f29f9d01b3153b356b07",
+    "original_state_last_saved": "BATCH_STARTED",
+    "actual_final_state": "STOPPED_FIRST_FAILURE_NO_RETRY",
+    "cause": "Campaign reader omitted owned monetary predecessor lineage; project had already been paused before report exception",
+    "native_reconciliation": "deepseek-reconciliation.json",
+    "fixed_in": "444aa0c391dde8af3f653d927297702ee3204c4e"
+  },
+  "metadata_defect": {
+    "affected_release": "90e7b0bde82c4ca7c4332ff757a5b20b14825ad2",
+    "issue": "Mixed route snapshot auth_profile_ref carried Codex account label while native adapter used private DeepSeek credential",
+    "actual_provider_identity": "DeepSeek HTTP response id/model/fingerprint and usage retained",
+    "historical_receipts_rewritten": false,
+    "new_request_fix_sha": "444aa0c391dde8af3f653d927297702ee3204c4e"
+  }
+}

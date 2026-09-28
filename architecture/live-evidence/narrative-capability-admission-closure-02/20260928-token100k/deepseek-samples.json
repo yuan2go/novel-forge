@@ -1,0 +1,63 @@
+{
+  "release_sha": "90e7b0bde82c4ca7c4332ff757a5b20b14825ad2",
+  "state": "STOPPED_FIRST_FAILURE_NO_RETRY",
+  "samples": [
+    {
+      "sample_id": "creative-zheng-deng-a:producer218:v3",
+      "asset_version_id": "authority-output:ed75fd9a-f90d-484c-9b0a-6c9c6ae2994b:story_planning.candidate:v1",
+      "native_content_hash": "sha256:de64fed7c44f8200133074f10407db99104ec9869c7198274d006329a4f3ed64",
+      "asset_file": "deepseek-creative-1-native-asset.json",
+      "asset_file_hash": "sha256:acc2eb1c57999297704fa3d8f6a09ae657cfd4409dcd67b1bd78a5b86d9c92f1",
+      "readable_file": "deepseek-creative-1-readable.md",
+      "readable_file_hash": "sha256:aef87abc9fde0b2cc5a1c791294f93147ac4e571327312b95e5ee66c9938940b",
+      "receipt_file": "deepseek-creative-1-receipt.json",
+      "receipt_file_hash": "sha256:e12bd655059f6c692b1e8165d0b39bc5ff0b3f0464a4abd3aa0b7302e2eca0a3",
+      "usage": {
+        "measurement": "PROVIDER_REPORTED",
+        "availability": "AVAILABLE",
+        "input_tokens": 5335,
+        "total_tokens": 7995,
+        "output_tokens": 2660,
+        "reasoning_tokens": 1268,
+        "cache_usage_status": "OBSERVED",
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 5335
+      },
+      "cost": {
+        "amount": "0.00239625",
+        "source": "usage_pricing",
+        "currency": "USD",
+        "estimated": true,
+        "measurement": "PRICED_FROM_PROVIDER_USAGE",
+        "availability": "AVAILABLE",
+        "pricing_period": "OFF_PEAK",
+        "pricing_version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+        "provider_billed": false,
+        "accounting_basis": "PRICED",
+        "pricing_snapshot": {
+          "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+          "version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+          "currency": "USD",
+          "effective_from": "2026-09-10T04:00:00+00:00",
+          "effective_until": "9999-12-31T23:59:59+00:00",
+          "accounting_basis": "PRICED",
+          "output_per_million": "1.2",
+          "input_hit_per_million": ".006",
+          "input_miss_per_million": ".3"
+        },
+        "pricing_multiplier": "0.5",
+        "pricing_time_basis": "PROVIDER_CREATED_ASSUMPTION",
+        "provider_created_at": "2026-09-28T00:45:15+00:00",
+        "pricing_snapshot_hash": "sha256:fc855d9c324cefa5bcfba5866a5c9f466d3cdc64c7c7f85672e0d139f1edd6b4",
+        "provider_billed_amount": null,
+        "reservation_ceiling_amount": "0.0047925"
+      },
+      "stage_status": "EVALUATION_PENDING",
+      "production_eligible": false,
+      "counts_as_prose": false
+    }
+  ],
+  "real_prose_count": 0,
+  "independent_human_labels": 0,
+  "editorial_benefit": "NOT_PROVEN"
+}

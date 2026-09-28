@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "port": 8143,
+  "mode": "REAL_READ_ONLY_RESTART_FROM_DURABLE_PRIVATE_RELEASE",
+  "sample_count": 3,
+  "model_calls": 0,
+  "business_writes": 0
+}

@@ -1,0 +1,29 @@
+{
+  "canonical_document_count": 5,
+  "capability_count": 25,
+  "comment_ratchet": {
+    "base_script_comment_count": 13,
+    "base_sha": "e9e6e2980f744ff69ac608d4ccce0ea6122441d3",
+    "base_source_comment_count": 512,
+    "base_source_docstring_count": 122,
+    "base_web_comment_count": 5,
+    "status": "FAIL"
+  },
+  "errors": [
+    "current-system projection is stale for the implementation tree",
+    "module docstring is not allowlisted: src/novel_forge/modules/content_authority/reference_review.py",
+    "comment ratchet increased source comments: 522 > 512",
+    "comment ratchet increased source docstrings: 127 > 122",
+    "comment ratchet increased web comments: 6 > 5"
+  ],
+  "evidence_class": "reality_inventory",
+  "inventory_sha256": "sha256:1a898a1ff8af77844aa8391d2c3b27afcf5990b7124dda1e8534ca0b3a27836c",
+  "module_docstring_count": 36,
+  "schema_version": "novel-forge.documentation-reality-check.v1",
+  "script_comment_count": 13,
+  "source_comment_count": 522,
+  "source_docstring_count": 127,
+  "status": "FAIL",
+  "tested_sha": "fb360dfc6d94b4458eed990e606911bf74d9f39d",
+  "web_comment_count": 6
+}

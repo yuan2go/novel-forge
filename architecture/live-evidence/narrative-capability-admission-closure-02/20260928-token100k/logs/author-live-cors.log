@@ -1,0 +1,1 @@
+{"status":"PASS","evidence_class":"REAL_DATABASE_READ_ONLY_BROWSER","ui":"http://127.0.0.1:3142/production","api":"http://127.0.0.1:8141","native_samples":3,"author_principal":"first-novel-pilot-operator","api_mutations":[],"judgments_entered":0,"human_labels_written":0,"model_dispatches":0}

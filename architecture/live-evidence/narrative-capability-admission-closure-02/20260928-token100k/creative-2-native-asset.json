@@ -1,0 +1,245 @@
+{
+  "asset_type": "planning_generation_candidate",
+  "asset_version_id": "authority-output:1ae36a8a-0c9a-4ff4-9173-312c3e0cbca3:story_planning.candidate:v1",
+  "asset_id": "authority-output:1ae36a8a-0c9a-4ff4-9173-312c3e0cbca3:story_planning.candidate",
+  "version_number": 1,
+  "lifecycle": "CANDIDATE",
+  "eligibility": "INELIGIBLE",
+  "governance": "CLEAR",
+  "content": {
+    "type": "PlanningGenerationCandidate",
+    "genre": "原创简体中文武侠与低魔玄幻",
+    "book_id": "duanchao-guan-zheng-deng-reference-01",
+    "subgenre": "雪山封路背景下的门派伦理与资源抉择故事",
+    "core_fear": "洛棠怕自己凭未经证实的消息交出火种，最终两边都未获救；迟岳怕为核实道路和去向耗尽日光，令替他担保的人承担后果。",
+    "objective": "发展《雪栈借火》为一条由稀缺火种、受阻道路和相互牵制的救人承诺持续驱动的故事主线，让关键选择具有可见的物资代价与后续责任。",
+    "project_id": "narrative-closure-02-admission-20260927",
+    "constraints": [
+      "以分配火种的真实代价推动情节，设计至少两条互相影响的持续意图与未完成承诺。",
+      "保留雪路、炭料、索道承重的约束；试通与打算通行都不等于已经抵达。",
+      "允许有依据地延期、重新协商或放弃步骤，但不允许抹去未完成承诺。",
+      "洛棠只能使用实际亲见或被告知的信息；迟岳的密令内容不自动进入洛棠认知。",
+      "每次决定动用火种或炭料，都要显出用量、被挤占的用途，以及随之改变的处境。",
+      "旧恩不能代替对接生人的交付承诺；师门施加的期限也不能证明索道安全。"
+    ],
+    "core_desire": "洛棠想让火种真正抵达接生人，同时偿还迟岳的救命之恩；迟岳想在期限前保住老伙计，又不愿把洛棠的承诺轻易抹去。",
+    "logical_key": "diagnostic:creative-xue-zhan-b",
+    "core_conflict": "洛棠答应把最后一罐火种交给山下的接生人，迟岳却称师门要他在日落前带回火种，否则替他担保的老伙计会被拘走。两人的承诺都指向同一份不可复制的资源；试索、寻人和借禁炉又会消耗有限炭料，使每一次争取一方的机会都可能缩小另一方的余地。",
+    "frozen_inputs": [
+      {
+        "role": "creative_brief",
+        "asset_type": "creative_brief",
+        "content_hash": "sha256:ebfddd724398905b4132643ec32e202c0660bf0dbffab99234fb74fc84a4fe67",
+        "asset_version_id": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+      }
+    ],
+    "style_profile": {
+      "pov": "以洛棠为主要限知视角；涉及迟岳的想法时，只通过他可见的行动和亲口所说的话呈现。",
+      "narrator": "贴近人物行动与感官的第三人称叙述者，措辞简练，因果清楚；不替人物断言尚未证实的消息。",
+      "constraints": [
+        "使用原创简体中文表达，不借用参考作品的文字、人物或独特桥段组合。",
+        "行动先于感慨，以炭量、雪势、绳索受力和可见路况呈现代价。",
+        "洛棠的判断只依据她亲见或听到的信息；迟岳未说出的密令内容不进入她的内心叙述。",
+        "人物对话贴合处境：守炉的洛棠留意燃料和可执行的承诺，药师迟岳留意期限与担保人的处境。",
+        "保留低魔玄幻的克制感，不用未经建立的术法抹除运输与燃料限制。"
+      ],
+      "genre_conventions": [
+        "以山栈、雪路、旧索道和禁炉承载武侠式险境与门派压力。",
+        "以可见的物资消耗和互负承诺制造道义抉择。",
+        "让每次局部进展带来新的事实与责任，而非直接解除全部危机。"
+      ],
+      "original_examples": [
+        {
+          "example": "洛棠把余炭分成两堆，一堆够暖开索轮，一堆留给罐中的火。迟岳看了片刻，问她若索轮冻住，哪一堆还能送下山。",
+          "purpose": "示范资源代价与人物冲突如何落在同一个动作上。",
+          "explanation": "用实物分配引出两人的不同急迫之处；试索所需的炭会直接减少留给火种的燃料。"
+        },
+        {
+          "example": "她只见过栈外断掉的那段路。迟岳说日落前必须回去，她便问：“索道试过多重？山下的人又是谁亲眼见着的？”",
+          "purpose": "示范第三人称限知下的信息边界与务实语气。",
+          "explanation": "洛棠依据亲见的坍塌和迟岳告知的期限发问，没有把密令内容或接生人的位置当成已知事实。"
+        },
+        {
+          "example": "空钩荡到对岸，又荡回来。洛棠松开攥紧的绳头，在炭堆旁划下一道记号：钩能过去，人和火还没有。",
+          "purpose": "示范局部进展如何带来清晰结果，同时保留未完成的目标。",
+          "explanation": "一次试通只确认空钩可往返，同时留下已付出的燃料成本与仍待完成的运输承诺。"
+        }
+      ]
+    },
+    "target_reader": "偏好具体行动、互负承诺和可信选择的中文类型文学读者",
+    "planning_scope": "NOT_APPLICABLE",
+    "schema_version": "story_design.authority.v1",
+    "differentiation": "冲突围绕可称量的炭料、可试却未必能载人的索道，以及尚未确认位置的收火人展开。人物不能用旧恩抵账，也不能用一次试通宣称完成交付；他们必须在信息不全时协商每一步由谁承担风险，并保留尚未兑现的承诺。",
+    "narrative_engine": "以“核实一项事实、消耗一份资源、重估两项承诺”推动情节：洛棠与迟岳先试旧索道承重并确认接生人的位置，再决定是否借禁炉。雪路坍塌限制探查，试索与取暖消耗炭料，借炉会占用原本可用于交付或返程的火力。每得到一条可靠消息，双方都须重新决定火种去向、剩余行动和各自愿承担的代价；延期或改道留下明确的待履行承诺。",
+    "candidate_payload": {
+      "genre": "原创简体中文武侠与低魔玄幻",
+      "subgenre": "雪山封路背景下的门派伦理与资源抉择故事",
+      "core_fear": "洛棠怕自己凭未经证实的消息交出火种，最终两边都未获救；迟岳怕为核实道路和去向耗尽日光，令替他担保的人承担后果。",
+      "objective": "发展《雪栈借火》为一条由稀缺火种、受阻道路和相互牵制的救人承诺持续驱动的故事主线，让关键选择具有可见的物资代价与后续责任。",
+      "constraints": [
+        "以分配火种的真实代价推动情节，设计至少两条互相影响的持续意图与未完成承诺。",
+        "保留雪路、炭料、索道承重的约束；试通与打算通行都不等于已经抵达。",
+        "允许有依据地延期、重新协商或放弃步骤，但不允许抹去未完成承诺。",
+        "洛棠只能使用实际亲见或被告知的信息；迟岳的密令内容不自动进入洛棠认知。",
+        "每次决定动用火种或炭料，都要显出用量、被挤占的用途，以及随之改变的处境。",
+        "旧恩不能代替对接生人的交付承诺；师门施加的期限也不能证明索道安全。"
+      ],
+      "core_desire": "洛棠想让火种真正抵达接生人，同时偿还迟岳的救命之恩；迟岳想在期限前保住老伙计，又不愿把洛棠的承诺轻易抹去。",
+      "core_conflict": "洛棠答应把最后一罐火种交给山下的接生人，迟岳却称师门要他在日落前带回火种，否则替他担保的老伙计会被拘走。两人的承诺都指向同一份不可复制的资源；试索、寻人和借禁炉又会消耗有限炭料，使每一次争取一方的机会都可能缩小另一方的余地。",
+      "style_profile": {
+        "pov": "以洛棠为主要限知视角；涉及迟岳的想法时，只通过他可见的行动和亲口所说的话呈现。",
+        "narrator": "贴近人物行动与感官的第三人称叙述者，措辞简练，因果清楚；不替人物断言尚未证实的消息。",
+        "constraints": [
+          "使用原创简体中文表达，不借用参考作品的文字、人物或独特桥段组合。",
+          "行动先于感慨，以炭量、雪势、绳索受力和可见路况呈现代价。",
+          "洛棠的判断只依据她亲见或听到的信息；迟岳未说出的密令内容不进入她的内心叙述。",
+          "人物对话贴合处境：守炉的洛棠留意燃料和可执行的承诺，药师迟岳留意期限与担保人的处境。",
+          "保留低魔玄幻的克制感，不用未经建立的术法抹除运输与燃料限制。"
+        ],
+        "genre_conventions": [
+          "以山栈、雪路、旧索道和禁炉承载武侠式险境与门派压力。",
+          "以可见的物资消耗和互负承诺制造道义抉择。",
+          "让每次局部进展带来新的事实与责任，而非直接解除全部危机。"
+        ],
+        "original_examples": [
+          {
+            "example": "洛棠把余炭分成两堆，一堆够暖开索轮，一堆留给罐中的火。迟岳看了片刻，问她若索轮冻住，哪一堆还能送下山。",
+            "purpose": "示范资源代价与人物冲突如何落在同一个动作上。",
+            "explanation": "用实物分配引出两人的不同急迫之处；试索所需的炭会直接减少留给火种的燃料。"
+          },
+          {
+            "example": "她只见过栈外断掉的那段路。迟岳说日落前必须回去，她便问：“索道试过多重？山下的人又是谁亲眼见着的？”",
+            "purpose": "示范第三人称限知下的信息边界与务实语气。",
+            "explanation": "洛棠依据亲见的坍塌和迟岳告知的期限发问，没有把密令内容或接生人的位置当成已知事实。"
+          },
+          {
+            "example": "空钩荡到对岸，又荡回来。洛棠松开攥紧的绳头，在炭堆旁划下一道记号：钩能过去，人和火还没有。",
+            "purpose": "示范局部进展如何带来清晰结果，同时保留未完成的目标。",
+            "explanation": "一次试通只确认空钩可往返，同时留下已付出的燃料成本与仍待完成的运输承诺。"
+          }
+        ]
+      },
+      "target_reader": "偏好具体行动、互负承诺和可信选择的中文类型文学读者",
+      "differentiation": "冲突围绕可称量的炭料、可试却未必能载人的索道，以及尚未确认位置的收火人展开。人物不能用旧恩抵账，也不能用一次试通宣称完成交付；他们必须在信息不全时协商每一步由谁承担风险，并保留尚未兑现的承诺。",
+      "narrative_engine": "以“核实一项事实、消耗一份资源、重估两项承诺”推动情节：洛棠与迟岳先试旧索道承重并确认接生人的位置，再决定是否借禁炉。雪路坍塌限制探查，试索与取暖消耗炭料，借炉会占用原本可用于交付或返程的火力。每得到一条可靠消息，双方都须重新决定火种去向、剩余行动和各自愿承担的代价；延期或改道留下明确的待履行承诺。",
+      "why_worth_writing": "一罐火种同时系着山下的交付承诺和山上的担保人命运，使“该先救谁”成为必须落实到道路、承重、燃料与时间的选择。故事能让人物的情义接受行动检验，也让每次付出的代价继续影响下一步。",
+      "emotional_contract": "读者能看见每个决定救了谁的机会、耗掉了什么，以及谁还在等待。紧张来自有限时间与物资，回报来自人物用可验证的行动承担承诺，即使行动结果迫使他们重新约定下一步。",
+      "constraint_envelope": {
+        "role": "CREATIVE_FOUNDATION",
+        "creative_brief": {
+          "content_hash": "sha256:ebfddd724398905b4132643ec32e202c0660bf0dbffab99234fb74fc84a4fe67",
+          "asset_version_id": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+        },
+        "contract_version": "foundation-generation.v1",
+        "foundation_parent_bindings": {}
+      },
+      "prohibited_outcomes": [
+        "把试通索道、计划下山或看见山路等同于接生人已收到火种。",
+        "让索道无视承重限制，或让雪路与炭料短缺在需要时自行消失。",
+        "让洛棠未经亲见或被告知便知晓迟岳密令的完整内容。",
+        "以迟岳救过洛棠为由，自动取消她对接生人的承诺。",
+        "以改道、延期或借用禁炉为由，宣称尚未完成的交付或带回任务已经完成。",
+        "让决定性的资源分配没有具体消耗、受影响的人或随之改变的处境。"
+      ],
+      "serialization_potential": "索道能否载人、接生人身在何处、禁炉是否值得借用，以及日落期限能否重新协商，构成相互牵制的连续问题。每解决一项，都改变可用炭料、通路或承诺的履行条件；后续情节可沿这些变化推进，而不必反复制造新的火种争夺。",
+      "foundation_parent_bindings": {}
+    },
+    "why_worth_writing": "一罐火种同时系着山下的交付承诺和山上的担保人命运，使“该先救谁”成为必须落实到道路、承重、燃料与时间的选择。故事能让人物的情义接受行动检验，也让每次付出的代价继续影响下一步。",
+    "emotional_contract": "读者能看见每个决定救了谁的机会、耗掉了什么，以及谁还在等待。紧张来自有限时间与物资，回报来自人物用可验证的行动承担承诺，即使行动结果迫使他们重新约定下一步。",
+    "execution_evidence": {
+      "attempt_id": "ae180900-cd24-442b-98a4-4b4f746d1635",
+      "operation_id": "1ae36a8a-0c9a-4ff4-9173-312c3e0cbca3",
+      "fencing_token": 1,
+      "commit_authority": "STORY_DESIGN_AUTHORITY",
+      "cost_receipt_ref": "authority-asset-version:3673644f-6c9f-4f39-b983-63606a990128",
+      "route_snapshot_id": "production_execution/routes/57bf5ae1bfda083f2a5f",
+      "usage_receipt_ref": "authority-asset-version:debb0889-dc24-4a84-97e6-bd6076f138b3",
+      "input_manifest_ref": "production_execution/inputs/57bf5ae1bfda083f2a5f",
+      "context_bundle_hash": "sha256:0caad43c6e850fd903908630d7456701a9b39f1c4f4bb7bc89fa604b14085435",
+      "output_manifest_ref": "authority-asset-version:121af11a-b5a3-4917-91dd-600a93de2177",
+      "production_verified": false,
+      "external_receipt_ref": "180242cf-7508-486c-961a-2f3a419c81cf",
+      "real_provider_proven": true,
+      "fixture_protocol_only": false,
+      "external_effect_backed": true,
+      "validation_manifest_ref": "authority-asset-version:edec39f5-0eb7-446f-954c-e6ac49cbcf6c",
+      "capability_execution_ref": "06fea569-d513-579d-8532-5f8a6476b9d0",
+      "capability_execution_hash": "sha256:25ad58fc66f23667a18ad74a35455b4b3cc777d4a4d0e64e786cc13292dcd44e",
+      "capability_runtime_binding_ref": "sha256:8373c8634f2d2e1e5ac22b6aa24683b3576c54fd4e9427d81adf4d792c8785e8",
+      "capability_runtime_binding_hash": "sha256:f93ad858cb4d7bf987715d9f6417fcb0c9f4db4b237e6df181ce79572e68eb67",
+      "context_bundle_asset_version_id": "bc9d248a-05e6-490c-a67f-1cd217338d95",
+      "capability_pack_attempt_snapshot_id": "sha256:8373c8634f2d2e1e5ac22b6aa24683b3576c54fd4e9427d81adf4d792c8785e8",
+      "production_execution_gateway_backed": true,
+      "capability_pack_attempt_snapshot_hash": "sha256:f93ad858cb4d7bf987715d9f6417fcb0c9f4db4b237e6df181ce79572e68eb67",
+      "narrative_intelligence_selection_digest": "sha256:6d3938a904905f6e08d6626bfd336102634d2ddc4d82ad1578efd7a6f947afc0"
+    },
+    "constraint_envelope": {
+      "role": "CREATIVE_FOUNDATION",
+      "creative_brief": {
+        "content_hash": "sha256:ebfddd724398905b4132643ec32e202c0660bf0dbffab99234fb74fc84a4fe67",
+        "asset_version_id": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+      },
+      "contract_version": "foundation-generation.v1",
+      "foundation_parent_bindings": {}
+    },
+    "prohibited_outcomes": [
+      "把试通索道、计划下山或看见山路等同于接生人已收到火种。",
+      "让索道无视承重限制，或让雪路与炭料短缺在需要时自行消失。",
+      "让洛棠未经亲见或被告知便知晓迟岳密令的完整内容。",
+      "以迟岳救过洛棠为由，自动取消她对接生人的承诺。",
+      "以改道、延期或借用禁炉为由，宣称尚未完成的交付或带回任务已经完成。",
+      "让决定性的资源分配没有具体消耗、受影响的人或随之改变的处境。"
+    ],
+    "routing_eligibility": "BENCHMARK_ONLY",
+    "serialization_potential": "索道能否载人、接生人身在何处、禁炉是否值得借用，以及日落期限能否重新协商，构成相互牵制的连续问题。每解决一项，都改变可用炭料、通路或承诺的履行条件；后续情节可沿这些变化推进，而不必反复制造新的火种争夺。",
+    "generator_operation_name": "creative.candidates.generate",
+    "foundation_parent_bindings": {},
+    "routing_bootstrap_authorization": {
+      "project_id": "narrative-closure-02-admission-20260927",
+      "environment": "validation",
+      "policy_hash": "7ce60ee1a830a869a9e16436f23f36d24738cc3b0539aa50c956357409e4e816",
+      "authorization": {
+        "reason": "Same sample and Producer; release f827 successor of never-dispatched 218 request. No additional diagnostic count, budget or independent group.",
+        "book_id": "duanchao-guan-zheng-deng-reference-01",
+        "purpose": "BENCHMARK_CHALLENGER",
+        "campaign": {
+          "group_id": "xue-zhan-original-family",
+          "partition": "CALIBRATION",
+          "sample_id": "creative-xue-zhan-b:producer218:v3",
+          "expires_at": "2026-09-28T05:28:24Z",
+          "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+          "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+          "maximum_calls": 720,
+          "maximum_amount": "0",
+          "maximum_tokens": 40108032
+        },
+        "currency": "UNKNOWN",
+        "task_type": "creative.candidates.generate",
+        "expires_at": "2026-09-28T05:28:24Z",
+        "environment": "validation",
+        "logical_key": "diagnostic:creative-xue-zhan-b",
+        "candidate_id": "codex-cli:gpt-6-sol:high",
+        "command_hash": "sha256:0d00c33ee752346c1ca725ec5d4a485fd7a367920996230471e5aed96ea5e067",
+        "maximum_calls": 1,
+        "maximum_amount": null,
+        "maximum_tokens": 100000,
+        "model_revision": "wp02-p0-controlled-no-dispatch-20260927",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-xue-zhan-b:producer218:v3:release-f827",
+        "input_versions_hash": "sha256:fc2935f3bb7fdf2933ac287d7840fbdcbd0ff528f75228e3e8abed5decdc79a9",
+        "production_eligible": false,
+        "cost_authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+        "producer_contract_hash": "sha256:1d4272af184206c237ae993fb169a5e620b50810eac05bc1dc5c6d36c4d2e2a9",
+        "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b:producer218:v3:release-f827"
+      },
+      "policy_version": "wp02-first-foundation-release-f827-v4",
+      "policy_actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+      "authorization_hash": "sha256:ec4611a5ada9edb7da6c8f09915052e3fa929c65141595881fe8d7b3a17344d2",
+      "policy_operation_id": "9f6e3510-9ec9-457c-8a4e-e799a32fa9f9"
+    },
+    "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+  },
+  "content_hash": "sha256:3cfd9697f8dea2d64c500a6c3cd1194a79c881857dc278bca1c3b35d093274d7",
+  "created_at": "2026-09-28T00:24:59.838314+00:00",
+  "schema_version": "planning-generation-candidate.v1"
+}
