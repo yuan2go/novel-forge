@@ -1,0 +1,57 @@
+[
+  {
+    "file": "src/novel_forge/modules/content_authority/reference_review.py",
+    "lines_removed": 1,
+    "executable_ast_unchanged": true
+  },
+  {
+    "file": "src/novel_forge/modules/provider_control/deepseek.py",
+    "lines_removed": 1,
+    "executable_ast_unchanged": true
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/provider_admission.py",
+    "lines_removed": 1,
+    "executable_ast_unchanged": true
+  },
+  {
+    "file": "src/novel_forge/modules/command_kernel/cancellation.py",
+    "lines_removed": 1,
+    "executable_ast_unchanged": true
+  },
+  {
+    "file": "src/novel_forge/storage/story_formation_repositories.py",
+    "lines_removed": 5,
+    "executable_ast_unchanged": true
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/routing_bootstrap.py",
+    "lines_removed": 3,
+    "executable_ast_unchanged": true
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production_policy.py",
+    "lines_removed": 1,
+    "executable_ast_unchanged": true
+  },
+  {
+    "file": "src/novel_forge/modules/provider_control/composition.py",
+    "lines_removed": 3,
+    "executable_ast_unchanged": true
+  },
+  {
+    "file": "web/admin/tests/formation-review-browser.mjs",
+    "lines_removed": 1,
+    "executable_ast_unchanged": false
+  },
+  {
+    "file": "src/novel_forge/modules/command_kernel/budget_runtime.py",
+    "lines_removed": 2,
+    "executable_ast_unchanged": true
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/routing_runtime.py",
+    "lines_removed": 5,
+    "executable_ast_unchanged": true
+  }
+]

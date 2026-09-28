@@ -430,8 +430,10 @@ class PostgresRoutingRegistry:
         from novel_forge.modules.command_kernel.routing_bootstrap import (
             campaign_contract, validate_bootstrap_history,
         )
+        from novel_forge.modules.command_kernel.creative_budget_runtime import provider_campaign_contract_lineage
 
         with AuthorityUnitOfWork(self.database_url) as uow:
+            authorized_contracts = provider_campaign_contract_lineage(uow.cursor, project_id)
             uow.cursor.execute(
                 "SELECT content,content_hash FROM authority_runtime_policy_version WHERE owner='PROVIDER_ROUTING' AND project_id=%s ORDER BY created_at,policy_version",
                 [project_id],
@@ -441,7 +443,8 @@ class PostgresRoutingRegistry:
                 if policy_hash(content) != digest:
                     raise KernelError("RUNTIME_POLICY_HASH_MISMATCH", "policy integrity failed")
                 current = content.get("bootstrap_authorizations", [])
-                validate_bootstrap_history(current, list(grants.values()))
+                validate_bootstrap_history(current, list(grants.values()),
+                                           authorized_campaign_contracts=authorized_contracts)
                 grants.update({grant["authorization_id"]: grant for grant in current})
             matched = [grant for grant in grants.values()
                        if (grant.get("campaign") or {}).get("campaign_id") == campaign_id]
@@ -515,7 +518,7 @@ class PostgresRoutingRegistry:
                                   else Decimal(row["reserved_amount"] or 0))
         return {
             "source": "POSTGRESQL_AUTHORITY_PROJECTION", "project_id": project_id,
-            "scope": "BOOTSTRAP_SAMPLING_ONLY", "campaign": campaign_contract(matched[0]["campaign"]),
+            "scope": "BOOTSTRAP_SAMPLING_ONLY", "campaign": campaign_contract(matched[-1]["campaign"]),
             "grants": matched, "reservations": reservations, "operations": operations,
             "usage": {"calls_used_or_reserved": len(used),
                       "conservative_tokens": tokens,
@@ -748,6 +751,7 @@ class ProductionProviderRouter:
         call_caps: Mapping[str, int] | None = None,
         outcome_projection: Callable[..., dict[str, dict[str, Any]]] | None = None,
         execution_environment: str = "production",
+        provider_auth_profiles: Mapping[str, str] | None = None,
     ) -> None:
         self.registry = PostgresRoutingRegistry(
             database_url, outcome_projection=outcome_projection
@@ -760,6 +764,7 @@ class ProductionProviderRouter:
         self.token_caps = dict(token_caps or {})
         self.call_caps = dict(call_caps or {})
         self.execution_environment = execution_environment
+        self.provider_auth_profiles = dict(provider_auth_profiles or {})
         money_limit = Decimal(task_money_limit)
         if self.task_token_limit <= 0 or not money_limit.is_finite() or money_limit < 0:
             raise ValueError("ROUTING_NONNEGATIVE_MONEY_AND_POSITIVE_TOKEN_BUDGET_REQUIRED")
@@ -973,16 +978,20 @@ class ProductionProviderRouter:
             policy_snapshot=policy_snapshot,
             **requirements,
         )
-        decision = CostAwareRouter().explain(task, candidates, observations, now=now)
         from novel_forge.modules.command_kernel.routing_bootstrap import (
             load_bootstrap_authorization,
         )
-        from .routing_bootstrap import benchmark_decision
+        from .routing_bootstrap import benchmark_decision, bind_diagnostic_escalation_reason
 
         with AuthorityUnitOfWork(self.registry.database_url) as uow:
             bootstrap = load_bootstrap_authorization(
                 uow.cursor, project_id=project_id, operation_id=operation_id
             )
+        if bootstrap:
+            task = bind_diagnostic_escalation_reason(
+                task, candidates, bootstrap, environment=self.execution_environment
+            )
+        decision = CostAwareRouter().explain(task, candidates, observations, now=now)
         if bootstrap:
             decision = benchmark_decision(
                 decision, bootstrap, environment=self.execution_environment
@@ -1159,6 +1168,11 @@ class ProductionProviderRouter:
             allowed_model_profile_ids=(profile.profile_id,),
         )
         changes = dict(model_profile=profile, route_policy=policy)
+        if self.provider_auth_profiles:
+            auth_profile = self.provider_auth_profiles.get(candidate["provider"])
+            if not auth_profile:
+                raise KernelError("PROVIDER_AUTH_PROFILE_REQUIRED", candidate["provider"])
+            changes["auth_profile_ref"] = auth_profile
         if hasattr(base, "model_context_limit"):
             changes.update(
                 model_context_limit=candidate["context_limit"],
@@ -1170,6 +1184,66 @@ class ProductionProviderRouter:
                 token_accounting_evidence_ref=candidate["capability_version"],
             )
         return replace(base, **changes)
+
+    def _frozen_output_protocol(
+        self, identity: Mapping[str, Any], admission: Any,
+        metadata: Mapping[str, Any], task: Mapping[str, Any], provider: str,
+    ) -> str:
+        from .provider_admission import (
+            DEEPSEEK_STRICT_PROTOCOL,
+            provider_request_protocol,
+        )
+
+        expected = provider_request_protocol(provider)
+        if identity.get("protocol") != DEEPSEEK_STRICT_PROTOCOL:
+            return expected
+        capability = metadata["capability_runtime"]
+        binding = admission.content.get("contract", admission.content)
+        version = str(capability.get("materialization_asset_version_id") or "")
+        content_hash = capability.get("materialization_content_hash")
+        if (
+            not version
+            or not content_hash
+            or binding.get("capability_materialization_asset_version_id") != version
+            or binding.get("capability_materialization_content_hash") != content_hash
+        ):
+            raise KernelError(
+                "ROUTING_ADMISSION_IDENTITY_MISMATCH",
+                "strict output materialization binding",
+            )
+        document = self.registry.query.require(
+            project_id=task["project_id"], asset_version_id=version
+        )
+        if (
+            document.asset_type != "capability_materialization_manifest"
+            or document.content_hash != content_hash
+        ):
+            raise KernelError(
+                "ROUTING_ADMISSION_IDENTITY_MISMATCH",
+                "strict output materialization identity",
+            )
+        materialization = document.content.get("contract", document.content)
+        artifacts = materialization.get("pack_artifacts") or {}
+        policy = (artifacts.get("context_policy") or {}).get("content") or {}
+        modes = (policy.get("provider_output_modes") or {}).get(task["task_type"]) or {}
+        try:
+            expected = provider_request_protocol(
+                provider, output_mode=str(modes.get(provider) or "")
+            )
+            schema = json.loads(identity.get("output_schema_json") or "null")
+        except (ValueError, TypeError) as exc:
+            raise KernelError(
+                "ROUTING_ADMISSION_IDENTITY_MISMATCH", "strict output policy"
+            ) from exc
+        if (
+            expected != DEEPSEEK_STRICT_PROTOCOL
+            or schema is None
+            or schema != (materialization.get("output_schema") or {}).get("content")
+        ):
+            raise KernelError(
+                "ROUTING_ADMISSION_IDENTITY_MISMATCH", "strict output schema or policy"
+            )
+        return expected
 
     def select_for_payload(
         self, base: Any, payload: Mapping[str, Any]
@@ -1228,7 +1302,9 @@ class ProductionProviderRouter:
                 "provider_request_identity", {}
             )
             selected = content["selected"]["candidate"]
-            from .provider_admission import provider_request_protocol
+            expected_protocol = self._frozen_output_protocol(
+                identity, admission, metadata, task, selected["provider"]
+            )
 
             try:
                 admitted_pricing = json.loads(
@@ -1248,7 +1324,7 @@ class ProductionProviderRouter:
                 or identity.get("provider") != selected["provider"]
                 or identity.get("model") != selected["model"]
                 or identity.get("protocol")
-                != provider_request_protocol(selected["provider"])
+                != expected_protocol
                 or str(identity.get("reasoning_effort") or "")
                 != (selected["reasoning"] if selected["provider"] == "deepseek" else "")
                 or admitted_pricing != selected["pricing"]
@@ -1256,6 +1332,36 @@ class ProductionProviderRouter:
                 raise KernelError("ROUTING_ADMISSION_IDENTITY_MISMATCH", version_id)
             return self._selected_route(base, frozen), dict(frozen)
         raise KernelError("ROUTING_FROZEN_DECISION_REQUIRED", str(payload.get("stage")))
+
+
+def validate_routed_reservation(
+    decision: Mapping[str, Any], *, reserved_tokens: int, reserved_amount: str | None,
+) -> None:
+    selected = decision.get("selected")
+    if decision.get("status") not in {"SELECTED", "BENCHMARK_SELECTED"} or not selected:
+        raise KernelError("ROUTING_RESERVATION_DECISION_INVALID", "reservation requires a selected route")
+    task, candidate = decision["task"], selected["candidate"]
+    budget = task.get("budget_snapshot", {}).get("candidates", {}).get(candidate["candidate_id"], {})
+    token_limits = [int(task["remaining_tokens"])]
+    if "remaining_tokens" in budget:
+        token_limits.append(int(budget["remaining_tokens"]))
+    grant = decision.get("bootstrap_authorization", {}).get("authorization", {})
+    if grant:
+        token_limits.append(int(grant["maximum_tokens"]))
+    limit = min(token_limits)
+    if reserved_tokens <= 0 or reserved_tokens > limit or budget.get("remaining_calls") == 0:
+        raise KernelError("ROUTING_RESERVATION_BUDGET_EXCEEDED",
+                          f"complete Provider reservation tokens={reserved_tokens} exceeds available limit={limit}")
+    if candidate["pricing"]["accounting_basis"] == "PRICED":
+        amount = Decimal(reserved_amount) if reserved_amount is not None else Decimal("NaN")
+        money_limits = [Decimal(task["remaining_money"])]
+        if "remaining_money" in budget:
+            money_limits.append(Decimal(str(budget["remaining_money"])))
+        if grant.get("maximum_amount") is not None:
+            money_limits.append(Decimal(grant["maximum_amount"]))
+        if not amount.is_finite() or amount < 0 or amount > min(money_limits):
+            raise KernelError("ROUTING_RESERVATION_BUDGET_EXCEEDED",
+                              "complete Provider reservation exceeds the frozen monetary limit")
 
 
 def routed_reservation(

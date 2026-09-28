@@ -1086,6 +1086,16 @@ class StoryFormationControlRequest(BaseModel):
     actor_id: str = ""
 
 
+class StoryFormationAuthorDecisionRequest(BaseModel):
+    expected_version: int = Field(ge=0)
+    candidate_asset_version_id: str = Field(min_length=1)
+    candidate_content_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    decision: Literal["SELECT", "APPROVE", "REJECT", "REQUEST_CHANGES"]
+    reason: str = Field(min_length=1, max_length=12000)
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""
+
+
 class StoryFormationBookDesignApprovalRequest(BaseModel):
     expected_version: int = Field(ge=0)
     book_design_asset_version_id: str = Field(min_length=1)
@@ -2506,6 +2516,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "StoryFormationLayerRequest": StoryFormationLayerRequest,
         "StoryFormationStartRequest": StoryFormationStartRequest,
         "StoryFormationControlRequest": StoryFormationControlRequest,
+        "StoryFormationAuthorDecisionRequest": StoryFormationAuthorDecisionRequest,
         "StoryFormationBookDesignApprovalRequest": (
             StoryFormationBookDesignApprovalRequest
         ),

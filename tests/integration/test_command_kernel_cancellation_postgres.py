@@ -118,6 +118,49 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
                 )
                 self.assertEqual(result["status"], target)
 
+    def test_control_cancel_settles_unreserved_ready_effect_and_replays(self) -> None:
+        project_id, operation_id = self._operation("EXECUTING")
+        context = EffectCommandContext(operation_id, project_id, "operator", "trace:unreserved", "correlation:unreserved")
+        effect = plan_external_effect(
+            DATABASE_URL, context, effect_type="model.invoke", provider="isolated-fixture",
+            capability="model.planning", stable_idempotency_key=f"unreserved:{operation_id}",
+            request_payload={"candidate": "immutable request"}, max_attempts=1, reversible=False,
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT request_hash FROM authority_external_effect WHERE external_effect_id=%s", [effect["external_effect_id"]])
+            original_request_hash = cursor.fetchone()[0]
+        self._transition(operation_id, project_id, 0, "EXECUTING", "FAILED_RETRYABLE")
+        command = self._cancel(operation_id, project_id, expected_version=1)
+        result = request_cancellation(DATABASE_URL, command, settle_undispatched=True)
+        self.assertEqual(result["status"], "CANCELLED")
+        replay = request_cancellation(DATABASE_URL, command, settle_undispatched=True)
+        self.assertTrue(replay["replayed"])
+        self.assertEqual(replay["status"], "CANCELLED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT status,request_payload,request_hash FROM authority_external_effect WHERE external_effect_id=%s", [effect["external_effect_id"]])
+            status, payload, request_hash = cursor.fetchone()
+            self.assertEqual(status, "CANCELLED")
+            self.assertEqual(payload, {"candidate": "immutable request"})
+            self.assertEqual(request_hash, original_request_hash)
+            cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s", [effect["external_effect_id"]])
+            self.assertEqual(cursor.fetchone()[0], 0)
+            cursor.execute("SELECT count(*) FROM authority_budget_reservation WHERE operation_id=%s", [operation_id])
+            self.assertEqual(cursor.fetchone()[0], 0)
+            cursor.execute("SELECT payload FROM state_event WHERE aggregate_id=%s AND event_type='external_effect.cancelled'", [effect["external_effect_id"]])
+            events = cursor.fetchall()
+            self.assertEqual(len(events), 1)
+            self.assertEqual(events[0][0]["budget_disposition"], "NONE")
+
+    def test_control_cancel_without_effects_settles_but_active_attempt_waits(self) -> None:
+        for active in (False, True):
+            with self.subTest(active=active):
+                project_id, operation_id = self._operation("FAILED_RETRYABLE" if not active else "EXECUTING")
+                if active:
+                    with transaction() as connection, connection.cursor() as cursor:
+                        insert_attempt(cursor, attempt_id=identifier("active"), operation_id=operation_id, attempt_number=1, status="RUNNING")
+                result = request_cancellation(DATABASE_URL, self._cancel(operation_id, project_id, 0), settle_undispatched=True)
+                self.assertEqual(result["status"], "CANCELLATION_REQUESTED" if active else "CANCELLED")
+
     def test_no_effect_resolution_rejects_verified_external_effect(self) -> None:
         project_id, operation_id = self._operation("EXECUTING")
         trace_id = identifier("trace")

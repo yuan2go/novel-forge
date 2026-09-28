@@ -117,6 +117,22 @@ class PostgresBookProductionQuery:
                   AND COALESCE(v.content->>'book_id','') IN ('',%s)
                 ORDER BY v.created_at DESC LIMIT 100""", [project_id, book_id])
             profiles = [dict(zip(("asset_version_id", "content_hash", "content"), row, strict=True)) for row in cur.fetchall()]
+            cur.execute("""SELECT cast_asset.asset_version_id, cast_asset.content_hash, cast_asset.content
+                FROM authority_book b
+                JOIN authority_asset_version design ON design.asset_version_id=b.current_book_design_asset_version_id
+                CROSS JOIN LATERAL jsonb_array_elements(COALESCE(design.content->'foundation_set'->'bindings','[]'::jsonb)) binding
+                JOIN authority_asset_version cast_asset ON cast_asset.asset_version_id=binding->>'asset_version_id'
+                  AND cast_asset.content_hash=binding->>'content_hash'
+                JOIN authority_asset cast_owner ON cast_owner.asset_id=cast_asset.asset_id
+                WHERE b.project_id=%s AND b.book_id=%s AND binding->>'role'='CHARACTER_CAST'
+                  AND cast_owner.project_id=b.project_id
+                  AND (cast_owner.asset_type='character_cast' OR (cast_owner.asset_type='planning_generation_candidate'
+                    AND cast_asset.content->>'generator_operation_name'='character.cast.generate'))""", [project_id, book_id])
+            characters = []
+            for version, content_hash, content in cur.fetchall():
+                for character in content.get("candidate_payload", content).get("characters", []):
+                    if character.get("character_id"):
+                        characters.append({"character_id": character["character_id"], "name": character.get("name") or character["character_id"], "source_asset_version_id": version, "source_content_hash": content_hash})
             cur.execute("""SELECT to_jsonb(s) FROM authority_book_production_input_snapshot s
                 WHERE project_id=%s AND book_id=%s ORDER BY created_at DESC LIMIT 100""", [project_id, book_id])
             snapshots = [row[0] for row in cur.fetchall()]
@@ -124,7 +140,21 @@ class PostgresBookProductionQuery:
                     deadline_at<=NOW(),policy_snapshot
                 FROM authority_provider_budget_scope WHERE project_id=%s ORDER BY deadline_at DESC""", [project_id])
             budgets = [dict(zip(("budget_scope_id", "owner_kind", "owner_id", "deadline_at", "expired", "policy"), row, strict=True)) for row in cur.fetchall()]
-        return {"books": books, "runs": runs, "profiles": profiles, "snapshots": snapshots, "budget_scopes": budgets}
+            cur.execute("""SELECT v.content,v.content_hash,s.selected_by_operation_id
+                FROM authority_runtime_policy_selection s JOIN authority_runtime_policy_version v
+                  USING(owner,project_id,policy_version)
+                WHERE s.owner='BOOK_CONTROL' AND s.project_id=%s""", [project_id])
+            selected = cur.fetchone()
+            editorial_control = {"policy": selected[0], "content_hash": selected[1], "selected_by_operation_id": selected[2], "scope": "PROJECT_FUTURE_SUBJECTS"} if selected else None
+            subjects = [f"{run['book_run_id']}:chapter:{int(run['accepted_through_chapter']) + 1}" for run in runs]
+            cur.execute("""SELECT b.subject_id,v.content,v.content_hash
+                FROM authority_runtime_policy_binding b JOIN authority_runtime_policy_version v
+                  USING(owner,project_id,policy_version)
+                WHERE b.owner='BOOK_CONTROL' AND b.project_id=%s AND b.subject_id=ANY(%s)""", [project_id, subjects])
+            bindings = {row[0]: {"subject_id": row[0], "policy": row[1], "content_hash": row[2]} for row in cur.fetchall()}
+            for run in runs:
+                run["frozen_editorial_control"] = bindings.get(f"{run['book_run_id']}:chapter:{int(run['accepted_through_chapter']) + 1}")
+        return {"books": books, "runs": runs, "profiles": profiles, "snapshots": snapshots, "budget_scopes": budgets, "approved_characters": characters, "editorial_control": editorial_control}
 
     def narrative_reality(self, *, book_run_id: str, chapter_number: int | None = None) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:

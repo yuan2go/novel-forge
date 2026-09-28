@@ -1,0 +1,37 @@
+{
+  "money_authorization_missing": false,
+  "deepseek_budget_cny": "100",
+  "single_call_token_limit": 100000,
+  "expires_at": "2026-09-28T05:28:24Z",
+  "first_batch_state": "STOPPED_AFTER_ONE_SUCCESS_ONE_MALFORMED_FAILURE",
+  "remaining_conditions": [
+    {
+      "scope": "Further DeepSeek paid diagnosis",
+      "required": "Review first failure and explicitly allocate a bounded continuation under current stop policy; do not replay terminal request or regenerate the successful candidate. Failed raw text was not retained by old adapter; new release retains future rejected final content.",
+      "not_a_missing_money_authorization": true
+    },
+    {
+      "scope": "Subjective task qualification",
+      "required": "Authentic independent reference judgments for exact retained samples under native-generator-quality.v1. Each candidate has five frozen STORY_INTENT criteria; at least two independent human records per adjudication plus independent adjudicator under existing protocol. Coding agent must not enter these. Required cohort coverage still applies; one set of labels alone is not production admission.",
+      "author_entry": "http://127.0.0.1:3142/production",
+      "choose_project": "narrative-closure-02-admission-20260927",
+      "choose_book": "duanchao-guan-zheng-deng-reference-01",
+      "form": "真实样本人工评阅; no identity strings or asset JSON required for individual annotations",
+      "independent_adjudication": "Existing Content authority command; no new platform or fabricated second person supplied"
+    },
+    {
+      "scope": "Real prose chain",
+      "required": "Qualified task paths and author-approved same-Book foundations through Formation, then actual planning/window/chapter contracts; no cross-Book asset substitution or diagnostic promotion. See task-routing.json."
+    }
+  ],
+  "private_restart_root": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/token100k-20260928",
+  "api_ui_state": "Running locally, project PAUSED and process brake true",
+  "restart": "Durable private source archive and relative environment loader retained; exact fb360dfc release restart verified read-only on temporary port 8143, then stopped. Current author API 8141 and UI 3142 remain running. Stop their own listeners before reusing these ports; do not stop unrelated historical services.",
+  "resume": "Use existing native dispatch control only after exact subsequent grants/Pack/release/qualification preflight; no global unpause or blanket replay. Current paid batch is closed.",
+  "push_merge_publish": "NOT_AUTHORIZED_NOT_PERFORMED",
+  "shared_history_rewrite": "NOT_AUTHORIZED_NOT_PERFORMED",
+  "restart_commands": {
+    "api": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python /Users/yuan/novel-runtime/wp02-security-handoff-20260928/token100k-20260928/run_private_author.py /Users/yuan/novel-runtime/wp02-security-handoff-20260928/token100k-20260928/live_api_final.py",
+    "ui": "python3 /Users/yuan/novel-runtime/wp02-security-handoff-20260928/token100k-20260928/start_author_ui.py"
+  }
+}

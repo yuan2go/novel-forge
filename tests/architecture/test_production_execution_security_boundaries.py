@@ -64,6 +64,18 @@ class ProductionExecutionSecurityBoundaryTests(unittest.TestCase):
         self.assertNotIn("provider-secret-value", redacted)
         self.assertIn("[REDACTED", redacted)
 
+    def test_keyword_dsns_are_rejected_and_redacted_without_echoing_values(self) -> None:
+        for assignment in ("password=short", "password='two words'", r"password='escaped\'word'", 'PASSWORD="quoted word"'):
+            raw = f"connection: host=localhost dbname=fixture {assignment} user=operator"
+            with self.subTest(assignment=assignment):
+                with self.assertRaisesRegex(ValueError, "inline secret material") as caught:
+                    assert_no_inline_secrets({"deployment": {"database_name": raw}})
+                self.assertNotIn(assignment, str(caught.exception))
+                redacted = redact_secret_text(raw)
+                self.assertNotIn(assignment, redacted)
+                self.assertIn("[REDACTED_SECRET]", redacted)
+                self.assertIn("user=operator", redacted)
+
     def test_contract_hash_and_evidence_persistence_reject_secrets(self) -> None:
         route = RouteSnapshot(
             route_snapshot_id="route:security:1",

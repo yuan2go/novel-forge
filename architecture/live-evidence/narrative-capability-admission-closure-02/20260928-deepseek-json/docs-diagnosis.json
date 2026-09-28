@@ -1,0 +1,62 @@
+{
+  "schema_version": "wp02-malformed-output-diagnosis.v1",
+  "release_sha": "9605c212d95aa51f2e1c2643cff4d6a8fa51eefe",
+  "operation_id": "c20f0f1f-3f7b-44ce-b771-937ca9d9601c",
+  "effect_id": "df35e16d-955b-4d14-9f27-55a18194129e",
+  "raw_final_text_sha256": "sha256:a5ec2b10e71aadc6c62b57eeec8c8e726cf596687b7867c0c0965436cfad14ef",
+  "structured_output_error": {
+    "code": "JSON_SYNTAX_ERROR",
+    "line": 1,
+    "column": 3775,
+    "offset": 3774,
+    "message": "Expecting ',' delimiter"
+  },
+  "final_text_characters": 3774,
+  "format_descriptor_prefix_present": false,
+  "finish_reason": "stop",
+  "usage": {
+    "measurement": "PROVIDER_REPORTED",
+    "availability": "AVAILABLE",
+    "input_tokens": 5850,
+    "total_tokens": 9186,
+    "output_tokens": 3336,
+    "reasoning_tokens": 1123,
+    "cache_usage_status": "OBSERVED",
+    "prompt_cache_hit_tokens": 3328,
+    "prompt_cache_miss_tokens": 2522
+  },
+  "cost": {
+    "amount": "0.004779768",
+    "source": "usage_pricing",
+    "currency": "USD",
+    "estimated": true,
+    "measurement": "PRICED_FROM_PROVIDER_USAGE",
+    "availability": "AVAILABLE",
+    "pricing_period": "PEAK",
+    "pricing_version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+    "provider_billed": false,
+    "accounting_basis": "PRICED",
+    "pricing_snapshot": {
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+      "currency": "USD",
+      "effective_from": "2026-09-10T04:00:00+00:00",
+      "effective_until": "9999-12-31T23:59:59+00:00",
+      "accounting_basis": "PRICED",
+      "output_per_million": "1.2",
+      "input_hit_per_million": ".006",
+      "input_miss_per_million": ".3"
+    },
+    "pricing_multiplier": "1",
+    "pricing_time_basis": "PROVIDER_CREATED_ASSUMPTION",
+    "provider_created_at": "2026-09-28T01:45:54+00:00",
+    "pricing_snapshot_hash": "sha256:fc855d9c324cefa5bcfba5866a5c9f466d3cdc64c7c7f85672e0d139f1edd6b4",
+    "provider_billed_amount": null,
+    "reservation_ceiling_amount": "0.004779768"
+  },
+  "native_budget_status": "SETTLED",
+  "candidate_promoted": false,
+  "candidate_repaired": false,
+  "diagnosis": "Strict JSON parser reaches end of output while expecting a delimiter. The output ends before closing the top-level object. This is an observed provider output contract violation; no replacement output was accepted.",
+  "control": "PAUSED"
+}

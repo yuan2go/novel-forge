@@ -505,3 +505,26 @@ def test_operator_genesis_binds_empty_story_state_and_canon() -> None:
     assert canon.content["current_facts"] == []
     assert canon.content["story_state_hash"] == story.content["state_hash"]
     assert canon.reference_asset_version_ids == (story_input.asset_version_id,)
+
+
+def test_production_profile_authorship_freezes_explicit_native_strategies():
+    name = "book.production_profile.author"
+    content = {
+        "book_id": "book:input", "profile_id": "explicit-v1", "target_chapter_count": 8,
+        "language_contract": {"language": "zh"}, "authority_boundary": "FUTURE_INTENT",
+        "safe_summary": "Use persistent Craft only when the approved plan requires it.", "structured_facts": [],
+        "author_configuration_version": "book-author-configuration.v1",
+        "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v3", "draft_token_budget": 18000, "quality_token_budget": 24000},
+        "craft_budget_policy": {"schema_version": "narrative-craft-budget.v4"},
+        "cross_chapter_review_policy": {"version": "accepted-prose-neighbours.v1", "maximum_previous_chapters": 2, "source_token_budget": 4000},
+    }
+    output = CONTENT_CODECS[name].execute(_request(name, content))
+    assert output.content["chapter_context_policy"] == content["chapter_context_policy"]
+    assert output.content["craft_budget_policy"]["usage_types"]
+    assert output.content["cross_chapter_review_policy"]["coverage_policy"] == "whole-paragraph-ending.v1"
+    assert output.content["world_production_policy"]["version"] == "world-production-policy.v1"
+    assert output.content["provider_generated"] is False
+    assert output.content["human_preference_evidence"] is False
+    assert "world_actor_experiment" not in output.content
+    with pytest.raises(KernelError, match="Context budgets"):
+        CONTENT_CODECS[name].execute(_request(name, {**content, "chapter_context_policy": {**content["chapter_context_policy"], "draft_token_budget": 24001}}))

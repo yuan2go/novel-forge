@@ -384,7 +384,8 @@
     {
       "id": "deepseek-wire-contract",
       "patterns": [
-        "tests/unit/test_deepseek_provider.py"
+        "tests/unit/test_deepseek_provider.py",
+        "tests/unit/test_deepseek_strict_output.py"
       ],
       "classification": "FIXTURE_PROTOCOL",
       "owner": "provider-control",

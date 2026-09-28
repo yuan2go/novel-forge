@@ -1,0 +1,64 @@
+{
+  "predecessor_operation_id": "0b0e9fd0-0d4e-4b78-89ff-c3f46515a4fa",
+  "known_external_effect_count": 0,
+  "known_budget_reservation_count": 0,
+  "cancellation": {
+    "cancel_command_id": "10fb5632-b49e-4729-b1fa-32b2fa85a186",
+    "replayed": false,
+    "status": "CANCELLED",
+    "version": 5
+  },
+  "producer_unchanged": true,
+  "sample_id_unchanged": true,
+  "budget_policy_unchanged": true,
+  "new_books": 0,
+  "new_model_calls": 0,
+  "release_sha": "1f3da4eeca7b0da6a19fea453ad09ad9380ee6cb",
+  "routing_registration": {
+    "operation_id": "f330c92b-cd27-42e5-8c41-004df05aec86",
+    "status": "SUCCEEDED",
+    "owner": "PROVIDER_ROUTING",
+    "policy": {
+      "policy_version": "wp02-deepseek-strict-release-successor-v10",
+      "reason": "Same unchanged Producer, input and sample; fix zero-dispatch Router protocol handoff. Same authorized one-call batch and existing cumulative budgets.",
+      "task_overrides": [],
+      "bootstrap_authorizations": [
+        {
+          "authorization_id": "grant:narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b:strict-tool:v5:deepseek-strict:v4:release:1f3da4eeca7b",
+          "reason": "Same unchanged Producer, input and sample; fix zero-dispatch Router protocol handoff. Same authorized one-call batch and existing cumulative budgets. predecessor=0b0e9fd0-0d4e-4b78-89ff-c3f46515a4fa",
+          "environment": "validation",
+          "book_id": "duanchao-guan-zheng-deng-reference-01",
+          "task_type": "creative.candidates.generate",
+          "logical_key": "diagnostic:creative-xue-zhan-b",
+          "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b:strict-tool:v5:strict-router-release:1f3da4eeca7b",
+          "input_versions_hash": "sha256:fc2935f3bb7fdf2933ac287d7840fbdcbd0ff528f75228e3e8abed5decdc79a9",
+          "command_hash": "sha256:09659e660d2905b19fd37b90816c77c1596750c05a2bd76f0da307c7ca1285f8",
+          "producer_contract_hash": "sha256:871ecfb8ee75735860b1793a8bea3543bd9136094d78fa8dbf9989c8f5536558",
+          "candidate_id": "deepseek:deepseek-flash:low",
+          "model_revision": "DeepSeek-V4.1-Flash",
+          "expires_at": "2026-09-28T05:28:24Z",
+          "maximum_calls": 1,
+          "maximum_tokens": 100000,
+          "maximum_amount": "0.15",
+          "currency": "USD",
+          "accounting_basis": "PRICED",
+          "purpose": "BENCHMARK_CHALLENGER",
+          "production_eligible": false,
+          "campaign": {
+            "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+            "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+            "sample_id": "creative-xue-zhan-b:strict-tool:v5",
+            "group_id": "xue-zhan-original-family",
+            "partition": "CALIBRATION",
+            "maximum_calls": 720,
+            "maximum_tokens": 40108032,
+            "maximum_amount": "1",
+            "expires_at": "2026-09-28T05:28:24Z"
+          }
+        }
+      ]
+    },
+    "policy_hash": "108f114e0f19b28b075565757cbaf1638a48d0ff7ba390ada3353412f5f83dd2",
+    "replayed": false
+  }
+}

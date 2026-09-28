@@ -31,6 +31,7 @@ STORY_FORMATION_OPERATIONS = frozenset(
         "story.formation.advance",
         "story.formation.wait_for_approval",
         "story.formation.approve_book_design",
+        "story.formation.author_decision",
         "story.formation.resume",
         "story.formation.abort",
     }
@@ -291,6 +292,81 @@ class StoryFormationApplication:
             "operation_id": executed["operation_id"],
             "replayed": bool(executed["replayed"]),
         }
+
+    def review_candidates(self, formation_run_id: str, *, principal: Principal) -> dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+        run = self.require(formation_run_id)
+        principal.require("book.authority.query", str(run["project_id"]))
+        approval = dict(run.get("recovery_instruction") or {})
+        query = AuthorityAssetQuery(self.database_url)
+        candidates = []
+        for candidate_id in approval.get("candidate_asset_version_ids", []):
+            asset = query.require(project_id=run["project_id"], asset_version_id=candidate_id)
+            state = {}
+            if approval.get("authority") == "STORY_PLANNING_AUTHORITY" and self.generation:
+                state = self.generation.planning.story_design.require(
+                    project_id=run["project_id"], asset_version_id=candidate_id
+                )
+            candidates.append({"asset_version_id": candidate_id, "content_hash": asset.content_hash,
+                               "content": asset.content, "state": state})
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                "SELECT stage,checkpoint->'author_decisions' FROM authority_story_formation_stage "
+                "WHERE formation_run_id=%s AND checkpoint ? 'author_decisions' ORDER BY created_at",
+                [formation_run_id],
+            )
+            history = [{"stage": row[0], "decisions": row[1]} for row in uow.cursor.fetchall()]
+        return {**run, "candidates": candidates, "author_review_history": history}
+
+    def author_decision(
+        self, formation_run_id: str, *, expected_version: int,
+        candidate_asset_version_id: str, candidate_content_hash: str,
+        decision: str, reason: str, idempotency_key: str, principal: Principal,
+    ) -> dict[str, Any]:
+        run = self.require(formation_run_id)
+        principal.require("book.authority.execute", str(run["project_id"]))
+        principal.require("book.authority.query", str(run["project_id"]))
+        if decision == "APPROVE":
+            principal.require("story_planning.authority.approve" if run["current_stage"] != "BOOK_DESIGN"
+                              else "book_design.authority.execute", str(run["project_id"]))
+        executed = self._control(
+            run=run, principal=principal, definition_name="story.formation.author_decision",
+            idempotency_key=idempotency_key, frozen_input=self._frozen_input(formation_run_id),
+            payload=dict(expected_version=expected_version,
+                         candidate_asset_version_id=candidate_asset_version_id,
+                         candidate_content_hash=candidate_content_hash,
+                         decision=decision, reason=reason, actor_id=principal.principal_id),
+            additional_input_assets=({"asset_version_id": candidate_asset_version_id,
+                                      "content_hash": candidate_content_hash},),
+        )
+        if decision == "APPROVE":
+            current = self.require(formation_run_id)
+            selected = dict(dict(current.get("recovery_instruction") or {}).get("author_selection") or {})
+            if current["lifecycle"] != "WAITING_APPROVAL" or selected.get("operation_id") != executed["operation_id"]:
+                return self.review_candidates(formation_run_id, principal=principal)
+            if self.generation is None:
+                raise KernelError("STORY_FORMATION_RUNTIME_NOT_CONFIGURED", "Formation approval runtime is unavailable")
+            if run["current_stage"] == "BOOK_DESIGN":
+                from .application import BookDesignAuthorityCommand
+
+                for action in ("decide", "activate"):
+                    self.generation.book_design.execute(BookDesignAuthorityCommand(
+                        project_id=run["project_id"], workspace_id=run["workspace_id"], book_id=run["book_id"],
+                        actor_id=principal.principal_id, service_identity="story-formation",
+                        expected_book_version=int(run["expected_book_version"]),
+                        definition_name=f"book_design.{action}", idempotency_key=f"{idempotency_key}:{action}",
+                        trace_id=f"trace:{formation_run_id}", correlation_id=run["root_operation_id"],
+                        target_asset_version_id=candidate_asset_version_id,
+                        payload={"reason": reason, **({"decision": "APPROVE"} if action == "decide" else {})},
+                    ), principal=principal)
+            else:
+                self.generation.planning.approve_candidate(
+                    candidate_asset_version_id, principal=principal,
+                    idempotency_key=f"{idempotency_key}:approve",
+                    trace_id=f"trace:{formation_run_id}", correlation_id=run["root_operation_id"],
+                )
+        return self.review_candidates(formation_run_id, principal=principal)
 
     def resume(
         self,
@@ -579,6 +655,14 @@ class StoryFormationApplication:
                     str(item) for item in payload["candidate_asset_version_ids"]
                 ),
                 runtime_attempt_id=str(payload["runtime_attempt_id"]),
+            )
+        elif definition_name == "story.formation.author_decision":
+            result = repository.record_author_decision(
+                formation_run_id, expected_version=int(payload["expected_version"]),
+                candidate_asset_version_id=str(payload["candidate_asset_version_id"]),
+                candidate_content_hash=str(payload["candidate_content_hash"]),
+                decision=str(payload["decision"]), reason=str(payload["reason"]),
+                actor_id=str(payload["actor_id"]), operation_id=operation_id,
             )
         elif definition_name == "story.formation.resume":
             result = repository.resume(

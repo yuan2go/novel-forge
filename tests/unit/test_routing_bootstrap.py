@@ -619,3 +619,121 @@ def test_zero_priced_campaign_cap_allows_authorized_entitlement_but_never_priced
         validate_bootstrap_authorization({**priced, "maximum_amount": "0"})
     with pytest.raises(ValueError, match="ROUTING_CAMPAIGN_LIMIT_INVALID"):
         validate_bootstrap_authorization({**grant, "campaign": {**grant["campaign"], "maximum_amount": "-1"}})
+
+
+def diagnostic_escalation_fixture():
+    ordinary, _ = codex_benchmark_decision(task_overrides={"escalation_reason": ""})
+    value = ordinary.to_dict()
+    task = RoutingTask(**{**value["task"], "history": tuple(value["task"]["history"])})
+    raw_candidate = value["candidates"][0]["candidate"]
+    candidate = ModelCandidate(**{**raw_candidate, "pricing": PricingSnapshot(**raw_candidate["pricing"])})
+    grant = entitlement_grant()
+    _, _, authorization = contract()
+    authorization.update(authorization=grant, authorization_hash=authorization_hash(grant))
+    return task, candidate, authorization
+
+
+def test_exact_high_risk_diagnostic_grant_binds_reason_without_changing_production_gates():
+    from novel_forge.modules.production_execution.routing_bootstrap import bind_diagnostic_escalation_reason
+
+    task, candidate, authorization = diagnostic_escalation_fixture()
+    frozen = bind_diagnostic_escalation_reason(task, [candidate], authorization, environment="validation")
+    assert task.escalation_reason == ""
+    assert frozen.escalation_reason == authorization["authorization"]["reason"]
+    assert frozen.history == task.history == ()
+    ordinary = CostAwareRouter().explain(frozen, [candidate], {})
+    assert ordinary.to_dict()["status"] == "BLOCKED"
+    assert "BENCHMARK_INSUFFICIENT" in ordinary.to_dict()["candidates"][0]["rejected_reasons"]
+    sampled = benchmark_decision(ordinary, authorization, environment="validation").to_dict()
+    assert sampled["status"] == "BENCHMARK_SELECTED"
+    assert sampled["production_eligible"] is False
+    with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_ENVIRONMENT_FORBIDDEN"):
+        bind_diagnostic_escalation_reason(task, [candidate], authorization, environment="production")
+    for mismatch in ({"project_id": "other"}, {"producer_contract_hash": "sha256:" + "f" * 64}):
+        with pytest.raises(KernelError):
+            bind_diagnostic_escalation_reason(replace(task, **mismatch), [candidate], authorization, environment="validation")
+    for mismatch in ({"model_revision": "other"}, {"authorization_ref": "other"}):
+        assert bind_diagnostic_escalation_reason(task, [replace(candidate, **mismatch)], authorization,
+                                                environment="validation").escalation_reason == ""
+    lower = replace(task, task_type="chapter_plan.generate", risk="MEDIUM")
+    grant = {**authorization["authorization"], "task_type": lower.task_type}
+    matching = {**authorization, "authorization": grant, "authorization_hash": authorization_hash(grant)}
+    assert bind_diagnostic_escalation_reason(lower, [candidate], matching, environment="validation").escalation_reason == ""
+    for change, reason in (({"available": False}, "PROVIDER_UNAVAILABLE:"),
+                           ({"quota_remaining": 0}, "ESCALATION_CAPACITY_OR_AUTHORIZATION_MISSING")):
+        rejected = CostAwareRouter().explain(frozen, [replace(candidate, **change)], {})
+        sampled = benchmark_decision(rejected, authorization, environment="validation").to_dict()
+        assert sampled["status"] == "BLOCKED"
+        assert reason in sampled["candidates"][0]["rejected_reasons"]
+
+
+def test_native_router_binds_admitted_diagnostic_before_explaining(monkeypatch):
+    from unittest.mock import MagicMock
+    from novel_forge.modules.production_execution import routing_runtime
+    from novel_forge.modules.command_kernel import routing_bootstrap
+
+    task, candidate, authorization = diagnostic_escalation_fixture()
+    router = routing_runtime.ProductionProviderRouter("unused", candidates=[candidate],
+        task_money_limit="0", task_token_limit=2000, execution_environment="validation")
+    cursor = MagicMock()
+    cursor.fetchone.return_value = (0, 0)
+    uow = MagicMock()
+    uow.__enter__.return_value.cursor = cursor
+    monkeypatch.setattr(routing_runtime, "AuthorityUnitOfWork", lambda _: uow)
+    monkeypatch.setattr(routing_bootstrap, "load_bootstrap_authorization", lambda *args, **kwargs: authorization)
+    monkeypatch.setattr(router.registry, "history", lambda **kwargs: ())
+    monkeypatch.setattr(router.registry, "policy", lambda *args: {})
+    monkeypatch.setattr(router.registry, "observations", lambda **kwargs: [])
+    monkeypatch.setattr(router.registry, "available_candidates", lambda **kwargs: kwargs["candidates"])
+    monkeypatch.setattr(router, "_candidate_budgets", lambda **kwargs: {})
+    _, result = router.select(object(), task_type=task.task_type, project_id=task.project_id,
+        work_id=task.work_id, operation_id=task.operation_id, attempt_id=task.attempt_id,
+        stable_key="operation:attempt:sample", input_tokens=1000, output_tokens=100,
+        trace_id="trace", correlation_id="correlation", dry_run=True,
+        producer_contract=task.producer_contract)
+    assert result["status"] == "BENCHMARK_SELECTED"
+    assert result["task"]["escalation_reason"] == authorization["authorization"]["reason"]
+    assert result["task"]["history"] == []
+    assert result["bootstrap_authorization"] == authorization
+
+
+@pytest.mark.parametrize("limiting_scope", ["grant", "task", "provider"])
+def test_complete_request_preflight_rejects_old_underestimated_decision(limiting_scope):
+    from novel_forge.modules.production_execution.routing_runtime import validate_routed_reservation
+
+    _, decision = codex_benchmark_decision()
+    decision["task"]["remaining_tokens"] = 65536
+    candidate_id = decision["selected"]["candidate"]["candidate_id"]
+    decision["task"]["budget_snapshot"]["candidates"] = {candidate_id: {"remaining_tokens": 65536}}
+    decision["bootstrap_authorization"]["authorization"]["maximum_tokens"] = 65536
+    if limiting_scope == "grant":
+        decision["bootstrap_authorization"]["authorization"]["maximum_tokens"] = 32768
+    elif limiting_scope == "task":
+        decision["task"]["remaining_tokens"] = 32768
+    else:
+        decision["task"]["budget_snapshot"]["candidates"][candidate_id]["remaining_tokens"] = 32768
+    validate_routed_reservation(decision, reserved_tokens=32768, reserved_amount=None)
+    with pytest.raises(KernelError, match="tokens=38825 exceeds available limit=32768"):
+        validate_routed_reservation(decision, reserved_tokens=38825, reserved_amount=None)
+
+
+def test_routing_complete_request_meter_rejects_oversized_diagnostic_before_selection():
+    from novel_forge.modules.production_execution.provider_admission import provider_request_token_components
+
+    task, candidate, authorization = diagnostic_escalation_fixture()
+    components = provider_request_token_components(
+        "x" * 20617, output_reserve=10000, framing_overhead=16, safety_margin=8192,
+    )
+    candidate = replace(candidate, context_limit=272000, output_limit=32000)
+    task = replace(task, input_tokens=sum(components.values()) - 10000,
+                   output_tokens=10000, remaining_tokens=65536, escalation_reason="approved diagnostic")
+    grant = {**authorization["authorization"], "maximum_tokens": 32768,
+             "campaign": {**authorization["authorization"]["campaign"], "maximum_tokens": 65536}}
+    authorization = {**authorization, "authorization": grant, "authorization_hash": authorization_hash(grant)}
+    ordinary = CostAwareRouter().explain(task, [candidate], {})
+    result = benchmark_decision(ordinary, authorization, environment="validation").to_dict()
+    assert result["status"] == "BLOCKED"
+    assert result["candidates"][0]["estimated_total_tokens"] == 38825
+    assert "BENCHMARK_AUTHORIZATION_BUDGET_EXCEEDED" in result["candidates"][0]["rejected_reasons"]
+    task_limited = CostAwareRouter().explain(replace(task, remaining_tokens=32768), [candidate], {}).to_dict()
+    assert "BUDGET_HARD_LIMIT" in task_limited["candidates"][0]["rejected_reasons"]

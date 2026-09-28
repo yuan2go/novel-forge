@@ -1,0 +1,13 @@
+{
+  "unmerged": [
+    {
+      "branch": "codex/real-prose-security-handoff",
+      "sha": "444aa0c391dde8af3f653d927297702ee3204c4e",
+      "ahead_behind": "0\t12"
+    }
+  ],
+  "main_status": "",
+  "origin_main": "e9e6e2980f744ff69ac608d4ccce0ea6122441d3",
+  "observed_at": "2026-09-28T01:15:13.593563+00:00",
+  "head_before_evidence_commit": "444aa0c391dde8af3f653d927297702ee3204c4e"
+}

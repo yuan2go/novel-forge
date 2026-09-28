@@ -1,0 +1,53 @@
+{
+  "contract_version": "narrative-closure-user-approval-amendment.v1",
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "amendment_ref": "user:WP02:20260928:per-call-100000:v1",
+  "parent_authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+  "parent_file_hash": "sha256:3fe3d4504eda79e57807d7b61cd0887f4c7bdca51a9d38214aa00ec716494893",
+  "recorded_at": "2026-09-28T00:06:20.792663+00:00",
+  "user_confirmation": "是，单次100,000 tokens",
+  "maximum_tokens_per_call": 100000,
+  "scope": "Existing original task only; current two Codex diagnostics remain two calls. No additional samples or failures waived.",
+  "current_two_diagnostic_call_ceiling": 2,
+  "current_two_diagnostic_token_ceiling": 200000,
+  "totals_by_separate_purpose": {
+    "sampling": {
+      "calls": 720,
+      "tokens": 40108032
+    },
+    "same_book_production": {
+      "calls": 125,
+      "tokens": 8421376
+    },
+    "effect_experiment": {
+      "calls": 468,
+      "tokens": 33030144
+    },
+    "combined_ceiling": {
+      "calls": 1313,
+      "tokens": 81559552
+    },
+    "transfer_between_purposes_allowed": false,
+    "status": "APPROVED_CAPS_NOT_NATIVE_GRANTS"
+  },
+  "expires_at": "2026-09-28T05:28:24Z",
+  "account_policy": {
+    "existing_codex_entitlement_only": true,
+    "purchase_extra_quota": false,
+    "cost_accounting": "ACCOUNT_ENTITLEMENT; monetary cost UNKNOWN, never zero/free",
+    "actual_principal": "codex-chatgpt-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+    "identity_verification": "READ_ONLY_EXISTING_CHATGPT_ACCOUNT_ID_HASH_AND_CODEX_LOGIN_STATUS"
+  },
+  "deepseek_paid_path_enabled": false,
+  "stop_conditions": [
+    "Run at most two diagnostic samples for each task first. Any failed sample, UNKNOWN outcome, exhausted limit or changed contract stops that task; no automatic repeat or additional samples.",
+    "Missing or expired scoped authorization/account identity; no dispatch.",
+    "Producer/schema/Pack/contract drift: freeze the changed task only after compatibility recheck; do not copy qualification.",
+    "Unknown external outcome or unknown cost holds its original task/campaign budget until native reconciliation; unrelated authorized scopes remain independent.",
+    "Any task, campaign, token, amount, entitlement or expiry ceiling reached: stop that scope; no automatic top-up.",
+    "Source/edition mismatch, knowledge leak, Canon contamination or permission bypass: stop affected production.",
+    "Reference disagreement, poor quality, no measured benefit or insufficient coverage: retain negative evidence and report; do not manufacture labels or seek PASS with more samples."
+  ],
+  "old_frozen_requests": "Immutable; native cancellation and legal same-Book/sample successor required",
+  "publication_authorized": false
+}

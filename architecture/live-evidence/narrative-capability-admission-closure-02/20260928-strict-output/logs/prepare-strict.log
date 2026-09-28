@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/tmp/novel-forge-wp02-token100k-20260928/run_private_strict.py", line 3, in <module>
+    env=json.loads(Path('/tmp/novel-forge-wp02-token100k-20260928/environment-strict.json').read_text());os.environ.update(env);credential=Path('/Users/yuan/novel-runtime/guofeng-xuanhuan-01/credentials/wp02-deepseek.env').read_text();os.environ['DEEPSEEK_API_KEY']=next(line.split('=',1)[1].strip().strip(chr(34)).strip(chr(39)) for line in credential.splitlines() if line.startswith('DEEPSEEK_API_KEY='));root=Path(env['NOVEL_FORGE_ROOT']);os.chdir(root);sys.path[:0]=[str(root/'src'),str(root)];sys.argv=sys.argv[1:];runpy.run_path(sys.argv[0],run_name='__main__')
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/novel-forge-wp02-token100k-20260928/prepare_strict.py", line 29, in <module>
+    old_prompt,old_identity=identity();assert snapshot_hash(old_identity)==old['routing_policy']['bootstrap_authorizations'][0]['producer_contract_hash']
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

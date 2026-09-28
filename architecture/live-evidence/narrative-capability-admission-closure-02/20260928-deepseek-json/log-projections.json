@@ -1,0 +1,55 @@
+{
+  "projections": [
+    {
+      "file": "logs/continuation-unit-correct-root.log",
+      "original_hash": "sha256:273b71e934e2a10933c13480b134f8c785d9ffa293b2bb84033be9a4115c81d2",
+      "shared_hash": "sha256:346356b2d16e119d757596f9f8e3bb0ad94e40c9d45f7966672cf946a12e0bab",
+      "transformation": "Trailing whitespace removed from log lines for repository formatting; failed assertion and all diagnostic lines retained.",
+      "private_original": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/deepseek-docs-20260928/evidence-continuation-unit-correct-root.log",
+      "first_evidence_commit": "8fd1a1d2",
+      "first_whitespace_check": "FAILED_TRAILING_WHITESPACE; evidence commit accidentally proceeded; corrected in this follow-up"
+    },
+    {
+      "file": "../20260928-token100k/creative-1-readable.md",
+      "original_hash": "sha256:43b4a88a43dedfd57f7dadf1a2ef5ba536051ea41e87a1e642e4bd63fb109558",
+      "shared_hash": "sha256:7016708b0197c541970e81cd5684fa52c0d7520fc99ab1081fa1c7c73e984e97",
+      "private_original": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/deepseek-docs-20260928/original-shared-token100k-creative-1-readable.md",
+      "transformation": "Whitespace-only shared projection normalization. Original native candidate/receipt and all failed diagnostic lines remain unchanged."
+    },
+    {
+      "file": "../20260928-token100k/creative-2-readable.md",
+      "original_hash": "sha256:c07948c69560471c68e602073ec3d63966d43d342b38687f792ad11d3b3d238b",
+      "shared_hash": "sha256:e488f0574378f4eb5bf2c32763e011318c75b41718dd0aa331da2469907c1069",
+      "private_original": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/deepseek-docs-20260928/original-shared-token100k-creative-2-readable.md",
+      "transformation": "Whitespace-only shared projection normalization. Original native candidate/receipt and all failed diagnostic lines remain unchanged."
+    },
+    {
+      "file": "../20260928-token100k/deepseek-creative-1-readable.md",
+      "original_hash": "sha256:aef87abc9fde0b2cc5a1c791294f93147ac4e571327312b95e5ee66c9938940b",
+      "shared_hash": "sha256:11442f4b74c0a90dd149387a0d38ea6fe7ae3a5d083176be3ce95781a2e40577",
+      "private_original": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/deepseek-docs-20260928/original-shared-token100k-deepseek-creative-1-readable.md",
+      "transformation": "Whitespace-only shared projection normalization. Original native candidate/receipt and all failed diagnostic lines remain unchanged."
+    },
+    {
+      "file": "../20260928-token100k/logs/budget-red.log",
+      "original_hash": "sha256:57ced41a872a8d540fb76f7da3eb4e27b70cd3173bc6fae2346c7869d3ff2f2e",
+      "shared_hash": "sha256:e0ae83358a11983b11b27a7ab9bc36d6607b7ff9c3db54d1637244132fbce216",
+      "private_original": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/deepseek-docs-20260928/original-shared-token100k-logs_budget-red.log",
+      "transformation": "Whitespace-only shared projection normalization. Original native candidate/receipt and all failed diagnostic lines remain unchanged."
+    },
+    {
+      "file": "../20260928-token100k/logs/campaign-amendment-tests.log",
+      "original_hash": "sha256:f92ab09cd4fd4642eaea68133b7408c6019f41d42d716048416cbe211ed7ea69",
+      "shared_hash": "sha256:de4f7b16c8327d3943ae6d7c82209ab84c3c413ced9a08d82e37bbab39b52c05",
+      "private_original": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/deepseek-docs-20260928/original-shared-token100k-logs_campaign-amendment-tests.log",
+      "transformation": "Whitespace-only shared projection normalization. Original native candidate/receipt and all failed diagnostic lines remain unchanged."
+    },
+    {
+      "file": "../20260928-token100k/security.json",
+      "original_hash": "sha256:cec199df30804a105cb012586e4e670f652514cf3eaafa64443de50d528f07f2",
+      "shared_hash": "sha256:edda9c662e1e2eef646d0b724b0f0011f4f79db6b6126a91043f6ec94966a34d",
+      "private_original": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/deepseek-docs-20260928/original-shared-token100k-security.json",
+      "transformation": "Update shared projection hashes for whitespace-normalized files; original scan timestamp remains historical."
+    }
+  ]
+}

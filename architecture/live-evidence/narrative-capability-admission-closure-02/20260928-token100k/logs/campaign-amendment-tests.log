@@ -1,0 +1,214 @@
+........................................................................ [ 46%]
+..........FFFFFFFF...................................................... [ 92%]
+...........                                                              [100%]
+=================================== FAILURES ===================================
+_ test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>0] _
+
+change = <function <lambda> at 0x10cbee200>
+
+    @pytest.mark.parametrize("change", [
+        lambda p: p["previous_policy"].update(policy_hash="a" * 64),
+        lambda p: p.update(expires_at="2099-02-01T00:00:00+00:00"),
+        lambda p: p.update(manifest_hash="sha256:" + "d" * 64),
+        lambda p: p["shared_total"].update(calls=17),
+        lambda p: p["shared_total"].update(tokens=17000),
+        lambda p: p["entitlements"][0].update(calls=2),
+        lambda p: p["arms"][0].update(book_id="new-book"),
+        lambda p: p["arms"][0]["repair_allocation"].update(priced_usd="0"),
+    ])
+    def test_money_amendment_cannot_change_other_authorization_boundaries(change):
+        from novel_forge.modules.command_kernel.creative_budget_runtime import _validate_campaign_monetary_amendment
+
+        previous = provider_campaign_policy()
+        amended = campaign_monetary_amendment(previous)
+        change(amended["comparison_budget"])
+>       with pytest.raises(KernelError):
+                           ^^^^^^^^^^^
+E       NameError: name 'KernelError' is not defined
+
+tests/unit/test_creative_budget_contract.py:395: NameError
+_ test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>1] _
+
+change = <function <lambda> at 0x10cbee2a0>
+
+    @pytest.mark.parametrize("change", [
+        lambda p: p["previous_policy"].update(policy_hash="a" * 64),
+        lambda p: p.update(expires_at="2099-02-01T00:00:00+00:00"),
+        lambda p: p.update(manifest_hash="sha256:" + "d" * 64),
+        lambda p: p["shared_total"].update(calls=17),
+        lambda p: p["shared_total"].update(tokens=17000),
+        lambda p: p["entitlements"][0].update(calls=2),
+        lambda p: p["arms"][0].update(book_id="new-book"),
+        lambda p: p["arms"][0]["repair_allocation"].update(priced_usd="0"),
+    ])
+    def test_money_amendment_cannot_change_other_authorization_boundaries(change):
+        from novel_forge.modules.command_kernel.creative_budget_runtime import _validate_campaign_monetary_amendment
+
+        previous = provider_campaign_policy()
+        amended = campaign_monetary_amendment(previous)
+        change(amended["comparison_budget"])
+>       with pytest.raises(KernelError):
+                           ^^^^^^^^^^^
+E       NameError: name 'KernelError' is not defined
+
+tests/unit/test_creative_budget_contract.py:395: NameError
+_ test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>2] _
+
+change = <function <lambda> at 0x10cbee340>
+
+    @pytest.mark.parametrize("change", [
+        lambda p: p["previous_policy"].update(policy_hash="a" * 64),
+        lambda p: p.update(expires_at="2099-02-01T00:00:00+00:00"),
+        lambda p: p.update(manifest_hash="sha256:" + "d" * 64),
+        lambda p: p["shared_total"].update(calls=17),
+        lambda p: p["shared_total"].update(tokens=17000),
+        lambda p: p["entitlements"][0].update(calls=2),
+        lambda p: p["arms"][0].update(book_id="new-book"),
+        lambda p: p["arms"][0]["repair_allocation"].update(priced_usd="0"),
+    ])
+    def test_money_amendment_cannot_change_other_authorization_boundaries(change):
+        from novel_forge.modules.command_kernel.creative_budget_runtime import _validate_campaign_monetary_amendment
+
+        previous = provider_campaign_policy()
+        amended = campaign_monetary_amendment(previous)
+        change(amended["comparison_budget"])
+>       with pytest.raises(KernelError):
+                           ^^^^^^^^^^^
+E       NameError: name 'KernelError' is not defined
+
+tests/unit/test_creative_budget_contract.py:395: NameError
+_ test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>3] _
+
+change = <function <lambda> at 0x10cbee3e0>
+
+    @pytest.mark.parametrize("change", [
+        lambda p: p["previous_policy"].update(policy_hash="a" * 64),
+        lambda p: p.update(expires_at="2099-02-01T00:00:00+00:00"),
+        lambda p: p.update(manifest_hash="sha256:" + "d" * 64),
+        lambda p: p["shared_total"].update(calls=17),
+        lambda p: p["shared_total"].update(tokens=17000),
+        lambda p: p["entitlements"][0].update(calls=2),
+        lambda p: p["arms"][0].update(book_id="new-book"),
+        lambda p: p["arms"][0]["repair_allocation"].update(priced_usd="0"),
+    ])
+    def test_money_amendment_cannot_change_other_authorization_boundaries(change):
+        from novel_forge.modules.command_kernel.creative_budget_runtime import _validate_campaign_monetary_amendment
+
+        previous = provider_campaign_policy()
+        amended = campaign_monetary_amendment(previous)
+        change(amended["comparison_budget"])
+>       with pytest.raises(KernelError):
+                           ^^^^^^^^^^^
+E       NameError: name 'KernelError' is not defined
+
+tests/unit/test_creative_budget_contract.py:395: NameError
+_ test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>4] _
+
+change = <function <lambda> at 0x10cbee480>
+
+    @pytest.mark.parametrize("change", [
+        lambda p: p["previous_policy"].update(policy_hash="a" * 64),
+        lambda p: p.update(expires_at="2099-02-01T00:00:00+00:00"),
+        lambda p: p.update(manifest_hash="sha256:" + "d" * 64),
+        lambda p: p["shared_total"].update(calls=17),
+        lambda p: p["shared_total"].update(tokens=17000),
+        lambda p: p["entitlements"][0].update(calls=2),
+        lambda p: p["arms"][0].update(book_id="new-book"),
+        lambda p: p["arms"][0]["repair_allocation"].update(priced_usd="0"),
+    ])
+    def test_money_amendment_cannot_change_other_authorization_boundaries(change):
+        from novel_forge.modules.command_kernel.creative_budget_runtime import _validate_campaign_monetary_amendment
+
+        previous = provider_campaign_policy()
+        amended = campaign_monetary_amendment(previous)
+        change(amended["comparison_budget"])
+>       with pytest.raises(KernelError):
+                           ^^^^^^^^^^^
+E       NameError: name 'KernelError' is not defined
+
+tests/unit/test_creative_budget_contract.py:395: NameError
+_ test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>5] _
+
+change = <function <lambda> at 0x10cbee520>
+
+    @pytest.mark.parametrize("change", [
+        lambda p: p["previous_policy"].update(policy_hash="a" * 64),
+        lambda p: p.update(expires_at="2099-02-01T00:00:00+00:00"),
+        lambda p: p.update(manifest_hash="sha256:" + "d" * 64),
+        lambda p: p["shared_total"].update(calls=17),
+        lambda p: p["shared_total"].update(tokens=17000),
+        lambda p: p["entitlements"][0].update(calls=2),
+        lambda p: p["arms"][0].update(book_id="new-book"),
+        lambda p: p["arms"][0]["repair_allocation"].update(priced_usd="0"),
+    ])
+    def test_money_amendment_cannot_change_other_authorization_boundaries(change):
+        from novel_forge.modules.command_kernel.creative_budget_runtime import _validate_campaign_monetary_amendment
+
+        previous = provider_campaign_policy()
+        amended = campaign_monetary_amendment(previous)
+        change(amended["comparison_budget"])
+>       with pytest.raises(KernelError):
+                           ^^^^^^^^^^^
+E       NameError: name 'KernelError' is not defined
+
+tests/unit/test_creative_budget_contract.py:395: NameError
+_ test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>6] _
+
+change = <function <lambda> at 0x10cbee5c0>
+
+    @pytest.mark.parametrize("change", [
+        lambda p: p["previous_policy"].update(policy_hash="a" * 64),
+        lambda p: p.update(expires_at="2099-02-01T00:00:00+00:00"),
+        lambda p: p.update(manifest_hash="sha256:" + "d" * 64),
+        lambda p: p["shared_total"].update(calls=17),
+        lambda p: p["shared_total"].update(tokens=17000),
+        lambda p: p["entitlements"][0].update(calls=2),
+        lambda p: p["arms"][0].update(book_id="new-book"),
+        lambda p: p["arms"][0]["repair_allocation"].update(priced_usd="0"),
+    ])
+    def test_money_amendment_cannot_change_other_authorization_boundaries(change):
+        from novel_forge.modules.command_kernel.creative_budget_runtime import _validate_campaign_monetary_amendment
+
+        previous = provider_campaign_policy()
+        amended = campaign_monetary_amendment(previous)
+        change(amended["comparison_budget"])
+>       with pytest.raises(KernelError):
+                           ^^^^^^^^^^^
+E       NameError: name 'KernelError' is not defined
+
+tests/unit/test_creative_budget_contract.py:395: NameError
+_ test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>7] _
+
+change = <function <lambda> at 0x10cbee660>
+
+    @pytest.mark.parametrize("change", [
+        lambda p: p["previous_policy"].update(policy_hash="a" * 64),
+        lambda p: p.update(expires_at="2099-02-01T00:00:00+00:00"),
+        lambda p: p.update(manifest_hash="sha256:" + "d" * 64),
+        lambda p: p["shared_total"].update(calls=17),
+        lambda p: p["shared_total"].update(tokens=17000),
+        lambda p: p["entitlements"][0].update(calls=2),
+        lambda p: p["arms"][0].update(book_id="new-book"),
+        lambda p: p["arms"][0]["repair_allocation"].update(priced_usd="0"),
+    ])
+    def test_money_amendment_cannot_change_other_authorization_boundaries(change):
+        from novel_forge.modules.command_kernel.creative_budget_runtime import _validate_campaign_monetary_amendment
+
+        previous = provider_campaign_policy()
+        amended = campaign_monetary_amendment(previous)
+        change(amended["comparison_budget"])
+>       with pytest.raises(KernelError):
+                           ^^^^^^^^^^^
+E       NameError: name 'KernelError' is not defined
+
+tests/unit/test_creative_budget_contract.py:395: NameError
+=========================== short test summary info ============================
+FAILED tests/unit/test_creative_budget_contract.py::test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>0]
+FAILED tests/unit/test_creative_budget_contract.py::test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>1]
+FAILED tests/unit/test_creative_budget_contract.py::test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>2]
+FAILED tests/unit/test_creative_budget_contract.py::test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>3]
+FAILED tests/unit/test_creative_budget_contract.py::test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>4]
+FAILED tests/unit/test_creative_budget_contract.py::test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>5]
+FAILED tests/unit/test_creative_budget_contract.py::test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>6]
+FAILED tests/unit/test_creative_budget_contract.py::test_money_amendment_cannot_change_other_authorization_boundaries[<lambda>7]
+8 failed, 147 passed in 5.12s

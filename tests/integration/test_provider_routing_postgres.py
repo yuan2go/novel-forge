@@ -994,6 +994,30 @@ def test_routed_entitlement_cannot_relabel_priced_candidate(scope):
     )
 
 
+@pytest.mark.parametrize("money", ["0", 0])
+def test_routed_entitlement_reserves_with_no_priced_spend_allowance(scope, money):
+    request = budget_request(
+        scope,
+        provider="codex-cli",
+        decision=frozen_budget_decision(scope, provider="codex-cli", money=money),
+    )
+    result = reserve_provider_budget(DATABASE_URL, request)
+    assert result["status"] == "RESERVED"
+    assert reserve_provider_budget(DATABASE_URL, request)["reservation_id"] == result["reservation_id"]
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT accounting_basis,currency,reserved_amount,estimated_tokens FROM authority_budget_reservation WHERE reservation_id=%s",
+            [result["reservation_id"]],
+        )
+        assert cursor.fetchone() == ("ACCOUNT_ENTITLEMENT", "UNKNOWN", None, 100)
+
+
+@pytest.mark.parametrize("money", ["0", 0, "-1", None])
+def test_priced_route_requires_positive_frozen_money_limit(scope, money):
+    request = budget_request(scope, decision=frozen_budget_decision(scope, money=money))
+    assert reserve_outcome(request) == "ROUTING_BUDGET_CONTRACT_REQUIRED"
+
+
 def test_chain_entitlement_actual_usage_cannot_exceed_frozen_task_budget(scope):
     from novel_forge.modules.command_kernel.budget_runtime import settle_provider_budget
 

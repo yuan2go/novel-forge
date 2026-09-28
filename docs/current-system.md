@@ -25,13 +25,17 @@ uses Story Formation RuntimeJobs to generate Creative Foundation, Theme, Ending,
 Reader Promise, World and Character candidates through the governed Planning
 Provider path. Independent semantic diagnosis and bounded repair precede Story
 Design approval/activation; Book Design then validates the exact six-layer lineage.
-`AUTO` is explicit policy authorization, while `REVIEW_PLAN` waits for the existing
-approval commands. Generated assets remain proposals until their owning Authority
-activates them. Foundation activation is never chapter acceptance or narrative history.
-The bounded creative-search baseline selects the first independently qualified branch
-and retains the alternatives; it does not claim a literary ranking. Only the selected
-branch is approved/activated; alternatives retain qualification evidence without becoming
-active Foundations. World depth follows
+`AUTO` is explicit policy authorization, while `REVIEW_PLAN` exposes the frozen
+candidate comparison through the author production page. Author choices, rejection and
+change requests retain exact candidate hashes, reasons and authenticated identities in
+Formation Operations and stage checkpoints. Approval calls the existing Planning or
+Book Design Authority; resume consumes the persisted choice, including a non-first
+candidate, without changing the frozen brief or candidate set. Generated assets remain
+proposals until their owning Authority activates them. Foundation activation is never
+chapter acceptance or narrative history. The AUTO creative-search baseline selects the
+first independently qualified branch and retains alternatives; it does not claim a
+literary ranking. Only the selected branch is activated; alternatives retain their
+qualification and author decision evidence. World depth follows
 the current story need and includes deferred dimensions; generated voice anchors are
 part of character/creative inputs. Scripted Formation execution proves wiring only.
 
@@ -458,7 +462,16 @@ may replace an identical strategy with its exact protected ExecutionIntent refer
 cannot omit the only copy or change the existing Context maximum. A new request can
 explicitly freeze `draft-context-profile-v3`, whose Context owner ceiling is 24,000 tokens;
 the approved Pack and request may impose smaller limits. The profile is frozen in the
-Chapter preparation report. Requests without the field retain v2 and its 16,000-token
+Chapter preparation report. The author production page writes an explicit
+`book-author-configuration.v1` through `book.production_profile.author`; its
+`chapter_context_policy` freezes the Draft profile and Draft/quality budgets from the
+selected production profile, ahead of process defaults. Craft, accepted-prose review and
+World/Actor choices use their existing policies. Actor choices come from the current
+Book Design's exact Character Cast binding; World preparation still verifies each actor's
+approved identity and private knowledge. Saving a configuration neither grants model
+calls nor changes a previously frozen Chapter command. Project editorial ControlMode
+is a separate native versioned policy: the UI identifies its project-wide future scope
+and shows the current selection separately from an existing chapter's frozen binding. Requests without the field retain v2 and its 16,000-token
 ceiling, even if they previously requested a larger budget. The corresponding v3 Provider
 view enforces the frozen token budget times four as its serialized-character bound,
 retains all selected facts, and omits their duplicate generated JSON summary. Legacy

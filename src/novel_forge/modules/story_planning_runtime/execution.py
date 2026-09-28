@@ -100,6 +100,7 @@ from novel_forge.modules.production_execution.provider_admission import (
     build_route_token_accounting_contract,
     prepare_provider_admission,
     provider_request_protocol,
+    provider_request_token_components,
 )
 from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
@@ -4217,6 +4218,27 @@ class PostgresPlanningExecutionPreparer:
                 materialization=materialization,
             )
             output_reserve = int(stable_request_payload["max_output_tokens"])
+            pack_artifacts = dict(materialization.get("pack_artifacts") or {})
+            context_artifact = dict(pack_artifacts.get("context_policy") or {})
+            context_policy = dict(context_artifact.get("content") or {})
+            output_modes = dict(
+                dict(context_policy.get("provider_output_modes") or {}).get(stage_name)
+                or {}
+            )
+            deepseek_mode = str(output_modes.get("deepseek") or "")
+            provider_request_protocol("deepseek", output_mode=deepseek_mode)
+            transport_schema_json = (
+                json.dumps(output_schema, sort_keys=True, ensure_ascii=False)
+                if deepseek_mode
+                else ""
+            )
+            token_components = provider_request_token_components(
+                prompt,
+                output_schema_json=transport_schema_json,
+                output_reserve=output_reserve,
+                safety_margin=planning_route.token_safety_margin,
+                framing_overhead=planning_route.token_framing_overhead,
+            )
             if provider_router is not None:
                 if frozen_world_sample is not None:
                     from .world_sampling import world_sample_routing_lineage
@@ -4239,7 +4261,7 @@ class PostgresPlanningExecutionPreparer:
                     operation_id=operation_id,
                     attempt_id=attempt_id,
                     stable_key=stable_key,
-                    input_tokens=len(prompt.encode()) + 512,
+                    input_tokens=sum(token_components.values()) - output_reserve,
                     output_tokens=output_reserve,
                     trace_id=command.trace_id,
                     correlation_id=command.correlation_id,
@@ -4247,13 +4269,20 @@ class PostgresPlanningExecutionPreparer:
                         : prompt_evidence["reusable_prefix_bytes"]
                     ],
                     producer_contract=producer_contract_identity(
-                        prompt_evidence, materialization,
-                        schema_identity=(planning_schema_evidence_identity(output_schema, output_schema_ref)
-                                         if provider_stage is None else world_schema_evidence_identity(output_schema, output_schema_ref)),
+                        prompt_evidence,
+                        materialization,
+                        schema_identity=(
+                            planning_schema_evidence_identity(
+                                output_schema, output_schema_ref
+                            )
+                            if provider_stage is None
+                            else world_schema_evidence_identity(
+                                output_schema, output_schema_ref
+                            )
+                        ),
                     ),
                     request_input=stable_request_payload["input"],
-                    input_hash="sha256:"
-                    + hashlib.sha256(prompt.encode()).hexdigest(),
+                    input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(),
                     lineage_operation_ids=routing_lineage,
                 )
             route_identity = ":".join(
@@ -4267,12 +4296,24 @@ class PostgresPlanningExecutionPreparer:
             )
             envelope = ProviderRequestEnvelope(
                 provider=planning_route.model_profile.model_provider,
-                reasoning_effort=planning_route.model_profile.reasoning_effort if planning_route.model_profile.model_provider == "deepseek" else "",
-                pricing_policy_json=json.dumps(routing_decision["selected"]["candidate"]["pricing"], sort_keys=True) if routing_decision else "",
+                reasoning_effort=planning_route.model_profile.reasoning_effort
+                if planning_route.model_profile.model_provider == "deepseek"
+                else "",
+                pricing_policy_json=json.dumps(
+                    routing_decision["selected"]["candidate"]["pricing"], sort_keys=True
+                )
+                if routing_decision
+                else "",
                 model=planning_route.model_profile.model_id,
                 protocol=provider_request_protocol(
-                    planning_route.model_profile.model_provider
+                    planning_route.model_profile.model_provider,
+                    output_mode=deepseek_mode
+                    if planning_route.model_profile.model_provider == "deepseek"
+                    else "",
                 ),
+                output_schema_json=transport_schema_json
+                if planning_route.model_profile.model_provider == "deepseek"
+                else "",
                 input_text=prompt,
                 max_output_tokens=output_reserve,
                 timeout_seconds=_provider_process_timeout_seconds(
@@ -4282,6 +4323,7 @@ class PostgresPlanningExecutionPreparer:
                 stable_idempotency_key=stable_key,
             )
             token_contract = build_route_token_accounting_contract(
+                serialization_contract=envelope.protocol,
                 provider=planning_route.model_profile.model_provider,
                 model=planning_route.model_profile.model_id,
                 route_identity=route_identity,
@@ -4454,7 +4496,7 @@ class PostgresPlanningExecutionPreparer:
         cost_accounting_basis = self.cost_accounting_basis
         account_authorization_ref = self.account_authorization_ref
         if provider_router is not None:
-            from novel_forge.modules.production_execution.routing_runtime import routed_reservation
+            from novel_forge.modules.production_execution.routing_runtime import routed_reservation, validate_routed_reservation
 
             routing_decision = request_payload["_production_execution"]["capability_runtime"]["routing_decision"]
             planning_route, routing_decision = provider_router.select_for_payload(self.planning_route, request_payload)
@@ -4464,6 +4506,11 @@ class PostgresPlanningExecutionPreparer:
             provider_reservation_amount = routed_reservation(routing_decision,
                 input_tokens=max(0, provider_reservation_tokens - int(stable_request_payload["max_output_tokens"])),
                 output_tokens=int(stable_request_payload["max_output_tokens"]))
+            if existing_intent is None or existing_intent["status"] == "READY":
+                validate_routed_reservation(
+                    routing_decision, reserved_tokens=provider_reservation_tokens,
+                    reserved_amount=provider_reservation_amount,
+                )
             if provider_reservation_amount is not None and Decimal(provider_reservation_amount) > Decimal(self.max_cost_per_call):
                 raise KernelError("BUDGET_HARD_LIMIT", "routed Planning call exceeds the per-call cap")
         effect = plan_external_effect(

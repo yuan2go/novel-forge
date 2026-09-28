@@ -136,6 +136,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     trace_id=request.trace_id,
                     correlation_id=request.correlation_id,
                 ),
+                settle_undispatched=True,
             )
         except KernelError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc

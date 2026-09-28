@@ -153,6 +153,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     BookProductionInputResolveRequest = ctx.models["BookProductionInputResolveRequest"]
     StoryFormationStartRequest = ctx.models["StoryFormationStartRequest"]
     StoryFormationControlRequest = ctx.models["StoryFormationControlRequest"]
+    StoryFormationAuthorDecisionRequest = ctx.models["StoryFormationAuthorDecisionRequest"]
     StoryFormationBookDesignApprovalRequest = ctx.models[
         "StoryFormationBookDesignApprovalRequest"
     ]
@@ -910,10 +911,26 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     "STORY_FORMATION_RUNTIME_NOT_CONFIGURED",
                     "Story Formation is unavailable",
                 )
-            result = composition.formation.require(formation_run_id)
             principal = build_trusted_principal_resolver().resolve_api_principal()
-            principal.require("book.authority.query", str(result["project_id"]))
-            return result
+            return composition.formation.review_candidates(formation_run_id, principal=principal)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/formation-runs/{formation_run_id}/author-decisions")
+    def story_formation_author_decision(
+        formation_run_id: str, request: StoryFormationAuthorDecisionRequest
+    ) -> dict[str, Any]:
+        try:
+            composition = _composition(ctx)
+            if composition.formation is None:
+                raise KernelError("STORY_FORMATION_RUNTIME_NOT_CONFIGURED", "Story Formation is unavailable")
+            principal = build_trusted_principal_resolver().resolve_api_principal(claimed_actor_id=request.actor_id)
+            return composition.formation.author_decision(
+                formation_run_id, principal=principal,
+                **request.model_dump(exclude={"actor_id"}),
+            )
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:

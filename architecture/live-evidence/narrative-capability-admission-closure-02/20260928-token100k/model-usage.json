@@ -1,0 +1,67 @@
+{
+  "codex": {
+    "calls": 2,
+    "input_tokens": 34767,
+    "output_tokens": 4907,
+    "total_tokens": 39674,
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "money": "UNKNOWN",
+    "release_sha": "f8271c54f9e9466b0d1f8a25c2e3e0001bf7932f",
+    "task": "creative.candidates.generate",
+    "succeeded": 2,
+    "retry_model_calls": 0
+  },
+  "deepseek": {
+    "calls": 2,
+    "input_tokens": 10695,
+    "output_tokens": 4987,
+    "total_tokens": 15682,
+    "cache_hit_input_tokens": 2176,
+    "accounting_basis": "PRICED",
+    "estimated_usd": "0.004276578",
+    "estimated_cny": "0.028510520",
+    "ledger_rounded_usd": "0.00427658",
+    "invoice": "NOT_VERIFIED",
+    "balance_before": {
+      "is_available": true,
+      "balance_infos": [
+        {
+          "currency": "CNY",
+          "total_balance": "99.99",
+          "granted_balance": "0.00",
+          "topped_up_balance": "99.99"
+        }
+      ]
+    },
+    "balance_after": {
+      "is_available": true,
+      "balance_infos": [
+        {
+          "currency": "CNY",
+          "total_balance": "99.97",
+          "granted_balance": "0.00",
+          "topped_up_balance": "99.97"
+        }
+      ]
+    },
+    "balance_change_is_not_exact_call_invoice": true,
+    "succeeded": 1,
+    "failed": 1,
+    "retry_model_calls": 0,
+    "release_sha": "90e7b0bde82c4ca7c4332ff757a5b20b14825ad2",
+    "task": "creative.candidates.generate",
+    "candidate": "deepseek:deepseek-flash:low",
+    "revision": "DeepSeek-V4.1-Flash",
+    "role": "same-input bounded Chinese creative diagnosis"
+  },
+  "combined_observed_runtime_tokens": 55356,
+  "development_agent": {
+    "tokens": "UNKNOWN",
+    "money": "UNKNOWN",
+    "included_in_runtime_totals": false
+  },
+  "all_samples_benchmark_only": true,
+  "real_chapter_prose": 0,
+  "formal_admission": false,
+  "paid_calling_state": "STOPPED_FIRST_FAILURE_NO_RETRY"
+}

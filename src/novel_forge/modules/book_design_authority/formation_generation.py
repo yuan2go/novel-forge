@@ -125,14 +125,22 @@ class FormationGeneration:
                     f"{role.value} candidate {candidate_id} remains {state['qualification']}; no Foundation activation",
                 )
             candidates.append(candidate_id)
-        selected = candidates[0]
-        key = f"{run['formation_run_id']}:{role.value}:0"
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            selection = StoryFormationRepository(uow.cursor).author_selection(
+                run["formation_run_id"], stage
+            )
+        selected = str(selection.get("candidate_asset_version_id") or candidates[0])
+        if selected not in candidates or selection.get("decision") in {"REJECT", "REQUEST_CHANGES"}:
+            raise KernelError("STORY_FORMATION_AUTHOR_SELECTION_DRIFT", "Frozen author selection cannot be consumed")
+        key = f"{run['formation_run_id']}:{role.value}:{candidates.index(selected)}"
         state = self.planning.story_design.require(
             project_id=run["project_id"], asset_version_id=selected
         )
         candidate = self.query.require(
             project_id=run["project_id"], asset_version_id=selected
         )
+        if selection and selection.get("candidate_content_hash") != candidate.content_hash:
+            raise KernelError("STORY_FORMATION_AUTHOR_SELECTION_DRIFT", "Selected candidate hash changed")
         if state["approval"] != "APPROVED":
             if policy["approval_mode"] != "AUTO":
                 raise FormationApprovalRequired(
@@ -189,8 +197,11 @@ class FormationGeneration:
                 candidate_id=selected,
                 candidates=tuple(candidates),
                 reasons=(
-                    "FIRST_INDEPENDENTLY_QUALIFIED_BRANCH",
-                    "Frozen brief and parent constraints passed; alternatives retain their independent evaluations",
+                    ("AUTHOR_SELECTED_QUALIFIED_BRANCH", str(selection["reason"]))
+                    if selection else (
+                        "FIRST_INDEPENDENTLY_QUALIFIED_BRANCH",
+                        "Frozen brief and parent constraints passed; alternatives retain their independent evaluations",
+                    )
                 ),
             )
 

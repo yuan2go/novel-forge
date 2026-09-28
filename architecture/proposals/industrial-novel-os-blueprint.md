@@ -387,6 +387,31 @@ coverage and issue dispositions. Public release is separately authorized.
 
 ## WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02
 
+### Security and native handoff continuation (2026-09-28)
+
+Baseline `e9e6e2980f744ff69ac608d4ccce0ea6122441d3`; isolated branch
+`codex/real-prose-security-handoff`. Original main and the reused worktree were clean.
+The package remains INCOMPLETE. Current work follows the original A1–A9 acceptance,
+with S0 first; no new production or literary evidence is inferred from compilation.
+
+| Issue | Current evidence / trigger | Owner | Action | Acceptance / remaining condition |
+| --- | --- | --- | --- | --- |
+| S0 | Keyword DSN leaked live PostgreSQL password | Private deployment / execution security | Rotated through trusted admin; updated 12 private consumers; corrected filter and shared evidence | Replacement connects; revoked bytes remain in Git history; no unauthorized history rewrite |
+| A1 | Same Book/campaign retained, no real model output | Native production / Book acceptance | Prepared exact bounded diagnostic inputs and preserved failures | INCOMPLETE: no manuscript, acceptance, edition or successor |
+| A2 | Codex route selected; complete reservation 38825 exceeds original 32768 grant | Pack / Router / Kernel | Explicit enabled providers; Pack 2.3.7 genuinely approved and activated on `218fb167`; aligned request accounting | API/CLI and isolated worker assembly executable; model amendment pending, qualification absent; no dispatch |
+| A3 | Merged export identity unchanged | Chapter export / Kernel Blob | Revalidated isolation and receipt recovery on isolated PostgreSQL/MinIO | 6 focused tests pass; no actual manuscript export claimed |
+| A4 | Author confirmation, async response loss and failed tasks needed normal operations | Formation / Content / existing author page | Persist decisions, restore original key, query conflicts, safely cancel never-dispatched tasks; bind diagnostic annotation API | Real API/browser configuration subset passes; full production/editor journey and human annotation form incomplete |
+| A5 | Process-default Context could diverge from author selection | Content profile / Book supervisor | Version explicit Context/Craft/World/Actor choice and consume frozen profile | New choice and old frozen-request regression pass; actual prose Provider view not produced |
+| A6 | No real text or finding | Existing editorial / Plan Change / edition | Keep original candidate/acceptance/edition boundaries | Proposed-asset collaboration and real editorial loop not exercised |
+| A7 | No exact real-text comparison | Existing review / independent editor | Define issue, preservation and overrevision denominators | NOT_PROVEN; zero denominators reported as null rates |
+| A8 | Manual selection returned to first candidate | Formation / Planning | Persist hash, reason and SELECT/APPROVE/REJECT/REQUEST_CHANGES; consume nonfirst choice | Native nonfirst-candidate regression passes; real comparison absent, AUTO compatibility remains first-qualified |
+| A9 | Actual full-request accounting diverged before dispatch | Context / Router / Provider admission | Share complete component calculation; retain facts and safety margin | Exact 38825 preflight reproduced read-only; long-range recall and literary effect unproven |
+
+[S0 evidence](../live-evidence/narrative-capability-admission-closure-02/20260928-security-handoff/security.json)
+records the original/redacted hashes and rotation verification. Original private evidence is
+protected; business history, UNKNOWN Effects and occupied budgets are retained.
+The [current execution status](../live-evidence/narrative-capability-admission-closure-02/20260928-security-handoff/status.json) binds the final implementation and deployed release, native Pack records, task dependencies, focused tests, and unresolved author/model conditions. This is a partial engineering delivery, not a real-prose closure.
+
 ### Same-Book real prose and author entry continuation (2026-09-27)
 
 Execution baseline: fetched `origin/main` `c616bc7a1d249a6cada0106414d1b679bd1f4a12`.
@@ -403,7 +428,7 @@ are leads; current conclusions require the implementation and live ledger below.
 | Real prose and editorial benefit absent | No new manuscript, acceptance, edition or successor Provider input; diagnostic briefs and Pack compilation are not chapters | Formation; Book/Chapter; Review; Edition | Resume only after applicable Pack approval and exact diagnostic grants; retain actual text and exact-version finding/revision evidence | NOT_PROVEN: package INCOMPLETE. No literary benefit denominator, human labels or causal Craft/Actor gain claimed |
 
 The [continuation evidence](../live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/status.json)
-binds the implementation SHA, private deployment identities without credentials, scoped tests,
+binds the implementation SHA, deployment identities, scoped tests,
 real compilation record, failure lineage, actual zero runtime usage and remaining engineering
 and external inputs. The [compiled Pack](../live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/reviewable-pack.json)
 is reviewable; compilation does not authorize activation or model calls. Historical Book records,

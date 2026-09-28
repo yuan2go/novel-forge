@@ -665,6 +665,43 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "non-empty structured result"):
             gateway.reconcile(gateway.submit(request))
 
+    def test_remote_schema_rejection_preserves_result_diagnostic_and_settlement(self):
+        capability, profile, policy, route, manifest, request = contracts(
+            backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)
+        source = StaticExecutionContractSource(
+            route_snapshots=(route,), model_profiles=(profile,),
+            route_policies=(policy,), input_manifests=(manifest,))
+        admission = AdmissionController(
+            source, StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}))
+        adapter, transport = _remote_adapter("success")
+
+        def validate(stage, schema, value):
+            from novel_forge.modules.chapter_authority.provider_output_contracts import (
+                validate_chapter_provider_output_against_schema,
+            )
+            return validate_chapter_provider_output_against_schema(stage, schema, value)
+
+        payload = replace(_admitted_remote_payload(request, "provider payload"),
+            output_schema={"$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object", "properties": {}, "additionalProperties": False})
+        backend = RemoteProviderExecutionBackend(
+            backend_id="remote-provider", capability_profile=capability,
+            provider_adapter=adapter, admission=admission,
+            payload_resolver=StaticExecutionPayloadResolver({request.execution_id: payload}),
+            record_store=InMemoryExecutionRecordStore(), structured_result_validator=validate)
+        handle = backend.submit(request)
+        first = backend.reconcile(handle)
+        self.assertEqual(backend.reconcile(handle), first)
+        record = backend.record_store.get_record(request.execution_id)
+        self.assertEqual(record.provider_result.outcome, "final_failure")
+        evidence = record.raw_evidence
+        self.assertEqual(evidence["result"], {"text": "remote result"})
+        self.assertEqual(evidence["failure_class"], "SCHEMA_REJECTION")
+        self.assertIn("text is not allowed", evidence["output_validation_error"]["detail"])
+        self.assertEqual(evidence["usage"]["output_tokens"], 3)
+        self.assertEqual(evidence["cost"]["amount"], "0.01")
+        self.assertEqual(transport.execute_calls, 1)
+
     def test_remote_backend_adapts_provider_v2_without_losing_provider_handle(
         self,
     ) -> None:

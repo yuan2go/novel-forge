@@ -1,0 +1,126 @@
+{
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "observed_at": "2026-09-28T01:12:49.250358+00:00",
+  "status": "INCOMPLETE",
+  "baseline_sha": "e9e6e2980f744ff69ac608d4ccce0ea6122441d3",
+  "final_implementation_sha": "444aa0c391dde8af3f653d927297702ee3204c4e",
+  "deployed_sha": "fb360dfc6d94b4458eed990e606911bf74d9f39d",
+  "delivery_commit": "Enclosing evidence-only commit; generation releases remain explicitly separate",
+  "branch": "codex/real-prose-security-handoff",
+  "worktree": "/Users/yuan/.codex/worktrees/real-prose-author-entry/novel-forge",
+  "changes_pushed": false,
+  "rows": [
+    {
+      "id": "S0",
+      "category": "CURRENT_SHARED_EVIDENCE_CLEAN_HISTORY_BOUNDARY_REMAINS",
+      "evidence": "security.json",
+      "action": "Retained prior PostgreSQL credential rotation; private DeepSeek credential used without output; scanned new artifacts",
+      "acceptance": "No known plaintext secrets in new shared files; revoked historic Git blobs remain, no unauthorized rewrite",
+      "owner": "Existing credential management + evidence export"
+    },
+    {
+      "id": "A1",
+      "category": "REAL_DIAGNOSTICS_ONLY_REAL_PROSE_NOT_PROVEN",
+      "evidence": "samples.json + deepseek-samples.json",
+      "action": "Retained three native candidates and failed paid receipt on same Book/campaign",
+      "acceptance": "Zero chapter prose, acceptance, edition and successor; package incomplete",
+      "owner": "Formation / Story Planning / Chapter / Book / Edition Authorities"
+    },
+    {
+      "id": "A2",
+      "category": "DIAGNOSTIC_EXECUTABLE_PRODUCTION_NOT_QUALIFIED",
+      "evidence": "reviewable-pack.json + model-usage.json",
+      "action": "Activated scoped Pack 2.3.10; original two Codex plus two DeepSeek native calls; preserved cumulative budget lineage",
+      "acceptance": "Three valid diagnostic outputs, one malformed paid failure; finite batch paused. Missing task qualification is distinct from authorization",
+      "owner": "Provider composition + CapabilityPackAuthority + Command Kernel + creative budget + Router"
+    },
+    {
+      "id": "A3",
+      "category": "STABLE_PREVIOUS_FOCUSED_EVIDENCE",
+      "evidence": "../20260928-security-handoff/logs/export-regression.log",
+      "action": "Export implementation unchanged; reused compatible 6-case PostgreSQL/MinIO evidence",
+      "acceptance": "No new real manuscript export or full-chain claim",
+      "owner": "export_delivery.py + asset_blob_repositories + reservation owner"
+    },
+    {
+      "id": "A4",
+      "category": "AUTHOR_REVIEW_SUBSET_EXECUTABLE_FULL_JOURNEY_INCOMPLETE",
+      "evidence": "author-browser.json + tests.json",
+      "action": "Added exact native-sample author review form, server-owned identity, draft and response-loss recovery; actual CORS configured",
+      "acceptance": "Real DB page reads three samples, no synthetic human labels. No full prose/editor/edition journey",
+      "owner": "ProductionChainPage + ContentAuthority API/application + reference_review.py"
+    },
+    {
+      "id": "A5",
+      "category": "STABLE_CONFIG_ENGINEERING_REAL_PROSE_VIEW_NOT_PROVEN",
+      "evidence": "../20260928-security-handoff/author-policy-browser.json",
+      "action": "Retained existing explicit policy/versioned snapshot controls and old-request isolation",
+      "acceptance": "Prior focused new/old configuration evidence reused; no real prose Provider view exists",
+      "owner": "Book production profile assets + frozen snapshot consumers"
+    },
+    {
+      "id": "A6",
+      "category": "REAL_EDITORIAL_FLOW_NOT_EXERCISED",
+      "evidence": "native-state.json",
+      "action": "Retained native ownership; did not invent findings, proposed assets or acceptance",
+      "acceptance": "No real prose/finding, disposition-to-revision cooperation unproven",
+      "owner": "Book prose review + disposition + Plan Change + edition"
+    },
+    {
+      "id": "A7",
+      "category": "LITERARY_EFFECT_NOT_PROVEN",
+      "evidence": "editorial-outcomes.json",
+      "action": "Kept model, human and reader judgments distinct; reported failed sample and unavailable raw output",
+      "acceptance": "No before/after prose denominator; metrics null, not zero percent",
+      "owner": "Chapter Quality + independent editorial evidence"
+    },
+    {
+      "id": "A8",
+      "category": "REAL_CREATIVE_COMPARISON_INPUTS_AVAILABLE_SELECTION_PENDING",
+      "evidence": "samples.json + deepseek-samples.json",
+      "action": "Retained same-input Codex/DeepSeek creative variants; existing nonfirst Formation selection stays native",
+      "acceptance": "Three real diagnostic candidates; no author decision/qualification/promotion or literary winner invented",
+      "owner": "Formation REVIEW_PLAN + Story Design decision + Planning consumers"
+    },
+    {
+      "id": "A9",
+      "category": "REQUEST_AND_COST_OBSERVED_LONG_RANGE_NOT_PROVEN",
+      "evidence": "model-usage.json + failure-lineage.json",
+      "action": "Observed actual Provider tokens/cache/price; fixed failed-output evidence and mixed-provider credential provenance for subsequent requests",
+      "acceptance": "Actual diagnostic usage available; long-range recall/context growth and Craft/Actor causal benefit unproven",
+      "owner": "Context builder + Producer compatibility + Provider adapter and Router receipts"
+    }
+  ],
+  "evidence_ceiling": {
+    "code": "CODE_EXISTS",
+    "author_and_provider_entries": "WIRED",
+    "selected_diagnostics_and_author_read_path": "EXECUTABLE",
+    "task_production_admission": "NOT_PROVEN",
+    "real_production": "NOT_PROVEN",
+    "literary_benefit": "NOT_PROVEN",
+    "long_form": "NOT_PROVEN"
+  },
+  "runtime_usage": {
+    "codex_calls": 2,
+    "deepseek_calls": 2,
+    "total_tokens": 55356,
+    "real_prose_count": 0,
+    "details": "model-usage.json"
+  },
+  "migration_changes": false,
+  "historical_pause_unknown_and_budget": "No action on historical project/effect; current observed effect/dispatch FAILED_RETRYABLE and reservation SETTLED, not current UNKNOWN",
+  "omitted_checks": "Full P0/backend/PostgreSQL/UI matrix, remote CI, migrations fresh/upgrade (no migration), real literary/long-form qualification NOT_RUN",
+  "constraint_classification": {
+    "100000_per_call_cap": "CONFIGURABLE_POLICY",
+    "8192_safety_margin": "CONFIGURABLE_POLICY",
+    "old_frozen_requests": "HISTORICAL_COMPATIBILITY",
+    "append_only_receipts_and_recovery": "CURRENT_PROVEN_INVARIANT",
+    "trusted_operator_pack_scope": "CURRENT_RUNTIME_FACT",
+    "human_reference_protocol": "CONFIGURABLE_POLICY",
+    "literary_effect_and_longform": "UNRESOLVED_DESIGN_CONSTRAINT"
+  },
+  "origin_main_rechecked": "e9e6e2980f744ff69ac608d4ccce0ea6122441d3",
+  "other_local_branches_unmerged_into_origin_main": [],
+  "original_main_worktree_clean": true,
+  "supersedes": "../20260928-security-handoff/status.json"
+}

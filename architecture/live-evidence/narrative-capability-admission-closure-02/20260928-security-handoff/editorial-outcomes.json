@@ -1,0 +1,45 @@
+{
+  "status": "NOT_PROVEN",
+  "real_prose_count": 0,
+  "unique_accepted_chapters": 0,
+  "initial_revision_pairs": 0,
+  "accepted_editions": 0,
+  "successor_manuscripts": 0,
+  "metrics": {
+    "finding_precision": {
+      "value": null,
+      "denominator": 0,
+      "source": "NO_EXACT_REAL_PROSE_REFERENCE_PAIR"
+    },
+    "finding_recall": {
+      "value": null,
+      "denominator": 0,
+      "source": "NO_EXACT_REAL_PROSE_REFERENCE_PAIR"
+    },
+    "overrevision_rate": {
+      "value": null,
+      "denominator": 0,
+      "source": "NO_EXACT_REAL_PROSE_REFERENCE_PAIR"
+    },
+    "preservation_rate": {
+      "value": null,
+      "denominator": 0,
+      "source": "NO_EXACT_REAL_PROSE_REFERENCE_PAIR"
+    },
+    "substantive_improvement_rate": {
+      "value": null,
+      "denominator": 0,
+      "source": "NO_EXACT_REAL_PROSE_REFERENCE_PAIR"
+    }
+  },
+  "future_denominators": {
+    "finding_precision": "confirmed substantive findings / reviewed system findings; independent adjudicated source",
+    "finding_recall": "system-detected adjudicated substantive issues / all adjudicated issues in the exact reviewed text and scope",
+    "overrevision_rate": "unnecessary or harmful adopted edits / independently reviewed adopted edits",
+    "preservation_rate": "retained prespecified strengths / all prespecified strengths checked in both exact versions",
+    "substantive_improvement_rate": "resolved substantive target issues without new equal-or-worse issue / independently reviewed target issues"
+  },
+  "model_review_human_edit_reader_preference": "Report separately; no reviewer, reader or successful literary outcome invented",
+  "causal_Craft_Actor_benefit": "NOT_PROVEN_NO_CONTROL",
+  "long_form_stability": "NOT_PROVEN"
+}

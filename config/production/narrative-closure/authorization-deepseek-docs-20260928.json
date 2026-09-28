@@ -1,0 +1,44 @@
+{
+  "contract_version": "narrative-closure-user-approval-amendment.v1",
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "authorization_ref": "user:WP02:20260928:deepseek-documentation-adjustment:v1",
+  "parent_authorization_ref": "user:WP02:20260928:completion-continuation:v1",
+  "user_instruction": "参考DeepSeek文档调整 https://api-docs.deepseek.com/zh-cn/",
+  "recorded_at": "2026-09-28T01:41:59.407767+00:00",
+  "expires_at": "2026-09-28T05:28:24Z",
+  "purpose": "One bounded native diagnostic after documented prompt-contract correction; same failed input and original campaign, not another independent observation",
+  "predecessor_operation_id": "84d5ae6b-f456-4cc8-9823-1088b31f89b0",
+  "predecessor_effect_id": "8bb574fb-3daa-45f2-a68c-7555dc4af83c",
+  "change": "Opt-in reviewed Pack prompt template includes schema-valid JSON instance and explicit single-object boundary, as required by official JSON Output guidance. Strict parser unchanged; rejected outputs remain failed.",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "model_revision": "DeepSeek-V4.1-Flash",
+  "reasoning_effort": "low",
+  "thinking": "enabled",
+  "maximum_additional_calls": 1,
+  "maximum_tokens_per_call": 100000,
+  "maximum_additional_priced_usd": "0.15",
+  "maximum_cumulative_cny": "100",
+  "native_campaign_usd_ceiling": "1",
+  "calibration_cumulative_caps": {
+    "calls": 6,
+    "tokens": 600000,
+    "priced_usd": "0.60"
+  },
+  "original_purpose_totals_and_expiry_unchanged": true,
+  "retain_all_failures_and_usage": true,
+  "require_exact_new_pack_approval": true,
+  "require_new_producer_hash": true,
+  "copy_prior_qualification": false,
+  "production_eligible": false,
+  "stop_conditions": [
+    "One call only; preserve result and stop regardless of quality.",
+    "First failure or UNKNOWN stops affected path without automatic retry or fallback.",
+    "No cross-pool transfer or additional monetary allocation; original deadline remains."
+  ],
+  "official_sources": [
+    "https://api-docs.deepseek.com/zh-cn/guides/json_mode/",
+    "https://api-docs.deepseek.com/zh-cn/api/create-chat-completion/",
+    "https://api-docs.deepseek.com/zh-cn/"
+  ]
+}

@@ -34,6 +34,42 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
             integration_proven=CONTENT_CODECS,
         )
 
+    def test_author_configuration_persists_versions_and_consumes_exact_profile(self):
+        from types import SimpleNamespace
+        from novel_forge.modules.book_authority.supervisor import PostgresBookProductionSupervisor
+        from novel_forge.modules.production_preparation import PostgresProductionAssetResolver
+
+        profile = {"book_id": f"book:{self.project_id}", "profile_id": "author-config", "target_chapter_count": 8,
+            "language_contract": {"language": "zh"}, "authority_boundary": "FUTURE_INTENT", "safe_summary": "Explicit configuration fixture", "structured_facts": [],
+            "author_configuration_version": "book-author-configuration.v1", "craft_budget_policy": {"schema_version": "narrative-craft-budget.v4"},
+            "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v2", "draft_token_budget": 12000, "quality_token_budget": 18000}}
+        request = ContentOperationRequest(definition_name="book.production_profile.author", project_id=self.project_id,
+            workspace_id=f"workspace:{self.project_id}", actor_id="content-operator", trace_id="trace:config", correlation_id="config",
+            idempotency_key="config:first", payload={"content": profile})
+        old = self.app.execute(request)
+        replay = self.app.execute(request)
+        self.assertEqual(old.asset_version_id, replay.asset_version_id)
+        original = self.read_content(old.asset_version_id)
+        newer = self.run_op("book.production_profile.author", payload={"content": {**profile, "profile_id": "author-config-v2",
+            "chapter_context_policy": {**profile["chapter_context_policy"], "draft_profile": "draft-context-profile-v3", "draft_token_budget": 20000, "quality_token_budget": 28000}}})
+        supervisor = object.__new__(PostgresBookProductionSupervisor)
+        supervisor.context_token_budget, supervisor.quality_context_token_budget = 6000, 7000
+        supervisor.draft_context_profile_version = "draft-context-profile-v3"
+        supervisor.production_preparation = SimpleNamespace(resolver=PostgresProductionAssetResolver(DATABASE_URL))
+        book = {"project_id": self.project_id, "workspace_id": f"workspace:{self.project_id}", "book_id": profile["book_id"], "stable_idempotency_key": "book:config"}
+        for version, expected in ((old.asset_version_id, 12000), (newer["asset_version_id"], 20000), (old.asset_version_id, 12000)):
+            prepared = supervisor._chapter_preparation_request(book={**book, "production_profile_version": version}, next_chapter=1, explicit_overrides={})
+            self.assertEqual(prepared.context_token_budget, expected)
+        self.assertEqual(self.read_content(old.asset_version_id), original)
+        self.assertNotEqual(old.asset_version_id, newer["asset_version_id"])
+        from novel_forge.modules.content_authority.queries import ContentAuthorityQuery
+        query = ContentAuthorityQuery(DATABASE_URL)
+        matching = query.list_operations(project_id=self.project_id, idempotency_key="config:first")
+        self.assertEqual(len(matching), 1)
+        self.assertEqual(query.require_operation(project_id=self.project_id, operation_id=matching[0]["operation_id"])["outputs"][0]["asset_version_id"], old.asset_version_id)
+        self.assertEqual(query.list_operations(project_id=self.project_id, idempotency_key="missing-key"), [])
+        self.assertEqual(query.list_operations(project_id="other-project", idempotency_key="config:first"), [])
+
     def seed(self, asset_type: str, content: dict, label: str):
         asset_version_id = f"{self.project_id}:{label}:v1"
         asset_id = f"{self.project_id}:{label}"

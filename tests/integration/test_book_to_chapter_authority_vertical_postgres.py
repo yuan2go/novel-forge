@@ -1135,6 +1135,33 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         self.assertEqual(current["runs"][0]["frozen_profile"]["context_profile"], "v2")
         self.assertEqual([p["content"]["context_profile"] for p in current["profiles"]], ["v3"])
         self.assertEqual(current["runs"][0]["book_run_id"], fixture["book"].book_run_id)
+        cast_version, design_version = identifier("cast-version"), identifier("design-version")
+        cast_hash = "sha256:" + "a" * 64
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            for asset_type, version, content, content_hash in (
+                ("planning_generation_candidate", cast_version, {"generator_operation_name": "character.cast.generate", "candidate_payload": {"characters": [{"character_id": "actor:1", "name": "本书角色"}]}}, cast_hash),
+                ("book_design", design_version, {"foundation_set": {"bindings": [{"role": "CHARACTER_CAST", "asset_version_id": cast_version, "content_hash": cast_hash}]}}, "sha256:" + "b" * 64),
+            ):
+                asset_id = identifier(asset_type)
+                uow.cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)", [asset_id, project, asset_type])
+                uow.cursor.execute("INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'fixture.v1')", [version, asset_id, json.dumps(content), content_hash])
+            uow.cursor.execute("UPDATE authority_book SET current_book_design_asset_version_id=%s WHERE project_id=%s AND book_id=%s", [design_version, project, book_id])
+            uow.commit()
+        characters = query.author_workspace(project_id=project, book_id=book_id)["approved_characters"]
+        self.assertEqual(characters, [{"character_id": "actor:1", "name": "本书角色", "source_asset_version_id": cast_version, "source_content_hash": cast_hash}])
+        from novel_forge.modules.book_authority.control_application import PostgresBookControlApplication
+        from novel_forge.modules.book_authority.control_policy import ControlPolicy
+        from novel_forge.storage.book_control_repositories import BookControlRepository
+        controls = PostgresBookControlApplication(DATABASE_URL, application_build_id="book-authority-control", commit_sha="e" * 40)
+        for mode in ("REVIEW_PLAN", "REVIEW_CHAPTER"):
+            controls.configure(policy=ControlPolicy(policy_version=f"author:{mode}", mode=mode), project_id=project, workspace_id=f"workspace:{project}", principal=fixture["principal"], idempotency_key=f"policy:{mode}", trace_id="trace:policy", correlation_id="policy")
+            if mode == "REVIEW_PLAN":
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    BookControlRepository(uow.cursor).freeze(project_id=project, book_run_id=fixture["book"].book_run_id, chapter_number=1, actor_id=fixture["principal"].principal_id)
+                    uow.commit()
+        configuration = query.author_workspace(project_id=project, book_id=book_id)
+        self.assertEqual(configuration["editorial_control"]["policy"]["mode"], "REVIEW_CHAPTER")
+        self.assertEqual(configuration["runs"][0]["frozen_editorial_control"]["policy"]["mode"], "REVIEW_PLAN")
         with self.assertRaisesRegex(KernelError, "BOOK_NOT_FOUND"):
             query.author_workspace(project_id=identifier("other-project"), book_id=book_id)
 

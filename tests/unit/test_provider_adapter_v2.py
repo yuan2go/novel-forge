@@ -52,6 +52,40 @@ class ProviderAdapterV2Tests(unittest.TestCase):
                 )
                 self.assertEqual(registry.resolve('deepseek').provider, 'deepseek')
 
+    def test_explicit_codex_only_router_does_not_require_deepseek_credentials(self) -> None:
+        registry = build_provider_adapter_registry(
+            environment="production", provider_ids={"codex-cli", "deepseek"},
+            env={"NOVEL_FORGE_ROUTER_PROVIDERS": "codex-cli"},
+        )
+        with self.assertRaisesRegex(ValueError, "not registered: deepseek"):
+            registry.resolve("deepseek")
+
+    def test_enabled_deepseek_router_requires_its_credential(self) -> None:
+        for providers in ("deepseek", "deepseek,codex-cli"):
+            with self.subTest(providers=providers), self.assertRaisesRegex(
+                RuntimeError, "DeepSeek credential"
+            ):
+                build_provider_adapter_registry(
+                    environment="production", provider_ids={"codex-cli"},
+                    env={"NOVEL_FORGE_ROUTER_PROVIDERS": providers},
+                )
+
+    def test_router_provider_selection_rejects_empty_unknown_or_conflicting_values(self) -> None:
+        for providers in ("", "openai", "deepseek,", "codex-cli,unknown"):
+            with self.subTest(providers=providers), self.assertRaisesRegex(
+                RuntimeError, "Router Providers"
+            ):
+                build_provider_adapter_registry(
+                    environment="production", provider_ids={"codex-cli"},
+                    env={"NOVEL_FORGE_ROUTER_PROVIDERS": providers},
+                )
+        with self.assertRaisesRegex(RuntimeError, "contradicts"):
+            build_provider_adapter_registry(
+                environment="production", provider_ids={"codex-cli"},
+                env={"NOVEL_FORGE_ROUTER_PROVIDERS": "deepseek",
+                     "NOVEL_FORGE_ROUTER_CODEX_ESCALATION": "true"},
+            )
+
     def test_provider_composition_is_fixture_only_in_local_environments(self) -> None:
         registry = build_provider_adapter_registry(
             environment="test",

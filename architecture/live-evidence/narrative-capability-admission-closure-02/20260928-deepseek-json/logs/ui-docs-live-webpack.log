@@ -1,0 +1,6 @@
+▲ Next.js 16.2.12 (webpack)
+- Local:         http://127.0.0.1:3142
+- Network:       http://127.0.0.1:3142
+✓ Ready in 262ms
+
+ GET /production 200 in 1945ms (next.js: 1833ms, application-code: 112ms)

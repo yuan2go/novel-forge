@@ -341,3 +341,57 @@ def test_mixed_campaign_rejects_inflated_unknown_or_unbound_allowances(mutate):
     mutate(policy)
     with pytest.raises(ValueError):
         validate_policy(policy)
+
+
+def campaign_monetary_amendment(previous, *, phase="PRODUCTION", extra="1"):
+    from decimal import Decimal
+    from novel_forge.storage.versioned_policy_repository import policy_hash
+    from novel_forge.modules.command_kernel.creative_budget_contract import contract_hash
+
+    amended = deepcopy(previous)
+    amended["policy_version"] += ":money-amended"
+    amended["authorization"].update(authorization_ref=previous["authorization"]["authorization_ref"] + ":explicit-money",
+                                    evidence_hash="sha256:" + "f" * 64)
+    plan = amended["comparison_budget"]
+    plan["previous_policy"] = {"policy_version": previous["policy_version"], "policy_hash": policy_hash(previous),
+                               "contract_hash": contract_hash(previous["comparison_budget"])}
+    for allocation in (plan["shared_total"], plan["arms"][0]["project_total"],
+                       plan["arms"][0][phase.lower() + "_allocation"], amended["authorization"]["authorized_cumulative_caps"][phase]):
+        allocation["priced_usd"] = str(Decimal(allocation["priced_usd"]) + Decimal(extra))
+    return amended
+
+
+def test_campaign_monetary_amendment_keeps_old_schema_and_uses_versioned_command():
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+    from novel_forge.modules.command_kernel.creative_budget_contract import V4_MONETARY_AMENDMENT_SCHEMA, V4_POLICY_SCHEMA
+    from novel_forge.modules.command_kernel.creative_budget_runtime import _validate_campaign_monetary_amendment
+
+    original = provider_campaign_policy()
+    amended = campaign_monetary_amendment(original)
+    _validate(V4_MONETARY_AMENDMENT_SCHEMA, amended, path="$")
+    assert validate_policy(amended) == amended
+    _validate_campaign_monetary_amendment(amended["comparison_budget"], original, project_id="project-A")
+    assert "previous_policy" not in V4_POLICY_SCHEMA["properties"]["comparison_budget"]["properties"]
+    assert owned_policy_definition(owner="CREATIVE_EXPERIMENT_BUDGET", content=amended,
+        application_build_id="fixture", commit_sha="a" * 40)["definition_version"] == "1.4.1"
+
+
+@pytest.mark.parametrize("change", [
+    lambda p: p["previous_policy"].update(policy_hash="a" * 64),
+    lambda p: p.update(expires_at="2099-02-01T00:00:00+00:00"),
+    lambda p: p.update(manifest_hash="sha256:" + "d" * 64),
+    lambda p: p["shared_total"].update(calls=17),
+    lambda p: p["shared_total"].update(tokens=17000),
+    lambda p: p["entitlements"][0].update(calls=2),
+    lambda p: p["arms"][0].update(book_id="new-book"),
+    lambda p: p["arms"][0]["repair_allocation"].update(priced_usd="0"),
+])
+def test_money_amendment_cannot_change_other_authorization_boundaries(change):
+    from novel_forge.modules.command_kernel.creative_budget_runtime import _validate_campaign_monetary_amendment
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    previous = provider_campaign_policy()
+    amended = campaign_monetary_amendment(previous)
+    change(amended["comparison_budget"])
+    with pytest.raises(KernelError):
+        _validate_campaign_monetary_amendment(amended["comparison_budget"], previous, project_id="project-A")

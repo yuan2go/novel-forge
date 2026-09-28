@@ -1,0 +1,28 @@
+{
+  "checked_at": "2026-09-28T02:01:35.118012+00:00",
+  "sources": [
+    "https://api-docs.deepseek.com/zh-cn/",
+    "https://api-docs.deepseek.com/zh-cn/guides/json_mode/",
+    "https://api-docs.deepseek.com/zh-cn/api/create-chat-completion/",
+    "https://api-docs.deepseek.com/zh-cn/guides/tool_calls/",
+    "https://api-docs.deepseek.com/quick_start/pricing/"
+  ],
+  "confirmed_contract": {
+    "endpoint": "https://api.deepseek.com/chat/completions",
+    "model": "deepseek-flash",
+    "reasoning_effort": "low",
+    "response_format": {
+      "type": "json_object"
+    },
+    "json_instruction_location": "User prompt is allowed by documentation; system-role separation is not mandatory",
+    "max_tokens": 10000,
+    "max_tokens_scope": "Frozen output cap, within authorized maximum total request tokens 100000"
+  },
+  "implemented_change": "Opt-in schema-valid JSON output example in reviewed prompt-template:story-planning-creative-json@v1. Existing default and frozen requests unchanged. Strict parser now retains exact location of malformed JSON, rejected final text, usage and costs. No output repair or promotion.",
+  "new_contract": "producer-comparison.json",
+  "pack": "reviewable-pack.json",
+  "real_validation": "FAILED_MALFORMED_STRUCTURED_OUTPUT; finish_reason=stop and output_tokens=3336, not reported length exhaustion",
+  "result_boundary": "The extra format-descriptor prefix was absent in this one response; this is not proof of causal improvement or reliable JSON output. It still fails the contract.",
+  "strict_tool_beta": "NOT_ENABLED. Different protocol with unsupported schema constraints and forced tool choice restrictions in thinking mode. Not silently substituted for frozen JSON-mode transport.",
+  "next_engineering_question": "Reliable structured transport remains unresolved after this bounded documented-contract trial; no claim prompt-only change solved provider reliability."
+}

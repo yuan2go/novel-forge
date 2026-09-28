@@ -69,6 +69,11 @@ _PROHIBITED_EXACT_KEYS = frozenset(
     }
 )
 _SECRET_VALUE_PATTERNS = (
+    # SECURITY: libpq accepts keyword DSNs as well as URLs, including escaped quotes.
+    re.compile(
+        r"\b(?:password|passwd)\s*=\s*(?:'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|[^\s,;\"']+)",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bbearer\s+[a-z0-9._~+/=-]{8,}", re.IGNORECASE),
     re.compile(r"\bsk-(?:proj-|ant-)?[a-z0-9_-]{8,}", re.IGNORECASE),
     re.compile(

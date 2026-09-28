@@ -1,0 +1,175 @@
+FF....                                                                   [100%]
+=================================== FAILURES ===================================
+_____ test_routed_entitlement_reserves_with_no_priced_spend_allowance[0_0] _____
+
+scope = ('router-project-24480a31-b297-4cd9-a2f9-9a5a9c4b39a4', 'router-operation-7333a52d-fc71-41e6-8492-1a317ade88a6')
+money = '0'
+
+    @pytest.mark.parametrize("money", ["0", 0])
+    def test_routed_entitlement_reserves_with_no_priced_spend_allowance(scope, money):
+        request = budget_request(
+            scope,
+            provider="codex-cli",
+            decision=frozen_budget_decision(scope, provider="codex-cli", money=money),
+        )
+>       result = reserve_provider_budget(DATABASE_URL, request)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_provider_routing_postgres.py:1004:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/novel_forge/modules/command_kernel/budget_runtime.py:2742: in reserve_provider_budget
+    result = reserve_provider_budget_in_uow(uow, request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/budget_runtime.py:3047: in reserve_provider_budget_in_uow
+    _enforce_routing_chain_budget(uow.cursor, request, amount)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cursor = <psycopg.Cursor [closed] [IDLE] (host=127.0.0.1 port=61959 user=novel_forge database=nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test) at 0x10dd50b90>
+request = BudgetReservationRequest(operation_id='router-operation-7333a52d-fc71-41e6-8492-1a317ade88a6', external_effect_id='85f...st_authorization_ref='authorization-4cafe4bc-681d-4e4e-a0c9-b391453057f6', model_id='gpt-5.6-sol', work_id='book:test')
+amount = None, check_attempts = True
+
+    def _enforce_routing_chain_budget(
+        cursor: Any,
+        request: BudgetReservationRequest,
+        amount: Decimal | None,
+        *,
+        check_attempts: bool = True,
+    ) -> None:
+        cursor.execute(
+            """SELECT request_payload #> '{_production_execution,capability_runtime,routing_decision}',
+                      request_payload->>'max_output_tokens'
+               FROM authority_external_effect WHERE external_effect_id=%s AND project_id=%s""",
+            [request.external_effect_id, request.project_id],
+        )
+        row = cursor.fetchone()
+        decision = row[0] if row else None
+        if not decision:
+            return
+        task = decision.get("task") or {}
+        limits = task.get("budget_snapshot") or {}
+        chain_id = task.get("chain_id")
+        if (
+            not chain_id
+            or not limits.get("task_token_limit")
+            or not limits.get("task_money_limit")
+        ):
+            raise KernelError(
+                "ROUTING_BUDGET_CONTRACT_REQUIRED",
+                "routed effect lacks frozen chain limits",
+            )
+        lineage_operations = task.get("lineage_operation_ids", [request.operation_id])
+        if (
+            not isinstance(lineage_operations, list) or not lineage_operations
+            or any(not isinstance(value, str) or not value for value in lineage_operations)
+            or len(set(lineage_operations)) != len(lineage_operations)
+            or lineage_operations[-1] != request.operation_id
+        ):
+            raise KernelError("ROUTING_BUDGET_IDENTITY_CONFLICT", "routing lineage operation identities are invalid")
+        from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_budget
+
+        verify_routing_bootstrap_budget(cursor, request, amount, check_usage=check_attempts)
+        candidate = (decision.get("selected") or {}).get("candidate") or {}
+        price = candidate.get("pricing") or {}
+        if (
+            decision.get("status") not in {"SELECTED", "BENCHMARK_SELECTED"}
+            or task.get("project_id") != request.project_id
+            or task.get("operation_id") != request.operation_id
+            or task.get("work_id") != request.work_id
+            or candidate.get("provider") != request.provider
+            or candidate.get("model") != request.model_id
+        ):
+            raise KernelError(
+                "ROUTING_BUDGET_IDENTITY_CONFLICT",
+                "reservation differs from selected route",
+            )
+        if (
+            price.get("accounting_basis") != request.accounting_basis.strip().upper()
+            or price.get("currency") != request.currency
+        ):
+            raise KernelError(
+                "ROUTING_BUDGET_ACCOUNTING_CONFLICT",
+                "reservation differs from frozen route accounting",
+            )
+        policy = decision.get("escalation_policy") or {}
+        try:
+            max_attempts = int(policy["max_attempts"])
+            max_escalations = int(policy["max_escalations"])
+            token_limit = int(limits["task_token_limit"])
+            money_limit = _amount(str(limits["task_money_limit"]))
+        except (KeyError, TypeError, ValueError) as exc:
+            raise KernelError(
+                "ROUTING_BUDGET_CONTRACT_REQUIRED",
+                "routed effect has invalid frozen limits",
+            ) from exc
+        if max_attempts <= 0 or max_escalations < 0 or token_limit <= 0 or money_limit <= 0:
+>           raise KernelError(
+                "ROUTING_BUDGET_CONTRACT_REQUIRED",
+                "routed effect has invalid frozen limits",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: ROUTING_BUDGET_CONTRACT_REQUIRED: routed effect has invalid frozen limits
+
+src/novel_forge/modules/command_kernel/budget_runtime.py:3346: KernelError
+_____ test_routed_entitlement_reserves_with_no_priced_spend_allowance[0_1] _____
+
+scope = ('router-project-f0e3a2e2-6663-4b56-9790-acda1d4e67f0', 'router-operation-b93f3eba-1035-45fd-a4a9-1a714b6a4ae7')
+money = 0
+
+    @pytest.mark.parametrize("money", ["0", 0])
+    def test_routed_entitlement_reserves_with_no_priced_spend_allowance(scope, money):
+        request = budget_request(
+            scope,
+            provider="codex-cli",
+            decision=frozen_budget_decision(scope, provider="codex-cli", money=money),
+        )
+>       result = reserve_provider_budget(DATABASE_URL, request)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_provider_routing_postgres.py:1004:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/novel_forge/modules/command_kernel/budget_runtime.py:2742: in reserve_provider_budget
+    result = reserve_provider_budget_in_uow(uow, request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/budget_runtime.py:3047: in reserve_provider_budget_in_uow
+    _enforce_routing_chain_budget(uow.cursor, request, amount)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cursor = <psycopg.Cursor [closed] [IDLE] (host=127.0.0.1 port=61959 user=novel_forge database=nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test) at 0x10c50a210>
+request = BudgetReservationRequest(operation_id='router-operation-b93f3eba-1035-45fd-a4a9-1a714b6a4ae7', external_effect_id='20a...st_authorization_ref='authorization-ede11416-9849-46e1-8664-867373bc1bd7', model_id='gpt-5.6-sol', work_id='book:test')
+amount = None, check_attempts = True
+
+    def _enforce_routing_chain_budget(
+        cursor: Any,
+        request: BudgetReservationRequest,
+        amount: Decimal | None,
+        *,
+        check_attempts: bool = True,
+    ) -> None:
+        cursor.execute(
+            """SELECT request_payload #> '{_production_execution,capability_runtime,routing_decision}',
+                      request_payload->>'max_output_tokens'
+               FROM authority_external_effect WHERE external_effect_id=%s AND project_id=%s""",
+            [request.external_effect_id, request.project_id],
+        )
+        row = cursor.fetchone()
+        decision = row[0] if row else None
+        if not decision:
+            return
+        task = decision.get("task") or {}
+        limits = task.get("budget_snapshot") or {}
+        chain_id = task.get("chain_id")
+        if (
+            not chain_id
+            or not limits.get("task_token_limit")
+            or not limits.get("task_money_limit")
+        ):
+>           raise KernelError(
+                "ROUTING_BUDGET_CONTRACT_REQUIRED",
+                "routed effect lacks frozen chain limits",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: ROUTING_BUDGET_CONTRACT_REQUIRED: routed effect lacks frozen chain limits
+
+src/novel_forge/modules/command_kernel/budget_runtime.py:3297: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_provider_routing_postgres.py::test_routed_entitlement_reserves_with_no_priced_spend_allowance[0_0]
+FAILED tests/integration/test_provider_routing_postgres.py::test_routed_entitlement_reserves_with_no_priced_spend_allowance[0_1]
+2 failed, 4 passed, 58 deselected in 2.03s

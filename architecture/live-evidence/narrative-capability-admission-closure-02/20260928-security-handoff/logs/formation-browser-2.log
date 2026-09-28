@@ -1,0 +1,1 @@
+{"status":"PASS","evidence_kind":"BROWSER_WITH_ISOLATED_API_DOUBLES","checks":["actual candidate comparison text","unsaved decision survives reload","second candidate approval","lost response uses identical body and idempotency key after reload"]}

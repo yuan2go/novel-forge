@@ -44,8 +44,8 @@ from tests.integration.synthesis_production_support import SynthesisTransport
 from tests.integration.test_core_functional_loops_postgres import _principal
 
 
-@pytest.mark.parametrize("author_guided,result_repair,runtime_recovery,evaluation_recovery", [(False, False, False, False), (True, False, False, False), (False, True, False, False), (False, False, True, False), (False, False, False, True)])
-def test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery, evaluation_recovery):
+@pytest.mark.parametrize("author_guided,result_repair,runtime_recovery,evaluation_recovery,manual_review", [(False, False, False, False, False), (True, False, False, False, False), (False, True, False, False, False), (False, False, True, False, False), (False, False, False, True, False), pytest.param(False, False, False, False, True, id="manual-second-candidate")])
+def test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery, evaluation_recovery, manual_review):
     harness = CapabilityPackPostgresHarness("synthesis-formation-author" if author_guided else "synthesis-formation")
     from copy import copy
 
@@ -239,11 +239,11 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
                     creative_brief_content_hash=brief.content_hash,
                     generation_policy={
                         "contract_version": "formation-generation.v2",
-                        "approval_mode": "AUTO",
+                        "approval_mode": "REVIEW_PLAN" if manual_review else "AUTO",
                         "creative_candidates": 2,
                         "target_chapters": 3,
                         "title": "Witness Map",
-                        "auto_authorization": {
+                        **({} if manual_review else {"auto_authorization": {
                             "contract_version": "formation-auto-authorization.v1",
                             "policy_version": "formation-auto-policy.v1",
                             "authorization_ref": "test:synthesis-formation",
@@ -258,7 +258,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
                                 "story_planning.candidate.activate",
                                 "story_planning.candidate.approve",
                             ],
-                        },
+                        }}),
                     },
                 ),
             ),
@@ -273,7 +273,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
                 if len(projection_checkpoints) == 3:
                     raise RuntimeError("simulated activation projection crash")
 
-        formation.generation.book_design.fault_injector = fail_activation
+        formation.generation.book_design.fault_injector = None if manual_review else fail_activation
         evaluation_failed = False
         concurrent_recovery_heads = []
         if evaluation_recovery:
@@ -307,7 +307,8 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
                 from novel_forge.modules.command_kernel.errors import KernelError
                 raise KernelError("EXECUTION_CONTRACT_FROZEN_CONFLICT", "retained legacy schema conflicts before dispatch")
             preparer._execution_binding = profile_collision
-        for _ in range(12):
+        selected_creative = ""
+        for _ in range(24 if manual_review else 12):
             formation.schedule_candidates(
                 limit=1,
                 project_id=harness.project_id,
@@ -394,10 +395,61 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
                 )
                 recovered_activation = True
 
+            waiting = formation.require(admitted.formation_run_id)
+            if manual_review and waiting["lifecycle"] == "WAITING_APPROVAL":
+                from novel_forge.modules.command_kernel.errors import KernelError
+
+                reviewer = replace(principal, permissions=principal.permissions | {"book.authority.query"})
+                review = formation.review_candidates(admitted.formation_run_id, principal=reviewer)
+                candidates = review["candidates"]
+                target = candidates[1] if len(candidates) > 1 else candidates[0]
+                if len(candidates) > 1:
+                    with pytest.raises(KernelError, match="outside the frozen comparison"):
+                        formation.author_decision(
+                            admitted.formation_run_id, expected_version=review["version"],
+                            candidate_asset_version_id=brief.asset_version_id,
+                            candidate_content_hash=brief.content_hash, decision="SELECT",
+                            reason="Invalid cross-role selection must not change the comparison",
+                            idempotency_key="manual:outside-candidate-set", principal=reviewer,
+                        )
+                    assert formation.require(admitted.formation_run_id)["version"] == review["version"]
+                    rejected = formation.author_decision(
+                        admitted.formation_run_id, expected_version=review["version"],
+                        candidate_asset_version_id=candidates[0]["asset_version_id"],
+                        candidate_content_hash=candidates[0]["content_hash"],
+                        decision="REJECT", reason="Fixture author rejects first branch; preserve alternatives",
+                        idempotency_key="manual:reject-first", principal=reviewer,
+                    )
+                    with pytest.raises(KernelError, match="Select and approve"):
+                        formation.resume(admitted.formation_run_id, expected_version=rejected["version"], principal=reviewer)
+                    review = rejected
+                    selected_creative = target["asset_version_id"]
+                args = dict(expected_version=review["version"],
+                            candidate_asset_version_id=target["asset_version_id"],
+                            candidate_content_hash=target["content_hash"], decision="APPROVE",
+                            reason="Fixture author preserves witness conflict and selects this exact branch",
+                            idempotency_key=f"manual:approve:{waiting['current_stage']}", principal=reviewer)
+                approved = formation.author_decision(admitted.formation_run_id, **args)
+                repeated = formation.author_decision(admitted.formation_run_id, **args)
+                assert repeated["version"] == approved["version"]
+                assert repeated["recovery_instruction"]["candidate_asset_version_id"] == target["asset_version_id"]
+                formation.resume(admitted.formation_run_id, expected_version=approved["version"], principal=reviewer)
+
             if formation.require(admitted.formation_run_id)["lifecycle"] == "READY":
                 break
         result = formation.require(admitted.formation_run_id)
         assert result["lifecycle"] == "READY", result
+        if manual_review:
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT asset_version_id FROM authority_book_foundation_binding WHERE formation_run_id=%s AND foundation_role='CREATIVE_FOUNDATION' AND freshness='CURRENT'", [admitted.formation_run_id])
+                assert str(uow.cursor.fetchone()[0]) == selected_creative
+                uow.cursor.execute("SELECT operation.input_asset_snapshot FROM authority_story_planning_generation generation JOIN authority_operation operation ON operation.operation_id=generation.operation_id WHERE generation.project_id=%s AND generation.generator_operation_name='theme.candidates.generate'", [harness.project_id])
+                parents = uow.cursor.fetchall()
+                assert parents and all(any(item["asset_version_id"] == selected_creative for item in row[0]) for row in parents)
+                uow.cursor.execute("SELECT checkpoint->'author_decisions' FROM authority_story_formation_stage WHERE formation_run_id=%s AND stage='CREATIVE_SEARCH'", [admitted.formation_run_id])
+                decisions = uow.cursor.fetchone()[0]
+                assert [item["decision"] for item in decisions] == ["REJECT", "APPROVE"]
+            return
         if evaluation_recovery:
             assert evaluation_failed
             assert len(concurrent_recovery_heads) == 2

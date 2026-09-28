@@ -140,6 +140,10 @@ V4_POLICY_SCHEMA = _object_schema({
         }),
     }),
 })
+V4_MONETARY_AMENDMENT_SCHEMA = deepcopy(V4_POLICY_SCHEMA)
+_V4_AMENDED_PLAN = V4_MONETARY_AMENDMENT_SCHEMA["properties"]["comparison_budget"]
+_V4_AMENDED_PLAN["properties"]["previous_policy"] = deepcopy(_V3_PLAN_SCHEMA["properties"]["previous_policy"])
+_V4_AMENDED_PLAN["required"].append("previous_policy")
 
 
 def _invalid(message: str) -> KernelError:
@@ -397,8 +401,14 @@ def _monetary_allocation(value: Any, label: str) -> dict[str, Any]:
 def _validate_provider_campaign(value: dict[str, Any], *, require_both_arms: bool) -> dict[str, Any]:
     plan = _object(value, "provider campaign", {
         "contract_version", "experiment_id", "manifest_hash", "expires_at", "accounting_basis",
-        "shared_total", "arms", "entitlements",
+        "shared_total", "arms", "entitlements", *({"previous_policy"} if "previous_policy" in value else set()),
     })
+    if "previous_policy" in plan:
+        previous = _object(plan["previous_policy"], "previous_policy", {"policy_version", "policy_hash", "contract_hash"})
+        _text(previous["policy_version"], "previous policy version")
+        if (not isinstance(previous["policy_hash"], str) or not re.fullmatch(r"[0-9a-f]{64}", previous["policy_hash"])
+            or not isinstance(previous["contract_hash"], str) or not _HASH.fullmatch(previous["contract_hash"])):
+            raise _invalid("campaign monetary amendment requires exact predecessor hashes")
     if require_both_arms or plan["accounting_basis"] != "MIXED":
         raise _invalid("Provider campaign budget does not itself prove a paired comparison")
     _text(plan["experiment_id"], "experiment_id")

@@ -162,6 +162,7 @@ from novel_forge.modules.provider_control import (
     ProviderAdapterRegistry,
     build_provider_adapter_registry,
     configured_chapter_provider_ids,
+    configured_router_provider_ids,
     normalize_provider_id,
 )
 from novel_forge.modules.provider_control.contracts import ProviderControlLevel
@@ -350,23 +351,40 @@ def build_production_execution_composition(
         str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
     )
     environment = runtime_environment.value
-    router_enabled = runtime_environment is RuntimeEnvironment.PRODUCTION or str(values.get("NOVEL_FORGE_PROVIDER_ROUTER") or "").strip() == "quality-cost-v1"
+    router_providers = configured_router_provider_ids(runtime_environment, values)
+    router_enabled = bool(router_providers)
+    deepseek_enabled = "deepseek" in router_providers
+    codex_router_enabled = "codex-cli" in router_providers
     if router_enabled:
-        from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
-
         templates = dict(values)
-        default_candidate = deepseek_candidates(available=True)[0]
+        if deepseek_enabled:
+            from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
+
+            default_candidate = deepseek_candidates(available=True)[0]
+            provider, model, reasoning = (
+                default_candidate.provider, default_candidate.model, default_candidate.reasoning
+            )
+            context_limit = default_candidate.context_limit
+            accounting_method = "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"
+            accounting_evidence = default_candidate.capability_version
+        else:
+            provider = "codex-cli"
+            model = str(values.get("NOVEL_FORGE_CODEX_ESCALATION_MODEL") or "").strip()
+            reasoning = "high"
+            context_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0)
+            accounting_method = "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"
+            accounting_evidence = str(values.get("NOVEL_FORGE_CODEX_CONFIGURATION_REF") or "")
         for stage_name in ("MODEL", "MEMO", "DRAFT", "REVIEW", "REVISION", "REREVIEW",
                            "CANON_EXTRACTION", "CANON_SUPPORT", "QUALITY", "READER_OUTCOME",
                            "NARRATIVE_EVALUATOR", "AGENT", "PLANNING"):
-            templates[f"NOVEL_FORGE_{stage_name}_PROVIDER"] = default_candidate.provider
-            templates[f"NOVEL_FORGE_{stage_name}_MODEL"] = default_candidate.model
-        templates["NOVEL_FORGE_REASONING_EFFORT"] = default_candidate.reasoning
-        templates["NOVEL_FORGE_AGENT_REASONING_EFFORT"] = default_candidate.reasoning
-        templates["NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"] = default_candidate.reasoning
-        templates["NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT"] = str(default_candidate.context_limit)
-        templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD"] = "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"
-        templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF"] = default_candidate.capability_version
+            templates[f"NOVEL_FORGE_{stage_name}_PROVIDER"] = provider
+            templates[f"NOVEL_FORGE_{stage_name}_MODEL"] = model
+        templates["NOVEL_FORGE_REASONING_EFFORT"] = reasoning
+        templates["NOVEL_FORGE_AGENT_REASONING_EFFORT"] = reasoning
+        templates["NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"] = reasoning
+        templates["NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT"] = str(context_limit)
+        templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD"] = accounting_method
+        templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF"] = accounting_evidence
         values = templates
     registry = provider_registry or build_provider_adapter_registry(
         environment=runtime_environment,
@@ -834,11 +852,11 @@ def build_production_execution_composition(
             )
             for stage, route in routes.items()
         }
-    codex_escalation_enabled = router_enabled and str(values.get("NOVEL_FORGE_ROUTER_CODEX_ESCALATION") or "").lower() == "true"
-    if codex_escalation_enabled:
+    codex_escalation_enabled = codex_router_enabled
+    if codex_router_enabled:
         escalation_model = str(values.get("NOVEL_FORGE_CODEX_ESCALATION_MODEL") or "").strip()
         if not escalation_model or int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT") or 0) <= 0:
-            raise RuntimeError("Codex escalation requires an explicit model and finite call allowance")
+            raise RuntimeError("Codex Router lane requires an explicit model and finite call allowance")
         codex_models.add(escalation_model)
     if codex_models:
         if len(codex_models) != 1:
@@ -855,10 +873,11 @@ def build_production_execution_composition(
         str(values.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") or "PRICED").strip().upper()
     )
     codex_accounting_basis = cost_accounting_basis
-    if codex_escalation_enabled:
+    if codex_router_enabled:
         if codex_accounting_basis != "ACCOUNT_ENTITLEMENT":
-            raise RuntimeError("Codex escalation requires governed account entitlement")
-        cost_accounting_basis = "PRICED"
+            raise RuntimeError("Codex Router lane requires governed account entitlement")
+        if deepseek_enabled:
+            cost_accounting_basis = "PRICED"
     if cost_accounting_basis not in {"PRICED", "ACCOUNT_ENTITLEMENT"}:
         raise RuntimeError("unsupported Codex cost accounting mode")
     if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and not codex_models:
@@ -1216,8 +1235,8 @@ def build_production_execution_composition(
         from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
         from novel_forge.modules.authority_handler_runtime.routing_feedback import domain_gate_outcomes
 
-        candidates = list(deepseek_candidates(available=True))
-        if codex_escalation_enabled:
+        candidates = list(deepseek_candidates(available=True)) if deepseek_enabled else []
+        if codex_router_enabled:
             from novel_forge.modules.production_execution.cost_routing import ModelCandidate, PricingSnapshot
             assert codex_entitlement is not None
             context_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0)
@@ -1235,16 +1254,22 @@ def build_production_execution_composition(
                     accounting_basis="ACCOUNT_ENTITLEMENT"),
                 capability_version=codex_entitlement.configuration_ref,
                 model_revision=codex_entitlement.configuration_ref,
-                escalation_only=True,
+                escalation_only=codex_escalation_enabled,
                 quota_remaining=int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
                 authorization_ref=codex_entitlement.authorization_ref,
             ))
         model_gateway.provider_router = ProductionProviderRouter(
             settings.database_url, candidates=candidates, execution_environment=environment,
-            task_money_limit=max_cost_per_call,
+            task_money_limit=max_cost_per_call or "0",
             task_token_limit=int(values.get("NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT") or 0),
             soft_money_limit=str(values.get("NOVEL_FORGE_ROUTER_SOFT_COST_PER_TASK") or "") or None,
             outcome_projection=domain_gate_outcomes,
+            provider_auth_profiles={
+                **({"codex-cli": next(iter(routes.values())).auth_profile_ref} if codex_router_enabled else {}),
+                **({"deepseek": "provider-account:deepseek:credential-sha256:"
+                    + hashlib.sha256(str(values["DEEPSEEK_API_KEY"]).strip().encode()).hexdigest()}
+                   if deepseek_enabled else {}),
+            },
         )
     shared_budget_caps = {
         key: str(values[value])

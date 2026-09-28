@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import asdict
+from typing import Any, Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from novel_forge.api.authority_dependencies import (
     build_content_authority_application,
@@ -27,12 +29,71 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
 
+class ReferenceEvaluationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    project_id: str = Field(min_length=1)
+    book_id: str = Field(min_length=1)
+    asset_version_id: str = Field(min_length=1)
+    content_hash: str = Field(pattern="^sha256:[0-9a-f]{64}$")
+    dimension: str = Field(min_length=1)
+    status: Literal["PASSED", "FAILED"]
+    score: float = Field(ge=0, le=100)
+    confidence: float = Field(ge=0, le=1)
+    evaluator_identity_class: Literal["PROFESSIONAL_EDITOR", "AUTHOR_EDITOR", "EXPERIENCED_READER", "GENERAL_READER"]
+    scope_type: Literal["CHAPTER", "ARC"]
+    chapter_start: int = Field(ge=1)
+    chapter_end: int = Field(ge=1)
+    quote: str = Field(min_length=1)
+    rationale: str = Field(min_length=1)
+    preserve_strengths: str = Field(min_length=1)
+    blind: bool
+    human_confirmation: Literal[True]
+    idempotency_key: str = Field(min_length=1, max_length=128)
+
+    @model_validator(mode="after")
+    def validate_scope(self):
+        if self.chapter_end < self.chapter_start or (
+            self.scope_type == "CHAPTER" and self.chapter_end != self.chapter_start
+        ):
+            raise ValueError("evaluation scope must match the stated chapter range")
+        return self
+
+
 def create_router(ctx: ProductRouterContext) -> APIRouter:
     globals().update(ctx.models)
     ContentAuthorityCommandRequest = ctx.models["ContentAuthorityCommandRequest"]
     AuthorityOperationControlRequest = ctx.models["AuthorityOperationControlRequest"]
     ExternalEffectManualResolutionRequest = ctx.models["ExternalEffectManualResolutionRequest"]
     router = APIRouter(prefix="/product/content-authority", tags=["product-content-authority"])
+
+    @router.get("/reference-samples")
+    def reference_samples(project_id: str = Query(min_length=1), book_id: str = Query(min_length=1)):
+        from novel_forge.modules.content_authority.reference_review import planning_reference_samples
+        try:
+            return planning_reference_samples(
+                _application(ctx).database_url, project_id=project_id, book_id=book_id,
+                principal=build_trusted_principal_resolver().resolve_api_principal(),
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except KernelError as exc:
+            raise HTTPException(status_code=409, detail={"code": exc.code, "message": exc.message}) from exc
+
+    @router.post("/reference-evaluations")
+    def record_reference_evaluation(request: ReferenceEvaluationRequest):
+        from novel_forge.modules.content_authority.reference_review import reference_evaluation_request
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            application = _application(ctx)
+            command = reference_evaluation_request(application.database_url, principal=principal, values=request.model_dump())
+            result = application.execute(command, principal=principal)
+            return {**asdict(result), "status": "SUCCEEDED", "production_eligible": False}
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except KernelError as exc:
+            raise HTTPException(status_code=409, detail={"code": exc.code, "message": exc.message}) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     @router.post("/commands", status_code=202)
     def admit_content_operation(request: ContentAuthorityCommandRequest) -> dict[str, Any]:
@@ -49,9 +110,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     "content_hash": resolved.content_hash,
                 }
                 for resolved in (
-                    (review_query.require if request.definition_name == "story_design.review.author"
-                     and asset_version_id == request.payload.get("candidate_asset_version_id")
-                     else resolver.resolve_override)(
+                    (review_query.require if (
+                        request.definition_name == "story_design.review.author"
+                        and asset_version_id == request.payload.get("candidate_asset_version_id")
+                    ) or (
+                        request.definition_name in {"quality.human_evaluation.record", "quality.adjudication.record"}
+                        and isinstance(request.payload.get("reference_sample"), dict)
+                        and asset_version_id == request.payload["reference_sample"].get("asset_version_id")
+                    ) else resolver.resolve_override)(
                         project_id=request.project_id,
                         asset_version_id=asset_version_id,
                     )
@@ -95,10 +161,11 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def list_operations(
         project_id: str = Query(..., min_length=1),
         limit: int = Query(default=100, ge=1, le=500),
+        idempotency_key: str = Query(default=""),
     ) -> list[dict[str, Any]]:
         principal = build_trusted_principal_resolver().resolve_api_principal()
         principal.require("content.authority.query", project_id)
-        return _query(ctx).list_operations(project_id=project_id, limit=limit)
+        return _query(ctx).list_operations(project_id=project_id, limit=limit, idempotency_key=idempotency_key)
 
     @router.get("/operations/{operation_id}")
     def operation_detail(operation_id: str, project_id: str = Query(..., min_length=1)) -> dict[str, Any]:
@@ -128,8 +195,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 trace_id=request.trace_id.strip() or f"trace:{uuid4()}",
                 correlation_id=request.correlation_id.strip() or f"correlation:{uuid4()}",
             ),
+            settle_undispatched=True,
         )
-        return {**result, "status": "CANCELLATION_REQUESTED"}
+        return result
 
     @router.post("/operations/{operation_id}/recover", status_code=202)
     def recover_operation(

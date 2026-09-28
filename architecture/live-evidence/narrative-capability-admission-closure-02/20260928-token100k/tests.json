@@ -1,0 +1,42 @@
+{
+  "implementation_sha": "fb360dfc6d94b4458eed990e606911bf74d9f39d",
+  "final_source_sha": "444aa0c391dde8af3f653d927297702ee3204c4e",
+  "final_source_delta": "Only comments/docstrings and reality projection; stripped executable AST identical, see comment-cleanup.json",
+  "final_focused": {
+    "command": "python /tmp/novel-forge-real-prose-20260927/test-run.py tests/unit/test_chapter_authority_dependencies.py tests/unit/test_deepseek_provider.py tests/unit/test_author_reference_review.py tests/unit/test_content_reference_api.py tests/unit/test_routing_bootstrap.py tests/integration/test_single_book_budget_postgres.py tests/integration/test_routing_bootstrap_budget_postgres.py -q",
+    "passed": 143,
+    "skipped": 2,
+    "skip_reason": "Existing tests hardcode absent /Applications/ChatGPT.app/Contents/Resources/codex; tests not modified to skip",
+    "log": "logs/final-focused.log",
+    "isolated_database": true
+  },
+  "ui_typecheck": {
+    "command": "web/admin/node_modules/.bin/tsc --project web/admin/tsconfig.json --noEmit",
+    "exit_code": 0
+  },
+  "ui_recovery": {
+    "command": "node web/admin/tests/author-reference-review-browser.mjs",
+    "scenarios": [
+      "NETWORK",
+      "422",
+      "409",
+      "FAILED_FINAL"
+    ],
+    "sample_switch_draft_retention": true,
+    "fixture_api": true,
+    "real_human_records": 0
+  },
+  "live_browser": "author-browser.json",
+  "earlier_stable_evidence": "../20260928-security-handoff/tests.json",
+  "full_backend_or_remote_ci": "NOT_RUN",
+  "new_migration_matrix": "NOT_APPLICABLE",
+  "new_adapter_failure_text_retention": "TESTED_NOT_YET_REPROVEN_BY_PAID_FAILURE",
+  "no_mixed_release_full_chain_pass_claim": true,
+  "documentation": {
+    "status": "PASS",
+    "implementation_sha": "444aa0c391dde8af3f653d927297702ee3204c4e",
+    "log": "logs/documentation-final-exact.log",
+    "command": "PYTHONPATH=src python -m novel_forge.tools.documentation_reality --repo-root ."
+  },
+  "durable_api_restart": "durable-restart.json"
+}

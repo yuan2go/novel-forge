@@ -11,7 +11,7 @@ class ContentAuthorityQuery:
     def __init__(self, database_url: str) -> None:
         self.database_url = database_url
 
-    def list_operations(self, *, project_id: str, limit: int = 100) -> list[dict[str, Any]]:
+    def list_operations(self, *, project_id: str, limit: int = 100, idempotency_key: str = "") -> list[dict[str, Any]]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -19,9 +19,10 @@ class ContentAuthorityQuery:
                        actor_id, trace_id, correlation_id, created_at, updated_at
                 FROM authority_operation
                 WHERE project_id = %s AND definition_name = ANY(%s)
+                  AND (%s='' OR idempotency_key=%s)
                 ORDER BY created_at DESC LIMIT %s
                 """,
-                [project_id, list(CONTENT_CODECS), limit],
+                [project_id, list(CONTENT_CODECS), idempotency_key, idempotency_key, limit],
             )
             rows = uow.cursor.fetchall()
         keys = (

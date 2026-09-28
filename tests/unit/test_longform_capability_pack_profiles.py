@@ -222,3 +222,18 @@ def test_reader_outcome_profile_is_independent_shadow_domain_pack() -> None:
             "schema:reader-outcome-pack-output:v1",
         }
     )
+
+
+def test_creative_json_format_example_matches_native_schema_without_replacing_default():
+    import json
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+    from novel_forge.modules.story_planning_runtime.foundation_generation import foundation_output_schema
+
+    template = (ROOT / "config/capability_packs/artifacts/story_planning_creative_json_template.md").read_text()
+    example = json.loads(template.split("<creative_json_output_example>\n", 1)[1].split("\n</creative_json_output_example>", 1)[0])
+    assert validate_chapter_provider_output_against_schema(
+        "creative.candidates.generate", foundation_output_schema("creative.candidates.generate"), example
+    ) == example
+    profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64)
+    assert profile.manifest["prompt_binding"]["template_ref"] == "prompt-template:story-planning-pack"
+    assert profile.manifest["prompt_binding"]["template_version"] == "v1"

@@ -1,0 +1,2151 @@
+{
+  "sample_id": "creative-xue-zhan-b:producer218:v3",
+  "error": {
+    "type": "KernelError",
+    "message": "MODEL_EFFECT_FINAL_PLANNING: Planning provider outcome was final_failure",
+    "code": "MODEL_EFFECT_FINAL_PLANNING"
+  },
+  "operation": {
+    "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+    "definition_name": "story_planning.generate",
+    "definition_version": "1.16.0",
+    "project_id": "narrative-closure-02-admission-20260927",
+    "status": "FAILED_FINAL",
+    "version": 3,
+    "parent_operation_id": null,
+    "root_operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+    "causation_operation_id": null,
+    "workflow_id": "",
+    "saga_id": "0a2f8f6d-c53d-4500-a8c6-69a7bf239b98",
+    "step_key": "",
+    "idempotency_scope": "book:story-planning-generation",
+    "idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b:producer218:v3:deepseek-flash:v1",
+    "request_digest": "f58a3e9490cc2909b263c004b509a50c48756ac5f425e91bb0b4b2f9f4d38bb0",
+    "definition_snapshot": {
+      "name": "story_planning.generate",
+      "family": "story_planning_runtime",
+      "policy": {
+        "candidate_only": true,
+        "high_risk_auto_approval": false,
+        "agent_runtime_binding_required": false,
+        "story_design_activation_separate": true,
+        "typed_capability_binding_required": true,
+        "repair_candidate_asset_input_allowed": true,
+        "repair_result_evidence_input_allowed": true,
+        "production_execution_gateway_required": true,
+        "semantic_evaluation_operation_separate": true,
+        "capability_pack_attempt_snapshot_required": true
+      },
+      "enabled": true,
+      "commit_sha": "90e7b0bde82c4ca7c4332ff757a5b20b14825ad2",
+      "handler_key": "novel_forge.story_planning.generate",
+      "permissions": [
+        "story_planning.authority.execute"
+      ],
+      "retry_policy": {
+        "max_attempts": 3,
+        "dead_letter_on_exhausted": true
+      },
+      "result_schema": {
+        "type": "object"
+      },
+      "command_schema": {
+        "type": "object",
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "properties": {
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          },
+          "input_asset_version_ids": {
+            "type": "array",
+            "minItems": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "execution_mode": "worker",
+      "timeout_policy": {
+        "operation_timeout_seconds": 1800
+      },
+      "approval_policy": {
+        "required": false
+      },
+      "definition_hash": "sha256:3b7ae7ea18650067a28506dad1a9aa409d6bec4e6f8c5463243783c0bcc67a8e",
+      "idempotency_scope": "book:story-planning-generation",
+      "definition_version": "1.16.0",
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "compensation_policy": {
+        "reason": "append-only candidates and validation evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "version": "story-planning-generation-completion-v1",
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_outbox_events": [
+          "story_planning.candidate.materialized"
+        ],
+        "required_asset_selectors": [
+          {
+            "role": "primary",
+            "selector": "planning_generation_candidate",
+            "lifecycle": "CANDIDATE",
+            "governance": "CLEAR",
+            "output_key": "story_planning.candidate",
+            "eligibility": "INELIGIBLE"
+          }
+        ]
+      },
+      "application_build_id": "wp02-deepseek-90e7b0bde82c",
+      "external_capabilities": [
+        "model.planning"
+      ],
+      "concurrency_key_template": "book:{book_id}:planning:{logical_key}",
+      "handler_contract_version": "story-planning-generation-handler-v1",
+      "irreversible_effect_policy": {
+        "allowed": false
+      }
+    },
+    "completion_contract_snapshot": {
+      "version": "story-planning-generation-completion-v1",
+      "required_evidence": [
+        "trace",
+        "audit",
+        "cost_when_provider_used"
+      ],
+      "required_outbox_events": [
+        "story_planning.candidate.materialized"
+      ],
+      "required_asset_selectors": [
+        {
+          "role": "primary",
+          "selector": "planning_generation_candidate",
+          "lifecycle": "CANDIDATE",
+          "governance": "CLEAR",
+          "output_key": "story_planning.candidate",
+          "eligibility": "INELIGIBLE"
+        }
+      ]
+    },
+    "policy_snapshot": {
+      "candidate_only": true,
+      "high_risk_auto_approval": false,
+      "agent_runtime_binding_required": false,
+      "story_design_activation_separate": true,
+      "typed_capability_binding_required": true,
+      "repair_candidate_asset_input_allowed": true,
+      "repair_result_evidence_input_allowed": true,
+      "production_execution_gateway_required": true,
+      "semantic_evaluation_operation_separate": true,
+      "capability_pack_attempt_snapshot_required": true
+    },
+    "metadata": {},
+    "created_at": "2026-09-28T00:45:31.654181+00:00",
+    "updated_at": "2026-09-28T00:45:48.579804+00:00",
+    "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+    "workspace_id": "ws:zheng-deng:sampling:20260927",
+    "concurrency_key": "book:duanchao-guan-zheng-deng-reference-01:planning:diagnostic:creative-xue-zhan-b",
+    "trace_id": "creative-xue-zhan-b",
+    "span_id": "13aba318-de2c-4c47-9a07-1d55771b3895",
+    "correlation_id": "narrative-closure-02-admission-20260927",
+    "causation_id": "",
+    "command_payload": {
+      "payload": {
+        "book_id": "duanchao-guan-zheng-deng-reference-01",
+        "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+        "trace_id": "creative-xue-zhan-b",
+        "project_id": "narrative-closure-02-admission-20260927",
+        "logical_key": "diagnostic:creative-xue-zhan-b",
+        "workspace_id": "ws:zheng-deng:sampling:20260927",
+        "repair_number": 0,
+        "repair_reason": "",
+        "correlation_id": "narrative-closure-02-admission-20260927",
+        "input_versions": {
+          "creative_brief": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+        },
+        "arc_working_set": {},
+        "idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b:producer218:v3:deepseek-flash:v1",
+        "parent_version_id": "",
+        "narrative_search_id": "",
+        "auto_approve_low_risk": false,
+        "narrative_realization": {},
+        "repair_of_candidate_id": "",
+        "generator_operation_name": "creative.candidates.generate",
+        "opening_execution_binding": {},
+        "execution_contract_version": "1.16.0",
+        "change_evidence_version_ids": [],
+        "narrative_search_branch_key": "",
+        "related_arc_plan_version_ids": [],
+        "governance_action_version_ids": [],
+        "dependent_arc_plan_version_ids": [],
+        "routing_bootstrap_authorization": {
+          "project_id": "narrative-closure-02-admission-20260927",
+          "environment": "validation",
+          "policy_hash": "cc0e3eb4a2b6f9bb25f1bbd6be4db42e8bdae520955d52df9439c9b95e101d96",
+          "authorization": {
+            "reason": "user:WP02:20260928:deepseek-100cny:v1; same-input paired creative diagnosis, not a new independent observation or task admission",
+            "book_id": "duanchao-guan-zheng-deng-reference-01",
+            "purpose": "BENCHMARK_CHALLENGER",
+            "campaign": {
+              "group_id": "xue-zhan-original-family",
+              "partition": "CALIBRATION",
+              "sample_id": "creative-xue-zhan-b:producer218:v3",
+              "expires_at": "2026-09-28T05:28:24Z",
+              "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+              "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+              "maximum_calls": 720,
+              "maximum_amount": "1",
+              "maximum_tokens": 40108032
+            },
+            "currency": "USD",
+            "task_type": "creative.candidates.generate",
+            "expires_at": "2026-09-28T05:28:24Z",
+            "environment": "validation",
+            "logical_key": "diagnostic:creative-xue-zhan-b",
+            "candidate_id": "deepseek:deepseek-flash:low",
+            "command_hash": "sha256:f572a08fa44c6070fd95c8e0e296e896dbd694b2cc099703bddfa95a7a6a52cc",
+            "maximum_calls": 1,
+            "maximum_amount": "0.15",
+            "maximum_tokens": 100000,
+            "model_revision": "DeepSeek-V4.1-Flash",
+            "accounting_basis": "PRICED",
+            "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-xue-zhan-b:producer218:v3:deepseek-flash:v1",
+            "input_versions_hash": "sha256:fc2935f3bb7fdf2933ac287d7840fbdcbd0ff528f75228e3e8abed5decdc79a9",
+            "production_eligible": false,
+            "producer_contract_hash": "sha256:1d4272af184206c237ae993fb169a5e620b50810eac05bc1dc5c6d36c4d2e2a9",
+            "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b:producer218:v3:deepseek-flash:v1"
+          },
+          "policy_version": "wp02-first-foundation-deepseek-v5",
+          "policy_actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+          "authorization_hash": "sha256:36b611a2c8c289f5b57c307abcd189234d49dece9ca48a5af5f293f97bf73663",
+          "policy_operation_id": "fd403d38-2c61-4c8a-904c-d388dd7292f4"
+        },
+        "arc_scope_volume_plan_version_ids": [],
+        "narrative_search_hard_constraints": [],
+        "narrative_search_planning_horizon": {},
+        "parent_agent_session_operation_id": "",
+        "routing_bootstrap_authorization_id": "grant:narrative-closure-02-admission-20260927:creative-xue-zhan-b:producer218:v3:deepseek-flash:v1",
+        "narrative_search_strategy_directive": "",
+        "narrative_search_desired_transformation": {},
+        "narrative_search_accepted_through_chapter": 0,
+        "narrative_search_parent_state_asset_version_id": ""
+      },
+      "project_id": "narrative-closure-02-admission-20260927",
+      "input_asset_version_ids": [
+        "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+      ]
+    },
+    "approval_requirement_snapshot": {
+      "policy": {
+        "required": false
+      },
+      "evidence": {}
+    },
+    "input_asset_snapshot": [
+      {
+        "project_id": "narrative-closure-02-admission-20260927",
+        "content_hash": "sha256:ebfddd724398905b4132643ec32e202c0660bf0dbffab99234fb74fc84a4fe67",
+        "asset_version_id": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+      }
+    ],
+    "business_deadline_at": "2026-09-28T01:15:31.654181+00:00"
+  },
+  "effects": [
+    {
+      "external_effect_id": "4bb43443-0f31-4175-9056-c58c823a1c8f",
+      "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+      "effect_type": "model.invoke",
+      "stable_idempotency_key": "3ef303f6-8871-49ef-92dc-10ae3901da53:creative.proposal.generate:planning-pep-v2",
+      "status": "FAILED_FINAL",
+      "request_hash": "sha256:2b57c055a84905b11720b8717c67f88c007ff8873b1f467ed3f13ae9eb041806",
+      "reconciliation": {},
+      "created_at": "2026-09-28T00:45:32.002787+00:00",
+      "request_payload": {
+        "input": {
+          "frozen_inputs": [
+            {
+              "role": "creative_brief",
+              "asset_type": "creative_brief",
+              "content_hash": "sha256:ebfddd724398905b4132643ec32e202c0660bf0dbffab99234fb74fc84a4fe67",
+              "asset_version_id": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+            }
+          ],
+          "arc_working_set": {},
+          "foundation_task": {
+            "role": "CREATIVE_FOUNDATION",
+            "task": "Develop a distinctive, sustainable conflict from the brief. Explain reader value, choices and costs; create original operational style examples, never imitate reference prose.",
+            "parent_roles": [],
+            "repair_contract": "When repair evidence is present, address each unresolved diagnosis, preserve unaffected constraints and explain uncertainty through the candidate rather than silently replacing upstream decisions.",
+            "contract_version": "foundation-generation.v1",
+            "authority_boundary": "Generate a candidate only. Upstream versions are immutable. No Canon, knowledge or accepted-history writes. Independent diagnosis and activation follow."
+          },
+          "narrative_search": {},
+          "planning_command": {
+            "book_id": "duanchao-guan-zheng-deng-reference-01",
+            "project_id": "narrative-closure-02-admission-20260927",
+            "logical_key": "diagnostic:creative-xue-zhan-b",
+            "repair_number": 0,
+            "repair_reason": "",
+            "input_versions": {
+              "creative_brief": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+            },
+            "planning_scope": "NOT_APPLICABLE",
+            "arc_working_set": {},
+            "parent_version_id": "",
+            "narrative_search_id": "",
+            "narrative_realization": {},
+            "generation_operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+            "change_evidence_version_ids": [],
+            "narrative_search_branch_key": "",
+            "related_arc_plan_version_ids": [],
+            "governance_action_version_ids": [],
+            "dependent_arc_plan_version_ids": [],
+            "arc_scope_volume_plan_version_ids": [],
+            "narrative_search_hard_constraints": [],
+            "narrative_search_planning_horizon": {},
+            "narrative_search_strategy_directive": "",
+            "narrative_search_desired_transformation": {},
+            "narrative_search_accepted_through_chapter": 0,
+            "narrative_search_parent_state_asset_version_id": ""
+          },
+          "narrative_intelligence": {
+            "need": {
+              "scope": "STORY",
+              "genre_tags": [
+                "原创简体中文武侠与低魔玄幻，第三人称限知"
+              ],
+              "theme_tags": [],
+              "need_digest": "sha256:37542f1b0eb0448419cb90201fac80fe5c848b982ea83cd6ec4251af1a08ece8",
+              "craft_policy": {},
+              "target_stage": "creative.candidates.generate",
+              "conflict_tags": [],
+              "craft_context": {
+                "pov": [],
+                "task": [
+                  "creative.candidates.generate"
+                ],
+                "genre": [
+                  "原创简体中文武侠与低魔玄幻，第三人称限知"
+                ],
+                "style": [],
+                "pacing": [],
+                "emotion": [],
+                "conflict": [],
+                "characters": [],
+                "scene_goal": [],
+                "information": [],
+                "obligations": [],
+                "relationship": [],
+                "reader_effect": [],
+                "chapter_number": 0,
+                "chapter_function": []
+              },
+              "hard_constraints": [
+                "以分配火种的真实代价推动情节，设计至少两条互相影响的持续意图与未完成承诺。",
+                "保留雪路、炭料、索道承重的约束；试通与打算通行都不等于已经抵达。",
+                "允许有依据地延期、重新协商或放弃步骤，但不允许抹去未完成承诺。",
+                "洛棠只能使用实际亲见或被告知的信息；迟岳的密令内容不自动进入洛棠认知。"
+              ],
+              "condition_sources": {
+                "creative_brief": {
+                  "content_hash": "sha256:ebfddd724398905b4132643ec32e202c0660bf0dbffab99234fb74fc84a4fe67",
+                  "asset_version_id": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+                }
+              },
+              "semantic_families": [
+                "CHARACTER_TRANSFORMATION",
+                "NARRATIVE_MECHANISM",
+                "THEME_MORAL_DILEMMA",
+                "WORLD_CONSEQUENCE"
+              ],
+              "reader_effect_tags": [],
+              "recent_craft_usage": [],
+              "current_state_terms": [],
+              "desired_transformation_terms": [],
+              "recently_used_repetition_keys": [],
+              "required_card_asset_version_ids": []
+            },
+            "rejected": [],
+            "selected": [],
+            "project_id": "narrative-closure-02-admission-20260927",
+            "policy_version": "knowledge-grounded-selection-v2",
+            "pool_truncated": false,
+            "schema_version": "mkaos-narrative-intelligence-selection.v1",
+            "pool_query_mode": "ALL_PROJECT_ELIGIBLE_NO_TRUNCATION",
+            "selection_digest": "sha256:6d3938a904905f6e08d6626bfd336102634d2ddc4d82ad1578efd7a6f947afc0",
+            "selection_status": "NO_ELIGIBLE_MATCH",
+            "authority_boundary": {
+              "semantic_role": "POSSIBILITY_ONLY",
+              "may_mutate_narrative_state": false,
+              "may_mutate_story_authority": false,
+              "may_prove_accepted_reality": false,
+              "planning_must_recompose_for_project": true
+            },
+            "eligible_card_count": 0,
+            "examined_card_count": 0,
+            "knowledge_access_policy": {
+              "mode": "PROJECT_DEFAULT",
+              "book_id": "duanchao-guan-zheng-deng-reference-01",
+              "policy_id": "book-production-knowledge-access",
+              "project_id": "narrative-closure-02-admission-20260927",
+              "policy_hash": "sha256:02662195d69348f2c4de3f0310a0c81d36f0f471246e193977615df9c4b62dad",
+              "policy_version": 1,
+              "schema_version": "book-knowledge-access-policy.v1",
+              "configured_explicitly": false,
+              "allowed_knowledge_card_asset_version_ids": []
+            }
+          }
+        },
+        "stage": "creative.candidates.generate",
+        "trace_id": "creative-xue-zhan-b",
+        "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+        "correlation_id": "narrative-closure-02-admission-20260927",
+        "max_output_tokens": 10000,
+        "_production_execution": {
+          "book_id": "duanchao-guan-zheng-deng-reference-01",
+          "attempt_id": "81eb53bf-694e-450d-bedf-95324f727235",
+          "project_id": "narrative-closure-02-admission-20260927",
+          "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+          "capability_runtime": {
+            "snapshot_id": "sha256:5756f34e5a822ddfe4b73aa90a5d7b324c837cc314b6af415f5dfa335fa8d1a7",
+            "snapshot_hash": "sha256:59a7bc9405bd57d55cb28f7aaf371d9bb4fd718de657a39d24269be244a1d354",
+            "routing_decision": {
+              "mode": "BENCHMARK_CHALLENGER",
+              "task": {
+                "risk": "",
+                "history": [],
+                "work_id": "duanchao-guan-zheng-deng-reference-01",
+                "chain_id": "sha256:e353b467bff08c127ce7f57cc7fdcac7ed827abf9aad623c7b870dffaa2b1c5a",
+                "task_type": "creative.candidates.generate",
+                "attempt_id": "81eb53bf-694e-450d-bedf-95324f727235",
+                "input_hash": "sha256:9e488d06e389ea61584936ab4f65eb442a50c3a5ee3d03b569f0bbdf3038a9f0",
+                "project_id": "narrative-closure-02-admission-20260927",
+                "stable_key": "3ef303f6-8871-49ef-92dc-10ae3901da53:creative.proposal.generate:planning-pep-v2",
+                "input_tokens": 28992,
+                "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+                "request_hash": "sha256:51f4c94cc203aba9a30986687a13a6ad3adff82f980dae3cfd9846eb46fd5b13",
+                "output_tokens": 10000,
+                "quality_floor": 0,
+                "cache_eligible": true,
+                "budget_snapshot": {
+                  "scope": "execution_chain",
+                  "candidates": {
+                    "codex-cli:gpt-6-sol:high": {
+                      "scopes": {
+                        "money:work_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:global_daily": {
+                          "cap": "1",
+                          "remaining": "1",
+                          "used_or_reserved": "0"
+                        },
+                        "money:global_total": {
+                          "cap": "1",
+                          "remaining": "1",
+                          "used_or_reserved": "0"
+                        },
+                        "calls:project_total": {
+                          "cap": "460",
+                          "remaining": "457",
+                          "used_or_reserved": "3"
+                        },
+                        "money:project_daily": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:project_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:global_monthly": {
+                          "cap": "1",
+                          "remaining": "1",
+                          "used_or_reserved": "0"
+                        },
+                        "tokens:project_total": {
+                          "cap": "11500000",
+                          "remaining": "11452331",
+                          "used_or_reserved": "47669"
+                        },
+                        "money:operation_total": {
+                          "cap": "0.15",
+                          "remaining": "0.15",
+                          "used_or_reserved": "0"
+                        },
+                        "tokens:operation_total": {
+                          "cap": "100000",
+                          "remaining": "100000",
+                          "used_or_reserved": "0"
+                        },
+                        "money:model_project_total": {
+                          "cap": "1",
+                          "remaining": "1",
+                          "used_or_reserved": "0"
+                        },
+                        "money:provider_project_daily": {
+                          "cap": "1",
+                          "remaining": "1",
+                          "used_or_reserved": "0"
+                        }
+                      },
+                      "remaining_calls": 0,
+                      "remaining_money": "0.15",
+                      "remaining_tokens": 100000
+                    },
+                    "deepseek:deepseek-flash:low": {
+                      "scopes": {
+                        "money:work_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:global_daily": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:global_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "calls:project_total": {
+                          "cap": "460",
+                          "remaining": "457",
+                          "used_or_reserved": "3"
+                        },
+                        "money:project_daily": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:project_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:global_monthly": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "tokens:project_total": {
+                          "cap": "11500000",
+                          "remaining": "11452331",
+                          "used_or_reserved": "47669"
+                        },
+                        "money:operation_total": {
+                          "cap": "0.15",
+                          "remaining": "0.15",
+                          "used_or_reserved": "0"
+                        },
+                        "tokens:operation_total": {
+                          "cap": "100000",
+                          "remaining": "100000",
+                          "used_or_reserved": "0"
+                        },
+                        "money:model_project_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:provider_project_daily": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        }
+                      },
+                      "remaining_calls": 457,
+                      "remaining_money": "0.15",
+                      "remaining_tokens": 100000
+                    },
+                    "deepseek:deepseek-v4-pro:max": {
+                      "scopes": {
+                        "money:work_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:global_daily": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:global_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "calls:project_total": {
+                          "cap": "460",
+                          "remaining": "457",
+                          "used_or_reserved": "3"
+                        },
+                        "money:project_daily": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:project_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:global_monthly": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "tokens:project_total": {
+                          "cap": "11500000",
+                          "remaining": "11452331",
+                          "used_or_reserved": "47669"
+                        },
+                        "money:operation_total": {
+                          "cap": "0.15",
+                          "remaining": "0.15",
+                          "used_or_reserved": "0"
+                        },
+                        "tokens:operation_total": {
+                          "cap": "100000",
+                          "remaining": "100000",
+                          "used_or_reserved": "0"
+                        },
+                        "money:model_project_total": {
+                          "cap": "1",
+                          "remaining": "1",
+                          "used_or_reserved": "0"
+                        },
+                        "money:provider_project_daily": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        }
+                      },
+                      "remaining_calls": 457,
+                      "remaining_money": "0.15",
+                      "remaining_tokens": 100000
+                    },
+                    "deepseek:deepseek-v4-pro:high": {
+                      "scopes": {
+                        "money:work_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:global_daily": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:global_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "calls:project_total": {
+                          "cap": "460",
+                          "remaining": "457",
+                          "used_or_reserved": "3"
+                        },
+                        "money:project_daily": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:project_total": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "money:global_monthly": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        },
+                        "tokens:project_total": {
+                          "cap": "11500000",
+                          "remaining": "11452331",
+                          "used_or_reserved": "47669"
+                        },
+                        "money:operation_total": {
+                          "cap": "0.15",
+                          "remaining": "0.15",
+                          "used_or_reserved": "0"
+                        },
+                        "tokens:operation_total": {
+                          "cap": "100000",
+                          "remaining": "100000",
+                          "used_or_reserved": "0"
+                        },
+                        "money:model_project_total": {
+                          "cap": "1",
+                          "remaining": "1",
+                          "used_or_reserved": "0"
+                        },
+                        "money:provider_project_daily": {
+                          "cap": "1",
+                          "remaining": "0.99760375",
+                          "used_or_reserved": "0.00239625"
+                        }
+                      },
+                      "remaining_calls": 457,
+                      "remaining_money": "0.15",
+                      "remaining_tokens": 100000
+                    }
+                  },
+                  "task_money_limit": "0.15",
+                  "task_token_limit": 100000,
+                  "money_used_or_reserved": "0",
+                  "tokens_used_or_reserved": 0,
+                  "admission_recheck_required": true
+                },
+                "policy_snapshot": {
+                  "policy": {
+                    "reason": "User authorized CNY100; first two same-input Flash diagnostics with approved monetary lineage retaining Codex usage; stop first failure or UNKNOWN",
+                    "policy_version": "wp02-first-foundation-deepseek-v5",
+                    "task_overrides": [],
+                    "bootstrap_authorizations": [
+                      {
+                        "reason": "user:WP02:20260928:deepseek-100cny:v1; same-input paired creative diagnosis, not a new independent observation or task admission",
+                        "book_id": "duanchao-guan-zheng-deng-reference-01",
+                        "purpose": "BENCHMARK_CHALLENGER",
+                        "campaign": {
+                          "group_id": "zheng-deng-original-family",
+                          "partition": "CALIBRATION",
+                          "sample_id": "creative-zheng-deng-a:producer218:v3",
+                          "expires_at": "2026-09-28T05:28:24Z",
+                          "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+                          "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+                          "maximum_calls": 720,
+                          "maximum_amount": "1",
+                          "maximum_tokens": 40108032
+                        },
+                        "currency": "USD",
+                        "task_type": "creative.candidates.generate",
+                        "expires_at": "2026-09-28T05:28:24Z",
+                        "environment": "validation",
+                        "logical_key": "diagnostic:creative-zheng-deng-a",
+                        "candidate_id": "deepseek:deepseek-flash:low",
+                        "command_hash": "sha256:0ebfe6e04f26a3f5a240b4e2724c79b56723897974fffee2b4d488c46547a88f",
+                        "maximum_calls": 1,
+                        "maximum_amount": "0.15",
+                        "maximum_tokens": 100000,
+                        "model_revision": "DeepSeek-V4.1-Flash",
+                        "accounting_basis": "PRICED",
+                        "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-zheng-deng-a:producer218:v3:deepseek-flash:v1",
+                        "input_versions_hash": "sha256:53c1acde850c08f0199cf88e24ea12454675f31a15afc7ce87f660d9a7f156c8",
+                        "production_eligible": false,
+                        "producer_contract_hash": "sha256:1d4272af184206c237ae993fb169a5e620b50810eac05bc1dc5c6d36c4d2e2a9",
+                        "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-zheng-deng-a:producer218:v3:deepseek-flash:v1"
+                      },
+                      {
+                        "reason": "user:WP02:20260928:deepseek-100cny:v1; same-input paired creative diagnosis, not a new independent observation or task admission",
+                        "book_id": "duanchao-guan-zheng-deng-reference-01",
+                        "purpose": "BENCHMARK_CHALLENGER",
+                        "campaign": {
+                          "group_id": "xue-zhan-original-family",
+                          "partition": "CALIBRATION",
+                          "sample_id": "creative-xue-zhan-b:producer218:v3",
+                          "expires_at": "2026-09-28T05:28:24Z",
+                          "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+                          "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+                          "maximum_calls": 720,
+                          "maximum_amount": "1",
+                          "maximum_tokens": 40108032
+                        },
+                        "currency": "USD",
+                        "task_type": "creative.candidates.generate",
+                        "expires_at": "2026-09-28T05:28:24Z",
+                        "environment": "validation",
+                        "logical_key": "diagnostic:creative-xue-zhan-b",
+                        "candidate_id": "deepseek:deepseek-flash:low",
+                        "command_hash": "sha256:f572a08fa44c6070fd95c8e0e296e896dbd694b2cc099703bddfa95a7a6a52cc",
+                        "maximum_calls": 1,
+                        "maximum_amount": "0.15",
+                        "maximum_tokens": 100000,
+                        "model_revision": "DeepSeek-V4.1-Flash",
+                        "accounting_basis": "PRICED",
+                        "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-xue-zhan-b:producer218:v3:deepseek-flash:v1",
+                        "input_versions_hash": "sha256:fc2935f3bb7fdf2933ac287d7840fbdcbd0ff528f75228e3e8abed5decdc79a9",
+                        "production_eligible": false,
+                        "producer_contract_hash": "sha256:1d4272af184206c237ae993fb169a5e620b50810eac05bc1dc5c6d36c4d2e2a9",
+                        "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b:producer218:v3:deepseek-flash:v1"
+                      }
+                    ]
+                  },
+                  "actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+                  "policy_hash": "cc0e3eb4a2b6f9bb25f1bbd6be4db42e8bdae520955d52df9439c9b95e101d96",
+                  "operation_id": "fd403d38-2c61-4c8a-904c-d388dd7292f4"
+                },
+                "remaining_money": "0.15",
+                "remaining_tokens": 100000,
+                "soft_money_limit": "0.15",
+                "cache_prefix_hash": "sha256:e048c624f062698b22a37dbbca6574a38874a1d8b44cbf8876b37321e8dab5b9",
+                "escalation_reason": "",
+                "producer_contract": {
+                  "skill": {
+                    "ref": "topic-development",
+                    "version": "topic-development-qualification-v1",
+                    "content_hash": "sha256:9766801ae782b1c3561e0dfc3604571c66882c6584011f957f4c4ad99a8b5893"
+                  },
+                  "stage": "creative.candidates.generate",
+                  "tool_policy": {
+                    "ref": "tools:chapter-generation-pack:v1",
+                    "version": "v1",
+                    "content_hash": "sha256:c020231fac59435d00b3bd2094f4642d79434994cb85f56aaccaa7ce2a5fc1f1"
+                  },
+                  "input_schema": {
+                    "ref": "schema:execution-input:creative-proposal-generate:v1",
+                    "version": "v1",
+                    "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+                  },
+                  "allowed_tools": [
+                    "model.provider.invoke"
+                  ],
+                  "output_schema": {
+                    "ref": "schema:foundation-provider-output:creative_foundation:v1",
+                    "shape_hash": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+                    "factory_hash": "sha256:e2bb151afe7556af01f149c388eaf3431dde393d4a0e5f64e8aa9bdd29fd9007",
+                    "binding_policy": "CONST_AND_ENUM_VALUES_ARE_FROZEN_PER_REQUEST;_TYPES_CARDINALITY_AND_FACTORY_ARE_SHARED",
+                    "identity_version": "planning-schema-factory-and-shape.v1"
+                  },
+                  "context_policy": {
+                    "ref": "context-policy:wp02-diagnostic-budget-10000:v1",
+                    "version": "v1",
+                    "content_hash": "sha256:bbbc31fadb0acabe28dbb8da5f659c6e75485f80d9b95026aae27eecac5fb5e5"
+                  },
+                  "schema_version": "routing-producer-contract.v1",
+                  "prompt_template": {
+                    "ref": "prompt-template:story-planning-pack",
+                    "version": "v1",
+                    "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+                  },
+                  "source_isolation": {},
+                  "pack_output_schema": {
+                    "ref": "schema:execution-output:creative-proposal-generate:v1",
+                    "version": "v1",
+                    "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+                  },
+                  "system_instruction": {
+                    "ref": "prompt-system:story-planning-pack",
+                    "version": "v7",
+                    "content_hash": "sha256:f91f8afd14743544f35690e45f079accd7eecfd3516ac16107b8aaf357c8cd5a"
+                  },
+                  "materialization_schema": "novelos.planning_capability_materialization.v1",
+                  "provider_view_versions": {
+                    "task_contract_version": "provider-task-view-v1",
+                    "context_contract_version": "provider-context-view-v2"
+                  },
+                  "required_reader_facing_language": null,
+                  "provider_prompt_projection_version": "authority-projection-task-provider-v1"
+                },
+                "latency_sla_seconds": 0,
+                "declared_requirements": {
+                  "risk": "",
+                  "chapter": 0,
+                  "quality_floor": 0
+                },
+                "lineage_operation_ids": [
+                  "3ef303f6-8871-49ef-92dc-10ae3901da53"
+                ],
+                "required_capabilities": [
+                  "structured_output"
+                ],
+                "producer_contract_hash": "sha256:1d4272af184206c237ae993fb169a5e620b50810eac05bc1dc5c6d36c4d2e2a9",
+                "reusable_prefix_tokens": 2266,
+                "latency_cost_per_second": "0"
+              },
+              "policy": {
+                "risk": "HIGH",
+                "max_attempts": 4,
+                "quality_floor": 0.85,
+                "quality_metric": "GENERATOR_SCORE",
+                "max_escalations": 1,
+                "minimum_samples": 20,
+                "confidence_penalty": 0.2
+              },
+              "status": "BENCHMARK_SELECTED",
+              "selected": {
+                "benchmark": {
+                  "as_of": "2026-09-28T00:45:31.815774+00:00",
+                  "version": "sha256:dab74d428ca1a79c295c28d9184f5def5d18700d1f09f97bbcf62815e83176f2",
+                  "uncertain": true,
+                  "retry_rate": 0,
+                  "actual_cost": "0",
+                  "judge_score": null,
+                  "repair_rate": null,
+                  "window_days": 30,
+                  "input_tokens": 5335,
+                  "outcome_refs": [],
+                  "quality_mean": 0.0,
+                  "sample_count": 1,
+                  "evidence_refs": [
+                    "asset-version:3ae72a23-2aaf-4a47-a8b4-7f2431bc41d7"
+                  ],
+                  "output_tokens": 2660,
+                  "quality_metric": "GENERATOR_SCORE",
+                  "reference_risk": null,
+                  "schema_success": 1,
+                  "acceptance_rate": null,
+                  "cache_hit_ratio": 0.0,
+                  "escalation_rate": 0,
+                  "latency_seconds": 15.555776624998543,
+                  "maximum_samples": 200,
+                  "predicted_quality": 0.0,
+                  "priced_usage_cost": "0.00239625",
+                  "confidence_penalty": 0.2,
+                  "mean_output_tokens": 2660,
+                  "canon_conflict_rate": null,
+                  "metric_sample_count": 0,
+                  "cost_unknown_samples": 1,
+                  "latency_sample_count": 1,
+                  "quality_distribution": [],
+                  "quality_sample_count": 0,
+                  "evidence_class_counts": {
+                    "PRODUCTION_OUTCOME": 0,
+                    "BENCHMARK_CHALLENGER": 1,
+                    "REFERENCE_EVALUATION": 0,
+                    "UNCLASSIFIED_REAL_PROVIDER": 0
+                  },
+                  "generator_score_basis": null,
+                  "mean_cache_hit_tokens": 0,
+                  "reference_label_strata": {
+                    "FAIL": {
+                      "lower_bound": 0.0,
+                      "sample_count": 0,
+                      "agreement_rate": null
+                    },
+                    "PASS": {
+                      "lower_bound": 0.0,
+                      "sample_count": 0,
+                      "agreement_rate": null
+                    }
+                  },
+                  "acceptance_sample_count": 0,
+                  "domain_gate_sample_count": 0,
+                  "independent_sample_count": 1,
+                  "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
+                  "reference_agreement_rate": null,
+                  "benchmark_acceptance_rate": null,
+                  "generator_context_buckets": [],
+                  "generator_protocol_hashes": [],
+                  "reference_context_buckets": [],
+                  "reference_protocol_hashes": [],
+                  "production_acceptance_rate": null,
+                  "conditional_content_quality": 0.0,
+                  "served_model_identity_hashes": [
+                    "sha256:ec99ccfa14ba7c198b5cbca4a8d481dc42637a79744de0ad765b71265fd463e8"
+                  ],
+                  "qualification_acceptance_rate": null,
+                  "repeated_sample_attempt_count": 0,
+                  "independent_reviewer_score_basis": null,
+                  "production_eligible_sample_count": 0,
+                  "reference_agreement_sample_count": 0,
+                  "benchmark_acceptance_sample_count": 0,
+                  "benchmark_challenger_sample_count": 1,
+                  "production_acceptance_sample_count": 0,
+                  "excluded_experiment_partition_count": 0,
+                  "unadjudicated_reviewer_sample_count": 0,
+                  "independent_reviewer_context_buckets": [],
+                  "independent_reviewer_protocol_hashes": [],
+                  "unadjudicated_generator_sample_count": 1,
+                  "partition_conflicted_sample_identities": []
+                },
+                "candidate": {
+                  "tier": "flash",
+                  "model": "deepseek-flash",
+                  "pricing": {
+                    "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+                    "version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+                    "currency": "USD",
+                    "effective_from": "2026-09-10T04:00:00+00:00",
+                    "effective_until": "9999-12-31T23:59:59+00:00",
+                    "accounting_basis": "PRICED",
+                    "output_per_million": "1.2",
+                    "input_hit_per_million": ".006",
+                    "input_miss_per_million": ".3"
+                  },
+                  "provider": "deepseek",
+                  "available": true,
+                  "reasoning": "low",
+                  "candidate_id": "deepseek:deepseek-flash:low",
+                  "capabilities": [
+                    "structured_output",
+                    "text"
+                  ],
+                  "output_limit": 384000,
+                  "context_limit": 1000000,
+                  "model_revision": "DeepSeek-V4.1-Flash",
+                  "escalation_only": false,
+                  "quota_remaining": 0,
+                  "authorization_ref": "",
+                  "capability_version": "deepseek-official-2026-09-16",
+                  "availability_reason": "",
+                  "estimated_price_multiplier": "0.5"
+                },
+                "expected_quality": 0.0,
+                "rejected_reasons": [],
+                "cache_evidence_refs": [
+                  "asset-version:3ae72a23-2aaf-4a47-a8b4-7f2431bc41d7"
+                ],
+                "soft_limit_pressure": false,
+                "cache_tokens_estimate": 0,
+                "estimated_total_tokens": 38992,
+                "estimated_monetary_cost": "0.00594480",
+                "expected_effective_cost": "1.188960000000000",
+                "reservation_upper_bound": "0.0206976",
+                "production_rejected_reasons": [
+                  "QUALITY_FLOOR_NOT_MET",
+                  "BENCHMARK_INSUFFICIENT"
+                ]
+              },
+              "candidates": [
+                {
+                  "benchmark": {
+                    "as_of": "2026-09-28T00:45:31.815774+00:00",
+                    "version": "sha256:dab74d428ca1a79c295c28d9184f5def5d18700d1f09f97bbcf62815e83176f2",
+                    "uncertain": true,
+                    "retry_rate": 0,
+                    "actual_cost": "0",
+                    "judge_score": null,
+                    "repair_rate": null,
+                    "window_days": 30,
+                    "input_tokens": 5335,
+                    "outcome_refs": [],
+                    "quality_mean": 0.0,
+                    "sample_count": 1,
+                    "evidence_refs": [
+                      "asset-version:3ae72a23-2aaf-4a47-a8b4-7f2431bc41d7"
+                    ],
+                    "output_tokens": 2660,
+                    "quality_metric": "GENERATOR_SCORE",
+                    "reference_risk": null,
+                    "schema_success": 1,
+                    "acceptance_rate": null,
+                    "cache_hit_ratio": 0.0,
+                    "escalation_rate": 0,
+                    "latency_seconds": 15.555776624998543,
+                    "maximum_samples": 200,
+                    "predicted_quality": 0.0,
+                    "priced_usage_cost": "0.00239625",
+                    "confidence_penalty": 0.2,
+                    "mean_output_tokens": 2660,
+                    "canon_conflict_rate": null,
+                    "metric_sample_count": 0,
+                    "cost_unknown_samples": 1,
+                    "latency_sample_count": 1,
+                    "quality_distribution": [],
+                    "quality_sample_count": 0,
+                    "evidence_class_counts": {
+                      "PRODUCTION_OUTCOME": 0,
+                      "BENCHMARK_CHALLENGER": 1,
+                      "REFERENCE_EVALUATION": 0,
+                      "UNCLASSIFIED_REAL_PROVIDER": 0
+                    },
+                    "generator_score_basis": null,
+                    "mean_cache_hit_tokens": 0,
+                    "reference_label_strata": {
+                      "FAIL": {
+                        "lower_bound": 0.0,
+                        "sample_count": 0,
+                        "agreement_rate": null
+                      },
+                      "PASS": {
+                        "lower_bound": 0.0,
+                        "sample_count": 0,
+                        "agreement_rate": null
+                      }
+                    },
+                    "acceptance_sample_count": 0,
+                    "domain_gate_sample_count": 0,
+                    "independent_sample_count": 1,
+                    "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
+                    "reference_agreement_rate": null,
+                    "benchmark_acceptance_rate": null,
+                    "generator_context_buckets": [],
+                    "generator_protocol_hashes": [],
+                    "reference_context_buckets": [],
+                    "reference_protocol_hashes": [],
+                    "production_acceptance_rate": null,
+                    "conditional_content_quality": 0.0,
+                    "served_model_identity_hashes": [
+                      "sha256:ec99ccfa14ba7c198b5cbca4a8d481dc42637a79744de0ad765b71265fd463e8"
+                    ],
+                    "qualification_acceptance_rate": null,
+                    "repeated_sample_attempt_count": 0,
+                    "independent_reviewer_score_basis": null,
+                    "production_eligible_sample_count": 0,
+                    "reference_agreement_sample_count": 0,
+                    "benchmark_acceptance_sample_count": 0,
+                    "benchmark_challenger_sample_count": 1,
+                    "production_acceptance_sample_count": 0,
+                    "excluded_experiment_partition_count": 0,
+                    "unadjudicated_reviewer_sample_count": 0,
+                    "independent_reviewer_context_buckets": [],
+                    "independent_reviewer_protocol_hashes": [],
+                    "unadjudicated_generator_sample_count": 1,
+                    "partition_conflicted_sample_identities": []
+                  },
+                  "candidate": {
+                    "tier": "flash",
+                    "model": "deepseek-flash",
+                    "pricing": {
+                      "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+                      "version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+                      "currency": "USD",
+                      "effective_from": "2026-09-10T04:00:00+00:00",
+                      "effective_until": "9999-12-31T23:59:59+00:00",
+                      "accounting_basis": "PRICED",
+                      "output_per_million": "1.2",
+                      "input_hit_per_million": ".006",
+                      "input_miss_per_million": ".3"
+                    },
+                    "provider": "deepseek",
+                    "available": true,
+                    "reasoning": "low",
+                    "candidate_id": "deepseek:deepseek-flash:low",
+                    "capabilities": [
+                      "structured_output",
+                      "text"
+                    ],
+                    "output_limit": 384000,
+                    "context_limit": 1000000,
+                    "model_revision": "DeepSeek-V4.1-Flash",
+                    "escalation_only": false,
+                    "quota_remaining": 0,
+                    "authorization_ref": "",
+                    "capability_version": "deepseek-official-2026-09-16",
+                    "availability_reason": "",
+                    "estimated_price_multiplier": "0.5"
+                  },
+                  "expected_quality": 0.0,
+                  "rejected_reasons": [],
+                  "cache_evidence_refs": [
+                    "asset-version:3ae72a23-2aaf-4a47-a8b4-7f2431bc41d7"
+                  ],
+                  "soft_limit_pressure": false,
+                  "cache_tokens_estimate": 0,
+                  "estimated_total_tokens": 38992,
+                  "estimated_monetary_cost": "0.00594480",
+                  "expected_effective_cost": "1.188960000000000",
+                  "reservation_upper_bound": "0.0206976",
+                  "production_rejected_reasons": [
+                    "QUALITY_FLOOR_NOT_MET",
+                    "BENCHMARK_INSUFFICIENT"
+                  ]
+                },
+                {
+                  "benchmark": {
+                    "as_of": "2026-09-28T00:45:31.815774+00:00",
+                    "version": "sha256:1aa2d5c8ea654a620740b3273957a09539d05d2ea0883033bea1e6940f31fa69",
+                    "uncertain": true,
+                    "retry_rate": null,
+                    "actual_cost": "0",
+                    "judge_score": null,
+                    "repair_rate": null,
+                    "window_days": 30,
+                    "input_tokens": 0,
+                    "outcome_refs": [],
+                    "quality_mean": 0.0,
+                    "sample_count": 0,
+                    "evidence_refs": [],
+                    "output_tokens": 0,
+                    "quality_metric": "GENERATOR_SCORE",
+                    "reference_risk": null,
+                    "schema_success": 0.0,
+                    "acceptance_rate": null,
+                    "cache_hit_ratio": 0.0,
+                    "escalation_rate": null,
+                    "latency_seconds": null,
+                    "maximum_samples": 200,
+                    "predicted_quality": 0.0,
+                    "priced_usage_cost": "0",
+                    "confidence_penalty": 0.2,
+                    "mean_output_tokens": null,
+                    "canon_conflict_rate": null,
+                    "metric_sample_count": 0,
+                    "cost_unknown_samples": 0,
+                    "latency_sample_count": 0,
+                    "quality_distribution": [],
+                    "quality_sample_count": 0,
+                    "evidence_class_counts": {
+                      "PRODUCTION_OUTCOME": 0,
+                      "BENCHMARK_CHALLENGER": 0,
+                      "REFERENCE_EVALUATION": 0,
+                      "UNCLASSIFIED_REAL_PROVIDER": 0
+                    },
+                    "generator_score_basis": null,
+                    "mean_cache_hit_tokens": 0,
+                    "reference_label_strata": {
+                      "FAIL": {
+                        "lower_bound": 0.0,
+                        "sample_count": 0,
+                        "agreement_rate": null
+                      },
+                      "PASS": {
+                        "lower_bound": 0.0,
+                        "sample_count": 0,
+                        "agreement_rate": null
+                      }
+                    },
+                    "acceptance_sample_count": 0,
+                    "domain_gate_sample_count": 0,
+                    "independent_sample_count": 0,
+                    "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
+                    "reference_agreement_rate": null,
+                    "benchmark_acceptance_rate": null,
+                    "generator_context_buckets": [],
+                    "generator_protocol_hashes": [],
+                    "reference_context_buckets": [],
+                    "reference_protocol_hashes": [],
+                    "production_acceptance_rate": null,
+                    "conditional_content_quality": 0.0,
+                    "served_model_identity_hashes": [],
+                    "qualification_acceptance_rate": null,
+                    "repeated_sample_attempt_count": 0,
+                    "independent_reviewer_score_basis": null,
+                    "production_eligible_sample_count": 0,
+                    "reference_agreement_sample_count": 0,
+                    "benchmark_acceptance_sample_count": 0,
+                    "benchmark_challenger_sample_count": 0,
+                    "production_acceptance_sample_count": 0,
+                    "excluded_experiment_partition_count": 0,
+                    "unadjudicated_reviewer_sample_count": 0,
+                    "independent_reviewer_context_buckets": [],
+                    "independent_reviewer_protocol_hashes": [],
+                    "unadjudicated_generator_sample_count": 0,
+                    "partition_conflicted_sample_identities": []
+                  },
+                  "candidate": {
+                    "tier": "pro-high",
+                    "model": "deepseek-v4-pro",
+                    "pricing": {
+                      "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+                      "version": "deepseek-scheduled-peak-ceiling:2026-08-16T16:00:00+00:00:deepseek-v4-pro",
+                      "currency": "USD",
+                      "effective_from": "2026-08-16T16:00:00+00:00",
+                      "effective_until": "9999-12-31T23:59:59+00:00",
+                      "accounting_basis": "PRICED",
+                      "output_per_million": "3.96",
+                      "input_hit_per_million": ".044",
+                      "input_miss_per_million": "1.32"
+                    },
+                    "provider": "deepseek",
+                    "available": true,
+                    "reasoning": "high",
+                    "candidate_id": "deepseek:deepseek-v4-pro:high",
+                    "capabilities": [
+                      "structured_output",
+                      "text"
+                    ],
+                    "output_limit": 384000,
+                    "context_limit": 1000000,
+                    "model_revision": "DeepSeek-V4-Pro-0813",
+                    "escalation_only": false,
+                    "quota_remaining": 0,
+                    "authorization_ref": "",
+                    "capability_version": "deepseek-official-2026-09-16",
+                    "availability_reason": "",
+                    "estimated_price_multiplier": "0.5"
+                  },
+                  "expected_quality": 0.0,
+                  "rejected_reasons": [
+                    "QUALITY_FLOOR_NOT_MET",
+                    "BENCHMARK_INSUFFICIENT",
+                    "BENCHMARK_AUTHORIZED_TARGET_MISMATCH"
+                  ],
+                  "cache_evidence_refs": [],
+                  "soft_limit_pressure": false,
+                  "cache_tokens_estimate": 0,
+                  "estimated_total_tokens": 38992,
+                  "estimated_monetary_cost": "0.038934720",
+                  "expected_effective_cost": "15.5738880",
+                  "reservation_upper_bound": "0.07786944",
+                  "production_rejected_reasons": [
+                    "QUALITY_FLOOR_NOT_MET",
+                    "BENCHMARK_INSUFFICIENT"
+                  ]
+                },
+                {
+                  "benchmark": {
+                    "as_of": "2026-09-28T00:45:31.815774+00:00",
+                    "version": "sha256:1aa2d5c8ea654a620740b3273957a09539d05d2ea0883033bea1e6940f31fa69",
+                    "uncertain": true,
+                    "retry_rate": null,
+                    "actual_cost": "0",
+                    "judge_score": null,
+                    "repair_rate": null,
+                    "window_days": 30,
+                    "input_tokens": 0,
+                    "outcome_refs": [],
+                    "quality_mean": 0.0,
+                    "sample_count": 0,
+                    "evidence_refs": [],
+                    "output_tokens": 0,
+                    "quality_metric": "GENERATOR_SCORE",
+                    "reference_risk": null,
+                    "schema_success": 0.0,
+                    "acceptance_rate": null,
+                    "cache_hit_ratio": 0.0,
+                    "escalation_rate": null,
+                    "latency_seconds": null,
+                    "maximum_samples": 200,
+                    "predicted_quality": 0.0,
+                    "priced_usage_cost": "0",
+                    "confidence_penalty": 0.2,
+                    "mean_output_tokens": null,
+                    "canon_conflict_rate": null,
+                    "metric_sample_count": 0,
+                    "cost_unknown_samples": 0,
+                    "latency_sample_count": 0,
+                    "quality_distribution": [],
+                    "quality_sample_count": 0,
+                    "evidence_class_counts": {
+                      "PRODUCTION_OUTCOME": 0,
+                      "BENCHMARK_CHALLENGER": 0,
+                      "REFERENCE_EVALUATION": 0,
+                      "UNCLASSIFIED_REAL_PROVIDER": 0
+                    },
+                    "generator_score_basis": null,
+                    "mean_cache_hit_tokens": 0,
+                    "reference_label_strata": {
+                      "FAIL": {
+                        "lower_bound": 0.0,
+                        "sample_count": 0,
+                        "agreement_rate": null
+                      },
+                      "PASS": {
+                        "lower_bound": 0.0,
+                        "sample_count": 0,
+                        "agreement_rate": null
+                      }
+                    },
+                    "acceptance_sample_count": 0,
+                    "domain_gate_sample_count": 0,
+                    "independent_sample_count": 0,
+                    "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
+                    "reference_agreement_rate": null,
+                    "benchmark_acceptance_rate": null,
+                    "generator_context_buckets": [],
+                    "generator_protocol_hashes": [],
+                    "reference_context_buckets": [],
+                    "reference_protocol_hashes": [],
+                    "production_acceptance_rate": null,
+                    "conditional_content_quality": 0.0,
+                    "served_model_identity_hashes": [],
+                    "qualification_acceptance_rate": null,
+                    "repeated_sample_attempt_count": 0,
+                    "independent_reviewer_score_basis": null,
+                    "production_eligible_sample_count": 0,
+                    "reference_agreement_sample_count": 0,
+                    "benchmark_acceptance_sample_count": 0,
+                    "benchmark_challenger_sample_count": 0,
+                    "production_acceptance_sample_count": 0,
+                    "excluded_experiment_partition_count": 0,
+                    "unadjudicated_reviewer_sample_count": 0,
+                    "independent_reviewer_context_buckets": [],
+                    "independent_reviewer_protocol_hashes": [],
+                    "unadjudicated_generator_sample_count": 0,
+                    "partition_conflicted_sample_identities": []
+                  },
+                  "candidate": {
+                    "tier": "pro-max",
+                    "model": "deepseek-v4-pro",
+                    "pricing": {
+                      "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+                      "version": "deepseek-scheduled-peak-ceiling:2026-08-16T16:00:00+00:00:deepseek-v4-pro",
+                      "currency": "USD",
+                      "effective_from": "2026-08-16T16:00:00+00:00",
+                      "effective_until": "9999-12-31T23:59:59+00:00",
+                      "accounting_basis": "PRICED",
+                      "output_per_million": "3.96",
+                      "input_hit_per_million": ".044",
+                      "input_miss_per_million": "1.32"
+                    },
+                    "provider": "deepseek",
+                    "available": true,
+                    "reasoning": "max",
+                    "candidate_id": "deepseek:deepseek-v4-pro:max",
+                    "capabilities": [
+                      "structured_output",
+                      "text"
+                    ],
+                    "output_limit": 384000,
+                    "context_limit": 1000000,
+                    "model_revision": "DeepSeek-V4-Pro-0813",
+                    "escalation_only": false,
+                    "quota_remaining": 0,
+                    "authorization_ref": "",
+                    "capability_version": "deepseek-official-2026-09-16",
+                    "availability_reason": "",
+                    "estimated_price_multiplier": "0.5"
+                  },
+                  "expected_quality": 0.0,
+                  "rejected_reasons": [
+                    "QUALITY_FLOOR_NOT_MET",
+                    "BENCHMARK_INSUFFICIENT",
+                    "BENCHMARK_AUTHORIZED_TARGET_MISMATCH"
+                  ],
+                  "cache_evidence_refs": [],
+                  "soft_limit_pressure": false,
+                  "cache_tokens_estimate": 0,
+                  "estimated_total_tokens": 38992,
+                  "estimated_monetary_cost": "0.038934720",
+                  "expected_effective_cost": "15.5738880",
+                  "reservation_upper_bound": "0.07786944",
+                  "production_rejected_reasons": [
+                    "QUALITY_FLOOR_NOT_MET",
+                    "BENCHMARK_INSUFFICIENT"
+                  ]
+                },
+                {
+                  "benchmark": {
+                    "as_of": "2026-09-28T00:45:31.815774+00:00",
+                    "version": "sha256:559e033827ee7c871a43292374f1413f006977615e7416a06b23bb76e8f42fde",
+                    "uncertain": true,
+                    "retry_rate": 0,
+                    "actual_cost": "0",
+                    "judge_score": null,
+                    "repair_rate": null,
+                    "window_days": 30,
+                    "input_tokens": 34767,
+                    "outcome_refs": [],
+                    "quality_mean": 0.0,
+                    "sample_count": 2,
+                    "evidence_refs": [
+                      "asset-version:62581deb-3437-451d-8bd7-54b7a79d9f2e",
+                      "asset-version:389b04d2-5a15-4ffb-a24d-47cadfa57111"
+                    ],
+                    "output_tokens": 4907,
+                    "quality_metric": "GENERATOR_SCORE",
+                    "reference_risk": null,
+                    "schema_success": 1,
+                    "acceptance_rate": null,
+                    "cache_hit_ratio": 0.0,
+                    "escalation_rate": 1,
+                    "latency_seconds": null,
+                    "maximum_samples": 200,
+                    "predicted_quality": 0.0,
+                    "priced_usage_cost": "0",
+                    "confidence_penalty": 0.2,
+                    "mean_output_tokens": 2453.5,
+                    "canon_conflict_rate": null,
+                    "metric_sample_count": 0,
+                    "cost_unknown_samples": 2,
+                    "latency_sample_count": 0,
+                    "quality_distribution": [],
+                    "quality_sample_count": 0,
+                    "evidence_class_counts": {
+                      "PRODUCTION_OUTCOME": 0,
+                      "BENCHMARK_CHALLENGER": 2,
+                      "REFERENCE_EVALUATION": 0,
+                      "UNCLASSIFIED_REAL_PROVIDER": 0
+                    },
+                    "generator_score_basis": null,
+                    "mean_cache_hit_tokens": 0,
+                    "reference_label_strata": {
+                      "FAIL": {
+                        "lower_bound": 0.0,
+                        "sample_count": 0,
+                        "agreement_rate": null
+                      },
+                      "PASS": {
+                        "lower_bound": 0.0,
+                        "sample_count": 0,
+                        "agreement_rate": null
+                      }
+                    },
+                    "acceptance_sample_count": 0,
+                    "domain_gate_sample_count": 0,
+                    "independent_sample_count": 2,
+                    "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
+                    "reference_agreement_rate": null,
+                    "benchmark_acceptance_rate": null,
+                    "generator_context_buckets": [],
+                    "generator_protocol_hashes": [],
+                    "reference_context_buckets": [],
+                    "reference_protocol_hashes": [],
+                    "production_acceptance_rate": null,
+                    "conditional_content_quality": 0.0,
+                    "served_model_identity_hashes": [],
+                    "qualification_acceptance_rate": null,
+                    "repeated_sample_attempt_count": 0,
+                    "independent_reviewer_score_basis": null,
+                    "production_eligible_sample_count": 0,
+                    "reference_agreement_sample_count": 0,
+                    "benchmark_acceptance_sample_count": 0,
+                    "benchmark_challenger_sample_count": 2,
+                    "production_acceptance_sample_count": 0,
+                    "excluded_experiment_partition_count": 0,
+                    "unadjudicated_reviewer_sample_count": 0,
+                    "independent_reviewer_context_buckets": [],
+                    "independent_reviewer_protocol_hashes": [],
+                    "unadjudicated_generator_sample_count": 2,
+                    "partition_conflicted_sample_identities": []
+                  },
+                  "candidate": {
+                    "tier": "escalation",
+                    "model": "gpt-6-sol",
+                    "pricing": {
+                      "source": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+                      "version": "wp02-p0-controlled-no-dispatch-20260927",
+                      "currency": "UNKNOWN",
+                      "effective_from": "2026-09-27T05:28:24Z",
+                      "effective_until": "2026-09-28T05:28:24Z",
+                      "accounting_basis": "ACCOUNT_ENTITLEMENT",
+                      "output_per_million": "0",
+                      "input_hit_per_million": "0",
+                      "input_miss_per_million": "0"
+                    },
+                    "provider": "codex-cli",
+                    "available": true,
+                    "reasoning": "high",
+                    "candidate_id": "codex-cli:gpt-6-sol:high",
+                    "capabilities": [
+                      "structured_output",
+                      "text"
+                    ],
+                    "output_limit": 32768,
+                    "context_limit": 272000,
+                    "model_revision": "wp02-p0-controlled-no-dispatch-20260927",
+                    "escalation_only": true,
+                    "quota_remaining": 2,
+                    "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+                    "capability_version": "wp02-p0-controlled-no-dispatch-20260927",
+                    "availability_reason": "",
+                    "estimated_price_multiplier": "1"
+                  },
+                  "expected_quality": 0.0,
+                  "rejected_reasons": [
+                    "QUALITY_FLOOR_NOT_MET",
+                    "BENCHMARK_INSUFFICIENT",
+                    "ESCALATION_THRESHOLD_NOT_MET",
+                    "BUDGET_HARD_LIMIT",
+                    "BENCHMARK_AUTHORIZED_TARGET_MISMATCH"
+                  ],
+                  "cache_evidence_refs": [
+                    "asset-version:62581deb-3437-451d-8bd7-54b7a79d9f2e",
+                    "asset-version:389b04d2-5a15-4ffb-a24d-47cadfa57111"
+                  ],
+                  "soft_limit_pressure": false,
+                  "cache_tokens_estimate": 0,
+                  "estimated_total_tokens": 38992,
+                  "estimated_monetary_cost": null,
+                  "expected_effective_cost": null,
+                  "reservation_upper_bound": null,
+                  "production_rejected_reasons": [
+                    "QUALITY_FLOOR_NOT_MET",
+                    "BENCHMARK_INSUFFICIENT",
+                    "ESCALATION_THRESHOLD_NOT_MET",
+                    "BUDGET_HARD_LIMIT"
+                  ]
+                }
+              ],
+              "created_at": "2026-09-28T00:45:31.815774+00:00",
+              "decision_id": "routing-decision:180c64df1cb4da377d31186d9b97ebdf3769c05f1bca3e8d9454009fa53e142f",
+              "policy_version": "quality-constrained-routing.v11",
+              "schema_version": "quality-constrained-routing.v11",
+              "asset_version_id": "ad1e2abf-1813-449c-8bce-6a3b71350ca1",
+              "escalation_policy": {
+                "reason": "",
+                "history": [],
+                "max_attempts": 4,
+                "max_escalations": 1,
+                "unavailable_action": "BLOCK",
+                "semantic_failure_threshold": 2
+              },
+              "production_eligible": false,
+              "bootstrap_authorization": {
+                "project_id": "narrative-closure-02-admission-20260927",
+                "environment": "validation",
+                "policy_hash": "cc0e3eb4a2b6f9bb25f1bbd6be4db42e8bdae520955d52df9439c9b95e101d96",
+                "authorization": {
+                  "reason": "user:WP02:20260928:deepseek-100cny:v1; same-input paired creative diagnosis, not a new independent observation or task admission",
+                  "book_id": "duanchao-guan-zheng-deng-reference-01",
+                  "purpose": "BENCHMARK_CHALLENGER",
+                  "campaign": {
+                    "group_id": "xue-zhan-original-family",
+                    "partition": "CALIBRATION",
+                    "sample_id": "creative-xue-zhan-b:producer218:v3",
+                    "expires_at": "2026-09-28T05:28:24Z",
+                    "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+                    "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+                    "maximum_calls": 720,
+                    "maximum_amount": "1",
+                    "maximum_tokens": 40108032
+                  },
+                  "currency": "USD",
+                  "task_type": "creative.candidates.generate",
+                  "expires_at": "2026-09-28T05:28:24Z",
+                  "environment": "validation",
+                  "logical_key": "diagnostic:creative-xue-zhan-b",
+                  "candidate_id": "deepseek:deepseek-flash:low",
+                  "command_hash": "sha256:f572a08fa44c6070fd95c8e0e296e896dbd694b2cc099703bddfa95a7a6a52cc",
+                  "maximum_calls": 1,
+                  "maximum_amount": "0.15",
+                  "maximum_tokens": 100000,
+                  "model_revision": "DeepSeek-V4.1-Flash",
+                  "accounting_basis": "PRICED",
+                  "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-xue-zhan-b:producer218:v3:deepseek-flash:v1",
+                  "input_versions_hash": "sha256:fc2935f3bb7fdf2933ac287d7840fbdcbd0ff528f75228e3e8abed5decdc79a9",
+                  "production_eligible": false,
+                  "producer_contract_hash": "sha256:1d4272af184206c237ae993fb169a5e620b50810eac05bc1dc5c6d36c4d2e2a9",
+                  "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-xue-zhan-b:producer218:v3:deepseek-flash:v1"
+                },
+                "policy_version": "wp02-first-foundation-deepseek-v5",
+                "policy_actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+                "authorization_hash": "sha256:36b611a2c8c289f5b57c307abcd189234d49dece9ca48a5af5f293f97bf73663",
+                "policy_operation_id": "fd403d38-2c61-4c8a-904c-d388dd7292f4"
+              }
+            },
+            "provider_admission": {
+              "reason": "ADMITTED",
+              "status": "ADMITTED",
+              "precision": "PROVEN_UPPER_BOUND",
+              "envelope_hash": "sha256:923dd065a2333bef77d62e14f0552472125730d8c513bf9d4bd4de1ded0612e3",
+              "total_reserved": 38992,
+              "component_usage": {
+                "safety_margin": 8192,
+                "output_reserve": 10000,
+                "provider_input": 20784,
+                "request_framing": 16
+              },
+              "applicable_limit": 1000000,
+              "contract_version": "provider-token-admission-v1",
+              "accounting_contract": {
+                "model": "deepseek-flash",
+                "provider": "deepseek",
+                "precision": "PROVEN_UPPER_BOUND",
+                "evidence_ref": "deepseek-official-2026-09-16",
+                "meter_version": "v1",
+                "safety_margin": 8192,
+                "meter_identity": "deepseek-byte-token-upper-bound",
+                "output_reserve": 10000,
+                "route_identity": "creative.candidates.generate:deepseek:deepseek-flash:90e7b0bde82c4ca7c4332ff757a5b20b14825ad2:sha256:59a7bc9405bd57d55cb28f7aaf371d9bb4fd718de657a39d24269be244a1d354",
+                "contract_version": "provider-token-accounting-v2",
+                "framing_overhead": 16,
+                "accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+                "model_context_limit": 1000000,
+                "execution_token_limit": 1000000,
+                "serialization_contract": "deepseek-chat-completions-json-v1"
+              },
+              "context_bundle_status": "VALID",
+              "context_bundle_tokens": 670,
+              "input_component_hashes": {
+                "tool_policy": "sha256:058abd5cdd33e9f20fec97de618920cae3f9b93617df642ebcd1dfc737d1e547",
+                "output_schema": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+                "governed_skill": "sha256:34d9235996a0b45808e3183204954a13db0601ef8d7eac7eeb12c7be01f1261e",
+                "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+                "provider_task_view": "sha256:4bdcd0d74a303a88b246e2de3587ba95e53bdaf287e955f78c0659df01d24c70",
+                "system_instruction": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+                "fully_rendered_prompt": "sha256:9e488d06e389ea61584936ab4f65eb442a50c3a5ee3d03b569f0bbdf3038a9f0",
+                "provider_context_view": "sha256:bd8ea4db022da421572708190e53327c13b4041be17ed3ad8187069c849b361f",
+                "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+              },
+              "complete_request_coverage": [
+                "system_runtime_instructions",
+                "prompt_template",
+                "skill_instructions",
+                "tool_policy_and_schemas",
+                "structured_output_schema",
+                "context_bundle",
+                "knowledge_inputs",
+                "request_envelope_and_framing",
+                "output_reserve",
+                "safety_margin"
+              ]
+            },
+            "materialization_hash": "sha256:3f86579b36e751d01d2ae6e509032303a9871af1cf8271e102ea87ce43eabbe2",
+            "token_accounting_contract": {
+              "model": "deepseek-flash",
+              "provider": "deepseek",
+              "precision": "PROVEN_UPPER_BOUND",
+              "evidence_ref": "deepseek-official-2026-09-16",
+              "meter_version": "v1",
+              "safety_margin": 8192,
+              "meter_identity": "deepseek-byte-token-upper-bound",
+              "output_reserve": 10000,
+              "route_identity": "creative.candidates.generate:deepseek:deepseek-flash:90e7b0bde82c4ca7c4332ff757a5b20b14825ad2:sha256:59a7bc9405bd57d55cb28f7aaf371d9bb4fd718de657a39d24269be244a1d354",
+              "contract_version": "provider-token-accounting-v2",
+              "framing_overhead": 16,
+              "accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+              "model_context_limit": 1000000,
+              "execution_token_limit": 1000000,
+              "serialization_contract": "deepseek-chat-completions-json-v1"
+            },
+            "materialization_content_hash": "sha256:d1062287aa50dc98ef1122c4df0f498129d8ee562427d11b36e6cb94803e80cc",
+            "provider_request_envelope_hash": "sha256:923dd065a2333bef77d62e14f0552472125730d8c513bf9d4bd4de1ded0612e3",
+            "provider_admission_content_hash": "sha256:90fbc09efe7825e5649261bbf741d34d16616a0eac8bd246c8f1dc542451f4db",
+            "materialization_asset_version_id": "79d40dab-2447-41af-a3b4-75e0aa019c28",
+            "provider_admission_asset_version_id": "a89db85a-2fbf-4bf7-9b20-ddb895a4df45"
+          }
+        },
+        "provider_token_contract": {
+          "source": "FROZEN_REQUEST_INPUT_PLUS_OUTPUT_CEILING",
+          "cost_status": "KNOWN",
+          "contract_hash": "sha256:b6fc27d8d88a35326fe709b063ccd471d1aedc75737e4b63f39158a21b4e247a",
+          "budget_scope_id": "",
+          "accounting_basis": "PRICED",
+          "contract_version": "provider-token-reservation.v1",
+          "max_output_tokens": 10000,
+          "input_token_ceiling": 10000,
+          "budget_scope_revision": null,
+          "estimated_cost_amount": null,
+          "cost_authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+          "estimated_total_tokens": 20000
+        }
+      },
+      "provider": "production_execution_gateway",
+      "capability": "creative.proposal.generate",
+      "max_attempts": 3,
+      "reversible": false,
+      "last_error": {
+        "model_id": "deepseek-flash",
+        "provider_id": "deepseek",
+        "skill_version": "topic-development@topic-development-qualification-v1",
+        "prompt_version": "prompt-system:story-planning-pack@v7",
+        "real_model_call": true,
+        "production_verified": false,
+        "production_execution": {
+          "input_manifest": {
+            "book_id": "duanchao-guan-zheng-deng-reference-01",
+            "read_set": [
+              "asset-version:8ed8e295-1f25-4c88-a67b-0274f43a7f14",
+              "asset-version:authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+            ],
+            "attempt_id": "81eb53bf-694e-450d-bedf-95324f727235",
+            "project_id": "narrative-closure-02-admission-20260927",
+            "manifest_id": "production_execution/inputs/743144114b1efe74bbf1",
+            "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+            "target_scope": {
+              "book_id": "duanchao-guan-zheng-deng-reference-01",
+              "scope_id": "diagnostic:creative-xue-zhan-b",
+              "project_id": "narrative-closure-02-admission-20260927",
+              "scope_kind": "not_applicable"
+            },
+            "fencing_token": 1,
+            "input_artifacts": [
+              {
+                "artifact_ref": "asset-version:8ed8e295-1f25-4c88-a67b-0274f43a7f14",
+                "content_hash": "sha256:0caad43c6e850fd903908630d7456701a9b39f1c4f4bb7bc89fa604b14085435",
+                "artifact_type": "context_bundle",
+                "schema_version": "novelos.planning_context_bundle.v1",
+                "asset_version_id": "8ed8e295-1f25-4c88-a67b-0274f43a7f14",
+                "source_eligibility": "PRODUCTION_ELIGIBLE"
+              },
+              {
+                "artifact_ref": "asset-version:authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1",
+                "content_hash": "sha256:ebfddd724398905b4132643ec32e202c0660bf0dbffab99234fb74fc84a4fe67",
+                "artifact_type": "creative_brief",
+                "schema_version": "creative_brief.v1",
+                "asset_version_id": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1",
+                "source_eligibility": "PRODUCTION_ELIGIBLE"
+              }
+            ],
+            "arc_version_refs": [],
+            "planning_version": "diagnostic:creative-xue-zhan-b",
+            "skill_bundle_ref": "topic-development@topic-development-qualification-v1",
+            "prompt_bundle_ref": "prompt-system:story-planning-pack@v7",
+            "source_policy_ref": "source:creative-proposal-generate:v1",
+            "canon_version_refs": [],
+            "context_bundle_ref": "asset-version:8ed8e295-1f25-4c88-a67b-0274f43a7f14",
+            "source_eligibility": "PRODUCTION_ELIGIBLE",
+            "story_state_version": "none",
+            "skill_bundle_version": "topic-development@topic-development-qualification-v1",
+            "prompt_bundle_version": "prompt-system:story-planning-pack@v7",
+            "canon_snapshot_version": "none",
+            "context_bundle_version": "8ed8e295-1f25-4c88-a67b-0274f43a7f14",
+            "quality_profile_version": "none"
+          },
+          "route_snapshot": {
+            "model_id": "deepseek-flash",
+            "policy_id": "planning.creative_foundation.route.sha256.8e924351962632746ccc635459b13ce51953edfd491a734b9eb5d720a3e03d69",
+            "attempt_id": "81eb53bf-694e-450d-bedf-95324f727235",
+            "backend_id": "remote-provider-deepseek",
+            "release_sha": "90e7b0bde82c4ca7c4332ff757a5b20b14825ad2",
+            "approval_ref": "",
+            "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+            "model_provider": "deepseek",
+            "policy_version": 1,
+            "backend_version": "1.0.0",
+            "runtime_host_id": "local:yuan:novel-production",
+            "auth_profile_ref": "account-entitlement:guofeng-xuanhuan-01:codex-production-01-v1:codex:98c3c620d66276fc452ed5654ba0e77d32c65e9f861fcec18d5c5712736629fc",
+            "credential_scope": "",
+            "fallback_trigger": "",
+            "model_profile_id": "planning.creative_foundation.default.sha256.8e924351962632746ccc635459b13ce51953edfd491a734b9eb5d720a3e03d69",
+            "reasoning_effort": "low",
+            "route_generation": 1,
+            "skill_bundle_ref": "topic-development@topic-development-qualification-v1",
+            "output_schema_ref": "schema:foundation-provider-output:creative_foundation:v1",
+            "prompt_bundle_ref": "prompt-system:story-planning-pack@v7",
+            "route_decision_id": "routing-decision:180c64df1cb4da377d31186d9b97ebdf3769c05f1bca3e8d9454009fa53e142f",
+            "route_policy_hash": "d7e53d9f98457d4964f2f60cdeae99fa9edd0d56b85acdafe7d6e45783f5cacf",
+            "route_snapshot_id": "production_execution/routes/743144114b1efe74bbf1",
+            "context_bundle_ref": "asset-version:8ed8e295-1f25-4c88-a67b-0274f43a7f14",
+            "model_profile_hash": "818ac5f3142671a5eea17cff1ea787926e1fddcecbeba227b0660ee528f74120",
+            "route_change_index": 0,
+            "secret_version_ref": "",
+            "fallback_policy_ref": "planning.creative_foundation.fail-closed.sha256.8e924351962632746ccc635459b13ce51953edfd491a734b9eb5d720a3e03d69",
+            "model_profile_version": 1,
+            "fallback_policy_version": 1,
+            "parent_route_snapshot_id": "",
+            "quality_revalidation_ref": "",
+            "requested_reasoning_effort": "low"
+          },
+          "execution_handle": {
+            "transport": "REMOTE_PROVIDER_API",
+            "attempt_id": "81eb53bf-694e-450d-bedf-95324f727235",
+            "backend_id": "remote-provider-deepseek",
+            "execution_id": "planning-execution:4bb43443-0f31-4175-9056-c58c823a1c8f:81eb53bf-694e-450d-bedf-95324f727235",
+            "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+            "fencing_token": 1,
+            "completion_mode": "SYNCHRONOUS",
+            "local_process_id": null,
+            "query_capability": "UNSUPPORTED",
+            "cancel_capability": "UNSUPPORTED",
+            "callback_capability": "UNSUPPORTED",
+            "external_request_id": null,
+            "provider_request_id": "c5a589bb-3ecf-47c4-80a1-405e7879a4da",
+            "backend_execution_id": "c5a589bb-3ecf-47c4-80a1-405e7879a4da",
+            "local_process_group_id": null,
+            "local_process_start_time": null,
+            "local_execution_receipt_id": null
+          },
+          "execution_result": {
+            "outcome": "FINAL_FAILURE",
+            "attempt_id": "81eb53bf-694e-450d-bedf-95324f727235",
+            "started_at": "2026-09-28T00:45:32.195440Z",
+            "completed_at": "2026-09-28T00:45:48.535977Z",
+            "execution_id": "planning-execution:4bb43443-0f31-4175-9056-c58c823a1c8f:81eb53bf-694e-450d-bedf-95324f727235",
+            "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+            "fencing_token": 1,
+            "raw_output_ref": null,
+            "cost_receipt_ref": null,
+            "usage_receipt_ref": null,
+            "output_manifest_ref": null,
+            "process_receipt_ref": null,
+            "external_receipt_ref": null,
+            "provider_receipt_ref": "authority-asset-version:5823e6e7-6875-4314-8fd8-f53b210f7a94",
+            "normalized_output_ref": null,
+            "validation_report_ref": null
+          },
+          "process_evidence": {
+            "cost": {
+              "amount": "0.001880328",
+              "source": "usage_pricing",
+              "currency": "USD",
+              "estimated": true,
+              "measurement": "PRICED_FROM_PROVIDER_USAGE",
+              "availability": "AVAILABLE",
+              "pricing_period": "OFF_PEAK",
+              "pricing_version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+              "provider_billed": false,
+              "accounting_basis": "PRICED",
+              "pricing_snapshot": {
+                "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+                "version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+                "currency": "USD",
+                "effective_from": "2026-09-10T04:00:00+00:00",
+                "effective_until": "9999-12-31T23:59:59+00:00",
+                "accounting_basis": "PRICED",
+                "output_per_million": "1.2",
+                "input_hit_per_million": ".006",
+                "input_miss_per_million": ".3"
+              },
+              "pricing_multiplier": "0.5",
+              "pricing_time_basis": "PROVIDER_CREATED_ASSUMPTION",
+              "provider_created_at": "2026-09-28T00:45:32+00:00",
+              "pricing_snapshot_hash": "sha256:fc855d9c324cefa5bcfba5866a5c9f466d3cdc64c7c7f85672e0d139f1edd6b4",
+              "provider_billed_amount": null,
+              "reservation_ceiling_amount": "0.003760656"
+            },
+            "usage": {
+              "measurement": "PROVIDER_REPORTED",
+              "availability": "AVAILABLE",
+              "input_tokens": 5360,
+              "total_tokens": 7687,
+              "output_tokens": 2327,
+              "reasoning_tokens": 254,
+              "cache_usage_status": "OBSERVED",
+              "prompt_cache_hit_tokens": 2176,
+              "prompt_cache_miss_tokens": 3184
+            },
+            "result": {},
+            "model_id": "deepseek-flash",
+            "provider_id": "deepseek",
+            "request_hash": "sha256:923dd065a2333bef77d62e14f0552472125730d8c513bf9d4bd4de1ded0612e3",
+            "failure_class": "MALFORMED_STRUCTURED_OUTPUT",
+            "finish_reason": "stop",
+            "model_revision": "DeepSeek-V4.1-Flash",
+            "latency_seconds": 16.29867383299279,
+            "real_model_call": true,
+            "served_model_id": "deepseek-flash",
+            "reasoning_effort": "low",
+            "submission_phase": "PROVIDER_RESULT_RECORDED",
+            "system_fingerprint": "aeb56401ca74e127821c4f9126dcb669",
+            "production_verified": false,
+            "fixture_protocol_only": false,
+            "output_schema_version": "schema:foundation-provider-output:creative_foundation:v1",
+            "served_model_identity_hash": "sha256:ec99ccfa14ba7c198b5cbca4a8d481dc42637a79744de0ad765b71265fd463e8"
+          },
+          "execution_request": {
+            "stage": "creative.candidates.generate",
+            "domain": "creative",
+            "book_id": "duanchao-guan-zheng-deng-reference-01",
+            "saga_id": "0a2f8f6d-c53d-4500-a8c6-69a7bf239b98",
+            "trace_id": "creative-xue-zhan-b",
+            "task_kind": "story_planning.generate",
+            "attempt_id": "81eb53bf-694e-450d-bedf-95324f727235",
+            "capability": "creative.proposal.generate",
+            "project_id": "narrative-closure-02-admission-20260927",
+            "risk_class": "high",
+            "execution_id": "planning-execution:4bb43443-0f31-4175-9056-c58c823a1c8f:81eb53bf-694e-450d-bedf-95324f727235",
+            "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+            "origin_chain": [
+              "story_planning.generate",
+              "creative.candidates.generate"
+            ],
+            "target_scope": {
+              "book_id": "duanchao-guan-zheng-deng-reference-01",
+              "scope_id": "diagnostic:creative-xue-zhan-b",
+              "project_id": "narrative-closure-02-admission-20260927",
+              "scope_kind": "not_applicable"
+            },
+            "workspace_id": "ws:zheng-deng:sampling:20260927",
+            "fencing_token": 1,
+            "correlation_id": "narrative-closure-02-admission-20260927",
+            "agent_hop_count": 0,
+            "resource_claims": [
+              "book:duanchao-guan-zheng-deng-reference-01",
+              "planning:diagnostic:creative-xue-zhan-b"
+            ],
+            "importance_class": "HIGH",
+            "budget_policy_ref": "budget:creative-proposal-generate:v1",
+            "commit_policy_ref": "commit:creative-proposal-generate:v1",
+            "root_operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+            "route_snapshot_id": "production_execution/routes/743144114b1efe74bbf1",
+            "external_effect_id": "4bb43443-0f31-4175-9056-c58c823a1c8f",
+            "input_manifest_ref": "production_execution/inputs/743144114b1efe74bbf1",
+            "timeout_policy_ref": "timeout:creative-proposal-generate:v3",
+            "budget_reservation_id": "6516d4f0-0bd6-460c-b376-968ddc5b0d07",
+            "permission_policy_ref": "permission:creative-proposal-generate:v1",
+            "validation_policy_ref": "validation:creative-proposal-generate:v1",
+            "stable_idempotency_key": "3ef303f6-8871-49ef-92dc-10ae3901da53:creative.proposal.generate:planning-pep-v2",
+            "workspace_snapshot_ref": "ws:zheng-deng:sampling:20260927"
+          }
+        },
+        "fixture_protocol_only": false
+      },
+      "project_id": "narrative-closure-02-admission-20260927",
+      "completion_policy": "synchronous_final",
+      "compensates_effect_id": null,
+      "provider_request_id": "c5a589bb-3ecf-47c4-80a1-405e7879a4da",
+      "model_id": "deepseek-flash",
+      "request_deadline_at": "2026-09-28T01:15:32.002787+00:00",
+      "last_provider_heartbeat_at": "2026-09-28T00:45:48.547505+00:00",
+      "reconciliation_mode": "query",
+      "manual_resolution_required": false,
+      "request_timeout_seconds": 1800,
+      "provider_capability_profile": {
+        "provider": "production_execution_gateway",
+        "control_level": "V2_CONTROLLED",
+        "supports_query": true,
+        "supports_cancel": true,
+        "contract_version": "provider-capability-v2",
+        "supports_callback": false,
+        "reconciliation_mode": "query",
+        "supports_cost_receipt": true,
+        "supports_usage_pricing": true,
+        "supports_usage_receipt": true,
+        "supports_request_timeout": true,
+        "supports_provider_idempotency": true,
+        "real_provider_validation_eligible": true
+      },
+      "provider_control_level": "V2_CONTROLLED",
+      "provider_idempotency_mode": "provider",
+      "provider_query_mode": "query",
+      "provider_cancel_mode": "cancel",
+      "provider_callback_mode": "unsupported"
+    }
+  ],
+  "budgets": [
+    {
+      "reservation_id": "6516d4f0-0bd6-460c-b376-968ddc5b0d07",
+      "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+      "external_effect_id": "4bb43443-0f31-4175-9056-c58c823a1c8f",
+      "project_id": "narrative-closure-02-admission-20260927",
+      "stable_idempotency_key": "budget:3ef303f6-8871-49ef-92dc-10ae3901da53:creative.proposal.generate:planning-pep-v2:attempt:81eb53bf-694e-450d-bedf-95324f727235",
+      "provider": "deepseek",
+      "chapter": null,
+      "currency": "USD",
+      "estimated_amount": 0.0206976,
+      "reserved_amount": 0.0206976,
+      "settled_amount": 0.00188033,
+      "estimated_tokens": 38992,
+      "actual_tokens": 7687,
+      "status": "SETTLED",
+      "caps": {
+        "work_total": "1",
+        "global_daily": "1",
+        "global_total": "1",
+        "project_daily": "1",
+        "project_total": "1",
+        "global_monthly": "1",
+        "operation_total": "0.15",
+        "model_project_total": "1",
+        "provider_project_daily": "1"
+      },
+      "evidence": {
+        "phase": "pre_dispatch",
+        "fixture": false,
+        "work_id": "duanchao-guan-zheng-deng-reference-01",
+        "model_id": "deepseek-flash",
+        "call_caps": {
+          "project_total": 460
+        },
+        "token_caps": {
+          "project_total": 11500000,
+          "operation_total": 100000
+        },
+        "cost_status": "KNOWN",
+        "provider_id": "deepseek",
+        "reservation_id": "6516d4f0-0bd6-460c-b376-968ddc5b0d07",
+        "budget_scope_id": "",
+        "real_model_call": true,
+        "accounting_basis": "PRICED",
+        "submission_state": "SENT",
+        "execution_outcome": "FINAL_FAILURE",
+        "accepted_candidate": false,
+        "creative_experiment": {
+          "owner": "CREATIVE_EXPERIMENT_BUDGET",
+          "phase": "CALIBRATION",
+          "subject_id": "effect:4bb43443-0f31-4175-9056-c58c823a1c8f",
+          "policy_hash": "db56aa6ccbfa149807714ce3c541bbf3e1657c7d1663203df2d351e5db1ba507",
+          "authorization": {
+            "book_id": "duanchao-guan-zheng-deng-reference-01",
+            "project_id": "narrative-closure-02-admission-20260927",
+            "evidence_hash": "sha256:891f74f903873337dc081c037c4db20bd55a0456fcc5fe5111fb98608e1c53e7",
+            "business_scope": {
+              "design_allowed": true,
+              "source_allowed": false,
+              "max_chapter_number": 0
+            },
+            "authorization_ref": "user:WP02:20260928:deepseek-100cny:v1",
+            "authorized_cumulative_caps": {
+              "DESIGN": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "REPAIR": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "SOURCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "HOLDOUT": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "REFERENCE": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "SCREENING": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "PRODUCTION": {
+                "calls": 0,
+                "tokens": 0,
+                "priced_usd": "0"
+              },
+              "CALIBRATION": {
+                "calls": 4,
+                "tokens": 400000,
+                "priced_usd": "0.30"
+              }
+            }
+          },
+          "contract_hash": "sha256:35e318a199dc3964ca2307b05267009368261c64711df21b3474ac0802d40983",
+          "business_scope": {
+            "phase": "CALIBRATION",
+            "stage": "creative.candidates.generate",
+            "capability": "creative.proposal.generate",
+            "origin_phase": "DESIGN",
+            "scope_sources": [
+              {
+                "path": "operation.repair_number",
+                "value": 0
+              }
+            ],
+            "chapter_number": 0,
+            "operation_name": "story_planning.generate",
+            "campaign_sample": {
+              "group_id": "xue-zhan-original-family",
+              "partition": "CALIBRATION",
+              "sample_id": "creative-xue-zhan-b:producer218:v3",
+              "expires_at": "2026-09-28T05:28:24Z",
+              "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+              "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+              "maximum_calls": 720,
+              "maximum_amount": "1",
+              "maximum_tokens": 40108032
+            },
+            "dispatch_generation": 1,
+            "source_operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+            "provider_request_hash": "sha256:2b57c055a84905b11720b8717c67f88c007ff8873b1f467ed3f13ae9eb041806",
+            "generator_operation_name": "creative.candidates.generate"
+          },
+          "policy_version": "wp02-sampling-deepseek-money-v3"
+        },
+        "budget_scope_revision": null,
+        "cost_settlement_basis": "FROZEN_USAGE_PRICING",
+        "estimated_cost_status": "KNOWN",
+        "measurement_available": true,
+        "cost_authorization_ref": "",
+        "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+        "entitlement_usage_reconciled": false
+      },
+      "created_at": "2026-09-28T00:45:32.012471+00:00",
+      "updated_at": "2026-09-28T00:45:48.55424+00:00",
+      "settled_at": "2026-09-28T00:45:48.55424+00:00",
+      "budget_timezone": "UTC",
+      "budget_breach": false,
+      "budget_scope_id": null,
+      "budget_scope_revision": null,
+      "version": 1,
+      "accounting_basis": "PRICED",
+      "estimated_cost_status": "KNOWN",
+      "settled_cost_status": "KNOWN"
+    }
+  ],
+  "raw_text": "NOT_RETAINED_BY_DEPLOYED_90e_ADAPTER; cannot reconstruct or claim cause beyond MALFORMED_STRUCTURED_OUTPUT",
+  "future_fix_sha": "444aa0c391dde8af3f653d927297702ee3204c4e",
+  "paid_rerun": false
+}

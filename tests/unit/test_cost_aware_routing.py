@@ -396,6 +396,11 @@ def test_missing_latency_is_uncertain_under_sla():
         "reasoning_effort",
         "pricing_policy_json",
         "lineage",
+        "strict",
+        "strict_policy",
+        "strict_schema",
+        "strict_materialization",
+        "strict_binding",
     ],
 )
 def test_frozen_route_requires_original_scope_input_and_admission(drift):
@@ -455,6 +460,25 @@ def test_frozen_route_requires_original_scope_input_and_admission(drift):
             },
         },
     }
+    if drift.startswith("strict"):
+        schema = {"type": "object", "properties": {}, "required": [], "additionalProperties": False}
+        identity.update(protocol="deepseek-chat-completions-strict-tool-v1", output_schema_json=json.dumps(schema))
+        payload["_production_execution"]["capability_runtime"].update(
+            materialization_asset_version_id="materialization-version", materialization_content_hash="sha256:materialization")
+        documents["admission-version"].content.update(
+            capability_materialization_asset_version_id="materialization-version", capability_materialization_content_hash="sha256:materialization")
+        policy = {"provider_output_modes": {"classification": {"deepseek": "STRICT_TOOL_V1"}}}
+        documents["materialization-version"] = SimpleNamespace(
+            asset_type="capability_materialization_manifest", content_hash="sha256:materialization",
+            content={"pack_artifacts": {"context_policy": {"content": policy}}, "output_schema": {"content": schema}})
+        if drift == "strict_policy":
+            policy["provider_output_modes"] = {}
+        elif drift == "strict_schema":
+            identity["output_schema_json"] = json.dumps({**schema, "description": "changed"})
+        elif drift == "strict_materialization":
+            documents["materialization-version"].content_hash = "sha256:other"
+        elif drift == "strict_binding":
+            documents["admission-version"].content["capability_materialization_asset_version_id"] = "other"
     if drift in {"attempt_id", "book_id"}:
         payload["_production_execution"][drift] = "different"
     elif drift == "input":
@@ -481,7 +505,7 @@ def test_frozen_route_requires_original_scope_input_and_admission(drift):
         side_effect=lambda **kw: documents[kw["asset_version_id"]]
     )
     router._selected_route = Mock(return_value="selected")
-    if drift == "none":
+    if drift in {"none", "strict"}:
         assert router.select_for_payload(None, payload)[0] == "selected"
     else:
         with pytest.raises(KernelError):

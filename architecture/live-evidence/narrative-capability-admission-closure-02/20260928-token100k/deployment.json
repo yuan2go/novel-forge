@@ -1,0 +1,39 @@
+{
+  "baseline_sha": "e9e6e2980f744ff69ac608d4ccce0ea6122441d3",
+  "final_implementation_sha": "444aa0c391dde8af3f653d927297702ee3204c4e",
+  "author_api_deployed_sha": "fb360dfc6d94b4458eed990e606911bf74d9f39d",
+  "comment_only_final_sha": "444aa0c391dde8af3f653d927297702ee3204c4e",
+  "behavioral_implementation_sha": "fb360dfc6d94b4458eed990e606911bf74d9f39d",
+  "active_pack_deployed_sha": "fb360dfc6d94b4458eed990e606911bf74d9f39d",
+  "generation_releases": {
+    "codex": "f8271c54f9e9466b0d1f8a25c2e3e0001bf7932f",
+    "deepseek": "90e7b0bde82c4ca7c4332ff757a5b20b14825ad2"
+  },
+  "release_root": "/tmp/novel-forge-wp02-token100k-20260928/release-fb360dfc6d94",
+  "database_identity": "novel_forge_[REDACTED:e8fdbecd4179]_test",
+  "historical_database_is_not_disposable": true,
+  "postgres_container": "novel-forge-first-novel-pilot-data",
+  "postgres_port": 61959,
+  "minio_container": "novel-forge-first-novel-pilot-objects",
+  "minio_port": 61961,
+  "migration_head": "20260927_0147_runtime_job_dispatch_pause",
+  "migration_changes": false,
+  "author_ui": "http://127.0.0.1:3142/production",
+  "api": "http://127.0.0.1:8141",
+  "cors_allowed_origin": "http://127.0.0.1:3142",
+  "author_principal": "first-novel-pilot-operator",
+  "author_identity_source": "Existing trusted local operator configuration, unchanged principal; project scope delegated by user",
+  "process_brake": true,
+  "project_dispatch_control": "PAUSED",
+  "workers": "Existing 218 clone worker slice remains braked; new final sampling path uses synchronous native application and API; no new broad worker activation",
+  "global_readiness": "NOT_CLAIMED; scoped operator cannot query global system health (403); no gate weakened",
+  "historical_effect_current_observation": {
+    "effect_id": "ff4d2c74-67d4-4627-8a05-9e47052fb3f8",
+    "effect_status": "FAILED_RETRYABLE",
+    "dispatch_status": "FAILED_RETRYABLE",
+    "budget_status": "SETTLED",
+    "action_this_turn": "NONE",
+    "note": "Earlier UNKNOWN label is historical and must not be used as the current status"
+  },
+  "all_business_history_preserved": true
+}

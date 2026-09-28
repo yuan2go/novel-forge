@@ -360,6 +360,41 @@ environment, a positive `NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL` and
 `NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT`. Never put credentials into task contexts,
 model-call assets, pricing policies or command-line arguments.
 
+DeepSeek JSON mode requires both the API `json_object` setting and an explicit JSON
+output example in the prompt ([official guidance](https://api-docs.deepseek.com/zh-cn/guides/json_mode/)).
+The opt-in `config/capability_packs/artifacts/story_planning_creative_json_template.md`
+provides a schema-valid creative output shape without story facts. Bind it as a new
+Prompt Template artifact in a reviewed Pack version, retaining the existing system,
+Skill, inputs and output schema. Compile, approve and activate the exact release before
+freezing a new Producer-scoped diagnostic grant. Existing default and frozen templates
+remain unchanged; their qualification cannot silently cover the changed prompt.
+Malformed or multiple-object responses fail strict parsing and retain the final text,
+hash, parser location and billable usage. Do not strip a format header to accept a
+failed result or retry it automatically. Thinking `low` remains an explicit route
+choice; changing the prompt does not authorize a different model or spending limit.
+
+A reviewed Planning Context Policy may explicitly set
+`provider_output_modes` to
+`{"creative.candidates.generate":{"deepseek":"STRICT_TOOL_V1"}}`.
+Bind `config/capability_packs/artifacts/story_planning_strict_tool_template.md`
+with that policy before compiling the new Pack. This freezes a distinct
+`deepseek-chat-completions-strict-tool-v1` envelope with the full output schema.
+Its Beta request supplies one strict `submit_structured_result` function; function
+arguments carry the result and do not execute another tool or Authority operation.
+Thinking mode keeps its chosen effort and uses no forced `tool_choice`.
+The conservative request bound includes the serialized tool/schema overhead before
+routing and again at admission. The transport accepts only closed objects whose
+properties are all required; unsupported schema shapes fail before dispatch. DeepSeek's
+unsupported string-length/array-cardinality keywords stay in the frozen full schema
+and the original native validator, although the transport projection omits them.
+Missing, multiple, wrong-name or malformed tool results fail with retained usage.
+Strict results retain exact final tool arguments and their hash before domain validation;
+this is unapproved Provider evidence, not accepted prose. Downstream schema rejection
+retains the parsed result, bounded validation error and original usage/cost receipt.
+No JSON-message fallback, output repair, automatic retry or qualification transfer
+occurs. Tasks without this explicit policy and previously frozen requests retain their
+original protocol. See the [official strict-mode contract](https://api-docs.deepseek.com/zh-cn/guides/tool_calls/).
+
 `novel-forge authority-provider-routing explain --project-id <id>
 --task-context-file <path>` performs no inference. It projects current benchmark and
 retry evidence through the canonical runtime composition and current ledger; actual
@@ -463,6 +498,13 @@ project and shared totals. `entitlements` contains separately capped `provider`,
 `authorization_ref`, `calls` and `tokens` lanes. The Codex lane must match the configured
 account authorization. Existing project/Book controls continue to apply as additional
 constraints. This plan does not itself authorize payment or confer A/B independence.
+
+An explicitly authorized monetary increase appends `comparison_budget.previous_policy`
+with the selected `policy_version`, `policy_hash` and `contract_hash`, and new authorization
+and evidence references. Only priced allowances may increase; manifest, expiry, Book,
+calls, tokens and entitlement lanes remain frozen. The same configure command validates
+this lineage, and campaign queries include earlier grants, reservations and settlements.
+Old requests retain their original limits. An increased ceiling is never reported as usage.
 
 The configure command verifies the existing authorization-evidence file; phase grants
 retain explicit Source/design/chapter business scope. `authority-creative-budget query`
@@ -697,6 +739,19 @@ qualification criterion, `PASSED` or `FAILED`, and one consistent protocol and C
 scope. Freeze at least two independent human records per adjudication; the evaluator
 and generator cannot author those labels. These commands record real supplied labels;
 the Coding Agent must not manufacture human evidence.
+
+The production page exposes an authenticated author form for native Planning diagnostic
+samples. `GET /product/content-authority/reference-samples` resolves exact candidate and
+Producer contracts; `POST /product/content-authority/reference-evaluations` derives the
+workspace, subject and author on the server and uses the existing Content operation.
+The form requires an exact quotation, rationale, preserved strengths, actual reviewer
+role, scope and explicit human confirmation. It does not preselect a judgment or claim
+blindness. Local drafts survive sample switches and reloads; an ambiguous submission
+keeps its original request and idempotency key for query or replay. An empty lookup is
+not proof of rejection; only a conclusive validation rejection or an exact terminal
+operation permits correction under a new key. Saving one annotation
+does not replace independent human records or adjudication, qualify a model, or promote
+the candidate. Never enter agent-generated judgments as human annotations.
 
 Extend the ordinary `reference_evaluation` binding with
 `adjudicated_reference: {adjudications: [{asset_version_id, content_hash}], scope:

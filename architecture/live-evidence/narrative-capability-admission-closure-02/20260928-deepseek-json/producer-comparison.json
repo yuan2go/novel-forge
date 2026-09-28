@@ -1,0 +1,66 @@
+{
+  "old_hash": "sha256:1d4272af184206c237ae993fb169a5e620b50810eac05bc1dc5c6d36c4d2e2a9",
+  "new_hash": "sha256:6f7c2e56ef065ae67f1429bf94bd4a6951a2c64cb9fd9418302fa0f988ac4f8e",
+  "changed_components": [
+    "prompt_template"
+  ],
+  "new_contract": {
+    "schema_version": "routing-producer-contract.v1",
+    "materialization_schema": "novelos.planning_capability_materialization.v1",
+    "stage": "creative.candidates.generate",
+    "output_schema": {
+      "ref": "schema:foundation-provider-output:creative_foundation:v1",
+      "identity_version": "planning-schema-factory-and-shape.v1",
+      "factory_hash": "sha256:e2bb151afe7556af01f149c388eaf3431dde393d4a0e5f64e8aa9bdd29fd9007",
+      "shape_hash": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+      "binding_policy": "CONST_AND_ENUM_VALUES_ARE_FROZEN_PER_REQUEST;_TYPES_CARDINALITY_AND_FACTORY_ARE_SHARED"
+    },
+    "allowed_tools": [
+      "model.provider.invoke"
+    ],
+    "provider_prompt_projection_version": "authority-projection-task-provider-v1",
+    "required_reader_facing_language": null,
+    "provider_view_versions": {
+      "task_contract_version": "provider-task-view-v1",
+      "context_contract_version": "provider-context-view-v2"
+    },
+    "source_isolation": {},
+    "system_instruction": {
+      "ref": "prompt-system:story-planning-pack",
+      "version": "v7",
+      "content_hash": "sha256:f91f8afd14743544f35690e45f079accd7eecfd3516ac16107b8aaf357c8cd5a"
+    },
+    "prompt_template": {
+      "ref": "prompt-template:story-planning-creative-json",
+      "version": "v1",
+      "content_hash": "sha256:05807b8d73c24513d5ee70941db4e6ed0881a8cb0a9390260e11a2831c93872d"
+    },
+    "skill": {
+      "ref": "topic-development",
+      "version": "topic-development-qualification-v1",
+      "content_hash": "sha256:9766801ae782b1c3561e0dfc3604571c66882c6584011f957f4c4ad99a8b5893"
+    },
+    "context_policy": {
+      "ref": "context-policy:wp02-diagnostic-budget-10000:v1",
+      "version": "v1",
+      "content_hash": "sha256:bbbc31fadb0acabe28dbb8da5f659c6e75485f80d9b95026aae27eecac5fb5e5"
+    },
+    "tool_policy": {
+      "ref": "tools:chapter-generation-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:c020231fac59435d00b3bd2094f4642d79434994cb85f56aaccaa7ce2a5fc1f1"
+    },
+    "input_schema": {
+      "ref": "schema:execution-input:creative-proposal-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+    },
+    "pack_output_schema": {
+      "ref": "schema:execution-output:creative-proposal-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+    }
+  },
+  "new_prompt_sha256": "sha256:0f9b8a85bffccb10db4ed2201ced9c2d4f7d2bf3dd858e7986e5eaef6211c222",
+  "old_qualification_copied": false
+}

@@ -41,6 +41,32 @@ def configured_chapter_provider_ids(
     )
 
 
+def configured_router_provider_ids(
+    environment: RuntimeEnvironment | str, values: Mapping[str, str],
+) -> frozenset[str]:
+    runtime_environment = RuntimeEnvironment.parse(environment)
+    enabled = runtime_environment is RuntimeEnvironment.PRODUCTION or str(
+        values.get("NOVEL_FORGE_PROVIDER_ROUTER") or ""
+    ).strip() == "quality-cost-v1"
+    if not enabled:
+        if str(values.get("NOVEL_FORGE_ROUTER_PROVIDERS") or "").strip():
+            raise RuntimeError("Router Provider selection requires quality-cost-v1")
+        return frozenset()
+    selection = values.get("NOVEL_FORGE_ROUTER_PROVIDERS")
+    if selection is None:
+        providers = {"deepseek"}
+        if str(values.get("NOVEL_FORGE_ROUTER_CODEX_ESCALATION") or "").lower() == "true":
+            providers.add("codex-cli")
+    else:
+        providers = {item.strip().lower() for item in selection.split(",")}
+        if not providers or not providers <= {"deepseek", "codex-cli"}:
+            raise RuntimeError("Router Providers must explicitly select deepseek and/or codex-cli")
+        if ("codex-cli" not in providers and
+            str(values.get("NOVEL_FORGE_ROUTER_CODEX_ESCALATION") or "").lower() == "true"):
+            raise RuntimeError("Codex escalation contradicts Router Provider selection")
+    return frozenset(providers)
+
+
 def build_provider_adapter_registry(
     *,
     environment: RuntimeEnvironment | str,
@@ -51,14 +77,10 @@ def build_provider_adapter_registry(
     runtime_environment = RuntimeEnvironment.parse(environment)
     values = os.environ if env is None else env
     normalized_ids = {normalize_provider_id(item) for item in provider_ids if item}
-    if runtime_environment is RuntimeEnvironment.PRODUCTION or str(
-        values.get("NOVEL_FORGE_PROVIDER_ROUTER") or ""
-    ).strip() == "quality-cost-v1":
-        # WHY: the Router's execution templates require these adapters even when
-        # the caller's legacy stage configuration selects only Codex CLI.
-        from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
-
-        normalized_ids.update(candidate.provider for candidate in deepseek_candidates(available=True))
+    router_providers = configured_router_provider_ids(runtime_environment, values)
+    if router_providers:
+        normalized_ids.difference_update({"deepseek", "codex-cli"})
+        normalized_ids.update(router_providers)
     adapter_ids = normalized_ids - {"codex-cli"}
     factory = ProviderAdapterFactory()
     if runtime_environment.fixture_allowed:
@@ -92,5 +114,6 @@ __all__ = [
     "CHAPTER_PROVIDER_ENVIRONMENT_KEYS",
     "build_provider_adapter_registry",
     "configured_chapter_provider_ids",
+    "configured_router_provider_ids",
     "normalize_provider_id",
 ]

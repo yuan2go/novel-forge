@@ -1,0 +1,25 @@
+{
+  "checked_at": "2026-09-28T02:44:39.128981+00:00",
+  "sources": [
+    "https://api-docs.deepseek.com/zh-cn/guides/tool_calls/",
+    "https://api-docs.deepseek.com/zh-cn/api/create-chat-completion/",
+    "https://api-docs.deepseek.com/quick_start/pricing/"
+  ],
+  "request": {
+    "model": "deepseek-flash",
+    "revision": "DeepSeek-V4.1-Flash",
+    "reasoning_effort": "low",
+    "endpoint": "https://api.deepseek.com/beta/chat/completions",
+    "protocol": "deepseek-chat-completions-strict-tool-v1",
+    "tool": "submit_structured_result",
+    "strict": true,
+    "forced_tool_choice": false,
+    "output_limit": 10000,
+    "context_limit": 10000,
+    "authorized_total_request_limit": 100000
+  },
+  "schema_policy": "Native full schema frozen in envelope and Pack; Beta-supported closed-object schema projected for transport. Unsupported length/cardinality retained in native validation. Schema/tool bytes metered before route and dispatch. No silent protocol fallback.",
+  "real_result": "FAILED_FINAL/SCHEMA_REJECTION; one parsed response returned forbidden $.style_profile.genre_conventions_note. No parameter repair or schema relaxation.",
+  "raw_retention_boundary": "Called release retained parsed result and original byte hash only. Final release stores exact raw arguments plus bounded native validation diagnostic; engineering tests verify this, no paid retest.",
+  "qualification": "NOT_QUALIFIED; one valid JSON response is not reliable schema compliance"
+}

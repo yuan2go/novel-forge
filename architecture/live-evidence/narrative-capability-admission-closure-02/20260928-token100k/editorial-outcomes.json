@@ -1,0 +1,22 @@
+{
+  "real_prose": 0,
+  "before_after_pairs": 0,
+  "system_findings_checked_against_prose": 0,
+  "human_editor_records": 0,
+  "reader_preferences": 0,
+  "false_positive_rate": null,
+  "false_negative_rate": null,
+  "over_edit_rate": null,
+  "preservation_rate": null,
+  "benefit_rate": null,
+  "reason": "No real chapter prose or independent exact-text review exists; diagnostic creative candidates are not counted as prose. Two-model output does not establish evaluator independence or calibration.",
+  "denominators": {
+    "false_positive": "independently checked system findings",
+    "false_negative": "independently adjudicated reference issues",
+    "over_edit": "independently reviewed edits",
+    "preservation": "specified strengths checked before and after",
+    "benefit": "independently adjudicated substantive revision targets"
+  },
+  "causal_craft_actor_benefit": "NOT_PROVEN",
+  "longform_stability": "NOT_PROVEN"
+}

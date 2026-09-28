@@ -1,0 +1,34 @@
+F...                                                                   [100%]
+=================================== FAILURES ===================================
+_ CommandKernelCancellationPostgresTests.test_control_cancel_settles_unreserved_ready_effect_and_replays _
+
+self = <tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests testMethod=test_control_cancel_settles_unreserved_ready_effect_and_replays>
+
+    def test_control_cancel_settles_unreserved_ready_effect_and_replays(self) -> None:
+        project_id, operation_id = self._operation("EXECUTING")
+        context = EffectCommandContext(operation_id, project_id, "operator", "trace:unreserved", "correlation:unreserved")
+        effect = plan_external_effect(
+            DATABASE_URL, context, effect_type="model.invoke", provider="isolated-fixture",
+            capability="model.planning", stable_idempotency_key=f"unreserved:{operation_id}",
+            request_payload={"candidate": "immutable request"}, max_attempts=1, reversible=False,
+        )
+        self._transition(operation_id, project_id, 0, "EXECUTING", "FAILED_RETRYABLE")
+        command = self._cancel(operation_id, project_id, expected_version=1)
+        result = request_cancellation(DATABASE_URL, command, settle_undispatched=True)
+        self.assertEqual(result["status"], "CANCELLED")
+        replay = request_cancellation(DATABASE_URL, command, settle_undispatched=True)
+        self.assertTrue(replay["replayed"])
+        self.assertEqual(replay["status"], "CANCELLED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT status,request_payload,request_hash FROM authority_external_effect WHERE external_effect_id=%s", [effect["external_effect_id"]])
+            status, payload, request_hash = cursor.fetchone()
+            self.assertEqual(status, "CANCELLED")
+            self.assertEqual(payload, {"candidate": "immutable request"})
+>           self.assertEqual(request_hash, effect["request_hash"])
+                                           ^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'request_hash'
+
+tests/integration/test_command_kernel_cancellation_postgres.py:141: KeyError
+=========================== short test summary info ============================
+FAILED tests/integration/test_command_kernel_cancellation_postgres.py::CommandKernelCancellationPostgresTests::test_control_cancel_settles_unreserved_ready_effect_and_replays
+1 failed, 3 passed, 10 deselected, 2 subtests passed in 2.11s

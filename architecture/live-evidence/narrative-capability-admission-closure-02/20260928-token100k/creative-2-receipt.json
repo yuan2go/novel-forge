@@ -1,0 +1,994 @@
+{
+  "dispatch_id": "19783e76-4705-4a03-83a3-9d785ecd21f9",
+  "external_effect_id": "180242cf-7508-486c-961a-2f3a419c81cf",
+  "generation": 1,
+  "status": "SUCCEEDED",
+  "provider_correlation_id": "process-receipt:35f7925b5671838ac1a70ad6",
+  "receipt_id": "process-receipt:35f7925b5671838ac1a70ad6",
+  "payload_hash": "sha256:358d2442bc0308060064a521c951ab735529cd9c4a0d8bda11927665521be5dd",
+  "evidence": {
+    "cost": {
+      "model": "gpt-6-sol",
+      "reason": "monetary_cost_not_observable",
+      "currency": "UNKNOWN",
+      "measurement": "UNKNOWN",
+      "availability": "UNAVAILABLE",
+      "provider_billed": "UNKNOWN",
+      "accounting_basis": "ACCOUNT_ENTITLEMENT",
+      "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+      "entitlement_snapshot": {
+        "cli_version": "codex-cli 0.155.1",
+        "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+        "configuration_ref": "wp02-p0-controlled-no-dispatch-20260927",
+        "executable_sha256": "sha256:8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+        "account_identity_ref": "codex-chatgpt-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+      },
+      "entitlement_snapshot_hash": "sha256:84d70eccbc74264fd46a7555c46e41d2be35eafb7b598fd3b62ec4287965557d"
+    },
+    "usage": {
+      "model": "gpt-6-sol",
+      "measurement": "MEASURED",
+      "availability": "AVAILABLE",
+      "input_tokens": 17413,
+      "total_tokens": 20474,
+      "output_tokens": 3061,
+      "cached_input_tokens": 0,
+      "uncached_input_tokens": 17413,
+      "reasoning_output_tokens": 1166
+    },
+    "result": {
+      "genre": "原创简体中文武侠与低魔玄幻",
+      "subgenre": "雪山封路背景下的门派伦理与资源抉择故事",
+      "core_fear": "洛棠怕自己凭未经证实的消息交出火种，最终两边都未获救；迟岳怕为核实道路和去向耗尽日光，令替他担保的人承担后果。",
+      "objective": "发展《雪栈借火》为一条由稀缺火种、受阻道路和相互牵制的救人承诺持续驱动的故事主线，让关键选择具有可见的物资代价与后续责任。",
+      "constraints": [
+        "以分配火种的真实代价推动情节，设计至少两条互相影响的持续意图与未完成承诺。",
+        "保留雪路、炭料、索道承重的约束；试通与打算通行都不等于已经抵达。",
+        "允许有依据地延期、重新协商或放弃步骤，但不允许抹去未完成承诺。",
+        "洛棠只能使用实际亲见或被告知的信息；迟岳的密令内容不自动进入洛棠认知。",
+        "每次决定动用火种或炭料，都要显出用量、被挤占的用途，以及随之改变的处境。",
+        "旧恩不能代替对接生人的交付承诺；师门施加的期限也不能证明索道安全。"
+      ],
+      "core_desire": "洛棠想让火种真正抵达接生人，同时偿还迟岳的救命之恩；迟岳想在期限前保住老伙计，又不愿把洛棠的承诺轻易抹去。",
+      "core_conflict": "洛棠答应把最后一罐火种交给山下的接生人，迟岳却称师门要他在日落前带回火种，否则替他担保的老伙计会被拘走。两人的承诺都指向同一份不可复制的资源；试索、寻人和借禁炉又会消耗有限炭料，使每一次争取一方的机会都可能缩小另一方的余地。",
+      "style_profile": {
+        "pov": "以洛棠为主要限知视角；涉及迟岳的想法时，只通过他可见的行动和亲口所说的话呈现。",
+        "narrator": "贴近人物行动与感官的第三人称叙述者，措辞简练，因果清楚；不替人物断言尚未证实的消息。",
+        "constraints": [
+          "使用原创简体中文表达，不借用参考作品的文字、人物或独特桥段组合。",
+          "行动先于感慨，以炭量、雪势、绳索受力和可见路况呈现代价。",
+          "洛棠的判断只依据她亲见或听到的信息；迟岳未说出的密令内容不进入她的内心叙述。",
+          "人物对话贴合处境：守炉的洛棠留意燃料和可执行的承诺，药师迟岳留意期限与担保人的处境。",
+          "保留低魔玄幻的克制感，不用未经建立的术法抹除运输与燃料限制。"
+        ],
+        "genre_conventions": [
+          "以山栈、雪路、旧索道和禁炉承载武侠式险境与门派压力。",
+          "以可见的物资消耗和互负承诺制造道义抉择。",
+          "让每次局部进展带来新的事实与责任，而非直接解除全部危机。"
+        ],
+        "original_examples": [
+          {
+            "example": "洛棠把余炭分成两堆，一堆够暖开索轮，一堆留给罐中的火。迟岳看了片刻，问她若索轮冻住，哪一堆还能送下山。",
+            "purpose": "示范资源代价与人物冲突如何落在同一个动作上。",
+            "explanation": "用实物分配引出两人的不同急迫之处；试索所需的炭会直接减少留给火种的燃料。"
+          },
+          {
+            "example": "她只见过栈外断掉的那段路。迟岳说日落前必须回去，她便问：“索道试过多重？山下的人又是谁亲眼见着的？”",
+            "purpose": "示范第三人称限知下的信息边界与务实语气。",
+            "explanation": "洛棠依据亲见的坍塌和迟岳告知的期限发问，没有把密令内容或接生人的位置当成已知事实。"
+          },
+          {
+            "example": "空钩荡到对岸，又荡回来。洛棠松开攥紧的绳头，在炭堆旁划下一道记号：钩能过去，人和火还没有。",
+            "purpose": "示范局部进展如何带来清晰结果，同时保留未完成的目标。",
+            "explanation": "一次试通只确认空钩可往返，同时留下已付出的燃料成本与仍待完成的运输承诺。"
+          }
+        ]
+      },
+      "target_reader": "偏好具体行动、互负承诺和可信选择的中文类型文学读者",
+      "differentiation": "冲突围绕可称量的炭料、可试却未必能载人的索道，以及尚未确认位置的收火人展开。人物不能用旧恩抵账，也不能用一次试通宣称完成交付；他们必须在信息不全时协商每一步由谁承担风险，并保留尚未兑现的承诺。",
+      "narrative_engine": "以“核实一项事实、消耗一份资源、重估两项承诺”推动情节：洛棠与迟岳先试旧索道承重并确认接生人的位置，再决定是否借禁炉。雪路坍塌限制探查，试索与取暖消耗炭料，借炉会占用原本可用于交付或返程的火力。每得到一条可靠消息，双方都须重新决定火种去向、剩余行动和各自愿承担的代价；延期或改道留下明确的待履行承诺。",
+      "why_worth_writing": "一罐火种同时系着山下的交付承诺和山上的担保人命运，使“该先救谁”成为必须落实到道路、承重、燃料与时间的选择。故事能让人物的情义接受行动检验，也让每次付出的代价继续影响下一步。",
+      "emotional_contract": "读者能看见每个决定救了谁的机会、耗掉了什么，以及谁还在等待。紧张来自有限时间与物资，回报来自人物用可验证的行动承担承诺，即使行动结果迫使他们重新约定下一步。",
+      "prohibited_outcomes": [
+        "把试通索道、计划下山或看见山路等同于接生人已收到火种。",
+        "让索道无视承重限制，或让雪路与炭料短缺在需要时自行消失。",
+        "让洛棠未经亲见或被告知便知晓迟岳密令的完整内容。",
+        "以迟岳救过洛棠为由，自动取消她对接生人的承诺。",
+        "以改道、延期或借用禁炉为由，宣称尚未完成的交付或带回任务已经完成。",
+        "让决定性的资源分配没有具体消耗、受影响的人或随之改变的处境。"
+      ],
+      "serialization_potential": "索道能否载人、接生人身在何处、禁炉是否值得借用，以及日落期限能否重新协商，构成相互牵制的连续问题。每解决一项，都改变可用炭料、通路或承诺的履行条件；后续情节可沿这些变化推进，而不必反复制造新的火种争夺。"
+    },
+    "model_id": "gpt-6-sol",
+    "provider_id": "codex-cli",
+    "skill_version": "topic-development@topic-development-qualification-v1",
+    "prompt_version": "prompt-system:story-planning-pack@v7",
+    "real_model_call": true,
+    "capability_runtime": {
+      "skill": {
+        "ref": "topic-development",
+        "version": "topic-development-qualification-v1",
+        "content_hash": "sha256:9766801ae782b1c3561e0dfc3604571c66882c6584011f957f4c4ad99a8b5893"
+      },
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "provider_view": {
+        "component_hashes": {
+          "tool_policy": "sha256:058abd5cdd33e9f20fec97de618920cae3f9b93617df642ebcd1dfc737d1e547",
+          "output_schema": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+          "governed_skill": "sha256:34d9235996a0b45808e3183204954a13db0601ef8d7eac7eeb12c7be01f1261e",
+          "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+          "provider_task_view": "sha256:bdf585354dcd83e8bd87ac5766cb05b4cb1957d664e3597e43e3666e184cda2d",
+          "system_instruction": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+          "fully_rendered_prompt": "sha256:4f155c51f29f12d764e9478ad7d4986071bd41da207d8029bc7fb7569e7e4ee0",
+          "provider_context_view": "sha256:bd8ea4db022da421572708190e53327c13b4041be17ed3ad8187069c849b361f",
+          "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+        },
+        "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+        "component_characters": {
+          "tool_policy": 258,
+          "output_schema": 1860,
+          "governed_skill": 1766,
+          "provider_knowledge": 437,
+          "provider_task_view": 4369,
+          "system_instruction": 5867,
+          "fully_rendered_prompt": 18154,
+          "provider_context_view": 2688,
+          "stage_semantic_contract": 65
+        },
+        "representation_policy": "authority-projection-task-provider-v1",
+        "selection_explanation": {
+          "policy": "minimum-sufficient-planning-context-v2",
+          "loss_receipt": {
+            "audit_hash": "sha256:1b419e072ec8ddc80f76874146a517d31d75bc285e4bd510e8e2d1668fa1f709",
+            "json_pointer": "/context_manifest/projection_audit",
+            "loss_record_count": 0,
+            "source_input_hash": "sha256:654b07e1c486c3f58cb30114096c95e238d3c1494225d723ad7f78b838e71b74"
+          },
+          "field_classes": {
+            "invariants": "HARD_CONSTRAINT",
+            "constraints": "HARD_CONSTRAINT",
+            "inspiration": "OPTIONAL_GUIDANCE",
+            "required_facts": "REQUIRED_FACT",
+            "due_obligations": "DUE_OBLIGATION",
+            "forbidden_events": "PROHIBITION",
+            "hard_constraints": "HARD_CONSTRAINT",
+            "required_payoffs": "DUE_OBLIGATION",
+            "soft_suggestions": "OPTIONAL_GUIDANCE",
+            "forbidden_payoffs": "PROHIBITION",
+            "optional_guidance": "OPTIONAL_GUIDANCE",
+            "required_fact_ids": "REQUIRED_FACT",
+            "story_constraints": "HARD_CONSTRAINT",
+            "style_suggestions": "OPTIONAL_GUIDANCE",
+            "prohibited_outcomes": "PROHIBITION",
+            "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+            "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+            "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+            "required_obligation_ids": "DUE_OBLIGATION",
+            "unresolved_obligation_ids": "DUE_OBLIGATION"
+          },
+          "compiler_version": "scope-preserving-planning-context-v1",
+          "maximum_segments": 24,
+          "omitted_fact_count": 0,
+          "omitted_item_count": 0,
+          "included_fact_count": 0,
+          "omitted_segment_count": 0,
+          "included_segment_count": 1,
+          "maximum_facts_per_segment": 32,
+          "truncated_character_count": 0,
+          "maximum_serialized_characters": 65536
+        },
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v2",
+        "context_projection_ratio": 1.8,
+        "component_estimated_tokens": {
+          "tool_policy": 86,
+          "output_schema": 620,
+          "governed_skill": 1040,
+          "provider_knowledge": 146,
+          "provider_task_view": 1573,
+          "system_instruction": 1956,
+          "fully_rendered_prompt": 6928,
+          "provider_context_view": 1206,
+          "stage_semantic_contract": 22
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+        "component_utf8_byte_upper_bounds": {
+          "tool_policy": 258,
+          "output_schema": 1860,
+          "governed_skill": 3118,
+          "provider_knowledge": 437,
+          "provider_task_view": 4719,
+          "system_instruction": 5867,
+          "fully_rendered_prompt": 20784,
+          "provider_context_view": 3616,
+          "stage_semantic_contract": 65
+        },
+        "provider_context_estimated_tokens": 1206,
+        "authority_context_estimated_tokens": 670,
+        "rendered_prompt_to_semantic_input_ratio": 2.368547,
+        "provider_admission_uses_component_estimates": false
+      },
+      "prompt_template": {
+        "ref": "prompt-template:story-planning-pack",
+        "version": "v1",
+        "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+      },
+      "output_schema_ref": "schema:foundation-provider-output:creative_foundation:v1",
+      "output_schema_hash": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+      "provider_admission": {
+        "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+        "status": "ADMITTED",
+        "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+        "envelope_hash": "sha256:f01b22003d5d6d9517ad17ea4cac86f6fa9685045bc0afeb4cfa7aec43c297a6",
+        "total_reserved": 38992,
+        "component_usage": {
+          "safety_margin": 8192,
+          "output_reserve": 10000,
+          "provider_input": 20784,
+          "request_framing": 16
+        },
+        "applicable_limit": 272000,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "gpt-6-sol",
+          "provider": "codex-cli",
+          "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+          "evidence_ref": "wp02-p0-controlled-no-dispatch-20260927",
+          "meter_version": "v1",
+          "safety_margin": 8192,
+          "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+          "output_reserve": 10000,
+          "route_identity": "creative.candidates.generate:codex-cli:gpt-6-sol:f8271c54f9e9466b0d1f8a25c2e3e0001bf7932f:sha256:f93ad858cb4d7bf987715d9f6417fcb0c9f4db4b237e6df181ce79572e68eb67",
+          "contract_version": "provider-token-accounting-v2",
+          "framing_overhead": 16,
+          "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+          "model_context_limit": 272000,
+          "execution_token_limit": 272000,
+          "serialization_contract": "codex-cli-application-stdin-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 670,
+        "input_component_hashes": {
+          "tool_policy": "sha256:058abd5cdd33e9f20fec97de618920cae3f9b93617df642ebcd1dfc737d1e547",
+          "output_schema": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+          "governed_skill": "sha256:34d9235996a0b45808e3183204954a13db0601ef8d7eac7eeb12c7be01f1261e",
+          "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+          "provider_task_view": "sha256:bdf585354dcd83e8bd87ac5766cb05b4cb1957d664e3597e43e3666e184cda2d",
+          "system_instruction": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+          "fully_rendered_prompt": "sha256:4f155c51f29f12d764e9478ad7d4986071bd41da207d8029bc7fb7569e7e4ee0",
+          "provider_context_view": "sha256:bd8ea4db022da421572708190e53327c13b4041be17ed3ad8187069c849b361f",
+          "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+        },
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "system_instruction": {
+        "ref": "prompt-system:story-planning-pack",
+        "version": "v7",
+        "content_hash": "sha256:f91f8afd14743544f35690e45f079accd7eecfd3516ac16107b8aaf357c8cd5a"
+      },
+      "materialization_hash": "sha256:fce29629a5b88a77a0cb4477363aedf64683e7911ab393be81e2a51ad803ec43",
+      "rendered_prompt_bytes": 20784,
+      "reusable_prefix_bytes": 9065,
+      "knowledge_content_hashes": [
+        "sha256:e880fdc724a45fccecbff445974f362668511fe03238b812f2740160e20b6c49"
+      ],
+      "context_asset_version_ids": [
+        "bc9d248a-05e6-490c-a67f-1cd217338d95"
+      ],
+      "embedding_output_contract": null,
+      "fully_rendered_prompt_hash": "sha256:4f155c51f29f12d764e9478ad7d4986071bd41da207d8029bc7fb7569e7e4ee0",
+      "provider_request_envelope_hash": "sha256:f01b22003d5d6d9517ad17ea4cac86f6fa9685045bc0afeb4cfa7aec43c297a6",
+      "required_reader_facing_language": null,
+      "rendered_prompt_estimated_tokens": 6928,
+      "provider_prompt_projection_version": "authority-projection-task-provider-v1",
+      "provider_admission_asset_version_id": "9b9f4c90-45c0-4c68-aa29-8341b7e8e062"
+    },
+    "production_verified": false,
+    "production_execution": {
+      "input_manifest": {
+        "book_id": "duanchao-guan-zheng-deng-reference-01",
+        "read_set": [
+          "asset-version:bc9d248a-05e6-490c-a67f-1cd217338d95",
+          "asset-version:authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1"
+        ],
+        "attempt_id": "ae180900-cd24-442b-98a4-4b4f746d1635",
+        "project_id": "narrative-closure-02-admission-20260927",
+        "manifest_id": "production_execution/inputs/57bf5ae1bfda083f2a5f",
+        "operation_id": "1ae36a8a-0c9a-4ff4-9173-312c3e0cbca3",
+        "target_scope": {
+          "book_id": "duanchao-guan-zheng-deng-reference-01",
+          "scope_id": "diagnostic:creative-xue-zhan-b",
+          "project_id": "narrative-closure-02-admission-20260927",
+          "scope_kind": "not_applicable"
+        },
+        "fencing_token": 1,
+        "input_artifacts": [
+          {
+            "artifact_ref": "asset-version:bc9d248a-05e6-490c-a67f-1cd217338d95",
+            "content_hash": "sha256:0caad43c6e850fd903908630d7456701a9b39f1c4f4bb7bc89fa604b14085435",
+            "artifact_type": "context_bundle",
+            "schema_version": "novelos.planning_context_bundle.v1",
+            "asset_version_id": "bc9d248a-05e6-490c-a67f-1cd217338d95",
+            "source_eligibility": "PRODUCTION_ELIGIBLE"
+          },
+          {
+            "artifact_ref": "asset-version:authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1",
+            "content_hash": "sha256:ebfddd724398905b4132643ec32e202c0660bf0dbffab99234fb74fc84a4fe67",
+            "artifact_type": "creative_brief",
+            "schema_version": "creative_brief.v1",
+            "asset_version_id": "authority-output:72795d02-4f0d-4bed-a138-b1e85a243e5d:creative.brief:v1",
+            "source_eligibility": "PRODUCTION_ELIGIBLE"
+          }
+        ],
+        "arc_version_refs": [],
+        "planning_version": "diagnostic:creative-xue-zhan-b",
+        "skill_bundle_ref": "topic-development@topic-development-qualification-v1",
+        "prompt_bundle_ref": "prompt-system:story-planning-pack@v7",
+        "source_policy_ref": "source:creative-proposal-generate:v1",
+        "canon_version_refs": [],
+        "context_bundle_ref": "asset-version:bc9d248a-05e6-490c-a67f-1cd217338d95",
+        "source_eligibility": "PRODUCTION_ELIGIBLE",
+        "story_state_version": "none",
+        "skill_bundle_version": "topic-development@topic-development-qualification-v1",
+        "prompt_bundle_version": "prompt-system:story-planning-pack@v7",
+        "canon_snapshot_version": "none",
+        "context_bundle_version": "bc9d248a-05e6-490c-a67f-1cd217338d95",
+        "quality_profile_version": "none"
+      },
+      "route_snapshot": {
+        "model_id": "gpt-6-sol",
+        "policy_id": "planning.creative_foundation.route.sha256.fcf83250d1d6f40fb6dad1734757dc65cc9d7ea8157aaac006b817f692fa0036",
+        "attempt_id": "ae180900-cd24-442b-98a4-4b4f746d1635",
+        "backend_id": "codex-cli",
+        "release_sha": "f8271c54f9e9466b0d1f8a25c2e3e0001bf7932f",
+        "approval_ref": "",
+        "operation_id": "1ae36a8a-0c9a-4ff4-9173-312c3e0cbca3",
+        "model_provider": "codex-cli",
+        "policy_version": 1,
+        "backend_version": "1.0.0",
+        "runtime_host_id": "local:yuan:novel-production",
+        "auth_profile_ref": "account-entitlement:guofeng-xuanhuan-01:codex-production-01-v1:codex:98c3c620d66276fc452ed5654ba0e77d32c65e9f861fcec18d5c5712736629fc",
+        "credential_scope": "",
+        "fallback_trigger": "",
+        "model_profile_id": "planning.creative_foundation.default.sha256.fcf83250d1d6f40fb6dad1734757dc65cc9d7ea8157aaac006b817f692fa0036",
+        "reasoning_effort": "high",
+        "route_generation": 1,
+        "skill_bundle_ref": "topic-development@topic-development-qualification-v1",
+        "output_schema_ref": "schema:foundation-provider-output:creative_foundation:v1",
+        "prompt_bundle_ref": "prompt-system:story-planning-pack@v7",
+        "route_decision_id": "routing-decision:ed423417c39f17531deb897cfdb8f581c5b4dc183c8d5f193812bf25be8f2e32",
+        "route_policy_hash": "a67d1f0bef74af440e0569bf57d50e082095e62bbec1047b7f2c7b1182c524a6",
+        "route_snapshot_id": "production_execution/routes/57bf5ae1bfda083f2a5f",
+        "context_bundle_ref": "asset-version:bc9d248a-05e6-490c-a67f-1cd217338d95",
+        "model_profile_hash": "9fcadb333c35f5ff8d6261b7fdf135c0cd6465df57b981ba4284990e489d3771",
+        "route_change_index": 0,
+        "secret_version_ref": "",
+        "fallback_policy_ref": "planning.creative_foundation.fail-closed.sha256.fcf83250d1d6f40fb6dad1734757dc65cc9d7ea8157aaac006b817f692fa0036",
+        "model_profile_version": 1,
+        "fallback_policy_version": 1,
+        "parent_route_snapshot_id": "",
+        "quality_revalidation_ref": "",
+        "requested_reasoning_effort": "high"
+      },
+      "execution_handle": {
+        "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+        "attempt_id": "ae180900-cd24-442b-98a4-4b4f746d1635",
+        "backend_id": "codex-cli",
+        "execution_id": "planning-execution:180242cf-7508-486c-961a-2f3a419c81cf:ae180900-cd24-442b-98a4-4b4f746d1635",
+        "operation_id": "1ae36a8a-0c9a-4ff4-9173-312c3e0cbca3",
+        "fencing_token": 1,
+        "completion_mode": "PROCESS_EXIT",
+        "local_process_id": 13020,
+        "query_capability": "SUPPORTED",
+        "cancel_capability": "SUPPORTED",
+        "callback_capability": "UNSUPPORTED",
+        "external_request_id": null,
+        "provider_request_id": null,
+        "backend_execution_id": "process-receipt:35f7925b5671838ac1a70ad6",
+        "local_process_group_id": 13020,
+        "local_process_start_time": "Mon Sep 28 08:21:24 2026",
+        "local_execution_receipt_id": "process-receipt:35f7925b5671838ac1a70ad6"
+      },
+      "execution_result": {
+        "outcome": "SUCCEEDED",
+        "attempt_id": "ae180900-cd24-442b-98a4-4b4f746d1635",
+        "started_at": "2026-09-28T00:21:24.379962Z",
+        "completed_at": "2026-09-28T00:24:59.769444Z",
+        "execution_id": "planning-execution:180242cf-7508-486c-961a-2f3a419c81cf:ae180900-cd24-442b-98a4-4b4f746d1635",
+        "operation_id": "1ae36a8a-0c9a-4ff4-9173-312c3e0cbca3",
+        "fencing_token": 1,
+        "raw_output_ref": "authority-asset-version:e9e3d4e4-73c8-45f9-94a7-55d60434afdf",
+        "cost_receipt_ref": "authority-asset-version:3673644f-6c9f-4f39-b983-63606a990128",
+        "usage_receipt_ref": "authority-asset-version:debb0889-dc24-4a84-97e6-bd6076f138b3",
+        "output_manifest_ref": "authority-asset-version:121af11a-b5a3-4917-91dd-600a93de2177",
+        "process_receipt_ref": "authority-asset-version:4a0d3d46-1b88-46f8-9115-760422bd57d7",
+        "external_receipt_ref": null,
+        "provider_receipt_ref": null,
+        "normalized_output_ref": "authority-asset-version:f06e39ec-7c1e-4bf5-8d4a-fd482005e648",
+        "validation_report_ref": "authority-asset-version:edec39f5-0eb7-446f-954c-e6ac49cbcf6c"
+      },
+      "process_evidence": {
+        "cost": {
+          "model": "gpt-6-sol",
+          "reason": "monetary_cost_not_observable",
+          "currency": "UNKNOWN",
+          "measurement": "UNKNOWN",
+          "availability": "UNAVAILABLE",
+          "provider_billed": "UNKNOWN",
+          "accounting_basis": "ACCOUNT_ENTITLEMENT",
+          "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+          "entitlement_snapshot": {
+            "cli_version": "codex-cli 0.155.1",
+            "authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+            "configuration_ref": "wp02-p0-controlled-no-dispatch-20260927",
+            "executable_sha256": "sha256:8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+            "account_identity_ref": "codex-chatgpt-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+          },
+          "entitlement_snapshot_hash": "sha256:84d70eccbc74264fd46a7555c46e41d2be35eafb7b598fd3b62ec4287965557d"
+        },
+        "stage": "creative.candidates.generate",
+        "tools": {
+          "denied": [],
+          "policy": "DEFAULT_DENY",
+          "allowed": [
+            "model.provider.invoke"
+          ],
+          "invoked": [
+            "model.provider.invoke"
+          ],
+          "invocations": [
+            {
+              "event": "provider_execution",
+              "status": "completed",
+              "call_id": "",
+              "tool_ref": "model.provider.invoke"
+            }
+          ]
+        },
+        "usage": {
+          "model": "gpt-6-sol",
+          "measurement": "MEASURED",
+          "availability": "AVAILABLE",
+          "input_tokens": 17413,
+          "total_tokens": 20474,
+          "output_tokens": 3061,
+          "cached_input_tokens": 0,
+          "uncached_input_tokens": 17413,
+          "reasoning_output_tokens": 1166
+        },
+        "result": {
+          "genre": "原创简体中文武侠与低魔玄幻",
+          "subgenre": "雪山封路背景下的门派伦理与资源抉择故事",
+          "core_fear": "洛棠怕自己凭未经证实的消息交出火种，最终两边都未获救；迟岳怕为核实道路和去向耗尽日光，令替他担保的人承担后果。",
+          "objective": "发展《雪栈借火》为一条由稀缺火种、受阻道路和相互牵制的救人承诺持续驱动的故事主线，让关键选择具有可见的物资代价与后续责任。",
+          "constraints": [
+            "以分配火种的真实代价推动情节，设计至少两条互相影响的持续意图与未完成承诺。",
+            "保留雪路、炭料、索道承重的约束；试通与打算通行都不等于已经抵达。",
+            "允许有依据地延期、重新协商或放弃步骤，但不允许抹去未完成承诺。",
+            "洛棠只能使用实际亲见或被告知的信息；迟岳的密令内容不自动进入洛棠认知。",
+            "每次决定动用火种或炭料，都要显出用量、被挤占的用途，以及随之改变的处境。",
+            "旧恩不能代替对接生人的交付承诺；师门施加的期限也不能证明索道安全。"
+          ],
+          "core_desire": "洛棠想让火种真正抵达接生人，同时偿还迟岳的救命之恩；迟岳想在期限前保住老伙计，又不愿把洛棠的承诺轻易抹去。",
+          "core_conflict": "洛棠答应把最后一罐火种交给山下的接生人，迟岳却称师门要他在日落前带回火种，否则替他担保的老伙计会被拘走。两人的承诺都指向同一份不可复制的资源；试索、寻人和借禁炉又会消耗有限炭料，使每一次争取一方的机会都可能缩小另一方的余地。",
+          "style_profile": {
+            "pov": "以洛棠为主要限知视角；涉及迟岳的想法时，只通过他可见的行动和亲口所说的话呈现。",
+            "narrator": "贴近人物行动与感官的第三人称叙述者，措辞简练，因果清楚；不替人物断言尚未证实的消息。",
+            "constraints": [
+              "使用原创简体中文表达，不借用参考作品的文字、人物或独特桥段组合。",
+              "行动先于感慨，以炭量、雪势、绳索受力和可见路况呈现代价。",
+              "洛棠的判断只依据她亲见或听到的信息；迟岳未说出的密令内容不进入她的内心叙述。",
+              "人物对话贴合处境：守炉的洛棠留意燃料和可执行的承诺，药师迟岳留意期限与担保人的处境。",
+              "保留低魔玄幻的克制感，不用未经建立的术法抹除运输与燃料限制。"
+            ],
+            "genre_conventions": [
+              "以山栈、雪路、旧索道和禁炉承载武侠式险境与门派压力。",
+              "以可见的物资消耗和互负承诺制造道义抉择。",
+              "让每次局部进展带来新的事实与责任，而非直接解除全部危机。"
+            ],
+            "original_examples": [
+              {
+                "example": "洛棠把余炭分成两堆，一堆够暖开索轮，一堆留给罐中的火。迟岳看了片刻，问她若索轮冻住，哪一堆还能送下山。",
+                "purpose": "示范资源代价与人物冲突如何落在同一个动作上。",
+                "explanation": "用实物分配引出两人的不同急迫之处；试索所需的炭会直接减少留给火种的燃料。"
+              },
+              {
+                "example": "她只见过栈外断掉的那段路。迟岳说日落前必须回去，她便问：“索道试过多重？山下的人又是谁亲眼见着的？”",
+                "purpose": "示范第三人称限知下的信息边界与务实语气。",
+                "explanation": "洛棠依据亲见的坍塌和迟岳告知的期限发问，没有把密令内容或接生人的位置当成已知事实。"
+              },
+              {
+                "example": "空钩荡到对岸，又荡回来。洛棠松开攥紧的绳头，在炭堆旁划下一道记号：钩能过去，人和火还没有。",
+                "purpose": "示范局部进展如何带来清晰结果，同时保留未完成的目标。",
+                "explanation": "一次试通只确认空钩可往返，同时留下已付出的燃料成本与仍待完成的运输承诺。"
+              }
+            ]
+          },
+          "target_reader": "偏好具体行动、互负承诺和可信选择的中文类型文学读者",
+          "differentiation": "冲突围绕可称量的炭料、可试却未必能载人的索道，以及尚未确认位置的收火人展开。人物不能用旧恩抵账，也不能用一次试通宣称完成交付；他们必须在信息不全时协商每一步由谁承担风险，并保留尚未兑现的承诺。",
+          "narrative_engine": "以“核实一项事实、消耗一份资源、重估两项承诺”推动情节：洛棠与迟岳先试旧索道承重并确认接生人的位置，再决定是否借禁炉。雪路坍塌限制探查，试索与取暖消耗炭料，借炉会占用原本可用于交付或返程的火力。每得到一条可靠消息，双方都须重新决定火种去向、剩余行动和各自愿承担的代价；延期或改道留下明确的待履行承诺。",
+          "why_worth_writing": "一罐火种同时系着山下的交付承诺和山上的担保人命运，使“该先救谁”成为必须落实到道路、承重、燃料与时间的选择。故事能让人物的情义接受行动检验，也让每次付出的代价继续影响下一步。",
+          "emotional_contract": "读者能看见每个决定救了谁的机会、耗掉了什么，以及谁还在等待。紧张来自有限时间与物资，回报来自人物用可验证的行动承担承诺，即使行动结果迫使他们重新约定下一步。",
+          "prohibited_outcomes": [
+            "把试通索道、计划下山或看见山路等同于接生人已收到火种。",
+            "让索道无视承重限制，或让雪路与炭料短缺在需要时自行消失。",
+            "让洛棠未经亲见或被告知便知晓迟岳密令的完整内容。",
+            "以迟岳救过洛棠为由，自动取消她对接生人的承诺。",
+            "以改道、延期或借用禁炉为由，宣称尚未完成的交付或带回任务已经完成。",
+            "让决定性的资源分配没有具体消耗、受影响的人或随之改变的处境。"
+          ],
+          "serialization_potential": "索道能否载人、接生人身在何处、禁炉是否值得借用，以及日落期限能否重新协商，构成相互牵制的连续问题。每解决一项，都改变可用炭料、通路或承诺的履行条件；后续情节可沿这些变化推进，而不必反复制造新的火种争夺。"
+        },
+        "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+        "event_count": 5,
+        "denied_tools": [],
+        "allowed_tools": [
+          "model.provider.invoke"
+        ],
+        "output_schema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "required": [
+            "objective",
+            "constraints",
+            "prohibited_outcomes",
+            "target_reader",
+            "why_worth_writing",
+            "genre",
+            "subgenre",
+            "core_desire",
+            "core_fear",
+            "core_conflict",
+            "narrative_engine",
+            "differentiation",
+            "emotional_contract",
+            "serialization_potential",
+            "style_profile"
+          ],
+          "properties": {
+            "genre": {
+              "type": "string",
+              "minLength": 1
+            },
+            "subgenre": {
+              "type": "string",
+              "minLength": 1
+            },
+            "core_fear": {
+              "type": "string",
+              "minLength": 1
+            },
+            "objective": {
+              "type": "string",
+              "minLength": 1
+            },
+            "constraints": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "maxItems": 24
+            },
+            "core_desire": {
+              "type": "string",
+              "minLength": 1
+            },
+            "core_conflict": {
+              "type": "string",
+              "minLength": 1
+            },
+            "style_profile": {
+              "type": "object",
+              "required": [
+                "narrator",
+                "pov",
+                "genre_conventions",
+                "constraints",
+                "original_examples"
+              ],
+              "properties": {
+                "pov": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "narrator": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "constraints": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 24
+                },
+                "genre_conventions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 24
+                },
+                "original_examples": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "purpose",
+                      "example",
+                      "explanation"
+                    ],
+                    "properties": {
+                      "example": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "purpose": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "explanation": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "maxItems": 6,
+                  "minItems": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "target_reader": {
+              "type": "string",
+              "minLength": 1
+            },
+            "differentiation": {
+              "type": "string",
+              "minLength": 1
+            },
+            "narrative_engine": {
+              "type": "string",
+              "minLength": 1
+            },
+            "why_worth_writing": {
+              "type": "string",
+              "minLength": 1
+            },
+            "emotional_contract": {
+              "type": "string",
+              "minLength": 1
+            },
+            "prohibited_outcomes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "maxItems": 24
+            },
+            "serialization_potential": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "model_authority": {
+          "schema_version": "novelos.model_authority_evidence.v1",
+          "route_policy_id": "planning.creative_foundation.route.sha256.fcf83250d1d6f40fb6dad1734757dc65cc9d7ea8157aaac006b817f692fa0036",
+          "invocation_model": "gpt-6-sol",
+          "model_profile_id": "planning.creative_foundation.default.sha256.fcf83250d1d6f40fb6dad1734757dc65cc9d7ea8157aaac006b817f692fa0036",
+          "route_policy_hash": "a67d1f0bef74af440e0569bf57d50e082095e62bbec1047b7f2c7b1182c524a6",
+          "route_snapshot_id": "production_execution/routes/57bf5ae1bfda083f2a5f",
+          "frozen_route_model": "gpt-6-sol",
+          "model_profile_hash": "9fcadb333c35f5ff8d6261b7fdf135c0cd6465df57b981ba4284990e489d3771",
+          "route_snapshot_hash": "2c5f7ade2fafb3440389d7693c4f4d045cd6b044c1c6de9334da9f1799ff2b17",
+          "route_policy_version": 1,
+          "model_profile_version": 1,
+          "policy_requested_model": "gpt-6-sol",
+          "invocation_command_hash": "sha256:79fcee5258dfe92fa32f9ddcbf378eca825ab73208b123754f8efe9e498bce22",
+          "provider_observed_model": "unavailable",
+          "local_user_config_ignored": true,
+          "invocation_reasoning_effort": "high",
+          "frozen_route_reasoning_effort": "high",
+          "policy_requested_reasoning_effort": "high",
+          "provider_observed_reasoning_effort": "unavailable",
+          "local_user_config_is_model_authority": false
+        },
+        "submission_phase": "PROCESS_RESULT_RECORDED",
+        "validation_checks": {
+          "tool_policy": "tool-policy:sha256:fc1887030896cf96eb10fd22ab968efc6575033ebead938c975fb6e617f1d9c1",
+          "output_schema": "schema:foundation-provider-output:creative_foundation:v1",
+          "stage_semantics": "chapter-stage:creative.candidates.generate:semantic-validation",
+          "capability_materialization": "sha256:fce29629a5b88a77a0cb4477363aedf64683e7911ab393be81e2a51ad803ec43"
+        },
+        "unauthorized_tools": [],
+        "capability_evidence": {
+          "skill": {
+            "ref": "topic-development",
+            "version": "topic-development-qualification-v1",
+            "content_hash": "sha256:9766801ae782b1c3561e0dfc3604571c66882c6584011f957f4c4ad99a8b5893"
+          },
+          "allowed_tools": [
+            "model.provider.invoke"
+          ],
+          "provider_view": {
+            "component_hashes": {
+              "tool_policy": "sha256:058abd5cdd33e9f20fec97de618920cae3f9b93617df642ebcd1dfc737d1e547",
+              "output_schema": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+              "governed_skill": "sha256:34d9235996a0b45808e3183204954a13db0601ef8d7eac7eeb12c7be01f1261e",
+              "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+              "provider_task_view": "sha256:bdf585354dcd83e8bd87ac5766cb05b4cb1957d664e3597e43e3666e184cda2d",
+              "system_instruction": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+              "fully_rendered_prompt": "sha256:4f155c51f29f12d764e9478ad7d4986071bd41da207d8029bc7fb7569e7e4ee0",
+              "provider_context_view": "sha256:bd8ea4db022da421572708190e53327c13b4041be17ed3ad8187069c849b361f",
+              "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+            },
+            "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+            "component_characters": {
+              "tool_policy": 258,
+              "output_schema": 1860,
+              "governed_skill": 1766,
+              "provider_knowledge": 437,
+              "provider_task_view": 4369,
+              "system_instruction": 5867,
+              "fully_rendered_prompt": 18154,
+              "provider_context_view": 2688,
+              "stage_semantic_contract": 65
+            },
+            "representation_policy": "authority-projection-task-provider-v1",
+            "selection_explanation": {
+              "policy": "minimum-sufficient-planning-context-v2",
+              "loss_receipt": {
+                "audit_hash": "sha256:1b419e072ec8ddc80f76874146a517d31d75bc285e4bd510e8e2d1668fa1f709",
+                "json_pointer": "/context_manifest/projection_audit",
+                "loss_record_count": 0,
+                "source_input_hash": "sha256:654b07e1c486c3f58cb30114096c95e238d3c1494225d723ad7f78b838e71b74"
+              },
+              "field_classes": {
+                "invariants": "HARD_CONSTRAINT",
+                "constraints": "HARD_CONSTRAINT",
+                "inspiration": "OPTIONAL_GUIDANCE",
+                "required_facts": "REQUIRED_FACT",
+                "due_obligations": "DUE_OBLIGATION",
+                "forbidden_events": "PROHIBITION",
+                "hard_constraints": "HARD_CONSTRAINT",
+                "required_payoffs": "DUE_OBLIGATION",
+                "soft_suggestions": "OPTIONAL_GUIDANCE",
+                "forbidden_payoffs": "PROHIBITION",
+                "optional_guidance": "OPTIONAL_GUIDANCE",
+                "required_fact_ids": "REQUIRED_FACT",
+                "story_constraints": "HARD_CONSTRAINT",
+                "style_suggestions": "OPTIONAL_GUIDANCE",
+                "prohibited_outcomes": "PROHIBITION",
+                "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+                "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+                "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+                "required_obligation_ids": "DUE_OBLIGATION",
+                "unresolved_obligation_ids": "DUE_OBLIGATION"
+              },
+              "compiler_version": "scope-preserving-planning-context-v1",
+              "maximum_segments": 24,
+              "omitted_fact_count": 0,
+              "omitted_item_count": 0,
+              "included_fact_count": 0,
+              "omitted_segment_count": 0,
+              "included_segment_count": 1,
+              "maximum_facts_per_segment": 32,
+              "truncated_character_count": 0,
+              "maximum_serialized_characters": 65536
+            },
+            "task_contract_version": "provider-task-view-v1",
+            "context_contract_version": "provider-context-view-v2",
+            "context_projection_ratio": 1.8,
+            "component_estimated_tokens": {
+              "tool_policy": 86,
+              "output_schema": 620,
+              "governed_skill": 1040,
+              "provider_knowledge": 146,
+              "provider_task_view": 1573,
+              "system_instruction": 1956,
+              "fully_rendered_prompt": 6928,
+              "provider_context_view": 1206,
+              "stage_semantic_contract": 22
+            },
+            "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+            "component_utf8_byte_upper_bounds": {
+              "tool_policy": 258,
+              "output_schema": 1860,
+              "governed_skill": 3118,
+              "provider_knowledge": 437,
+              "provider_task_view": 4719,
+              "system_instruction": 5867,
+              "fully_rendered_prompt": 20784,
+              "provider_context_view": 3616,
+              "stage_semantic_contract": 65
+            },
+            "provider_context_estimated_tokens": 1206,
+            "authority_context_estimated_tokens": 670,
+            "rendered_prompt_to_semantic_input_ratio": 2.368547,
+            "provider_admission_uses_component_estimates": false
+          },
+          "prompt_template": {
+            "ref": "prompt-template:story-planning-pack",
+            "version": "v1",
+            "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+          },
+          "output_schema_ref": "schema:foundation-provider-output:creative_foundation:v1",
+          "output_schema_hash": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+          "provider_admission": {
+            "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+            "status": "ADMITTED",
+            "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+            "envelope_hash": "sha256:f01b22003d5d6d9517ad17ea4cac86f6fa9685045bc0afeb4cfa7aec43c297a6",
+            "total_reserved": 38992,
+            "component_usage": {
+              "safety_margin": 8192,
+              "output_reserve": 10000,
+              "provider_input": 20784,
+              "request_framing": 16
+            },
+            "applicable_limit": 272000,
+            "contract_version": "provider-token-admission-v1",
+            "accounting_contract": {
+              "model": "gpt-6-sol",
+              "provider": "codex-cli",
+              "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+              "evidence_ref": "wp02-p0-controlled-no-dispatch-20260927",
+              "meter_version": "v1",
+              "safety_margin": 8192,
+              "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+              "output_reserve": 10000,
+              "route_identity": "creative.candidates.generate:codex-cli:gpt-6-sol:f8271c54f9e9466b0d1f8a25c2e3e0001bf7932f:sha256:f93ad858cb4d7bf987715d9f6417fcb0c9f4db4b237e6df181ce79572e68eb67",
+              "contract_version": "provider-token-accounting-v2",
+              "framing_overhead": 16,
+              "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+              "model_context_limit": 272000,
+              "execution_token_limit": 272000,
+              "serialization_contract": "codex-cli-application-stdin-v1"
+            },
+            "context_bundle_status": "VALID",
+            "context_bundle_tokens": 670,
+            "input_component_hashes": {
+              "tool_policy": "sha256:058abd5cdd33e9f20fec97de618920cae3f9b93617df642ebcd1dfc737d1e547",
+              "output_schema": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+              "governed_skill": "sha256:34d9235996a0b45808e3183204954a13db0601ef8d7eac7eeb12c7be01f1261e",
+              "provider_knowledge": "sha256:65f204a03f4f20899e85e3b2c0415695977be2c851c9cd419a571a0647cb520d",
+              "provider_task_view": "sha256:bdf585354dcd83e8bd87ac5766cb05b4cb1957d664e3597e43e3666e184cda2d",
+              "system_instruction": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+              "fully_rendered_prompt": "sha256:4f155c51f29f12d764e9478ad7d4986071bd41da207d8029bc7fb7569e7e4ee0",
+              "provider_context_view": "sha256:bd8ea4db022da421572708190e53327c13b4041be17ed3ad8187069c849b361f",
+              "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+            },
+            "complete_request_coverage": [
+              "system_runtime_instructions",
+              "prompt_template",
+              "skill_instructions",
+              "tool_policy_and_schemas",
+              "structured_output_schema",
+              "context_bundle",
+              "knowledge_inputs",
+              "request_envelope_and_framing",
+              "output_reserve",
+              "safety_margin"
+            ]
+          },
+          "system_instruction": {
+            "ref": "prompt-system:story-planning-pack",
+            "version": "v7",
+            "content_hash": "sha256:f91f8afd14743544f35690e45f079accd7eecfd3516ac16107b8aaf357c8cd5a"
+          },
+          "materialization_hash": "sha256:fce29629a5b88a77a0cb4477363aedf64683e7911ab393be81e2a51ad803ec43",
+          "rendered_prompt_bytes": 20784,
+          "reusable_prefix_bytes": 9065,
+          "knowledge_content_hashes": [
+            "sha256:e880fdc724a45fccecbff445974f362668511fe03238b812f2740160e20b6c49"
+          ],
+          "context_asset_version_ids": [
+            "bc9d248a-05e6-490c-a67f-1cd217338d95"
+          ],
+          "embedding_output_contract": null,
+          "fully_rendered_prompt_hash": "sha256:4f155c51f29f12d764e9478ad7d4986071bd41da207d8029bc7fb7569e7e4ee0",
+          "provider_request_envelope_hash": "sha256:f01b22003d5d6d9517ad17ea4cac86f6fa9685045bc0afeb4cfa7aec43c297a6",
+          "required_reader_facing_language": null,
+          "rendered_prompt_estimated_tokens": 6928,
+          "provider_prompt_projection_version": "authority-projection-task-provider-v1",
+          "provider_admission_asset_version_id": "9b9f4c90-45c0-4c68-aa29-8341b7e8e062"
+        },
+        "provider_request_id": null,
+        "output_schema_version": "schema:foundation-provider-output:creative_foundation:v1",
+        "transport_retry_policy": {
+          "version": "codex-no-transport-retry.v1",
+          "stream_max_retries": 0,
+          "request_max_retries": 0,
+          "invocation_overrides": [
+            "model_provider=\"novel_forge_openai_no_retry\"",
+            "model_providers.novel_forge_openai_no_retry.name=\"OpenAI\"",
+            "model_providers.novel_forge_openai_no_retry.wire_api=\"responses\"",
+            "model_providers.novel_forge_openai_no_retry.requires_openai_auth=true",
+            "model_providers.novel_forge_openai_no_retry.request_max_retries=0",
+            "model_providers.novel_forge_openai_no_retry.stream_max_retries=0"
+          ]
+        },
+        "terminal_event_observed": true,
+        "provider_schema_contract": {
+          "version": "codex-structured-schema.v2",
+          "provider_hash": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+          "canonical_hash": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc",
+          "local_constraints_retained": [
+            "uniqueItems"
+          ]
+        },
+        "local_execution_receipt_id": "process-receipt:35f7925b5671838ac1a70ad6"
+      },
+      "execution_request": {
+        "stage": "creative.candidates.generate",
+        "domain": "creative",
+        "book_id": "duanchao-guan-zheng-deng-reference-01",
+        "saga_id": "6c461c30-24be-4fa6-9263-d06c92d773f0",
+        "trace_id": "creative-xue-zhan-b",
+        "task_kind": "story_planning.generate",
+        "attempt_id": "ae180900-cd24-442b-98a4-4b4f746d1635",
+        "capability": "creative.proposal.generate",
+        "project_id": "narrative-closure-02-admission-20260927",
+        "risk_class": "high",
+        "execution_id": "planning-execution:180242cf-7508-486c-961a-2f3a419c81cf:ae180900-cd24-442b-98a4-4b4f746d1635",
+        "operation_id": "1ae36a8a-0c9a-4ff4-9173-312c3e0cbca3",
+        "origin_chain": [
+          "story_planning.generate",
+          "creative.candidates.generate"
+        ],
+        "target_scope": {
+          "book_id": "duanchao-guan-zheng-deng-reference-01",
+          "scope_id": "diagnostic:creative-xue-zhan-b",
+          "project_id": "narrative-closure-02-admission-20260927",
+          "scope_kind": "not_applicable"
+        },
+        "workspace_id": "ws:zheng-deng:sampling:20260927",
+        "fencing_token": 1,
+        "correlation_id": "narrative-closure-02-admission-20260927",
+        "agent_hop_count": 0,
+        "resource_claims": [
+          "book:duanchao-guan-zheng-deng-reference-01",
+          "planning:diagnostic:creative-xue-zhan-b"
+        ],
+        "importance_class": "HIGH",
+        "budget_policy_ref": "budget:creative-proposal-generate:v1",
+        "commit_policy_ref": "commit:creative-proposal-generate:v1",
+        "root_operation_id": "1ae36a8a-0c9a-4ff4-9173-312c3e0cbca3",
+        "route_snapshot_id": "production_execution/routes/57bf5ae1bfda083f2a5f",
+        "external_effect_id": "180242cf-7508-486c-961a-2f3a419c81cf",
+        "input_manifest_ref": "production_execution/inputs/57bf5ae1bfda083f2a5f",
+        "timeout_policy_ref": "timeout:creative-proposal-generate:v3",
+        "budget_reservation_id": "8c2bce20-b71b-4a2b-b5b6-7e969e91db2d",
+        "permission_policy_ref": "permission:creative-proposal-generate:v1",
+        "validation_policy_ref": "validation:creative-proposal-generate:v1",
+        "stable_idempotency_key": "1ae36a8a-0c9a-4ff4-9173-312c3e0cbca3:creative.proposal.generate:planning-pep-v2",
+        "workspace_snapshot_ref": "ws:zheng-deng:sampling:20260927"
+      }
+    },
+    "fixture_protocol_only": false
+  },
+  "created_at": "2026-09-28T00:21:24.308806+00:00",
+  "provider": "production_execution_gateway",
+  "updated_at": "2026-09-28T00:24:59.795768+00:00",
+  "finished_at": "2026-09-28T00:24:59.795768+00:00"
+}

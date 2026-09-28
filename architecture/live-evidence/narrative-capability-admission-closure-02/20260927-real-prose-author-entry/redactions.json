@@ -22,5 +22,24 @@
     "original_sha256": "sha256:8729e1ed040853d4edba3c3f1a1a51a1d410bfaec49d02725f4c3f2ccc111b34",
     "reason": "private account identifier also occurs inside a database identity; original guarded harness remains private",
     "runnable_redacted_copy": null
+  },
+  {
+    "version": "s0-20260928",
+    "correction": "Prior identifier redaction did not remove the PostgreSQL password in keyword DSNs or the exported pytest log. No-credentials claim was incorrect. Password has now been rotated; follow the S0 report.",
+    "relation": "Subsequent security redaction; original test outcomes and failure lineage retained",
+    "artifacts": [
+      {
+        "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/deployment.json",
+        "original_sha256": "9060e41357c7e28ef78e055731a496ac76719bd65e29123f12033b3652358781",
+        "redacted_sha256": "b73d07dc6a66ff94ba44c8d1d4caa5bf29a333de4527e41006ac8aa4d37bd796",
+        "reason": "Exposed PostgreSQL role password revoked; shared representation sanitized; original retained privately"
+      },
+      {
+        "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260927-real-prose-author-entry/logs/export-final.log",
+        "original_sha256": "e1b7330cb9df6ddcae8fed4a3746e6244227195549a28aa3d9c9e515f8771908",
+        "redacted_sha256": "6d9b4a40f02d8e1ad5bde0c47082fdd81cceda256c2ca0bc2905b6659f81a949",
+        "reason": "Exposed PostgreSQL role password revoked; shared representation sanitized; original retained privately"
+      }
+    ]
   }
 ]

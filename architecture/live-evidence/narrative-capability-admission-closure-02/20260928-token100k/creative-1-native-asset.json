@@ -1,0 +1,233 @@
+{
+  "asset_type": "planning_generation_candidate",
+  "asset_version_id": "authority-output:d239f6c6-c241-4f51-8d05-73b537676210:story_planning.candidate:v1",
+  "asset_id": "authority-output:d239f6c6-c241-4f51-8d05-73b537676210:story_planning.candidate",
+  "version_number": 1,
+  "lifecycle": "CANDIDATE",
+  "eligibility": "INELIGIBLE",
+  "governance": "CLEAR",
+  "content": {
+    "type": "PlanningGenerationCandidate",
+    "genre": "原创简体中文玄幻与武侠，第三人称限知",
+    "book_id": "duanchao-guan-zheng-deng-reference-01",
+    "subgenre": "证词悬念与守诺抉择驱动的玄幻武侠",
+    "core_fear": "闻澈怕证词消失，也怕自己回来太迟；沈照怕公开证词把证人变成可追索的目标，而独自赴关的决定使保护承诺落空。",
+    "objective": "发展《断潮关·证灯》的持续冲突：让闻澈和沈照在旧渡口面临抹除、证人可能暴露的压力下，努力保全证词并护送三名逃民过关，同时承担各自未兑现承诺的代价。",
+    "project_id": "narrative-closure-02-admission-20260927",
+    "constraints": [
+      "保存并送出证词与护送三名逃民过关必须形成连续因果链；证词送达不能等同于护送完成。",
+      "闻澈与沈照各有持续目标、私有认知和未完成承诺；尚未采取的行动只能作为计划呈现。",
+      "证灯余油、道路可达性和公开证词暴露证人位置的风险都必须迫使人物作出有代价的选择。",
+      "决定性行动须呈现具体后果及其造成的状态变化；承诺未完成时，人物须实际承受后果。",
+      "未知路况、证人处境和阵籍运作细节，在人物获得可靠信息前保持未知。",
+      "第三人称限知；人物声音从各自的目标、经历和当下认知生长。"
+    ],
+    "core_desire": "闻澈想保存并送出证词，再兑现护送三名逃民过关的承诺；沈照想让证人活着抵达安全之处，并参与决定如何承担风险。",
+    "logical_key": "diagnostic:creative-zheng-deng-a",
+    "core_conflict": "逃民证词能够延缓旧渡口被阵籍抹除，却可能暴露作证者的位置。闻澈必须决定何时送出证词、何时返回护送；沈照则要在有限的证灯余油下保护证人，同时阻止两人的分工变成无人承担的空诺。",
+    "frozen_inputs": [
+      {
+        "role": "creative_brief",
+        "asset_type": "creative_brief",
+        "content_hash": "sha256:7573df7ad0c752581168b60bdc608d4523a91be29f4d7b6b328112b53ece999d",
+        "asset_version_id": "authority-output:2cfc1861-e772-4a5c-94b8-0b1753a8d852:creative.brief:v1"
+      }
+    ],
+    "style_profile": {
+      "pov": "第三人称限知，可随明确的场景边界在闻澈与沈照之间切换；每个场景只使用当前视角人物当时可知的信息。",
+      "narrator": "贴近当前视角人物的冷静叙述者，记录其所见、所知及误判；在情绪高处仍保持具体。",
+      "constraints": [
+        "采用简体中文，句式清晰，以行动、感官细节和可核对的后果承载紧张感。",
+        "限知叙述不得替当前视角人物断定他人的私有认知或未知事实。",
+        "对话应体现闻澈重视完成送证步骤、沈照重视证人眼前安全的不同判断，同时允许两人随经历改变。",
+        "决定性选择后写出资源消耗、位置变化或关系受损等具体后果。",
+        "以下例句仅示范原创表达与叙述方式，不预设为已发生情节。"
+      ],
+      "genre_conventions": [
+        "关隘、阵籍与证灯提供玄幻压力，但规则通过人物可观察的效果逐步显露。",
+        "武侠气质体现于守诺、同行、取舍和行动能力，而非无代价的胜负。",
+        "阶段性进展须与新风险并存，维持追读动力。"
+      ],
+      "original_examples": [
+        {
+          "example": "闻澈看着灯盏里浅浅的一圈油，先在心里算去关口的时辰，再算回来要走的路。第二个数，他怎么算都不肯写成零。",
+          "purpose": "示范有限视角中的资源计算与人物动机。",
+          "explanation": "用可计量的时间压力和未完成的返回承诺呈现闻澈的选择，不替他宣告行动已经成功。"
+        },
+        {
+          "example": "沈照把灯移离门缝。她不知道外头的人看见了什么，只知道这一挪，屋里三张脸都沉进了暗处。",
+          "purpose": "示范未知信息边界和保护证人的即时成本。",
+          "explanation": "叙述只确认沈照能够感知的动作与后果，保留门外信息的未知状态。"
+        }
+      ]
+    },
+    "target_reader": "重视人物选择、行动代价与承诺连续性的中文类型文学读者。",
+    "planning_scope": "NOT_APPLICABLE",
+    "schema_version": "story_design.authority.v1",
+    "differentiation": "把证词的效力与证人的安危绑定：越早公开，旧渡口越可能暂缓抹除，作证者也越可能暴露。证灯余油限制等待时间，路况变化改变护送可能性，两人的互信则决定能否及时共享判断。每次推进一项承诺，都可能使另一项更难兑现。",
+    "narrative_engine": "以保存证词、送出证词、返回接应和护送过关构成相互制约的行动链。每获得一条路况或风险信息，人物都须重新安排有限时间、证灯余油与同行人手；选择一条路径便付出可见代价，并留下下一步必须处理的后果。",
+    "candidate_payload": {
+      "genre": "原创简体中文玄幻与武侠，第三人称限知",
+      "subgenre": "证词悬念与守诺抉择驱动的玄幻武侠",
+      "core_fear": "闻澈怕证词消失，也怕自己回来太迟；沈照怕公开证词把证人变成可追索的目标，而独自赴关的决定使保护承诺落空。",
+      "objective": "发展《断潮关·证灯》的持续冲突：让闻澈和沈照在旧渡口面临抹除、证人可能暴露的压力下，努力保全证词并护送三名逃民过关，同时承担各自未兑现承诺的代价。",
+      "constraints": [
+        "保存并送出证词与护送三名逃民过关必须形成连续因果链；证词送达不能等同于护送完成。",
+        "闻澈与沈照各有持续目标、私有认知和未完成承诺；尚未采取的行动只能作为计划呈现。",
+        "证灯余油、道路可达性和公开证词暴露证人位置的风险都必须迫使人物作出有代价的选择。",
+        "决定性行动须呈现具体后果及其造成的状态变化；承诺未完成时，人物须实际承受后果。",
+        "未知路况、证人处境和阵籍运作细节，在人物获得可靠信息前保持未知。",
+        "第三人称限知；人物声音从各自的目标、经历和当下认知生长。"
+      ],
+      "core_desire": "闻澈想保存并送出证词，再兑现护送三名逃民过关的承诺；沈照想让证人活着抵达安全之处，并参与决定如何承担风险。",
+      "core_conflict": "逃民证词能够延缓旧渡口被阵籍抹除，却可能暴露作证者的位置。闻澈必须决定何时送出证词、何时返回护送；沈照则要在有限的证灯余油下保护证人，同时阻止两人的分工变成无人承担的空诺。",
+      "style_profile": {
+        "pov": "第三人称限知，可随明确的场景边界在闻澈与沈照之间切换；每个场景只使用当前视角人物当时可知的信息。",
+        "narrator": "贴近当前视角人物的冷静叙述者，记录其所见、所知及误判；在情绪高处仍保持具体。",
+        "constraints": [
+          "采用简体中文，句式清晰，以行动、感官细节和可核对的后果承载紧张感。",
+          "限知叙述不得替当前视角人物断定他人的私有认知或未知事实。",
+          "对话应体现闻澈重视完成送证步骤、沈照重视证人眼前安全的不同判断，同时允许两人随经历改变。",
+          "决定性选择后写出资源消耗、位置变化或关系受损等具体后果。",
+          "以下例句仅示范原创表达与叙述方式，不预设为已发生情节。"
+        ],
+        "genre_conventions": [
+          "关隘、阵籍与证灯提供玄幻压力，但规则通过人物可观察的效果逐步显露。",
+          "武侠气质体现于守诺、同行、取舍和行动能力，而非无代价的胜负。",
+          "阶段性进展须与新风险并存，维持追读动力。"
+        ],
+        "original_examples": [
+          {
+            "example": "闻澈看着灯盏里浅浅的一圈油，先在心里算去关口的时辰，再算回来要走的路。第二个数，他怎么算都不肯写成零。",
+            "purpose": "示范有限视角中的资源计算与人物动机。",
+            "explanation": "用可计量的时间压力和未完成的返回承诺呈现闻澈的选择，不替他宣告行动已经成功。"
+          },
+          {
+            "example": "沈照把灯移离门缝。她不知道外头的人看见了什么，只知道这一挪，屋里三张脸都沉进了暗处。",
+            "purpose": "示范未知信息边界和保护证人的即时成本。",
+            "explanation": "叙述只确认沈照能够感知的动作与后果，保留门外信息的未知状态。"
+          }
+        ]
+      },
+      "target_reader": "重视人物选择、行动代价与承诺连续性的中文类型文学读者。",
+      "differentiation": "把证词的效力与证人的安危绑定：越早公开，旧渡口越可能暂缓抹除，作证者也越可能暴露。证灯余油限制等待时间，路况变化改变护送可能性，两人的互信则决定能否及时共享判断。每次推进一项承诺，都可能使另一项更难兑现。",
+      "narrative_engine": "以保存证词、送出证词、返回接应和护送过关构成相互制约的行动链。每获得一条路况或风险信息，人物都须重新安排有限时间、证灯余油与同行人手；选择一条路径便付出可见代价，并留下下一步必须处理的后果。",
+      "why_worth_writing": "这个题材把抽象的守诺落到证人位置、灯油和道路上：保存真相的行动可能伤及说出真相的人。闻澈与沈照必须共同承担选择的后果，使悬念、人物关系和阶段性回报由同一条因果链推动。",
+      "emotional_contract": "读者将看到人物凭有限信息作选择，随后面对选择造成的损失、责任和关系变化。回报来自证词得到保全、证人获得实际保护，以及承诺被逐项履行，而非一句宣告便化解危险。",
+      "constraint_envelope": {
+        "role": "CREATIVE_FOUNDATION",
+        "creative_brief": {
+          "content_hash": "sha256:7573df7ad0c752581168b60bdc608d4523a91be29f4d7b6b328112b53ece999d",
+          "asset_version_id": "authority-output:2cfc1861-e772-4a5c-94b8-0b1753a8d852:creative.brief:v1"
+        },
+        "contract_version": "foundation-generation.v1",
+        "foundation_parent_bindings": {}
+      },
+      "prohibited_outcomes": [
+        "把证词送达写成三名逃民已安全过关。",
+        "让证灯余油、道路阻断或公开证词的风险只作气氛描写，不影响决策。",
+        "以未铺垫的安全通道、无限续灯或即时撤销阵籍抹除消除核心压力。",
+        "让闻澈或沈照凭未获知的信息行动，或把打算采取的步骤写成已经完成。",
+        "让失约仅靠解释或谅解化解，而不产生具体后果。"
+      ],
+      "serialization_potential": "连载可围绕证词能否保存、何时公开、证人能否移动及两人如何补救失约逐步推进。每一阶段改变可用时间、道路与互信，再推动下一次选择；后续规模可随阵籍抹除机制和受影响者逐步展开，但具体真相须由故事中的发现支持。",
+      "foundation_parent_bindings": {}
+    },
+    "why_worth_writing": "这个题材把抽象的守诺落到证人位置、灯油和道路上：保存真相的行动可能伤及说出真相的人。闻澈与沈照必须共同承担选择的后果，使悬念、人物关系和阶段性回报由同一条因果链推动。",
+    "emotional_contract": "读者将看到人物凭有限信息作选择，随后面对选择造成的损失、责任和关系变化。回报来自证词得到保全、证人获得实际保护，以及承诺被逐项履行，而非一句宣告便化解危险。",
+    "execution_evidence": {
+      "attempt_id": "b173168e-79d3-4178-ae54-6c778f2363db",
+      "operation_id": "d239f6c6-c241-4f51-8d05-73b537676210",
+      "fencing_token": 1,
+      "commit_authority": "STORY_DESIGN_AUTHORITY",
+      "cost_receipt_ref": "authority-asset-version:02cf071b-4a52-4656-9e9c-aa539da09556",
+      "route_snapshot_id": "production_execution/routes/bea936324807589fb26a",
+      "usage_receipt_ref": "authority-asset-version:bd44f94f-291f-49ff-8a48-bfbcceebb55c",
+      "input_manifest_ref": "production_execution/inputs/bea936324807589fb26a",
+      "context_bundle_hash": "sha256:d74e905a89687d046d66ceb011ba654b20065d18d584d28db05611f132c35d15",
+      "output_manifest_ref": "authority-asset-version:85d11fd1-383b-421f-99fc-6225417151c3",
+      "production_verified": false,
+      "external_receipt_ref": "0295d680-9a95-47f3-b87f-7d7f39b65a99",
+      "real_provider_proven": true,
+      "fixture_protocol_only": false,
+      "external_effect_backed": true,
+      "validation_manifest_ref": "authority-asset-version:f22ff15b-94c8-4182-8b65-e823f80bdfea",
+      "capability_execution_ref": "944a0251-c2e2-5d26-bb4b-92ab72107b15",
+      "capability_execution_hash": "sha256:4496c059b3ed8b732cf08de5b8655f774c009c558e85de26010fb7227abf3045",
+      "capability_runtime_binding_ref": "sha256:71cc1b88ea09576c147b53c6b12e3d9ad17582b9697a7c9589fc64379517ed8b",
+      "capability_runtime_binding_hash": "sha256:f93ad858cb4d7bf987715d9f6417fcb0c9f4db4b237e6df181ce79572e68eb67",
+      "context_bundle_asset_version_id": "822e1f50-06ac-4780-b85c-35e1ff03ad30",
+      "capability_pack_attempt_snapshot_id": "sha256:71cc1b88ea09576c147b53c6b12e3d9ad17582b9697a7c9589fc64379517ed8b",
+      "production_execution_gateway_backed": true,
+      "capability_pack_attempt_snapshot_hash": "sha256:f93ad858cb4d7bf987715d9f6417fcb0c9f4db4b237e6df181ce79572e68eb67",
+      "narrative_intelligence_selection_digest": "sha256:c51f3ada3a7c08d19e77c84cb0a504fbe655bbee45541175ad97a294342f9bbc"
+    },
+    "constraint_envelope": {
+      "role": "CREATIVE_FOUNDATION",
+      "creative_brief": {
+        "content_hash": "sha256:7573df7ad0c752581168b60bdc608d4523a91be29f4d7b6b328112b53ece999d",
+        "asset_version_id": "authority-output:2cfc1861-e772-4a5c-94b8-0b1753a8d852:creative.brief:v1"
+      },
+      "contract_version": "foundation-generation.v1",
+      "foundation_parent_bindings": {}
+    },
+    "prohibited_outcomes": [
+      "把证词送达写成三名逃民已安全过关。",
+      "让证灯余油、道路阻断或公开证词的风险只作气氛描写，不影响决策。",
+      "以未铺垫的安全通道、无限续灯或即时撤销阵籍抹除消除核心压力。",
+      "让闻澈或沈照凭未获知的信息行动，或把打算采取的步骤写成已经完成。",
+      "让失约仅靠解释或谅解化解，而不产生具体后果。"
+    ],
+    "routing_eligibility": "BENCHMARK_ONLY",
+    "serialization_potential": "连载可围绕证词能否保存、何时公开、证人能否移动及两人如何补救失约逐步推进。每一阶段改变可用时间、道路与互信，再推动下一次选择；后续规模可随阵籍抹除机制和受影响者逐步展开，但具体真相须由故事中的发现支持。",
+    "generator_operation_name": "creative.candidates.generate",
+    "foundation_parent_bindings": {},
+    "routing_bootstrap_authorization": {
+      "project_id": "narrative-closure-02-admission-20260927",
+      "environment": "validation",
+      "policy_hash": "7ce60ee1a830a869a9e16436f23f36d24738cc3b0539aa50c956357409e4e816",
+      "authorization": {
+        "reason": "Same sample and Producer; release f827 successor of never-dispatched 218 request. No additional diagnostic count, budget or independent group.",
+        "book_id": "duanchao-guan-zheng-deng-reference-01",
+        "purpose": "BENCHMARK_CHALLENGER",
+        "campaign": {
+          "group_id": "zheng-deng-original-family",
+          "partition": "CALIBRATION",
+          "sample_id": "creative-zheng-deng-a:producer218:v3",
+          "expires_at": "2026-09-28T05:28:24Z",
+          "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+          "manifest_hash": "sha256:b14709b9570d2c0f7ad0a013249470afdc5e7234df1db5409420cd403991952c",
+          "maximum_calls": 720,
+          "maximum_amount": "0",
+          "maximum_tokens": 40108032
+        },
+        "currency": "UNKNOWN",
+        "task_type": "creative.candidates.generate",
+        "expires_at": "2026-09-28T05:28:24Z",
+        "environment": "validation",
+        "logical_key": "diagnostic:creative-zheng-deng-a",
+        "candidate_id": "codex-cli:gpt-6-sol:high",
+        "command_hash": "sha256:cdf2fcedbc9929c0990ce56b4ede861228b1e2e75e25c58e8360dbb763d15112",
+        "maximum_calls": 1,
+        "maximum_amount": null,
+        "maximum_tokens": 100000,
+        "model_revision": "wp02-p0-controlled-no-dispatch-20260927",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "authorization_id": "grant:narrative-closure-02-admission-20260927:creative-zheng-deng-a:producer218:v3:release-f827",
+        "input_versions_hash": "sha256:53c1acde850c08f0199cf88e24ea12454675f31a15afc7ce87f660d9a7f156c8",
+        "production_eligible": false,
+        "cost_authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+        "producer_contract_hash": "sha256:1d4272af184206c237ae993fb169a5e620b50810eac05bc1dc5c6d36c4d2e2a9",
+        "generation_idempotency_key": "narrative-closure-02-admission-20260927:sample:creative-zheng-deng-a:producer218:v3:release-f827"
+      },
+      "policy_version": "wp02-first-foundation-release-f827-v4",
+      "policy_actor_id": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+      "authorization_hash": "sha256:7f367d955e5eb7167e8e9026eed8caef8d6633322a343dbdedf89bc61c9f8523",
+      "policy_operation_id": "9f6e3510-9ec9-457c-8a4e-e799a32fa9f9"
+    },
+    "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+  },
+  "content_hash": "sha256:cf17f6ba819e7cb45a09f49f228a57cdbda57929cf88a2c12a568d199835f9b0",
+  "created_at": "2026-09-28T00:21:23.584552+00:00",
+  "schema_version": "planning-generation-candidate.v1"
+}

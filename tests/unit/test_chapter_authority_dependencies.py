@@ -546,6 +546,14 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self.assertEqual(codex[0].model_revision, "sha256:" + "4" * 64)
         self.assertTrue(codex[0].escalation_only)
         self.assertEqual(codex[0].quota_remaining, 3)
+        from dataclasses import asdict
+        base = next(iter(execution.gateway.routes.values()))
+        selected = router._selected_route(base, {"status": "SELECTED", "selected": {"candidate": asdict(deepseek[0])}})
+        self.assertEqual(selected.auth_profile_ref, "provider-account:deepseek:credential-sha256:"
+                         + hashlib.sha256(environment["DEEPSEEK_API_KEY"].encode()).hexdigest())
+        codex_selected = router._selected_route(base, {"status": "SELECTED", "selected": {"candidate": asdict(codex[0])}})
+        self.assertIn(":codex:", codex_selected.auth_profile_ref)
+        self.assertNotEqual(codex_selected.auth_profile_ref, selected.auth_profile_ref)
         self.assertEqual(execution.cost_accounting_basis, "PRICED")
         self.assertEqual(
             execution.account_authorization_ref, "authorization:codex-test"
@@ -562,6 +570,45 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             codex_backend.account_entitlement.authorization_ref,
             "authorization:codex-test",
         )
+
+    def test_production_codex_only_router_has_no_deepseek_dependency(self) -> None:
+        repository_root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            environment = _mixed_router_environment(Path(directory))
+            environment.update({
+                "NOVEL_FORGE_ENVIRONMENT": "production",
+                "NOVEL_FORGE_ROUTER_PROVIDERS": "codex-cli",
+                "NOVEL_FORGE_ROUTER_CODEX_ESCALATION": "false",
+            })
+            environment.pop("DEEPSEEK_API_KEY")
+            environment.pop("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL")
+            with (
+                patch("novel_forge.storage.object_store.MinioObjectStore",
+                      return_value=SimpleNamespace(client=object())),
+                patch("novel_forge.api.authority_dependencies.observe_codex_cli_version",
+                      return_value="codex-test 1.0"),
+            ):
+                execution = build_production_execution_composition(
+                    IndustrialSettings(root=repository_root,
+                                       database_url="postgresql://authority"),
+                    env=environment,
+                )
+                session = execution.gateway.session_factory("project:codex-only")
+        self.assertEqual(execution.cost_accounting_basis, "ACCOUNT_ENTITLEMENT")
+        self.assertEqual(execution.max_cost_per_call, "0")
+        self.assertEqual(execution.gateway.provider_adapters, {})
+        self.assertIsNotNone(session.gateway.backends.resolve("codex-cli"))
+        candidates = execution.gateway.provider_router.candidates
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0].provider, "codex-cli")
+        self.assertTrue(candidates[0].escalation_only)
+        self.assertEqual(candidates[0].quota_remaining, 3)
+        self.assertEqual(candidates[0].pricing.accounting_basis, "ACCOUNT_ENTITLEMENT")
+        self.assertEqual({route.model_profile.model_provider
+                          for route in execution.gateway.routes.values()}, {"codex-cli"})
+        self.assertTrue(all(route.token_accounting_method ==
+                            "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"
+                            for route in execution.gateway.routes.values()))
 
     def test_configured_mixed_router_fails_closed_when_codex_lane_is_unavailable(
         self,

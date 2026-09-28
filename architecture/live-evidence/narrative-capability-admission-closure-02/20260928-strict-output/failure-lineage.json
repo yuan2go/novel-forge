@@ -1,0 +1,14 @@
+{
+  "previous": "../20260928-deepseek-json/failure-lineage.json",
+  "new_predispatch": "Frozen routing verifier only allowed old protocol; 0 Effect/dispatch/reservation. Fixed by validating opt-in against exact Pack materialization, not bypassing identity. Native cancellation preserved first operation, legal successor under same grant.",
+  "new_paid_failure": "Valid tool JSON contained forbidden business property; native final rejection retained and settled. One successor call, stopped first failure, no retry.",
+  "raw_original_gap": "Only parsed object and raw argument hash retained at called release. Final release fixes future retention; cannot recover missing historical bytes.",
+  "development_failures": [
+    "Initial strict integration collection had unclosed parenthesis; fixed, original failure log retained.",
+    "Producer preparation initially compared current factory with old frozen identity; resolved using actual old frozen contract, new compatibility identity retained.",
+    "First offline diagnosis used schema wrapper rather than its content; no API/DB mutation, corrected diagnosis uses exact frozen content.",
+    "Documentation projection stale after implementation edit; regenerated checked hash, then PASS."
+  ],
+  "no_qualification_transfer": true,
+  "no_repaired_model_output": true
+}

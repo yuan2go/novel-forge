@@ -1,0 +1,117 @@
+{
+  "scope": "Same existing Book/campaign; downstream rows identify actual absent input, not executed dry-runs",
+  "pack": "reviewable-pack.json",
+  "exact_ready_task_contracts": "authorization-and-grants.json",
+  "grants": "authorization-and-grants.json",
+  "tasks": [
+    {
+      "task": "creative.candidates.generate",
+      "readiness": "EXECUTABLE_DIAGNOSTIC",
+      "required_input": "Two exact native creative.brief.create outputs; input and producer hashes retained",
+      "actual_first_blocker": "Seven native diagnostic calls total: three valid candidates, four DeepSeek output failures. Latest strict-tool call was valid JSON but failed forbidden-property schema validation. Bounded batch stopped; no production qualification."
+    },
+    {
+      "task": "narrative_semantic_evaluation",
+      "readiness": "CANDIDATES_READY_REFERENCE_INPUTS_MISSING",
+      "required_input": "Exact generated candidate and independent reviewer/reference inputs",
+      "actual_first_blocker": "Three exact diagnostic candidates exist. Real reference judgments and independent evaluation/adjudication under applicable protocol remain absent; no evaluator call or approval fabricated."
+    },
+    {
+      "task": "theme.candidates.generate",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Approved active CreativePlan",
+      "actual_first_blocker": "Diagnostic candidate cannot be activated; task-scoped generation qualification and author approval still absent"
+    },
+    {
+      "task": "ending.intent.generate",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Approved creative/theme dependencies required by Producer",
+      "actual_first_blocker": "Upstream approved design absent"
+    },
+    {
+      "task": "reader.promise.generate",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Approved creative/theme/ending dependencies required by Producer",
+      "actual_first_blocker": "Upstream approved design absent"
+    },
+    {
+      "task": "world.design.generate",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Approved creative, theme, ending and reading promise",
+      "actual_first_blocker": "No compatible approved foundation for this Book"
+    },
+    {
+      "task": "character.cast.generate",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Same-Book approved foundation plus World rules",
+      "actual_first_blocker": "Approved World/character inputs absent"
+    },
+    {
+      "task": "book_plan.generate",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Active Book Design and foundation",
+      "actual_first_blocker": "No Active Book Design for selected production Book; no Book creation fabricated"
+    },
+    {
+      "task": "volume/arc/workset/chapter_group planning",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Typed Book plan and actual execution window/dependencies",
+      "actual_first_blocker": "No upstream native Book plan; task set is conditional, not a forced tree"
+    },
+    {
+      "task": "chapter_plan.generate",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Frozen ChapterGroup/workset plus actual scene constraints",
+      "actual_first_blocker": "No current eligible execution window"
+    },
+    {
+      "task": "chapter.draft.generate",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Approved chapter/scene plan, frozen Context/Craft and selected World/Actor inputs",
+      "actual_first_blocker": "No eligible prose task input or task-scoped prose qualification"
+    },
+    {
+      "task": "chapter.review/revision/rereview",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Exact genuine draft/review findings and independent evaluator contract",
+      "actual_first_blocker": "No real manuscript; revision conditional on actual findings"
+    },
+    {
+      "task": "chapter.canon.propose + book acceptance",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Approved exact candidate, review, Canon/Narrative State evidence",
+      "actual_first_blocker": "No real candidate or admission; no acceptance written"
+    },
+    {
+      "task": "edition edit/review/select + successor",
+      "readiness": "INPUT_NOT_READY",
+      "required_input": "Accepted same-Book base edition and actual approved edit",
+      "actual_first_blocker": "No accepted base; no edition or successor prose asserted"
+    }
+  ],
+  "models": {
+    "codex-cli:gpt-6-sol:high": {
+      "real_calls": 2,
+      "tokens": 39674,
+      "money": "UNKNOWN",
+      "qualification": "BENCHMARK_ONLY; no task-scoped production admission"
+    },
+    "deepseek:deepseek-flash:low": {
+      "enabled": true,
+      "real_calls": 5,
+      "tokens": 43334,
+      "successes": 1,
+      "failures": 4,
+      "revision": "DeepSeek-V4.1-Flash",
+      "money_estimate_usd": "0.019885314",
+      "qualification": "BENCHMARK_ONLY; bounded trials stopped; no formal task admission"
+    }
+  },
+  "developer_agent_usage": {
+    "tokens": "UNKNOWN",
+    "money": "UNKNOWN",
+    "separate_from_runtime": true
+  },
+  "human_reference": "Not a prerequisite for the first authorized diagnostic. Formal subjective calibration requires real authenticated independent human evaluations and adjudication, not model votes.",
+  "current_producer": "producer-comparison.json"
+}

@@ -1,0 +1,11 @@
+[
+  {
+    "file": "deployment.json",
+    "types": [
+      "NOVEL_FORGE_MINIO_ACCESS_KEY"
+    ],
+    "reason": "Credential identifier occurs within an operational identity; shared projection redacted without changing private/native records",
+    "original_hash": "sha256:913d176cdab2f75e25bce865b4787ca5b6374f179c13537e66edf631ed28841c",
+    "shared_hash": "sha256:68caaf843cdfc744d5737773084ae581539b70a4834a27c0e64efea91e1de553"
+  }
+]
