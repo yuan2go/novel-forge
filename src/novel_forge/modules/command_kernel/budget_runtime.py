@@ -3342,8 +3342,6 @@ def _enforce_routing_chain_budget(
             "ROUTING_BUDGET_CONTRACT_REQUIRED",
             "routed effect has invalid frozen limits",
         ) from exc
-    # WHY: zero priced-spend allowance may authorize subscription use with unknown
-    # monetary cost; it never authorizes a priced Provider reservation.
     if (
         max_attempts <= 0
         or max_escalations < 0

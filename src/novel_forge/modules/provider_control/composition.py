@@ -54,7 +54,6 @@ def configured_router_provider_ids(
         return frozenset()
     selection = values.get("NOVEL_FORGE_ROUTER_PROVIDERS")
     if selection is None:
-        # COMPATIBILITY: retain the existing Router lane set unless explicitly selected.
         providers = {"deepseek"}
         if str(values.get("NOVEL_FORGE_ROUTER_CODEX_ESCALATION") or "").lower() == "true":
             providers.add("codex-cli")
@@ -80,8 +79,6 @@ def build_provider_adapter_registry(
     normalized_ids = {normalize_provider_id(item) for item in provider_ids if item}
     router_providers = configured_router_provider_ids(runtime_environment, values)
     if router_providers:
-        # WHY: Router templates replace legacy stage routes; disabled lanes must not
-        # require credentials or reappear merely because a legacy variable names them.
         normalized_ids.difference_update({"deepseek", "codex-cli"})
         normalized_ids.update(router_providers)
     adapter_ids = normalized_ids - {"codex-cli"}

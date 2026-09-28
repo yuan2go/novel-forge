@@ -1,4 +1,3 @@
-"""SECURITY: Human annotations bind native samples and authenticated authors, never model labels."""
 
 from __future__ import annotations
 

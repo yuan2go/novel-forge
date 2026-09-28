@@ -1275,11 +1275,6 @@ class ProductionProviderRouter:
 def validate_routed_reservation(
     decision: Mapping[str, Any], *, reserved_tokens: int, reserved_amount: str | None,
 ) -> None:
-    """CONSTRAINT: Preflight the final reservation before creating any Effect intent.
-
-    Kernel still checks the live cumulative quota under lock. This check also
-    protects replay of older decisions whose input estimate omitted request margins.
-    """
     selected = decision.get("selected")
     if decision.get("status") not in {"SELECTED", "BENCHMARK_SELECTED"} or not selected:
         raise KernelError("ROUTING_RESERVATION_DECISION_INVALID", "reservation requires a selected route")

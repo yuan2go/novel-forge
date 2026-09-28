@@ -20,7 +20,6 @@ def bind_diagnostic_escalation_reason(
     task: RoutingTask, candidates: Sequence[ModelCandidate],
     authorization: Mapping[str, Any], *, environment: str,
 ) -> RoutingTask:
-    """CONSTRAINT: Only a frozen exact HIGH-risk diagnostic grant supplies escalation intent."""
     if environment != "validation":
         raise KernelError("ROUTING_BOOTSTRAP_ENVIRONMENT_FORBIDDEN",
                           "benchmark challengers require the validation runtime")
@@ -42,8 +41,6 @@ def bind_diagnostic_escalation_reason(
         and bootstrap_candidate_accounting_matches(grant, asdict(candidate))]
     if len(matching) != 1:
         return task
-    # WHY: The admitted grant explicitly selected this diagnostic model; preserve its
-    # reason in the Task rather than inventing failure history or dropping a gate.
     return replace(task, escalation_reason=grant["reason"])
 
 

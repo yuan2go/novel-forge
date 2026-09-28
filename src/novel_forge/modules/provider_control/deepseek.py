@@ -381,7 +381,6 @@ class DeepSeekProviderAdapter:
             "failure_class": failure,
         }
         if failure:
-            # WHY: Rejected output remains inspectable without paying to reproduce it.
             # SECURITY: Retain final content only, never transport headers or hidden reasoning.
             evidence["rejected_output"] = {
                 "text": text,

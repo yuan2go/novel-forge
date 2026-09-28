@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 
-// CONSTRAINT: These isolated API doubles verify author UI recovery, not Provider or production behavior.
 const base = process.env.NOVEL_FORGE_WEB_BASE_URL;
 if (!base) throw new Error('NOVEL_FORGE_WEB_BASE_URL must identify the isolated author UI');
 const browser = await chromium.launch({headless: true, channel: process.env.NOVEL_FORGE_BROWSER_CHANNEL || 'chrome'});

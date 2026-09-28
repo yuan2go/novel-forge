@@ -382,7 +382,6 @@ def build_route_token_accounting_contract(
 def provider_request_token_components(
     input_text: str, *, output_reserve: int, safety_margin: int, framing_overhead: int,
 ) -> dict[str, int]:
-    """INVARIANT: Routing and admission reserve the same complete request components."""
     if (any(type(value) is not int or value < 0
             for value in (output_reserve, safety_margin, framing_overhead))
         or output_reserve == 0):

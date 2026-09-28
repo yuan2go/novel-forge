@@ -568,11 +568,6 @@ class StoryFormationRepository:
         candidate_asset_version_id: str, candidate_content_hash: str,
         decision: str, reason: str, actor_id: str, operation_id: str,
     ) -> dict[str, Any]:
-        """INVARIANT: Author selection only retargets the frozen candidate set.
-
-        Story Design still owns qualification and approval. Rejected candidates
-        remain immutable evidence; a comment never grants production eligibility.
-        """
         self.cursor.execute(
             "SELECT version,lifecycle,current_stage,recovery_instruction FROM "
             "authority_story_formation_run WHERE formation_run_id=%s FOR UPDATE",

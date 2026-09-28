@@ -63,7 +63,6 @@ def request_cancellation(
             correlation_id=command.correlation_id, require_no_active_attempt=True,
         )
     except KernelError as exc:
-        # WHY: A live worker, dispatch or occupied budget needs its existing reconciliation path.
         if exc.code not in {"CANCELLATION_ACTIVE_ATTEMPT", "CANCELLATION_NO_EFFECT_EVIDENCE_CONFLICT", "CANCELLATION_NOT_DISPATCHED_PROOF_REQUIRED"}:
             raise
         return result

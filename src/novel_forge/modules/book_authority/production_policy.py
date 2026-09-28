@@ -44,7 +44,6 @@ def validate_author_configuration(content: dict[str, Any]) -> dict[str, Any]:
     if actor is not None:
         if not isinstance(actor, dict):
             raise KernelError("WORLD_ACTOR_POLICY_INVALID", "Actor policy must be an object")
-        # INVARIANT: These are future intent IDs; World preparation checks membership against the exact approved Foundation before dispatch.
         result["world_actor_experiment"] = validate_actor_policy(actor, character_ids=actor.get("actor_ids", []), policy=world)
     elif world.version != "world-production-policy.v1":
         raise KernelError("WORLD_ACTOR_POLICY_REQUIRED", "Actor World policy requires explicit bounded Actor selection")
