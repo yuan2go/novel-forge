@@ -380,6 +380,13 @@ class DeepSeekProviderAdapter:
                 {
                     "output_protocol": DEEPSEEK_STRICT_PROTOCOL,
                     "structured_output_tool": DEEPSEEK_OUTPUT_TOOL,
+                    "structured_output": {
+                        "source": ("PROVIDER_TOOL_CONTRACT_FAILURE" if tool_error
+                                   else "PROVIDER_TOOL_ARGUMENTS"),
+                        "text": text,
+                        "sha256": "sha256:" + hashlib.sha256(text.encode()).hexdigest(),
+                        "domain_validation": "PENDING",
+                    },
                     "output_schema_hash": "sha256:"
                     + hashlib.sha256(
                         str(request.request_payload["output_schema_json"]).encode()

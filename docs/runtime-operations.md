@@ -388,6 +388,9 @@ properties are all required; unsupported schema shapes fail before dispatch. Dee
 unsupported string-length/array-cardinality keywords stay in the frozen full schema
 and the original native validator, although the transport projection omits them.
 Missing, multiple, wrong-name or malformed tool results fail with retained usage.
+Strict results retain exact final tool arguments and their hash before domain validation;
+this is unapproved Provider evidence, not accepted prose. Downstream schema rejection
+retains the parsed result, bounded validation error and original usage/cost receipt.
 No JSON-message fallback, output repair, automatic retry or qualification transfer
 occurs. Tasks without this explicit policy and previously frozen requests retain their
 original protocol. See the [official strict-mode contract](https://api-docs.deepseek.com/zh-cn/guides/tool_calls/).

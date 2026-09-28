@@ -1130,8 +1130,12 @@ class RemoteProviderExecutionBackend:
             try:
                 evidence["result"] = dict(self.structured_result_validator(
                     request.stage, payload.output_schema or {}, evidence.get("result")))
-            except ValueError:
+            except ValueError as exc:
                 evidence["failure_class"] = "SCHEMA_REJECTION"
+                evidence["output_validation_error"] = {
+                    "code": getattr(exc, "code", "SCHEMA_REJECTION"),
+                    "detail": str(exc)[:2048],
+                }
                 provider_result = replace(provider_result, outcome="final_failure", evidence=evidence)
             else:
                 provider_result = replace(provider_result, evidence=evidence)

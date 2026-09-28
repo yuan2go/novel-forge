@@ -25,6 +25,7 @@ from tests.unit.test_provider_token_admission import COMPLETE_COVERAGE
 
 
 SCHEMA = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {"classification": {"type": "string", "minLength": 1}},
     "required": ["classification"],
@@ -134,6 +135,10 @@ def test_strict_wire_keeps_reasoning_and_accepts_exact_single_function_arguments
     assert wire["tools"][0]["function"]["strict"] is True
     assert result.evidence["result"] == {"classification": "fiction"}
     assert result.evidence["output_protocol"] == DEEPSEEK_STRICT_PROTOCOL
+    raw = result.evidence["structured_output"]
+    assert raw["text"] == '{"classification":"fiction"}'
+    assert raw["sha256"] == result.evidence["output_text_sha256"]
+    assert raw["domain_validation"] == "PENDING"
     assert "unretained reasoning" not in json.dumps(result.evidence)
 
 
@@ -172,7 +177,7 @@ def test_transport_subset_does_not_relax_native_business_schema():
     projected = deepseek_strict_tools(frozen)[0]["function"]["parameters"]
     assert "minLength" not in projected["properties"]["classification"]
     assert json.loads(frozen)["properties"]["classification"]["minLength"] == 1
-    with pytest.raises(KernelError):
+    with pytest.raises(KernelError, match=r"classification must contain at least 1 characters"):
         validate_chapter_provider_output_against_schema(
             "test", SCHEMA, {"classification": ""}
         )
