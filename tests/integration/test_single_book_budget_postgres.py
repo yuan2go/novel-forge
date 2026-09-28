@@ -396,3 +396,90 @@ def test_mixed_campaign_reconciles_expired_calls_and_retains_monetary_breach(act
         assert usage["phases"]["DESIGN"]["conservative_tokens"] == 200
         with pytest.raises(KernelError, match="CREATIVE_BUDGET_USD_EXHAUSTED"):
             reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, fixture.native_effect(planning_identity()), amount="0.01"))
+
+
+def test_campaign_money_amendment_preserves_usage_frozen_settlement_and_unknown():
+    from novel_forge.modules.command_kernel.creative_budget_runtime import get_creative_budget, provider_campaign_contract_lineage
+    from tests.unit.test_creative_budget_contract import campaign_monetary_amendment
+
+    fixture = provider_campaign_fixture()
+    project = fixture.projects["A"]
+    prior = deepcopy(fixture.policies["A"])
+    effects = [fixture.native_effect(chapter_identity(1, stage=stage)) for stage in ("draft", "review")]
+    requests = [campaign_reservation(fixture, effect, entitlement=index == 1) for index, effect in enumerate(effects)]
+    reservations = [reserve_provider_budget(DATABASE_URL, request) for request in requests]
+    resolve_provider_budget_failure(DATABASE_URL, project_id=project,
+        reservation_id=reservations[1]["reservation_id"], external_state_unknown=True)
+    before = get_creative_budget(DATABASE_URL, project)["budget_usage"]
+    amended = campaign_monetary_amendment(prior)
+    fixture.configure(amended)
+    after = get_creative_budget(DATABASE_URL, project)["budget_usage"]
+    assert after["project_total"] == before["project_total"]
+    assert after["reservation_ids"] == before["reservation_ids"]
+    settled = settle_provider_budget(DATABASE_URL, reservation_id=reservations[0]["reservation_id"],
+        project_id=project, actual_amount="0.4", actual_tokens=100, evidence={"fixture": True})
+    assert settled["status"] == "SETTLED"
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        lineage = provider_campaign_contract_lineage(uow.cursor, project)
+        assert {row["maximum_amount"] for row in lineage} == {"8", "9"}
+        uow.cursor.execute("SELECT status FROM authority_budget_reservation WHERE reservation_id=%s", [reservations[1]["reservation_id"]])
+        assert uow.cursor.fetchone()[0] == "HELD_UNKNOWN"
+    third = fixture.native_effect(chapter_identity(2))
+    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
+        reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, third))
+    with pytest.raises(KernelError, match="CREATIVE_BUDGET_PLAN_IMMUTABLE"):
+        fixture.configure({**prior, "policy_version": "rollback-without-authority"})
+
+
+@pytest.mark.parametrize("mutation", ["missing_authorization", "stale_predecessor", "permission_expansion"])
+def test_campaign_money_amendment_requires_new_authorization_and_current_predecessor(mutation):
+    from tests.unit.test_creative_budget_contract import campaign_monetary_amendment
+
+    fixture = provider_campaign_fixture()
+    prior = deepcopy(fixture.policies["A"])
+    amended = campaign_monetary_amendment(prior)
+    if mutation == "missing_authorization":
+        amended["authorization"]["authorization_ref"] = prior["authorization"]["authorization_ref"]
+    elif mutation == "stale_predecessor":
+        amended["comparison_budget"]["previous_policy"]["policy_hash"] = "a" * 64
+    else:
+        amended["authorization"]["business_scope"]["max_chapter_number"] = 11
+    with pytest.raises(KernelError, match="CREATIVE_BUDGET_(AUTHORIZATION_MISMATCH|PREDECESSOR_MISMATCH|AMENDMENT_SCOPE_MISMATCH)"):
+        fixture.configure(amended)
+
+
+def test_router_accepts_only_native_monetary_amendment_and_retains_original_grant():
+    from novel_forge.modules.authority_handler_runtime.policy_commands import configure_owned_policy
+    from tests.unit.test_creative_budget_contract import campaign_monetary_amendment
+    from tests.unit.test_routing_bootstrap import campaign_grant
+
+    fixture = provider_campaign_fixture()
+    project = fixture.projects["A"]
+    previous = deepcopy(fixture.policies["A"])
+    plan = previous["comparison_budget"]
+    original = campaign_grant()
+    original["book_id"] = fixture.books["A"]
+    original["campaign"].update(campaign_id=plan["experiment_id"], manifest_hash=plan["manifest_hash"],
+        maximum_calls=plan["shared_total"]["calls"], maximum_tokens=plan["shared_total"]["tokens"],
+        maximum_amount=plan["shared_total"]["priced_usd"], expires_at=plan["expires_at"])
+
+    def configure_route(grant, version):
+        return configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", project_id=project,
+            workspace_id=fixture.workspaces["A"], principal=fixture.principal, application_build_id=BUILD_ID, commit_sha=COMMIT_SHA,
+            idempotency_key=identifier("routing-amendment"), trace_id=identifier("trace"), correlation_id=project,
+            content={"policy_version": version, "reason": "isolated explicit monetary amendment test",
+                     "task_overrides": [], "bootstrap_authorizations": [grant]})
+
+    configure_route(original, "route-before-money")
+    changed = deepcopy(original)
+    changed["authorization_id"] += ":new-paid-grant"
+    changed["campaign"]["maximum_amount"] = "9"
+    with pytest.raises(KernelError, match="ROUTING_CAMPAIGN_REDEFINED"):
+        configure_route(changed, "route-unapproved-money")
+    fixture.configure(campaign_monetary_amendment(previous))
+    configure_route(changed, "route-after-money")
+    with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_AUTHORIZATION_REDEFINED"):
+        configure_route({**changed, "authorization_id": original["authorization_id"]}, "route-forged-old-grant")
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute("SELECT content->'bootstrap_authorizations' FROM authority_runtime_policy_version WHERE owner='PROVIDER_ROUTING' AND project_id=%s AND policy_version='route-before-money'", [project])
+        assert cursor.fetchone()[0] == [original]

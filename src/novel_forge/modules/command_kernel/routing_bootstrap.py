@@ -273,7 +273,8 @@ def campaign_contract(campaign: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def validate_bootstrap_history(
-    grants: list[Mapping[str, Any]], previous: list[Mapping[str, Any]]
+    grants: list[Mapping[str, Any]], previous: list[Mapping[str, Any]],
+    *, authorized_campaign_contracts: tuple[Mapping[str, Any], ...] = (),
 ) -> None:
     identities: dict[str, Mapping[str, Any]] = {}
     campaigns: dict[str, Mapping[str, Any]] = {}
@@ -291,7 +292,8 @@ def validate_bootstrap_history(
             continue
         identity = campaign["campaign_id"]
         contract = campaign_contract(campaign)
-        if identity in campaigns and campaigns[identity] != contract:
+        if (identity in campaigns and campaigns[identity] != contract
+            and not (campaigns[identity] in authorized_campaign_contracts and contract in authorized_campaign_contracts)):
             raise KernelError("ROUTING_CAMPAIGN_REDEFINED",
                               "a campaign retains its frozen manifest and cumulative quota")
         campaigns[identity] = contract
@@ -342,7 +344,10 @@ def validate_bootstrap_policy_in_uow(
         if policy_hash(policy) != digest:
             raise KernelError("RUNTIME_POLICY_HASH_MISMATCH", "policy integrity failed")
         previous.extend(policy.get("bootstrap_authorizations", []))
-    validate_bootstrap_history(list(content.get("bootstrap_authorizations", [])), previous)
+    from .creative_budget_runtime import provider_campaign_contract_lineage
+
+    validate_bootstrap_history(list(content.get("bootstrap_authorizations", [])), previous,
+                               authorized_campaign_contracts=provider_campaign_contract_lineage(cursor, project_id))
 
 
 def validate_bootstrap_scope(
