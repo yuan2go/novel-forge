@@ -19,7 +19,7 @@ _ test_two_top_level_objects_remain_failed_with_exact_parser_location_and_cost _
         assert result.evidence["usage"]["total_tokens"] == 100
 >       assert result.evidence["cost"]["amount"] == "0.000008592"
 E       AssertionError: assert '0.000014592' == '0.000008592'
-E         
+E
 E         - 0.000008592
 E         ?       ^^
 E         + 0.000014592

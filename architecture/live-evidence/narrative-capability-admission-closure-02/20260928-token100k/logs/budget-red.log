@@ -15,14 +15,14 @@ money = '0'
 >       result = reserve_provider_budget(DATABASE_URL, request)
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-tests/integration/test_provider_routing_postgres.py:1004: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_provider_routing_postgres.py:1004:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 src/novel_forge/modules/command_kernel/budget_runtime.py:2742: in reserve_provider_budget
     result = reserve_provider_budget_in_uow(uow, request)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 src/novel_forge/modules/command_kernel/budget_runtime.py:3047: in reserve_provider_budget_in_uow
     _enforce_routing_chain_budget(uow.cursor, request, amount)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 cursor = <psycopg.Cursor [closed] [IDLE] (host=127.0.0.1 port=61959 user=novel_forge database=nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test) at 0x10dd50b90>
 request = BudgetReservationRequest(operation_id='router-operation-7333a52d-fc71-41e6-8492-1a317ade88a6', external_effect_id='85f...st_authorization_ref='authorization-4cafe4bc-681d-4e4e-a0c9-b391453057f6', model_id='gpt-5.6-sol', work_id='book:test')
@@ -66,7 +66,7 @@ amount = None, check_attempts = True
         ):
             raise KernelError("ROUTING_BUDGET_IDENTITY_CONFLICT", "routing lineage operation identities are invalid")
         from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_budget
-    
+
         verify_routing_bootstrap_budget(cursor, request, amount, check_usage=check_attempts)
         candidate = (decision.get("selected") or {}).get("candidate") or {}
         price = candidate.get("pricing") or {}
@@ -124,14 +124,14 @@ money = 0
 >       result = reserve_provider_budget(DATABASE_URL, request)
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-tests/integration/test_provider_routing_postgres.py:1004: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_provider_routing_postgres.py:1004:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 src/novel_forge/modules/command_kernel/budget_runtime.py:2742: in reserve_provider_budget
     result = reserve_provider_budget_in_uow(uow, request)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 src/novel_forge/modules/command_kernel/budget_runtime.py:3047: in reserve_provider_budget_in_uow
     _enforce_routing_chain_budget(uow.cursor, request, amount)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 cursor = <psycopg.Cursor [closed] [IDLE] (host=127.0.0.1 port=61959 user=novel_forge database=nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test) at 0x10c50a210>
 request = BudgetReservationRequest(operation_id='router-operation-b93f3eba-1035-45fd-a4a9-1a714b6a4ae7', external_effect_id='20a...st_authorization_ref='authorization-ede11416-9849-46e1-8664-867373bc1bd7', model_id='gpt-5.6-sol', work_id='book:test')

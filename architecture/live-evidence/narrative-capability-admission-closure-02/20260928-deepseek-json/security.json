@@ -45,11 +45,12 @@
     "logs/prepare-docs.log": "sha256:58ad8da0c776309b336bb0a953a5e8268ca5f10e00675f3c212433641aa3e982",
     "logs/pack-docs.log": "sha256:706b21f48f89aabfb756ab33063621607c241f0cea916fc70d6adbff7b1192ed",
     "logs/runtime-docs-observation-v2.log": "sha256:53a1359081cc57e73c38ec2d1c080ffe97366150f95360c5e59eeac8aebd8557",
-    "logs/continuation-unit-correct-root.log": "sha256:273b71e934e2a10933c13480b134f8c785d9ffa293b2bb84033be9a4115c81d2",
+    "logs/continuation-unit-correct-root.log": "sha256:346356b2d16e119d757596f9f8e3bb0ad94e40c9d45f7966672cf946a12e0bab",
     "logs/deepseek-docs-unit.log": "sha256:1aa8cadc4129dd096a901429e38800ff1b1c34aad62095bf9ab44b4665a4ad0e",
     "logs/continuation-tsc.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "logs/runtime-docs-observation.log": "sha256:84495ac0abd4794021f977462a0722c5697900cce508258456b64e096a7c8c6c",
-    "logs/continuation-formation-browser.log": "sha256:853d64b52a4f50fd20d2fff29ddcca411cf9f633f13836f79ce3a224b9c6bc7c"
+    "logs/continuation-formation-browser.log": "sha256:853d64b52a4f50fd20d2fff29ddcca411cf9f633f13836f79ce3a224b9c6bc7c",
+    "log-projections.json": "sha256:4de7ad43618b13ce4a73517d0845f91142c7ee21707da04781a2887eddbd453e"
   },
   "prior_rotation_evidence": "../20260928-security-handoff/security.json",
   "rotation_not_repeated": true,
