@@ -3292,7 +3292,7 @@ def _enforce_routing_chain_budget(
     if (
         not chain_id
         or not limits.get("task_token_limit")
-        or not limits.get("task_money_limit")
+        or limits.get("task_money_limit") is None
     ):
         raise KernelError(
             "ROUTING_BUDGET_CONTRACT_REQUIRED",
@@ -3342,7 +3342,14 @@ def _enforce_routing_chain_budget(
             "ROUTING_BUDGET_CONTRACT_REQUIRED",
             "routed effect has invalid frozen limits",
         ) from exc
-    if max_attempts <= 0 or max_escalations < 0 or token_limit <= 0 or money_limit <= 0:
+    # WHY: zero priced-spend allowance may authorize subscription use with unknown
+    # monetary cost; it never authorizes a priced Provider reservation.
+    if (
+        max_attempts <= 0
+        or max_escalations < 0
+        or token_limit <= 0
+        or (money_limit == 0 and request.accounting_basis != "ACCOUNT_ENTITLEMENT")
+    ):
         raise KernelError(
             "ROUTING_BUDGET_CONTRACT_REQUIRED",
             "routed effect has invalid frozen limits",
