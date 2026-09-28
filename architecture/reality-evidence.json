@@ -5340,6 +5340,10 @@
         {
           "path": "src/novel_forge/modules/command_kernel/dispatch_control.py",
           "symbol": "require_dispatch_enabled"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/creative_budget_renewal.py",
+          "symbol": "validate_selection"
         }
       ],
       "commands_operations": [
@@ -5556,6 +5560,14 @@
         {
           "path": "tests/integration/test_single_book_budget_postgres.py",
           "symbol": "test_router_accepts_only_native_monetary_amendment_and_retains_original_grant"
+        },
+        {
+          "path": "tests/integration/test_creative_budget_renewal_postgres.py",
+          "symbol": "test_renewal_preserves_unknown_and_bounds_new_money_tokens_and_entitlement"
+        },
+        {
+          "path": "tests/unit/test_author_supervised_routing.py",
+          "symbol": "test_supervised_book_cannot_dispatch_strict_selected_model_without_exact_grant"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9179,7 +9191,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:346ea469976f181a45487fdcdf253b9d1a16f7ae25803b90344eeb80c2141199"
+    "implementation_tree_sha": "sha256:a317566067c0784b860b5e61adf78c26badad224f1ca2ae26b7558d192bff790"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

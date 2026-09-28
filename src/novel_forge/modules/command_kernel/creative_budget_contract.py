@@ -17,6 +17,8 @@ PRODUCTION_BOOK_VERSION = "creative-book-production-budget.v3"
 PAIRED_SAMPLES_VERSION = "creative-paired-samples-budget.v5"
 PAIRED_SAMPLES_PHASES = (*PHASES, "QUALIFICATION")
 PROVIDER_CAMPAIGN_VERSION = "creative-provider-campaign-budget.v4"
+PROVIDER_RENEWAL_VERSION = "creative-provider-campaign-budget.v5"
+PROVIDER_BUDGET_VERSIONS = {PROVIDER_CAMPAIGN_VERSION, PROVIDER_RENEWAL_VERSION}
 PROVIDER_CAMPAIGN_PHASES = ("REFERENCE", "SCREENING", "CALIBRATION", "HOLDOUT", "SOURCE", "DESIGN", "PRODUCTION", "REPAIR")
 SINGLE_BOOK_VERSIONS = {SINGLE_BOOK_VERSION, PRODUCTION_BOOK_VERSION}
 SINGLE_BOOK_PHASES = ("SOURCE", "DESIGN", "CREATION_EARLY", "CREATION_LATE", "REPAIR")
@@ -145,6 +147,23 @@ _V4_AMENDED_PLAN = V4_MONETARY_AMENDMENT_SCHEMA["properties"]["comparison_budget
 _V4_AMENDED_PLAN["properties"]["previous_policy"] = deepcopy(_V3_PLAN_SCHEMA["properties"]["previous_policy"])
 _V4_AMENDED_PLAN["required"].append("previous_policy")
 
+PROVIDER_RENEWAL_POLICY_SCHEMA = deepcopy(V4_MONETARY_AMENDMENT_SCHEMA)
+_RENEWAL_PLAN_SCHEMA = PROVIDER_RENEWAL_POLICY_SCHEMA["properties"]["comparison_budget"]
+_RENEWAL_PLAN_SCHEMA["properties"]["contract_version"] = {"const": PROVIDER_RENEWAL_VERSION}
+_RENEWAL_PLAN_SCHEMA["properties"]["renewal"] = _object_schema({
+    "authorized_at": {"type": "string", "format": "date-time"},
+    "additional_total": _MIXED_ALLOCATION_SCHEMA,
+    "carry_forward": _object_schema({
+        "reservation_ids": {"type": "array", "items": _TEXT_SCHEMA},
+        "shared_total": _MIXED_ALLOCATION_SCHEMA,
+        "phases": _object_schema({phase: _MIXED_ALLOCATION_SCHEMA for phase in PROVIDER_CAMPAIGN_PHASES}),
+        "entitlements": deepcopy(_RENEWAL_PLAN_SCHEMA["properties"]["entitlements"]),
+    }),
+})
+_RENEWAL_PLAN_SCHEMA["required"].append("renewal")
+_RENEWAL_PLAN_SCHEMA["properties"]["entitlements"]["items"]["properties"]["tokens"]["minimum"] = 0
+_RENEWAL_PLAN_SCHEMA["properties"]["renewal"]["properties"]["carry_forward"]["properties"]["entitlements"]["items"]["properties"]["tokens"]["minimum"] = 0
+
 
 def _invalid(message: str) -> KernelError:
     return KernelError("CREATIVE_BUDGET_CONTRACT_INVALID", message)
@@ -180,7 +199,7 @@ def _allocation(value: Any, label: str, *, positive: bool = False, paired: bool 
 
 
 def validate_comparison_budget(value: Any, *, require_both_arms: bool = False) -> dict[str, Any]:
-    if isinstance(value, dict) and value.get("contract_version") == PROVIDER_CAMPAIGN_VERSION:
+    if isinstance(value, dict) and value.get("contract_version") in PROVIDER_BUDGET_VERSIONS:
         return _validate_provider_campaign(value, require_both_arms=require_both_arms)
     production = isinstance(value, dict) and value.get("contract_version") == PRODUCTION_BOOK_VERSION
     contract = _object(value, "comparison_budget", {
@@ -282,7 +301,7 @@ def _validate_paired_samples_budget(contract: dict[str, Any]) -> dict[str, Any]:
 def budget_phases(plan: dict[str, Any]) -> tuple[str, ...]:
     if plan["contract_version"] == PAIRED_SAMPLES_VERSION:
         return PAIRED_SAMPLES_PHASES
-    if plan["contract_version"] == PROVIDER_CAMPAIGN_VERSION:
+    if plan["contract_version"] in PROVIDER_BUDGET_VERSIONS:
         return PROVIDER_CAMPAIGN_PHASES
     return SINGLE_BOOK_PHASES if plan["contract_version"] in SINGLE_BOOK_VERSIONS else PHASES
 
@@ -353,7 +372,7 @@ def validate_policy(value: Any) -> dict[str, Any]:
     policy = _object(value, "policy", {"policy_version", "comparison_budget", "authorization"})
     _text(policy["policy_version"], "policy_version")
     plan = validate_comparison_budget(policy["comparison_budget"])
-    if plan["contract_version"] == PROVIDER_CAMPAIGN_VERSION:
+    if plan["contract_version"] in PROVIDER_BUDGET_VERSIONS:
         return _validate_provider_campaign_policy(policy, plan)
     if plan["accounting_basis"] != "ACCOUNT_ENTITLEMENT":
         raise _invalid("Native stage budget requires ACCOUNT_ENTITLEMENT; PRICED needs an explicit monetary phase contract")
@@ -384,9 +403,9 @@ def validate_policy(value: Any) -> dict[str, Any]:
     return deepcopy(policy)
 
 
-def _monetary_allocation(value: Any, label: str) -> dict[str, Any]:
+def _monetary_allocation(value: Any, label: str, *, paired: bool = True) -> dict[str, Any]:
     result = _object(value, label, {"calls", "tokens", "priced_usd"})
-    _allocation({key: result[key] for key in ("calls", "tokens")}, label)
+    _allocation({key: result[key] for key in ("calls", "tokens")}, label, paired=paired)
     if not isinstance(result["priced_usd"], str) or not re.fullmatch(r"(0|[1-9][0-9]*)(\.[0-9]+)?", result["priced_usd"]):
         raise _invalid("priced USD requires a decimal string")
     try:
@@ -402,6 +421,7 @@ def _validate_provider_campaign(value: dict[str, Any], *, require_both_arms: boo
     plan = _object(value, "provider campaign", {
         "contract_version", "experiment_id", "manifest_hash", "expires_at", "accounting_basis",
         "shared_total", "arms", "entitlements", *({"previous_policy"} if "previous_policy" in value else set()),
+        *({"renewal"} if value["contract_version"] == PROVIDER_RENEWAL_VERSION else set()),
     })
     if "previous_policy" in plan:
         previous = _object(plan["previous_policy"], "previous_policy", {"policy_version", "policy_hash", "contract_hash"})
@@ -433,7 +453,7 @@ def _validate_provider_campaign(value: dict[str, Any], *, require_both_arms: boo
     for key in ("project_id", "book_id"):
         _text(arm[key], key)
     for key in ("project_total", *fields.values()):
-        _monetary_allocation(arm[key], key)
+        _monetary_allocation(arm[key], key, paired=plan["contract_version"] != PROVIDER_RENEWAL_VERSION)
     ranges = _object(arm["chapter_ranges"], "chapter_ranges", {"PRODUCTION"})
     span = ranges["PRODUCTION"]
     if (not isinstance(span, list) or len(span) != 2 or span[0] != 1
@@ -454,8 +474,11 @@ def _validate_provider_campaign(value: dict[str, Any], *, require_both_arms: boo
             raise _invalid("Provider campaign entitlement identity is duplicated")
         identities.add(identity)
         for key in ("calls", "tokens"):
-            if _integer(lane[key], "entitlement " + key, 1) > total[key]:
+            if _integer(lane[key], "entitlement " + key, 0 if key == "tokens" and plan["contract_version"] == PROVIDER_RENEWAL_VERSION else 1) > total[key]:
                 raise _invalid("entitlement allowance exceeds the complete campaign")
+    if plan["contract_version"] == PROVIDER_RENEWAL_VERSION:
+        from .creative_budget_renewal import validate_renewal_contract
+        validate_renewal_contract(plan)
     return deepcopy(plan)
 
 
@@ -472,7 +495,7 @@ def _validate_provider_campaign_policy(policy: dict[str, Any], plan: dict[str, A
         raise _invalid("Provider campaign authorization must bind its production Book")
     caps = _object(authorization["authorized_cumulative_caps"], "campaign phase authorization", set(PROVIDER_CAMPAIGN_PHASES))
     for phase, cap in caps.items():
-        _monetary_allocation(cap, phase)
+        _monetary_allocation(cap, phase, paired=plan["contract_version"] != PROVIDER_RENEWAL_VERSION)
         if any(Decimal(str(cap[key])) > Decimal(str(arm[phase.lower() + "_allocation"][key])) for key in cap):
             raise _invalid("phase authorization exceeds its frozen campaign allocation")
     scope = _object(authorization["business_scope"], "business_scope", {"source_allowed", "design_allowed", "max_chapter_number"})

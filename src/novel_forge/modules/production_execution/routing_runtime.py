@@ -1013,7 +1013,8 @@ class ProductionProviderRouter:
             decision = benchmark_decision(
                 decision, bootstrap, environment=self.execution_environment
             )
-        elif policy_snapshot.get("policy", {}).get("author_supervised_authorizations"):
+        elif (policy_snapshot.get("policy", {}).get("author_supervised_authorizations")
+                or policy_snapshot.get("policy", {}).get("author_supervised_books")):
             from .author_supervision import supervised_decision
             decision = supervised_decision(decision, now=now)
         snapshot = (

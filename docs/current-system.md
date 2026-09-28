@@ -76,6 +76,11 @@ literary quality-floor and benchmark insufficiency may be overridden; identity, 
 Schema, capacity, budget and unknown-outcome constraints still reject execution. The
 frozen route records its original strict rejection reasons and `NOT_PROVEN` literary
 qualification. Returning new requests to strict mode does not rewrite existing requests.
+New selections for an explicitly supervised Book require an exact task/Producer grant
+even when strict routing would otherwise select a qualified model. The
+`author-supervision-admission.v2` receipt records this boundary; existing frozen
+selections keep their prior contract. A strict-purpose semantic review must satisfy both
+its original strict selection and the exact model/revision grant, without quality relaxation.
 Story Design and Book Design retain native author decisions without assigning independent
 literary qualification; production snapshots distinguish `AUTHOR_SUPERVISED_DESIGN` from
 `LONGFORM_DESIGN_QUALIFIED`. Native Book control requires author decision boundaries.
@@ -324,7 +329,15 @@ admit priced grants, and an unknown subscription cost is never recorded as free.
 chapter boundaries determine business scope, while sampling phases come from the frozen
 grant. Expiry prevents new sends but permits reconciliation of existing calls. This
 budget contract does not supply evaluator calibration, paid authorization or campaign
-qualification.
+qualification. An explicitly approved `creative-provider-campaign-budget.v5` renewal
+appends to the exact selected predecessor and freezes its native conservative usage.
+Only design, production and repair receive new allowances. Historical usage plus the new
+allowance forms the cumulative cap, while a separate new-window cap prevents released
+historical reservations from creating additional credit. Campaign, manifest and Book
+identities stay unchanged; old reservations retain their original expiry and reconciliation
+path. Subscription and priced calls share the new call/token ceiling, with priced USD
+accounted separately. New authorization evidence is required; selecting a policy does not
+renew an author decision or confer model qualification.
 
 ## Governed corpus works and Book knowledge isolation
 

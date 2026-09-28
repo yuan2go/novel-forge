@@ -28,15 +28,17 @@ def run_creative_budget_command(settings: Any, args: Any) -> dict[str, Any]:
     if not all((args.policy_file, args.authorization_evidence_file, args.workspace_id, args.idempotency_key)):
         raise ValueError("configure requires an explicit policy, authorization evidence, workspace and stable idempotency key")
     policy = json.loads(args.policy_file.read_bytes())
-    from novel_forge.modules.command_kernel.creative_budget_contract import PROVIDER_CAMPAIGN_VERSION, validate_policy
+    from novel_forge.modules.command_kernel.creative_budget_contract import PROVIDER_BUDGET_VERSIONS, validate_policy
 
     validate_policy(policy)
     evidence_hash = "sha256:" + hashlib.sha256(args.authorization_evidence_file.read_bytes()).hexdigest()
     authorization = policy.get("authorization") or {}
     if authorization.get("evidence_hash") != evidence_hash:
         raise ValueError("authorization evidence bytes do not match the policy grant")
-    if policy["comparison_budget"]["contract_version"] == PROVIDER_CAMPAIGN_VERSION:
-        if any(lane["provider"] == "codex-cli" and lane["authorization_ref"] != os.environ.get("NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF")
+    if policy["comparison_budget"]["contract_version"] in PROVIDER_BUDGET_VERSIONS:
+        carried = {(lane["provider"], lane["authorization_ref"]) for lane in
+                   policy["comparison_budget"].get("renewal", {}).get("carry_forward", {}).get("entitlements", [])}
+        if any((lane["provider"], lane["authorization_ref"]) not in carried and lane["provider"] == "codex-cli" and lane["authorization_ref"] != os.environ.get("NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF")
                for lane in policy["comparison_budget"]["entitlements"]):
             raise ValueError("the configured Codex account route differs from the frozen campaign entitlement")
     elif authorization.get("authorization_ref") != os.environ.get("NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF"):

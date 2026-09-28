@@ -65,12 +65,53 @@ def matching_grant(task: Mapping[str, Any], *, now: datetime) -> dict[str, Any] 
 
 def supervised_decision(decision: RoutingDecision, *, now: datetime) -> RoutingDecision:
     snapshot = decision.to_dict()
-    if (snapshot["task"]["task_type"] == "narrative_semantic_evaluation"
-            and snapshot["task"].get("declared_requirements", {}).get("cross_model_review", {}).get("purpose") != "AUTHOR_ADVISORY"):
+    task = snapshot["task"]
+    supervised_book = any(book["book_id"] == task["work_id"]
+        for book in task.get("policy_snapshot", {}).get("policy", {}).get("author_supervised_books", []))
+    strict_evaluation = (task["task_type"] == "narrative_semantic_evaluation"
+        and task.get("declared_requirements", {}).get("cross_model_review", {}).get("purpose") != "AUTHOR_ADVISORY")
+    if strict_evaluation and not supervised_book:
         return decision
-    grant = matching_grant(snapshot["task"], now=now)
+    grant = matching_grant(task, now=now)
     if grant is None:
-        return decision
+        if not supervised_book:
+            return decision
+        for row in snapshot["candidates"]:
+            row["strict_rejected_reasons"] = list(row["rejected_reasons"])
+            row["rejected_reasons"].append("AUTHOR_SUPERVISION_TASK_AUTHORIZATION_REQUIRED")
+        snapshot.update(status="BLOCKED", selected=None, mode=MODE, production_eligible=False,
+            independent_qualification_eligible=False,
+            author_supervision={"admission_contract_version": "author-supervision-admission.v2",
+                "authorization": {}, "policy_operation_id": task.get("policy_snapshot", {}).get("operation_id", ""),
+                "literary_qualification": "NOT_PROVEN", "author_review_required": True,
+                "required_decision": "Approve this exact Book, task, Producer and model, then resume with a new Attempt"})
+        snapshot.pop("decision_id", None)
+        snapshot["decision_id"] = "routing-decision:" + snapshot_hash(snapshot)[7:]
+        return RoutingDecision(json.dumps(snapshot, sort_keys=True, ensure_ascii=False, allow_nan=False))
+    if strict_evaluation:
+        selected = snapshot.get("selected")
+        if selected is None:
+            return decision
+        candidate = selected["candidate"]
+        reasons = []
+        if (candidate["candidate_id"], candidate["model_revision"]) != (grant["candidate_id"], grant["model_revision"]):
+            reasons.append("AUTHOR_SUPERVISION_MODEL_MISMATCH")
+        if (selected["estimated_total_tokens"] > grant["maximum_tokens"] or
+                Decimal(selected["reservation_upper_bound"] or "0") > Decimal(grant["maximum_amount"])):
+            reasons.append("AUTHOR_SUPERVISION_BUDGET_EXCEEDED")
+        if not reasons:
+            return decision
+        for row in snapshot["candidates"]:
+            if row["candidate"]["candidate_id"] == candidate["candidate_id"]:
+                row["strict_rejected_reasons"] = list(row["rejected_reasons"])
+                row["rejected_reasons"].extend(reasons)
+        snapshot.update(status="BLOCKED", selected=None, production_eligible=False,
+            author_supervision={"admission_contract_version": "author-supervision-admission.v2",
+                "authorization": grant, "authorization_hash": snapshot_hash(grant),
+                "policy_operation_id": task["policy_snapshot"]["operation_id"], "qualification_override": False})
+        snapshot.pop("decision_id", None)
+        snapshot["decision_id"] = "routing-decision:" + snapshot_hash(snapshot)[7:]
+        return RoutingDecision(json.dumps(snapshot, sort_keys=True, ensure_ascii=False, allow_nan=False))
     if snapshot.get("bootstrap_authorization"):
         raise KernelError("AUTHOR_SUPERVISION_EXPERIMENT_FORBIDDEN", "Sampling cannot become supervised production")
     selected = None
@@ -93,7 +134,8 @@ def supervised_decision(decision: RoutingDecision, *, now: datetime) -> RoutingD
             selected = row
     snapshot.update(status="AUTHOR_SUPERVISED_SELECTED" if selected else "BLOCKED", selected=selected,
                     mode=MODE, production_eligible=selected is not None, independent_qualification_eligible=False,
-                    author_supervision={"authorization": grant, "authorization_hash": snapshot_hash(grant),
+                    author_supervision={"admission_contract_version": "author-supervision-admission.v2",
+                        "authorization": grant, "authorization_hash": snapshot_hash(grant),
                         "policy_operation_id": snapshot["task"]["policy_snapshot"]["operation_id"],
                         "literary_qualification": "NOT_PROVEN", "author_review_required": True})
     snapshot.pop("decision_id", None)

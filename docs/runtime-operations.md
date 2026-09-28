@@ -506,6 +506,22 @@ calls, tokens and entitlement lanes remain frozen. The same configure command va
 this lineage, and campaign queries include earlier grants, reservations and settlements.
 Old requests retain their original limits. An increased ceiling is never reported as usage.
 
+For a new, explicitly approved finite production window, use
+`creative-provider-campaign-budget.v5` through the same configure command. Preserve the
+campaign, manifest, project and Book and bind `previous_policy` to the selected native
+policy. `renewal` records the original timezone-aware `authorized_at`, `additional_total`
+and `carry_forward` (accounted reservation IDs, shared total, phases and entitlement
+lanes). Read that snapshot from the native ledger; a concurrent ledger change rejects
+selection and requires a refreshed snapshot. The new cumulative total equals conservative
+historical usage plus the approved addition, with additional allocations only in DESIGN,
+PRODUCTION and REPAIR. Retain old account lanes at their carried usage and bind the new
+lane to the new authorization reference. New-window consumption has its own shared cap;
+settling or releasing old reservations cannot enlarge it. Use a new evidence hash and
+reference for the actual author approval. Expiry runs from that approval, not deployment.
+Old frozen reservations cannot borrow the new expiry. UNKNOWN still needs reconciliation.
+Do not substitute a new campaign, rename a reservation or release historical holds to
+configure a renewal. Separate model grants and Book review boundaries remain required.
+
 The configure command verifies the existing authorization-evidence file; phase grants
 retain explicit Source/design/chapter business scope. `authority-creative-budget query`
 returns cumulative native-ledger usage by phase, priced USD, unknown-cost entitlement
@@ -2283,7 +2299,10 @@ limits. This policy does not grant account access, add budget, activate a Pack, 
 dispatch pause or settle an UNKNOWN Effect. The panel freezes the prior policy hash to
 detect concurrent changes and retains the original request/idempotency key after a lost
 response. Strict mode remains available, and previously admitted requests keep their
-frozen policy. Migration 0148 requires the normal private backup and forward-upgrade
+frozen policy. New selections on an explicitly supervised Book are blocked without an
+exact task/Producer grant, including candidates that would pass strict qualification.
+Strict-purpose semantic review keeps strict qualification and must also match its grant;
+a trial grant does not relax it. Migration 0148 requires the normal private backup and forward-upgrade
 boundary before deploying code that emits supervised production snapshots.
 An explicit policy-version conflict retains the rejected request locally and refreshes
 the policy for a new confirmation. Uncertain outcomes keep the original pending key.

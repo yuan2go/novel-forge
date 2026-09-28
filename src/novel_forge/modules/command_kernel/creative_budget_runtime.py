@@ -66,7 +66,7 @@ def require_provider_campaign_entitlement(cursor: Any, *, project_id: str, grant
     campaign = grant.get("campaign") or {}
     lanes = [lane for lane in plan.get("entitlements", [])
              if lane["provider"] == "codex-cli" and lane["authorization_ref"] == grant.get("cost_authorization_ref")]
-    if (plan["contract_version"] != _contract().PROVIDER_CAMPAIGN_VERSION
+    if (plan["contract_version"] not in _contract().PROVIDER_BUDGET_VERSIONS
         or plan["experiment_id"] != campaign.get("campaign_id")
         or plan.get("manifest_hash") != campaign.get("manifest_hash")
         or _arm(plan, project_id)["book_id"] != grant["book_id"]
@@ -100,7 +100,8 @@ def _lineage_plans(cursor: Any, plan: dict[str, Any], project_id: str) -> dict[s
             raise KernelError("CREATIVE_BUDGET_PREDECESSOR_MISMATCH", "budget predecessor lineage contains a cycle")
         result[digest] = current
         monetary_amendment = current["contract_version"] == _contract().PROVIDER_CAMPAIGN_VERSION and "previous_policy" in current
-        if current["contract_version"] != _contract().PRODUCTION_BOOK_VERSION and not monetary_amendment:
+        renewal = current["contract_version"] == _contract().PROVIDER_RENEWAL_VERSION
+        if current["contract_version"] != _contract().PRODUCTION_BOOK_VERSION and not monetary_amendment and not renewal:
             return result
         reference = current["previous_policy"]
         cursor.execute("""SELECT content,content_hash FROM authority_runtime_policy_version
@@ -109,7 +110,10 @@ def _lineage_plans(cursor: Any, plan: dict[str, Any], project_id: str) -> dict[s
         if row is None or row[1] != reference["policy_hash"] or policy_hash(row[0]) != row[1]:
             raise KernelError("CREATIVE_BUDGET_PREDECESSOR_MISMATCH", "budget predecessor native policy is missing or altered")
         _contract().validate_policy(row[0])
-        if monetary_amendment:
+        if renewal:
+            from .creative_budget_renewal import validate_predecessor
+            validate_predecessor(current, row[0], project_id=project_id)
+        elif monetary_amendment:
             _validate_campaign_monetary_amendment(current, row[0], project_id=project_id)
         else:
             _validate_reallocation(current, row[0], project_id=project_id)
@@ -150,6 +154,16 @@ def validate_selection_in_uow(uow: AuthorityUnitOfWork, *, project_id: str, cont
     selections = _selected(uow.cursor)
     own = next((row for row in selections if row["project_id"] == project_id), None)
     monetary_amendment = plan["contract_version"] == _contract().PROVIDER_CAMPAIGN_VERSION and "previous_policy" in plan
+    renewal = plan["contract_version"] == _contract().PROVIDER_RENEWAL_VERSION
+    if renewal and own is not None and own["policy"]["comparison_budget"] == plan and content["authorization"] != own["policy"]["authorization"]:
+        raise KernelError("CREATIVE_BUDGET_RENEWAL_INVALID", "A changed renewal authorization requires a new exact predecessor")
+    if renewal and (own is None or own["policy"]["comparison_budget"] != plan):
+        if own is None:
+            raise KernelError("CREATIVE_BUDGET_PREDECESSOR_MISMATCH", "Renewal requires the selected native predecessor")
+        from .creative_budget_renewal import validate_predecessor, validate_selection
+        validate_predecessor(plan, own["policy"], project_id=project_id)
+        prior_usage = _usage(uow.cursor, own["policy"]["comparison_budget"], project_id)
+        validate_selection(plan, own["policy"], content, prior_usage)
     if monetary_amendment and (own is None or own["policy"]["comparison_budget"] != plan):
         if own is None:
             raise KernelError("CREATIVE_BUDGET_PREDECESSOR_MISMATCH", "campaign amendment requires an existing selected native policy")
@@ -168,7 +182,7 @@ def validate_selection_in_uow(uow: AuthorityUnitOfWork, *, project_id: str, cont
         prior = selected["policy"]["comparison_budget"]
         overlap = projects & {a["project_id"] for a in prior["arms"]}
         if (overlap or prior["experiment_id"] == plan["experiment_id"]) and prior != plan:
-            if selected is not own or not (plan["contract_version"] == _contract().PRODUCTION_BOOK_VERSION or monetary_amendment):
+            if selected is not own or not (plan["contract_version"] == _contract().PRODUCTION_BOOK_VERSION or monetary_amendment or renewal):
                 raise KernelError("CREATIVE_BUDGET_PLAN_IMMUTABLE", "participants and allocations require an exact native reallocation predecessor")
     usage = _usage(uow.cursor, plan, project_id)
     _check_limits(content, usage, phase=None, tokens=0, calls=0)
@@ -299,7 +313,7 @@ def _empty_usage() -> dict[str, int]:
 def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reservation: str = "") -> dict[str, Any]:
     from novel_forge.modules.command_kernel.budget_runtime import provider_usage_accounted_sql
     projects = [a["project_id"] for a in plan["arms"]]
-    mixed = plan["contract_version"] == _contract().PROVIDER_CAMPAIGN_VERSION
+    mixed = plan["contract_version"] in _contract().PROVIDER_BUDGET_VERSIONS
     lineage = _lineage_plans(cursor, plan, project_id)
     cursor.execute(f"""SELECT reservation_id,external_effect_id,project_id,status,
         estimated_tokens,actual_tokens,evidence,created_at,currency,provider,reserved_amount,settled_amount FROM authority_budget_reservation
@@ -314,6 +328,10 @@ def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reserv
         usage.update(entitlements=[], entitlement_usd=None, invoice_status="NOT_VERIFIED")
         for total in [usage["project_total"], usage["shared_total"], *usage["phases"].values()]:
             total.update(priced_usd=Decimal(0), unpriced_calls=0)
+    renewal = plan["contract_version"] == _contract().PROVIDER_RENEWAL_VERSION
+    if renewal:
+        usage["renewal_usage"] = {**_empty_usage(), "priced_usd": Decimal(0), "unpriced_calls": 0}
+        carried = set(plan["renewal"]["carry_forward"]["reservation_ids"])
     seen: set[str] = set()
     for reservation_id, effect_id, owner_project, status, estimate, actual, evidence, _created, currency, provider, reserved_amount, settled_amount in rows:
         proof = dict(evidence or {}).get("creative_experiment")
@@ -366,6 +384,8 @@ def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reserv
             else:
                 raise KernelError("CREATIVE_BUDGET_COST_UNKNOWN", "campaign usage has an unknown accounting basis")
         totals = [usage["shared_total"]]
+        if renewal and reservation_id not in carried:
+            totals.append(usage["renewal_usage"])
         if owner_project == project_id:
             totals += [usage["project_total"], usage["phases"][phase]]
             usage["reservation_ids"].append(reservation_id)
@@ -381,13 +401,21 @@ def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reserv
     if mixed:
         for total in [usage["project_total"], usage["shared_total"], *usage["phases"].values()]:
             total["priced_usd"] = str(total["priced_usd"])
+    if renewal:
+        usage["renewal_usage"]["priced_usd"] = str(usage["renewal_usage"]["priced_usd"])
     return usage
 
 
 def _check_limits(policy: dict[str, Any], usage: dict[str, Any], *, phase: str | None, tokens: int, calls: int,
-                  amount: Decimal | None = None, entitlement: tuple[str, str] | None = None) -> None:
+                  amount: Decimal | None = None, entitlement: tuple[str, str] | None = None, renewal_addition: bool = True) -> None:
     plan = policy["comparison_budget"]
     arm = _arm(plan, usage["project_id"])
+    if plan["contract_version"] == _contract().PROVIDER_RENEWAL_VERSION:
+        from .creative_budget_renewal import check_window
+        if renewal_addition and calls and phase not in {"DESIGN", "PRODUCTION", "REPAIR"}:
+            raise KernelError("CREATIVE_BUDGET_RENEWAL_SCOPE_DENIED", "Production renewal cannot dispatch diagnostics or Source work")
+        check_window(plan, usage, calls=calls if renewal_addition else 0, tokens=tokens if renewal_addition else 0,
+                     amount=amount if renewal_addition else None)
     pairs = [("project_total", usage["project_total"], arm["project_total"], calls, tokens),
              ("shared_total", usage["shared_total"], plan["shared_total"], calls, tokens)]
     for candidate in _contract().budget_phases(plan):
@@ -396,11 +424,11 @@ def _check_limits(policy: dict[str, Any], usage: dict[str, Any], *, phase: str |
     for name, used, cap, extra_calls, extra_tokens in pairs:
         if used["calls_used_or_reserved"] + extra_calls > cap["calls"] or used["conservative_tokens"] + extra_tokens > cap["tokens"]:
             raise KernelError("CREATIVE_BUDGET_EXHAUSTED", f"cumulative {name} allocation/authorization does not admit this Provider usage")
-        if plan["contract_version"] == _contract().PROVIDER_CAMPAIGN_VERSION and (
+        if plan["contract_version"] in _contract().PROVIDER_BUDGET_VERSIONS and (
             Decimal(used["priced_usd"]) + ((amount or Decimal(0)) if extra_calls else Decimal(0)) > Decimal(cap["priced_usd"])
         ):
             raise KernelError("CREATIVE_BUDGET_USD_EXHAUSTED", f"cumulative {name} priced USD allowance is exhausted")
-    if plan["contract_version"] == _contract().PROVIDER_CAMPAIGN_VERSION:
+    if plan["contract_version"] in _contract().PROVIDER_BUDGET_VERSIONS:
         lanes = {(lane["provider"], lane["authorization_ref"]): lane for lane in plan["entitlements"]}
         used_lanes = {(lane["provider"], lane["authorization_ref"]): lane for lane in usage["entitlements"]}
         for key in {*used_lanes, *((entitlement,) if entitlement is not None else ())}:
@@ -442,7 +470,7 @@ def reserve_creative_budget_in_uow(uow: AuthorityUnitOfWork, request: Any) -> di
         subject_id=subject_id, default=policy, actor_id="command-kernel-budget")
     policy = snapshot["policy"]
     current_policy = selected["policy"]
-    mixed = policy["comparison_budget"]["contract_version"] == _contract().PROVIDER_CAMPAIGN_VERSION
+    mixed = policy["comparison_budget"]["contract_version"] in _contract().PROVIDER_BUDGET_VERSIONS
     if (current_policy["comparison_budget"]["contract_version"] == _contract().PRODUCTION_BOOK_VERSION
         and current_policy["comparison_budget"] != policy["comparison_budget"]):
         raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "an earlier frozen budget cannot dispatch after its Book allocation was superseded")
@@ -512,8 +540,9 @@ def check_creative_settlement_in_uow(uow: AuthorityUnitOfWork, row: dict[str, An
     if _contract().contract_hash(policy["comparison_budget"]) not in lineage:
         raise KernelError("CREATIVE_BUDGET_PLAN_IMMUTABLE", "settlement cannot change the frozen allocation plan")
     usage = _usage(uow.cursor, current["comparison_budget"], row["project_id"], exclude_reservation=row["reservation_id"])
-    mixed = current["comparison_budget"]["contract_version"] == _contract().PROVIDER_CAMPAIGN_VERSION
+    mixed = current["comparison_budget"]["contract_version"] in _contract().PROVIDER_BUDGET_VERSIONS
     _check_limits(current, usage, phase=proof["phase"], tokens=actual_tokens, calls=1,
+                  renewal_addition=row["reservation_id"] not in current["comparison_budget"].get("renewal", {}).get("carry_forward", {}).get("reservation_ids", []),
                   amount=actual_amount,
                   entitlement=(row["provider"], row["evidence"]["cost_authorization_ref"])
                   if mixed and row["accounting_basis"] == "ACCOUNT_ENTITLEMENT" else None)
@@ -537,7 +566,7 @@ def assert_creative_budget_dispatch(
     cursor: Any, *, project_id: str, external_effect_id: str, reservation_id: str,
 ) -> None:
     selected = _policy_for(cursor, project_id)
-    if selected is None or selected["policy"]["comparison_budget"]["contract_version"] != _contract().PROVIDER_CAMPAIGN_VERSION:
+    if selected is None or selected["policy"]["comparison_budget"]["contract_version"] not in _contract().PROVIDER_BUDGET_VERSIONS:
         return
     policy = selected["policy"]
     plan = policy["comparison_budget"]
@@ -568,13 +597,18 @@ def assert_creative_budget_dispatch(
         or frozen[0]["authorization"] != proof.get("authorization")
         or _contract().contract_hash(frozen[0]["comparison_budget"]) != proof.get("contract_hash")):
         raise KernelError("RUNTIME_POLICY_HASH_MISMATCH", "campaign dispatch policy is missing or altered")
+    if datetime.now(timezone.utc) >= datetime.fromisoformat(frozen[0]["comparison_budget"]["expires_at"]):
+        raise KernelError("CREATIVE_BUDGET_AUTHORIZATION_EXPIRED", "The exact reservation authorization expired before send")
     from .creative_budget_scope import require_business_scope
 
     require_business_scope(policy, proof["business_scope"])
     usage = _usage(cursor, plan, project_id, exclude_reservation=reservation_id)
     _check_limits(policy, usage, phase=proof["phase"], tokens=int(row[4]), calls=1, amount=row[5],
+        renewal_addition=reservation_id not in plan.get("renewal", {}).get("carry_forward", {}).get("reservation_ids", []),
         entitlement=(row[3], evidence["cost_authorization_ref"])
         if evidence.get("accounting_basis") == "ACCOUNT_ENTITLEMENT" else None)
+    if frozen[0]["comparison_budget"].get("renewal") and frozen[0]["comparison_budget"] != plan:
+        raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "An earlier renewal reservation requires reconciliation after replacement")
     _check_limits(frozen[0], usage, phase=proof["phase"], tokens=int(row[4]), calls=1, amount=row[5],
         entitlement=(row[3], evidence["cost_authorization_ref"])
         if evidence.get("accounting_basis") == "ACCOUNT_ENTITLEMENT" else None)
@@ -591,7 +625,7 @@ def provider_campaign_contract_lineage(cursor: Any, project_id: str) -> tuple[di
         raise KernelError("RUNTIME_POLICY_HASH_MISMATCH", "campaign policy integrity failed")
     _contract().validate_policy(selected[0])
     plan = selected[0]["comparison_budget"]
-    if plan["contract_version"] != _contract().PROVIDER_CAMPAIGN_VERSION:
+    if plan["contract_version"] not in _contract().PROVIDER_BUDGET_VERSIONS:
         return ()
     return tuple({
         "campaign_id": version["experiment_id"], "manifest_hash": version["manifest_hash"],
