@@ -6,11 +6,13 @@ from typing import Any
 
 from novel_forge.modules.authority_handler_runtime.policy_commands import configure_owned_policy
 from novel_forge.modules.authority_security import PrincipalType
+from novel_forge.modules.book_authority.control_policy import CONTROL_BOUNDARIES, ControlPolicy
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution.author_supervision import validate_grants
 from novel_forge.modules.production_execution.routing_runtime import PostgresRoutingRegistry
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.versioned_policy_repository import policy_hash
 
 
 def supervision_workspace(database_url: str, *, project_id: str, book_id: str, principal: Any) -> dict[str, Any]:
@@ -27,12 +29,16 @@ def supervision_workspace(database_url: str, *, project_id: str, book_id: str, p
         seen = set()
         for version, decision in uow.cursor.fetchall():
             task = decision["task"]
-            identity = (task["task_type"], task.get("producer_contract_hash", ""))
+            review_requirement = task.get("declared_requirements", {}).get("cross_model_review") or {}
+            identity = (task["task_type"], task.get("producer_contract_hash", ""),
+                review_requirement.get("target_asset_version_id", ""), review_requirement.get("target_content_hash", ""))
             if identity in seen or not identity[1]:
                 continue
             seen.add(identity)
             producers.append({"routing_asset_version_id": version, "task_type": identity[0], "producer_contract_hash": identity[1],
-                "status": decision["status"], "candidates": decision["candidates"], "budget": task.get("budget_snapshot", {})})
+                "status": decision["status"], "candidates": decision["candidates"], "budget": task.get("budget_snapshot", {}),
+                "review_requirement": review_requirement or None,
+                "operation_id": task.get("operation_id", "")})
         uow.cursor.execute("""SELECT v.asset_version_id,v.content_hash,v.content,s.qualification,s.approval,s.planning_scope
             FROM authority_story_design_version_state s JOIN authority_asset_version v USING(asset_version_id)
             JOIN authority_story_planning_candidate c ON c.candidate_asset_version_id=v.asset_version_id
@@ -48,10 +54,38 @@ def supervision_workspace(database_url: str, *, project_id: str, book_id: str, p
               AND candidate.content->>'book_id'=%s AND v.content->>'evaluation_purpose'='AUTHOR_ADVISORY'
             ORDER BY v.created_at""", [project_id, book_id])
         reviews = [dict(zip(("asset_version_id", "content_hash", "content"), row)) for row in uow.cursor.fetchall()]
+        uow.cursor.execute("""SELECT v.content,v.content_hash FROM authority_runtime_policy_selection s
+            JOIN authority_runtime_policy_version v USING(owner,project_id,policy_version)
+            WHERE s.owner='BOOK_CONTROL' AND s.project_id=%s""", [project_id])
+        control = uow.cursor.fetchone()
+        if control and policy_hash(control[0]) != control[1]:
+            raise KernelError("RUNTIME_POLICY_HASH_MISMATCH", "Book control policy integrity failed")
+        selected_control = ControlPolicy(**control[0]) if control else None
+        uow.cursor.execute("""SELECT provider,currency,status,accounting_basis,settled_cost_status,count(*),
+            sum(actual_tokens),sum(estimated_tokens),sum(reserved_amount),sum(settled_amount)
+            FROM authority_budget_reservation WHERE project_id=%s
+            GROUP BY 1,2,3,4,5 ORDER BY 1,2,3,4,5""", [project_id])
+        ledger = [dict(zip(("provider", "currency", "status", "accounting_basis", "cost_status", "reservations",
+            "actual_tokens", "estimated_tokens", "reserved_amount", "settled_amount"), row, strict=True)) for row in uow.cursor.fetchall()]
+        uow.cursor.execute("SELECT state,version FROM authority_runtime_dispatch_control WHERE project_id=%s", [project_id])
+        dispatch = uow.cursor.fetchone()
+    from novel_forge.modules.command_kernel.dispatch_control import process_dispatch_suspended
     policy = PostgresRoutingRegistry(database_url).policy(project_id)
-    return {"policy_hash": policy.get("policy_hash", ""), "policy_version": policy.get("policy", {}).get("policy_version", ""),
+    now = datetime.now(timezone.utc)
+    return {"controls": {
+            "book_control": {"scope": "PROJECT_FUTURE_SUBJECTS", "selected_policy": selected_control.to_dict() if selected_control else None,
+                "policy_hash": control[1] if control else None,
+                "selected_boundaries": sorted(b for b in CONTROL_BOUNDARIES if selected_control and selected_control.requires(b)),
+                "supervised_fallback": ControlPolicy(policy_version="book-control-v2:author-supervised", mode="AUTHOR_SUPERVISED").to_dict(),
+                "supervised_boundaries": sorted(b for b in CONTROL_BOUNDARIES if ControlPolicy(mode="AUTHOR_SUPERVISED").requires(b)),
+                "frozen_requests": "UNCHANGED"},
+            "dispatch": {"scope": "PROJECT", "state": dispatch[0] if dispatch else "UNMANAGED",
+                "version": int(dispatch[1]) if dispatch else 0, "api_process_suspended": process_dispatch_suspended()},
+            "budget_ledger": {"scope": "PROJECT", "rows": ledger}},
+        "policy_hash": policy.get("policy_hash", ""), "policy_version": policy.get("policy", {}).get("policy_version", ""),
         "book_modes": [b for b in policy.get("policy", {}).get("author_supervised_books", []) if b["book_id"] == book_id],
-        "authorizations": [g for g in policy.get("policy", {}).get("author_supervised_authorizations", []) if g["book_id"] == book_id],
+        "authorizations": [{**g, "expired": datetime.fromisoformat(g["expires_at"]) <= now}
+            for g in policy.get("policy", {}).get("author_supervised_authorizations", []) if g["book_id"] == book_id],
         "producers": producers, "pending_designs": pending, "model_reviews": reviews, "literary_qualification": "NOT_PROVEN"}
 
 

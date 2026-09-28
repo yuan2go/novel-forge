@@ -5,6 +5,7 @@ import pytest
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution.author_supervision import supervised_decision, verify_frozen_supervision
 from novel_forge.modules.production_execution.cost_routing import CostAwareRouter
+from novel_forge.modules.production_execution.cost_routing import snapshot_hash
 from novel_forge.modules.production_execution.cross_model_review import generator_identity, reviewer_rejection
 from tests.unit.test_author_supervised_routing import prepared
 from tests.unit.test_cost_aware_routing import NOW
@@ -14,6 +15,26 @@ def contract(provider="codex-cli"):
     return {"generator": {"provider": provider, "model": "generator-model", "model_revision": "gen-r1"},
         "required_reviewer_provider": "deepseek" if provider == "codex-cli" else "codex-cli",
         "target_asset_version_id": "exact-draft", "target_content_hash": "sha256:" + "c" * 64}
+
+
+@pytest.mark.parametrize("kind", ["AUTHOR_ORIGINAL", "MODEL_EDITED_BY_AUTHOR", "EDITION_MIXED"])
+def test_authored_source_contract_requires_exact_authorized_reviewer_and_immutable_provenance(kind):
+    from dataclasses import asdict
+    task, model = prepared("review")
+    reviewer = {key: asdict(model)[key] for key in ("candidate_id", "provider", "model", "model_revision")}
+    source = {"kind": kind, "decision": {"asset_version_id": "author-decision", "content_hash": "decision-hash"}}
+    requirement = {"schema_version": "cross-model-review.v2", "target_asset_version_id": "new-draft",
+        "target_content_hash": "new-hash", "source": source, "source_hash": snapshot_hash(source),
+        "reviewer_policy": "EXPLICIT_AUTHORIZED_REVIEWER", "authorized_reviewer": reviewer, "purpose": "AUTHOR_ADVISORY"}
+    scope = replace(task, declared_requirements={"cross_model_review": requirement})
+    result = supervised_decision(CostAwareRouter().explain(scope, [model], {}, now=NOW), now=NOW).to_dict()
+    assert result["status"] == "AUTHOR_SUPERVISED_SELECTED"
+    verify_frozen_supervision(result)
+    assert "generator" not in requirement
+    assert reviewer_rejection(requirement, {**reviewer, "model_revision": "unapproved"}) == "CROSS_MODEL_REVIEW_AUTHORIZED_REVIEWER_REQUIRED"
+    assert reviewer_rejection({**requirement, "authorized_reviewer": {}}, reviewer) == "CROSS_MODEL_REVIEW_SOURCE_POLICY_REQUIRED"
+    assert reviewer_rejection({**requirement, "source": {**source, "kind": "invented"}}, reviewer) == "CROSS_MODEL_REVIEW_IDENTITY_INVALID"
+    assert reviewer_rejection({**requirement, "schema_version": "cross-model-review.v99"}, reviewer) == "CROSS_MODEL_REVIEW_IDENTITY_INVALID"
 
 
 @pytest.mark.parametrize("provider", ["codex-cli", "deepseek"])

@@ -2290,6 +2290,15 @@ the policy for a new confirmation. Uncertain outcomes keep the original pending 
 Rejected plan decisions also replay with their original expected version; changing the
 decision or target under that key remains an idempotency conflict.
 
+For an adopted author draft or edition, select the prepared `review` task and authorize
+its exact reviewer model before dispatch. The source-aware contract binds the new text
+and native adoption evidence without inventing a generation Effect. A
+`CROSS_MODEL_REVIEW_SOURCE_POLICY_REQUIRED` routing reason requires reviewer authorization;
+`CROSS_MODEL_REVIEW_SOURCE_INVALID` requires correction or reconciliation of the named
+source, not another generation call. A direct model draft still requires the opposite
+Provider. The project Book Control policy and each request's frozen review boundaries
+remain separate from Book mode and task authorization.
+
 The original-direction controls save `/author-creative-input` and approve its exact
 version through `/author-creative-input/{asset_version_id}/decisions`; workspace and
 source identities are resolved by the API. Formation v3 then references the approved
