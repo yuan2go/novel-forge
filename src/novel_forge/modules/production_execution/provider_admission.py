@@ -31,9 +31,19 @@ _REQUIRED_COMPLETE_COVERAGE = frozenset(
 )
 
 
-def provider_request_protocol(provider: str) -> str:
+DEEPSEEK_STRICT_PROTOCOL = "deepseek-chat-completions-strict-tool-v1"
+DEEPSEEK_OUTPUT_TOOL = "submit_structured_result"
+
+
+def provider_request_protocol(provider: str, *, output_mode: str = "") -> str:
+    if output_mode and (provider != "deepseek" or output_mode != "STRICT_TOOL_V1"):
+        raise ValueError("PROVIDER_OUTPUT_MODE_UNSUPPORTED")
     if provider == "deepseek":
-        return "deepseek-chat-completions-json-v1"
+        return (
+            DEEPSEEK_STRICT_PROTOCOL
+            if output_mode
+            else "deepseek-chat-completions-json-v1"
+        )
     if provider == "openai":
         return "openai-responses-text-envelope-v1"
     if provider == "scripted_provider_v2":
@@ -41,6 +51,63 @@ def provider_request_protocol(provider: str) -> str:
     if provider == "codex-cli":
         return "codex-cli-application-stdin-v1"
     return "unsupported-provider-envelope-v1"
+
+
+def deepseek_strict_tools(output_schema_json: str) -> list[dict[str, Any]]:
+    schema = json.loads(output_schema_json)
+    if not isinstance(schema, dict) or schema.get("type") != "object":
+        raise ValueError("DEEPSEEK_STRICT_ROOT_OBJECT_REQUIRED")
+
+    def project(node: Any) -> dict[str, Any]:
+        if not isinstance(node, dict):
+            raise ValueError("DEEPSEEK_STRICT_SCHEMA_UNSUPPORTED")
+        native_only = {
+            "minLength",
+            "maxLength",
+            "minItems",
+            "maxItems",
+            "$schema",
+            "title",
+        }
+        supported = {
+            "type",
+            "properties",
+            "required",
+            "additionalProperties",
+            "items",
+            "enum",
+            "description",
+        }
+        if set(node) - native_only - supported:
+            raise ValueError("DEEPSEEK_STRICT_SCHEMA_UNSUPPORTED")
+        kind = node.get("type")
+        if kind not in {"object", "array", "string", "number", "integer", "boolean"}:
+            raise ValueError("DEEPSEEK_STRICT_SCHEMA_UNSUPPORTED")
+        result = {k: v for k, v in node.items() if k in supported}
+        if kind == "object":
+            properties = node.get("properties")
+            if (
+                not isinstance(properties, dict)
+                or set(node.get("required") or []) != set(properties)
+                or node.get("additionalProperties") is not False
+            ):
+                raise ValueError("DEEPSEEK_STRICT_CLOSED_REQUIRED_OBJECT_ONLY")
+            result["properties"] = {k: project(v) for k, v in properties.items()}
+        elif kind == "array":
+            result["items"] = project(node.get("items"))
+        return result
+
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": DEEPSEEK_OUTPUT_TOOL,
+                "description": "Submit the complete task result once. All frozen business constraints still apply.",
+                "strict": True,
+                "parameters": project(schema),
+            },
+        }
+    ]
 
 
 def _canonical(value: Mapping[str, Any]) -> str:
@@ -62,6 +129,7 @@ class ProviderRequestEnvelope:
     stable_idempotency_key: str
     reasoning_effort: str = ""
     pricing_policy_json: str = ""
+    output_schema_json: str = ""
 
     def __post_init__(self) -> None:
         if not all(
@@ -78,12 +146,21 @@ class ProviderRequestEnvelope:
         if self.max_output_tokens <= 0 or self.timeout_seconds <= 0:
             raise ValueError("Provider request envelope limits must be positive")
 
+        if self.protocol == DEEPSEEK_STRICT_PROTOCOL:
+            if self.provider != "deepseek" or not self.output_schema_json:
+                raise ValueError("DEEPSEEK_STRICT_SCHEMA_REQUIRED")
+            deepseek_strict_tools(self.output_schema_json)
+        elif self.output_schema_json:
+            raise ValueError("PROVIDER_OUTPUT_SCHEMA_PROTOCOL_MISMATCH")
+
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         if not self.reasoning_effort:
             payload.pop("reasoning_effort")
         if not self.pricing_policy_json:
             payload.pop("pricing_policy_json")
+        if not self.output_schema_json:
+            payload.pop("output_schema_json")
         return payload
 
     @property
@@ -92,8 +169,21 @@ class ProviderRequestEnvelope:
 
     def to_identity_dict(self) -> dict[str, Any]:
         return {
-            **({"reasoning_effort": self.reasoning_effort} if self.reasoning_effort else {}),
-            **({"pricing_policy_json": self.pricing_policy_json} if self.pricing_policy_json else {}),
+            **(
+                {"reasoning_effort": self.reasoning_effort}
+                if self.reasoning_effort
+                else {}
+            ),
+            **(
+                {"pricing_policy_json": self.pricing_policy_json}
+                if self.pricing_policy_json
+                else {}
+            ),
+            **(
+                {"output_schema_json": self.output_schema_json}
+                if self.output_schema_json
+                else {}
+            ),
             "provider": self.provider,
             "model": self.model,
             "protocol": self.protocol,
@@ -111,6 +201,7 @@ class ProviderRequestEnvelope:
     def from_dict(cls, payload: Mapping[str, Any]) -> "ProviderRequestEnvelope":
         return cls(
             pricing_policy_json=str(payload.get("pricing_policy_json") or ""),
+            output_schema_json=str(payload.get("output_schema_json") or ""),
             reasoning_effort=str(payload.get("reasoning_effort") or ""),
             provider=str(payload.get("provider") or ""),
             model=str(payload.get("model") or ""),
@@ -127,6 +218,7 @@ class ProviderRequestEnvelope:
     ) -> "ProviderRequestEnvelope":
         envelope = cls(
             pricing_policy_json=str(payload.get("pricing_policy_json") or ""),
+            output_schema_json=str(payload.get("output_schema_json") or ""),
             reasoning_effort=str(payload.get("reasoning_effort") or ""),
             provider=str(payload.get("provider") or ""),
             model=str(payload.get("model") or ""),
@@ -321,6 +413,7 @@ def build_route_token_accounting_contract(
     output_reserve: int,
     safety_margin: int,
     framing_overhead: int,
+    serialization_contract: str = "",
 ) -> TokenAccountingContract:
     if provider == "scripted_provider_v2" and not accounting_method:
         method = "SCRIPTED_UTF8_BYTES_EXACT_V1"
@@ -328,8 +421,16 @@ def build_route_token_accounting_contract(
         evidence_ref = "fixture-protocol:scripted-byte-meter:v1"
         context_limit = model_context_limit or _SCRIPTED_PROVIDER_CONTEXT_BYTES
     elif (
-        ((provider == "openai" and accounting_method == "OPENAI_UTF8_BYTES_UPPER_BOUND_V1")
-         or (provider == "deepseek" and accounting_method == "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"))
+        (
+            (
+                provider == "openai"
+                and accounting_method == "OPENAI_UTF8_BYTES_UPPER_BOUND_V1"
+            )
+            or (
+                provider == "deepseek"
+                and accounting_method == "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"
+            )
+        )
         and model_context_limit > 0
         and accounting_evidence_ref
     ):
@@ -357,8 +458,9 @@ def build_route_token_accounting_contract(
         model=model,
         route_identity=route_identity,
         meter_identity=(
-            "deepseek-byte-token-upper-bound" if provider == "deepseek" else
-            "openai-byte-token-upper-bound"
+            "deepseek-byte-token-upper-bound"
+            if provider == "deepseek"
+            else "openai-byte-token-upper-bound"
             if provider == "openai"
             else "codex-cli-application-stdin-byte-upper-bound"
             if provider == "codex-cli"
@@ -370,7 +472,8 @@ def build_route_token_accounting_contract(
         accounting_method=method,
         precision=precision,
         evidence_ref=evidence_ref,
-        serialization_contract=provider_request_protocol(provider),
+        serialization_contract=serialization_contract
+        or provider_request_protocol(provider),
         model_context_limit=context_limit,
         execution_token_limit=execution_token_limit or context_limit,
         output_reserve=output_reserve,
@@ -380,14 +483,36 @@ def build_route_token_accounting_contract(
 
 
 def provider_request_token_components(
-    input_text: str, *, output_reserve: int, safety_margin: int, framing_overhead: int,
+    input_text: str,
+    *,
+    output_reserve: int,
+    safety_margin: int,
+    framing_overhead: int,
+    output_schema_json: str = "",
 ) -> dict[str, int]:
-    if (any(type(value) is not int or value < 0
-            for value in (output_reserve, safety_margin, framing_overhead))
-        or output_reserve == 0):
+    if (
+        any(
+            type(value) is not int or value < 0
+            for value in (output_reserve, safety_margin, framing_overhead)
+        )
+        or output_reserve == 0
+    ):
         raise ValueError("PROVIDER_TOKEN_COMPONENT_LIMIT_INVALID")
     return {
         "provider_input": len(input_text.encode("utf-8")),
+        **(
+            {
+                "structured_output_transport": len(
+                    _canonical(
+                        {
+                            "tools": deepseek_strict_tools(output_schema_json),
+                        }
+                    ).encode("utf-8")
+                )
+            }
+            if output_schema_json
+            else {}
+        ),
         "request_framing": framing_overhead,
         "output_reserve": output_reserve,
         "safety_margin": safety_margin,
@@ -433,8 +558,11 @@ def prepare_provider_admission(
     ):
         status, reason = "REJECTED", "PROVIDER_REQUEST_COVERAGE_INCOMPLETE"
     components = provider_request_token_components(
-        envelope.input_text, output_reserve=contract.output_reserve,
-        safety_margin=contract.safety_margin, framing_overhead=contract.framing_overhead,
+        envelope.input_text,
+        output_reserve=contract.output_reserve,
+        output_schema_json=envelope.output_schema_json,
+        safety_margin=contract.safety_margin,
+        framing_overhead=contract.framing_overhead,
     )
     total = sum(components.values())
     applicable_limit = min(

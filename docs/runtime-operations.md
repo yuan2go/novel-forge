@@ -373,6 +373,25 @@ hash, parser location and billable usage. Do not strip a format header to accept
 failed result or retry it automatically. Thinking `low` remains an explicit route
 choice; changing the prompt does not authorize a different model or spending limit.
 
+A reviewed Planning Context Policy may explicitly set
+`provider_output_modes` to
+`{"creative.candidates.generate":{"deepseek":"STRICT_TOOL_V1"}}`.
+Bind `config/capability_packs/artifacts/story_planning_strict_tool_template.md`
+with that policy before compiling the new Pack. This freezes a distinct
+`deepseek-chat-completions-strict-tool-v1` envelope with the full output schema.
+Its Beta request supplies one strict `submit_structured_result` function; function
+arguments carry the result and do not execute another tool or Authority operation.
+Thinking mode keeps its chosen effort and uses no forced `tool_choice`.
+The conservative request bound includes the serialized tool/schema overhead before
+routing and again at admission. The transport accepts only closed objects whose
+properties are all required; unsupported schema shapes fail before dispatch. DeepSeek's
+unsupported string-length/array-cardinality keywords stay in the frozen full schema
+and the original native validator, although the transport projection omits them.
+Missing, multiple, wrong-name or malformed tool results fail with retained usage.
+No JSON-message fallback, output repair, automatic retry or qualification transfer
+occurs. Tasks without this explicit policy and previously frozen requests retain their
+original protocol. See the [official strict-mode contract](https://api-docs.deepseek.com/zh-cn/guides/tool_calls/).
+
 `novel-forge authority-provider-routing explain --project-id <id>
 --task-context-file <path>` performs no inference. It projects current benchmark and
 retry evidence through the canonical runtime composition and current ledger; actual

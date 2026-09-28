@@ -24,6 +24,9 @@ from novel_forge.modules.production_execution.routing_catalog import (
     deepseek_pricing_period,
 )
 from novel_forge.modules.production_execution.provider_admission import (
+    DEEPSEEK_OUTPUT_TOOL,
+    DEEPSEEK_STRICT_PROTOCOL,
+    deepseek_strict_tools,
     ProviderAdmissionReceipt,
     ProviderRequestEnvelope,
     verify_provider_admission,
@@ -96,7 +99,8 @@ class DeepSeekProviderAdapter:
         ):
             raise ValueError("PROVIDER_REQUEST_IDENTITY_DRIFT")
         if (
-            envelope.protocol != "deepseek-chat-completions-json-v1"
+            envelope.protocol
+            not in {"deepseek-chat-completions-json-v1", DEEPSEEK_STRICT_PROTOCOL}
             or envelope.model not in self.pricing
             or not deepseek_model_routing_available(envelope.model)
             or envelope.reasoning_effort
@@ -137,8 +141,14 @@ class DeepSeekProviderAdapter:
         }
         if envelope.reasoning_effort != "none":
             body["reasoning_effort"] = envelope.reasoning_effort
+        strict_output = envelope.protocol == DEEPSEEK_STRICT_PROTOCOL
+        if strict_output:
+            body.pop("response_format")
+            body["tools"] = deepseek_strict_tools(envelope.output_schema_json)
         wire = Request(
-            "https://api.deepseek.com/chat/completions",
+            "https://api.deepseek.com/beta/chat/completions"
+            if strict_output
+            else "https://api.deepseek.com/chat/completions",
             data=json.dumps(body, ensure_ascii=False).encode(),
             method="POST",
             headers={
@@ -282,6 +292,26 @@ class DeepSeekProviderAdapter:
         if raw_text is not None and not isinstance(raw_text, str):
             raise ValueError("DEEPSEEK_MESSAGE_INVALID")
         text = raw_text or ""
+        strict_output = (
+            request.request_payload.get("protocol") == DEEPSEEK_STRICT_PROTOCOL
+        )
+        tool_error = ""
+        if strict_output:
+            calls = choice["message"].get("tool_calls")
+            tool = calls[0] if isinstance(calls, list) and len(calls) == 1 else None
+            function = tool.get("function") if isinstance(tool, Mapping) else None
+            if (
+                not isinstance(function, Mapping)
+                or tool.get("type") != "function"
+                or function.get("name") != DEEPSEEK_OUTPUT_TOOL
+                or not isinstance(function.get("arguments"), str)
+            ):
+                tool_error = "STRUCTURED_TOOL_CALL_REQUIRED"
+                text = json.dumps(
+                    {"content": raw_text, "tool_calls": calls}, ensure_ascii=False
+                )
+            else:
+                text = function["arguments"]
         finish_reason = choice.get("finish_reason")
         failure = {
             "stop": "",
@@ -290,6 +320,10 @@ class DeepSeekProviderAdapter:
             "insufficient_system_resource": "PROVIDER_UNAVAILABLE",
             "aborted": "CANCELLED",
         }.get(finish_reason)
+        if strict_output and finish_reason == "tool_calls":
+            failure = tool_error
+        elif strict_output and not failure:
+            failure = tool_error or "STRUCTURED_TOOL_CALL_REQUIRED"
         if failure is None:
             raise ValueError("DEEPSEEK_FINISH_REASON_INVALID")
         structured_output_error = None
@@ -303,8 +337,11 @@ class DeepSeekProviderAdapter:
         except json.JSONDecodeError as exc:
             output = {}
             structured_output_error = {
-                "code": "JSON_SYNTAX_ERROR", "message": exc.msg,
-                "line": exc.lineno, "column": exc.colno, "offset": exc.pos,
+                "code": "JSON_SYNTAX_ERROR",
+                "message": exc.msg,
+                "line": exc.lineno,
+                "column": exc.colno,
+                "offset": exc.pos,
             }
             if not failure:
                 failure = "MALFORMED_STRUCTURED_OUTPUT"
@@ -339,8 +376,25 @@ class DeepSeekProviderAdapter:
         )
         evidence = {
             "result": output,
-            **({"structured_output_error": structured_output_error}
-               if structured_output_error else {}),
+            **(
+                {
+                    "output_protocol": DEEPSEEK_STRICT_PROTOCOL,
+                    "structured_output_tool": DEEPSEEK_OUTPUT_TOOL,
+                    "output_schema_hash": "sha256:"
+                    + hashlib.sha256(
+                        str(request.request_payload["output_schema_json"]).encode()
+                    ).hexdigest(),
+                    "output_text_sha256": "sha256:"
+                    + hashlib.sha256(text.encode()).hexdigest(),
+                }
+                if strict_output
+                else {}
+            ),
+            **(
+                {"structured_output_error": structured_output_error}
+                if structured_output_error
+                else {}
+            ),
             "provider_id": self.provider,
             "model_id": request.model,
             "model_revision": requested_model_revision,
@@ -393,7 +447,9 @@ class DeepSeekProviderAdapter:
             evidence["rejected_output"] = {
                 "text": text,
                 "sha256": "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest(),
-                "source": "PROVIDER_MESSAGE_CONTENT",
+                "source": "PROVIDER_TOOL_ARGUMENTS_OR_REJECTED_MESSAGE"
+                if strict_output
+                else "PROVIDER_MESSAGE_CONTENT",
                 "accepted": False,
             }
         outcome = (
