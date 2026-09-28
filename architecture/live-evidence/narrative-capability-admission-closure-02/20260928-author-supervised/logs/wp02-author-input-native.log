@@ -28,23 +28,23 @@ request = AuthorityHandlerRequest(operation_id='33a0fcca-575a-4dd8-9609-5aae17d3
                 )
             )
 
-src/novel_forge/modules/content_authority/codecs.py:103: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/content_authority/codecs.py:103:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 src/novel_forge/modules/content_authority/codecs.py:1206: in bind
     content = author_story_design_candidate(request)
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 request = AuthorityHandlerRequest(operation_id='33a0fcca-575a-4dd8-9609-5aae17d3cc51', project_id='supervised-design-23f973a6-a1... blobs=()),), attempt_id='17c89952-cabc-47b0-a809-92d81275278d', fencing_token=1, worker_id='content-authority-worker')
 
     def author_story_design_candidate(
         request: AuthorityHandlerRequest,
     ) -> dict[str, Any]:
-    
+
         from novel_forge.modules.story_design_authority.validators import (
             validate_story_design_candidate,
         )
-    
+
         payload = _payload(request)
         content = payload.get("content")
         if not isinstance(content, dict):
@@ -184,8 +184,8 @@ The above exception was the direct cause of the following exception:
 >       authored = author_creative_input(DATABASE_URL, request=request, **args)
                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-tests/integration/test_author_supervised_policy_postgres.py:141: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_supervised_policy_postgres.py:141:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 src/novel_forge/modules/book_authority/author_supervision.py:184: in author_creative_input
     result = application.execute(ContentOperationRequest(definition_name="story_design.creative_foundation.author",
 src/novel_forge/modules/content_authority/application.py:68: in execute
@@ -197,7 +197,7 @@ src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_hand
 src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
     output = registration.handler.execute(request)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = ContentHandlerCodec(definition_name='story_design.creative_foundation.author', output_asset_type='creative_foundation'...function _story_design_author_binder.<locals>.bind at 0x109a85da0>, qualification_policy='content-authority-output-v2')
 request = AuthorityHandlerRequest(operation_id='33a0fcca-575a-4dd8-9609-5aae17d3cc51', project_id='supervised-design-23f973a6-a1... blobs=()),), attempt_id='17c89952-cabc-47b0-a809-92d81275278d', fencing_token=1, worker_id='content-authority-worker')

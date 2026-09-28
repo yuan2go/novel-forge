@@ -2,9 +2,10 @@
   {
     "file": "logs/wp02-supervised-native-book.log",
     "original_sha256": "dcd832dc6c0f44d3551a04772336c879d64f7e78ef597dcc0061540e0015f5f3",
-    "shared_sha256": "00891abf6e950fc69e2c57dc36e58a4b90c31770bc71254c74d1a338824a175c",
+    "shared_sha256": "af76eb1906a40038dd283b39c6e81782dca71f557452fcc5f0d2361b8dd9900c",
     "redacted": true,
-    "reason": "credential protection; original logs remain private /tmp"
+    "reason": "credential protection; original logs remain private /tmp; shared trailing whitespace normalized, original failure content and private original unchanged",
+    "prior_shared_sha256": "00891abf6e950fc69e2c57dc36e58a4b90c31770bc71254c74d1a338824a175c"
   },
   {
     "file": "logs/wp02-supervised-mode.log",
@@ -23,9 +24,10 @@
   {
     "file": "logs/wp02-author-input-native.log",
     "original_sha256": "6e76b916e5163df02008cbe2553d098d58d10436feb97970371a075e43561760",
-    "shared_sha256": "6e76b916e5163df02008cbe2553d098d58d10436feb97970371a075e43561760",
-    "redacted": false,
-    "reason": "credential protection; original logs remain private /tmp"
+    "shared_sha256": "a48a458056981d053068a914d0d9bcd57d6e001b3e18645dd0102ab6bb5f4754",
+    "redacted": true,
+    "reason": "credential protection; original logs remain private /tmp; shared trailing whitespace normalized, original failure content and private original unchanged",
+    "prior_shared_sha256": "6e76b916e5163df02008cbe2553d098d58d10436feb97970371a075e43561760"
   },
   {
     "file": "logs/wp02-author-input-native-repair.log",
@@ -100,9 +102,10 @@
   {
     "file": "logs/wp02-supervision-ui-final.log",
     "original_sha256": "be73f7e26a6446ddcef5a3a3eb2c8cea5df60c3b5530890682ec14fadd19436c",
-    "shared_sha256": "be73f7e26a6446ddcef5a3a3eb2c8cea5df60c3b5530890682ec14fadd19436c",
-    "redacted": false,
-    "reason": "credential protection; original logs remain private /tmp"
+    "shared_sha256": "28868b08115b17e8526ed179e84a578438c5209203c4a0d1d33e4eb721ccee11",
+    "redacted": true,
+    "reason": "credential protection; original logs remain private /tmp; shared trailing whitespace normalized, original failure content and private original unchanged",
+    "prior_shared_sha256": "be73f7e26a6446ddcef5a3a3eb2c8cea5df60c3b5530890682ec14fadd19436c"
   },
   {
     "file": "logs/wp02-supervised-mixed-receipts.log",

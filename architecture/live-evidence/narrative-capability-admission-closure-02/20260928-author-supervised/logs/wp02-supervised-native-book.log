@@ -36,11 +36,11 @@ _ test_book_design_freezes_author_policy_and_activation_consumes_native_decision
 >       case.application.execute(BookDesignAuthorityCommand(**common, definition_name="book_design.activate", idempotency_key=case.book_id+":activate",
             target_asset_version_id=candidate["asset_version_id"], payload={"reason": "Select exact author-reviewed design"}), principal=author)
 
-tests/integration/test_author_supervised_policy_postgres.py:156: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_supervised_policy_postgres.py:156:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 src/novel_forge/modules/book_design_authority/application.py:285: in execute
     result = execute_transaction_command(
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 database_url = 'user=novel_forge password=[REDACTED:password] dbname=nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test host=127.0.0.1 port=61959'
 command = {'definition_name': 'book_design.activate', 'definition_version': '1.3.0', 'project_id': 'book-design-project-321e87e5-4fb4-446d-a6ca-fb1333ddd362', 'workspace_id': 'book-design-workspace-59dd5ebe-0e91-47f8-bcb3-68d42b8e8607', ...}
@@ -58,7 +58,7 @@ fault_injector = None, transaction_guard = None
         transaction_guard: TransactionGuard | None = None,
     ) -> dict[str, Any]:
         """INVARIANT: Execute a short, deterministic command in one PostgreSQL transaction.
-    
+
         Transaction commands never create Attempts or Leases. Admission, business
         state, completion evidence, the replay result, and the terminal Operation
         transition are committed together. The one post-commit checkpoint models a
@@ -87,7 +87,7 @@ fault_injector = None, transaction_guard = None
                     **dict(replay["result"]),
                     "replayed": True,
                 }
-    
+
             checkpoint("after_admission")
             definition = uow.repositories.definitions.get(
                 str(command["definition_name"]),
@@ -107,14 +107,14 @@ fault_injector = None, transaction_guard = None
                     "EXECUTION_CLASSIFICATION_CONFLICT",
                     "only transaction-classified definitions may execute inline atomically",
                 )
-    
+
             result = handler(uow, operation_id, checkpoint)
             _validate_json_schema(definition["result_schema"], result, "result")
-    
+
             from novel_forge.modules.command_kernel.completion import (
                 evaluate_completion_in_uow,
             )
-    
+
             operation = uow.repositories.completion_contracts.operation(
                 operation_id,
                 str(command["project_id"]),
