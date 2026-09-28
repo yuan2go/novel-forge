@@ -83,8 +83,11 @@ def test_generator_receipt_is_required_and_benchmark_source_is_rejected():
     args = dict(project_id="project", book_id="book", asset_version_id="draft", content_hash="sha256:" + "c" * 64)
     with pytest.raises(KernelError, match="SOURCE_REQUIRED"):
         generator_identity(cursor, **args)
-    cursor.rows = [("effect", "model", {"bootstrap_authorization": {"id": "sample"},
-        "selected": {"candidate": {"model": "model"}}}, {})]
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+    evidence = {"real_model_call": True, "model_id": "model", "provider_id": "deepseek"}
+    cursor.rows = [("effect", "model", {"bootstrap_authorization": {"id": "sample"}, "decision_id": "routing",
+        "selected": {"candidate": {"model": "model", "provider": "deepseek", "model_revision": "revision"}}},
+        evidence, snapshot_hash(evidence), {"evidence": evidence}, "VERIFIED")]
     with pytest.raises(KernelError, match="SOURCE_INVALID"):
         generator_identity(cursor, **args)
 

@@ -467,3 +467,234 @@ def test_model_and_author_edited_sources_use_native_router_effect_and_distinct_h
     assert actual_contract["target_content_hash"] == edited_contract["target_content_hash"]
     assert actual_contract["authorized_reviewer"]["candidate_id"] == model.candidate_id
     verify_frozen_supervision(allowed)
+
+
+@pytest.fixture
+def generator_receipt_boundary():
+    """Synthetic SQL protocol records test corruption handling, never production provenance."""
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+
+    project, book, operation = identifier("receipt-project"), identifier("receipt-book"), identifier("receipt-operation")
+    effect, dispatch, receipt = identifier("receipt-effect"), identifier("receipt-dispatch"), identifier("receipt")
+    evidence = {"provider_id": "deepseek", "model_id": "receipt-model", "real_model_call": True,
+                "test_transport": "SYNTHETIC_RECEIPT_INTEGRITY_BOUNDARY", "result": {"text": "A test-only generated line."}}
+    route = {"decision_id": identifier("receipt-routing"), "selected": {"candidate": {
+        "provider": "deepseek", "model": "receipt-model", "model_revision": "receipt-revision"}}}
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        definition = identifier("receipt-definition")
+        insert_definition(uow.cursor, definition)
+        insert_operation(uow.cursor, operation_id=operation, definition_name=definition,
+                         project_id=project, status="EXECUTING", command_payload={"book_id": book})
+        draft = uow.repositories.asset_documents.materialize_output(AuthorityAssetWriteCommand(
+            operation_id=operation, project_id=project, asset_id=identifier("receipt-draft"),
+            asset_type="draft_chapter", schema_version="receipt-integrity-fixture.v1", logical_ref=identifier("receipt-drafts"),
+            category="drafts", output_key="chapter.draft", role="primary", content=evidence["result"],
+            qualification_policy="synthetic-receipt-integrity-only", trace_id=identifier("trace"), correlation_id=identifier("correlation")))
+        uow.cursor.execute("""INSERT INTO authority_external_effect(external_effect_id,operation_id,project_id,effect_type,
+            stable_idempotency_key,status,request_hash,model_id,request_payload)
+            VALUES(%s,%s,%s,'model.invoke',%s,'SUCCEEDED',%s,'receipt-model',%s)""",
+            [effect, operation, project, effect, snapshot_hash({"effect": effect}),
+             Jsonb({"_production_execution": {"book_id": book, "capability_runtime": {"routing_decision": route}}})])
+        uow.cursor.execute("""INSERT INTO authority_external_effect_dispatch(dispatch_id,external_effect_id,generation,
+            status,payload_hash,evidence,receipt_id) VALUES(%s,%s,2,'SUCCEEDED',%s,%s,%s)""",
+            [dispatch, effect, snapshot_hash(evidence), Jsonb(evidence), receipt])
+        uow.cursor.execute("""INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+            VALUES('production_execution_gateway',%s,%s,%s,%s,'VERIFIED')""",
+            [receipt, dispatch, snapshot_hash(evidence), Jsonb({"evidence": evidence})])
+        uow.cursor.execute("UPDATE authority_operation SET status='SUCCEEDED' WHERE operation_id=%s", [operation])
+        uow.commit()
+    return {"args": dict(project_id=project, book_id=book, asset_version_id=draft.asset_version_id, content_hash=draft.content_hash),
+            "effect_id": effect, "dispatch_id": dispatch, "receipt_id": receipt, "evidence": evidence}
+
+
+def test_generator_receipt_boundary_accepts_one_intact_verified_success(generator_receipt_boundary):
+    from novel_forge.modules.production_execution.cross_model_review import generator_identity
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+    sample = generator_receipt_boundary
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        result = generator_identity(uow.cursor, **sample["args"])
+    assert result["generator"]["external_effect_id"] == sample["effect_id"]
+    assert result["generator"]["receipt_hash"] == snapshot_hash(sample["evidence"])
+
+
+def test_generator_receipt_boundary_ignores_failed_dispatch_before_verified_success(generator_receipt_boundary):
+    from novel_forge.modules.production_execution.cross_model_review import generator_identity
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+    sample = generator_receipt_boundary
+    failed = {"real_model_call": True, "provider_id": "deepseek", "failure_class": "PROVIDER_UNAVAILABLE",
+              "test_transport": "SYNTHETIC_RECEIPT_INTEGRITY_BOUNDARY"}
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("""INSERT INTO authority_external_effect_dispatch(dispatch_id,external_effect_id,generation,
+            status,payload_hash,evidence) VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+            [identifier("failed-receipt-dispatch"), sample["effect_id"], snapshot_hash(failed), Jsonb(failed)])
+        result = generator_identity(uow.cursor, **sample["args"])
+    assert result["generator"]["receipt_hash"] == snapshot_hash(sample["evidence"])
+
+
+@pytest.mark.parametrize("damage", ["missing", "received", "rejected", "wrong_hash", "different_payload", "duplicate_verified"])
+def test_generator_receipt_boundary_rejects_unverified_or_inconsistent_receipts(generator_receipt_boundary, damage):
+    from novel_forge.modules.production_execution.cross_model_review import generator_identity
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+    sample = generator_receipt_boundary
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        if damage == "missing":
+            uow.cursor.execute("DELETE FROM authority_external_receipt WHERE dispatch_id=%s", [sample["dispatch_id"]])
+        elif damage in {"received", "rejected"}:
+            uow.cursor.execute("UPDATE authority_external_receipt SET status=%s WHERE dispatch_id=%s",
+                               [damage.upper(), sample["dispatch_id"]])
+        elif damage == "wrong_hash":
+            uow.cursor.execute("UPDATE authority_external_receipt SET payload_hash=%s WHERE dispatch_id=%s",
+                               ["sha256:" + "f" * 64, sample["dispatch_id"]])
+        elif damage == "different_payload":
+            replaced = {**sample["evidence"], "result": {"text": "Different receipt body."}}
+            uow.cursor.execute("UPDATE authority_external_receipt SET payload=%s,payload_hash=%s WHERE dispatch_id=%s",
+                               [Jsonb({"evidence": replaced}), snapshot_hash(replaced), sample["dispatch_id"]])
+        else:
+            uow.cursor.execute("""INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                SELECT provider,%s,dispatch_id,payload_hash,payload,status FROM authority_external_receipt WHERE dispatch_id=%s""",
+                [identifier("duplicate-receipt"), sample["dispatch_id"]])
+        with pytest.raises(KernelError) as caught:
+            generator_identity(uow.cursor, **sample["args"])
+    assert caught.value.code in {"CROSS_MODEL_REVIEW_SOURCE_INVALID", "CROSS_MODEL_REVIEW_SOURCE_REQUIRED"}
+
+
+def test_native_author_acceptance_and_edition_source_classification(monkeypatch, separate_release_database):
+    """Real native author/Book/edition records, with scripted literary judgments only."""
+    from novel_forge.modules.book_authority.edition_application import BookEditionApplication
+    from novel_forge.modules.book_authority.edition_runtime import freeze_edition_adoption
+    from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+    from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+    from novel_forge.modules.book_authority.edition_planning import edition_plan_scope
+    from tests.integration import test_book_to_chapter_authority_vertical_postgres as native_book
+
+    build_execution = native_book.build_production_execution_composition
+
+    def literary_transport(stage, inputs):
+        result = default_chapter_fixture_response(stage, inputs)
+        if stage == "review":
+            result.update(score=95, issues=[], resolution_checks=[])
+        elif stage == "revision":
+            result["resolved_issue_codes"] = []
+        elif stage == "rereview":
+            result.update(score=90, issues=[], resolution_checks=[])
+        return result
+
+    def build_with_transport(*args, **kwargs):
+        return build_execution(*args, **kwargs, chapter_fixture_factory=literary_transport)
+
+    monkeypatch.setattr(native_book, "build_production_execution_composition", build_with_transport)
+    helper = native_book.BookToChapterAuthorityVerticalPostgresTests()
+    fixture = helper._new_book_fixture(target_chapter_count=1)
+    try:
+        authority = fixture["authority"]
+        principal = replace(fixture["principal"], permissions=fixture["principal"].permissions | {"chapter.authority.query", "book.authority.query"})
+        book = authority.require(fixture["book"].book_run_id)
+        scope = {key: book[key] for key in ("project_id", "workspace_id", "book_id")}
+        scope["chapter"] = 1
+        planned = next(row for row in fixture["candidates"] if row["asset_type"] == "chapter_plan")
+        plan_content = {**planned["content"], "text": "", "scene_artifacts": [{"slot_id": "s1:skeleton", "text": "", "used_fact_ids": []}]}
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            definition, root = identifier("edition-author-plan"), identifier("edition-author-plan-root")
+            insert_definition(uow.cursor, definition)
+            insert_operation(uow.cursor, operation_id=root, definition_name=definition,
+                project_id=scope["project_id"], workspace_id=scope["workspace_id"], status="EXECUTING",
+                command_payload={"chapter": 1, "book_id": scope["book_id"]})
+            plan = uow.repositories.asset_documents.materialize_output(AuthorityAssetWriteCommand(
+                operation_id=root, project_id=scope["project_id"], asset_id=identifier("edition-plan"),
+                asset_type="chapter_plan", schema_version="fixture-plan.v1", logical_ref=identifier("edition-plan"),
+                category="plans", output_key="chapter.plan", role="primary", content=plan_content,
+                qualification_policy="fixture-only", trace_id="edition-source", correlation_id="edition-source"))
+            uow.commit()
+        fixture["candidates"] = [{**row, "asset_version_id": plan.asset_version_id, "content_hash": plan.content_hash,
+            "content": plan_content} if row is planned else row for row in fixture["candidates"]]
+        editor = ChapterAuthorEditingApplication(DATABASE_URL, application_build_id="book-authority-control", commit_sha="e" * 40)
+        prose = "Mara breaks her only passage token and shelters the witnesses behind the gate. She cannot go home now."
+        payload = {**scope, "base_asset_version_id": plan.asset_version_id, "base_asset_hash": plan.content_hash,
+            "base_text_hash": text_hash(""), "expected_version": 0, "text": prose, "rights_basis": "ORIGINAL_AUTHOR_INPUT"}
+        saved = editor.execute(action="save", payload=payload, idempotency_key=identifier("edition-author-save"), principal=principal)
+        accepted = editor.execute(action="accept", payload={**payload, "expected_version": saved["version"],
+            "candidate_asset_version_id": saved["candidate_asset_version_id"], "rationale": "Engineering author input"},
+            idempotency_key=identifier("edition-author-adopt"), principal=principal)
+        adoption = freeze_author_adoption(DATABASE_URL, **scope, candidate_asset_version_id=saved["candidate_asset_version_id"],
+            decision_asset_version_id=accepted["decision_asset_version_id"], principal=principal)
+        command = replace(helper._chapter_command(fixture, chapter_number=1), preparation_report={"author_draft_adoption": adoption})
+        delegated = authority.submit_chapter(command, principal=principal)
+        helper._run_child(fixture, delegated["chapter_root_operation_id"])
+        authority.reconcile_chapter(delegated["chapter_request_id"])
+        authority.accept_chapter(delegated["chapter_request_id"], principal=principal)
+        assert authority.require(book["book_run_id"])["accepted_through_chapter"] == 1
+        app = BookEditionApplication(DATABASE_URL, application_build_id="book-authority-control", commit_sha="e" * 40)
+        edition_scope = {key: book[key] for key in ("project_id", "workspace_id", "book_run_id")}
+        edition_scope["principal"] = principal
+        manifest = app.query(**edition_scope)["source_manifest"]
+        assert manifest["units"][0]["text"] == prose
+        original = app.execute(action="create", **edition_scope, data={"base_manifest_digest": manifest["manifest_digest"]},
+            idempotency_key=identifier("author-origin-edition"))
+        candidate = app.execute(action="create", **edition_scope,
+            data={"base_revision_id": original["revision_id"], "base_manifest_digest": manifest["manifest_digest"]},
+            idempotency_key=identifier("author-edit-edition"))
+        units = deepcopy(manifest["units"])
+        units[0]["scene_artifacts"][0]["text"] += " The broken token stayed beside her hand."
+        units[0]["text"] = serialize_realization(units[0]["scene_artifacts"], units[0].get("scene_separators"))
+        revised = app.execute(action="save", **edition_scope,
+            data={"revision_id": candidate["revision_id"], "expected_version": candidate["version"],
+                "base_manifest_digest": candidate["manifest_digest"], "units": units,
+                "reason": "Engineering author clarifies the retained physical cost", "change_kind": "EXPRESSION"},
+            idempotency_key=identifier("author-edition-save"))
+        validation = app.start_validation(authority=authority, **edition_scope, revision_id=revised["revision_id"])
+        edition_adoption = freeze_edition_adoption(DATABASE_URL, **scope, revision_id=revised["revision_id"],
+            book_run_id=validation["validation_book_run_id"], principal=principal)
+        validation_book = authority.require(validation["validation_book_run_id"])
+        execution_scope = edition_plan_scope(DATABASE_URL, book=validation_book, chapter=1, generator="chapter_plan.generate")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            revision = uow.repositories.asset_documents.require(project_id=scope["project_id"], asset_version_id=revised["revision_id"])
+            source_plan = uow.repositories.asset_documents.require(project_id=scope["project_id"],
+                asset_version_id=edition_adoption["source_chapter_plan_asset_version_id"])
+            execution_content = {**source_plan.content, "constraint_envelope": {
+                **source_plan.content.get("constraint_envelope", {}), "edition_execution": execution_scope}}
+            definition, root = identifier("edition-execution-plan-fixture"), identifier("edition-execution-plan-root")
+            insert_definition(uow.cursor, definition)
+            insert_operation(uow.cursor, operation_id=root, definition_name=definition,
+                project_id=scope["project_id"], workspace_id=scope["workspace_id"], status="EXECUTING",
+                command_payload={"chapter": 1, "book_id": scope["book_id"]})
+            execution_plan = uow.repositories.asset_documents.materialize_output(AuthorityAssetWriteCommand(
+                operation_id=root, project_id=scope["project_id"], asset_id=identifier("edition-execution-plan"),
+                asset_type="chapter_plan", schema_version="fixture-plan.v1", logical_ref=identifier("edition-execution-plan"),
+                category="plans", output_key="chapter.plan", role="primary", content=execution_content,
+                qualification_policy="fixture-only", trace_id="edition-source", correlation_id="edition-source"))
+            uow.commit()
+        validation_command = replace(command, book_run_id=validation_book["book_run_id"],
+            preparation_report={}, chapter_plan_asset_version_id=source_plan.asset_version_id,
+            chapter_plan_content_hash=source_plan.content_hash,
+            execution_chapter_plan_asset_version_id=execution_plan.asset_version_id,
+            execution_chapter_plan_content_hash=execution_plan.content_hash,
+            context_candidates=tuple({**row, "asset_version_id": execution_plan.asset_version_id,
+                "content_hash": execution_plan.content_hash, "content": execution_content}
+                if row["asset_type"] == "chapter_plan" else row for row in fixture["candidates"]))
+        validation_child = authority.submit_chapter(validation_command, principal=principal)
+        scheduler = fixture["chapter"].scheduler(principal=fixture["worker"])
+        for node in ("plan", "execution_intent", "memo", "retrieval", "context", "draft", "review"):
+            tick = scheduler.tick(project_id=scope["project_id"], root_operation_id=validation_child["chapter_root_operation_id"])
+            assert (tick.node, tick.operation_status) == (node, "SUCCEEDED"), tick
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT operation_id FROM authority_operation WHERE root_operation_id=%s AND definition_name='chapter.review.evaluate'",
+                [validation_child["chapter_root_operation_id"]])
+            review_operation = uow.cursor.fetchone()[0]
+            contract = freeze_review_requirement(uow.cursor, project_id=scope["project_id"], book_id=scope["book_id"],
+                operation_id=review_operation, task_type="review", request_input={}, authorized_reviewer=REVIEWER)
+            target = uow.repositories.asset_documents.require(project_id=scope["project_id"], asset_version_id=contract["target_asset_version_id"])
+        source = contract["source"]
+        assert contract["schema_version"] == "cross-model-review.v2"
+        assert contract["target_content_hash"] == target.content_hash
+        assert target.content["text"] == units[0]["text"]
+        assert contract["reviewer_policy"] == "EXPLICIT_AUTHORIZED_REVIEWER"
+        assert reviewer_rejection(contract, REVIEWER) is None
+        assert source["kind"] == "EDITION_MIXED"
+        assert source["revision_id"] == revised["revision_id"]
+        assert source["revision_content_hash"] == revision.content_hash
+        assert source["predecessor_revision_id"] == candidate["revision_id"]
+        assert source["author_id"] == principal.principal_id
+        assert source["unit_sources"][0]["provenance"]["selected_provenance"]["source"]["kind"] == "AUTHOR_ORIGINAL"
+        assert source["unit_sources"][0]["acceptance_id"] == manifest["sources"][0]["acceptance_id"]
+    finally:
+        helper.doCleanups()

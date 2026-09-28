@@ -16,13 +16,18 @@ def generator_identity(cursor: Any, *, project_id: str, book_id: str,
     cursor.execute(
         """SELECT e.external_effect_id,e.model_id,
                   e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',
-                  d.evidence
+                  d.evidence,r.payload_hash,r.payload,r.status
            FROM authority_operation_output_asset output
            JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
            JOIN authority_asset a ON a.asset_id=v.asset_id
            JOIN authority_operation op ON op.operation_id=output.operation_id
            JOIN authority_external_effect e ON e.operation_id=output.operation_id
-           JOIN authority_external_effect_dispatch d USING(external_effect_id)
+           JOIN LATERAL (
+             SELECT dispatch_id,evidence FROM authority_external_effect_dispatch
+             WHERE external_effect_id=e.external_effect_id AND status='SUCCEEDED'
+             ORDER BY generation DESC LIMIT 1
+           ) d ON true
+           LEFT JOIN authority_external_receipt r ON r.dispatch_id=d.dispatch_id
            WHERE e.project_id=%s AND output.asset_version_id=%s AND v.content_hash=%s
              AND e.status='SUCCEEDED'
              AND op.status='SUCCEEDED' AND op.project_id=e.project_id AND a.project_id=e.project_id
@@ -32,7 +37,12 @@ def generator_identity(cursor: Any, *, project_id: str, book_id: str,
         [project_id, asset_version_id, content_hash, book_id],
     )
     identities = {}
-    for effect_id, model_id, decision, evidence in cursor.fetchall():
+    for effect_id, model_id, decision, evidence, receipt_hash, receipt, receipt_status in cursor.fetchall():
+        if (effect_id in identities or receipt_status != "VERIFIED"
+                or not isinstance(receipt, dict) or not isinstance(evidence, dict)
+                or not evidence or receipt.get("evidence") != evidence
+                or snapshot_hash(evidence) != receipt_hash):
+            raise KernelError("CROSS_MODEL_REVIEW_SOURCE_INVALID", "Generator requires one intact verified success receipt")
         if not isinstance(decision, dict) or not isinstance(evidence, dict):
             raise KernelError("CROSS_MODEL_REVIEW_SOURCE_INVALID", "Generator receipt and routing identity must be native objects")
         selected = (decision.get("selected") or {}).get("candidate", {})
