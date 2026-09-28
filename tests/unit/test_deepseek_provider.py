@@ -414,6 +414,12 @@ def test_terminal_response_failure_retains_billable_usage(
     assert result.evidence["failure_class"] == failure
     assert result.evidence["usage"]["output_tokens"] == 20
     assert result.evidence["cost"]["amount"] != "0"
+    import hashlib
+    assert result.evidence["rejected_output"] == {
+        "text": content, "sha256": "sha256:" + hashlib.sha256(content.encode()).hexdigest(),
+        "source": "PROVIDER_MESSAGE_CONTENT", "accepted": False,
+    }
+    assert "unretained reasoning" not in json.dumps(result.evidence)
 
 
 def test_malformed_message_shape_is_an_ambiguous_receipt():

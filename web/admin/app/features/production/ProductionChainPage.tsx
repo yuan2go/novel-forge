@@ -1,5 +1,7 @@
 "use client";
 
+import { ReferenceReviewPanel } from "./ReferenceReviewPanel";
+
 import Link from "next/link";
 import { EditorialControlPanel, controlModes } from "./EditorialControlPanel";
 import { ProductionPolicyPanel, PolicySummary } from "./ProductionPolicyPanel";
@@ -106,6 +108,7 @@ export function ProductionChainPage() {
     {(!bookId || book) && <CreativeInputPanel key={`${project}:${bookId}`} project={projects.find(p => p.project_id === project)} book={book} release={workspace.release_identity} onBook={setBookId} onRefresh={refresh} />}
     {book && <ProductionPolicyPanel key={`${project}:${bookId}:${profileId}`} project={project} book={book} profile={profile} characters={workspace.approved_characters} onRefresh={refresh} onSelect={id => {setProfileId(id); setSnapshotId("");}} />}
     {book && <EditorialControlPanel key={project} project={project} book={book} current={workspace.editorial_control} onRefresh={refresh} />}
+    {book && <ReferenceReviewPanel key={`reference:${project}:${bookId}`} project={project} book={book} />}
     <section className="panel">
       <h2>进度与恢复</h2>
       <label>生产记录<select aria-label="生产记录" value={runId} onChange={e => setRunId(e.target.value)}><option value="">选择生产记录</option>{workspace.runs.map(r => <option key={r.book_run_id} value={r.book_run_id}>{r.state} · 已接纳 {r.accepted_through_chapter}/{r.target_chapter_count} · {r.book_run_id.slice(-8)}</option>)}</select></label>

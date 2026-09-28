@@ -478,6 +478,11 @@ def test_router_accepts_only_native_monetary_amendment_and_retains_original_gran
         configure_route(changed, "route-unapproved-money")
     fixture.configure(campaign_monetary_amendment(previous))
     configure_route(changed, "route-after-money")
+    from novel_forge.modules.production_execution.routing_runtime import PostgresRoutingRegistry
+    projection = PostgresRoutingRegistry(DATABASE_URL).campaign(project_id=project, campaign_id=plan["experiment_id"])
+    assert projection["campaign"]["maximum_amount"] == "9"
+    assert projection["grants"] == [original, changed]
+    assert projection["usage"]["calls_used_or_reserved"] == 0
     with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_AUTHORIZATION_REDEFINED"):
         configure_route({**changed, "authorization_id": original["authorization_id"]}, "route-forged-old-grant")
     with transaction() as connection, connection.cursor() as cursor:

@@ -430,8 +430,10 @@ class PostgresRoutingRegistry:
         from novel_forge.modules.command_kernel.routing_bootstrap import (
             campaign_contract, validate_bootstrap_history,
         )
+        from novel_forge.modules.command_kernel.creative_budget_runtime import provider_campaign_contract_lineage
 
         with AuthorityUnitOfWork(self.database_url) as uow:
+            authorized_contracts = provider_campaign_contract_lineage(uow.cursor, project_id)
             uow.cursor.execute(
                 "SELECT content,content_hash FROM authority_runtime_policy_version WHERE owner='PROVIDER_ROUTING' AND project_id=%s ORDER BY created_at,policy_version",
                 [project_id],
@@ -441,7 +443,8 @@ class PostgresRoutingRegistry:
                 if policy_hash(content) != digest:
                     raise KernelError("RUNTIME_POLICY_HASH_MISMATCH", "policy integrity failed")
                 current = content.get("bootstrap_authorizations", [])
-                validate_bootstrap_history(current, list(grants.values()))
+                validate_bootstrap_history(current, list(grants.values()),
+                                           authorized_campaign_contracts=authorized_contracts)
                 grants.update({grant["authorization_id"]: grant for grant in current})
             matched = [grant for grant in grants.values()
                        if (grant.get("campaign") or {}).get("campaign_id") == campaign_id]
@@ -515,7 +518,7 @@ class PostgresRoutingRegistry:
                                   else Decimal(row["reserved_amount"] or 0))
         return {
             "source": "POSTGRESQL_AUTHORITY_PROJECTION", "project_id": project_id,
-            "scope": "BOOTSTRAP_SAMPLING_ONLY", "campaign": campaign_contract(matched[0]["campaign"]),
+            "scope": "BOOTSTRAP_SAMPLING_ONLY", "campaign": campaign_contract(matched[-1]["campaign"]),
             "grants": matched, "reservations": reservations, "operations": operations,
             "usage": {"calls_used_or_reserved": len(used),
                       "conservative_tokens": tokens,
@@ -748,6 +751,7 @@ class ProductionProviderRouter:
         call_caps: Mapping[str, int] | None = None,
         outcome_projection: Callable[..., dict[str, dict[str, Any]]] | None = None,
         execution_environment: str = "production",
+        provider_auth_profiles: Mapping[str, str] | None = None,
     ) -> None:
         self.registry = PostgresRoutingRegistry(
             database_url, outcome_projection=outcome_projection
@@ -760,6 +764,7 @@ class ProductionProviderRouter:
         self.token_caps = dict(token_caps or {})
         self.call_caps = dict(call_caps or {})
         self.execution_environment = execution_environment
+        self.provider_auth_profiles = dict(provider_auth_profiles or {})
         money_limit = Decimal(task_money_limit)
         if self.task_token_limit <= 0 or not money_limit.is_finite() or money_limit < 0:
             raise ValueError("ROUTING_NONNEGATIVE_MONEY_AND_POSITIVE_TOKEN_BUDGET_REQUIRED")
@@ -1163,6 +1168,11 @@ class ProductionProviderRouter:
             allowed_model_profile_ids=(profile.profile_id,),
         )
         changes = dict(model_profile=profile, route_policy=policy)
+        if self.provider_auth_profiles:
+            auth_profile = self.provider_auth_profiles.get(candidate["provider"])
+            if not auth_profile:
+                raise KernelError("PROVIDER_AUTH_PROFILE_REQUIRED", candidate["provider"])
+            changes["auth_profile_ref"] = auth_profile
         if hasattr(base, "model_context_limit"):
             changes.update(
                 model_context_limit=candidate["context_limit"],

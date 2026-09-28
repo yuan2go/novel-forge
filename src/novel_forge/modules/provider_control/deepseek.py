@@ -4,6 +4,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from decimal import Decimal
 from email.utils import parsedate_to_datetime
+import hashlib
 import json
 import math
 import socket
@@ -379,6 +380,15 @@ class DeepSeekProviderAdapter:
             "finish_reason": finish_reason,
             "failure_class": failure,
         }
+        if failure:
+            # WHY: Rejected output remains inspectable without paying to reproduce it.
+            # SECURITY: Retain final content only, never transport headers or hidden reasoning.
+            evidence["rejected_output"] = {
+                "text": text,
+                "sha256": "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                "source": "PROVIDER_MESSAGE_CONTENT",
+                "accepted": False,
+            }
         outcome = (
             "retryable_failure"
             if finish_reason == "insufficient_system_resource"

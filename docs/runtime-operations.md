@@ -464,6 +464,13 @@ project and shared totals. `entitlements` contains separately capped `provider`,
 account authorization. Existing project/Book controls continue to apply as additional
 constraints. This plan does not itself authorize payment or confer A/B independence.
 
+An explicitly authorized monetary increase appends `comparison_budget.previous_policy`
+with the selected `policy_version`, `policy_hash` and `contract_hash`, and new authorization
+and evidence references. Only priced allowances may increase; manifest, expiry, Book,
+calls, tokens and entitlement lanes remain frozen. The same configure command validates
+this lineage, and campaign queries include earlier grants, reservations and settlements.
+Old requests retain their original limits. An increased ceiling is never reported as usage.
+
 The configure command verifies the existing authorization-evidence file; phase grants
 retain explicit Source/design/chapter business scope. `authority-creative-budget query`
 returns cumulative native-ledger usage by phase, priced USD, unknown-cost entitlement
@@ -697,6 +704,17 @@ qualification criterion, `PASSED` or `FAILED`, and one consistent protocol and C
 scope. Freeze at least two independent human records per adjudication; the evaluator
 and generator cannot author those labels. These commands record real supplied labels;
 the Coding Agent must not manufacture human evidence.
+
+The production page exposes an authenticated author form for native Planning diagnostic
+samples. `GET /product/content-authority/reference-samples` resolves exact candidate and
+Producer contracts; `POST /product/content-authority/reference-evaluations` derives the
+workspace, subject and author on the server and uses the existing Content operation.
+The form requires an exact quotation, rationale, preserved strengths, actual reviewer
+role, scope and explicit human confirmation. It does not preselect a judgment or claim
+blindness. Local drafts survive sample switches and reloads; an ambiguous submission
+keeps its original request and idempotency key for query or replay. Saving one annotation
+does not replace independent human records or adjudication, qualify a model, or promote
+the candidate. Never enter agent-generated judgments as human annotations.
 
 Extend the ordinary `reference_evaluation` binding with
 `adjudicated_reference: {adjudications: [{asset_version_id, content_hash}], scope:

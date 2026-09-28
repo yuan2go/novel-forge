@@ -1264,6 +1264,12 @@ def build_production_execution_composition(
             task_token_limit=int(values.get("NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT") or 0),
             soft_money_limit=str(values.get("NOVEL_FORGE_ROUTER_SOFT_COST_PER_TASK") or "") or None,
             outcome_projection=domain_gate_outcomes,
+            provider_auth_profiles={
+                **({"codex-cli": next(iter(routes.values())).auth_profile_ref} if codex_router_enabled else {}),
+                **({"deepseek": "provider-account:deepseek:credential-sha256:"
+                    + hashlib.sha256(str(values["DEEPSEEK_API_KEY"]).strip().encode()).hexdigest()}
+                   if deepseek_enabled else {}),
+            },
         )
     shared_budget_caps = {
         key: str(values[value])
