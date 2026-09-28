@@ -7,7 +7,7 @@ import { loadFormation, submitFormationDecision, type Formation, type FormationC
 type Decision = "SELECT" | "APPROVE" | "REJECT" | "REQUEST_CHANGES";
 type Pending = {candidate_asset_version_id: string; candidate_content_hash: string; expected_version: number; idempotency_key: string; reason: string; decision: Decision};
 const labels: Record<string, string> = {core_conflict: "核心冲突", reader_promise: "阅读承诺", narrative_engine: "叙事承载力", differentiation: "差异化", emotional_contract: "情绪承诺", thematic_question: "主题问题", ending_direction: "结局方向", protagonist_cost: "人物代价", constraints: "约束", characters: "人物驱动", character_cast: "人物驱动"};
-function describe(value: unknown): string {
+export function describe(value: unknown): string {
   if (typeof value === "string") return value;
   if (Array.isArray(value)) return value.map(describe).join("；");
   if (value && typeof value === "object") return Object.entries(value).map(([key, item]) => `${labels[key] || key}：${describe(item)}`).join("；");

@@ -42,6 +42,7 @@ class ControlPolicy:
             )
         boundaries = {
             ControlMode.AUTO: set(),
+            ControlMode.AUTHOR_SUPERVISED: {"BOOK", "VOLUME", "ARC", "NEAR_TERM", "CHAPTER", "SCENE", "FINAL_CANDIDATE", "REALITY_COMMIT", "MAJOR_DECISION"},
             ControlMode.REVIEW_MAJOR_DECISION: {"MAJOR_DECISION"},
             ControlMode.REVIEW_PLAN: {
                 "BOOK",

@@ -10,6 +10,7 @@ from novel_forge.modules.narrative_state.reality import narrative_hash
 
 class ControlMode(StrEnum):
     AUTO = "AUTO"
+    AUTHOR_SUPERVISED = "AUTHOR_SUPERVISED"
     REVIEW_MAJOR_DECISION = "REVIEW_MAJOR_DECISION"
     REVIEW_PLAN = "REVIEW_PLAN"
     REVIEW_CHAPTER = "REVIEW_CHAPTER"

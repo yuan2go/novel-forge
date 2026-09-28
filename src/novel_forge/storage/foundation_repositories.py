@@ -88,6 +88,13 @@ def require_current_foundation_set(
         )
     bindings: list[FoundationBinding] = []
     for row in rows:
+        qualification_status = "QUALIFIED"
+        if row[15] == "SEMANTICALLY_VALID":
+            from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt
+            receipt = approved_design_receipt(cursor, project_id=project_id, book_id=book_id, asset_version_id=str(row[2]))
+            if receipt is None or (receipt["decision_asset_version_id"], receipt["decision_content_hash"]) != (str(row[5]), str(row[6])):
+                raise KernelError("FOUNDATION_QUALIFICATION_DRIFT", "Foundation author approval differs from the frozen receipt")
+            qualification_status = "SEMANTICALLY_VALID"
         if tuple(str(item) for item in row[9:14]) != (
             str(row[3]),
             str(row[4]),
@@ -96,7 +103,7 @@ def require_current_foundation_set(
             "CLEAR",
         ) or tuple(str(item) for item in row[14:19]) != (
             "ACTIVE",
-            "QUALIFIED",
+            qualification_status,
             "APPROVED",
             "CURRENT",
             str(row[7]),

@@ -795,6 +795,12 @@ class CostAwareRouter:
                 observations.get(candidate.candidate_id, ()), now=now, policy=policy, input_tokens=task.input_tokens
             )
             reasons: list[str] = []
+            cross_review = task.declared_requirements.get("cross_model_review")
+            if cross_review:
+                from .cross_model_review import reviewer_rejection
+                review_rejection = reviewer_rejection(cross_review, asdict(candidate))
+                if review_rejection:
+                    reasons.append(review_rejection)
             if len(task.history) >= policy.max_attempts:
                 reasons.append("CHAIN_ATTEMPTS_EXHAUSTED")
             if any(

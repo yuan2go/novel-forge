@@ -365,6 +365,8 @@ class StoryFormationApplication:
                     candidate_asset_version_id, principal=principal,
                     idempotency_key=f"{idempotency_key}:approve",
                     trace_id=f"trace:{formation_run_id}", correlation_id=run["root_operation_id"],
+                    decision_evidence={"author_review": {"asset_version_id": candidate_asset_version_id,
+                        "content_hash": candidate_content_hash, "decision": "ACCEPT", "reason": reason, "findings": []}},
                 )
         return self.review_candidates(formation_run_id, principal=principal)
 
@@ -821,6 +823,9 @@ class StoryFormationApplication:
             requested.add(frozen.book_design_asset_version_id)
         if frozen.creative_brief_asset_version_id:
             requested.add(frozen.creative_brief_asset_version_id)
+        author_selected = (frozen.generation_policy or {}).get("author_creative_foundation")
+        if author_selected:
+            requested.add(author_selected["asset_version_id"])
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -834,6 +839,8 @@ class StoryFormationApplication:
             found = {str(row[0]): str(row[1]) for row in uow.cursor.fetchall()}
         if frozen.creative_brief_asset_version_id and found.get(frozen.creative_brief_asset_version_id) != frozen.creative_brief_content_hash:
             raise KernelError("STORY_FORMATION_BRIEF_DRIFT", "Formation author brief content hash differs")
+        if author_selected and found.get(author_selected["asset_version_id"]) != author_selected["content_hash"]:
+            raise KernelError("FORMATION_AUTHOR_INPUT_REQUIRED", "Formation must freeze the exact selected author direction")
         if set(found) != requested:
             raise KernelError(
                 "STORY_FORMATION_INPUT_ASSET_MISSING",

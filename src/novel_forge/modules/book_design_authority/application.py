@@ -174,10 +174,36 @@ class BookDesignAuthorityApplication:
             if command.migration_evidence is not None
             else None
         )
+        from .author_supervision import proposed_supervision, approved_book_design_receipt
+        from novel_forge.modules.production_execution.author_supervision import selected_book_supervision
+        supervision = None
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            if command.definition_name == "book_design.propose":
+                uow.cursor.execute("""SELECT command_payload FROM authority_operation
+                    WHERE project_id=%s AND idempotency_scope='book:design' AND idempotency_key=%s""",
+                    [command.project_id, command.idempotency_key])
+                replay = uow.cursor.fetchone()
+                supervision = (replay[0].get("payload", {}).get("_author_supervision") if replay else
+                    selected_book_supervision(uow.cursor, project_id=command.project_id, book_id=command.book_id))
+            elif command.definition_name in {"book_design.decide", "book_design.activate"}:
+                supervision = proposed_supervision(uow.cursor, project_id=command.project_id,
+                    book_id=command.book_id, asset_version_id=command.target_asset_version_id)
+                if supervision and command.definition_name == "book_design.activate":
+                    approved_book_design_receipt(uow.cursor, project_id=command.project_id,
+                        book_id=command.book_id, asset_version_id=command.target_asset_version_id)
+        if supervision and command.definition_name == "book_design.decide":
+            from novel_forge.modules.authority_security import PrincipalType
+            if principal is None or principal.principal_type is not PrincipalType.LOCAL_OPERATOR or principal.principal_id != supervision["author_id"]:
+                raise PermissionError("Supervised BookDesign requires the authenticated scoped author")
+            if not str(command.payload.get("reason") or "").strip():
+                raise KernelError("AUTHOR_SUPERVISION_EXACT_REVIEW_REQUIRED", "Author decision needs a reason")
+        if "_author_supervision" in command.payload:
+            raise KernelError("AUTHOR_SUPERVISION_POLICY_UNTRUSTED", "Book supervision is resolved by the Authority")
         if (
             command.definition_name == "book_design.activate"
             and not self.allow_scripted_evaluation_fixture
             and migration_lineage is None
+            and supervision is None
         ):
             self._require_model_provider_qualification(
                 project_id=command.project_id,
@@ -192,7 +218,7 @@ class BookDesignAuthorityApplication:
             "expected_book_version": command.expected_book_version,
             "expected_current_design_asset_version_id": command.expected_current_design_asset_version_id,
             "target_asset_version_id": command.target_asset_version_id,
-            "payload": dict(command.payload),
+            "payload": {**dict(command.payload), **({"_author_supervision": supervision} if supervision else {})},
             "migration_evidence": (
                 asdict(command.migration_evidence)
                 if command.migration_evidence is not None
@@ -288,6 +314,7 @@ class BookDesignAuthorityApplication:
         )
         if (
             command.definition_name == "book_design.propose"
+            and supervision is None
             and self.narrative_evaluator_principal is not None
             and (semantic_port := self.semantic_evaluation.execution_port) is not None
         ):
@@ -616,12 +643,18 @@ class BookDesignAuthorityApplication:
                     "BOOK_VERSION_CONFLICT", "expected Book/design version is stale"
                 )
             if action == "book_design.propose":
-                design = BookDesignPayload.from_mapping(dict(payload["payload"]))
+                design_payload = dict(payload["payload"])
+                supervision = design_payload.pop("_author_supervision", None)
+                if supervision:
+                    from novel_forge.modules.production_execution.author_supervision import verify_book_supervision
+                    verify_book_supervision(uow.cursor, supervision)
+                design = BookDesignPayload.from_mapping(design_payload)
                 checkpoint("after_domain_validation")
                 result.update(
                     repository.propose(
                         book=book,
                         design=design,
+                        author_supervision=supervision,
                         operation_id=operation_id,
                         trace_id=str(operation["trace_id"]),
                         checkpoint=checkpoint,
@@ -638,6 +671,7 @@ class BookDesignAuthorityApplication:
                     decision=str(payload["payload"].get("decision") or ""),
                     reason=str(payload["payload"].get("reason") or ""),
                     decided_by=actor_id,
+                    author_supervision=payload["payload"].get("_author_supervision"),
                     operation_id=operation_id,
                 )
                 checkpoint("after_business_projection_update")

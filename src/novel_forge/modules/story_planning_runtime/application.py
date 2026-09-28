@@ -790,6 +790,7 @@ class StoryPlanningGenerationApplication:
         transition_principal: Principal | None = None,
         execution_probe: Callable[[], object] | None = None,
     ) -> PlanningGenerationResult | NarrativeSemanticEvaluationResult:
+        from novel_forge.modules.story_design_authority.author_supervision import supervised_state
         principal.require("narrative_design.evaluate", command.project_id)
         if principal.principal_id != command.actor_id:
             raise PermissionError(
@@ -817,7 +818,7 @@ class StoryPlanningGenerationApplication:
             project_id=command.project_id,
             asset_version_id=command.candidate_asset_version_id,
         )
-        if state["qualification"] != "STRUCTURALLY_VALID":
+        if state["qualification"] != "STRUCTURALLY_VALID" and not supervised_state(state):
             raise KernelError(
                 "NARRATIVE_EVALUATION_CANDIDATE_NOT_READY",
                 "Narrative Evaluation requires a structurally valid immutable candidate",
@@ -841,6 +842,7 @@ class StoryPlanningGenerationApplication:
                 routing_bootstrap_authorization_id=command.routing_bootstrap_authorization_id,
                 reference_evaluation=command.reference_evaluation,
                 reference_predecessor_operation_id=command.reference_predecessor_operation_id,
+                author_supervised_review=supervised_state(state),
                 idempotency_key=command.idempotency_key,
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
@@ -849,7 +851,7 @@ class StoryPlanningGenerationApplication:
             caller_permission="story_planning.authority.execute",
         )
         self._probe(execution_probe)
-        if command.routing_bootstrap_authorization_id:
+        if command.routing_bootstrap_authorization_id or supervised_state(state):
             return evaluated
         generation_command = self._generation_command(command.generation_operation_id)
         if evaluated.qualification.status != "PASS":
@@ -936,6 +938,31 @@ class StoryPlanningGenerationApplication:
         if execution_probe is not None:
             execution_probe()
 
+    def reject_candidate(
+        self, candidate_asset_version_id: str, *, principal: Principal,
+        idempotency_key: str, reason: str, decision: str,
+    ) -> dict[str, Any]:
+        generation = self.require_candidate(candidate_asset_version_id)
+        principal.require("story_design.authority.execute", generation["project_id"])
+        state = self.story_design.require(project_id=generation["project_id"], asset_version_id=candidate_asset_version_id)
+        expected_version = int(state["version"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT command_payload #>> '{payload,expected_version}'
+                FROM authority_operation WHERE project_id=%s
+                  AND idempotency_scope='project:story-design-transition' AND idempotency_key=%s""",
+                [generation["project_id"], idempotency_key])
+            original = uow.cursor.fetchone()
+        if original is not None:
+            expected_version = int(original[0])
+        return self.story_design.transition(StoryDesignTransitionCommand(
+            project_id=generation["project_id"], workspace_id=generation["workspace_id"],
+            actor_id=principal.principal_id, trace_id=idempotency_key, correlation_id=idempotency_key,
+            idempotency_key=idempotency_key, asset_version_id=candidate_asset_version_id,
+            content_hash=generation["content_hash"], logical_key=generation["logical_key"],
+            generator_operation_name=generation["generator_operation_name"], planning_scope=generation["planning_scope"],
+            transition=DesignTransition.REJECT, expected_version=expected_version,
+            evidence={"author_decision": decision, "reason": reason}), principal=principal)
+
     def approve_candidate(
         self,
         candidate_asset_version_id: str,
@@ -968,7 +995,30 @@ class StoryPlanningGenerationApplication:
             project_id=generation["project_id"],
             asset_version_id=candidate_asset_version_id,
         )
+        from novel_forge.modules.story_design_authority.author_supervision import supervised_state
+        if supervised_state(state):
+            review = (decision_evidence or {}).get("author_review")
+            for transition, should_apply in (
+                (DesignTransition.SEMANTIC_VALIDATE, state["qualification"] == "STRUCTURALLY_VALID"),
+                (DesignTransition.SUBMIT_APPROVAL, state["approval"] == "NOT_REQUESTED"),
+            ):
+                if should_apply:
+                    state = self.story_design.transition(StoryDesignTransitionCommand(
+                        project_id=generation["project_id"], workspace_id=generation["workspace_id"],
+                        actor_id=principal.principal_id, trace_id=trace_id, correlation_id=correlation_id,
+                        idempotency_key=idempotency_key + ":" + transition.value,
+                        asset_version_id=candidate_asset_version_id, content_hash=generation["content_hash"],
+                        logical_key=generation["logical_key"], generator_operation_name=generation["generator_operation_name"],
+                        transition=transition, planning_scope=generation["planning_scope"], expected_version=int(state["version"]),
+                        evidence={"passed": True, "author_review": review}), principal=principal)
         if state["approval"] == "APPROVED":
+            if supervised_state(state):
+                from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    receipt = approved_design_receipt(uow.cursor, project_id=generation["project_id"],
+                        book_id=generation["book_id"], asset_version_id=candidate_asset_version_id)
+                if receipt is None or receipt["author_review"] != (decision_evidence or {}).get("author_review"):
+                    raise KernelError("AUTHOR_SUPERVISION_EXACT_REVIEW_REQUIRED", "Recover the original author judgment before changing it")
             return state
         if state["approval"] != "PENDING":
             raise KernelError(
@@ -993,6 +1043,7 @@ class StoryPlanningGenerationApplication:
                 evidence={
                     "approval_policy_key": generation["approval_policy_key"],
                     "approved_by": principal.principal_id,
+                    **({"author_review": decision_evidence["author_review"]} if supervised_state(state) and decision_evidence else {}),
                     **(
                         {"formation_auto_decision": dict(decision_evidence)}
                         if decision_evidence
@@ -1002,6 +1053,9 @@ class StoryPlanningGenerationApplication:
             ),
             principal=principal,
         )
+        if supervised_state(approved):
+            self._set_candidate_eligibility(project_id=generation["project_id"],
+                candidate_asset_version_id=candidate_asset_version_id, eligibility="ELIGIBLE")
         self._update_generation_status(
             generation["generation_operation_id"], "APPROVED"
         )
@@ -1070,13 +1124,13 @@ class StoryPlanningGenerationApplication:
                 project_id=generation["project_id"],
                 book_id=generation["book_id"],
             )
-        self._require_narrative_qualification_summary(
-            operation_id=generation["generation_operation_id"],
-            candidate_asset_version_id=candidate_asset_version_id,
-            project_id=generation["project_id"],
-            book_id=generation["book_id"],
-            generator_operation_name=generation["generator_operation_name"],
-        )
+        from novel_forge.modules.story_design_authority.author_supervision import supervised_state
+        current = self.story_design.require(project_id=generation["project_id"], asset_version_id=candidate_asset_version_id)
+        if not supervised_state(current):
+            self._require_narrative_qualification_summary(
+                operation_id=generation["generation_operation_id"], candidate_asset_version_id=candidate_asset_version_id,
+                project_id=generation["project_id"], book_id=generation["book_id"],
+                generator_operation_name=generation["generator_operation_name"])
         state = self.story_design.require(
             project_id=generation["project_id"],
             asset_version_id=candidate_asset_version_id,
@@ -1107,6 +1161,7 @@ class StoryPlanningGenerationApplication:
                     expected_version=int(state["version"]),
                     evidence={
                         "activation_policy_key": generation["activation_policy_key"],
+                        **({"author_review": decision_evidence["author_review"]} if supervised_state(state) and decision_evidence and "author_review" in decision_evidence else {}),
                         **(
                             {"formation_auto_decision": dict(decision_evidence)}
                             if decision_evidence
@@ -1129,6 +1184,7 @@ class StoryPlanningGenerationApplication:
                         transition=DesignTransition.ACTIVATE, planning_scope=generation["planning_scope"],
                         expected_version=int(state["version"]), evidence={
                             "activation_policy_key": generation["activation_policy_key"],
+                        **({"author_review": decision_evidence["author_review"]} if supervised_state(state) and decision_evidence and "author_review" in decision_evidence else {}),
                             **(
                                 {"formation_auto_decision": dict(decision_evidence)}
                                 if decision_evidence
@@ -2263,6 +2319,11 @@ class StoryPlanningGenerationApplication:
                 expected_version=int(state["version"]),
                 evidence={"passed": True, "validation_report": evidence},
             )
+        from novel_forge.modules.story_design_authority.author_supervision import supervised_state
+        if supervised_state(state):
+            self._update_generation_status(operation_id, "APPROVAL_PENDING")
+            return PlanningGenerationResult(operation_id, candidate_asset_version_id,
+                PlanningGenerationStatus.APPROVAL_PENDING, state, replayed=replayed)
         if state["qualification"] == "STRUCTURALLY_VALID":
             if command.routing_bootstrap_authorization_id:
                 self._update_generation_status(operation_id, "EVALUATION_PENDING")
@@ -2667,7 +2728,9 @@ class StoryPlanningGenerationApplication:
                     if FOUNDATION_GENERATORS.get(generator) is not foundation_role or item["content"].get("planning_scope") != "NOT_APPLICABLE":
                         raise KernelError("FOUNDATION_INPUT_OWNER_INVALID", "Generated Foundation role differs from its semantic owner")
                     state = self.story_design.require(project_id=command.project_id, asset_version_id=asset_version_id)
-                    if (state["lifecycle"], state["qualification"], state["approval"], state["freshness"]) != ("ACTIVE", "QUALIFIED", "APPROVED", "CURRENT"):
+                    from novel_forge.modules.story_design_authority.author_supervision import supervised_state
+                    admitted = state["qualification"] == "QUALIFIED" or supervised_state(state)
+                    if not admitted or (state["lifecycle"], state["approval"], state["freshness"]) != ("ACTIVE", "APPROVED", "CURRENT"):
                         raise KernelError("FOUNDATION_INPUT_NOT_ACTIVE", "Generated Foundation must be independently qualified and activated")
                 if item["asset_type"] not in allowed_asset_types and not generated_foundation:
                     raise KernelError(

@@ -69,6 +69,31 @@ project into task-specific benchmark metrics. A domain gate acceptance probabili
 not a calibrated literary score. Model revisions and observed DeepSeek service cohorts
 remain separate; missing legacy identity cannot qualify a current model. Classification,
 MKAOS extraction, and judges without independent calibration remain unqualified.
+Author-supervised trial production is a configurable alternative to strict model
+qualification. Existing Provider Routing policy versions bind the authenticated author,
+Book, task, Producer hash, model revision, expiry and finite reservation limits. Only
+literary quality-floor and benchmark insufficiency may be overridden; identity, source,
+Schema, capacity, budget and unknown-outcome constraints still reject execution. The
+frozen route records its original strict rejection reasons and `NOT_PROVEN` literary
+qualification. Returning new requests to strict mode does not rewrite existing requests.
+Story Design and Book Design retain native author decisions without assigning independent
+literary qualification; production snapshots distinguish `AUTHOR_SUPERVISED_DESIGN` from
+`LONGFORM_DESIGN_QUALIFIED`. Native Book control requires author decision boundaries.
+
+Supervised model reviews use the existing semantic Evaluation and Chapter review paths.
+The Router binds the exact target hash and successful generator Effect: Codex-generated
+targets require DeepSeek review, and DeepSeek-generated targets require Codex review.
+Different accounts or role prompts do not satisfy this policy. Semantic review purpose
+`AUTHOR_ADVISORY` retains its native execution/recovery lineage and creates no independent
+qualification rows. The author must explicitly resolve or dismiss each non-PASS model
+finding with evidence before approving the target. This is model advice and author
+judgment, not calibrated independent literary or reader-preference evidence. Original
+author input may be approved through the existing Content and Story Design Authorities;
+Formation v3 consumes that exact selected direction without another creative search.
+Diagnostic candidates retain their original source restrictions.
+Strict semantic-qualification commands cannot consume a trial reviewer authorization;
+the review purpose is checked against the native frozen command before routing.
+
 Planning has an explicitly authorized, bounded validation challenger path. Its immutable
 decisions retain unknown quality and the original production rejection reasons; generated
 candidates remain `BENCHMARK_ONLY` and cannot be qualified, approved or activated for

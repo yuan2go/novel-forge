@@ -432,13 +432,15 @@ class StoryDesignRepository:
                         "Legacy Story Design qualification requires bound validation",
                     )
             qualification = "QUALIFIED"
-        elif transition == "SUBMIT_APPROVAL" and qualification == "QUALIFIED":
+        elif transition == "SUBMIT_APPROVAL" and (qualification == "QUALIFIED" or
+                qualification == "SEMANTICALLY_VALID" and evidence.get("author_supervision", {}).get("mode") == "AUTHOR_SUPERVISED"):
             approval = "PENDING"
         elif transition == "APPROVE" and approval == "PENDING":
             approval = "APPROVED"
         elif (
             transition == "ACTIVATE"
-            and qualification == "QUALIFIED"
+            and (qualification == "QUALIFIED" or qualification == "SEMANTICALLY_VALID"
+                 and evidence.get("author_supervision", {}).get("mode") == "AUTHOR_SUPERVISED")
             and approval == "APPROVED"
             and freshness == "CURRENT"
         ):

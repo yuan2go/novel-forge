@@ -1619,7 +1619,7 @@ class PostgresBookProductionQuery:
                 [snapshot_id],
             )
             snapshot = uow.cursor.fetchone()
-            if snapshot is None or str(snapshot[3]) != "LONGFORM_DESIGN_QUALIFIED":
+            if snapshot is None or str(snapshot[3]) not in {"LONGFORM_DESIGN_QUALIFIED", "AUTHOR_SUPERVISED_DESIGN"}:
                 raise KernelError(
                     "LONGFORM_DESIGN_QUALIFICATION_REQUIRED",
                     "Chapter production requires a qualified Book input snapshot",
@@ -1627,7 +1627,7 @@ class PostgresBookProductionQuery:
             global_qualification = dict(snapshot[4])
             if global_qualification.get(
                 "admission"
-            ) != "LONGFORM_DESIGN_QUALIFIED" or canonical_hash(
+            ) != str(snapshot[3]) or canonical_hash(
                 global_qualification
             ) != str(snapshot[5]):
                 raise KernelError(
@@ -1652,40 +1652,59 @@ class PostgresBookProductionQuery:
                     "LONGFORM_DESIGN_QUALIFICATION_CORRUPT",
                     "Book input design qualification has an empty asset identity",
                 )
-            uow.cursor.execute(
-                """
-                SELECT asset_version_id, design_layer, profile_hash,
-                       evaluation_hash, qualification_hash
-                FROM authority_current_narrative_design_qualification AS qualification
-                JOIN authority_operation AS operation
-                  ON operation.operation_id=qualification.source_operation_id
-                WHERE qualification.project_id=%s AND qualification.book_id=%s
-                  AND qualification.asset_version_id=ANY(%s)
-                  AND qualification.freshness='CURRENT'
-                  AND operation.status IN ('WAITING_GATE', 'SUCCEEDED')
-                """,
-                [str(snapshot[0]), str(snapshot[1]), global_version_ids],
-            )
-            current_global = {
-                (str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]))
-                for row in uow.cursor.fetchall()
-            }
-            expected_global = {
-                (
-                    str(item.get("asset_version_id") or ""),
-                    str(item.get("design_layer") or ""),
-                    str(item.get("profile_hash") or ""),
-                    str(item.get("evaluation_hash") or ""),
-                    str(item.get("qualification_hash") or ""),
+            supervised = str(snapshot[3]) == "AUTHOR_SUPERVISED_DESIGN"
+            if supervised:
+                from novel_forge.modules.book_design_authority.author_supervision import approved_book_design_receipt
+                from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt, reusable_qualified_design_receipt
+                if global_qualification.get("book_authorization"):
+                    from novel_forge.modules.production_execution.author_supervision import verify_book_supervision
+                    verify_book_supervision(uow.cursor, global_qualification["book_authorization"])
+                for receipt in global_receipts:
+                    if receipt.get("mode") == "STRICT_QUALIFIED":
+                        current = reusable_qualified_design_receipt(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]),
+                            asset_version_id=receipt["asset_version_id"], generator=receipt["design_layer"])
+                        if current != receipt:
+                            raise KernelError("LONGFORM_DESIGN_QUALIFICATION_STALE", "Reused strict design receipt changed")
+                        continue
+                    resolver = approved_book_design_receipt if receipt["design_layer"] == "book_design.propose" else approved_design_receipt
+                    current = resolver(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]), asset_version_id=receipt["asset_version_id"])
+                    if current is None or {**current, "design_layer": receipt["design_layer"]} != receipt:
+                        raise KernelError("AUTHOR_SUPERVISION_APPROVAL_STALE", "Frozen author decision differs from current design")
+            else:
+                uow.cursor.execute(
+                    """
+                    SELECT asset_version_id, design_layer, profile_hash,
+                           evaluation_hash, qualification_hash
+                    FROM authority_current_narrative_design_qualification AS qualification
+                    JOIN authority_operation AS operation
+                      ON operation.operation_id=qualification.source_operation_id
+                    WHERE qualification.project_id=%s AND qualification.book_id=%s
+                      AND qualification.asset_version_id=ANY(%s)
+                      AND qualification.freshness='CURRENT'
+                      AND operation.status IN ('WAITING_GATE', 'SUCCEEDED')
+                    """,
+                    [str(snapshot[0]), str(snapshot[1]), global_version_ids],
                 )
-                for item in global_receipts
-                if isinstance(item, dict)
-            }
-            if current_global != expected_global:
-                raise KernelError(
-                    "LONGFORM_DESIGN_QUALIFICATION_STALE",
-                    "Book input design qualification no longer names current active design",
-                )
+                current_global = {
+                    (str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]))
+                    for row in uow.cursor.fetchall()
+                }
+                expected_global = {
+                    (
+                        str(item.get("asset_version_id") or ""),
+                        str(item.get("design_layer") or ""),
+                        str(item.get("profile_hash") or ""),
+                        str(item.get("evaluation_hash") or ""),
+                        str(item.get("qualification_hash") or ""),
+                    )
+                    for item in global_receipts
+                    if isinstance(item, dict)
+                }
+                if current_global != expected_global:
+                    raise KernelError(
+                        "LONGFORM_DESIGN_QUALIFICATION_STALE",
+                        "Book input design qualification no longer names current active design",
+                    )
             uow.cursor.execute(
                 """
                 SELECT binding.contract_type, binding.asset_version_id,
@@ -1873,6 +1892,18 @@ class PostgresBookProductionQuery:
                 ],
             )
             rows = uow.cursor.fetchall()
+            author_receipts = []
+            if supervised:
+                for stage, version_id in (("chapter_group_plan.generate", chapter_group_plan_version_id), ("chapter_plan.generate", chapter_plan_version_id)):
+                    receipt = approved_design_receipt(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]), asset_version_id=version_id)
+                    if receipt is None:
+                        author_receipts.append(reusable_qualified_design_receipt(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]),
+                            asset_version_id=version_id, generator=stage))
+                        continue
+                    if receipt["lifecycle"] != "ACTIVE" or receipt["author_id"] != global_qualification["author_id"]:
+                        raise KernelError("AUTHOR_SUPERVISION_APPROVAL_REQUIRED", "Chapter execution requires its exact author decision")
+                    author_receipts.append({**receipt, "design_layer": stage})
+                expected_receipts = []
         authoritative_working_set = self.require_arc_working_set(
             book_run_id=book_run_id,
             snapshot_id=snapshot_id,
@@ -1894,7 +1925,7 @@ class PostgresBookProductionQuery:
         by_identity: dict[tuple[str, str], list[Any]] = {}
         for row in rows:
             by_identity.setdefault((str(row[0]), str(row[1])), []).append(row)
-        receipts: list[dict[str, Any]] = []
+        receipts: list[dict[str, Any]] = list(author_receipts)
         for asset_version_id, profile in expected_receipts:
             matches = by_identity.get((asset_version_id, profile.layer.value), [])
             if len(matches) != 1:
@@ -1933,6 +1964,7 @@ class PostgresBookProductionQuery:
             "schema_version": "chapter-production-admission.v1",
             "narrative_reality_revision_id": reality_id,
             "admission": "CHAPTER_PRODUCTION_ADMITTED",
+            **({"execution_mode": "AUTHOR_SUPERVISED", "literary_qualification": "NOT_PROVEN"} if supervised else {}),
             "snapshot_id": snapshot_id,
             "longform_design_qualification_hash": str(snapshot[5]),
             "book_version": int(snapshot[2]),

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import asdict, replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
@@ -836,6 +836,8 @@ class ProductionProviderRouter:
                             "risk": risk,
                             "quality_floor": quality_floor,
                             "chapter": chapter,
+                            **({"cross_model_review": original["declared_requirements"]["cross_model_review"]}
+                               if original.get("declared_requirements", {}).get("cross_model_review") else {}),
                         },
                         "cache_prefix_hash": snapshot_hash(cache_prefix.hex())
                         if cache_prefix
@@ -991,11 +993,24 @@ class ProductionProviderRouter:
             task = bind_diagnostic_escalation_reason(
                 task, candidates, bootstrap, environment=self.execution_environment
             )
+        else:
+            from .author_supervision import matching_grant
+            from .cross_model_review import REVIEW_TASKS, freeze_review_requirement
+            supervised_book = any(book["book_id"] == work_id for book in policy_snapshot.get("policy", {}).get("author_supervised_books", []))
+            if task_type in REVIEW_TASKS and (supervised_book or matching_grant(asdict(task), now=now)):
+                with AuthorityUnitOfWork(self.registry.database_url) as uow:
+                    cross_review = freeze_review_requirement(uow.cursor, project_id=project_id,
+                        book_id=work_id, operation_id=operation_id, task_type=task_type,
+                        request_input=request_input or {})
+                task = replace(task, declared_requirements={**task.declared_requirements, "cross_model_review": cross_review})
         decision = CostAwareRouter().explain(task, candidates, observations, now=now)
         if bootstrap:
             decision = benchmark_decision(
                 decision, bootstrap, environment=self.execution_environment
             )
+        elif policy_snapshot.get("policy", {}).get("author_supervised_authorizations"):
+            from .author_supervision import supervised_decision
+            decision = supervised_decision(decision, now=now)
         snapshot = (
             decision.to_dict()
             if dry_run
@@ -1120,6 +1135,11 @@ class ProductionProviderRouter:
                     "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
                     "benchmark route lacks its admitted validation grant",
                 )
+        elif snapshot.get("status") == "AUTHOR_SUPERVISED_SELECTED":
+            from .author_supervision import verify_frozen_supervision, verify_policy_provenance
+            verify_frozen_supervision(snapshot)
+            with AuthorityUnitOfWork(self.registry.database_url) as uow:
+                verify_policy_provenance(uow.cursor, snapshot)
         elif snapshot.get("status") != "SELECTED" or snapshot.get(
             "bootstrap_authorization"
         ):
@@ -1127,6 +1147,12 @@ class ProductionProviderRouter:
                 "PROVIDER_ROUTING_BLOCKED", str(snapshot.get("decision_id"))
             )
         candidate = snapshot["selected"]["candidate"]
+        cross_review = snapshot["task"].get("declared_requirements", {}).get("cross_model_review")
+        if cross_review:
+            from .cross_model_review import reviewer_rejection
+            rejection = reviewer_rejection(cross_review, candidate)
+            if rejection:
+                raise KernelError(rejection, "Reviewer selection differs from the frozen source receipt")
         fixture = candidate["provider"] == "scripted_provider_v2"
         if (
             fixture
@@ -1338,14 +1364,17 @@ def validate_routed_reservation(
     decision: Mapping[str, Any], *, reserved_tokens: int, reserved_amount: str | None,
 ) -> None:
     selected = decision.get("selected")
-    if decision.get("status") not in {"SELECTED", "BENCHMARK_SELECTED"} or not selected:
+    if decision.get("status") not in {"SELECTED", "BENCHMARK_SELECTED", "AUTHOR_SUPERVISED_SELECTED"} or not selected:
         raise KernelError("ROUTING_RESERVATION_DECISION_INVALID", "reservation requires a selected route")
     task, candidate = decision["task"], selected["candidate"]
     budget = task.get("budget_snapshot", {}).get("candidates", {}).get(candidate["candidate_id"], {})
     token_limits = [int(task["remaining_tokens"])]
     if "remaining_tokens" in budget:
         token_limits.append(int(budget["remaining_tokens"]))
-    grant = decision.get("bootstrap_authorization", {}).get("authorization", {})
+    grant = (decision.get("bootstrap_authorization") or decision.get("author_supervision") or {}).get("authorization", {})
+    if decision.get("status") == "AUTHOR_SUPERVISED_SELECTED":
+        from .author_supervision import verify_frozen_supervision
+        verify_frozen_supervision(decision)
     if grant:
         token_limits.append(int(grant["maximum_tokens"]))
     limit = min(token_limits)

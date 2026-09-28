@@ -84,6 +84,12 @@ class FormationGeneration:
                 "STORY_FORMATION_BRIEF_DRIFT",
                 "Formation must consume its exact author brief",
             )
+        author_selected = (frozen.generation_policy or {}).get("author_creative_foundation")
+        if author_selected and role is FoundationRole.CREATIVE_FOUNDATION:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                return StoryFormationRepository(uow.cursor).authored_creative_layer(
+                    project_id=run["project_id"], book_id=run["book_id"], asset_version_id=author_selected["asset_version_id"],
+                    content_hash=author_selected["content_hash"])
         inputs = {"creative_brief": brief.asset_version_id}
         with AuthorityUnitOfWork(self.database_url) as uow:
             repository = StoryFormationRepository(uow.cursor)
@@ -119,7 +125,8 @@ class FormationGeneration:
             state = self.planning.story_design.require(
                 project_id=run["project_id"], asset_version_id=candidate_id
             )
-            if state["qualification"] != "QUALIFIED":
+            from novel_forge.modules.story_design_authority.author_supervision import supervised_state
+            if state["qualification"] != "QUALIFIED" and not supervised_state(state):
                 raise KernelError(
                     "STORY_FORMATION_GENERATION_BLOCKED",
                     f"{role.value} candidate {candidate_id} remains {state['qualification']}; no Foundation activation",
@@ -142,7 +149,7 @@ class FormationGeneration:
         if selection and selection.get("candidate_content_hash") != candidate.content_hash:
             raise KernelError("STORY_FORMATION_AUTHOR_SELECTION_DRIFT", "Selected candidate hash changed")
         if state["approval"] != "APPROVED":
-            if policy["approval_mode"] != "AUTO":
+            if policy["approval_mode"] != "AUTO" or supervised_state(state):
                 raise FormationApprovalRequired(
                     stage=str(run["current_stage"]),
                     authority="STORY_PLANNING_AUTHORITY",
@@ -165,7 +172,7 @@ class FormationGeneration:
                 correlation_id=run["root_operation_id"],
                 decision_evidence=approval_evidence,
             )
-        if policy["approval_mode"] == "AUTO":
+        if policy["approval_mode"] == "AUTO" and not supervised_state(state):
             activation_evidence = build_formation_auto_decision_evidence(
                 frozen=frozen,
                 action="story_planning.candidate.activate",
@@ -197,7 +204,7 @@ class FormationGeneration:
                 candidate_id=selected,
                 candidates=tuple(candidates),
                 reasons=(
-                    ("AUTHOR_SELECTED_QUALIFIED_BRANCH", str(selection["reason"]))
+                    ("AUTHOR_SUPERVISED_SELECTION" if supervised_state(state) else "AUTHOR_SELECTED_QUALIFIED_BRANCH", str(selection["reason"]))
                     if selection else (
                         "FIRST_INDEPENDENTLY_QUALIFIED_BRANCH",
                         "Frozen brief and parent constraints passed; alternatives retain their independent evaluations",
@@ -304,7 +311,10 @@ class FormationGeneration:
         candidate = self.query.require(
             project_id=run["project_id"], asset_version_id=proposed["asset_version_id"]
         )
-        if policy["approval_mode"] != "AUTO":
+        from .author_supervision import proposed_supervision
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            supervision = proposed_supervision(uow.cursor, project_id=run["project_id"], book_id=run["book_id"], asset_version_id=candidate.asset_version_id)
+        if policy["approval_mode"] != "AUTO" or supervision:
             from .query import BookDesignAuthorityQuery
 
             book = BookDesignAuthorityQuery(self.database_url).require_book(

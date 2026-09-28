@@ -257,6 +257,16 @@ def _evaluation_lifecycle(operation_status: str) -> str:
     return "ADMITTED"
 
 
+def _require_author_advisory_target(database_url: str, *, project_id: str, book_id: str,
+                                    asset_version_id: str, content_hash: str) -> None:
+    from .author_supervision import candidate_supervision
+    with AuthorityUnitOfWork(database_url) as uow:
+        supervision = candidate_supervision(uow.cursor, project_id=project_id, asset_version_id=asset_version_id)
+    if (not supervision or supervision.get("book_id") != book_id
+            or supervision.get("content_hash") != content_hash or not supervision.get("route_decision_id")):
+        raise KernelError("AUTHOR_ADVISORY_TARGET_INVALID", "Review must target the exact native supervised model candidate")
+
+
 @dataclass(frozen=True, slots=True)
 class NarrativeSemanticEvaluationCommand:
     project_id: str
@@ -276,6 +286,7 @@ class NarrativeSemanticEvaluationCommand:
     routing_bootstrap_authorization_id: str = ""
     reference_evaluation: Mapping[str, Any] | None = None
     reference_predecessor_operation_id: str = ""
+    author_supervised_review: bool = False
 
     def __post_init__(self) -> None:
         required = (
@@ -293,6 +304,9 @@ class NarrativeSemanticEvaluationCommand:
         if any(not item.strip() for item in required):
             raise ValueError("Narrative Semantic Evaluation command is incomplete")
         reference_command_fields(self)
+        if self.author_supervised_review and (self.evaluator_execution_class != "MODEL_PROVIDER"
+                or self.routing_bootstrap_authorization_id or self.reference_evaluation):
+            raise ValueError("Author advisory review requires a real production model, not sampling or supplied evaluation")
         digest = self.candidate_content_hash.removeprefix("sha256:")
         if (
             not self.candidate_content_hash.startswith("sha256:")
@@ -328,6 +342,7 @@ def evaluation_command_payload(
 ) -> dict[str, Any]:
     return {
         **reference_command_fields(command),
+        **({"evaluation_purpose": "AUTHOR_ADVISORY"} if command.author_supervised_review else {}),
         "candidate_asset_version_id": command.candidate_asset_version_id,
         "candidate_content_hash": command.candidate_content_hash,
         "generation_operation_id": command.generation_operation_id,
@@ -381,6 +396,7 @@ class NarrativeProviderEvaluation:
     prompt_version: str
     skill_version: str
     real_model_call: bool
+    cross_model_review: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         required = (
@@ -486,6 +502,13 @@ class NarrativeSemanticEvaluationHandler:
         evidence_inputs = tuple(
             item for item in request.inputs if item is not candidate
         )
+        advisory = payload.get("evaluation_purpose") == "AUTHOR_ADVISORY"
+        if advisory:
+            _require_author_advisory_target(getattr(self.execution_port, "database_url", ""),
+                project_id=request.project_id, book_id=str(payload.get("book_id") or ""),
+                asset_version_id=candidate_id, content_hash=candidate_hash)
+            if execution_class != "MODEL_PROVIDER" or payload.get("reference_evaluation"):
+                raise KernelError("AUTHOR_ADVISORY_REVIEW_INVALID", "Advisory review requires governed real production evidence")
         reference = None
         if payload.get("reference_evaluation"):
             if execution_class != "MODEL_PROVIDER" or candidate.content.get("routing_eligibility") != "BENCHMARK_ONLY":
@@ -585,6 +608,7 @@ class NarrativeSemanticEvaluationHandler:
                 "evaluation_attempt_id": request.attempt_id,
                 "provider_evidence": provider_evidence,
                 **({"reference_evaluation": reference_result} if reference_result else {}),
+                **({"evaluation_purpose": "AUTHOR_ADVISORY"} if advisory else {}),
                 "provider_evidence_hash": (
                     provider_result.provider_evidence_hash
                     if provider_result is not None
@@ -609,6 +633,8 @@ class NarrativeSemanticEvaluationHandler:
             role="qualification_evidence",
             content={
                 "schema_version": "narrative-design-evaluation.v1",
+                **({"evaluation_purpose": "AUTHOR_ADVISORY", "production_qualification_eligible": False,
+                    "literary_qualification": "NOT_PROVEN", "author_disposition_required": True} if advisory else {}),
                 **({"reference_evaluation": reference_result,
                     "routing_eligibility": "BENCHMARK_ONLY",
                     "production_qualification_eligible": False} if reference_result else {}),
@@ -628,6 +654,7 @@ class NarrativeSemanticEvaluationHandler:
                 "provider_evidence": provider_evidence,
                 "provider_execution": (
                     {
+                        **({"cross_model_review": dict(provider_result.cross_model_review)} if provider_result.cross_model_review else {}),
                         "provider_id": provider_result.provider_id,
                         "model_id": provider_result.model_id,
                         "route_snapshot_id": provider_result.route_snapshot_id,
@@ -642,10 +669,11 @@ class NarrativeSemanticEvaluationHandler:
                     else {}
                 ),
             },
-            qualification_policy="independent-narrative-evaluation-v1",
+            qualification_policy="author-advisory-review-v1" if advisory else "independent-narrative-evaluation-v1",
             reference_asset_version_ids=reference_asset_version_ids,
             evidence={
-                "independent_from_generation": True,
+                "independent_from_generation": not advisory,
+                **({"evaluation_purpose": "AUTHOR_ADVISORY", "independent_literary_qualification": "NOT_PROVEN"} if advisory else {}),
                 "evaluation_attempt_id": request.attempt_id,
                 "evaluation_evidence_hash": evidence_hash,
             },
@@ -742,6 +770,7 @@ class NarrativeSemanticEvaluationHandler:
             and source_content.get("evaluation_operation_id") == source_operation_id
             and source_content.get("evaluation_attempt_id") == source_attempt_id
             and source_content.get("evaluator_execution_class") == "MODEL_PROVIDER"
+            and source_content.get("evaluation_purpose") == request.command["payload"].get("evaluation_purpose")
             and source_content.get("provider_evidence_asset_version_ids")
             == [model.asset_version_id]
             and source_content.get("provider_evidence")
@@ -797,7 +826,7 @@ class NarrativeSemanticEvaluationHandler:
             output_key="story_design.semantic_evaluation",
             role="qualification_evidence",
             content=projected,
-            qualification_policy="independent-narrative-evaluation-v1",
+            qualification_policy="author-advisory-review-v1" if source_content.get("evaluation_purpose") == "AUTHOR_ADVISORY" else "independent-narrative-evaluation-v1",
             reference_asset_version_ids=(
                 candidate.asset_version_id,
                 model.asset_version_id,
@@ -805,7 +834,7 @@ class NarrativeSemanticEvaluationHandler:
                 source.asset_version_id,
             ),
             evidence={
-                "independent_from_generation": True,
+                "independent_from_generation": source_content.get("evaluation_purpose") != "AUTHOR_ADVISORY",
                 "durable_success_replay": True,
                 "source_evaluation_asset_version_id": source.asset_version_id,
                 "bundle_hash": bundle_hash,
@@ -968,6 +997,10 @@ class NarrativeSemanticEvaluationApplication:
         if not command.routing_bootstrap_authorization_id:
             raise ValueError("reference preparation requires an explicit grant identity")
         candidate = self._require_candidate(command)
+        if command.author_supervised_review:
+            _require_author_advisory_target(self.database_url, project_id=command.project_id,
+                book_id=command.book_id, asset_version_id=command.candidate_asset_version_id,
+                content_hash=command.candidate_content_hash)
         if candidate["content"].get("routing_eligibility") != "BENCHMARK_ONLY":
             raise KernelError("NARRATIVE_REFERENCE_TARGET_FORBIDDEN",
                               "reference sampling requires an isolated benchmark candidate")
@@ -1098,7 +1131,8 @@ class NarrativeSemanticEvaluationApplication:
                 self._lock_candidate(uow, project_id=command.project_id,
                                      candidate_asset_version_id=command.candidate_asset_version_id)
                 self._require_candidate_in_uow(uow, command)
-                self._validate_reference_predecessor(uow, command, admission_command["input"]["payload"])
+                if reference_sampling:
+                    self._validate_reference_predecessor(uow, command, admission_command["input"]["payload"])
                 admitted = admit_command_in_uow(uow, admission_command,
                                                 context=self._admission_context(command.actor_id))
                 uow.commit()
@@ -1251,7 +1285,10 @@ class NarrativeSemanticEvaluationApplication:
                 (content.get("provider_execution") or {}).get("route_snapshot_id") or ""
             ),
         )
-        if command.routing_bootstrap_authorization_id:
+        if command.author_supervised_review:
+            if content.get("evaluation_purpose") != "AUTHOR_ADVISORY" or content.get("production_qualification_eligible") is not False:
+                raise KernelError("AUTHOR_ADVISORY_REVIEW_INVALID", "Advisory receipt must retain its non-qualification boundary")
+        elif command.routing_bootstrap_authorization_id:
             if content.get("production_qualification_eligible") is not False or not content.get("reference_evaluation"):
                 raise KernelError("NARRATIVE_REFERENCE_RESULT_INVALID",
                                   "reference evaluation must retain its non-production evidence boundary")
@@ -3458,6 +3495,12 @@ class NarrativeSemanticEvaluationApplication:
                 and str(row[13] or "") == command.generator_operation_name
                 and str(row[14] or "") == command.generation_operation_id
             )
+        if command.author_supervised_review:
+            from .author_supervision import candidate_supervision
+            supervision = candidate_supervision(uow.cursor, project_id=command.project_id, asset_version_id=command.candidate_asset_version_id)
+            pending = bool(supervision and supervision.get("route_decision_id")
+                           and supervision.get("book_id") == command.book_id
+                           and supervision.get("content_hash") == command.candidate_content_hash)
         if not pending and not lineage_exists:
             raise KernelError(
                 "NARRATIVE_EVALUATION_CANDIDATE_NOT_PENDING",
@@ -3517,6 +3560,8 @@ class NarrativeSemanticEvaluationApplication:
         lineage: NarrativeEvaluationLineage,
         result: NarrativeQualificationResult,
     ) -> None:
+        if command.author_supervised_review:
+            raise KernelError("AUTHOR_ADVISORY_CANNOT_QUALIFY", "Model advice cannot create independent qualification")
         with AuthorityUnitOfWork(self.database_url) as uow:
             for receipt in result.receipts:
                 qualification_id = _canonical_hash(
