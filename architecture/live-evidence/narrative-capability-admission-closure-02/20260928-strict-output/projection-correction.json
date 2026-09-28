@@ -1,0 +1,23 @@
+{
+  "observed_at": "2026-09-28T03:03:15.179559+00:00",
+  "file": "task-routing.json",
+  "prior_commit": "81702f4e8722aa77ac6d32b8779eab236dbe5e69",
+  "prior_hash": "sha256:bab992272b53f87201d2891fb7c25da53ae895d3f0600b320c54f62fdbed6ee5",
+  "corrected_hash": "sha256:1f666b16ab0db10254c5d8f1167bb14a110da37ae5e84c1548117c0e6cdff69a",
+  "reason": "Task rows and model-usage.json included the seventh call, but copied model-summary fields still described six calls. Synchronize projection from native usage evidence. No new call, cost, qualification or business mutation.",
+  "changed_values": {
+    "deepseek_calls": [
+      4,
+      5
+    ],
+    "deepseek_tokens": [
+      33659,
+      43334
+    ],
+    "deepseek_failures": [
+      3,
+      4
+    ]
+  },
+  "source": "model-usage.json"
+}

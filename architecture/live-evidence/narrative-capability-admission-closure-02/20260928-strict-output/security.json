@@ -26,7 +26,7 @@
     "runtime-observation.json": "sha256:20441bc423180a1edb6c3d672d0690d73a0fa5b48569b210eb619e75131c9f5e",
     "author-browser.json": "sha256:55d60702f4822dc4cbcb228a5ed103bf2ddb7714f26854a1de7366eacb8dd63b",
     "predispatch-attempt.json": "sha256:447f69fcacc8b8f33a30d421be2fa60b0271dc26018c22a681554aed50d7cf04",
-    "task-routing.json": "sha256:bab992272b53f87201d2891fb7c25da53ae895d3f0600b320c54f62fdbed6ee5",
+    "task-routing.json": "sha256:1f666b16ab0db10254c5d8f1167bb14a110da37ae5e84c1548117c0e6cdff69a",
     "status.json": "sha256:d2c986696a12086e10247c2d28468429b56901acfb2a00ebc2a75b1216deec16",
     "failure-lineage.json": "sha256:987722c74c67b083d52a5be5bc5b16fbaf805652a9c8195f012b8c374a5b33bc",
     "logs/wp02-strict-retention-documentation-final.log": "sha256:44b493d6fa2d107b723261bff529bdff015c5c90e88042abac87c20de5b1bc5d",
@@ -56,7 +56,8 @@
     "logs/wp02-strict-planning-integration-v2.log": "sha256:61a64d31141cf4ea026d0ff032076db76b7614610bb5de41f8d3bf026ddd76f9",
     "logs/pack-strict-router.log": "sha256:2fa0a4d2d5e355485c79a82f9aac494af44b89c41cdf09e21f3b63b719b4d0f6",
     "logs/wp02-strict-unit-first.log": "sha256:ec6f469ae5231b357cee6ed2d0ea8ac03abca2e07b108bbac7d021ca238a4ecf",
-    "logs/author-strict-browser.log": "sha256:dbfc93de91d19c1a011fd1021092546dd863f2e8a66f97876b14ba821dfb9369"
+    "logs/author-strict-browser.log": "sha256:dbfc93de91d19c1a011fd1021092546dd863f2e8a66f97876b14ba821dfb9369",
+    "projection-correction.json": "sha256:a1de49fbc1dfd925e18e62e98baba488e25178520d45f34acfeabb584080b78e"
   },
   "prior_rotation": "../20260928-security-handoff/security.json",
   "prior_shared_redactions": "../20260928-deepseek-json/prior-evidence-redactions.json",
@@ -65,5 +66,6 @@
   "history_boundary": "Two known revoked credential Git blobs remain. No shared history rewrite, force-push, remote-cache purge or backup deletion authorized/performed.",
   "private_root": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/strict-output-20260928",
   "private_permissions": "root0700/environment0600",
-  "redacted_version_relations": "redactions.json"
+  "redacted_version_relations": "redactions.json",
+  "projection_correction": "projection-correction.json; only nonsecret model counts and hashes changed"
 }

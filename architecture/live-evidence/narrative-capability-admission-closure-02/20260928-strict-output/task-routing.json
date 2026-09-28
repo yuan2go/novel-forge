@@ -98,12 +98,12 @@
     },
     "deepseek:deepseek-flash:low": {
       "enabled": true,
-      "real_calls": 4,
-      "tokens": 33659,
+      "real_calls": 5,
+      "tokens": 43334,
       "successes": 1,
-      "failures": 3,
+      "failures": 4,
       "revision": "DeepSeek-V4.1-Flash",
-      "money_estimate_usd": "0.013800414",
+      "money_estimate_usd": "0.019885314",
       "qualification": "BENCHMARK_ONLY; bounded trials stopped; no formal task admission"
     }
   },
