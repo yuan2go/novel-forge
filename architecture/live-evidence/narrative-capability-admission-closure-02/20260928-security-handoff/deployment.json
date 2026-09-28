@@ -1,7 +1,7 @@
 {
   "release_sha": "218fb167add04c3f577565c7d6bdf01a3b8ecfbd",
   "release_root": "/tmp/novel-forge-s0-20260928/release-218fb167add0",
-  "database_identity": "novel_forge_first_novel_pilot_test",
+  "database_identity": "novel_forge_[REDACTED:e8fdbecd4179]_test",
   "historical_database_is_not_disposable": true,
   "postgres_container": "novel-forge-first-novel-pilot-data",
   "postgres_port": 61959,

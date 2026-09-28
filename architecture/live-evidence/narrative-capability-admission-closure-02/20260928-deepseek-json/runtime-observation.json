@@ -1,0 +1,213 @@
+{
+  "observed_at": "2026-09-28T01:55:31.271243+00:00",
+  "release_sha": "9605c212d95aa51f2e1c2643cff4d6a8fa51eefe",
+  "process_dispatch_brake": true,
+  "selected_project_effect_states": {
+    "CANCELLED": 2,
+    "FAILED_FINAL": 3,
+    "SUCCEEDED": 3
+  },
+  "story_design_states": [
+    {
+      "lifecycle": "MATERIALIZED",
+      "qualification": "STRUCTURALLY_VALID",
+      "approval": "NOT_REQUESTED",
+      "count": 3
+    }
+  ],
+  "active_packs": [
+    {
+      "project_id": "narrative-closure-02-admission-20260927",
+      "workspace_id": "ws:zheng-deng:sampling:20260927",
+      "book_id": "duanchao-guan-zheng-deng-reference-01",
+      "activation_version": 8,
+      "active_deployment_id": "deployment:diagnostic-handoff:9605c212d95a:wp02-planning-diagnostic-4ccc3aa53044-native-retry"
+    }
+  ],
+  "books": [
+    {
+      "project_id": "narrative-closure-02-admission-20260927",
+      "workspace_id": "ws:zheng-deng:sampling:20260927",
+      "book_id": "duanchao-guan-zheng-deng-reference-01"
+    }
+  ],
+  "selected_and_proposed_projects": {
+    "narrative-closure-02-admission-20260927": 1
+  },
+  "http": {
+    "/health": {
+      "status": 200,
+      "body": {
+        "provider_dispatch_suspended": true,
+        "status": "alive",
+        "storage_authority": "postgresql"
+      }
+    },
+    "/readiness": {
+      "status": 503,
+      "body": {
+        "detail": {
+          "status": "not_ready",
+          "api_ready": false,
+          "runtime_ready": false,
+          "fixture_only": false,
+          "real_provider_qualified": false,
+          "real_provider_proven": false,
+          "longform_proven": false,
+          "production_verified": false,
+          "runtime_profile": "full",
+          "postgresql": {
+            "authority": true,
+            "reachable": true,
+            "migration_head": "20260927_0147_runtime_job_dispatch_pause",
+            "migration_chain_current": true,
+            "pool": {
+              "status": "ready",
+              "role": "api",
+              "service": "novel-forge-api",
+              "latency_ms": 2.515,
+              "pool_size": 3,
+              "pool_available": 2,
+              "pool_in_use": 0,
+              "pool_waiting": 0,
+              "pool_max_size": 8,
+              "session": {
+                "application_name": "novel-forge-api",
+                "statement_timeout": "30s",
+                "lock_timeout": "5s",
+                "idle_in_transaction_session_timeout": "30s"
+              },
+              "metrics": {
+                "connection_acquire_count": 9.0,
+                "connection_acquire_latency_ms": 6.878832093207166,
+                "transaction_count": 0,
+                "transaction_duration_ms": 0.0,
+                "transaction_rollback_count": 0,
+                "database_retry_count": 0,
+                "statement_timeout_count": 0,
+                "deadlock_count": 0,
+                "serialization_failure_count": 0,
+                "idle_in_transaction_detected": 0,
+                "long_transaction_count": 0,
+                "query_failure_count": 0,
+                "rollback_count": 0,
+                "retry_count": 0,
+                "timeout_count": 0
+              }
+            },
+            "connection_budget": {
+              "postgres_max_connections": 100,
+              "management_reserve": 10,
+              "migration_reserve": 2,
+              "emergency_reserve": 5,
+              "application_capacity": 83,
+              "allocations": {
+                "api": 8,
+                "agent": 4,
+                "chapter": 4,
+                "content": 4,
+                "source": 3,
+                "mkaos": 3,
+                "book": 3,
+                "book_followup": 3,
+                "outbox": 2,
+                "maintenance": 2
+              },
+              "application_max_connections": 36,
+              "within_budget": true
+            },
+            "error": ""
+          },
+          "object_store": {
+            "configured": true,
+            "reachable": true,
+            "error": ""
+          },
+          "operation_definitions": {
+            "chapter_handler_count": 22,
+            "content_definition_count": 68,
+            "agent_runtime_definition_count": 4
+          },
+          "runtime_groups": {
+            "registered": [
+              "agent",
+              "chapter",
+              "content",
+              "source",
+              "source_import",
+              "mkaos",
+              "book",
+              "book_followup",
+              "outbox",
+              "maintenance"
+            ],
+            "registration_status": "REGISTERED",
+            "heartbeat_status_endpoint": "/runtime/readiness"
+          },
+          "provider": {
+            "status": "ROUTE_BUILT",
+            "route_buildable": true,
+            "runtime_classes": [
+              "REMOTE_PROVIDER_API"
+            ],
+            "real_provider_qualified": false,
+            "real_provider_proven": false
+          },
+          "capability_pack": {
+            "ok": true,
+            "pack_id": "chapter_generation_pack",
+            "pack_version": "2.3.3",
+            "manifest_hash": "sha256:9a97f5eb361306be4ac6af6c3938d17b96e3f0530e1f6c06c1f626c5a2194f33",
+            "compilation_hash": "sha256:60188ab2cad316c494a954c1f427fe2674de6589e346f001c8a3b44054a5fa6b",
+            "errors": [],
+            "compilable": true,
+            "activation_required": true,
+            "activation_checked": true,
+            "activation_ready": false,
+            "activation_error": ""
+          },
+          "provider_dispatch_suspended": true
+        }
+      }
+    },
+    "/product/projects": {
+      "status": 200,
+      "body": [
+        {
+          "project_id": "narrative-closure-02-admission-20260927",
+          "workspace_id": "ws:zheng-deng:sampling:20260927",
+          "title": "断潮关·证灯—独立任务采样",
+          "series_title": "",
+          "book_number": null,
+          "status": "ACTIVE",
+          "stage": "DESIGN",
+          "health": "UNKNOWN",
+          "version": 1,
+          "asset_version_id": "f39fe9dc-89b5-4c2f-9d52-580567b5ba10",
+          "content_hash": "sha256:a0dd5e10c788b43afe9bcf9525ada9d615893579d3147cc901d75f3202b67a6c",
+          "content": {
+            "stage": "DESIGN",
+            "title": "断潮关·证灯—独立任务采样",
+            "config": {},
+            "health": "UNKNOWN",
+            "status": "ACTIVE",
+            "project_id": "narrative-closure-02-admission-20260927",
+            "book_number": null,
+            "series_title": "",
+            "workspace_id": "ws:zheng-deng:sampling:20260927",
+            "schema_version": "project-authority.v1"
+          },
+          "created_by_operation_id": "0525e78a-f99e-4fc0-aa91-e40fec7de7ca",
+          "last_operation_id": "0525e78a-f99e-4fc0-aa91-e40fec7de7ca",
+          "created_at": "2026-09-27 15:14:46.879676+00:00",
+          "updated_at": "2026-09-27 15:14:46.879676+00:00",
+          "asset_count": 142,
+          "id": "narrative-closure-02-admission-20260927",
+          "path": "authority://project/narrative-closure-02-admission-20260927",
+          "authority_ref": "authority://project/narrative-closure-02-admission-20260927",
+          "project_config": {}
+        }
+      ]
+    }
+  }
+}

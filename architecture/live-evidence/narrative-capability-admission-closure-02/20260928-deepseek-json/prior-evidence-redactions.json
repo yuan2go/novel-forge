@@ -1,0 +1,29 @@
+[
+  {
+    "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260928-security-handoff/deployment.json",
+    "type": "MINIO_ACCESS_IDENTIFIER_EMBEDDED_IN_OPERATIONAL_NAME",
+    "original_hash": "sha256:4b0fe6b2a0a306c6df0f532a442f692ecb7670b56435c1f1b0e60d6101c4b4e5",
+    "redacted_hash": "sha256:698e196065417c904ba7e19893fb84ea6d26a6b83584570798762a37777e5d3a",
+    "private_original_name": "original-shared-security-handoff-deployment.json",
+    "reason": "The prior known-secret scan scope did not redact identifier text embedded in container/runtime names. This is current shared-evidence redaction only, not native ledger alteration or shared Git history rewrite.",
+    "operational_facts_changed": false
+  },
+  {
+    "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260928-security-handoff/ledger-preservation.json",
+    "type": "MINIO_ACCESS_IDENTIFIER_EMBEDDED_IN_OPERATIONAL_NAME",
+    "original_hash": "sha256:b3841b6a2d5dfeec2bdfab84e124e5fb7b7e5e537d7f3381e5930f006ecc7e2d",
+    "redacted_hash": "sha256:c5e793f748b4299318ad0844a022e003423a8a87cc8c7be08f2abd27addf0f4a",
+    "private_original_name": "original-shared-security-handoff-ledger-preservation.json",
+    "reason": "The prior known-secret scan scope did not redact identifier text embedded in container/runtime names. This is current shared-evidence redaction only, not native ledger alteration or shared Git history rewrite.",
+    "operational_facts_changed": false
+  },
+  {
+    "path": "architecture/live-evidence/narrative-capability-admission-closure-02/20260928-security-handoff/security.json",
+    "type": "MINIO_ACCESS_IDENTIFIER_EMBEDDED_IN_OPERATIONAL_NAME",
+    "original_hash": "sha256:af1393ff647c6c4a8e1d52494d140921a1428daeac77f8fcdc108b1c339cba1e",
+    "redacted_hash": "sha256:275c5f7b86b8d866b57d62e31b03735e9f4d1a76d85aaea665baabc4bc940796",
+    "private_original_name": "original-shared-security-handoff-security.json",
+    "reason": "The prior known-secret scan scope did not redact identifier text embedded in container/runtime names. This is current shared-evidence redaction only, not native ledger alteration or shared Git history rewrite.",
+    "operational_facts_changed": false
+  }
+]

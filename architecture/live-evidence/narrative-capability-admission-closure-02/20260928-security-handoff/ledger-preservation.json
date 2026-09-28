@@ -81,7 +81,7 @@
     {
       "schema_version": "runtime-ledger-inspection.v1",
       "database_identity": {
-        "database": "novel_forge_first_novel_pilot_test",
+        "database": "novel_forge_[REDACTED:e8fdbecd4179]_test",
         "role": "novel_forge",
         "address": "172.17.0.2/32",
         "port": 5432,
@@ -162,7 +162,7 @@
     {
       "schema_version": "runtime-ledger-inspection.v1",
       "database_identity": {
-        "database": "novel_forge_first_novel_pilot_test",
+        "database": "novel_forge_[REDACTED:e8fdbecd4179]_test",
         "role": "novel_forge",
         "address": "172.17.0.2/32",
         "port": 5432,

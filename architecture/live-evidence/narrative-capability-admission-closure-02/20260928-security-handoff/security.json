@@ -9,7 +9,7 @@
     "role": "novel_forge",
     "old_fingerprint": "29121bee2cbb",
     "new_fingerprint": "cb93d32bbdaf",
-    "new_connection_database": "novel_forge_first_novel_pilot_test",
+    "new_connection_database": "novel_forge_[REDACTED:e8fdbecd4179]_test",
     "new_connection_role": "novel_forge",
     "new_password_verifier_matches": true,
     "old_password_verifier_matches": false,

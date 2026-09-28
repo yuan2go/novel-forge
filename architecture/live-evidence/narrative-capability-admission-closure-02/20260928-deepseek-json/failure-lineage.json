@@ -1,0 +1,26 @@
+{
+  "earlier_failures": "../20260928-token100k/failure-lineage.json",
+  "continuation_native_failure": "continuation-diagnosis.json",
+  "docs_native_failure": "docs-diagnosis.json",
+  "new_pack_sample_registration": {
+    "first_attempt": "ROUTING_CAMPAIGN_SAMPLE_REDEFINED",
+    "model_calls": 0,
+    "resolution": "New explicit sample version creative-xue-zhan-b:json-docs:v4, same native Book, campaign, group and input. Old frozen sample version retained."
+  },
+  "ui_restart": {
+    "first_attempt": "Turbopack refused dependency symlink outside immutable source root",
+    "resolution": "Existing Next webpack mode; no application or permission gate changed",
+    "result": "Actual read-only browser PASS"
+  },
+  "read_only_observer": {
+    "first_attempt": "Inherited HTTP proxy disconnected local request; no business write",
+    "second_attempt": "Wrong health/API route guesses returned 404; original evidence retained",
+    "resolution": "Explicit no-proxy loopback request to registered /readiness and /product/projects, returned 503 and 200 respectively"
+  },
+  "unit_first_attempts": {
+    "collection": "Wrong editable source root, rerun with correct root",
+    "assertion": "Test expected price arithmetic corrected to exact frozen tariff calculation; production parser behavior unchanged",
+    "final": "39 passed"
+  },
+  "original_raw_output_gap": "First malformed DeepSeek output at release90e was not retained and cannot be reconstructed. Latest two failures retain exact final text."
+}

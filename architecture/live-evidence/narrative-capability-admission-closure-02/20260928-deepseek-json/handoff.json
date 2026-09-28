@@ -1,0 +1,40 @@
+{
+  "money_authorization_missing": false,
+  "cumulative_deepseek_limit_cny": 100,
+  "maximum_tokens_per_call": 100000,
+  "authorization_expires_at": "2026-09-28T05:28:24Z",
+  "finite_trial_state": "STOPPED_FIRST_FAILURE_OR_UNKNOWN",
+  "remaining_conditions": [
+    {
+      "scope": "DeepSeek structured creative output",
+      "class": "REAL_MODEL_OUTPUT_CONTRACT_FAILURE",
+      "required": "Resolve reliable structured-output strategy with an explicitly frozen compatible request/Producer and bounded successor authorization. Current JSON-mode example trial failed. Do not fix invalid JSON locally and relabel it as provider success; do not repeat identical terminal request.",
+      "money_is_not_the_blocker": true
+    },
+    {
+      "scope": "Task-level subjective production qualification",
+      "class": "EXTERNAL_REFERENCE_INPUT_AND_QUALIFICATION_GAP",
+      "required": "Actual authenticated independent reference records under native-generator-quality.v1: two independent human reviewers per adjudication and independent adjudicator, exact criteria/sample hashes, then required independent evaluator/cohort admission. Existing local operator alone is not two reviewers. No labels have been supplied. Initial legal diagnostics were already run without requiring humans first.",
+      "author_ui": "http://127.0.0.1:3142/production",
+      "project": "narrative-closure-02-admission-20260927",
+      "book": "duanchao-guan-zheng-deng-reference-01",
+      "panel": "真实样本人工评阅",
+      "model_voting_not_human_ground_truth": true
+    },
+    {
+      "scope": "Real same-Book prose and editing",
+      "class": "UPSTREAM_APPROVED_INPUT_DEPENDENCY_MISSING",
+      "required": "Qualified tasks and author-approved same-Book foundation via Formation, then native plan/window/chapter inputs. Existing benchmark outputs cannot be activated. No cross-book copies, hand-written model output or synthetic acceptance."
+    }
+  ],
+  "normal_author_operation": "Select project and existing Book; exact samples display automatically with server-owned identity. Human reviewer can draft annotations, save under original idempotency key, and recover request status. No SQL or handwritten asset identity required.",
+  "deployed_release": "9605c212d95aa51f2e1c2643cff4d6a8fa51eefe",
+  "private_restart_root": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/deepseek-docs-20260928",
+  "restart_api": "Use private run_private_author.py with live_api_final.py, existing project and process pause retained. API port8141.",
+  "restart_ui": "From immutable release web/admin: NEXT_PUBLIC_NOVEL_FORGE_API_URL=http://127.0.0.1:8141 node node_modules/next/dist/bin/next dev --webpack --hostname 127.0.0.1 --port 3142.",
+  "resume": "Do native exact-task preflight for inputs, approval, production qualification or legal diagnostic scope, cumulative budgets and unexpired grants. Authorize only selected new dispatch scope; never globally replay paused queues.",
+  "history": "Previous historical effect is currently FAILED_RETRYABLE with SETTLED reservation; untouched. No selected-project UNKNOWN effect observed.",
+  "push_pr_merge_publish": "NOT_AUTHORIZED_NOT_PERFORMED",
+  "history_rewrite": "NOT_AUTHORIZED_NOT_PERFORMED",
+  "entire_package_complete": false
+}

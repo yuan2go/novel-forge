@@ -1,0 +1,64 @@
+{
+  "schema_version": "wp02-malformed-output-diagnosis.v1",
+  "operation_id": "84d5ae6b-f456-4cc8-9823-1088b31f89b0",
+  "effect_id": "8bb574fb-3daa-45f2-a68c-7555dc4af83c",
+  "raw_final_text_sha256": "sha256:53fd649e6d57b1099d46b98085bd7930de4ed822e433a7bb68489ec4c7015f18",
+  "json_error": {
+    "message": "Extra data",
+    "line": 2,
+    "column": 1,
+    "offset": 23
+  },
+  "leading_object": {
+    "type": "json_object"
+  },
+  "trailing_object_schema_validation": "PASSED_STRUCTURAL_ONLY",
+  "inference": "The retained response repeats the API response_format descriptor as a separate JSON object before its task output. Origin of this prefix in provider generation is not established.",
+  "candidate_promoted": false,
+  "candidate_repaired": false,
+  "usage": {
+    "measurement": "PROVIDER_REPORTED",
+    "availability": "AVAILABLE",
+    "input_tokens": 5363,
+    "total_tokens": 8791,
+    "output_tokens": 3428,
+    "reasoning_tokens": 1630,
+    "cache_usage_status": "OBSERVED",
+    "prompt_cache_hit_tokens": 3328,
+    "prompt_cache_miss_tokens": 2035
+  },
+  "cost": {
+    "amount": "0.004744068",
+    "source": "usage_pricing",
+    "currency": "USD",
+    "estimated": true,
+    "measurement": "PRICED_FROM_PROVIDER_USAGE",
+    "availability": "AVAILABLE",
+    "pricing_period": "PEAK",
+    "pricing_version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+    "provider_billed": false,
+    "accounting_basis": "PRICED",
+    "pricing_snapshot": {
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "version": "deepseek-scheduled-peak-ceiling:2026-09-10T04:00:00+00:00:deepseek-flash",
+      "currency": "USD",
+      "effective_from": "2026-09-10T04:00:00+00:00",
+      "effective_until": "9999-12-31T23:59:59+00:00",
+      "accounting_basis": "PRICED",
+      "output_per_million": "1.2",
+      "input_hit_per_million": ".006",
+      "input_miss_per_million": ".3"
+    },
+    "pricing_multiplier": "1",
+    "pricing_time_basis": "PROVIDER_CREATED_ASSUMPTION",
+    "provider_created_at": "2026-09-28T01:30:56+00:00",
+    "pricing_snapshot_hash": "sha256:fc855d9c324cefa5bcfba5866a5c9f466d3cdc64c7c7f85672e0d139f1edd6b4",
+    "provider_billed_amount": null,
+    "reservation_ceiling_amount": "0.004744068"
+  },
+  "pack_release": "fb360dfc6d94b4458eed990e606911bf74d9f39d",
+  "prompt_hash": "sha256:9586eeca9fd5a28c9ab00e57c6d10d488f8d7ffb2b98e967a3de9aaee9afabc5",
+  "format_descriptor_in_prompt": false,
+  "native_budget_status": "SETTLED",
+  "control": "PAUSED"
+}

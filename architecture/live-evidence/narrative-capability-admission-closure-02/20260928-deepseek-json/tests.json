@@ -1,0 +1,56 @@
+{
+  "implementation_sha": "9605c212d95aa51f2e1c2643cff4d6a8fa51eefe",
+  "unit": {
+    "command": "python /tmp/novel-forge-real-prose-20260927/test-run.py tests/unit/test_deepseek_provider.py tests/unit/test_longform_capability_pack_profiles.py -q",
+    "passed": 39,
+    "log": "logs/deepseek-docs-unit.log"
+  },
+  "reference_browser": {
+    "command": "node web/admin/tests/author-reference-review-browser.mjs",
+    "scenarios": [
+      "NETWORK",
+      "422",
+      "409",
+      "FAILED_FINAL",
+      "ABSENT",
+      "AMBIGUOUS",
+      "QUOTE_MISMATCH"
+    ],
+    "result": "PASS",
+    "api_doubles": true,
+    "model_calls": 0
+  },
+  "formation_browser": {
+    "command": "node web/admin/tests/formation-review-browser.mjs",
+    "scenarios": [
+      "NETWORK",
+      "AMBIGUOUS_CONFLICT",
+      "FORBIDDEN_AFTER_DECISION",
+      "VERSION_CONFLICT"
+    ],
+    "result": "PASS",
+    "nonfirst_candidate_choice": true,
+    "response_loss_original_key_retained": true,
+    "api_doubles": true
+  },
+  "typecheck": {
+    "command": "web/admin/node_modules/.bin/tsc --project web/admin/tsconfig.json --noEmit",
+    "exit_code": 0
+  },
+  "documentation_reality": {
+    "command": "python -m novel_forge.tools.documentation_reality --repo-root .",
+    "result": "PASS",
+    "log": "logs/docs-adjustment-documentation-final.log"
+  },
+  "live_browser": "author-browser.json",
+  "actual_native_pack_handoff": "reviewable-pack.json",
+  "actual_deepseek_call": "docs-native-receipt.json; FAILED_FINAL is not a PASS",
+  "stable_previous_evidence": [
+    "../20260928-token100k/tests.json",
+    "../20260928-security-handoff/tests.json"
+  ],
+  "new_migration": "NOT_APPLICABLE",
+  "full_backend_postgres_ui_remote_ci": "NOT_RUN",
+  "isolated_test_database_only": true,
+  "no_mixed_release_full_chain_pass": true
+}
