@@ -1,0 +1,1 @@
+{"status":"PASS","evidence_kind":"BROWSER_WITH_ISOLATED_API_DOUBLES","checks":["cross-model review entry","confirmed policy conflict retained and reconfirmed against refreshed version","lost response keeps original idempotency key","unresolved model finding blocks approval","disposition survives reload","exact target and finding submitted"],"real_model_calls":0}

@@ -1,0 +1,35 @@
+TypeError: Cannot read properties of undefined (reading 'failed_task_count')
+    at ConsoleShell (webpack-internal:///(app-pages-browser)/./app/shared/console-shell.tsx:38:46)
+    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/../../../../../../../../Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:28242:20)
+    at renderWithHooks (webpack-internal:///(app-pages-browser)/../../../../../../../../Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:7926:22)
+    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/../../../../../../../../Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10443:19)
+    at beginWork (webpack-internal:///(app-pages-browser)/../../../../../../../../Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:12113:18)
+    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/../../../../../../../../Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:987:30)
+    at performUnitOfWork (webpack-internal:///(app-pages-browser)/../../../../../../../../Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18989:22)
+    at workLoopSync (webpack-internal:///(app-pages-browser)/../../../../../../../../Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18817:41)
+    at renderRootSync (webpack-internal:///(app-pages-browser)/../../../../../../../../Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18798:11)
+    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/../../../../../../../../Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:17903:35)
+    at performWorkOnRootViaSchedulerTask (webpack-internal:///(app-pages-browser)/../../../../../../../../Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:20472:7)
+    at MessagePort.performWorkUntilDeadline (webpack-internal:///(app-pages-browser)/../../../../../../../../Volumes/DevSSD/Development/Workspace/projects/novel-forge/web/admin/node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:45:48)
+This page couldn’t load
+
+Reload to try again, or go back.
+
+Reload
+Back
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('section').filter({ has: getByRole('heading', { name: '作者监督试生产', exact: true }) }).getByRole('button', { name: '请求另一模型复核此版本', exact: true }) to be visible[22m
+
+    at /Users/yuan/.codex/worktrees/real-prose-author-entry/novel-forge/web/admin/tests/author-supervision-browser.mjs:37:67 {
+  log: [
+    "  - waiting for locator('section').filter({ has: getByRole('heading', { name: '作者监督试生产', exact: true }) }).getByRole('button', { name: '请求另一模型复核此版本', exact: true }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v26.3.1

@@ -1,0 +1,113 @@
+{
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "status": "INCOMPLETE",
+  "observed_at": "2026-09-28T05:34:13.664097+00:00",
+  "initial_baseline_sha": "e9e6e2980f744ff69ac608d4ccce0ea6122441d3",
+  "baseline_sha": "ab11cb0b3501726b531b38e7e66c170525f6094e",
+  "baseline_update": "origin/main merged PR105; its tree exactly equals prior HEAD5bbb5ebe; fast-forward preserved all current edits",
+  "final_implementation_sha": "f4334b7d53bfb3f1048a0798f8e8ef031bc0da6c",
+  "deployed_sha": "b272b43da5f245987e44e0930fa0913a6ea50154",
+  "changes_pushed": false,
+  "production_migration": "20260927_0147_runtime_job_dispatch_pause",
+  "isolated_test_migration": "20260928_0148_author_supervised_design",
+  "rows": [
+    {
+      "id": "S0",
+      "state": "CURRENT_SHARED_SCAN",
+      "current_evidence": "Known revoked historical Git blobs retained; private replacement used for read-only observation.",
+      "owner": "Existing credential management / evidence export",
+      "action": "No login using disclosed credentials; redact logs and protect private originals.",
+      "acceptance_and_remaining": "This turn did not rotate credentials again; no shared-history rewrite."
+    },
+    {
+      "id": "A1",
+      "state": "NOT_PROVEN",
+      "current_evidence": "Live read found no prose assets and no proposed production Book.",
+      "owner": "Formation / Chapter / Book acceptance / edition",
+      "action": "Add scoped supervised design input and native approval path.",
+      "acceptance_and_remaining": "No real draft, revision, acceptance, edition or successor prose. Joint new-mode production chain NOT_RUN."
+    },
+    {
+      "id": "A2",
+      "state": "WIRED",
+      "current_evidence": "Existing Pack 2.3.14 activation 11 remains bound to b272b43d; new code not deployed.",
+      "owner": "Router / Pack / Kernel / policy authority",
+      "action": "Finite exact Book/task/Producer/model grants; cross-model advice cannot qualify.",
+      "acceptance_and_remaining": "294 focused checks pass. Production assembly and governed cross-model call NOT_RUN; original authorization expired 2026-09-28T05:28:24Z."
+    },
+    {
+      "id": "A3",
+      "state": "NO_INCREMENT",
+      "current_evidence": "No export/reservation code changed.",
+      "owner": "Export delivery / asset blob reservations",
+      "action": "Retain prior isolated export evidence without rerunning unrelated tests.",
+      "acceptance_and_remaining": "No new real manuscript export claimed."
+    },
+    {
+      "id": "A4",
+      "state": "WIRED",
+      "current_evidence": "Native API and author panel resolve exact candidate, evaluator and original creative input.",
+      "owner": "Existing Book API / Planning / Content Authority / production panels",
+      "action": "Cross-model review entry, per-finding dispositions, original-direction selection, retry and policy conflict recovery.",
+      "acceptance_and_remaining": "Isolated browser PASS; native author input approval and Formation consumption PASS; deployed full author journey NOT_RUN."
+    },
+    {
+      "id": "A5",
+      "state": "EXECUTABLE",
+      "current_evidence": "New scoped native policy and old frozen route replay tests pass.",
+      "owner": "Provider Routing policy / input snapshots / Book control",
+      "action": "Strict default remains; trial snapshot admission distinct; existing frozen requests retain their purpose and scope.",
+      "acceptance_and_remaining": "Fresh/upgrade migration test PASS on isolated PostgreSQL; selected deployment remains migration 0147."
+    },
+    {
+      "id": "A6",
+      "state": "WIRED",
+      "current_evidence": "Exact non-PASS semantic model findings require native author disposition.",
+      "owner": "Semantic Evaluation / Story Design / existing Chapter Quality and Canon",
+      "action": "Preserve exact target/model receipts and native recovery; no independent qualification rows from AUTHOR_ADVISORY.",
+      "acceptance_and_remaining": "No real finding or textual revision yet. Canon support remains fail-closed on structural/grounding errors."
+    },
+    {
+      "id": "A7",
+      "state": "NOT_PROVEN",
+      "current_evidence": "No exact before/after prose pair.",
+      "owner": "Editorial findings / author disposition / Chapter Quality",
+      "action": "Keep model advice distinct from author judgment and independent literary evidence.",
+      "acceptance_and_remaining": "Precision, misses, overrevision and benefit denominators unavailable; no 0% or causal quality claim."
+    },
+    {
+      "id": "A8",
+      "state": "EXECUTABLE",
+      "current_evidence": "Three diagnostic candidates remain BENCHMARK_ONLY; no source or ID promotion.",
+      "owner": "Formation REVIEW_PLAN / Content and Story Design Authorities",
+      "action": "Formation v3 consumes exact approved original author direction without another creative generation.",
+      "acceptance_and_remaining": "Native isolated test reaches THEME_CONTRACT with zero model calls; actual story-direction confirmation pending."
+    },
+    {
+      "id": "A9",
+      "state": "NOT_PROVEN",
+      "current_evidence": "Historical real-call tokens retained; no new request or long-range text.",
+      "owner": "Context / Producer compatibility / routing qualifications",
+      "action": "Do not expand context or rebuild all cohorts; mixed receipts can retain strict qualification without relabeling.",
+      "acceptance_and_remaining": "Mixed-receipt positive real-qualification integration and long-range behavior not proven."
+    }
+  ],
+  "this_turn_real_model_calls": 0,
+  "whole_package_complete": false,
+  "engineering_remaining": [
+    "Undeployed new release requires actual no-dispatch API/worker assembly and compatible native Pack deployment; old approval does not authorize a new release SHA.",
+    "End-to-end supervised Book input -> Chapter -> Canon/Book acceptance -> edition -> successor has not run.",
+    "Real governed cross-model review, actual manuscript and editorial benefit remain unverified."
+  ],
+  "external_inputs": [
+    "Exact original story-direction confirmation through author input; diagnostic assets cannot substitute.",
+    "Current code uses model advice with author dispute disposition. Automatic author-approval substitution is not enabled.",
+    "Original runtime budget authorization expired; renewal must explicitly retain cumulative usage/caps and specify expiry and scoped tasks before any new dispatch."
+  ],
+  "unchanged_boundaries": [
+    "No Pack reapproval or activation this turn",
+    "No old queue replay, UNKNOWN release, new campaign or benchmark promotion",
+    "No DeepSeek format experiments or creative candidate retries",
+    "No publication or remote push/merge"
+  ]
+}

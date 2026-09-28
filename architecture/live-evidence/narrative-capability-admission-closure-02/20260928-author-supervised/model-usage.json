@@ -1,0 +1,38 @@
+{
+  "observed_at": "2026-09-28T05:34:13.664097+00:00",
+  "this_turn": {
+    "real_runtime_calls": 0,
+    "runtime_tokens": 0,
+    "new_runtime_charge": 0,
+    "new_account_query_calls": 0
+  },
+  "historical_receipt_source": "../20260928-strict-output/model-usage.json",
+  "historical_real_calls": 7,
+  "historical_runtime_tokens": 83008,
+  "codex": {
+    "calls": 2,
+    "tokens": 39674,
+    "money": "UNKNOWN",
+    "basis": "ACCOUNT_ENTITLEMENT"
+  },
+  "deepseek": {
+    "calls": 5,
+    "tokens": 43334,
+    "estimated_usd": "0.019885314",
+    "estimated_cny": "0.132568760",
+    "not_invoice": true,
+    "successful_diagnostic_candidates": 1,
+    "failed_calls": 4
+  },
+  "authorization_ceiling_cny": 100,
+  "per_call_token_ceiling": 100000,
+  "authorization_expires_at": "2026-09-28T05:28:24Z",
+  "authorization_current_state": "EXPIRED",
+  "ceilings_are_not_consumption": true,
+  "development_agent": {
+    "tokens": "UNKNOWN",
+    "money": "UNKNOWN",
+    "included_in_runtime_totals": false
+  },
+  "history_and_unknown": "No writes to historical Effects, holds or campaign totals; paused sampling retained."
+}

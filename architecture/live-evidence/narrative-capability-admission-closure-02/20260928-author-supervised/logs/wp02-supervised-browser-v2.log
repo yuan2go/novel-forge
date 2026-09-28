@@ -1,0 +1,22 @@
+This page couldn’t load
+
+Reload to try again, or go back.
+
+Reload
+Back
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('section').filter({ has: getByRole('heading', { name: '作者监督试生产', exact: true }) }).getByRole('button', { name: '请求另一模型复核此版本', exact: true }) to be visible[22m
+
+    at /Users/yuan/.codex/worktrees/real-prose-author-entry/novel-forge/web/admin/tests/author-supervision-browser.mjs:37:67 {
+  log: [
+    "  - waiting for locator('section').filter({ has: getByRole('heading', { name: '作者监督试生产', exact: true }) }).getByRole('button', { name: '请求另一模型复核此版本', exact: true }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v26.3.1

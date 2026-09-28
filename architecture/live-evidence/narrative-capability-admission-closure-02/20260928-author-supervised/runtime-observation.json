@@ -1,0 +1,57 @@
+{
+  "observed_at": "2026-09-28T05:07:46.696025+00:00",
+  "mutation": false,
+  "credential": "verified replacement private configuration",
+  "database": "novel_forge_first_novel_pilot_test",
+  "migrations": "20260927_0147_runtime_job_dispatch_pause",
+  "effects": [
+    {
+      "project_id": "narrative-closure-02-admission-20260927",
+      "model_id": "deepseek-flash",
+      "status": "FAILED_FINAL",
+      "count": 4
+    },
+    {
+      "project_id": "narrative-closure-02-admission-20260927",
+      "model_id": "deepseek-flash",
+      "status": "SUCCEEDED",
+      "count": 1
+    },
+    {
+      "project_id": "narrative-closure-02-admission-20260927",
+      "model_id": "gpt-6-sol",
+      "status": "CANCELLED",
+      "count": 2
+    },
+    {
+      "project_id": "narrative-closure-02-admission-20260927",
+      "model_id": "gpt-6-sol",
+      "status": "SUCCEEDED",
+      "count": 2
+    }
+  ],
+  "prose_assets": [],
+  "production_book_count": 0,
+  "real_call_counts": [
+    [
+      "deepseek-flash",
+      5
+    ],
+    [
+      "gpt-6-sol",
+      2
+    ]
+  ],
+  "dispatch_control": [
+    [
+      "first-novel-pilot-20260912",
+      "PAUSED",
+      1
+    ],
+    [
+      "narrative-closure-02-admission-20260927",
+      "PAUSED",
+      27
+    ]
+  ]
+}

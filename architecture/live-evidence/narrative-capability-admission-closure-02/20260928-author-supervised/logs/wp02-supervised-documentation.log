@@ -1,0 +1,26 @@
+{
+  "canonical_document_count": 5,
+  "capability_count": 25,
+  "comment_ratchet": {
+    "base_script_comment_count": 13,
+    "base_sha": "5bbb5ebe0d0f2387193fd37ee46bc990787bee33",
+    "base_source_comment_count": 512,
+    "base_source_docstring_count": 122,
+    "base_web_comment_count": 5,
+    "status": "PASS"
+  },
+  "errors": [
+    "current-system projection is stale for the implementation tree",
+    "reality inventory migration_head differs from migration manifest"
+  ],
+  "evidence_class": "reality_inventory",
+  "inventory_sha256": "sha256:11569b8f89b2c50a8d081ae4ca58d16df685b46c4d789fb80c1f137a68d2c144",
+  "module_docstring_count": 35,
+  "schema_version": "novel-forge.documentation-reality-check.v1",
+  "script_comment_count": 13,
+  "source_comment_count": 512,
+  "source_docstring_count": 122,
+  "status": "FAIL",
+  "tested_sha": "5bbb5ebe0d0f2387193fd37ee46bc990787bee33",
+  "web_comment_count": 5
+}

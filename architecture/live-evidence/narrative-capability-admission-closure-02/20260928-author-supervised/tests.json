@@ -1,0 +1,69 @@
+{
+  "matrix": "CHANGE_FOCUSED_ONLY",
+  "implementation_sha": "f4334b7d53bfb3f1048a0798f8e8ef031bc0da6c",
+  "test_database": "nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test",
+  "business_database_excluded": "novel_forge_first_novel_pilot_test",
+  "results": [
+    {
+      "check": "Routing, cross-model, API, Planning, Formation, qualification, Book and native author policy regression",
+      "command": "python /tmp/novel-forge-real-prose-20260927/test-run.py -q tests/unit/test_author_supervised_routing.py tests/unit/test_cross_model_author_review.py tests/unit/test_author_supervision_api.py tests/unit/test_cost_aware_routing.py tests/unit/test_story_planning_runtime.py tests/unit/test_story_formation_authorization.py tests/unit/test_story_design_authority.py tests/unit/test_foundation_hierarchy.py tests/unit/test_narrative_evaluation_context.py tests/unit/test_narrative_evaluation_replacement.py tests/unit/test_narrative_evaluation_replacement_gate.py tests/unit/test_book_production_authority.py tests/integration/test_author_supervised_policy_postgres.py",
+      "result": "294 passed",
+      "log": "logs/wp02-supervised-affected-final.log"
+    },
+    {
+      "check": "Routing after import lint correction",
+      "result": "23 passed",
+      "log": "logs/wp02-supervised-routing-final.log"
+    },
+    {
+      "check": "Native author policy, legacy BookDesign/Formation second-candidate and atomic activation",
+      "result": "11 passed",
+      "log": "logs/wp02-supervised-pg-final.log"
+    },
+    {
+      "check": "Migration fresh / upgrade from0147 / replay",
+      "command": "pytest -q tests/integration/test_author_supervision_migration_postgres.py",
+      "result": "2 passed",
+      "log": "logs/wp02-supervision-migration.log"
+    },
+    {
+      "check": "Browser controls and recovery",
+      "command": "NOVEL_FORGE_WEB_BASE_URL=http://127.0.0.1:3150 node web/admin/tests/author-supervision-browser.mjs",
+      "result": "PASS",
+      "kind": "BROWSER_WITH_ISOLATED_API_DOUBLES",
+      "log": "logs/wp02-supervised-browser-v10.log"
+    },
+    {
+      "check": "TypeScript",
+      "command": "cd web/admin && npm exec -- tsc --noEmit",
+      "result": "PASS",
+      "log": "logs/wp02-supervision-ui-final-v3.log"
+    },
+    {
+      "check": "Changed Python lint",
+      "result": "PASS",
+      "log": "logs/wp02-supervised-lint-v2.log"
+    },
+    {
+      "check": "Documentation / ownership projection",
+      "command": "PYTHONPATH=src python -m novel_forge.tools.documentation_reality --repo-root .",
+      "result": "PASS",
+      "log": "logs/wp02-supervised-documentation-final.log"
+    }
+  ],
+  "counts_are_not_additive": true,
+  "not_run": [
+    "Full P0/backend/PostgreSQL/UI/remote CI",
+    "Production new-mode joint acceptance/edition/successor",
+    "Live governed cross-model Provider call"
+  ],
+  "failures_retained_in": "redactions.json",
+  "failure_explanations": [
+    "Original creative_brief was incorrectly treated as a Foundation parent; source roles fixed and native test rerun.",
+    "Rejection recovery test first imported an incorrect test class name; repaired and rerun.",
+    "Browser fixtures initially omitted global shell data and encoded Formation URL; fixture wiring corrected.",
+    "Browser exposed missing stable labels on populated textarea/select; explicit aria labels added.",
+    "Lint found late import and unused test import; fixed.",
+    "Documentation ratchet rejected one extra comment; self-explanatory code retained without that redundant comment."
+  ]
+}

@@ -1,0 +1,135 @@
+..F                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_book_design_freezes_author_policy_and_activation_consumes_native_decision _
+
+    def test_book_design_freezes_author_policy_and_activation_consumes_native_decision():
+        from novel_forge.modules.book_design_authority import BookDesignAuthorityCommand
+        from novel_forge.modules.book_design_authority.author_supervision import approved_book_design_receipt
+        from tests.integration.test_authority_book_design_postgres import BookDesignAuthorityPostgresTests
+        case = BookDesignAuthorityPostgresTests()
+        case.setUp()
+        case.application.allow_scripted_evaluation_fixture = False
+        author = replace(case.principal, permissions=case.principal.permissions | {"book.authority.execute"})
+        case.principal = author
+        case._book_command("book.create", payload={"schema_version": "book-authority.v1", "title": "Supervised protocol",
+            "production_profile": {}, "runtime_policy": {"silent_fallback": False}, "release_identity": "test@"+"b"*40},
+            idempotency_key=case.book_id+":create")
+        book = case.query.require_book(project_id=case.project_id, book_id=case.book_id)
+        scope, _ = prepared("creative.candidates.generate")
+        policy = deepcopy(scope.policy_snapshot["policy"])
+        policy["author_supervised_authorizations"][0].update(book_id=case.book_id, author_id=author.principal_id,
+            expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat())
+        configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", content=policy,
+            project_id=case.project_id, workspace_id=case.workspace_id, idempotency_key=case.book_id+":policy",
+            trace_id=case.book_id, correlation_id=case.book_id, application_build_id="book-design-integration", commit_sha="b"*40, principal=author)
+        common = dict(project_id=case.project_id, workspace_id=case.workspace_id, book_id=case.book_id,
+            actor_id=author.principal_id, service_identity="test", expected_book_version=book["version"],
+            trace_id=case.book_id, correlation_id=case.book_id)
+        proposal = BookDesignAuthorityCommand(**common, definition_name="book_design.propose", idempotency_key=case.book_id+":propose", payload=case._evolution_design())
+        candidate = case.application.execute(proposal, principal=author)
+        assert candidate["status"] == "VALIDATED"
+        decision = BookDesignAuthorityCommand(**common, definition_name="book_design.decide", idempotency_key=case.book_id+":decide",
+            target_asset_version_id=candidate["asset_version_id"], payload={"decision": "APPROVE", "reason": "Protocol author reviewed exact design"})
+        with pytest.raises(PermissionError):
+            case.application.execute(replace(decision, actor_id="other"), principal=replace(author, principal_id="other"))
+        case.application.execute(decision, principal=author)
+>       case.application.execute(BookDesignAuthorityCommand(**common, definition_name="book_design.activate", idempotency_key=case.book_id+":activate",
+            target_asset_version_id=candidate["asset_version_id"], payload={"reason": "Select exact author-reviewed design"}), principal=author)
+
+tests/integration/test_author_supervised_policy_postgres.py:156: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/book_design_authority/application.py:285: in execute
+    result = execute_transaction_command(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_url = 'user=novel_forge password=[REDACTED:password] dbname=nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test host=127.0.0.1 port=61959'
+command = {'definition_name': 'book_design.activate', 'definition_version': '1.3.0', 'project_id': 'book-design-project-321e87e5-4fb4-446d-a6ca-fb1333ddd362', 'workspace_id': 'book-design-workspace-59dd5ebe-0e91-47f8-bcb3-68d42b8e8607', ...}
+context = AdmissionContext(actor_id='book-design-operator', permissions=frozenset({'book_design.authority.execute'}), available_....transaction'}), application_build_id='book-design-integration', commit_sha='bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
+handler = <bound method BookDesignAuthorityApplication._execute_transaction of <novel_forge.modules.book_design_authority.application.BookDesignAuthorityApplication object at 0x10ba123f0>>
+fault_injector = None, transaction_guard = None
+
+    def execute_transaction_command(
+        database_url: str,
+        command: dict[str, Any],
+        *,
+        context: AdmissionContext,
+        handler: TransactionHandler,
+        fault_injector: TransactionCheckpoint | None = None,
+        transaction_guard: TransactionGuard | None = None,
+    ) -> dict[str, Any]:
+        """INVARIANT: Execute a short, deterministic command in one PostgreSQL transaction.
+    
+        Transaction commands never create Attempts or Leases. Admission, business
+        state, completion evidence, the replay result, and the terminal Operation
+        transition are committed together. The one post-commit checkpoint models a
+        lost HTTP response and is intentionally outside the transaction.
+        """
+        checkpoint = fault_injector or _noop_checkpoint
+        checkpoint("before_admission")
+        with AuthorityUnitOfWork(database_url) as uow:
+            if transaction_guard is not None:
+                transaction_guard(uow)
+            admitted = admit_command_in_uow(uow, command, context=context)
+            operation_id = str(admitted["operation_id"])
+            if admitted["replayed"]:
+                replay = uow.repositories.operations.transaction_result(
+                    operation_id,
+                    str(command["project_id"]),
+                )
+                if replay["status"] != "SUCCEEDED":
+                    raise KernelError(
+                        "TRANSACTION_COMMAND_INCOMPLETE",
+                        "a persisted transaction command is not terminal; legacy hybrid recovery is required",
+                    )
+                return {
+                    "operation_id": operation_id,
+                    "status": "SUCCEEDED",
+                    **dict(replay["result"]),
+                    "replayed": True,
+                }
+    
+            checkpoint("after_admission")
+            definition = uow.repositories.definitions.get(
+                str(command["definition_name"]),
+                str(command["definition_version"]),
+            )
+            if definition is None:  # INVARIANT: admission already proves this; fail closed on drift
+                raise KernelError(
+                    "OPERATION_DEFINITION_NOT_FOUND",
+                    "transaction command definition disappeared during execution",
+                )
+            if (
+                definition["execution_mode"] != "transactional"
+                or definition["policy"].get("execution_classification")
+                != "transaction_command"
+            ):
+                raise KernelError(
+                    "EXECUTION_CLASSIFICATION_CONFLICT",
+                    "only transaction-classified definitions may execute inline atomically",
+                )
+    
+            result = handler(uow, operation_id, checkpoint)
+            _validate_json_schema(definition["result_schema"], result, "result")
+    
+            from novel_forge.modules.command_kernel.completion import (
+                evaluate_completion_in_uow,
+            )
+    
+            operation = uow.repositories.completion_contracts.operation(
+                operation_id,
+                str(command["project_id"]),
+                lock=True,
+            )
+            completion = evaluate_completion_in_uow(uow, operation)
+            if completion["target_status"] != "SUCCEEDED":
+>               raise KernelError(
+                    "TRANSACTION_COMPLETION_CONTRACT_UNSATISFIED",
+                    "transaction command completion contract is not satisfied: "
+                    + ", ".join(completion["missing"] + completion["failed"]),
+                )
+E               novel_forge.modules.command_kernel.errors.KernelError: TRANSACTION_COMPLETION_CONTRACT_UNSATISFIED: transaction command completion contract is not satisfied: qualification:ELIGIBLE
+
+src/novel_forge/modules/command_kernel/service.py:105: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_author_supervised_policy_postgres.py::test_book_design_freezes_author_policy_and_activation_consumes_native_decision
+1 failed, 2 passed in 2.61s
