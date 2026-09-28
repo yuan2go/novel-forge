@@ -1185,6 +1185,66 @@ class ProductionProviderRouter:
             )
         return replace(base, **changes)
 
+    def _frozen_output_protocol(
+        self, identity: Mapping[str, Any], admission: Any,
+        metadata: Mapping[str, Any], task: Mapping[str, Any], provider: str,
+    ) -> str:
+        from .provider_admission import (
+            DEEPSEEK_STRICT_PROTOCOL,
+            provider_request_protocol,
+        )
+
+        expected = provider_request_protocol(provider)
+        if identity.get("protocol") != DEEPSEEK_STRICT_PROTOCOL:
+            return expected
+        capability = metadata["capability_runtime"]
+        binding = admission.content.get("contract", admission.content)
+        version = str(capability.get("materialization_asset_version_id") or "")
+        content_hash = capability.get("materialization_content_hash")
+        if (
+            not version
+            or not content_hash
+            or binding.get("capability_materialization_asset_version_id") != version
+            or binding.get("capability_materialization_content_hash") != content_hash
+        ):
+            raise KernelError(
+                "ROUTING_ADMISSION_IDENTITY_MISMATCH",
+                "strict output materialization binding",
+            )
+        document = self.registry.query.require(
+            project_id=task["project_id"], asset_version_id=version
+        )
+        if (
+            document.asset_type != "capability_materialization_manifest"
+            or document.content_hash != content_hash
+        ):
+            raise KernelError(
+                "ROUTING_ADMISSION_IDENTITY_MISMATCH",
+                "strict output materialization identity",
+            )
+        materialization = document.content.get("contract", document.content)
+        artifacts = materialization.get("pack_artifacts") or {}
+        policy = (artifacts.get("context_policy") or {}).get("content") or {}
+        modes = (policy.get("provider_output_modes") or {}).get(task["task_type"]) or {}
+        try:
+            expected = provider_request_protocol(
+                provider, output_mode=str(modes.get(provider) or "")
+            )
+            schema = json.loads(identity.get("output_schema_json") or "null")
+        except (ValueError, TypeError) as exc:
+            raise KernelError(
+                "ROUTING_ADMISSION_IDENTITY_MISMATCH", "strict output policy"
+            ) from exc
+        if (
+            expected != DEEPSEEK_STRICT_PROTOCOL
+            or schema is None
+            or schema != (materialization.get("output_schema") or {}).get("content")
+        ):
+            raise KernelError(
+                "ROUTING_ADMISSION_IDENTITY_MISMATCH", "strict output schema or policy"
+            )
+        return expected
+
     def select_for_payload(
         self, base: Any, payload: Mapping[str, Any]
     ) -> tuple[Any, dict[str, Any]]:
@@ -1242,7 +1302,9 @@ class ProductionProviderRouter:
                 "provider_request_identity", {}
             )
             selected = content["selected"]["candidate"]
-            from .provider_admission import provider_request_protocol
+            expected_protocol = self._frozen_output_protocol(
+                identity, admission, metadata, task, selected["provider"]
+            )
 
             try:
                 admitted_pricing = json.loads(
@@ -1262,7 +1324,7 @@ class ProductionProviderRouter:
                 or identity.get("provider") != selected["provider"]
                 or identity.get("model") != selected["model"]
                 or identity.get("protocol")
-                != provider_request_protocol(selected["provider"])
+                != expected_protocol
                 or str(identity.get("reasoning_effort") or "")
                 != (selected["reasoning"] if selected["provider"] == "deepseek" else "")
                 or admitted_pricing != selected["pricing"]
