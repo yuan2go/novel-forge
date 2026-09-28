@@ -1,0 +1,243 @@
+{
+  "operation_id": "d4e81f81-d074-4795-b133-7e871ee59362",
+  "effect_id": "6c3ebe16-2509-4bd0-bf1b-0d1b17532eda",
+  "release_sha": "1f3da4eeca7b0da6a19fea453ad09ad9380ee6cb",
+  "native_failure_class": "SCHEMA_REJECTION",
+  "offline_exact_frozen_schema_error": "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID: stage creative.candidates.generate: $.style_profile.genre_conventions_note is not allowed",
+  "schema": {
+    "ref": "schema:foundation-provider-output:creative_foundation:v1",
+    "content": {
+      "type": "object",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "required": [
+        "objective",
+        "constraints",
+        "prohibited_outcomes",
+        "target_reader",
+        "why_worth_writing",
+        "genre",
+        "subgenre",
+        "core_desire",
+        "core_fear",
+        "core_conflict",
+        "narrative_engine",
+        "differentiation",
+        "emotional_contract",
+        "serialization_potential",
+        "style_profile"
+      ],
+      "properties": {
+        "genre": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subgenre": {
+          "type": "string",
+          "minLength": 1
+        },
+        "core_fear": {
+          "type": "string",
+          "minLength": 1
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maxItems": 24
+        },
+        "core_desire": {
+          "type": "string",
+          "minLength": 1
+        },
+        "core_conflict": {
+          "type": "string",
+          "minLength": 1
+        },
+        "style_profile": {
+          "type": "object",
+          "required": [
+            "narrator",
+            "pov",
+            "genre_conventions",
+            "constraints",
+            "original_examples"
+          ],
+          "properties": {
+            "pov": {
+              "type": "string",
+              "minLength": 1
+            },
+            "narrator": {
+              "type": "string",
+              "minLength": 1
+            },
+            "constraints": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "maxItems": 24
+            },
+            "genre_conventions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "maxItems": 24
+            },
+            "original_examples": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "purpose",
+                  "example",
+                  "explanation"
+                ],
+                "properties": {
+                  "example": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "explanation": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "additionalProperties": false
+              },
+              "maxItems": 6,
+              "minItems": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "target_reader": {
+          "type": "string",
+          "minLength": 1
+        },
+        "differentiation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "narrative_engine": {
+          "type": "string",
+          "minLength": 1
+        },
+        "why_worth_writing": {
+          "type": "string",
+          "minLength": 1
+        },
+        "emotional_contract": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prohibited_outcomes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maxItems": 24
+        },
+        "serialization_potential": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "content_hash": "sha256:957de8085ca19d8cdab348612ac7990b1595ff9266bc69ed47e16153a16086fc"
+  },
+  "parsed_result": {
+    "genre": "原创简体中文武侠与低魔玄幻",
+    "subgenre": "雪域山栈武侠 · 低魔 · 有限资源型恩义叙事",
+    "core_fear": "换一条路、换一个说法，就自认为已经还清，结果两笔承诺都落空——接生人没有火，迟岳替她担保的老伙计被带走，而她还以为自己已经付过账。",
+    "objective": "生成一个可长期连载的核心冲突候选：以「最后一罐火种」的分配代价为主引擎，让洛棠在日落前同时背负两笔无法互相抵消的承诺（报迟岳救命之恩、救山下接生人），并把雪路、炭料、索道承重与山栈禁炉做成每一步都不可回收的消耗；候选只提供可能性与风格锚点，不写 Canon，不判定接纳。",
+    "constraints": [
+      "以分配火种的真实代价推动情节，设计至少两条互相影响的持续意图与未完成承诺。",
+      "保留雪路、炭料、索道承重的约束；试通与打算通行都不等于已经抵达。",
+      "允许有依据地延期、重新协商或放弃步骤，但不允许抹去未完成承诺。",
+      "洛棠只能使用实际亲见或被告知的信息；迟岳的密令内容不自动进入洛棠认知。",
+      "同一罐火种不得被写成可同时兑付两笔承诺；任何一步消耗的炭料与承重余量必须在文本中留下可见账目。",
+      "允许延期、重议、放弃步骤，但每次变更都必须显式说明哪一笔承诺被推迟、由谁承担新的风险。"
+    ],
+    "core_desire": "让两笔承诺都留下可核对的凭据：既以实际行动回应迟岳的救命之恩，也让山下接生人确实拿到火种；若做不到全部，也要让每一次推迟、重议与放弃都被明确记录，而不是被悄悄消掉。",
+    "core_conflict": "同一罐火种、同一段日落时限，必须同时兑付两笔不能被彼此抵消的承诺；而雪路坍塌、索道承重上限与炭料余量把每一步都变成不可回收的消耗，使「先做什么」本身就是在对另一笔承诺做出单方面决定。洛棠与迟岳对信息掌握不对称（她只亲眼确认了一段山路坍塌，密令是否完整她无从验证），因此每一次协商都同时是资源分配与信任定价。",
+    "style_profile": {
+      "pov": "第三人称限知，单视角洛棠；读者所知其上限为洛棠亲见或明确被告知的内容，迟岳密令的完整性始终不可从叙述内部证实。",
+      "narrator": "第三人称限知，叙述紧贴洛棠的感官与判断：冷、重、可计数。句子偏短、以动作与器物细节承载信息，情绪从行为里渗出而不被点명；不解释主题，不替读者结算账目，只呈现消耗与余额。",
+      "constraints": [
+        "全篇第三人称限知，不进入洛棠之外角色的内心，也不叙述她无从得知的事实。",
+        "任何决定性行动必须与具体后果或不可逆代价在同一场景内落地，不允许只写意图不写结算。",
+        "试通、打算、计划与抵达必须在语言上明确区分，禁止用近义措辞模糊完成状态。",
+        "火种与炭料的余量变化要可作为账目核对，不出现凭空补充的免费资源。",
+        "禁止模仿或改写任何既有作品的句式、人物、设定与情节组合；示例仅示范本项目自有的叙述肌理。",
+        "延期的合法性来自有依据的理由与公开承担的新风险，而非叙述者默许。"
+      ],
+      "genre_conventions": [
+        "恩义与私诺的张力优先于门派正邪对抗：冲突来自责任如何分配，而非谁武力更高。",
+        "低魔由代价而非力量等级驱动：任何非常手段（如禁炉齿火）都必须付出可计量的损耗。",
+        "有限资源构成江湖逻辑：火种、炭料、索道承重决定可行方案集合，而非角色意志。",
+        "承诺具有债的性质：可以被延期、重议、部分履行或公开放弃，但不能被沉默注销。",
+        "信息通过亲见与口传流动，传话人的可靠性构成悬念的一部分。"
+      ],
+      "original_examples": [
+        {
+          "example": "洛棠把掌心按在绞盘的木纹上，木头冷得像刚从雪里刨出来。她数到第七圈，索道往下一沉，深处传来铁件咬住铁件的一声短响——不是断了，是吃住了力。她把这一声记住，却没有跨出去。",
+          "purpose": "示范「试通不等于抵达」如何在感官层面落地，而不靠旁白说明。",
+          "explanation": "用触觉与听觉给出「能承重」这一阶段性事实，并以「没有跨出去」把试通与抵达切分清楚；叙述不评价，只呈现界线。"
+        },
+        {
+          "example": "火种罐搁在膝上，余温隔着一层旧布渗过来。她掀开布角看了一眼，又替它盖严——每掀一次，暖就走一分。这账她算得清，也正因为算得清才不敢多看。",
+          "purpose": "示范资源账如何以动作而非说明写成可核对的消耗。",
+          "explanation": "每个动作对应一次不可逆损耗，读者可自行累加余量；情绪由「不敢多看」这一行为渗出，避免直接抒情。"
+        },
+        {
+          "example": "迟岳说的每个字她都听见了。至于那枚封蜡上缺的一角，她没瞧过。他说是路上磕的，她就先当是路上磕的——不是信，是还没有别的可依。",
+          "purpose": "示范洛棠的知识边界：亲见与被告知之间的差异如何在文本中保持可见。",
+          "explanation": "把可确证部分与不可确证部分并置，用「先当是」而非「就是」保留缺口，使密令完整性始终无法从叙述内部被证实。"
+        },
+        {
+          "example": "她借了禁炉的齿火，栈里那面铜镜便暗了一格。有人问她值不值，她说不出值，只说得出暗——暗几格，就得有几格的柴补回来，补不回来就是欠着。",
+          "purpose": "示范低魔代价的可计量表达，并让承诺的选择留下痕迹。",
+          "explanation": "把非常手段的代价换算成可计数的损耗，并把「欠着」作为未完成承诺的语言标记，呼应不得抹账的边界。"
+        }
+      ],
+      "genre_conventions_note": "以上惯例仅约束本项目原创表达的取向，不引用、不复刻任何具体作品的桥段或设定组合。"
+    },
+    "target_reader": "偏好具体行动、互负承诺和可信选择的中文类型文学读者",
+    "differentiation": "不以武功升级、血脉奇遇或势力对抗作卖点，而以「承诺会计学」作差异化：每一次行动必须同时标出消耗、被推迟的承诺和新增的承担者。三条物理约束（雪路、索道承重、炭料）给出合法的延期、重议与放弃空间，但把「抹账」设为不可越界项。信息不对称被限制在可验证边界内（洛棠不能凭直觉获知密令内容），因此悬念来自责任如何结算，而非真相揭晓。",
+    "narrative_engine": "三重引擎叠加：①资源账——火种、炭料、索道承重每次使用都产生可见扣减，读者能随时核对余量；②承诺债——两条互相影响的持续意图与未完成承诺，任一步骤的推迟都改变另一条的紧迫度；③认知缺口——洛棠的知识边界由亲见与被告知划定，迟岳密令的完整性始终不可验证，使「要不要借禁炉」变成必须靠行为而非台词来判定的问题。引擎输出的是选择与代价，而不是能力增长。",
+    "why_worth_writing": "它把武侠最常见的「恩义」主题翻译成可算账的行动：每次借火、每次试通、每次改路线，都要在文本里留下代价与未清偿项。冲突不依赖奇遇或武力升级，而依赖两条互相影响的持续承诺如何在有限资源下互相挤压，因此天然可连载、可分支，也便于在不同章节里逐步结算而不是一次性揭晓。第三人称限知让读者与洛棠共享同一份不完整信息，包括「密令是否完整」这个不可靠缺口。",
+    "emotional_contract": "读者得到「选择有重量」的持续紧张感与可核对的公平感：每一次取舍都能看见代价，每一笔欠账都被保留在明面上；不会用一句旧恩或一次运气把账目清空，也不会用无限资源化解两难。紧张中的踏实感来自——结算方式始终透明，只是结果未必如愿。",
+    "prohibited_outcomes": [
+      "不得把「试通索道」或「打算通行」写成已经抵达山下或已经送达火种。",
+      "不得用一句旧恩、一次换路或一次口头谅解把未完成的承诺记为已完成。",
+      "不得让洛棠引用她未亲见、未被明确告知的信息，尤其是迟岳密令的完整内容。",
+      "不得让火种在零代价条件下同时满足接生人与师门两方要求。",
+      "不得抹去任何一条未完成承诺或让其无声过期。",
+      "不得把山栈禁炉写成没有后果的免费资源。"
+    ],
+    "serialization_potential": "承诺账本天然可分段结算：索道试通、接生人位置确认、禁炉借火、师门日落时限、担保老伙计的下落，各自可展开为独立章节单元又互相牵动。可扩展的方向包括山栈规矩与禁炉禁忌的来历、迟岳密令背后师门的真实意图、接生人所处村落的处境、以及炭料供应链上的其他持份者；每条线都通过「谁承担了被推迟的风险」接入主线，不需要推翻既有约束即可长期续写。"
+  },
+  "parsed_result_canonical_sha256": "sha256:f52ff8ef6e9d0873dc8e2cb8e781aa751939819cf88fda1becff43ee21836bd9",
+  "provider_reported_raw_arguments_sha256": "sha256:5325378c200c6cf63042e68f66dfe7cb193c7871d8a42dbb8d4c67eaada8578c",
+  "exact_raw_arguments_retained": false,
+  "historical_evidence_gap": "Adapter retained parsed arguments and raw hash, but not exact original argument bytes. New release fixes future retention; no reserialization represented as original.",
+  "repaired": false,
+  "candidate_accepted": false,
+  "real_chapter_prose": false
+}

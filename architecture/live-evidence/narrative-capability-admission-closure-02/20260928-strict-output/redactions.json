@@ -1,0 +1,11 @@
+[
+  {
+    "file": "deployment.json",
+    "types": [
+      "NOVEL_FORGE_MINIO_ACCESS_KEY"
+    ],
+    "original_hash": "sha256:8badf78fef61f9209064e2e33bdcaff356649db40e8c6bc92b74573f5fb6fd82",
+    "shared_hash": "sha256:d9ac59b2ba5f2e6a52241c9c5469e8a0b7bea4a0ef2729121a6bf3ab400a5378",
+    "reason": "Protect credential bytes/identifiers; raw native evidence retained privately"
+  }
+]

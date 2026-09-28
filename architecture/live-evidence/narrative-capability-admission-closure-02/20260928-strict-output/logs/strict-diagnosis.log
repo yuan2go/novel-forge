@@ -1,0 +1,1 @@
+{"operation_id": "d4e81f81-d074-4795-b133-7e871ee59362", "native_failure_class": "SCHEMA_REJECTION", "offline_exact_frozen_schema_error": "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID: stage creative.candidates.generate: $.style_profile.genre_conventions_note is not allowed", "exact_raw_arguments_retained": false}

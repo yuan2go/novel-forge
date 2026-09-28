@@ -1,0 +1,36 @@
+{
+  "final_implementation_sha": "b272b43da5f245987e44e0930fa0913a6ea50154",
+  "unit": {
+    "command": "python /tmp/novel-forge-real-prose-20260927/test-run.py -q tests/unit/test_deepseek_provider.py tests/unit/test_deepseek_strict_output.py tests/unit/test_provider_token_admission.py tests/unit/test_cost_aware_routing.py tests/unit/test_production_execution_gateway.py -k \"not local\"",
+    "passed": 146,
+    "subtests": 5,
+    "log": "logs/wp02-strict-retention-tests.log",
+    "identity": "Final implementation before source-label refinement; affected subset rechecked below"
+  },
+  "exact_affected_subset": {
+    "command": "python /tmp/novel-forge-real-prose-20260927/test-run.py -q tests/unit/test_deepseek_strict_output.py tests/unit/test_production_execution_gateway.py -k \"strict or schema_rejection or transport_subset or unsupported_schema\"",
+    "passed": 12,
+    "log": "logs/wp02-strict-retention-exact-tests.log"
+  },
+  "postgres": {
+    "command": "python /tmp/novel-forge-real-prose-20260927/test-run.py -q tests/integration/test_core_functional_loops_postgres.py::test_production_composition_executes_upstream_planning_via_pep tests/integration/test_core_functional_loops_postgres.py::test_planning_retry_reuses_frozen_pack_after_provider_result tests/integration/test_planning_routing_bootstrap_postgres.py::test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible",
+    "passed": 4,
+    "log": "logs/wp02-strict-final-integration.log",
+    "database": "nf_p0_4af8e614d6794f7e98d8064911bb2dd0_test",
+    "evidence": "FIXTURE_PROTOCOL_ONLY"
+  },
+  "documentation": {
+    "command": "PYTHONPATH=src python -m novel_forge.tools.documentation_reality --repo-root .",
+    "result": "PASS",
+    "log": "logs/wp02-strict-retention-exact.log"
+  },
+  "live_browser": "author-browser.json; three native samples, zero writes/labels/dispatch",
+  "stable_previous_evidence": [
+    "../20260928-deepseek-json/tests.json",
+    "../20260928-security-handoff/tests.json"
+  ],
+  "stable_reuse_scope": "No export, Formation UI, policy UI or edition code changed this increment. Earlier isolated engineering evidence remains bounded to original versions; no combined end-to-end production PASS.",
+  "full_backend_ui_remote_ci": "NOT_RUN",
+  "new_migration": "NOT_APPLICABLE",
+  "real_deepseek_result": "FAILED_FINAL/SCHEMA_REJECTION, not PASS"
+}
