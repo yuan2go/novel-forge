@@ -1,0 +1,64 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____ test_native_author_draft_without_generator_effect_enters_exact_review _____
+
+original_author_draft = ({'project_id': 'source-project-c3ff36b0-1b77-41b8-95f4-85ed08ff06e5', 'workspace_id': 'source-workspace-1c687b9d-d076...687b9d-d076-4f07-84c7-571b4620ebd9', 'book_id': 'source-book-03c7ff6a-6952-490f-9ee9-e66b9f167ad3', 'chapter': 1, ...})
+
+    def test_native_author_draft_without_generator_effect_enters_exact_review(original_author_draft):
+        scope, result, adoption = original_author_draft
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            draft = uow.repositories.asset_documents.require(project_id=scope["project_id"],
+                asset_version_id=result.outputs[ChapterNode.DRAFT].asset_version_id)
+            uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s AND capability='model.draft'",
+                               [result.operation_ids[ChapterNode.DRAFT]])
+            assert uow.cursor.fetchone()[0] == 0
+>           contract = freeze_review_requirement(uow.cursor, project_id=scope["project_id"], book_id=scope["book_id"],
+                operation_id=result.operation_ids[ChapterNode.REVIEW], task_type="review", request_input={})
+
+tests/integration/test_cross_model_source_postgres.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/production_execution/cross_model_review.py:84: in freeze_review_requirement
+    contract = generator_identity(cursor, project_id=project_id, book_id=book_id,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cursor = <psycopg.Cursor [closed] [IDLE] (host=127.0.0.1 port=61959 user=novel_forge database=nf_p0_0b8aceeb23204148936830f8f05bf558_test) at 0x10d9bfb90>
+project_id = 'source-project-c3ff36b0-1b77-41b8-95f4-85ed08ff06e5'
+book_id = 'source-book-03c7ff6a-6952-490f-9ee9-e66b9f167ad3'
+asset_version_id = 'authority-output:9cb24f64-8ec5-4995-acc0-b0c086b818aa:chapter.draft:v1'
+content_hash = 'sha256:6adf31505752ae35dcd0e70eb36b4a6a13cd4b3caabbe48e32ab99efc4869201'
+
+    def generator_identity(cursor: Any, *, project_id: str, book_id: str,
+                           asset_version_id: str, content_hash: str) -> dict[str, Any]:
+        cursor.execute(
+            """SELECT e.external_effect_id,e.model_id,
+                      e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',
+                      d.evidence
+               FROM authority_operation_output_asset output
+               JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+               JOIN authority_external_effect e ON e.operation_id=output.operation_id
+               JOIN authority_external_effect_dispatch d USING(external_effect_id)
+               WHERE e.project_id=%s AND output.asset_version_id=%s AND v.content_hash=%s
+                 AND e.status='SUCCEEDED'
+                 AND e.request_payload #>> '{_production_execution,book_id}'=%s
+                 AND d.evidence->>'real_model_call'='true'""",
+            [project_id, asset_version_id, content_hash, book_id],
+        )
+        identities = {}
+        for effect_id, model_id, decision, evidence in cursor.fetchall():
+            selected = (decision or {}).get("selected", {}).get("candidate", {})
+            if (not selected or decision.get("bootstrap_authorization")
+                    or selected.get("model") != model_id or evidence.get("model_id") != model_id
+                    or evidence.get("provider_id") != selected.get("provider")
+                    or evidence.get("fixture_protocol_only")):
+                raise KernelError("CROSS_MODEL_REVIEW_SOURCE_INVALID", "Generator identity must match its real native receipt")
+            identities[effect_id] = {"provider": selected["provider"], "model": model_id,
+                "model_revision": selected["model_revision"], "external_effect_id": effect_id,
+                "routing_decision_id": decision["decision_id"], "receipt_hash": snapshot_hash(evidence)}
+        if len(identities) != 1:
+>           raise KernelError("CROSS_MODEL_REVIEW_SOURCE_REQUIRED", "Exact target needs one successful real generator receipt")
+E           novel_forge.modules.command_kernel.errors.KernelError: CROSS_MODEL_REVIEW_SOURCE_REQUIRED: Exact target needs one successful real generator receipt
+
+src/novel_forge/modules/production_execution/cross_model_review.py:42: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_cross_model_source_postgres.py::test_native_author_draft_without_generator_effect_enters_exact_review
+1 failed in 4.05s

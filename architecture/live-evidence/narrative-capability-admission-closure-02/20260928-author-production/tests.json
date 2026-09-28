@@ -1,0 +1,141 @@
+{
+  "schema_version": "wp02-targeted-checks.v1",
+  "final_implementation_commit": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+  "final_implementation_tree": "sha256:346ea469976f181a45487fdcdf253b9d1a16f7ae25803b90344eeb80c2141199",
+  "qualification_claim": "NO_UNIFIED_REAL_PRODUCTION_SUCCESS",
+  "execution_note": "Checks were run during edits before commits. Earlier d15 results remain separate. Receipt/edition/recovery changes were committed as b305; final fixture import organization changed only import placement and explicit re-export, with ruff verification. No full matrix or paid rerun was done merely for evidence export.",
+  "checks": [
+    {
+      "scope": "original source mismatch reproduction",
+      "result": "EXPECTED_FAIL",
+      "evidence": "logs/source-baseline-red.log",
+      "boundary": "native PostgreSQL author editor/adoption; old generation-only review source lookup"
+    },
+    {
+      "scope": "author provenance, exact hash/scope and native model/author-edit route",
+      "result": "PASS",
+      "count": 11,
+      "evidence": "logs/source-nonedition-final.log",
+      "implementation": "d15e09864472324a03e5d4032292eab7687e53ca"
+    },
+    {
+      "scope": "edition cannot launder scripted fixture generator",
+      "result": "PASS",
+      "count": 1,
+      "evidence": "logs/source-edition-final.log",
+      "implementation": "d15e09864472324a03e5d4032292eab7687e53ca"
+    },
+    {
+      "scope": "affected unit checks (source, routing, API, editor, edition)",
+      "result": "PASS",
+      "count": 49,
+      "subtests": 4,
+      "evidence": "logs/affected-unit.log",
+      "implementation": "d15e09864472324a03e5d4032292eab7687e53ca"
+    },
+    {
+      "scope": "receipt retry/integrity minimal reproduction",
+      "result": "EXPECTED_FAIL",
+      "failed": 7,
+      "passed_control": 1,
+      "evidence": "logs/receipt-red.log"
+    },
+    {
+      "scope": "receipt verified-success boundary",
+      "result": "PASS",
+      "count": 8,
+      "evidence": "logs/receipt-green.log",
+      "command": ".venv/bin/python /tmp/novel-forge-cross-source-test-runner.py -k generator_receipt_boundary"
+    },
+    {
+      "scope": "native Router/Effect generated draft and author edit after receipt correction",
+      "result": "PASS",
+      "count": 1,
+      "evidence": "logs/native-model-after-receipt.log",
+      "command": ".venv/bin/python /tmp/novel-forge-cross-source-test-runner.py -k model_and_author_edited_sources"
+    },
+    {
+      "scope": "native author acceptance to edited edition validation and exact review freeze",
+      "result": "PASS",
+      "count": 1,
+      "evidence": "logs/edition-native-positive.log",
+      "boundary": "real native PostgreSQL owners; planning and literary transport are explicitly engineering fixtures"
+    },
+    {
+      "scope": "persisted blocked review to native approve_route and next legal Attempt",
+      "result": "PASS",
+      "count": 1,
+      "evidence": "logs/review-grant-recovery.log",
+      "command": "PYTHONPATH=src .venv/bin/python /tmp/novel-forge-review-grant-recovery-test.py",
+      "boundary": "routing/approval recovery only; no Provider call or whole-chapter recovery proof"
+    },
+    {
+      "scope": "receipt affected unit checks",
+      "result": "PASS",
+      "count": 14,
+      "evidence": "logs/receipt-unit.log",
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest -q tests/unit/test_cross_model_author_review.py"
+    },
+    {
+      "scope": "supervision workspace exact target dedup and three controls",
+      "result": "PASS",
+      "count": 2,
+      "evidence": "subagent tool stdout; independent log not retained",
+      "boundary": "isolated PostgreSQL"
+    },
+    {
+      "scope": "supervision browser response loss, exact decision and controls",
+      "result": "PASS",
+      "count": 9,
+      "evidence": "subagent tool stdout; independent log not retained",
+      "boundary": "browser with API doubles, not live business acceptance"
+    },
+    {
+      "scope": "live deployed production page",
+      "result": "PASS",
+      "evidence": "live-browser.json",
+      "boundary": "read-only real API/historical PostgreSQL; no mutations or author approvals"
+    },
+    {
+      "scope": "documentation reality",
+      "result": "PASS",
+      "evidence": "logs/documentation-final.json"
+    },
+    {
+      "scope": "test reality",
+      "result": "PASS",
+      "evidence": "logs/test-reality-final.json"
+    },
+    {
+      "scope": "changed Python ruff and git diff --check",
+      "result": "PASS",
+      "evidence": "parent tool stdout"
+    },
+    {
+      "scope": "formal production Next build",
+      "result": "PASS",
+      "evidence": "web-production-build.json"
+    },
+    {
+      "scope": "full P0 / full backend / full PostgreSQL / full UI / remote CI",
+      "result": "NOT_RUN",
+      "reason": "User requested affected checks only"
+    },
+    {
+      "scope": "same persistent Book real prose/edit/review/acceptance/selected edition/successor",
+      "result": "NOT_RUN",
+      "reason": "Original direction/mode and production authorization are not approved"
+    },
+    {
+      "scope": "final b305 live production page and native editor link",
+      "result": "PASS",
+      "evidence": "live-browser-final.json",
+      "boundary": "real API/historical PostgreSQL; zero writes, zero page errors"
+    },
+    {
+      "scope": "final b305 formal production Next build",
+      "result": "PASS",
+      "evidence": "web-production-build-final.json"
+    }
+  ]
+}

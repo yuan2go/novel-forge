@@ -1,0 +1,104 @@
+[
+  {
+    "kind": "api",
+    "pid": 62577,
+    "started_at": "2026-09-28T08:22:29.004161+00:00",
+    "application_build_id": "wp02-author-b305d7c7093e",
+    "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+    "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+    "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+    "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+    "provider_dispatch_suspended": true,
+    "pack_ids": {
+      "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+      "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+    }
+  },
+  {
+    "kind": "book",
+    "pid": 62580,
+    "started_at": "2026-09-28T08:22:29.000279+00:00",
+    "application_build_id": "wp02-author-b305d7c7093e",
+    "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+    "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+    "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+    "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+    "provider_dispatch_suspended": true,
+    "pack_ids": {
+      "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+      "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+    }
+  },
+  {
+    "kind": "book_followup",
+    "pid": 62581,
+    "started_at": "2026-09-28T08:22:29.002381+00:00",
+    "application_build_id": "wp02-author-b305d7c7093e",
+    "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+    "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+    "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+    "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+    "provider_dispatch_suspended": true,
+    "pack_ids": {
+      "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+      "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+    }
+  },
+  {
+    "kind": "chapter",
+    "pid": 62579,
+    "started_at": "2026-09-28T08:22:29.045531+00:00",
+    "application_build_id": "wp02-author-b305d7c7093e",
+    "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+    "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+    "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+    "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+    "provider_dispatch_suspended": true,
+    "pack_ids": {
+      "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+      "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+    }
+  },
+  {
+    "kind": "cli",
+    "pid": 62645,
+    "started_at": "2026-09-28T08:22:38.504797+00:00",
+    "application_build_id": "wp02-author-b305d7c7093e",
+    "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+    "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+    "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+    "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+    "provider_dispatch_suspended": true,
+    "pack_ids": {
+      "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+      "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+    }
+  },
+  {
+    "kind": "content",
+    "pid": 62578,
+    "started_at": "2026-09-28T08:22:29.001083+00:00",
+    "application_build_id": "wp02-author-b305d7c7093e",
+    "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+    "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+    "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+    "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+    "provider_dispatch_suspended": true,
+    "pack_ids": {
+      "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+      "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+    }
+  }
+]

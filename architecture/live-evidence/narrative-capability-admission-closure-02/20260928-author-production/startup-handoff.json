@@ -1,0 +1,55 @@
+{
+  "schema_version": "wp02-author-startup-proposal.v1",
+  "status": "AWAITING_AUTHOR_DECISION",
+  "project_id": "narrative-closure-02-admission-20260927",
+  "book_id": "duanchao-guan-zheng-deng-reference-01",
+  "current_book_mode": "STRICT",
+  "current_book_state": "DESIGN_PENDING",
+  "current_production_profiles": 0,
+  "current_production_runs": 0,
+  "current_dispatch": "PAUSED@27",
+  "current_process_dispatch_suspended": true,
+  "prior_authorization": {
+    "scope": "CALIBRATION_ONLY",
+    "expired_at": "2026-09-28T13:28:24+08:00",
+    "usable_for_production": false
+  },
+  "proposal": {
+    "attribution": "AI_ASSISTED_PENDING_AUTHOR_CONFIRMATION_NOT_A_NATIVE_APPROVAL",
+    "title": "断潮关·证灯",
+    "direction": "原创玄幻/武侠，第三人称限知。证词能延缓渡口被阵册抹去，却会暴露作证者的位置。闻澈答应送达证词后返回接走三名流民；沈照用有限灯油守住证人。路程、灯油与互信构成阻力，送达证词不等于兑现承诺。",
+    "mode": "AUTHOR_SUPERVISED",
+    "author_boundaries": "现有逐层设计、精确终稿和事实接纳边界；不自动批准未来正文",
+    "models": [
+      {
+        "provider": "codex-cli",
+        "model": "gpt-6-sol",
+        "reasoning": "high",
+        "accounting": "ACCOUNT_ENTITLEMENT"
+      },
+      {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "revision": "DeepSeek-V4.1-Flash",
+        "reasoning": "low",
+        "accounting": "PRICED"
+      }
+    ],
+    "task_scope": "本书Foundation、现有层级规划、正文、审读、必要修订/复审、Canon、edition验证和一次后继正文；每项依实际Producer分别授权",
+    "limits": {
+      "calls": 80,
+      "tokens": 4000000,
+      "usd": 5,
+      "duration_hours_from_native_approval": 24
+    },
+    "stop_conditions": [
+      "累计或单任务额度耗尽",
+      "授权到期",
+      "UNKNOWN等待对账",
+      "技术Schema或来源校验失败",
+      "需要尚未给出的精确作者决定"
+    ],
+    "history": "保留原占用、失败与暂停；不续期旧授权，不提升诊断资产资格"
+  },
+  "native_mutations_performed_from_proposal": 0
+}

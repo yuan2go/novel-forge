@@ -1,0 +1,364 @@
+{
+  "schema_version": "wp02-author-supervised-deployment.v1",
+  "observed_at": "2026-09-28T08:24:11.199999+00:00",
+  "baseline_sha": "f6ba4ab542cc20a50b58317f67a4c0e238bff030",
+  "previous_deployed_sha": "d15e09864472324a03e5d4032292eab7687e53ca",
+  "deployed_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+  "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+  "historical_database": "novel_forge_first_novel_pilot_test",
+  "database_oid": 16384,
+  "migration_head": "20260928_0148_author_supervised_design",
+  "migration_count": 149,
+  "runtime_environment": "validation",
+  "release_channel": "VALIDATION",
+  "provider_dispatch_suspended": true,
+  "project_dispatch_control": "PAUSED@27",
+  "api_url": "http://127.0.0.1:8143",
+  "ui_url": "http://127.0.0.1:3143",
+  "ui_server": "node .next/standalone/server.js",
+  "ui_build": {
+    "release_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+    "command": "next build --webpack",
+    "exit_code": 0,
+    "api_url": "http://127.0.0.1:8143",
+    "build_id": "28u6pu_vxtaaKJvry0AXI",
+    "log": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/web-production-build.log"
+  },
+  "processes": {
+    "api": {
+      "pid": 62577,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release_service.py api",
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc"
+    },
+    "content": {
+      "pid": 62578,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release_service.py content",
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc"
+    },
+    "chapter": {
+      "pid": 62579,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release_service.py chapter",
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc"
+    },
+    "book": {
+      "pid": 62580,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release_service.py book",
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc"
+    },
+    "book_followup": {
+      "pid": 62581,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release_service.py book_followup",
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc"
+    },
+    "web": {
+      "pid": 62582,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/web/admin/.next/standalone/server.js",
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc"
+    }
+  },
+  "loaded_code_attestations": [
+    {
+      "kind": "api",
+      "pid": 62577,
+      "started_at": "2026-09-28T08:22:29.004161+00:00",
+      "application_build_id": "wp02-author-b305d7c7093e",
+      "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+      "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+      "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+      "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+      "provider_dispatch_suspended": true,
+      "pack_ids": {
+        "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+        "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+        "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+      }
+    },
+    {
+      "kind": "book",
+      "pid": 62580,
+      "started_at": "2026-09-28T08:22:29.000279+00:00",
+      "application_build_id": "wp02-author-b305d7c7093e",
+      "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+      "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+      "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+      "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+      "provider_dispatch_suspended": true,
+      "pack_ids": {
+        "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+        "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+        "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+      }
+    },
+    {
+      "kind": "book_followup",
+      "pid": 62581,
+      "started_at": "2026-09-28T08:22:29.002381+00:00",
+      "application_build_id": "wp02-author-b305d7c7093e",
+      "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+      "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+      "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+      "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+      "provider_dispatch_suspended": true,
+      "pack_ids": {
+        "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+        "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+        "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+      }
+    },
+    {
+      "kind": "chapter",
+      "pid": 62579,
+      "started_at": "2026-09-28T08:22:29.045531+00:00",
+      "application_build_id": "wp02-author-b305d7c7093e",
+      "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+      "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+      "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+      "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+      "provider_dispatch_suspended": true,
+      "pack_ids": {
+        "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+        "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+        "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+      }
+    },
+    {
+      "kind": "cli",
+      "pid": 62645,
+      "started_at": "2026-09-28T08:22:38.504797+00:00",
+      "application_build_id": "wp02-author-b305d7c7093e",
+      "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+      "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+      "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+      "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+      "provider_dispatch_suspended": true,
+      "pack_ids": {
+        "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+        "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+        "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+      }
+    },
+    {
+      "kind": "content",
+      "pid": 62578,
+      "started_at": "2026-09-28T08:22:29.001083+00:00",
+      "application_build_id": "wp02-author-b305d7c7093e",
+      "commit_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e",
+      "python_executable": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+      "loaded_module": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/b305d7c7093eee95482105f8cf82f9f21cb959bc/release-b305d7c7093e/src/novel_forge/modules/production_execution/cross_model_review.py",
+      "loaded_module_sha256": "e73e169b2d4246e2b812273fe3eceef50373e4d88383de231332f6507fdd605a",
+      "provider_dispatch_suspended": true,
+      "pack_ids": {
+        "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+        "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "wp02-author-supervised-chapter",
+        "NOVEL_FORGE_LONGFORM_PROSE_REVIEW_CAPABILITY_PACK_ID": "wp02-author-supervised-prose-review"
+      }
+    }
+  ],
+  "pack_technical_approvals": [
+    {
+      "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "pack_version": null,
+      "workflow_ref": "story_planning_generators@1.12.0",
+      "compilation_id": "compilation:wp02-author:b305d7c7093e:wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "compilation_hash": "sha256:dc39e7d24bc81234c529c297bf514fce93a42669c17cc78b1a9fe2899a4bc8a9",
+      "deployment_id": "deployment:wp02-author:b305d7c7093e:wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "expected_activation_version": 12,
+      "activation": {
+        "operation_id": "1da04970-1b2e-4e39-80ad-8eda692338a8",
+        "status": "SUCCEEDED",
+        "activation_key": "sha256:37ee5d1045aef79e6331747d3388258b9822715d9007053506fd4b136ddfcef7",
+        "scope_key": "sha256:50722f1e7ad83d5b5c356f6be6279dc66ed0920844d348753f272134005400cb",
+        "target_scope_type": "BOOK",
+        "project_id": "narrative-closure-02-admission-20260927",
+        "workspace_id": "ws:zheng-deng:sampling:20260927",
+        "book_id": "duanchao-guan-zheng-deng-reference-01",
+        "environment": "validation",
+        "workflow_definition_ref": "story_planning_generators@1.12.0",
+        "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+        "active_deployment_id": "deployment:wp02-author:b305d7c7093e:wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+        "activation_version": 13,
+        "reason": "Activate the technical release compilation within the user-requested Book deployment; no model dispatch, author text approval or qualification",
+        "activated_by": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+        "replayed": false
+      },
+      "approval_scope": "Technical exact release compilation, target Book, validation; no model-call grant, author decision, literary qualification"
+    },
+    {
+      "pack_id": "wp02-author-supervised-chapter",
+      "pack_version": null,
+      "workflow_ref": "chapter_authority_slice@3.4.1",
+      "compilation_id": "compilation:wp02-author:b305d7c7093e:wp02-author-supervised-chapter",
+      "compilation_hash": "sha256:fcb3163c495cf5021cd5bfbcb0e51744614f361bcd29d9a99338fb486929a1b2",
+      "deployment_id": "deployment:wp02-author:b305d7c7093e:wp02-author-supervised-chapter",
+      "expected_activation_version": 1,
+      "activation": {
+        "operation_id": "603520b2-8b7a-46a9-9d67-c53a3fb3fe29",
+        "status": "SUCCEEDED",
+        "activation_key": "sha256:ab56da49cab959a48e672f66a908b8160533eb07784a9c2c7d2e2515a30fb8d5",
+        "scope_key": "sha256:50722f1e7ad83d5b5c356f6be6279dc66ed0920844d348753f272134005400cb",
+        "target_scope_type": "BOOK",
+        "project_id": "narrative-closure-02-admission-20260927",
+        "workspace_id": "ws:zheng-deng:sampling:20260927",
+        "book_id": "duanchao-guan-zheng-deng-reference-01",
+        "environment": "validation",
+        "workflow_definition_ref": "chapter_authority_slice@3.4.1",
+        "pack_id": "wp02-author-supervised-chapter",
+        "active_deployment_id": "deployment:wp02-author:b305d7c7093e:wp02-author-supervised-chapter",
+        "activation_version": 2,
+        "reason": "Activate the technical release compilation within the user-requested Book deployment; no model dispatch, author text approval or qualification",
+        "activated_by": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+        "replayed": false
+      },
+      "approval_scope": "Technical exact release compilation, target Book, validation; no model-call grant, author decision, literary qualification"
+    },
+    {
+      "pack_id": "wp02-author-supervised-prose-review",
+      "pack_version": null,
+      "workflow_ref": "book_followup_longform_prose_review@1.1.0",
+      "compilation_id": "compilation:wp02-author:b305d7c7093e:wp02-author-supervised-prose-review",
+      "compilation_hash": "sha256:3289e4b335e497817799b726672d8ec8d2ba30f3eeef6bb01f04d3fa438c1731",
+      "deployment_id": "deployment:wp02-author:b305d7c7093e:wp02-author-supervised-prose-review",
+      "expected_activation_version": 1,
+      "activation": {
+        "operation_id": "5e8e5d6d-3223-4113-976e-2dd7d54fcfcc",
+        "status": "SUCCEEDED",
+        "activation_key": "sha256:20026eac7729d95f42d55c359049a99a4b3dd7b800a3324ca1153c13c7be2aaf",
+        "scope_key": "sha256:50722f1e7ad83d5b5c356f6be6279dc66ed0920844d348753f272134005400cb",
+        "target_scope_type": "BOOK",
+        "project_id": "narrative-closure-02-admission-20260927",
+        "workspace_id": "ws:zheng-deng:sampling:20260927",
+        "book_id": "duanchao-guan-zheng-deng-reference-01",
+        "environment": "validation",
+        "workflow_definition_ref": "book_followup_longform_prose_review@1.1.0",
+        "pack_id": "wp02-author-supervised-prose-review",
+        "active_deployment_id": "deployment:wp02-author:b305d7c7093e:wp02-author-supervised-prose-review",
+        "activation_version": 2,
+        "reason": "Activate the technical release compilation within the user-requested Book deployment; no model dispatch, author text approval or qualification",
+        "activated_by": "ai:codex:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+        "replayed": false
+      },
+      "approval_scope": "Technical exact release compilation, target Book, validation; no model-call grant, author decision, literary qualification"
+    }
+  ],
+  "unchanged_pack_profiles": [
+    {
+      "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "manifest_version": "2.3.15",
+      "unchanged_profile": true
+    },
+    {
+      "pack_id": "wp02-author-supervised-chapter",
+      "manifest_version": "2.3.3",
+      "unchanged_profile": true
+    },
+    {
+      "pack_id": "wp02-author-supervised-prose-review",
+      "manifest_version": "1.1.0",
+      "unchanged_profile": true
+    }
+  ],
+  "pack_nodes_resolved": 34,
+  "necessary_workers_ready": true,
+  "global_readiness": "DEGRADED",
+  "global_readiness_reasons": [
+    "Readiness recompiles hardcoded default chapter_generation_pack instead of configured project-owned Chapter Pack",
+    "Six nonrequired historical worker kinds remain stale or stopped"
+  ],
+  "object_store": {
+    "endpoint": "127.0.0.1:61961",
+    "bucket": "novel-forge-artifacts",
+    "exists": true,
+    "object_count": 359
+  },
+  "recovery_test": "NOT_RERUN_ON_THIS_SHA; prior d15 same-configuration process reconstruction evidence retained separately",
+  "current_process_import_paths_verified": true,
+  "business_effect_budget_pause_policy_fingerprints_unchanged": true,
+  "fingerprint_tables": [
+    "authority_external_effect",
+    "authority_external_effect_dispatch",
+    "authority_external_receipt",
+    "authority_budget_reservation",
+    "authority_provider_budget_scope",
+    "authority_runtime_dispatch_control",
+    "authority_runtime_dispatch_event",
+    "authority_runtime_job",
+    "authority_runtime_job_attempt",
+    "authority_runtime_job_checkpoint",
+    "authority_book",
+    "authority_book_production",
+    "authority_book_chapter_acceptance",
+    "authority_book_edition",
+    "authority_book_edition_event",
+    "authority_runtime_policy_version",
+    "authority_runtime_policy_selection",
+    "authority_runtime_policy_binding"
+  ],
+  "provider_dispatches_before": 414,
+  "provider_dispatches_after": 414,
+  "new_provider_dispatches": 0,
+  "author_startup_decision": "NOT_GRANTED",
+  "production_call_authorization": "NOT_GRANTED",
+  "literary_qualification": "NOT_PROVEN",
+  "real_prose_cycle": "NOT_RUN",
+  "retired_endpoints": {
+    "at": "2026-09-28T08:23:19.864455+00:00",
+    "replacement_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+    "actions": [
+      {
+        "pid": 13062,
+        "port": 8140,
+        "matched_command": "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python /tmp/novel-forge-wp02-token100k-20260928/live_api_f827.py",
+        "matched_cwd": "",
+        "signal": "SIGTERM",
+        "outcome": "STOPPED"
+      },
+      {
+        "pid": 30865,
+        "port": 8141,
+        "matched_command": "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python /Users/yuan/novel-runtime/wp02-security-handoff-20260928/strict-output-20260928/run_private_author.py /Users/yuan/novel-runtime/wp02-security-handoff-20260928/strict-output-20260928/live_api.py",
+        "matched_cwd": "",
+        "signal": "SIGTERM",
+        "outcome": "STOPPED"
+      },
+      {
+        "pid": 30866,
+        "port": 3142,
+        "matched_command": "node node_modules/next/dist/bin/next dev --webpack --hostname 127.0.0.1 --port 3142",
+        "matched_cwd": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/strict-output-20260928/release-b272b43da5f2/web/admin",
+        "signal": "SIGTERM",
+        "outcome": "STOPPED"
+      },
+      {
+        "pid": 30884,
+        "port": 3142,
+        "outcome": "ALREADY_STOPPED"
+      }
+    ],
+    "excluded": [
+      "PostgreSQL containers/local server",
+      "MinIO container",
+      "API8137",
+      "UI3138",
+      "isolated clone workers"
+    ],
+    "listen_results": {
+      "8140": false,
+      "8141": false,
+      "3142": false,
+      "8143": true,
+      "3143": true,
+      "8137": true,
+      "3138": true,
+      "61959": true,
+      "61961": true
+    }
+  },
+  "prior_d15_evidence": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/d15e09864472324a03e5d4032292eab7687e53ca/evidence",
+  "evidence_ceiling": "EXECUTABLE"
+}

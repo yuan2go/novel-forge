@@ -1,0 +1,113 @@
+{
+  "schema_version": "wp02-author-supervised-deployment.v1",
+  "observed_at": "2026-09-28T08:10:55.065645+00:00",
+  "baseline_sha": "f6ba4ab542cc20a50b58317f67a4c0e238bff030",
+  "deployed_sha": "d15e09864472324a03e5d4032292eab7687e53ca",
+  "release_root": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/release-d15e09864472",
+  "historical_database": "novel_forge_first_novel_pilot_test",
+  "database_oid": 16384,
+  "migration_head": "20260928_0148_author_supervised_design",
+  "migration_count": 149,
+  "runtime_environment": "validation",
+  "release_channel": "VALIDATION",
+  "provider_dispatch_suspended": true,
+  "project_dispatch_control": "PAUSED@27",
+  "api_url": "http://127.0.0.1:8143",
+  "ui_url": "http://127.0.0.1:3143",
+  "ui_server": "node .next/standalone/server.js",
+  "ui_build": {
+    "release_sha": "d15e09864472324a03e5d4032292eab7687e53ca",
+    "command": "next build --webpack",
+    "exit_code": 0,
+    "api_url": "http://127.0.0.1:8143",
+    "build_id": "72cA8yoPM4_0LX-prDDhy",
+    "log": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/web-production-build.log"
+  },
+  "processes": {
+    "api": {
+      "pid": 60853,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/release_service.py api",
+      "sha": "d15e09864472324a03e5d4032292eab7687e53ca"
+    },
+    "content": {
+      "pid": 60854,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/release_service.py content",
+      "sha": "d15e09864472324a03e5d4032292eab7687e53ca"
+    },
+    "chapter": {
+      "pid": 60855,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/release_service.py chapter",
+      "sha": "d15e09864472324a03e5d4032292eab7687e53ca"
+    },
+    "book": {
+      "pid": 60856,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/release_service.py book",
+      "sha": "d15e09864472324a03e5d4032292eab7687e53ca"
+    },
+    "book_followup": {
+      "pid": 60857,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/release_service.py book_followup",
+      "sha": "d15e09864472324a03e5d4032292eab7687e53ca"
+    },
+    "web": {
+      "pid": 60858,
+      "marker": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/release-d15e09864472/web/admin/.next/standalone/server.js",
+      "sha": "d15e09864472324a03e5d4032292eab7687e53ca"
+    }
+  },
+  "pack_technical_approvals": [
+    {
+      "workflow_ref": "story_planning_generators@1.12.0",
+      "compilation_id": "compilation:wp02-author:d15e09864472:wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "deployment_id": "deployment:wp02-author:d15e09864472:wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "expected_activation_version": 11,
+      "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "approval_scope": "exact release compilation, target Book, validation environment; no model authorization or literary qualification"
+    },
+    {
+      "workflow_ref": "chapter_authority_slice@3.4.1",
+      "compilation_id": "compilation:wp02-author:d15e09864472:wp02-author-supervised-chapter",
+      "deployment_id": "deployment:wp02-author:d15e09864472:wp02-author-supervised-chapter",
+      "expected_activation_version": 0,
+      "pack_id": "wp02-author-supervised-chapter",
+      "approval_scope": "exact release compilation, target Book, validation environment; no model authorization or literary qualification"
+    },
+    {
+      "workflow_ref": "book_followup_longform_prose_review@1.1.0",
+      "compilation_id": "compilation:wp02-author:d15e09864472:wp02-author-supervised-prose-review",
+      "deployment_id": "deployment:wp02-author:d15e09864472:wp02-author-supervised-prose-review",
+      "expected_activation_version": 0,
+      "pack_id": "wp02-author-supervised-prose-review",
+      "approval_scope": "exact release compilation, target Book, validation environment; no model authorization or literary qualification"
+    }
+  ],
+  "pack_nodes_resolved": 34,
+  "necessary_workers_ready": true,
+  "global_readiness": "DEGRADED",
+  "global_readiness_reasons": [
+    "Readiness recompiles hardcoded default chapter_generation_pack instead of configured project-owned Chapter Pack",
+    "Six nonrequired historical worker kinds remain stale or stopped"
+  ],
+  "object_store": {
+    "endpoint": "127.0.0.1:61961",
+    "bucket": "novel-forge-artifacts",
+    "exists": true,
+    "object_count": 359
+  },
+  "restart_verified": true,
+  "business_effect_budget_pause_policy_fingerprints_unchanged": true,
+  "provider_dispatches_before": 414,
+  "provider_dispatches_after": 414,
+  "new_provider_dispatches": 0,
+  "author_startup_decision": "NOT_GRANTED",
+  "production_call_authorization": "NOT_GRANTED",
+  "literary_qualification": "NOT_PROVEN",
+  "real_prose_cycle": "NOT_RUN",
+  "prior_endpoints_retired": false,
+  "evidence_ceiling": "EXECUTABLE",
+  "observed_limitations": [
+    "Initial next start invocation warned about standalone output; switched to the officially generated standalone server using the same successful build",
+    "Initial /creation URL probe returned 404; real product entry /production returns 200",
+    "Source compatibility code may receive a subsequent focused correction; this deployment records only its exact deployed SHA"
+  ]
+}

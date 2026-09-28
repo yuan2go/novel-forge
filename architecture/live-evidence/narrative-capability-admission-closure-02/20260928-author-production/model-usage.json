@@ -1,0 +1,15 @@
+{
+  "schema_version": "wp02-model-usage.v1",
+  "new_real_novel_calls": 0,
+  "new_real_novel_tokens": 0,
+  "new_paid_novel_cost": "0",
+  "historical_dispatch_count_before": 414,
+  "historical_dispatch_count_after": 414,
+  "historical_occupancy": "PRESERVED_INCLUDING_UNKNOWN",
+  "test_transport_calls": "ENGINEERING_ONLY_NOT_REAL_PROVIDER",
+  "development_codex_usage": "NOT_OBSERVABLE",
+  "production_authorization": "NOT_GRANTED",
+  "author_startup_approval": "NOT_GIVEN",
+  "new_prose_count": 0,
+  "prose_before_after_comparison": "NOT_AVAILABLE"
+}
