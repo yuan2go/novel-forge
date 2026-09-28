@@ -1,0 +1,273 @@
+本地模式
+Novel Forge
+
+个人本地小说工厂控制台
+
+当前项目
+隔离测试项目
+trial-project
+
+工作区
+
+工作台
+项目管理
+
+OS RUNTIME
+
+OS 控制台
+总编控制台
+Workflow Runtime
+Agent Center
+Agent Registry
+Agent Dispatch
+Operation Coverage
+Audit Log
+Permission Center
+Canon Console
+Canon Graph 2.0
+Character Console
+Arc Console
+Foreshadowing
+Novel KG Workbench
+Review Issues
+Longform Recap
+Loop Runs
+Trace Timeline
+Retrieval / pgvector
+Cost Dashboard
+Invalidation Map
+Review Rework
+Longform Stability
+
+创作资产
+
+题材库
+素材库
+知识库
+MKAOS
+Novel KG
+Genre Console
+设定书
+文风中心
+Style Console
+写作模板
+精品标准
+
+分析拆解
+
+分析拆解中心
+网文商业结构
+出版技法拆解
+名著深度拆解
+资产转换器
+批量拆书
+
+生产流程
+
+大纲生成
+细纲生成
+上下文构建器
+章节生产
+作者编辑器
+审稿中心
+原创性保护
+发布中心
+Publish Gate
+读者反馈
+Feedback Console
+
+管理工具
+
+生产总控
+变更影响
+模型评测
+Publish Feedback 2.0
+Analytics
+数据统计
+设置中心
+任务中心
+Handoff
+健康检查
+本地生产
+数据同步: attention
+模型状态: attention
+自动保存: on
+EN
+刷新
+0
+
+大纲版本链
+
+大纲生成
+root: local
+Postgres: attention
+
+Novel Forge Feature
+
+作品生产
+
+选择作品和已批准输入，确认生产快照，再阅读、审改和继续。
+
+刷新
+作品与输入
+项目
+选择项目
+隔离测试项目
+作品
+选择作品
+监督流程隔离检查 · ACTIVE
+已批准生产配置
+选择配置
+解析生产快照
+生产快照
+选择已冻结快照
+本次生产到第几章
+确认快照并启动
+查询最新状态
+
+此作品尚无可选择的已批准生产配置。现有设计、开书输入和资格需先补齐；解析会保留具体缺项。
+
+创作输入与设计准备
+
+已批准的作品可直接选择配置并解析快照。仅在缺少设计时启动设计准备；该操作可能产生模型调用，仍受现有授权、资格和预算约束。
+
+作品标题
+创作想法
+类型
+目标读者
+创作约束（每行一条）
+素材使用边界（每行一条）
+保存创作输入使用我已确定的原创方向，直接进入下层设计
+设计目标章数
+比较候选数
+2
+3
+4
+启动设计准备（确认计划后推进）
+确认新的生产策略
+
+填写本书的显式生产策略。保存经现有 Content Authority 校验后，再解析新快照。已提交的生产记录和章节继续使用原冻结版本。
+
+配置名称
+作品目标章数
+正文 Context 策略
+v2 · 上限 16000
+v3 · 上限 24000
+正文 Context tokens
+审读 Context tokens
+技法策略
+Craft v1 · 保留对应合同
+Craft v2 · 保留对应合同
+Craft v3 · 保留对应合同
+Craft v4 · 有界重新选择与阶段延续
+审读时读取已接纳的前文
+Actor 参与
+不启用 Actor
+选择已有角色的持续意图
+World Context tokens
+本次选择依据确认并保存新配置
+项目审阅确认方式
+
+作用于此项目以后首次冻结的章节，包括项目内其他作品；已在途章节和恢复请求保留各自原策略。此操作不修改 Formation 的确认模式，不释放项目暂停，也不增加预算。
+
+当前项目选择：未设置；首次冻结时使用原生 AUTO 默认
+
+新的项目审阅方式
+保留当前设置
+作者监督试生产（计划、终稿与事实接纳逐项确认；文学资格未证明）
+自动推进（仍受资格、预算与质量门禁约束）
+重大决策需确认
+层级计划需确认
+章节最终候选需确认
+叙事事实接纳需确认
+导演决策需人工确认
+确认项目范围并保存审阅方式
+作者监督试生产
+
+仅批准本作品的指定任务、Producer 和模型。独立文学资格仍未证明；计划、正文终稿和事实接纳需要作者判断。结构、引用、预算、权限和 UNKNOWN 对账继续生效。
+
+这项决定不会追加预算、续期原额度或释放历史暂停。模型文学资格不足可由作者监督处理；明确的结构或事实错误必须修复。
+
+模型辅助判断：Codex 生成交给 DeepSeek 复核，DeepSeek 生成交给 Codex 复核。依据真实生成回执选择另一模型；复核是作者判断的依据，尚不构成独立文学资格或自动发布批准。
+
+本作品新设计模式：作者监督试生产。旧冻结输入保持原模式。
+
+查询任务与原审批
+
+尚无本作品可批准的实际任务合同。先保存作者输入并准备原生任务；诊断候选不列为生产输入。
+
+批准理由 / 保留优点 / 修改意见
+确认本作品采用作者监督模式
+本作品的新请求恢复严格资格模式
+需要作者判断的精确计划
+CHAPTER · STRUCTURALLY_VALID · PENDING
+core_conflict
+工程测试候选：人物是否已知证人身份
+
+sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa · 独立文学资格未证明
+
+冻结约束与来源
+请求另一模型复核此版本
+模型审读建议 · deepseek / fixture-reviewer
+
+evaluations：layer：CAUSALITY；criteria：criterion：knowledge；verdict：FAIL；rationale：工程模拟发现：身份披露先于目击。；evidence_refs：paragraph:4；repair_directive：核对人物的信息来源。
+
+审读版本 sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb · 作者尚需判断争议，文学资格未证明。
+
+knowledge · FAIL
+
+工程模拟发现：身份披露先于目击。
+
+依据：paragraph:4。建议：核对人物的信息来源。
+
+作者判断
+请选择处理方式
+依据原文驳回此判断
+已有证据证明问题解决
+原文依据与处理理由
+批准并选择此计划记录修改意见并拒绝当前候选
+真实样本人工评阅
+
+诊断样本保留为未接纳候选。请本人阅读并判断，每项意见保存原文依据与应保留的优点。此表单不展示生成模型和其他评阅结果；看过这些信息时请勿声明盲评。
+
+当前身份可查询；提交需要有权限的真人操作者登录。
+
+当前作品尚无可评阅的原生诊断候选。
+
+评阅样本
+选择样本
+进度与恢复
+生产记录
+选择生产记录
+操作原因
+暂停
+恢复
+恢复章节提交
+取消
+阅读正文、审稿与整稿版本
+新请求待选择的配置
+
+选择配置后解析快照；尚未冻结的设置不表示已用于正文。
+
+作品策略来源
+项目预算范围
+
+范围上限不是实际用量；项目预算不自动授权每个任务。
+
+未查到持久预算范围。
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.selectOption: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('section').filter({ has: getByRole('heading', { name: '作者监督试生产', exact: true }) }).getByLabel('作者判断', { exact: true })[22m
+
+    at /Users/yuan/.codex/worktrees/real-prose-author-entry/novel-forge/web/admin/tests/author-supervision-browser.mjs:47:47 {
+  log: [
+    "  - waiting for locator('section').filter({ has: getByRole('heading', { name: '作者监督试生产', exact: true }) }).getByLabel('作者判断', { exact: true })"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v26.3.1

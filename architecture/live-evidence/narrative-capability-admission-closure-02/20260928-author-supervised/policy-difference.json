@@ -1,0 +1,27 @@
+{
+  "type": "CONFIGURABLE_POLICY",
+  "strict": "Default unchanged; no trial grant consumed by strict semantic qualification; old frozen requests unchanged.",
+  "supervised": "Native author policy scopes Book/task/Producer/candidate/revision/expiry/tokens/amount; only literary benchmark/quality insufficiency may be overridden.",
+  "cross_review": {
+    "codex-cli": "deepseek",
+    "deepseek": "codex-cli",
+    "identity": "exact generator Effect + target version/hash; no prompt/account substitution",
+    "purpose": "AUTHOR_ADVISORY only; no independent qualification rows",
+    "decision": "Author must resolve or evidence-dismiss each exact non-PASS finding before native approval. Auto author substitution disabled."
+  },
+  "technical_constraints_unchanged": [
+    "permissions and true identities",
+    "credentials",
+    "finite accumulated budget",
+    "schema and source validation",
+    "frozen inputs",
+    "Book/run/edition isolation",
+    "idempotency",
+    "UNKNOWN reconciliation",
+    "native acceptance transaction",
+    "immutable history",
+    "publication authorization"
+  ],
+  "asset_source": "Three diagnostic samples retain BENCHMARK_ONLY. Author input is original and truthfully attributed; Formation v3 consumes its exact approved version.",
+  "recovery": "Unknown network outcomes reuse original request/key; confirmed policy CAS failure retained then reconfirmed against refreshed policy; plan rejection reuses original expected version."
+}

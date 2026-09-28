@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FormationReviewPanel } from "./FormationReviewPanel";
+import { fetchJson } from "../../shared/api";
 import type { ProjectRow } from "../../shared/types";
 import { createAuthorBook, createAuthorWorkspace, loadProductionProjects, saveCreativeInput, loadCreativeInput, startFormation, loadFormation, resumeFormation, type Book, type ContentOperation, type Formation } from "./api";
 
-type Pending = {kind: "book" | "brief" | "formation"; body: Record<string, unknown>; workspaceBody?: Record<string, unknown>};
-type Saved = {title: string; idea: string; genre: string; audience: string; constraints: string; sources: string; target: number; candidates: number; operationId: string; formationId: string; pending: Pending | null};
+type Direction = {asset_version_id: string; content_hash: string; state: {lifecycle: string}; content?: {candidate_payload: Record<string,string>}};
+type Pending = {kind: "book" | "brief" | "formation" | "direction" | "direction-decision"; path?: string; body: Record<string, unknown>; workspaceBody?: Record<string, unknown>};
+type Saved = {title: string; idea: string; genre: string; audience: string; constraints: string; sources: string; target: number; candidates: number; operationId: string; formationId: string; pending: Pending | null; directionOnly?: boolean; design?: Record<string,string>; direction?: Direction; directionReason?: string; contribution?: string};
+const designFields = [["objective","故事目标"],["target_reader","目标读者"],["why_worth_writing","为什么值得写"],["genre","类型"],["subgenre","细分类型"],["core_desire","核心欲望"],["core_fear","核心恐惧"],["core_conflict","核心冲突与代价"],["narrative_engine","持续推动故事的机制"],["differentiation","与同类作品的差异"],["emotional_contract","阅读与情感承诺"],["serialization_potential","后继叙事空间"]];
 const initial: Saved = {title: "", idea: "", genre: "", audience: "", constraints: "", sources: "", target: 1, candidates: 2, operationId: "", formationId: "", pending: null};
 export function CreativeInputPanel({project, book, release, onBook, onRefresh}: {project?: ProjectRow; book?: Book; release?: string; onBook: (id: string) => void; onRefresh: () => Promise<void>}) {
   const key = `novel-forge:creative-input:${project?.project_id || ""}:${book?.book_id || "new"}`;
@@ -50,6 +53,9 @@ export function CreativeInputPanel({project, book, release, onBook, onRefresh}: 
       } else if (request.kind === "brief") {
         const result = await saveCreativeInput(request.body);
         retain({...frozen, pending: null, operationId: result.operation_id});
+      } else if(request.kind === "direction" || request.kind === "direction-decision") {
+        const direction = await fetchJson<Direction>(request.path!, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(request.body)});
+        retain({...frozen,pending:null,direction:{...direction,content:direction.content || frozen.direction?.content}});
       } else {
         const result = await startFormation(String(request.body.book_id), request.body);
         retain({...frozen, pending: null, formationId: result.formation_run_id});
@@ -75,9 +81,11 @@ export function CreativeInputPanel({project, book, release, onBook, onRefresh}: 
   }
   function form() {
     const asset = operation?.outputs[0]; if (!asset || !book || !project) return;
-    void send({kind: "formation", body: {project_id: project.project_id, workspace_id: book.workspace_id, book_id: book.book_id, expected_book_version: book.version, idempotency_key: crypto.randomUUID(), creative_brief_asset_version_id: asset.asset_version_id, creative_brief_content_hash: asset.content_hash, generation_policy: {contract_version: "formation-generation.v2", approval_mode: "REVIEW_PLAN", creative_candidates: saved.candidates, target_chapters: saved.target, title: saved.title || book.title}}});
+    if(saved.directionOnly && (saved.direction?.state.lifecycle!=="ACTIVE" || !directionMatches)) return;
+    void send({kind: "formation", body: {project_id: project.project_id, workspace_id: book.workspace_id, book_id: book.book_id, expected_book_version: book.version, idempotency_key: crypto.randomUUID(), creative_brief_asset_version_id: asset.asset_version_id, creative_brief_content_hash: asset.content_hash, generation_policy: {contract_version: saved.directionOnly ? "formation-generation.v3" : "formation-generation.v2", approval_mode: "REVIEW_PLAN", creative_candidates: saved.directionOnly ? 1 : saved.candidates, target_chapters: saved.target, title: saved.title || book.title, ...(saved.directionOnly ? {author_creative_foundation:{asset_version_id:saved.direction!.asset_version_id,content_hash:saved.direction!.content_hash}} : {})}}});
   }
   const disabled = busy || !!saved.pending;
+  const directionMatches = designFields.every(([name])=>saved.design?.[name]===saved.direction?.content?.candidate_payload[name]);
   const change = (field: keyof Saved, value: string | number) => setSaved(current => ({...current, [field]: value}));
   return <section className="panel">
     <h2>{book ? "创作输入与设计准备" : "登记新作品"}</h2>
@@ -96,10 +104,19 @@ export function CreativeInputPanel({project, book, release, onBook, onRefresh}: 
       </div>
       <button disabled={disabled || !saved.idea.trim() || !saved.genre.trim() || !saved.audience.trim() || !saved.sources.trim()} onClick={brief}>保存创作输入</button>
       {operation && <p>输入任务：{operation.status} · {operation.operation_id} · {operation.outputs[0]?.content_hash || "等待形成持久输入"}</p>}
+      <label><input type="checkbox" checked={!!saved.directionOnly} disabled={disabled || !!saved.formationId} onChange={e=>retain({...saved,directionOnly:e.target.checked})}/>使用我已确定的原创方向，直接进入下层设计</label>
+      {saved.directionOnly && <fieldset><legend>确认原创方向</legend><p>先在监督面板选择本作品的作者监督模式。本输入走原生作者资产和审批流程；诊断候选保留原用途，不导入或改为正式资产。无需重新生成创意候选。</p>
+        <div className="formGrid wide">{designFields.map(([name,label])=><label key={name}>{label}<textarea aria-label={label} value={saved.design?.[name] || ""} disabled={disabled} onChange={e=>retain({...saved,design:{...saved.design,[name]:e.target.value}})}/></label>)}</div>
+        <label>内容贡献<select aria-label="内容贡献" value={saved.contribution || ""} disabled={disabled} onChange={e=>retain({...saved,contribution:e.target.value})}><option value="">如实选择来源</option><option value="OPERATOR_AUTHORED_INPUT">作者原创输入</option><option value="AI_ASSISTED_AUTHOR_INPUT">AI 协助整理，作者确认的原创输入</option></select></label>
+        <button disabled={disabled || operation?.status!=="SUCCEEDED" || !saved.contribution || designFields.some(([name])=>!saved.design?.[name]?.trim())} onClick={()=>{const asset=operation?.outputs[0];if(!asset || !project) return;void send({kind:"direction",path:`/product/production/book-authority/books/${encodeURIComponent(book.book_id)}/author-creative-input`,body:{project_id:project.project_id,brief_asset_version_id:asset.asset_version_id,brief_content_hash:asset.content_hash,design:saved.design,contribution:saved.contribution,idempotency_key:crypto.randomUUID()}});}}>保存方向为待批准输入</button>
+        {saved.direction && <><p>方向版本：{saved.direction.content_hash} · {saved.direction.state.lifecycle}</p><label>确认依据与保留的阅读承诺<textarea value={saved.directionReason || ""} disabled={disabled} onChange={e=>retain({...saved,directionReason:e.target.value})}/></label>
+          {!directionMatches && <p>方向有未保存修改，请先保存新版本；原批准版本保持不变。</p>}
+          <button disabled={disabled || !directionMatches || !saved.directionReason?.trim() || saved.direction.state.lifecycle==="ACTIVE"} onClick={()=>send({kind:"direction-decision",path:`/product/production/book-authority/books/${encodeURIComponent(book.book_id)}/author-creative-input/${encodeURIComponent(saved.direction!.asset_version_id)}/decisions`,body:{project_id:project!.project_id,content_hash:saved.direction!.content_hash,reason:saved.directionReason,decision:"APPROVE",findings:[],idempotency_key:crypto.randomUUID()}})}>批准此版本并选择为创作方向</button></>}
+      </fieldset>}
       <div className="formGrid wide">
         <label>设计目标章数<input aria-label="设计目标章数" type="number" min={1} max={10000} value={saved.target} disabled={disabled} onChange={e => change("target", Number(e.target.value))} /></label>
-        <label>比较候选数<select aria-label="比较候选数" value={saved.candidates} disabled={disabled} onChange={e => change("candidates", Number(e.target.value))}>{[2,3,4].map(n => <option key={n}>{n}</option>)}</select></label>
-        <button disabled={disabled || operation?.status !== "SUCCEEDED" || !operation.outputs.length || !!saved.formationId || saved.target < 1 || saved.target > 10000} onClick={form}>启动设计准备（确认计划后推进）</button>
+        {!saved.directionOnly && <label>比较候选数<select aria-label="比较候选数" value={saved.candidates} disabled={disabled} onChange={e => change("candidates", Number(e.target.value))}>{[2,3,4].map(n => <option key={n}>{n}</option>)}</select></label>}
+        <button disabled={disabled || operation?.status !== "SUCCEEDED" || !operation.outputs.length || !!saved.formationId || saved.target < 1 || saved.target > 10000 || !!saved.directionOnly && (saved.direction?.state.lifecycle!=="ACTIVE" || !directionMatches)} onClick={form}>启动设计准备（确认计划后推进）</button>
       </div>
       {formation && <div><FormationReviewPanel formation={formation} onChange={setFormation} /><p>设计状态：{formation.lifecycle} · {formation.current_stage}</p><p>{JSON.stringify(formation.failure || formation.recovery_instruction || "等待原生任务更新")}</p>
         <button disabled={disabled || !["FAILED", "WAITING_APPROVAL"].includes(formation.lifecycle)} onClick={async () => {setBusy(true); try {setFormation(await resumeFormation(formation));} catch(e) {setError(String(e));} finally {setBusy(false);}}}>核对停点后恢复设计</button>

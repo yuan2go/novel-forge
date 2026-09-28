@@ -710,6 +710,21 @@ class GatewayNarrativeSemanticEvaluationExecutionPort:
                 "NARRATIVE_EVALUATION_PROVIDER_EVIDENCE_INVALID",
                 "ModelCallLog is not the exact real-provider evaluator receipt",
             )
+        cross_review = None
+        if request.command["payload"].get("evaluation_purpose") == "AUTHOR_ADVISORY":
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+            from novel_forge.modules.production_execution.cross_model_review import reviewer_rejection
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("""SELECT request_payload #> '{_production_execution,capability_runtime,routing_decision}'
+                    FROM authority_external_effect WHERE project_id=%s AND external_effect_id=%s AND status='SUCCEEDED'""",
+                    [request.project_id, external_effect_id])
+                row = uow.cursor.fetchone()
+            decision = row[0] if row else {}
+            cross_review = (decision or {}).get("task", {}).get("declared_requirements", {}).get("cross_model_review")
+            if (not cross_review or cross_review.get("target_asset_version_id") != candidate.asset_version_id
+                    or cross_review.get("target_content_hash") != candidate.content_hash
+                    or reviewer_rejection(cross_review, {"provider": result.provider_id, "model": result.model_id})):
+                raise KernelError("CROSS_MODEL_REVIEW_RECEIPT_INVALID", "Served reviewer and exact target must match the frozen cross-model route")
         return NarrativeProviderEvaluation(
             evaluation=dict(result.output),
             model_call_log_asset_version_id=log.asset_version_id,
@@ -722,6 +737,7 @@ class GatewayNarrativeSemanticEvaluationExecutionPort:
             prompt_version=result.prompt_version,
             skill_version=result.skill_version,
             real_model_call=result.real_model_call,
+            cross_model_review=cross_review,
         )
 
 

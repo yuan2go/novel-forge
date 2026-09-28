@@ -122,6 +122,7 @@ class BookDesignAuthorityRepository:
         *,
         book: dict[str, Any],
         design: BookDesignPayload,
+        author_supervision: dict[str, Any] | None = None,
         operation_id: str,
         trace_id: str,
         checkpoint: Callable[[str], None],
@@ -171,7 +172,7 @@ class BookDesignAuthorityRepository:
         )
         candidate_status = (
             "VALIDATED"
-            if design.schema_version not in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS
+            if design.schema_version not in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS or author_supervision
             else "EVALUATION_PENDING"
         )
         self.cursor.execute(
@@ -223,6 +224,7 @@ class BookDesignAuthorityRepository:
                 else "EVALUATION_PENDING"
             ),
             "candidate_generation_does_not_evaluate_itself": True,
+            **({"author_supervision": author_supervision, "semantic_evaluation_status": "AUTHOR_REVIEW_PENDING"} if author_supervision else {}),
         }
         self.cursor.execute(
             """
@@ -404,6 +406,7 @@ class BookDesignAuthorityRepository:
         decision: str,
         reason: str,
         decided_by: str,
+        author_supervision: dict[str, Any] | None = None,
         operation_id: str,
     ) -> str:
         candidate = self._candidate_for_update(book, asset_version_id)
@@ -414,7 +417,12 @@ class BookDesignAuthorityRepository:
             )
         if candidate["schema_version"] == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
             self._require_v5_foundation(book, asset_version_id)
-        if candidate["schema_version"] in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS:
+        if author_supervision:
+            from novel_forge.modules.book_design_authority.author_supervision import proposed_supervision
+            expected = proposed_supervision(self.cursor, project_id=book["project_id"], book_id=book["book_id"], asset_version_id=asset_version_id)
+            if expected != author_supervision or decided_by != expected["author_id"]:
+                raise KernelError("AUTHOR_SUPERVISION_BOOK_SCOPE", "Author decision differs from proposed Book policy")
+        elif candidate["schema_version"] in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS:
             self._require_progressive_qualification(book, asset_version_id)
         normalized = decision.strip().upper()
         if normalized not in {"APPROVE", "REJECT"}:
@@ -443,10 +451,20 @@ class BookDesignAuthorityRepository:
                         "schema_version": "asset-decision.v1",
                         "decision": normalized,
                         "reason": reason,
+                        **({"author_supervision": author_supervision, "content_hash": candidate["content_hash"],
+                            "literary_qualification": "NOT_PROVEN"} if author_supervision else {}),
                     }
                 ),
             ],
         )
+        if author_supervision:
+            self.cursor.execute("""INSERT INTO authority_asset_qualification(qualification_id,asset_version_id,policy_version,decision,evidence)
+                VALUES (%s,%s,'book-design-author-supervision.v1',%s,%s)""", [str(uuid4()), asset_version_id,
+                "ELIGIBLE" if normalized == "APPROVE" else "INELIGIBLE", Jsonb({"schema_version": "author-supervised-design-eligibility.v1",
+                    "author_supervision": author_supervision, "decision_id": decision_id, "decision_operation_id": operation_id,
+                    "content_hash": candidate["content_hash"], "reason": reason, "literary_qualification": "NOT_PROVEN"})])
+            self.cursor.execute("UPDATE authority_asset_version SET eligibility=%s WHERE asset_version_id=%s",
+                ["ELIGIBLE" if normalized == "APPROVE" else "INELIGIBLE", asset_version_id])
         self.cursor.execute(
             """
             UPDATE authority_book_design_candidate

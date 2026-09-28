@@ -644,7 +644,7 @@ class BookProductionInputResolver:
                 for role in _OPTIONAL_INITIAL_STATE_ROLE_TYPES
             },
             "capability_pack_deployment_refs": deployments,
-            "design_admission_status": "LONGFORM_DESIGN_QUALIFIED",
+            "design_admission_status": design_qualification["admission"],
             "design_qualification": design_qualification,
             "design_qualification_hash": canonical_hash(design_qualification),
             "release_sha": self.commit_sha,
@@ -702,6 +702,33 @@ class BookProductionInputResolver:
                 tuple(item["asset_version_id"] for item in plans["ARC"]),
             ),
         )
+        from novel_forge.modules.book_design_authority.author_supervision import approved_book_design_receipt
+        from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt, reusable_qualified_design_receipt
+        from novel_forge.modules.production_execution.author_supervision import selected_book_supervision
+        author_design = approved_book_design_receipt(cursor, project_id=command.project_id,
+            book_id=command.book_id, asset_version_id=book_design_version)
+        book_supervision = selected_book_supervision(cursor, project_id=command.project_id, book_id=command.book_id)
+        if author_design is not None or book_supervision is not None:
+            author_id = author_design["author_id"] if author_design else book_supervision["author_id"]
+            if book_supervision is not None and book_supervision["author_id"] != author_id:
+                raise KernelError("AUTHOR_SUPERVISION_APPROVAL_REQUIRED", "Book author scope differs from the selected design decision")
+            receipts = []
+            for stage, ids in stage_assets:
+                for asset_version_id in ids:
+                    receipt = author_design if stage == "book_design.propose" else approved_design_receipt(
+                        cursor, project_id=command.project_id, book_id=command.book_id, asset_version_id=asset_version_id)
+                    if receipt is None:
+                        receipts.append(reusable_qualified_design_receipt(cursor, project_id=command.project_id,
+                            book_id=command.book_id, asset_version_id=asset_version_id, generator=stage))
+                        continue
+                    if receipt["lifecycle"] != "ACTIVE" or receipt["author_id"] != author_id:
+                        raise KernelError("AUTHOR_SUPERVISION_APPROVAL_REQUIRED", f"{stage} needs exact current author approval")
+                    receipts.append({**receipt, "design_layer": stage})
+            return {"schema_version": "author-supervised-design-admission.v1", "admission": "AUTHOR_SUPERVISED_DESIGN",
+                "project_id": command.project_id, "book_id": command.book_id,
+                "book_version": command.expected_book_version, "author_id": author_id,
+                **({"book_authorization":book_supervision} if book_supervision else {}),
+                "literary_qualification": "NOT_PROVEN", "receipts": receipts}
         for stage, asset_version_ids in stage_assets:
             for asset_version_id in asset_version_ids:
                 expected.extend(

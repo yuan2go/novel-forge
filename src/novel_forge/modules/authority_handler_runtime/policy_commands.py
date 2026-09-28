@@ -58,10 +58,10 @@ def owned_policy_definition(
     paired_samples_budget = False
     provider_campaign_budget = False
     campaign_monetary_amendment = False
-    routing_sources = owner == "PROVIDER_ROUTING" and any(key in content for key in ("benchmark_exports", "benchmark_source_bindings"))
+    routing_sources = owner == "PROVIDER_ROUTING" and any(key in content for key in ("benchmark_exports", "benchmark_source_bindings", "author_supervised_authorizations", "author_supervised_books"))
     if owner == "PROVIDER_ROUTING":
-        from novel_forge.modules.production_execution.routing_policy import POLICY_SCHEMA, LEGACY_POLICY_SCHEMA
-        policy_schema = POLICY_SCHEMA if routing_sources else LEGACY_POLICY_SCHEMA
+        from novel_forge.modules.production_execution.routing_policy import POLICY_SCHEMA, LEGACY_POLICY_SCHEMA, AUTHOR_SUPERVISED_POLICY_SCHEMA
+        policy_schema = AUTHOR_SUPERVISED_POLICY_SCHEMA if any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else POLICY_SCHEMA if routing_sources else LEGACY_POLICY_SCHEMA
     if owner == "CREATIVE_EXPERIMENT_BUDGET":
         from novel_forge.modules.command_kernel.creative_budget_contract import PAIRED_SAMPLES_VERSION, V5_POLICY_SCHEMA, PRODUCTION_BOOK_VERSION, SINGLE_BOOK_VERSION, PROVIDER_CAMPAIGN_VERSION, V1_POLICY_SCHEMA, V2_POLICY_SCHEMA, V3_POLICY_SCHEMA, V4_POLICY_SCHEMA
         single_book_budget = not content or content.get("comparison_budget", {}).get("contract_version") == SINGLE_BOOK_VERSION
@@ -93,14 +93,16 @@ def owned_policy_definition(
             "policy": policy_schema,
         },
     }
+    if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")):
+        command_schema["properties"]["expected_policy_hash"] = {"type": "string"}
     return {
         "name": name,
-        "definition_version": "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
+        "definition_version": "1.5.0" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
         "family": owner.lower(),
         "enabled": True,
         "definition_status": "implemented_validation_pending",
-        "command_schema_version": f"{name}.command.v3" if production_book_budget or routing_sources else f"{name}.command.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.command.v1",
-        "result_schema_version": f"{name}.result.v3" if production_book_budget or routing_sources else f"{name}.result.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.result.v1",
+        "command_schema_version": f"{name}.command.v5" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else f"{name}.command.v3" if production_book_budget or routing_sources else f"{name}.command.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.command.v1",
+        "result_schema_version": f"{name}.result.v5" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else f"{name}.result.v3" if production_book_budget or routing_sources else f"{name}.result.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.result.v1",
         "command_schema": command_schema,
         "result_schema": result_schema,
         "input_contract": command_schema,
@@ -148,12 +150,15 @@ def configure_owned_policy(
     commit_sha: str,
     principal: Principal,
     fault_injector: TransactionCheckpoint | None = None,
+    expected_policy_hash: str | None = None,
 ) -> dict[str, Any]:
     principal.require("book.authority.execute", project_id)
     if owner == "PROVIDER_ROUTING":
         from novel_forge.modules.authority_security import PrincipalType
         from novel_forge.modules.production_execution.routing_policy import validate_routing_policy
         validate_routing_policy(content)
+        from novel_forge.modules.production_execution.author_supervision import validate_grants
+        validate_grants(content, author_id=principal.principal_id)
         if principal.principal_type is not PrincipalType.LOCAL_OPERATOR:
             raise PermissionError("only an authenticated operator can change routing requirements")
         from novel_forge.modules.production_execution.routing_sources import require_source_permissions
@@ -185,6 +190,15 @@ def configure_owned_policy(
         uow: AuthorityUnitOfWork, operation_id: str, checkpoint: TransactionCheckpoint
     ) -> dict[str, Any]:
         if owner == "PROVIDER_ROUTING":
+            uow.cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", ["routing-policy:" + project_id])
+            if expected_policy_hash is not None:
+                uow.cursor.execute("""SELECT v.content_hash FROM authority_runtime_policy_selection s
+                    JOIN authority_runtime_policy_version v USING(owner,project_id,policy_version)
+                    WHERE s.owner='PROVIDER_ROUTING' AND s.project_id=%s FOR UPDATE OF s""", [project_id])
+                previous = uow.cursor.fetchone()
+                if (previous[0] if previous else "") != expected_policy_hash:
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    raise KernelError("ROUTING_POLICY_VERSION_CONFLICT", "Refresh the author policy before confirming another change")
             from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_policy_in_uow
             validate_bootstrap_policy_in_uow(uow.cursor, project_id=project_id, content=content)
             from novel_forge.modules.production_execution.routing_sources import validate_sources_in_uow
@@ -232,7 +246,7 @@ def configure_owned_policy(
             "span_id": str(uuid4()),
             "correlation_id": correlation_id,
             "causation_id": "",
-            "input": {"project_id": project_id, "owner": owner, "policy": content},
+            "input": {"project_id": project_id, "owner": owner, "policy": content, **({"expected_policy_hash": expected_policy_hash} if expected_policy_hash is not None else {})},
             "input_assets": [],
         },
         context=AdmissionContext(

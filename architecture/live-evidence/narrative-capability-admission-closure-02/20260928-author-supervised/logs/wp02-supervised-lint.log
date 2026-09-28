@@ -1,0 +1,22 @@
+E402 Module level import not at top of file
+  --> src/novel_forge/modules/production_execution/routing_policy.py:58:1
+   |
+57 | LEGACY_POLICY_SCHEMA = deepcopy(POLICY_SCHEMA)
+58 | from .author_supervision import GRANT_SCHEMA, validate_grants
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+59 | POLICY_SCHEMA["properties"].update({
+60 |     "benchmark_exports": {"type": "array", "maxItems": 16, "items": EXPORT_SCHEMA},
+   |
+
+F401 [*] `json` imported but unused
+ --> tests/unit/test_author_supervised_routing.py:1:8
+  |
+1 | import json
+  |        ^^^^
+2 | from copy import deepcopy
+3 | from dataclasses import replace
+  |
+help: Remove unused import: `json`
+
+Found 2 errors.
+[*] 1 fixable with the `--fix` option.

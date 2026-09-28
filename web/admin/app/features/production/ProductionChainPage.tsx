@@ -1,5 +1,7 @@
 "use client";
 
+import { AuthorSupervisionPanel } from "./AuthorSupervisionPanel";
+
 import { ReferenceReviewPanel } from "./ReferenceReviewPanel";
 
 import Link from "next/link";
@@ -103,11 +105,12 @@ export function ProductionChainPage() {
         <button className="secondaryButton" disabled={busy || !project} onClick={() => act(refresh, "已刷新持久状态。")}>查询最新状态</button>
       </div>
       {book && !workspace.profiles.length && <p>此作品尚无可选择的已批准生产配置。现有设计、开书输入和资格需先补齐；解析会保留具体缺项。</p>}
-      {snapshot && <p>快照校验：{snapshot.snapshot_hash} · 冻结版本：{snapshot.release_sha}</p>}
+      {snapshot && <p>设计准入：{snapshot.design_admission_status === "AUTHOR_SUPERVISED_DESIGN" ? "作者监督试生产 · 独立文学资格未证明" : String(snapshot.design_admission_status || "历史未标记")} · 快照校验：{snapshot.snapshot_hash} · 冻结版本：{snapshot.release_sha}</p>}
     </section>
     {(!bookId || book) && <CreativeInputPanel key={`${project}:${bookId}`} project={projects.find(p => p.project_id === project)} book={book} release={workspace.release_identity} onBook={setBookId} onRefresh={refresh} />}
     {book && <ProductionPolicyPanel key={`${project}:${bookId}:${profileId}`} project={project} book={book} profile={profile} characters={workspace.approved_characters} onRefresh={refresh} onSelect={id => {setProfileId(id); setSnapshotId("");}} />}
     {book && <EditorialControlPanel key={project} project={project} book={book} current={workspace.editorial_control} onRefresh={refresh} />}
+    {book && <AuthorSupervisionPanel key={`supervision:${project}:${bookId}`} project={project} book={book} />}
     {book && <ReferenceReviewPanel key={`reference:${project}:${bookId}`} project={project} book={book} />}
     <section className="panel">
       <h2>进度与恢复</h2>

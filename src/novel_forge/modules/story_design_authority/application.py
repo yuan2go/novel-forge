@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Any
 from uuid import uuid4
 
@@ -217,7 +217,7 @@ class PostgresStoryDesignAssetAuthority:
                 transition=command.transition.value,
                 expected_version=command.expected_version,
                 source_kind=command.source_kind,
-                evidence=dict(command.evidence or {}),
+                evidence=dict(prepared.get("admitted_evidence", command.evidence or {})),
             )
             uow.commit()
         return result
@@ -269,11 +269,37 @@ class PostgresStoryDesignAssetAuthority:
             and command.source_kind == "OPERATOR_AUTHORED"
         ):
             self._require_operator_authored_candidate(command)
-        if (
-            command.transition is DesignTransition.SEMANTIC_VALIDATE
-            and current_state is not None
-            and str(current_state["source_kind"]) == "OPERATOR_AUTHORED"
-        ):
+        from .author_supervision import candidate_supervision, validate_author_review
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            supervision = candidate_supervision(uow.cursor, project_id=command.project_id,
+                                                asset_version_id=command.asset_version_id,
+                                                author_input=command.transition is DesignTransition.ENROLL and command.source_kind == "OPERATOR_AUTHORED")
+        if supervision is not None:
+            review_receipts = []
+            if command.transition is DesignTransition.QUALIFY:
+                raise KernelError("AUTHOR_SUPERVISION_NOT_INDEPENDENT_QUALIFICATION", "Author review cannot confer independent qualification")
+            if command.transition in {DesignTransition.SEMANTIC_VALIDATE, DesignTransition.SUBMIT_APPROVAL, DesignTransition.APPROVE}:
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    review_receipts = validate_author_review((command.evidence or {}).get("author_review"), principal=principal,
+                        supervision=supervision, asset_version_id=command.asset_version_id, content_hash=command.content_hash, cursor=uow.cursor)
+            evidence = {**dict(command.evidence or {}), "author_supervision": supervision,
+                **({"model_review_receipts": review_receipts} if review_receipts else {})}
+            if command.transition is DesignTransition.ENROLL and command.source_kind == "OPERATOR_AUTHORED":
+                if principal.principal_id != supervision["author_id"]:
+                    raise PermissionError("Supervised author input must belong to the authenticated author")
+            if command.transition is DesignTransition.ACTIVATE:
+                from .author_supervision import approved_design_receipt
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    approval = approved_design_receipt(uow.cursor, project_id=command.project_id,
+                        book_id=supervision["book_id"], asset_version_id=command.asset_version_id)
+                if approval is None:
+                    raise KernelError("AUTHOR_SUPERVISION_APPROVAL_REQUIRED", "Activation requires native author approval")
+                evidence["author_review"] = approval["author_review"]
+                evidence["author_approval_receipt"] = approval
+            command = replace(command, evidence=evidence)
+        elif (command.evidence or {}).get("author_supervision") or (command.evidence or {}).get("author_review"):
+            raise KernelError("AUTHOR_SUPERVISION_SCOPE_REQUIRED", "Supervised decisions require a native supervised candidate")
+        if supervision is None and command.transition is DesignTransition.SEMANTIC_VALIDATE and current_state is not None and current_state["source_kind"] == "OPERATOR_AUTHORED":
             self._require_operator_semantic_evaluation(command, current_state)
         self._register_contracts()
         payload = {
@@ -365,6 +391,7 @@ class PostgresStoryDesignAssetAuthority:
         return {
             "operation_id": operation_id,
             "replayed": bool(admitted["replayed"]),
+            "admitted_evidence": dict(command.evidence or {}),
         }
 
     def require(self, *, project_id: str, asset_version_id: str) -> dict[str, Any]:

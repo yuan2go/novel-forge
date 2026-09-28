@@ -1,0 +1,100 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___ test_native_author_design_is_approved_without_independent_qualification ____
+
+    def test_native_author_design_is_approved_without_independent_qualification():
+        from novel_forge.modules.content_authority import CONTENT_CODECS, ContentAuthorityApplication, ContentOperationRequest
+        from novel_forge.modules.story_design_authority import DesignTransition, PlanningScope, PostgresStoryDesignAssetAuthority, StoryDesignTransitionCommand
+        from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt
+        ensure_migrated()
+        project = identifier("supervised-design")
+        book, workspace = "book:" + project, "workspace:" + project
+        seed_authority_project_book(project_id=project, book_id=book, workspace_id=workspace)
+        author = Principal("author", PrincipalType.LOCAL_OPERATOR, frozenset({"book.authority.execute", "content.authority.execute",
+            "content.operation:story_design.creative_foundation.author", "story_design.authority.execute"}), frozenset({project}), "isolated-test")
+        scope, _ = prepared("creative.candidates.generate")
+        policy = deepcopy(scope.policy_snapshot["policy"])
+        grant = policy["author_supervised_authorizations"][0]
+        grant.update(book_id=book, expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat())
+        configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", content=policy, project_id=project, workspace_id=workspace,
+            idempotency_key=project+":policy", trace_id=project, correlation_id=project, application_build_id="supervised-design-test", commit_sha="a"*40, principal=author)
+        candidate = {"schema_version": "story_design.authority.v1", "project_id": project, "book_id": book,
+            "generator_operation_name": "creative.candidates.generate", "planning_scope": "NOT_APPLICABLE", "logical_key": "foundation:test",
+            "operator_authored": True, "provider_generated": False, "candidate_payload": {
+                "objective": "Protect a witness while disclosing an accountable record.", "target_reader": "adult mystery readers",
+                "why_worth_writing": "Truth requires responsibility for its consequences.", "genre": "mystery", "subgenre": "institutional mystery",
+                "core_desire": "restore a lost record", "core_fear": "expose a witness", "core_conflict": "public evidence risks a private life",
+                "narrative_engine": "each clue creates a concrete obligation", "differentiation": "proof has a physical cost",
+                "emotional_contract": "courage includes return and protection", "serialization_potential": "new records expose connected obligations"}}
+        content = ContentAuthorityApplication(DATABASE_URL, application_build_id="supervised-design-test", commit_sha="a"*40, integration_proven=CONTENT_CODECS, trusted_only=True)
+        result = content.execute(ContentOperationRequest(definition_name="story_design.creative_foundation.author", project_id=project, workspace_id=workspace,
+            actor_id=author.principal_id, trace_id=project, correlation_id=project, idempotency_key=project+":author", payload={"content": candidate}), principal=author)
+        authority = PostgresStoryDesignAssetAuthority(DATABASE_URL, application_build_id="supervised-design-test", commit_sha="a"*40)
+        state = {"version": 0}
+        def transition(step, evidence, actor=author):
+            return authority.transition(StoryDesignTransitionCommand(project_id=project, workspace_id=workspace, actor_id=actor.principal_id,
+                trace_id=project, correlation_id=project, idempotency_key=project+":"+step.value+":"+actor.principal_id,
+                asset_version_id=result.asset_version_id, content_hash=result.content_hash, logical_key="foundation:test",
+                generator_operation_name="creative.candidates.generate", transition=step, planning_scope=PlanningScope.NOT_APPLICABLE,
+                expected_version=state["version"], source_kind="OPERATOR_AUTHORED", evidence=evidence), principal=actor)
+        state = transition(DesignTransition.ENROLL, {"operation_id": result.operation_id, "authoring_operation_id": result.operation_id,
+            "operator_authored": True, "provider_generated": False})
+        for step in (DesignTransition.MATERIALIZE, DesignTransition.STRUCTURAL_VALIDATE):
+            state = transition(step, {"passed": True})
+        review = {"asset_version_id": result.asset_version_id, "content_hash": result.content_hash,
+            "decision": "ACCEPT", "reason": "Protocol test author explicitly preserves costly protection after disclosure", "findings": []}
+        with pytest.raises(PermissionError):
+            transition(DesignTransition.SEMANTIC_VALIDATE, {"author_review": review}, replace(author, principal_type=PrincipalType.WORKER))
+        with pytest.raises(KernelError, match="EXACT_REVIEW"):
+            transition(DesignTransition.SEMANTIC_VALIDATE, {"author_review": {**review, "content_hash": "sha256:"+"b"*64}})
+        state = transition(DesignTransition.SEMANTIC_VALIDATE, {"author_review": review})
+        with pytest.raises(KernelError, match="NOT_INDEPENDENT"):
+            transition(DesignTransition.QUALIFY, {"passed": True})
+        for step in (DesignTransition.SUBMIT_APPROVAL, DesignTransition.APPROVE):
+            state = transition(step, {"author_review": review})
+        state = transition(DesignTransition.ACTIVATE, {})
+        assert (state["lifecycle"], state["qualification"], state["approval"]) == ("ACTIVE", "SEMANTICALLY_VALID", "APPROVED")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            receipt = approved_design_receipt(uow.cursor, project_id=project, book_id=book, asset_version_id=result.asset_version_id)
+            assert receipt["author_review"] == review and receipt["literary_qualification"] == "NOT_PROVEN"
+            uow.cursor.execute("SELECT count(*) FROM authority_narrative_design_qualification WHERE project_id=%s", [project])
+            assert uow.cursor.fetchone()[0] == 0
+            uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [project])
+            assert uow.cursor.fetchone()[0] == 0
+            from novel_forge.storage.story_formation_repositories import StoryFormationRepository
+            layer = StoryFormationRepository(uow.cursor).authored_creative_layer(project_id=project, book_id=book,
+                asset_version_id=result.asset_version_id, content_hash=result.content_hash)
+            assert layer.selection_basis == "AUTHOR_DIRECTION"
+            assert layer.candidate_asset_version_ids == (result.asset_version_id,)
+            from novel_forge.modules.production_execution.cross_model_review import generator_identity
+            with pytest.raises(KernelError, match="CROSS_MODEL_REVIEW_SOURCE_REQUIRED"):
+                generator_identity(uow.cursor, project_id=project, book_id=book, asset_version_id=result.asset_version_id, content_hash=result.content_hash)
+            from novel_forge.modules.story_design_authority.author_supervision import reusable_qualified_design_receipt
+            with pytest.raises(KernelError, match="LONGFORM_DESIGN_QUALIFICATION_INCOMPLETE"):
+                reusable_qualified_design_receipt(uow.cursor, project_id=project, book_id=book,
+                    asset_version_id=result.asset_version_id, generator="creative.candidates.generate")
+            with pytest.raises(KernelError):
+                StoryFormationRepository(uow.cursor).authored_creative_layer(project_id=project, book_id="other-book",
+                    asset_version_id=result.asset_version_id, content_hash=result.content_hash)
+        from types import SimpleNamespace
+        from novel_forge.modules.book_authority.author_supervision import author_creative_input, decide_creative_input
+        author = replace(author, permissions=author.permissions | {"content.operation:creative.brief.create"})
+        brief = content.execute(ContentOperationRequest(definition_name="creative.brief.create", project_id=project, workspace_id=workspace,
+            actor_id=author.principal_id, trace_id=project, correlation_id=project, idempotency_key=project+":brief",
+            payload={"brief":{"creative_brief_contract_version":"creative-brief-v2","idea":"Protect an original witness while delivering the record.",
+                "genre":"mystery","audience":"adult readers","constraints":["Evidence must be witnessed"],"source_boundaries":["Original author input"]}}), principal=author)
+        request = SimpleNamespace(brief_asset_version_id=brief.asset_version_id, brief_content_hash=brief.content_hash,
+            design=candidate["candidate_payload"], contribution="OPERATOR_AUTHORED_INPUT", idempotency_key=project+":author-adapter")
+        args = dict(project_id=project, book_id=book, principal=author, application_build_id="supervised-design-test", commit_sha="a"*40)
+        authored = author_creative_input(DATABASE_URL, request=request, **args)
+        assert author_creative_input(DATABASE_URL, request=request, **args)["asset_version_id"] == authored["asset_version_id"]
+        rejected = author_creative_input(DATABASE_URL, request=SimpleNamespace(**{
+            **vars(request), "idempotency_key": project+":reject-adapter",
+            "design": {**request.design, "core_conflict": "A separate rejected protocol-test direction"}}), **args)
+>       from novel_forge.modules.story_planning_runtime.application import StoryPlanningApplication
+E       ImportError: cannot import name 'StoryPlanningApplication' from 'novel_forge.modules.story_planning_runtime.application' (/Users/yuan/.codex/worktrees/real-prose-author-entry/novel-forge/src/novel_forge/modules/story_planning_runtime/application.py)
+
+tests/integration/test_author_supervised_policy_postgres.py:153: ImportError
+=========================== short test summary info ============================
+FAILED tests/integration/test_author_supervised_policy_postgres.py::test_native_author_design_is_approved_without_independent_qualification
+1 failed in 3.08s

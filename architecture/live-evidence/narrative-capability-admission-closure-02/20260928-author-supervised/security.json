@@ -1,0 +1,10 @@
+{
+  "observed_at": "2026-09-28T05:34:13.664097+00:00",
+  "status": "PASS",
+  "scope": "All changed and new non-symlink text files including shared evidence; exact known revoked/current credentials and DSN patterns",
+  "checked_files": 89,
+  "findings": [],
+  "deepseek_private_file_mode": "0o600",
+  "history_boundary": "Two previously revoked secret Git blobs and remote copies retained; no rewrite/backup deletion authorized; this scan does not claim history clean.",
+  "raw_logs": "Original sensitive logs retained privately with mode0600; shared hashes/redactions recorded."
+}

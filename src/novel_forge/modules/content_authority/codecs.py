@@ -1157,6 +1157,19 @@ def author_story_design_candidate(
     frozen_parents = {
         (item.asset_version_id, item.content_hash) for item in request.inputs
     }
+    author_source = content.get("author_input_source")
+    if author_source is not None:
+        if (generator != "creative.candidates.generate" or not isinstance(author_source, dict)
+                or set(author_source) != {"brief_asset_version_id", "brief_content_hash", "contribution", "source_boundary"}
+                or author_source["contribution"] not in {"OPERATOR_AUTHORED_INPUT", "AI_ASSISTED_AUTHOR_INPUT"}
+                or not str(author_source["source_boundary"]).strip()):
+            raise ValueError("Original author source requires exact brief identity and contribution")
+        source = (author_source["brief_asset_version_id"], author_source["brief_content_hash"])
+        matches = [item for item in request.inputs if (item.asset_version_id, item.content_hash) == source
+                   and item.asset_type == "creative_brief" and item.content.get("routing_eligibility") != "BENCHMARK_ONLY"]
+        if len(matches) != 1:
+            raise ValueError("Original author source must be the exact frozen creative brief")
+        frozen_parents.remove(source)
     if declared_parents != frozen_parents or any(
         not all(item) for item in declared_parents
     ):

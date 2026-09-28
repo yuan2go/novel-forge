@@ -1,0 +1,173 @@
+{
+  "implementation_sha": "f4334b7d53bfb3f1048a0798f8e8ef031bc0da6c",
+  "artifacts": [
+    {
+      "path": "logs/wp02-author-formation-consumption.log",
+      "sha256": "c94dceefada2220b095d850b1b40fcd6433587e83188f5b4249fb44a4cc8a055"
+    },
+    {
+      "path": "logs/wp02-author-input-native-repair.log",
+      "sha256": "3216e524b8c55e0b92dd2cc70f9c178310cea0b28470441675b27bb0e223d157"
+    },
+    {
+      "path": "logs/wp02-author-input-native.log",
+      "sha256": "a48a458056981d053068a914d0d9bcd57d6e001b3e18645dd0102ab6bb5f4754"
+    },
+    {
+      "path": "logs/wp02-supervised-affected-final.log",
+      "sha256": "4612da43bd34113e0464ec1ebe5d43105e6864417503f984971eb88801c76285"
+    },
+    {
+      "path": "logs/wp02-supervised-browser-v10.log",
+      "sha256": "eab0bf3d1ce0be4578a957d0b0aee0b8c2aa4999fbe9a148fdd30180eddfb025"
+    },
+    {
+      "path": "logs/wp02-supervised-browser-v2.log",
+      "sha256": "b2eb616ac3aa1c53f0656c1e6de522a791ba213b4e55b1073a49555fa6c49344"
+    },
+    {
+      "path": "logs/wp02-supervised-browser-v3.log",
+      "sha256": "35bdac2cb577d840530eb981442ca2cc644296b2d73ecf63af548d83fd6f8980"
+    },
+    {
+      "path": "logs/wp02-supervised-browser-v4.log",
+      "sha256": "a3278e34601996824d3c847cec6d51d17c075355f58b33cc989bf0f0f9a2982b"
+    },
+    {
+      "path": "logs/wp02-supervised-browser-v5.log",
+      "sha256": "9c8630153b4741b42ec3462c6f1c405447f46e2d1ef73e0b2c54aac50ae5bb14"
+    },
+    {
+      "path": "logs/wp02-supervised-browser-v6.log",
+      "sha256": "04fec8cb68f0e145ff4ac4349062da74a7d3d9b473c0d45a6cb5fd7a91824a6f"
+    },
+    {
+      "path": "logs/wp02-supervised-browser-v7.log",
+      "sha256": "330af21ec64ccf6bf4c85ddb45614c87d0ef1c9fe615cf6332f0aef3f616e2c4"
+    },
+    {
+      "path": "logs/wp02-supervised-browser-v8.log",
+      "sha256": "df6858566ca4a742d2d307f77c53754ee188a2d0c6637a60a969f6c92cc1a012"
+    },
+    {
+      "path": "logs/wp02-supervised-browser-v9.log",
+      "sha256": "6c4a8fb5a2f0ff60a926fedc4d4e1c0f3be2373529e5c3811d1393ac8e4a28b9"
+    },
+    {
+      "path": "logs/wp02-supervised-browser.log",
+      "sha256": "9903f0b88b5b7312118cf2e7f727f20d70e250b6e54a1924a9acd6528de2ca0d"
+    },
+    {
+      "path": "logs/wp02-supervised-documentation-final.log",
+      "sha256": "0f4c44c413c7485d40edfb2ab756ff1522563769e4fe2c23ee714b2e53904131"
+    },
+    {
+      "path": "logs/wp02-supervised-documentation-v4.log",
+      "sha256": "27ad2578dcfe2b09004e60bb05b2dd7bcad48ce57f755921f62bcad67438cde8"
+    },
+    {
+      "path": "logs/wp02-supervised-documentation-v5.log",
+      "sha256": "fe6766e90796c924e1120a3aa96aff9afc01383f2449488a1f7d17477db1c543"
+    },
+    {
+      "path": "logs/wp02-supervised-documentation.log",
+      "sha256": "0da2979beceb5ad181d2661d61561fa9613e5f094583f276cf13b0edc9fa0d63"
+    },
+    {
+      "path": "logs/wp02-supervised-focused-final.log",
+      "sha256": "d83f9a2836d0f8e2aaa0e44b347c51d6079d5c981ec7a41c879570646e196899"
+    },
+    {
+      "path": "logs/wp02-supervised-lint-v2.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "logs/wp02-supervised-lint.log",
+      "sha256": "f4a63684f31729bd6d5e98b634a31a4e52c722db7f55a225eb44cdee245b08ab"
+    },
+    {
+      "path": "logs/wp02-supervised-mixed-receipts.log",
+      "sha256": "6b3a7e5c29e9cb3f5f33e0b90ea2da4be991087f966ae621e7a1ef6f425fa804"
+    },
+    {
+      "path": "logs/wp02-supervised-mode.log",
+      "sha256": "36ba9bead94327f833f0e955dffa0fc3f4b0d013fea213d12a870bf0dc0e8389"
+    },
+    {
+      "path": "logs/wp02-supervised-native-book.log",
+      "sha256": "af76eb1906a40038dd283b39c6e81782dca71f557452fcc5f0d2361b8dd9900c"
+    },
+    {
+      "path": "logs/wp02-supervised-pg-final.log",
+      "sha256": "17928f264a1a87b8df93802c034a06c333c5d29774d50d86561b9462da2165e3"
+    },
+    {
+      "path": "logs/wp02-supervised-rejection-recovery-v2.log",
+      "sha256": "6fe006d7b5bd47f576d5f062b22ff46c4010890d4c719dc20488da0cc6e378a8"
+    },
+    {
+      "path": "logs/wp02-supervised-rejection-recovery.log",
+      "sha256": "af1e25b3f7125c2360a47dfeadaa23c4d662c8f19a4ad30e7ae833e24a451f76"
+    },
+    {
+      "path": "logs/wp02-supervised-routing-final.log",
+      "sha256": "b3566aa6ad1221e6bbb908cd2a4c66821a17095053a77c2d75f1eb67df0a7321"
+    },
+    {
+      "path": "logs/wp02-supervised-ui-typecheck.log",
+      "sha256": "2c77fefd2a6f315150168231169bc613a87ee05eaafa9d5a41c9f7fe7049bc3a"
+    },
+    {
+      "path": "logs/wp02-supervision-migration.log",
+      "sha256": "68e9bcf9268b67612adc2b9ed8872fc7afbf9d89fe17c2336fa7d0c33d18a35b"
+    },
+    {
+      "path": "logs/wp02-supervision-ui-final-v2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/wp02-supervision-ui-final-v3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/wp02-supervision-ui-final.log",
+      "sha256": "28868b08115b17e8526ed179e84a578438c5209203c4a0d1d33e4eb721ccee11"
+    },
+    {
+      "path": "model-usage.json",
+      "sha256": "56c49879fc9cf5e08c7e3d489f73240860ee5a6011c85be179ce54d39242d04f"
+    },
+    {
+      "path": "policy-difference.json",
+      "sha256": "a9d9c3bf8f6f4691e3c7da0b19cf4e88e49f0bc3cd7515413586e8b98b32ec26"
+    },
+    {
+      "path": "redactions.json",
+      "sha256": "1c1ec4f9faef2b64c76432e06642b96a611f49b2125027448b3fdf2f65ad6ee9"
+    },
+    {
+      "path": "runtime-observation.json",
+      "sha256": "e169bbc27894a2ce7cb3948c4fccb29ceee409feb233e635bb77cf82d32d721f"
+    },
+    {
+      "path": "security.json",
+      "sha256": "125c20e0eb80cec4d098607180123852c6ca4f9cf97c03d267a3340414a84c7f"
+    },
+    {
+      "path": "status.json",
+      "sha256": "c3e2a6eecab32a2cbf94a2c46de1ba8e5a5b4d456b4944122a81ef3ddc761a94"
+    },
+    {
+      "path": "status.md",
+      "sha256": "f3311bd59134713d74810f019a9908e154cd6e5046e34069ee6736ee2096bf6a"
+    },
+    {
+      "path": "task-checkpoints.json",
+      "sha256": "7eab7986bfd593af91a1255c5eccb46795b4af5719542e3d62e42228bb7957f4"
+    },
+    {
+      "path": "tests.json",
+      "sha256": "d34f9f51977323244848899348169d7000952cfeefc47782f60e8778fa45fe61"
+    }
+  ]
+}

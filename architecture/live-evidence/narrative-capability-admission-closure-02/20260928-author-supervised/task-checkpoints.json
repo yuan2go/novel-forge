@@ -1,0 +1,77 @@
+{
+  "not_a_live_task_dry_run": true,
+  "tasks": [
+    {
+      "task": "Original author direction",
+      "input": "Existing creative_brief -> native authored Foundation",
+      "native_checkpoint": "Story Design exact author decision",
+      "policy": "AUTHOR_DIRECTION",
+      "current_result": "Awaiting actual author content confirmation; isolated adapter/Formation consumption PASS"
+    },
+    {
+      "task": "Foundation / Book / Volume / Arc",
+      "input": "Approved same-Book parent versions",
+      "native_checkpoint": "Native Planning generator + Story Design approval",
+      "policy": "Book/task/Producer scoped grant, or existing strict receipts",
+      "current_result": "Upper production assets not yet formed; no per-task live dispatch dry-run claimed"
+    },
+    {
+      "task": "ChapterGroup / Chapter / Scene",
+      "input": "Current legal hierarchy/window + frozen configuration",
+      "native_checkpoint": "Planning qualification receipt and author control boundary",
+      "policy": "Same exact scope; references and structure still required",
+      "current_result": "Input dependency not satisfied in business Book"
+    },
+    {
+      "task": "Draft / revision",
+      "input": "Approved Chapter/Scene + Context/Craft/Actor view",
+      "native_checkpoint": "Existing Provider Router + Pack + Kernel",
+      "policy": "Scoped generation grant and finite budget",
+      "current_result": "No live draft request formed; new release and task grant not deployed"
+    },
+    {
+      "task": "Review / rereview",
+      "input": "Exact draft or revision version/hash + generator receipt",
+      "native_checkpoint": "Opposite-Provider Router constraint; Chapter Quality",
+      "policy": "Reviewer has its own scope/budget; same-model review rejected",
+      "current_result": "No real draft; route/advisory unit checks only"
+    },
+    {
+      "task": "Semantic plan advice",
+      "input": "Exact generated supervised plan version/hash",
+      "native_checkpoint": "Native Evaluation execution/recovery, no qualification writes",
+      "policy": "AUTHOR_ADVISORY frozen purpose + opposite Provider",
+      "current_result": "Native business candidate unavailable; API/route/source unit checks PASS"
+    },
+    {
+      "task": "Canon support",
+      "input": "Frozen canon_extraction claims + real extractor receipt",
+      "native_checkpoint": "Opposite-Provider support plus unchanged deterministic grounding validation",
+      "policy": "Own task grant; unsupported/uncertain claims cannot be silently accepted",
+      "current_result": "No prose/extraction input; native support not executed this turn"
+    },
+    {
+      "task": "Canon / Book acceptance",
+      "input": "Exact final candidate, review, reality outcome",
+      "native_checkpoint": "Native author FINAL_CANDIDATE / REALITY_COMMIT + atomic acceptance",
+      "policy": "No AI identity impersonation or direct SQL acceptance",
+      "current_result": "Joint new-mode acceptance unverified"
+    },
+    {
+      "task": "Edition / successor",
+      "input": "Actual accepted text, validated edition selection, new legal plan/input snapshot",
+      "native_checkpoint": "Existing edition and Book state isolation",
+      "policy": "Old in-flight tasks settle frozen versions",
+      "current_result": "No accepted prose; no edition or successor input claimed"
+    }
+  ],
+  "existing_pack": {
+    "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+    "version": "2.3.14",
+    "activation_version": 11,
+    "release_sha": "b272b43da5f245987e44e0930fa0913a6ea50154",
+    "source": "../20260928-strict-output/reviewable-pack.json",
+    "this_turn_mutations": 0
+  },
+  "unchanged_deepseek_defect": "No new format experiment or unknown-field relaxation; prior strict-output minimal reproduction retained."
+}

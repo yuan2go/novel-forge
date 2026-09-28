@@ -2276,6 +2276,32 @@ Export does not grant publication rights. Native screenplay Provider sampling us
 existing production Book API's `/product/production/book-authority/runs/{book_run_id}/screenplay/provider-samples` entry; `dry_run=true` checks
 scope/grant without calls, and all sample outputs remain INELIGIBLE.
 
+For author-supervised production, the existing production Book panel exposes
+`/product/production/book-authority/books/{book_id}/author-supervision`. Select the Book
+mode, then approve an actual prepared task's Producer/model scope, expiry and finite
+limits. This policy does not grant account access, add budget, activate a Pack, release a
+dispatch pause or settle an UNKNOWN Effect. The panel freezes the prior policy hash to
+detect concurrent changes and retains the original request/idempotency key after a lost
+response. Strict mode remains available, and previously admitted requests keep their
+frozen policy. Migration 0148 requires the normal private backup and forward-upgrade
+boundary before deploying code that emits supervised production snapshots.
+An explicit policy-version conflict retains the rejected request locally and refreshes
+the policy for a new confirmation. Uncertain outcomes keep the original pending key.
+Rejected plan decisions also replay with their original expected version; changing the
+decision or target under that key remains an idempotency conflict.
+
+The original-direction controls save `/author-creative-input` and approve its exact
+version through `/author-creative-input/{asset_version_id}/decisions`; workspace and
+source identities are resolved by the API. Formation v3 then references the approved
+direction and keeps `REVIEW_PLAN`. This does not import diagnostic candidates. For a
+supervised generated plan, `/planning-candidates/{asset_version_id}/model-reviews` resolves
+the configured trusted evaluator and the native generation identity. It uses the governed
+Router/Pack/Effect path and the opposite Provider under its own valid task authorization.
+Absent authorization or budget remains a task-specific stop; do not rename a failed or
+unknown operation to resend it. Existing semantic Evaluation recovery owns continuation.
+The panel displays exact model findings and retains per-finding author dispositions.
+Model advice cannot authorize publication or confer independent literary qualification.
+
 The applicable WP02 checks are focused Craft selection/repair/phase, Actor private intents,
 Book edition/source isolation and in-flight recovery, screenplay production/sampling,
 runtime dispatch control, fresh/upgrade migration and the same-Book native vertical.

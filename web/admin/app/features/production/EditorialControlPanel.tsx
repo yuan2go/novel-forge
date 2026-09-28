@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { fetchJson } from "../../shared/api";
 import type { Book, EditorialControl } from "./api";
 
-export const controlModes: Record<string, string> = {AUTO: "自动推进（仍受资格、预算与质量门禁约束）", REVIEW_MAJOR_DECISION: "重大决策需确认", REVIEW_PLAN: "层级计划需确认", REVIEW_CHAPTER: "章节最终候选需确认", REVIEW_REALITY_COMMIT: "叙事事实接纳需确认", MANUAL_DIRECTOR: "导演决策需人工确认"};
+export const controlModes: Record<string, string> = {AUTHOR_SUPERVISED: "作者监督试生产（计划、终稿与事实接纳逐项确认；文学资格未证明）", AUTO: "自动推进（仍受资格、预算与质量门禁约束）", REVIEW_MAJOR_DECISION: "重大决策需确认", REVIEW_PLAN: "层级计划需确认", REVIEW_CHAPTER: "章节最终候选需确认", REVIEW_REALITY_COMMIT: "叙事事实接纳需确认", MANUAL_DIRECTOR: "导演决策需人工确认"};
 type Saved = {mode: string; pending: Record<string, unknown> | null};
 export function EditorialControlPanel({project, book, current, onRefresh}: {project: string; book: Book; current?: EditorialControl | null; onRefresh: () => Promise<void>}) {
   const key = `novel-forge:editorial-control:${project}`;

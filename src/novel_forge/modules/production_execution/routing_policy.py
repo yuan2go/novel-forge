@@ -16,6 +16,7 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
 )
 
 from .cost_routing import task_policy
+from .author_supervision import GRANT_SCHEMA, validate_grants
 from .routing_sources import BINDING_SCHEMA, EXPORT_SCHEMA
 
 
@@ -61,13 +62,19 @@ POLICY_SCHEMA["properties"].update({
 })
 
 
+AUTHOR_SUPERVISED_POLICY_SCHEMA = deepcopy(POLICY_SCHEMA)
+AUTHOR_SUPERVISED_POLICY_SCHEMA["properties"]["author_supervised_authorizations"] = {"type": "array", "items": GRANT_SCHEMA}
+
+AUTHOR_SUPERVISED_POLICY_SCHEMA["properties"]["author_supervised_books"] = {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["book_id", "author_id", "reason"], "properties": {key: {"type": "string", "minLength": 1} for key in ("book_id", "author_id", "reason")}}}
+
 def validate_routing_policy(content: Mapping[str, Any]) -> None:
     try:
-        _validate_json_schema(POLICY_SCHEMA, dict(content))
+        _validate_json_schema(AUTHOR_SUPERVISED_POLICY_SCHEMA if any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else POLICY_SCHEMA, dict(content))
         if not all(content[key].strip() for key in ("policy_version", "reason")):
             raise ValueError("policy identity and reason are required")
         from .routing_sources import validate_source_fields
         validate_source_fields(content)
+        validate_grants(content)
         authorization_ids = set()
         for grant in content.get("bootstrap_authorizations", []):
             validate_bootstrap_authorization(grant)

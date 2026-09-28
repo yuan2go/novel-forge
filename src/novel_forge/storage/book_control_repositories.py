@@ -58,13 +58,21 @@ class BookControlRepository:
                 "BOOK_CONTROL_FRONTIER_INVALID",
                 "Control binding requires a positive chapter frontier",
             )
-        return VersionedPolicyRepository(
+        self.cursor.execute("""SELECT s.design_admission_status FROM authority_book_production b
+            JOIN authority_book_production_input_snapshot s ON s.snapshot_id=b.input_snapshot_id
+            WHERE b.project_id=%s AND b.book_run_id=%s""", [project_id, book_run_id])
+        admission = self.cursor.fetchone()
+        supervised = bool(admission and admission[0] == "AUTHOR_SUPERVISED_DESIGN")
+        frozen = VersionedPolicyRepository(
             self.cursor, owner=CONTROL_POLICY_OWNER, project_id=project_id
         ).freeze(
             subject_id=f"{book_run_id}:chapter:{chapter_number}",
-            default=ControlPolicy().to_dict(),
+            default=(ControlPolicy(policy_version="book-control-v2:author-supervised", mode="AUTHOR_SUPERVISED") if supervised else ControlPolicy()).to_dict(),
             actor_id=actor_id,
         )
+        if supervised and frozen["policy"]["mode"] != "AUTHOR_SUPERVISED":
+            raise KernelError("AUTHOR_SUPERVISION_CONTROL_REQUIRED", "Select author-supervised editorial control before starting this Book run")
+        return frozen
 
     def current_decision(
         self, *, project_id: str, logical_ref: str
@@ -328,7 +336,7 @@ class BookControlRepository:
                     )
                 subjects[boundary] = subject
         pending = [(boundary, subject) for boundary, subject in subjects.items()]
-        if policy.mode == "REVIEW_PLAN":
+        if policy.mode in {"REVIEW_PLAN", "AUTHOR_SUPERVISED"}:
             self.cursor.execute(
                 """
                 SELECT DISTINCT ON (s.logical_key) s.planning_scope, v.asset_version_id
@@ -336,7 +344,7 @@ class BookControlRepository:
                 JOIN authority_asset_version v ON v.asset_version_id=s.asset_version_id
                 WHERE s.project_id=%s AND v.content->>'book_id'=%s
                   AND s.planning_scope IN ('BOOK','VOLUME','ARC','CHAPTER_GROUP','CHAPTER')
-                  AND s.qualification='QUALIFIED' AND s.freshness='CURRENT'
+                  AND (s.qualification='QUALIFIED' OR (s.qualification IN ('STRUCTURALLY_VALID','SEMANTICALLY_VALID') AND s.execution_evidence #>> '{author_supervision,mode}'='AUTHOR_SUPERVISED')) AND s.freshness='CURRENT'
                   AND s.lifecycle NOT IN ('REJECTED','SUPERSEDED','ARCHIVED')
                   AND (s.lifecycle<>'ACTIVE' OR EXISTS (SELECT 1 FROM story_plan_binding b WHERE b.asset_version_id=v.asset_version_id AND b.execution_scope='PLANNED'))
                   AND NOT EXISTS (SELECT 1 FROM story_plan_binding b WHERE b.asset_version_id=v.asset_version_id AND b.execution_scope='EXECUTED')

@@ -41,6 +41,55 @@ from novel_forge.modules.story_planning_runtime.world_sampling import WorldProvi
 
 
 @dataclass
+class AuthorSupervisionModeRequest:
+    project_id: str
+    mode: str
+    reason: str
+    expected_policy_hash: str
+    idempotency_key: str
+
+
+@dataclass
+class AuthorSupervisionRequest:
+    project_id: str
+    routing_asset_version_id: str
+    candidate_id: str
+    expires_at: str
+    maximum_tokens: Annotated[int, Field(strict=True, ge=1)]
+    maximum_amount: str
+    reason: str
+    expected_policy_hash: str
+    idempotency_key: str
+
+
+@dataclass
+class AuthorCreativeInputRequest:
+    project_id: str
+    brief_asset_version_id: str
+    brief_content_hash: str
+    design: dict[str, str]
+    contribution: str
+    idempotency_key: str
+
+
+@dataclass
+class AuthorModelReviewRequest:
+    project_id: str
+    content_hash: str
+    idempotency_key: str
+
+
+@dataclass
+class AuthorDesignDecisionRequest:
+    project_id: str
+    content_hash: str
+    reason: str
+    idempotency_key: str
+    findings: list[dict[str, Any]] = field(default_factory=list)
+    decision: str = "APPROVE"
+
+
+@dataclass
 class PlanChangeDecisionRequest:
     project_id: str
     actor_id: str
@@ -189,6 +238,140 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             build_id, sha = authority_release_identity()
             return {**composition.query.author_workspace(project_id=project_id, book_id=book_id),
                     "release_identity": build_id + "@" + sha, "dispatch_control": control}
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/books/{book_id}/author-supervision")
+    def author_supervision(book_id: str, project_id: str) -> dict[str, Any]:
+        try:
+            from novel_forge.modules.book_authority.author_supervision import supervision_workspace
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            return supervision_workspace(_composition(ctx).query.database_url, project_id=project_id, book_id=book_id, principal=principal)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/author-supervision/mode")
+    def select_author_supervision_mode(book_id: str, request: AuthorSupervisionModeRequest) -> dict[str, Any]:
+        try:
+            from novel_forge.api.authority_dependencies import authority_release_identity
+            from novel_forge.modules.book_authority.author_supervision import select_book_mode
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            build, sha = authority_release_identity()
+            return select_book_mode(_composition(ctx).query.database_url, project_id=request.project_id, book_id=book_id,
+                request=request, principal=principal, application_build_id=build, commit_sha=sha)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/author-supervision")
+    def approve_author_supervision(book_id: str, request: AuthorSupervisionRequest) -> dict[str, Any]:
+        try:
+            from novel_forge.api.authority_dependencies import authority_release_identity
+            from novel_forge.modules.book_authority.author_supervision import approve_route
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            build, sha = authority_release_identity()
+            return approve_route(_composition(ctx).query.database_url, project_id=request.project_id, book_id=book_id,
+                request=request, principal=principal, application_build_id=build, commit_sha=sha)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/author-creative-input")
+    def save_author_creative_input(book_id: str, request: AuthorCreativeInputRequest) -> dict[str, Any]:
+        try:
+            from novel_forge.api.authority_dependencies import authority_release_identity
+            from novel_forge.modules.book_authority.author_supervision import author_creative_input
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            build, sha = authority_release_identity()
+            return author_creative_input(_composition(ctx).query.database_url, project_id=request.project_id,
+                book_id=book_id, request=request, principal=principal, application_build_id=build, commit_sha=sha)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/author-creative-input/{asset_version_id}/decisions")
+    def approve_author_creative_input(book_id: str, asset_version_id: str, request: AuthorDesignDecisionRequest) -> dict[str, Any]:
+        try:
+            from novel_forge.api.authority_dependencies import authority_release_identity
+            from novel_forge.modules.book_authority.author_supervision import decide_creative_input
+            if request.decision != "APPROVE":
+                raise KernelError("FORMATION_AUTHOR_INPUT_REQUIRED", "Save a revised original input before approving its direction")
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            build, sha = authority_release_identity()
+            return decide_creative_input(_composition(ctx).query.database_url, project_id=request.project_id,
+                book_id=book_id, asset_version_id=asset_version_id, request=request, principal=principal,
+                application_build_id=build, commit_sha=sha)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/planning-candidates/{asset_version_id}/model-reviews")
+    def review_author_design(book_id: str, asset_version_id: str, request: AuthorModelReviewRequest) -> dict[str, Any]:
+        try:
+            resolver = build_trusted_principal_resolver()
+            operator = resolver.resolve_api_principal()
+            operator.require("story_planning.authority.execute", request.project_id)
+            planning = _composition(ctx).planning
+            candidate = planning.require_candidate(asset_version_id)
+            _planning_scope(candidate, project_id=request.project_id, book_id=book_id)
+            if candidate["content_hash"] != request.content_hash:
+                raise KernelError("AUTHOR_SUPERVISION_EXACT_REVIEW_REQUIRED", "Review must bind the displayed candidate hash")
+            from novel_forge.modules.story_design_authority.author_supervision import supervised_state
+            state = planning.story_design.require(project_id=request.project_id, asset_version_id=asset_version_id)
+            if not supervised_state(state):
+                raise KernelError("AUTHOR_ADVISORY_TARGET_INVALID", "Use the existing strict evaluation path for strict candidates")
+            from novel_forge.modules.authority_security import PrincipalType
+            supervision = state["execution_evidence"]["author_supervision"]
+            if (operator.principal_type is not PrincipalType.LOCAL_OPERATOR
+                    or operator.principal_id != supervision.get("author_id", supervision.get("authorization", {}).get("author_id"))):
+                raise PermissionError("Only the scoped author may request model advice against the authorized budget")
+            evaluator = resolver.resolve_narrative_evaluator_principal()
+            result = planning.evaluate_candidate(StoryPlanningEvaluationCommand(project_id=request.project_id,
+                workspace_id=candidate["workspace_id"], book_id=book_id, actor_id=evaluator.principal_id,
+                candidate_asset_version_id=asset_version_id, candidate_content_hash=request.content_hash,
+                generation_operation_id=candidate["generation_operation_id"], generator_operation_name=candidate["generator_operation_name"],
+                evaluator_execution_class="MODEL_PROVIDER", idempotency_key=request.idempotency_key,
+                trace_id=request.idempotency_key, correlation_id=request.idempotency_key),
+                principal=evaluator, transition_principal=operator)
+            return asdict(result)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/books/{book_id}/planning-candidates/{asset_version_id}/author-decisions")
+    def decide_author_design(book_id: str, asset_version_id: str, request: AuthorDesignDecisionRequest) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            planning = _composition(ctx).planning
+            candidate = planning.require_candidate(asset_version_id)
+            _planning_scope(candidate, project_id=request.project_id, book_id=book_id)
+            if candidate["content_hash"] != request.content_hash:
+                raise KernelError("AUTHOR_SUPERVISION_EXACT_REVIEW_REQUIRED", "Refresh the exact candidate before approving")
+            state = planning.story_design.require(project_id=request.project_id, asset_version_id=asset_version_id)
+            supervision = state["execution_evidence"].get("author_supervision", {})
+            from novel_forge.modules.authority_security import PrincipalType
+            if (principal.principal_type is not PrincipalType.LOCAL_OPERATOR or principal.principal_id != supervision.get("author_id", supervision.get("authorization", {}).get("author_id"))):
+                raise PermissionError("Only the scoped author may decide this supervised plan")
+            if not request.reason.strip() or request.decision not in {"APPROVE", "REJECT", "REQUEST_CHANGES"}:
+                raise KernelError("AUTHOR_SUPERVISION_EXACT_REVIEW_REQUIRED", "Record the decision and its basis")
+            if request.decision != "APPROVE":
+                return planning.reject_candidate(asset_version_id, principal=principal,
+                    idempotency_key=request.idempotency_key, reason=request.reason, decision=request.decision)
+            evidence = {"author_review": {"asset_version_id": asset_version_id, "content_hash": request.content_hash,
+                "decision": "ACCEPT", "reason": request.reason, "findings": request.findings}}
+            planning.approve_candidate(asset_version_id, principal=principal, idempotency_key=request.idempotency_key+":approve",
+                trace_id=request.idempotency_key, correlation_id=request.idempotency_key, decision_evidence=evidence)
+            return planning.activate_candidate(asset_version_id, principal=principal, idempotency_key=request.idempotency_key+":activate",
+                trace_id=request.idempotency_key, correlation_id=request.idempotency_key, decision_evidence=evidence)
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:

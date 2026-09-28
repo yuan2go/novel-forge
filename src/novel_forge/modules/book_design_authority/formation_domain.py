@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 from enum import StrEnum
 import hashlib
 import json
+import re
 from typing import Any, Mapping
 from types import MappingProxyType
 
@@ -65,6 +66,7 @@ class FormationLayerInput:
     activation_operation_id: str
     candidate_asset_version_ids: tuple[str, ...]
     selection_reason: tuple[str, ...]
+    selection_basis: str = "INDEPENDENT_COMPARISON"
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "role", FoundationRole(self.role))
@@ -92,7 +94,9 @@ class FormationLayerInput:
             or not self.selection_reason
         ):
             raise ValueError("Formation selection evidence is incomplete")
-        if self.role is FoundationRole.CREATIVE_FOUNDATION and len(
+        if self.selection_basis not in {"INDEPENDENT_COMPARISON", "AUTHOR_COMPARISON", "AUTHOR_DIRECTION"}:
+            raise ValueError("Formation selection basis is undeclared")
+        if self.role is FoundationRole.CREATIVE_FOUNDATION and self.selection_basis != "AUTHOR_DIRECTION" and len(
             self.candidate_asset_version_ids
         ) < 2:
             raise ValueError("Creative Search requires at least two compared candidates")
@@ -111,7 +115,7 @@ class FormationLayerInput:
             "candidate_asset_version_ids",
             "selection_reason",
         }
-        if set(value) != expected:
+        if set(value) not in (expected, expected | {"selection_basis"}):
             raise KernelError(
                 "STORY_FORMATION_INPUT_INVALID",
                 "Formation layer input fields must match exactly",
@@ -131,6 +135,7 @@ class FormationLayerInput:
                 str(item) for item in value["candidate_asset_version_ids"]
             ),
             selection_reason=tuple(str(item) for item in value["selection_reason"]),
+            selection_basis=str(value.get("selection_basis") or "INDEPENDENT_COMPARISON"),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -140,6 +145,8 @@ class FormationLayerInput:
             self.candidate_asset_version_ids
         )
         value["selection_reason"] = list(self.selection_reason)
+        if self.selection_basis == "INDEPENDENT_COMPARISON":
+            value.pop("selection_basis")
         return value
 
 
@@ -166,6 +173,13 @@ class StoryFormationInput:
                 "title",
             }
             contract_version = str(policy.get("contract_version") or "")
+            if contract_version == "formation-generation.v3":
+                selected = policy.get("author_creative_foundation")
+                if (not isinstance(selected, dict) or set(selected) != {"asset_version_id", "content_hash"}
+                        or not str(selected["asset_version_id"]).strip() or not re.fullmatch(r"sha256:[0-9a-f]{64}", str(selected["content_hash"]))
+                        or policy.get("approval_mode") != "REVIEW_PLAN" or policy.get("creative_candidates") != 1):
+                    raise ValueError("Author-directed Formation requires one exact selected input and manual review")
+                base_fields.add("author_creative_foundation")
             expected_fields = (
                 base_fields | {"auto_authorization"}
                 if contract_version == "formation-generation.v2"
@@ -175,11 +189,11 @@ class StoryFormationInput:
             if (
                 set(policy) != expected_fields
                 or contract_version
-                not in {"formation-generation.v1", "formation-generation.v2"}
+                not in {"formation-generation.v1", "formation-generation.v2", "formation-generation.v3"}
                 or policy["approval_mode"] not in {"AUTO", "REVIEW_PLAN"}
                 or not isinstance(policy["creative_candidates"], int)
                 or isinstance(policy["creative_candidates"], bool)
-                or not 2 <= policy["creative_candidates"] <= 4
+                or not (1 if contract_version == "formation-generation.v3" else 2) <= policy["creative_candidates"] <= 4
                 or not isinstance(policy["target_chapters"], int)
                 or isinstance(policy["target_chapters"], bool)
                 or not 1 <= policy["target_chapters"] <= 10000

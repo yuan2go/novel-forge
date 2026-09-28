@@ -3309,10 +3309,13 @@ def _enforce_routing_chain_budget(
     from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_budget
 
     verify_routing_bootstrap_budget(cursor, request, amount, check_usage=check_attempts)
+    from novel_forge.modules.production_execution.author_supervision import verify_dispatch_budget
+    verify_dispatch_budget(cursor, decision, estimated_tokens=request.estimated_tokens,
+                           amount=amount, new_dispatch=check_attempts)
     candidate = (decision.get("selected") or {}).get("candidate") or {}
     price = candidate.get("pricing") or {}
     if (
-        decision.get("status") not in {"SELECTED", "BENCHMARK_SELECTED"}
+        decision.get("status") not in {"SELECTED", "BENCHMARK_SELECTED", "AUTHOR_SUPERVISED_SELECTED"}
         or task.get("project_id") != request.project_id
         or task.get("operation_id") != request.operation_id
         or task.get("work_id") != request.work_id

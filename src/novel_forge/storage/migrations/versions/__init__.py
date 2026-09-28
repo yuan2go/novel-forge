@@ -149,6 +149,7 @@ from . import (
     v20260927_0145_edition_execution_windows,
     v20260927_0146_edition_prefix_inheritance,
     v20260927_0147_runtime_job_dispatch_pause,
+    v20260928_0148_author_supervised_design,
 )
 
 VERSION_MODULES = [
@@ -300,6 +301,7 @@ VERSION_MODULES = [
     v20260927_0145_edition_execution_windows,
     v20260927_0146_edition_prefix_inheritance,
     v20260927_0147_runtime_job_dispatch_pause,
+    v20260928_0148_author_supervised_design,
 ]
 
 __all__ = ["VERSION_MODULES"]
