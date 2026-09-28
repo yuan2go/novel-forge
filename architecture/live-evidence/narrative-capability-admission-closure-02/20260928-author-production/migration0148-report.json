@@ -1,0 +1,34 @@
+[
+  {
+    "mode": "restore",
+    "database": "nf_wp02_author_restore_20260928",
+    "at": "2026-09-28T07:48:15.039469+00:00",
+    "migration": "20260928_0148_author_supervised_design",
+    "source_file_sha256": "4e70a858658988ad2c20fab26d68e8dcb1e4edf392a8d13f9bda0d9232c3d2c4",
+    "before_migrations": 148,
+    "after_migrations": 149,
+    "changed_tables": [
+      "nf_schema_migrations"
+    ],
+    "business_history_unchanged": true,
+    "dispatch_control": "PAUSED@27",
+    "constraint": "CHECK ((design_admission_status = ANY (ARRAY['LEGACY_UNQUALIFIED'::text, 'LONGFORM_DESIGN_QUALIFIED'::text, 'AUTHOR_SUPERVISED_DESIGN'::text])))",
+    "constraint_validated": true
+  },
+  {
+    "mode": "historical",
+    "database": "novel_forge_first_novel_pilot_test",
+    "at": "2026-09-28T07:48:17.544931+00:00",
+    "migration": "20260928_0148_author_supervised_design",
+    "source_file_sha256": "4e70a858658988ad2c20fab26d68e8dcb1e4edf392a8d13f9bda0d9232c3d2c4",
+    "before_migrations": 148,
+    "after_migrations": 149,
+    "changed_tables": [
+      "nf_schema_migrations"
+    ],
+    "business_history_unchanged": true,
+    "dispatch_control": "PAUSED@27",
+    "constraint": "CHECK ((design_admission_status = ANY (ARRAY['LEGACY_UNQUALIFIED'::text, 'LONGFORM_DESIGN_QUALIFIED'::text, 'AUTHOR_SUPERVISED_DESIGN'::text])))",
+    "constraint_validated": true
+  }
+]

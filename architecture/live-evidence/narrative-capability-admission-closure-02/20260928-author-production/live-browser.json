@@ -1,0 +1,11 @@
+{
+  "schema_version": "wp02-live-browser.v1",
+  "implementation_sha": "d15e09864472324a03e5d4032292eab7687e53ca",
+  "url": "http://127.0.0.1:3143/production",
+  "transport": "REAL_API_REAL_HISTORICAL_POSTGRES",
+  "mutation_requests": [],
+  "page_errors": [],
+  "controls_text": "作者监督试生产\n\n仅批准本作品的指定任务、Producer 和模型。独立文学资格仍未证明；计划、正文终稿和事实接纳需要作者判断。结构、引用、预算、权限和 UNKNOWN 对账继续生效。\n\n这项决定不会追加预算、续期原额度或释放历史暂停。模型文学资格不足可由作者监督处理；明确的结构或事实错误必须修复。\n\n模型直接生成稿绑定真实生成回执，由另一 Provider 审读。作者稿、模型后人工修改稿及 edition 混合稿绑定当前稿件版本、hash 与原生来源，使用明确授权的审读模型，无需虚构新稿生成回执。语义设计建议与 Canon support 按各自目标合同校验。模型复核仍是作者判断的依据，独立文学资格未证明。\n\n1. 本作品的设计模式\n\n本作品新设计模式：严格资格。旧冻结输入保持原模式。\n\n查询任务与原审批\n2. 任务授权、预算与派发\n\n项目派发状态：PAUSED；当前 API 进程禁止新模型派发：是。这不是 worker 状态或任务可执行性证明；解除暂停需使用原运行控制入口。\n\n项目累计预算账本（含其他作品与历史记录）\n实际任务\n选择已准备的任务\ncreative.candidates.generate · BLOCKED · c2f02d63d1\ncreative.candidates.generate · BLOCKED · 8a03243787\n限定模型\n选择模型\n截止时间\n单次 tokens 上限\n单次金额上限（路由币种）\n批准理由 / 保留优点 / 修改意见\n确认本作品采用作者监督模式\n本作品的新请求恢复严格资格模式\n3. BOOK CONTROL 作者确认边界\n\n项目级新请求策略：尚未显式选择。项目级调整影响该项目其他 Book 的新请求；本作品设计模式按钮只修改本 Book。\n\n监督型设计在未配置项目策略时使用 AUTHOR_SUPERVISED 默认边界：ARC、BOOK、CHAPTER、FINAL_CANDIDATE、MAJOR_DECISION、NEAR_TERM、REALITY_COMMIT、SCENE、VOLUME。已选项目策略若不兼容，原生启动门禁会阻断。旧冻结请求继续使用原政策。\n\n等待作者判断是正常阶段：阅读下方精确计划与模型发现后提交决定，再从原任务恢复。正文终稿与事实接纳在生产链对应待处理事项中确认；批准启动不代表批准未来未知正文。",
+  "prose": "NONE",
+  "author_approval": "NOT_GIVEN"
+}

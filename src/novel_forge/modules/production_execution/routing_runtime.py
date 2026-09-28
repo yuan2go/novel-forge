@@ -998,10 +998,15 @@ class ProductionProviderRouter:
             from .cross_model_review import REVIEW_TASKS, freeze_review_requirement
             supervised_book = any(book["book_id"] == work_id for book in policy_snapshot.get("policy", {}).get("author_supervised_books", []))
             if task_type in REVIEW_TASKS and (supervised_book or matching_grant(asdict(task), now=now)):
+                grant = matching_grant(asdict(task), now=now)
+                reviewers = [asdict(candidate) for candidate in candidates if grant
+                    and candidate.candidate_id == grant["candidate_id"] and candidate.model_revision == grant["model_revision"]]
+                authorized_reviewer = ({key: reviewers[0][key] for key in ("candidate_id", "provider", "model", "model_revision")}
+                    if len(reviewers) == 1 else None)
                 with AuthorityUnitOfWork(self.registry.database_url) as uow:
                     cross_review = freeze_review_requirement(uow.cursor, project_id=project_id,
                         book_id=work_id, operation_id=operation_id, task_type=task_type,
-                        request_input=request_input or {})
+                        request_input=request_input or {}, authorized_reviewer=authorized_reviewer)
                 task = replace(task, declared_requirements={**task.declared_requirements, "cross_model_review": cross_review})
         decision = CostAwareRouter().explain(task, candidates, observations, now=now)
         if bootstrap:

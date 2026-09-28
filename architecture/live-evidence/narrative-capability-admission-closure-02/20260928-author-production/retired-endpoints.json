@@ -1,0 +1,53 @@
+{
+  "at": "2026-09-28T08:23:19.864455+00:00",
+  "replacement_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+  "actions": [
+    {
+      "pid": 13062,
+      "port": 8140,
+      "matched_command": "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python /tmp/novel-forge-wp02-token100k-20260928/live_api_f827.py",
+      "matched_cwd": "",
+      "signal": "SIGTERM",
+      "outcome": "STOPPED"
+    },
+    {
+      "pid": 30865,
+      "port": 8141,
+      "matched_command": "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python /Users/yuan/novel-runtime/wp02-security-handoff-20260928/strict-output-20260928/run_private_author.py /Users/yuan/novel-runtime/wp02-security-handoff-20260928/strict-output-20260928/live_api.py",
+      "matched_cwd": "",
+      "signal": "SIGTERM",
+      "outcome": "STOPPED"
+    },
+    {
+      "pid": 30866,
+      "port": 3142,
+      "matched_command": "node node_modules/next/dist/bin/next dev --webpack --hostname 127.0.0.1 --port 3142",
+      "matched_cwd": "/Users/yuan/novel-runtime/wp02-security-handoff-20260928/strict-output-20260928/release-b272b43da5f2/web/admin",
+      "signal": "SIGTERM",
+      "outcome": "STOPPED"
+    },
+    {
+      "pid": 30884,
+      "port": 3142,
+      "outcome": "ALREADY_STOPPED"
+    }
+  ],
+  "excluded": [
+    "PostgreSQL containers/local server",
+    "MinIO container",
+    "API8137",
+    "UI3138",
+    "isolated clone workers"
+  ],
+  "listen_results": {
+    "8140": false,
+    "8141": false,
+    "3142": false,
+    "8143": true,
+    "3143": true,
+    "8137": true,
+    "3138": true,
+    "61959": true,
+    "61961": true
+  }
+}

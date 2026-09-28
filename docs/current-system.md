@@ -857,6 +857,16 @@ locks the target run and uses head CAS. Old in-flight tasks settle only into the
 new dispatch on an unselected source is denied. Reverting to an older manuscript is another
 recorded selection, subject to the same checks.
 
+Supervised Chapter review resolves adopted prose through its native author decision or
+edition validation binding. `cross-model-review.v2` binds the current draft version/hash,
+author edit lineage, exact edition unit mappings and an explicitly authorized reviewer.
+An original model receipt describes the earlier source, not the author's changed text.
+Missing reviewer authorization leaves a blocked routing decision available for the normal
+task approval entry. Diagnostic and fixture prose cannot acquire production provenance
+through editing or edition reuse. Direct model drafts retain the v1 opposite-Provider
+rule; ReReview targets the actual model revision and Canon support binds extraction plus
+its exact supporting prose. Existing frozen review contracts remain unchanged.
+
 `scene-screenplay.v2` is a separate scene/action/dialogue contract with approved Craft references, located realization and effect/interference review; frozen v1 retains its original contract. Its explicit source range,
 scene plan, preservation/adaptation policy and character/reader knowledge bind one validated
 edition. Book Follow-up executes generation, review and revision through the existing

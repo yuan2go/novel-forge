@@ -1,0 +1,15 @@
+{
+  "at": "2026-09-28T07:45:53.270454+00:00",
+  "historical_database": "novel_forge_first_novel_pilot_test",
+  "database_oid": 16384,
+  "restored_database": "nf_wp02_author_restore_20260928",
+  "backup": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/historical-pre0148.pgdump",
+  "backup_bytes": 26781776,
+  "backup_sha256": "fc0304c6c2132174a250543715f68237afc39a875bbe7e19094066567e5f6669",
+  "table_count": 320,
+  "restore_exact": true,
+  "historical_unchanged": true,
+  "migrations_applied_to_historical": 0,
+  "model_dispatches": 0,
+  "fingerprint_mismatches": []
+}

@@ -7611,6 +7611,14 @@
         {
           "path": "src/novel_forge/modules/review/diagnostics.py",
           "symbol": "constrain_diagnosis_schema"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/cross_model_review.py",
+          "symbol": "freeze_review_requirement"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/review_sources.py",
+          "symbol": "adopted_source"
         }
       ],
       "commands_operations": [
@@ -7722,6 +7730,14 @@
         {
           "path": "tests/unit/test_author_reference_review.py",
           "symbol": "test_author_form_resolves_native_input_actor_and_stable_retry"
+        },
+        {
+          "path": "tests/unit/test_cross_model_author_review.py",
+          "symbol": "test_authored_source_contract_requires_exact_authorized_reviewer_and_immutable_provenance"
+        },
+        {
+          "path": "tests/integration/test_cross_model_source_postgres.py",
+          "symbol": "test_native_author_draft_without_generator_effect_enters_exact_review"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9163,7 +9179,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:f3b06a5abee632a87845d4748c6aae462d25a16c85820ab3af2c87bb77c97885"
+    "implementation_tree_sha": "sha256:346ea469976f181a45487fdcdf253b9d1a16f7ae25803b90344eeb80c2141199"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

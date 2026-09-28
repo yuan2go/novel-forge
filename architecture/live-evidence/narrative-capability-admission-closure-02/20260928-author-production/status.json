@@ -1,0 +1,110 @@
+{
+  "schema_version": "wp02-author-production-status.v1",
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "unit": "作者监督生产运行与编辑闭环",
+  "overall": "INCOMPLETE",
+  "evidence_ceiling": "EXECUTABLE",
+  "baseline_sha": "f6ba4ab542cc20a50b58317f67a4c0e238bff030",
+  "final_code_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+  "deployed_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+  "implementation_tree_sha": "sha256:346ea469976f181a45487fdcdf253b9d1a16f7ae25803b90344eeb80c2141199",
+  "branch": "codex/wp02-author-production-editorial",
+  "publication": {
+    "local_commits": true,
+    "pushed": false,
+    "pull_request": null,
+    "merged": false
+  },
+  "runtime": {
+    "project_id": "narrative-closure-02-admission-20260927",
+    "book_id": "duanchao-guan-zheng-deng-reference-01",
+    "database_oid": 16384,
+    "migration_head": "20260928_0148_author_supervised_design",
+    "migration_records": 149,
+    "pack_versions": {
+      "planning": "2.3.15",
+      "chapter": "2.3.3",
+      "prose_review": "1.1.0"
+    },
+    "pack_activation_versions": {
+      "planning": 13,
+      "chapter": 2,
+      "prose_review": 2
+    },
+    "api": "http://127.0.0.1:8143",
+    "production_ui": "http://127.0.0.1:3143/production",
+    "editor_ui": "http://127.0.0.1:3143/editor?project_id=narrative-closure-02-admission-20260927&book_id=duanchao-guan-zheng-deng-reference-01",
+    "global_health": "DEGRADED",
+    "selected_pack_nodes_resolved": 34,
+    "necessary_workers_ready": 4,
+    "project_dispatch": "PAUSED@27",
+    "process_dispatch_suspended": true
+  },
+  "breakpoints": [
+    {
+      "class": "ACTUAL_FAULT",
+      "item": "作者采用稿/edition无直接生成Effect时被generation-only审读规则拒绝",
+      "state": "FIXED_AND_TARGETED_ENGINEERING_VERIFIED",
+      "evidence": "tests.json"
+    },
+    {
+      "class": "ACTUAL_FAULT_REPRODUCED_IN_ISOLATION",
+      "item": "成功Effect查询混入失败dispatch或忽略损坏receipt",
+      "state": "FIXED_AND_TARGETED_ENGINEERING_VERIFIED",
+      "evidence": "logs/receipt-red.log"
+    },
+    {
+      "class": "DEPLOYMENT_GAP",
+      "item": "旧实现/0148未应用/对象桶配置与历史对象不一致",
+      "state": "UPGRADED_AFTER_BACKUP_WITH_HISTORY_PRESERVED",
+      "evidence": "deployment.json"
+    },
+    {
+      "class": "MISSING_BUSINESS_INPUT",
+      "item": "本Book缺已批准正式方向、Foundation、生产配置，当前DESIGN_PENDING，无生产run",
+      "state": "PENDING"
+    },
+    {
+      "class": "AUTHOR_DECISION_REQUIRED",
+      "item": "原创方向、AUTHOR_SUPERVISED模式及现有逐层确认边界",
+      "state": "AWAITING_AUTHOR",
+      "evidence": "startup-handoff.json"
+    },
+    {
+      "class": "AUTHORIZATION_REQUIRED",
+      "item": "旧CALIBRATION授权已过期且不覆盖生产；新任务/Producer授权和累计预算未批准",
+      "state": "AWAITING_AUTHOR",
+      "evidence": "startup-handoff.json"
+    },
+    {
+      "class": "NOT_VERIFIED",
+      "item": "同一持久Book真实正文、真实作者编辑、审改对照、原生接纳、选择edition和后继正文",
+      "state": "NOT_RUN"
+    },
+    {
+      "class": "OBSERVED_HEALTH_LIMITATION",
+      "item": "全局readiness仍检查硬编码默认Chapter Pack，并要求六类无关历史worker",
+      "state": "DEGRADED_NOT_A_SELECTED_TASK_PACK_FAILURE"
+    }
+  ],
+  "source_contracts": {
+    "direct_model": "v1 exact target plus unique intact verified success receipt; different Provider required",
+    "model_then_author": "v2 exact adopted new draft and native author decision; original model receipt attributed only to ancestor",
+    "author_original": "v2 native input/save/accept/adoption with explicitly authorized reviewer; no fabricated Effect",
+    "edition": "v2 exact revision/base/predecessor/unit range and committed acceptance lineage; explicitly authorized reviewer",
+    "old_frozen_contracts": "UNCHANGED",
+    "strict_mode": "UNCHANGED",
+    "review_task_targets": "Review=draft_chapter, ReReview=draft_version, Canon support=canon_extraction plus support binding; design evaluation keeps its own purpose"
+  },
+  "delivery_limits": {
+    "real_new_novel_calls": 0,
+    "real_new_prose": 0,
+    "actual_author_edit_comparison": "NOT_AVAILABLE",
+    "native_startup_decision": "NOT_GIVEN",
+    "independent_literary_qualification": "NOT_PROVEN",
+    "longform_stability": "NOT_PROVEN",
+    "full_qualification": "NOT_RUN",
+    "development_codex_consumption": "NOT_OBSERVABLE"
+  },
+  "next_action": "Await explicit author decision on startup-handoff.json; record approved portions through native product entry and grant exact task/Producer/model scope. Preserve missing exact future-text decisions and restore the original Book/run rather than creating another Book."
+}

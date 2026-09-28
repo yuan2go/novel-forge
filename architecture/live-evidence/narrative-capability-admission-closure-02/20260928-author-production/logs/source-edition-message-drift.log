@@ -1,0 +1,58 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_native_edition_cannot_launder_fixture_sources ______________
+
+request = <FixtureRequest for <Function test_native_edition_cannot_launder_fixture_sources>>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10d8e9a00>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-124/test_native_edition_cannot_lau0')
+separate_release_database = 'nf_p0_ea2805ae9e354f1ca896bef70476da5a_test'
+
+    def test_native_edition_cannot_launder_fixture_sources(request, monkeypatch, tmp_path, separate_release_database):
+        from novel_forge.modules.book_authority.edition_application import BookEditionApplication
+        from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+        from tests.integration.test_book_editions_postgres import persistent_actor_book, advance_to
+    
+        captured = persistent_actor_book(request, monkeypatch, tmp_path)
+        composition = captured["composition"]
+        principal = replace(composition.principal, permissions=composition.principal.permissions | {"book.authority.query"})
+        source_run = captured["source_book_run_id"]
+        book = composition.authority.require(source_run)
+        app = BookEditionApplication(DATABASE_URL, application_build_id=composition.authority.application_build_id,
+                                     commit_sha=composition.authority.commit_sha)
+        scope = dict(project_id=book["project_id"], workspace_id=book["workspace_id"], book_run_id=source_run, principal=principal)
+        manifest = app.query(**scope)["source_manifest"]
+        original = app.execute(action="create", **scope, data={"base_manifest_digest": manifest["manifest_digest"]},
+                               idempotency_key=identifier("source-original-edition"))
+        candidate = app.execute(action="create", **scope,
+            data={"base_revision_id": original["revision_id"], "base_manifest_digest": manifest["manifest_digest"]},
+            idempotency_key=identifier("source-candidate-edition"))
+        units = deepcopy(manifest["units"])
+        units[1]["scene_artifacts"][0]["text"] += " Wind passed under the door while the witness waited."
+        units[1]["text"] = serialize_realization(units[1]["scene_artifacts"], units[1].get("scene_separators"))
+        saved = app.execute(action="save", **scope,
+            data={"revision_id": candidate["revision_id"], "expected_version": candidate["version"],
+                  "base_manifest_digest": candidate["manifest_digest"], "units": units,
+                  "reason": "Engineering fixture author edits the exact second unit", "change_kind": "EXPRESSION"},
+            idempotency_key=identifier("source-save-edition"))
+        admitted = app.start_validation(authority=composition.authority, **scope, revision_id=saved["revision_id"])
+        validation_run = admitted["validation_book_run_id"]
+        advance_to(captured, validation_run, 2)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("""SELECT op.operation_id FROM authority_book_chapter_request request
+                JOIN authority_operation op ON op.root_operation_id=request.chapter_root_operation_id
+                WHERE request.book_run_id=%s AND request.chapter_number=2
+                  AND op.definition_name='chapter.review.evaluate' AND op.status='SUCCEEDED'""", [validation_run])
+            review_operation = uow.cursor.fetchone()[0]
+            with pytest.raises(KernelError) as caught:
+                freeze_review_requirement(uow.cursor, project_id=book["project_id"], book_id=book["book_id"],
+                    operation_id=review_operation, task_type="review", request_input={}, authorized_reviewer=REVIEWER)
+            assert caught.value.code == "CROSS_MODEL_REVIEW_SOURCE_REQUIRED"
+>           assert "No unique real generator receipt" in str(caught.value)
+E           AssertionError: assert 'Exact target needs one successful real generator receipt' in 'CROSS_MODEL_REVIEW_SOURCE_REQUIRED: No unique real generator receipt for this exact target; use native author adoption or edition lineage for edited prose, and reconcile ambiguous Effects'
+E            +  where 'CROSS_MODEL_REVIEW_SOURCE_REQUIRED: No unique real generator receipt for this exact target; use native author adoption or edition lineage for edited prose, and reconcile ambiguous Effects' = str(KernelError('CROSS_MODEL_REVIEW_SOURCE_REQUIRED: No unique real generator receipt for this exact target; use native author adoption or edition lineage for edited prose, and reconcile ambiguous Effects'))
+E            +    where KernelError('CROSS_MODEL_REVIEW_SOURCE_REQUIRED: No unique real generator receipt for this exact target; use native author adoption or edition lineage for edited prose, and reconcile ambiguous Effects') = <ExceptionInfo KernelError('CROSS_MODEL_REVIEW_SOURCE_REQUIRED: No unique real generator receipt for this exact target; use native author adoption or edition lineage for edited prose, and reconcile ambiguous Effects') tblen=7>.value
+
+tests/integration/test_cross_model_source_postgres.py:313: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/test_cross_model_source_postgres.py::test_native_edition_cannot_launder_fixture_sources
+1 failed, 11 deselected in 84.23s (0:01:24)

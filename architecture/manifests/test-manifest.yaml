@@ -8,6 +8,42 @@
   ],
   "classification_rules": [
     {
+      "id": "author-supervision-workspace-postgres",
+      "patterns": [
+        "tests/integration/test_author_supervision_workspace_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "author-supervision-controls",
+      "production_target": "src/novel_forge/modules/book_authority/author_supervision.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "source-aware-author-review-unit",
+      "patterns": [
+        "tests/unit/test_cross_model_author_review.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "production-execution",
+      "capability": "source-aware-author-review",
+      "production_target": "src/novel_forge/modules/production_execution/cross_model_review.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "source-aware-author-review-postgres",
+      "patterns": [
+        "tests/integration/test_cross_model_source_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "production-execution",
+      "capability": "source-aware-author-review",
+      "production_target": "src/novel_forge/modules/production_execution/cross_model_review.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
       "id": "chapter-dispatch-recovery-unit",
       "patterns": [
         "tests/unit/test_chapter_dispatch_recovery.py"

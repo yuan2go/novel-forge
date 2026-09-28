@@ -9,7 +9,8 @@ const page = await context.newPage();
 const hash = 'sha256:'+'a'.repeat(64), reviewHash = 'sha256:'+'b'.repeat(64);
 const requests = [], errors = [];
 page.on('pageerror', e=>{errors.push(e.message);process.stderr.write(e.stack+'\n');});
-const view = {book_modes:[{book_id:'trial-book',reason:'Isolated browser fixture'}],policy_hash:hash,policy_version:'fixture',authorizations:[],producers:[],
+const view = {book_modes:[{book_id:'trial-book',reason:'Isolated browser fixture'}],policy_hash:hash,policy_version:'fixture',authorizations:[{task_type:'review',model_revision:'fixture-reviewer',expires_at:'2020-01-01T00:00:00Z',maximum_tokens:1000,maximum_amount:'1',expired:true}],producers:[{routing_asset_version_id:'route:review:1',task_type:'review',producer_contract_hash:hash,operation_id:'review-op',status:'BLOCKED',budget:{scope:'execution_chain',tokens_used_or_reserved:20},review_requirement:{schema_version:'cross-model-review.v2',target_asset_version_id:'author-draft:2',target_content_hash:reviewHash,source:{kind:'MODEL_EDITED_BY_AUTHOR'},reviewer_policy:'EXPLICIT_AUTHORIZED_REVIEWER',authorized_reviewer:{}},candidates:[{candidate:{candidate_id:'reviewer:fixture',provider:'deepseek',model:'fixture',model_revision:'fixture-reviewer',pricing:{currency:'USD',accounting_basis:'PRICED'}},rejected_reasons:['CROSS_MODEL_REVIEW_SOURCE_POLICY_REQUIRED'],estimated_total_tokens:20,reservation_upper_bound:'0.01'}]}],
+  controls:{book_control:{scope:'PROJECT_FUTURE_SUBJECTS',selected_policy:null,selected_boundaries:[],supervised_boundaries:['BOOK','CHAPTER','SCENE','FINAL_CANDIDATE','REALITY_COMMIT']},dispatch:{state:'PAUSED',api_process_suspended:true},budget_ledger:{scope:'PROJECT',rows:[{provider:'fixture',currency:'USD',status:'HELD_UNKNOWN',accounting_basis:'ACCOUNT_ENTITLEMENT',cost_status:'UNKNOWN',reservations:1,actual_tokens:12,estimated_tokens:20,reserved_amount:'1',settled_amount:null}]}},
   pending_designs:[{asset_version_id:'plan:1',content_hash:hash,content:{candidate_payload:{core_conflict:'工程测试候选：人物是否已知证人身份'}},qualification:'STRUCTURALLY_VALID',approval:'PENDING',planning_scope:'CHAPTER'}],model_reviews:[]};
 try {
   await page.addInitScript(()=>localStorage.setItem('novel-forge.author-production.v1',JSON.stringify({project:'trial-project',bookId:'trial-book'})));
@@ -62,8 +63,19 @@ try {
   await page.goto(base+'/production');
   await page.waitForLoadState('networkidle');
   const panel=page.locator('section').filter({has:page.getByRole('heading',{name:'作者监督试生产',exact:true})});
-  await panel.getByRole('button',{name:'请求另一模型复核此版本',exact:true}).waitFor();
-  assert.equal(await panel.getByRole('button',{name:'请求另一模型复核此版本',exact:true}).count(),1);
+  await panel.getByText(/项目派发状态：PAUSED/).waitFor();
+  assert.match(await panel.innerText(), /已过期，需作者重新确认/);
+  assert.match(await panel.innerText(), /旧冻结请求继续使用原政策/);
+  assert.match(await panel.innerText(), /无需虚构新稿生成回执/);
+  await panel.getByText('项目累计预算账本（含其他作品与历史记录）',{exact:true}).click();
+  assert.match(await panel.innerText(), /结算金额 未知/);
+  await panel.getByLabel('实际任务',{exact:true}).selectOption('route:review:1');
+  await panel.getByLabel('限定模型',{exact:true}).selectOption('reviewer:fixture');
+  assert.match(await panel.innerText(), /当前审读目标：author-draft:2/);
+  assert.match(await panel.innerText(), /MODEL_EDITED_BY_AUTHOR/);
+  assert.match(await panel.innerText(), /CROSS_MODEL_REVIEW_SOURCE_POLICY_REQUIRED/);
+  await panel.getByRole('button',{name:'请求模型复核此精确版本',exact:true}).waitFor();
+  assert.equal(await panel.getByRole('button',{name:'请求模型复核此精确版本',exact:true}).count(),1);
   await panel.getByLabel('批准理由 / 保留优点 / 修改意见').fill('隔离检查：明确选择监督模式。');
   await panel.getByRole('button',{name:'确认本作品采用作者监督模式',exact:true}).click();
   await panel.getByText('配置已有更新，此次决定被拒绝且已保留记录。请查询当前配置，核对后重新确认。',{exact:true}).waitFor();
@@ -72,7 +84,7 @@ try {
   assert.equal(retained.rejected[0].code,'ROUTING_POLICY_VERSION_CONFLICT');
   await panel.getByRole('button',{name:'确认本作品采用作者监督模式',exact:true}).click();
   await page.waitForFunction(()=>!document.body.textContent.includes('恢复原监督决定（原幂等键）'));
-  await panel.getByRole('button',{name:'请求另一模型复核此版本',exact:true}).click();
+  await panel.getByRole('button',{name:'请求模型复核此精确版本',exact:true}).click();
   await panel.getByRole('button',{name:'恢复原监督决定（原幂等键）',exact:true}).waitFor();
   await page.reload();
   await panel.getByRole('button',{name:'恢复原监督决定（原幂等键）',exact:true}).click();
@@ -117,6 +129,6 @@ try {
   assert.equal(requests.filter(r=>r.kind==='direction').length,1);
   assert.equal(requests.find(r=>r.kind==='direction').body.contribution,'AI_ASSISTED_AUTHOR_INPUT');
   assert.equal(errors.length,0,errors.join('\n'));
-  process.stdout.write(JSON.stringify({status:'PASS',evidence_kind:'BROWSER_WITH_ISOLATED_API_DOUBLES',checks:['cross-model review entry','confirmed policy conflict retained and reconfirmed against refreshed version','lost response keeps original idempotency key','unresolved model finding blocks approval','disposition survives reload','exact target and finding submitted','original author direction persisted and exact approval consumed by Formation v3','unsaved direction survives reload and cannot be approved'],real_model_calls:0})+'\n');
+  process.stdout.write(JSON.stringify({status:'PASS',evidence_kind:'BROWSER_WITH_ISOLATED_API_DOUBLES',checks:['three independent controls, expiry and unknown cumulative ledger displayed','source-aware exact-version review entry','confirmed policy conflict retained and reconfirmed against refreshed version','lost response keeps original idempotency key','unresolved model finding blocks approval','disposition survives reload','exact target and finding submitted','original author direction persisted and exact approval consumed by Formation v3','unsaved direction survives reload and cannot be approved'],real_model_calls:0})+'\n');
 } catch(error) {process.stderr.write((await page.locator('body').innerText())+'\n');throw error;}
 finally {await context.close();await browser.close();}
