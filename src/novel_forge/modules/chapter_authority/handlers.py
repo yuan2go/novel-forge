@@ -385,6 +385,7 @@ def deterministic_retrieval_coverage_fast_path(
     documents: list[dict[str, Any]], semantic_status: dict[str, Any],
     context_token_budget: int,
 ) -> bool:
+    del context_token_budget
     if query_plan.get("semantic_policy") != "FALLBACK_ALLOWED":
         return False
     preview = build_retrieval_result(
@@ -405,10 +406,7 @@ def deterministic_retrieval_coverage_fast_path(
     return bool(coverage.get("sufficient")) and (
         bool(selected)
         or int(dict(query_plan.get("accepted_boundary") or {}).get("accepted_through_chapter") or 0) == 0
-    ) and sum(
-        max(0, int(item.get("output_characters") or 0))
-        for item in selected
-    ) <= 2 * context_token_budget
+    )
 
 
 def bind_quality_prose_evidence(

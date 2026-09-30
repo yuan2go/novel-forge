@@ -354,6 +354,7 @@ def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[
 
 def build_provider_task_view(
     stage: str, inputs: Mapping[str, Any], *, compact_contract: bool = False,
+    targeted_edits_only: bool = False,
 ) -> dict[str, Any]:
 
     if stage == "retrieval_query_expansion":
@@ -706,7 +707,11 @@ def build_provider_task_view(
                 "craft_targets": deepcopy(review.get("craft_targets", [])),
                 "craft_checks": deepcopy(review.get("craft_checks", [])),
                 "knowledge_checks": deepcopy(review.get("knowledge_checks", [])),
-                "instructions": "Correct only the frozen Quality tasks. Accepted history is read-only. Preserve adopted Craft, resolved diagnoses, voice, facts and information boundaries. Return exact scene artifacts consistent with prose; the same historical window and before/after comparison are reviewed again before any acceptance.",
+                "instructions": (
+                    "Correct only the frozen Quality tasks. Return exact old quotes, replacements and issue codes; the host derives Slot prose. Accepted history is read-only. Preserve adopted Craft, resolved diagnoses, voice, facts and information boundaries. The same historical window and before/after comparison are reviewed again before any acceptance."
+                    if targeted_edits_only else
+                    "Correct only the frozen Quality tasks. Accepted history is read-only. Preserve adopted Craft, resolved diagnoses, voice, facts and information boundaries. Return exact scene artifacts consistent with prose; the same historical window and before/after comparison are reviewed again before any acceptance."
+                ),
             }
         if review.get("cross_chapter_window") and inputs.get("required_actions") is None:
             payload["targeted_repair"] = {
@@ -716,7 +721,9 @@ def build_provider_task_view(
                 "preservation_requirements": deepcopy(review["cross_chapter_window"]["preservation_requirements"]),
                 "instructions": (
                     "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. The host verifies that the joined Scene Slot prose equals applying those edits. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
-                    if compact_contract else
+                    if compact_contract and not targeted_edits_only else
+                    "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. The host derives revised Slot prose from these edits. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
+                    if targeted_edits_only else
                     "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. Return text equal to applying those edits only. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
                 ),
             }

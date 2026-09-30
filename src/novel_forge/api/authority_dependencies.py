@@ -332,6 +332,31 @@ def build_book_design_authority_query(
     return BookDesignAuthorityQuery(settings.database_url)
 
 
+def validate_production_structured_result(
+    stage: str,
+    output_schema: Mapping[str, object],
+    value: Mapping[str, object],
+    *,
+    output_schema_ref: str = "",
+) -> Mapping[str, object]:
+    if stage in {CLASSIFICATION_STAGE, DECONSTRUCTION_STAGE, MKAOS_STAGE}:
+        return validate_content_intelligence_output(stage, output_schema, value)
+    validated = validate_chapter_provider_output_against_schema(
+        stage, output_schema, value,
+    )
+    if stage in {
+        *FOUNDATION_GENERATORS,
+        "book_plan.generate", "volume_plan.generate", "arc_plan.generate",
+        "chapter_group_plan.generate", "chapter_plan.generate",
+        "narrative_semantic_evaluation", *WORLD_SAMPLE_TASKS,
+    }:
+        return validated
+    semantic = validate_chapter_provider_output_semantics(
+        stage, validated, output_schema_ref=output_schema_ref,
+    )
+    return normalize_model_output(stage, semantic, output_schema_ref=output_schema_ref)
+
+
 def build_production_execution_composition(
     settings: IndustrialSettings,
     *,
@@ -1045,36 +1070,6 @@ def build_production_execution_composition(
             for stage, route in routes.items()
         }
 
-    def validate_codex_result(
-        stage: str,
-        output_schema: Mapping[str, object],
-        value: Mapping[str, object],
-    ) -> Mapping[str, object]:
-        if stage in {
-            CLASSIFICATION_STAGE,
-            DECONSTRUCTION_STAGE,
-            MKAOS_STAGE,
-        }:
-            return validate_content_intelligence_output(stage, output_schema, value)
-        validated = validate_chapter_provider_output_against_schema(
-            stage,
-            output_schema,
-            value,
-        )
-        if stage in {
-            *FOUNDATION_GENERATORS,
-            "book_plan.generate",
-            "volume_plan.generate",
-            "arc_plan.generate",
-            "chapter_group_plan.generate",
-            "chapter_plan.generate",
-            "narrative_semantic_evaluation",
-            *WORLD_SAMPLE_TASKS,
-        }:
-            return validated
-        semantic = validate_chapter_provider_output_semantics(stage, validated)
-        return normalize_model_output(stage, semantic)
-
     def fixture_response(stage: str, inputs: Mapping[str, object]) -> dict[str, object]:
         if stage in {
             CLASSIFICATION_STAGE,
@@ -1160,7 +1155,7 @@ def build_production_execution_composition(
                     pricing=codex_pricing,
                     account_entitlement=codex_entitlement,
                     retry_policy=str(values.get("NOVEL_FORGE_CODEX_RETRY_POLICY") or ""),
-                    structured_result_validator=validate_codex_result,
+                    structured_result_validator=validate_production_structured_result,
                     qualification_ref="capability-probe:codex-cli:real-runtime-v1",
                 )
             )
@@ -1177,7 +1172,7 @@ def build_production_execution_composition(
                         working_directory=settings.root,
                     ),
                     record_store=store,
-                    structured_result_validator=validate_codex_result,
+                    structured_result_validator=validate_production_structured_result,
                 )
             )
         gateway = ProductionExecutionGateway(backends, admission)

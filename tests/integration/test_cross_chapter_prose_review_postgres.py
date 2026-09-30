@@ -137,16 +137,11 @@ class ProseTransport:
             }
             if issues:
                 issue = issues[0]
-                result["text"] = draft["text"].replace(BROKEN, REPAIRED)
-                result["scene_artifacts"][-1]["text"] = result["scene_artifacts"][-1][
-                    "text"
-                ].replace(BROKEN, REPAIRED)
+                result.pop("text")
+                result.pop("scene_artifacts")
                 result["edits"] = [
                     {
-                        **{
-                            key: issue["evidence_locator"][key]
-                            for key in ("start", "end", "quote")
-                        },
+                        "quote": issue["evidence_locator"]["quote"],
                         "replacement": REPAIRED,
                         "issue_codes": [issue["code"]],
                     }
@@ -473,7 +468,7 @@ def test_book_accepted_prose_drives_targeted_repair_and_acceptance(
         assert len(effects) == 2
         effect_id, payload, receipt = effects[-1]
         binding = payload["_production_execution"]["capability_runtime"]
-        assert binding["output_schema_ref"].endswith("cross-chapter-v2")
+        assert binding["output_schema_ref"].endswith("cross-chapter-v3")
         assert binding["provider_admission"]["total_reserved"] > len(HISTORY.encode())
         from novel_forge.modules.chapter_authority.provider_views import (
             build_provider_task_view,

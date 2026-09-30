@@ -72,8 +72,9 @@ HASH = "sha256:" + hashlib.sha256(b"input").hexdigest()
 
 
 class _RemoteTransport:
-    def __init__(self, scenario: str) -> None:
+    def __init__(self, scenario: str, result=None) -> None:
         self.scenario = scenario
+        self.result = result
         self.last_request = None
         self.execute_calls = 0
 
@@ -91,7 +92,7 @@ class _RemoteTransport:
             if self.scenario == "success"
             else "background",
             "evidence": {
-                "result": {"text": "remote result"},
+                "result": self.result if self.result is not None else {"text": "remote result"},
                 "usage": {"input_tokens": 2, "output_tokens": 3},
                 "cost": {"amount": "0.01", "currency": "USD"},
             },
@@ -125,8 +126,8 @@ class _RemoteTransport:
         raise NotImplementedError
 
 
-def _remote_adapter(scenario: str):
-    transport = _RemoteTransport(scenario)
+def _remote_adapter(scenario: str, result=None):
+    transport = _RemoteTransport(scenario, result)
     adapter = OpenAIProviderAdapterV2(
         transport,
         supports_query=True,
@@ -701,6 +702,138 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         self.assertEqual(evidence["usage"]["output_tokens"], 3)
         self.assertEqual(evidence["cost"]["amount"], "0.01")
         self.assertEqual(transport.execute_calls, 1)
+
+    def test_remote_local_validation_crash_reuses_durable_response(self):
+        capability, profile, policy, route, manifest, request = contracts(
+            backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)
+        admission = AdmissionController(
+            StaticExecutionContractSource(
+                route_snapshots=(route,), model_profiles=(profile,),
+                route_policies=(policy,), input_manifests=(manifest,)),
+            StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+        )
+        adapter, transport = _remote_adapter("success")
+        calls = 0
+
+        def validate(stage, schema, value, *, output_schema_ref):
+            nonlocal calls
+            calls += 1
+            self.assertEqual(output_schema_ref, "chapter-draft.v1")
+            if calls == 1:
+                raise RuntimeError("local validator unavailable")
+            return value
+
+        store = InMemoryExecutionRecordStore()
+        backend = RemoteProviderExecutionBackend(
+            backend_id="remote-provider", capability_profile=capability,
+            provider_adapter=adapter, admission=admission,
+            payload_resolver=StaticExecutionPayloadResolver({
+                request.execution_id: _admitted_remote_payload(request, "provider payload")
+            }),
+            record_store=store, structured_result_validator=validate,
+        )
+        handle = backend.submit(request)
+        self.assertEqual(store.get_record(request.execution_id).raw_evidence["result"],
+                         {"text": "remote result"})
+        with self.assertRaisesRegex(RuntimeError, "local validator unavailable"):
+            backend.reconcile(handle)
+        self.assertIsNone(store.get_record(request.execution_id).result)
+        result = backend.reconcile(handle)
+        self.assertEqual(result.outcome, ExecutionOutcome.SUCCEEDED)
+        self.assertEqual(transport.execute_calls, 1)
+        self.assertEqual(calls, 2)
+
+    def test_remote_backend_uses_frozen_canon_semantics(self):
+        from novel_forge.api.authority_dependencies import validate_production_structured_result
+        from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema
+
+        for legacy, obligation_type, payoff, expected in (
+            (False, "PROMISE", None, ExecutionOutcome.SUCCEEDED),
+            (True, "PROMISE", None, ExecutionOutcome.FINAL_FAILURE),
+            (False, "CAUSAL_DEBT", None, ExecutionOutcome.FINAL_FAILURE),
+        ):
+            capability, profile, policy, route, manifest, request = contracts(
+                backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)
+            ref = "schema:chapter-provider-output:canon_extraction:" + ("v18" if legacy else "v20")
+            route = replace(route, output_schema_ref=ref)
+            request = replace(request, stage="canon_extraction")
+            schema = chapter_provider_output_schema("canon_extraction", legacy_contract=legacy)
+            result = {
+                key: [] for key in schema["required"]
+                if schema["properties"][key].get("type") == "array"
+            }
+            result.update(extraction_status="EXTRACTED", no_change_reason="")
+            obligation = {
+                "obligation_id": "promise:one", "obligation_type": obligation_type,
+                "causal_requirement": None, "causal_plan_asset_version_id": None,
+                "from_status": "OPEN", "status": "FULFILLED", "priority": "HIGH",
+                "target_window": {"status": "SCHEDULED", "from_chapter": 1, "to_chapter": 1},
+                "payoff_evidence": payoff, "linked_arc_ids": [],
+                "summary": "她兑现了承诺。", "evidence_quote": "她兑现了承诺。",
+                "claim_kind": "OBJECTIVE_EVENT", "confidence": 0.9,
+                "impact_type": "obligation_payoff",
+            }
+            if legacy:
+                obligation.update(evidence_start=0, evidence_end=8)
+            result["obligation_changes"] = [obligation]
+            admission = AdmissionController(
+                StaticExecutionContractSource(
+                    route_snapshots=(route,), model_profiles=(profile,),
+                    route_policies=(policy,), input_manifests=(manifest,)),
+                StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+            )
+            adapter, transport = _remote_adapter("success", result)
+            payload = replace(_admitted_remote_payload(request, "frozen canon prompt"),
+                              output_schema_version=ref, output_schema=schema)
+            store = InMemoryExecutionRecordStore()
+            backend = RemoteProviderExecutionBackend(
+                backend_id="remote-provider", capability_profile=capability,
+                provider_adapter=adapter, admission=admission,
+                payload_resolver=StaticExecutionPayloadResolver({request.execution_id: payload}),
+                record_store=store, structured_result_validator=validate_production_structured_result,
+            )
+            observed = backend.reconcile(backend.submit(request))
+            self.assertEqual(observed.outcome, expected)
+            self.assertEqual(transport.execute_calls, 1)
+            self.assertEqual(store.get_record(request.execution_id).raw_evidence["output_schema_version"], ref)
+
+    def test_remote_backend_accepts_edits_only_for_frozen_targeted_revision(self):
+        from novel_forge.api.authority_dependencies import validate_production_structured_result
+        from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema
+
+        for targeted, expected in (
+            (True, ExecutionOutcome.SUCCEEDED),
+            (False, ExecutionOutcome.FINAL_FAILURE),
+        ):
+            capability, profile, policy, route, manifest, request = contracts(
+                backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)
+            ref = "schema:chapter-provider-output:revision:" + ("v4" if targeted else "v3")
+            route = replace(route, output_schema_ref=ref)
+            request = replace(request, stage="revision")
+            admission = AdmissionController(
+                StaticExecutionContractSource(
+                    route_snapshots=(route,), model_profiles=(profile,),
+                    route_policies=(policy,), input_manifests=(manifest,)),
+                StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+            )
+            raw = {"resolved_issue_codes": ["ISSUE"], "edits": [
+                {"quote": "旧句。", "replacement": "新句。", "issue_codes": ["ISSUE"]}
+            ]}
+            adapter, transport = _remote_adapter("success", raw)
+            payload = replace(_admitted_remote_payload(request, "frozen revision prompt"),
+                              output_schema_version=ref,
+                              output_schema=chapter_provider_output_schema(
+                                  "revision", targeted_revision=targeted))
+            backend = RemoteProviderExecutionBackend(
+                backend_id="remote-provider", capability_profile=capability,
+                provider_adapter=adapter, admission=admission,
+                payload_resolver=StaticExecutionPayloadResolver({request.execution_id: payload}),
+                record_store=InMemoryExecutionRecordStore(),
+                structured_result_validator=validate_production_structured_result,
+            )
+            observed = backend.reconcile(backend.submit(request))
+            self.assertEqual(observed.outcome, expected)
+            self.assertEqual(transport.execute_calls, 1)
 
     def test_remote_backend_adapts_provider_v2_without_losing_provider_handle(
         self,

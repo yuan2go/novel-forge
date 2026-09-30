@@ -381,8 +381,9 @@ def test_provider_process_timeout_preserves_external_effect_settlement_headroom(
 
 
 @pytest.mark.parametrize("accounting_basis", ["PRICED", "ACCOUNT_ENTITLEMENT"])
+@pytest.mark.parametrize("local_crash", [False, True])
 def test_codex_backend_validates_schema_and_semantics_before_success(
-    accounting_basis: str,
+    accounting_basis: str, local_crash: bool,
 ) -> None:
     contract_set = contracts(
         backend_id="codex-cli",
@@ -400,7 +401,14 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
         StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
     )
 
-    def validator(stage, schema, value):  # type: ignore[no-untyped-def]
+    validation_calls = 0
+
+    def validator(stage, schema, value, *, output_schema_ref):  # type: ignore[no-untyped-def]
+        nonlocal validation_calls
+        validation_calls += 1
+        assert output_schema_ref == "schema:chapter-provider-output:draft:v2"
+        if local_crash and validation_calls == 1:
+            raise RuntimeError("local validator unavailable")
         validate_chapter_provider_output_against_schema(stage, schema, value)
         return normalize_model_output(stage, dict(value))
 
@@ -468,9 +476,15 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
             structured_result_validator=validator,
         )
 
-        result = backend.reconcile(backend.submit(request))
+        handle = backend.submit(request)
+        if local_crash:
+            with pytest.raises(RuntimeError, match="local validator unavailable"):
+                backend.reconcile(handle)
+            assert store.get_record(request.execution_id).result is None
+        result = backend.reconcile(handle)
 
     assert result.outcome is ExecutionOutcome.SUCCEEDED
+    assert validation_calls == (2 if local_crash else 1)
     evidence = store.get_record(request.execution_id).raw_evidence
     assert evidence["result"] == {"text": "Validated chapter.", "scene_artifacts": []}
     assert evidence["usage"]["measurement"] == "MEASURED"

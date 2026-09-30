@@ -800,10 +800,21 @@ class PostgresChapterExecutionContractBinder:
         materialization = self.pack_resolver.materialize_attempt_artifacts(
             attempt_snapshot
         )
-        if materialization.prompt_template.version not in {"v2", "v3"}:
+        supported_templates = {
+            "prompt-template:chapter-generation-pack": {"v2", "v3", "v4"},
+            "prompt-template:agent-session-pack": {"v1"},
+            "prompt-template:story-planning-pack": {"v1"},
+            "prompt-template:reader-outcome-pack": {"v2"},
+            "prompt-template:longform-prose-review-pack": {"v2"},
+            "prompt-template:narrative-semantic-evaluation-pack": {"v1"},
+            "prompt-template:scene-screenplay-pack": {"v1"},
+        }
+        if materialization.prompt_template.version not in supported_templates.get(
+            materialization.prompt_template.ref, set()
+        ):
             raise KernelError(
                 "CHAPTER_PROMPT_CONTRACT_UNSUPPORTED",
-                "frozen Chapter Prompt Template version has no output contract adapter",
+                "frozen Prompt Template identity has no output contract adapter",
             )
         artifacts = self._artifacts(metadata)
         selected_inputs = self._materialize_selected_inputs(
@@ -857,6 +868,7 @@ class PostgresChapterExecutionContractBinder:
             stage=stage,
             request_payload=request_payload,
             legacy_contract=materialization.prompt_template.version == "v2",
+            prompt_contract_version=materialization.prompt_template.version,
         )
         schema_hash = canonical_hash(provider_schema)
         embedding_output_contract = (
@@ -1125,13 +1137,28 @@ class PostgresChapterExecutionContractBinder:
         stage: str,
         request_payload: Mapping[str, Any],
         legacy_contract: bool = False,
+        prompt_contract_version: str = "v3",
     ) -> tuple[dict[str, Any], str]:
         inputs = request_payload.get("input") or {}
         causal_batch = bool(
             (inputs.get("execution_expectations") or {}).get("world_preparation")
         )
-        schema = chapter_provider_output_schema(stage, causal_batch=causal_batch, legacy_contract=legacy_contract)
-        schema_ref = chapter_provider_output_schema_ref(stage, causal_batch=causal_batch, legacy_contract=legacy_contract)
+        targeted_revision = bool(
+            stage == "revision" and prompt_contract_version == "v4" and (
+                inputs.get("quality_edit_contract")
+                or (
+                    ((inputs.get("review") or {}).get("issues") or
+                     (inputs.get("review") or {}).get("unresolved_issues"))
+                    and (
+                        inputs.get("cross_chapter_window")
+                        or (inputs.get("review") or {}).get("cross_chapter_window")
+                        or (inputs.get("review") or {}).get("craft_targets")
+                    )
+                )
+            )
+        )
+        schema = chapter_provider_output_schema(stage, causal_batch=causal_batch, legacy_contract=legacy_contract, targeted_revision=targeted_revision)
+        schema_ref = chapter_provider_output_schema_ref(stage, causal_batch=causal_batch, legacy_contract=legacy_contract, targeted_revision=targeted_revision)
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
             contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")
@@ -1141,11 +1168,11 @@ class PostgresChapterExecutionContractBinder:
             schema_ref = "schema:chapter-provider-output:" + stage + (":v2" if contract == "screenplay-source.v2" else ":v1")
         if inputs.get("cross_chapter_window") or (stage == "revision" and inputs.get("required_actions") is None and (inputs.get("review") or {}).get("cross_chapter_window")):
             from novel_forge.modules.review.cross_chapter import extend_provider_schema
-            schema, schema_ref = extend_provider_schema(schema, stage, legacy_contract=legacy_contract), f"schema:chapter-provider-output:{stage}:cross-chapter-{'v2' if legacy_contract else 'v3'}"
+            schema, schema_ref = extend_provider_schema(schema, stage, legacy_contract=legacy_contract), f"schema:chapter-provider-output:{stage}:cross-chapter-{'v2' if legacy_contract else 'v4' if targeted_revision else 'v3'}"
         if stage == "revision" and inputs.get("quality_edit_contract"):
             from novel_forge.modules.review.cross_chapter import extend_provider_schema
             schema = extend_provider_schema(schema, stage, legacy_contract=legacy_contract)
-            schema_ref += ":quality-targeted-v1"
+            schema_ref += ":quality-targeted-v2" if targeted_revision else ":quality-targeted-v1"
         if stage == "rereview" and (inputs.get("revision") or {}).get("quality_edit_contract"):
             from novel_forge.modules.revision.domain import extend_quality_rereview_schema
             schema = extend_quality_rereview_schema(schema, legacy_contract=legacy_contract)
@@ -4146,7 +4173,7 @@ def _materialize_production_codex_prompt(
     system_text, system = required_text("system_instruction")
     template_text, template = required_text("prompt_template")
     skill_text, skill = required_text("skill")
-    compact_contract = str(template.get("version") or "") == "v3"
+    compact_contract = str(template.get("version") or "") in {"v3", "v4"}
     context = materialization.get("context_selection")
     knowledge = materialization.get("knowledge_selection")
     tools = materialization.get("tool_permissions")
@@ -4174,7 +4201,14 @@ def _materialize_production_codex_prompt(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
             "Capability Context selection has no ContextBundle content",
         )
-    task_view = build_provider_task_view(stage, inputs, compact_contract=compact_contract)
+    from .provider_output_contracts import is_targeted_revision_schema_ref
+    targeted_edits_only = stage == "revision" and is_targeted_revision_schema_ref(
+        str(schema.get("ref") or "")
+    )
+    task_view = build_provider_task_view(
+        stage, inputs, compact_contract=compact_contract,
+        targeted_edits_only=targeted_edits_only,
+    )
     context_view = build_provider_context_view(stage, context_content, task_view)
     context_manifest = context_content.get("context_manifest")
     if isinstance(context_manifest, Mapping):
@@ -4246,6 +4280,15 @@ def _materialize_production_codex_prompt(
             else None
         ),
     )
+    if targeted_edits_only:
+        stage_semantic_contract = _bind_language_contract(
+            "Return only ordered non-overlapping edits with exact old quotes, replacement prose and linked issue codes. "
+            "Do not return Scene Slot texts or a second complete chapter. The host locates each quote against the frozen "
+            "candidate, enforces diagnosed ranges and Slot boundaries, and derives unchanged prose byte-for-byte. "
+            "Preserve actor, POV, knowledge, accepted facts and due obligations; read adjacent passages for continuity. "
+            "A Slot boundary only locates prose and does not prove narrative coherence.",
+            required_language,
+        )
     grounding_observations = [
         item
         for item in inputs.get("observations") or ()

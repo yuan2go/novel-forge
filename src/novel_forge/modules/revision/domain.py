@@ -3,7 +3,23 @@ from __future__ import annotations
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.chapter_authority.realization_composition import prose_from_output, reconcile_revision_composition
+from novel_forge.modules.chapter_authority.realization_composition import (
+    derive_targeted_revision_slots, prose_from_output, reconcile_revision_composition,
+)
+
+
+def _materialize_targeted_result(
+    source: dict[str, Any], review: dict[str, Any], result: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    from novel_forge.modules.review.cross_chapter import apply_targeted_edits
+    targeted = apply_targeted_edits(draft=source, review=review, result=result)
+    if "scene_artifacts" not in result:
+        slots = derive_targeted_revision_slots(source, targeted["targeted_edits"])
+        result = {**result, "scene_artifacts": slots}
+    text = prose_from_output(result, separators=source.get("scene_separators"))
+    if text != targeted["repaired_text"]:
+        raise KernelError("REVISION_TARGETED_EDIT_INVALID", "derived Slot prose differs from bounded edits")
+    return result, {key: value for key, value in targeted.items() if key != "repaired_text"}
 
 
 def apply_revision_result(
@@ -27,11 +43,10 @@ def apply_revision_result(
             or review.get("context_bundle_version_id") != context_bundle_version_id
             or review.get("target_text_hash") != prose_hash(str(draft.get("text") or ""))):
             raise KernelError("REVISION_DIAGNOSIS_STALE", "revision must consume diagnostics for its exact source candidate and Context")
-    text = prose_from_output(result, separators=draft.get("scene_separators"))
     targeted = {}
     if review.get("cross_chapter_window") or review.get("craft_targets"):
-        from novel_forge.modules.review.cross_chapter import apply_targeted_edits
-        targeted = apply_targeted_edits(draft=draft, review=review, result={**result, "text": text})
+        result, targeted = _materialize_targeted_result(draft, review, result)
+    text = prose_from_output(result, separators=draft.get("scene_separators"))
     if review.get("craft_targets"):
         from novel_forge.modules.review.craft import craft_revision_contract
         targeted["craft_revision_contract"] = craft_revision_contract(draft, review)
@@ -112,6 +127,14 @@ def apply_quality_revision_result(
             "QUALITY_REVISION_INPUT_INVALID",
             "Quality correction requires versioned target, decision, task, and context lineage",
         )
+    scope = quality_edit_contract(revision=revision, revision_asset_version_id=revision_asset_version_id, revision_tasks=revision_tasks)
+    targeted = {}
+    if scope is not None:
+        result, targeted = _materialize_targeted_result(
+            revision,
+            {"target_text_hash": scope["target_text_hash"], "issues": scope["permitted_ranges"]},
+            result,
+        )
     text = prose_from_output(result, separators=revision.get("scene_separators"))
     if not text.strip():
         raise KernelError(
@@ -157,11 +180,6 @@ def apply_quality_revision_result(
             "bounded Quality correction cannot replace a complete chapter with a "
             "truncated summary or excerpt",
         )
-    scope = quality_edit_contract(revision=revision, revision_asset_version_id=revision_asset_version_id, revision_tasks=revision_tasks)
-    targeted = {}
-    if scope is not None:
-        from novel_forge.modules.review.cross_chapter import apply_targeted_edits
-        targeted = apply_targeted_edits(draft=revision, review={"target_text_hash": scope["target_text_hash"], "issues": scope["permitted_ranges"]}, result={**result, "text": text})
     return {
         **revision,
         **reconcile_revision_composition(revision, result),

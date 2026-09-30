@@ -309,6 +309,38 @@ def test_original_controls_preserve_evidence_through_review_targeted_revision_an
     assert task["review_issues"][0]["evidence_locator"]["quote"] == case["misuse"]
 
 
+def test_targeted_revision_derives_scene_prose_from_edits_only() -> None:
+    draft = draft_for(CASES[0], second_scene=True)
+    review = initial_review(draft)
+    legacy = repair_output(draft)
+    edits_only = {
+        "resolved_issue_codes": legacy["resolved_issue_codes"],
+        "edits": [
+            {key: value for key, value in edit.items() if key not in {"start", "end"}}
+            for edit in legacy["edits"]
+        ],
+    }
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="revision", request_payload={"input": {"review": review}},
+        prompt_contract_version="v4",
+    )
+    assert ref.startswith("schema:chapter-provider-output:revision:v4")
+    assert "scene_artifacts" not in schema["properties"]
+    validated = validate_chapter_provider_output_against_schema("revision", schema, edits_only)
+    revised = apply_repair(
+        draft, review, normalize_model_output("revision", validated, output_schema_ref=ref)
+    )
+    assert revised["text"] == legacy["text"]
+    assert revised["scene_artifacts"][0] == draft["scene_artifacts"][0]
+    assert revised["scene_artifacts"][1]["text"] == CASES[0]["targeted_repair"]
+    assert revised["targeted_edits"][0]["quote"] == edits_only["edits"][0]["quote"]
+
+    outside = deepcopy(edits_only)
+    outside["edits"][0]["quote"] = draft["scene_artifacts"][0]["text"]
+    with pytest.raises(KernelError):
+        apply_repair(draft, review, outside)
+
+
 def test_wrong_scene_literal_quote_does_not_count_as_selected_craft_effect():
     draft = draft_for(second_scene=True)
     raw = review_output(draft, "ACHIEVED")

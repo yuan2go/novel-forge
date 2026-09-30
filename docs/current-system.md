@@ -535,20 +535,21 @@ Source Observation or original catalog → MKAOS Candidate → explicit Approval
 → Book Acceptance → read-only effect/receipt/accepted-manuscript trace
 ```
 
-The Chapter Generation Pack `2.4.0` binds Prompt Template v3, task-matched
+The Chapter Generation Pack `2.5.0` binds Prompt Template v4, task-matched
 creative Skill v2 and stage output schemas for new governed deployments, independently
-of earlier requests. Draft and Revision
-return one prose body per frozen Scene Slot; Chapter Authority joins it with frozen
-separators and verifies Slot, actor, POV and knowledge scope. Review, ReReview and
+of earlier requests. Draft returns one prose body per frozen Scene Slot. Targeted
+Revision v4 returns bounded edits against the exact candidate; Chapter Authority
+derives changed Slot prose and copies unchanged Slots. It joins frozen separators
+and verifies Slot, actor, POV and knowledge scope. Review, ReReview and
 Canon extraction return literal evidence quotes. The host locates unique Unicode
 spans against the exact candidate and binds candidate, accepted-source and payoff
 identities before domain validation; missing or ambiguous evidence blocks progress.
-Older frozen Pack artifacts and output schemas remain addressable by their exact
-versions, while accepted chapters remain immutable. Retrieval may skip optional
-semantic embedding when deterministic ranking already selects relevant accepted
-evidence, frozen coverage is sufficient, and selected text fits the conservative
-Context budget. The same RetrievalResult, ContextBundle and Provider admission
-boundaries still govern the downstream request.
+Older frozen Pack artifacts and output schemas retain their own validation semantics,
+while accepted chapters remain immutable. Retrieval may skip optional semantic
+embedding when deterministic ranking already selects relevant accepted evidence
+and frozen coverage is sufficient. The complete rendered request, including Prompt,
+Skill, Schema and output reserve, must still pass Provider admission. The same
+RetrievalResult and ContextBundle boundaries govern either path.
 
 Plan, Intent and Memo must retain the same strategy. Draft admission checks exact selected
 Card versions in the frozen Context. Only adopted mechanisms reach its realization task;
@@ -1318,8 +1319,9 @@ integrity-checked DENY_ALL empty retrieval query with its frozen need receipt.
 
 Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
 Description, Transition and Integration slots as needed. Dialogue and Interior slots
-carry actor-local knowledge. The Draft and Revision contracts require complete slot
-coverage and exact deterministic prose integration. A revision retains the frozen
+carry actor-local knowledge. Draft requires complete slot coverage; targeted Revision
+edits one frozen candidate and deterministically derives updated Slot representation.
+Mechanical Slot joining does not establish narrative coherence. A revision retains the frozen
 contract, identifies changed slots and reruns the existing Review, Quality and Actual
 reconciliation chain. Voice contracts distinguish Book, Narrator, POV, Character,
 Dialogue and Genre layers; current drift checks prove explicit textual constraints,

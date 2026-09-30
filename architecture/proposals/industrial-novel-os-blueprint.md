@@ -15,11 +15,11 @@ Baseline implementation identity: `sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-09-27",
-  "review_due": "2026-10-11",
+  "reviewed_on": "2026-09-30",
+  "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "5bb9d91dcb64260956c901a50316badca560094e",
-    "implementation_tree_sha": "sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc"
+    "sha": "c2756022d53094a7a2e5f42c07d1f61ec8f39560",
+    "implementation_tree_sha": "sha256:da172db318b41ab6b9e3e84dc01ccb6aabf080e43b3c413ee10406d8e369c9ae"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",

@@ -335,6 +335,12 @@ def default_chapter_artifact_resolver(
             "config/capability_packs/artifacts/chapter_generation_template.md",
         ),
         (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:chapter-generation-pack",
+            "v4",
+            "config/capability_packs/artifacts/chapter_generation_template.md",
+        ),
+        (
             ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
             "prompt-system:agent-session-pack",
             "v1",

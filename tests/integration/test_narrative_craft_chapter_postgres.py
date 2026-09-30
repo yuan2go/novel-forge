@@ -276,19 +276,12 @@ class CraftTransport:
                 ],
             )
         elif stage == "revision":
-            draft, issue = inputs["draft"], inputs["review"]["issues"][0]
-            artifacts = deepcopy(draft["scene_artifacts"])
-            artifacts[-1]["text"] = artifacts[-1]["text"].replace(self.broken, self.repaired)
+            issue = inputs["review"]["issues"][0]
             result = {
-                "text": draft["text"].replace(self.broken, self.repaired),
-                "scene_artifacts": artifacts,
                 "resolved_issue_codes": [issue["code"]],
                 "edits": [
                     {
-                        **{
-                            key: issue["evidence_locator"][key]
-                            for key in ("start", "end", "quote")
-                        },
+                        "quote": issue["evidence_locator"]["quote"],
                         "replacement": self.repaired,
                         "issue_codes": [issue["code"]],
                     }
@@ -466,7 +459,7 @@ def test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_recei
         if receipt_loss:
             assert effect == interrupted
         binding = effect[1]["_production_execution"]["capability_runtime"]
-        assert binding["output_schema_ref"].endswith(":narrative-craft-v1")
+        assert binding["output_schema_ref"].endswith(":cross-chapter-v3:narrative-craft-v2")
         admission = uow.repositories.asset_documents.require(
             project_id=project,
             asset_version_id=binding["provider_admission_asset_version_id"],
@@ -487,10 +480,20 @@ def test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_recei
                     "provider_admission_asset_version_id"
                 ],
             ).content["contract"]
-            task_view = build_provider_task_view(stage, payload["input"])
+            task_view = build_provider_task_view(
+                stage,
+                payload["input"],
+                compact_contract=True,
+                targeted_edits_only=(
+                    stage == "revision"
+                    and ":cross-chapter-v4" in admitted_binding["output_schema_ref"]
+                ),
+            )
             assert admitted["prompt_materialization"]["provider_view"][
                 "component_hashes"
-            ]["provider_task_view"] == craft_hash(task_view)
+            ]["provider_task_view"] == craft_hash(task_view), (
+                stage, admitted_binding["output_schema_ref"]
+            )
             assert transport.strategy["uses"][0]["mechanism_id"] in json.dumps(
                 task_view
             )
@@ -531,17 +534,12 @@ class JointCraftTransport(CraftTransport):
         )
         if stage == "revision":
             self.calls.append((stage, deepcopy(inputs)))
-            draft = inputs["draft"]
-            result = {"text": draft["text"], "scene_artifacts": deepcopy(draft["scene_artifacts"]),
-                      "resolved_issue_codes": [], "edits": []}
+            result = {"resolved_issue_codes": [], "edits": []}
             for issue in inputs["review"]["issues"]:
-                original, replacement = ((self.broken, self.repaired) if issue["category"] == "CRAFT_EFFECT"
-                                         else (CONTINUITY_BROKEN, CONTINUITY_REPAIRED))
-                result["text"] = result["text"].replace(original, replacement)
-                for artifact in result["scene_artifacts"]:
-                    artifact["text"] = artifact["text"].replace(original, replacement)
+                replacement = (self.repaired if issue["category"] == "CRAFT_EFFECT"
+                               else CONTINUITY_REPAIRED)
                 result["resolved_issue_codes"].append(issue["code"])
-                result["edits"].append({**{key: issue["evidence_locator"][key] for key in ("start", "end", "quote")},
+                result["edits"].append({"quote": issue["evidence_locator"]["quote"],
                                         "replacement": replacement, "issue_codes": [issue["code"]]})
             return result
         result = super().__call__(stage, inputs)
@@ -647,16 +645,12 @@ class JointQualityCorrectionTransport(JointCraftTransport):
     def __call__(self, stage, inputs):
         if stage == "revision" and inputs.get("quality_edit_contract"):
             self.calls.append((stage, deepcopy(inputs)))
-            draft = inputs["draft"]
             scope = inputs["quality_edit_contract"]
             located = scope["permitted_ranges"][0]
             span = located["evidence_locator"]
             replacement = span["quote"] + "（原地付出代价）"
-            text = draft["text"][:span["start"]] + replacement + draft["text"][span["end"]:]
-            artifacts = deepcopy(draft["scene_artifacts"])
-            artifacts[0]["text"] = artifacts[0]["text"].replace(span["quote"], replacement, 1)
-            return {"text": text, "scene_artifacts": artifacts, "resolved_issue_codes": [],
-                "edits": [{**span, "replacement": replacement, "issue_codes": [located["code"]]}]}
+            return {"resolved_issue_codes": [],
+                "edits": [{"quote": span["quote"], "replacement": replacement, "issue_codes": [located["code"]]}]}
         result = super().__call__(stage, inputs)
         if stage == "quality_longform" and inputs["revision"]["chapter"] == 2:
             self.quality_calls += 1

@@ -1379,6 +1379,12 @@ Provider retry first reloads any existing ExternalEffect intent and reuses its f
 request/admission identity. A historical remote intent that predates complete admission
 is not upgraded in place or reinterpreted with the current meter; dispatch remains
 fail-closed and recovery follows the owning effect policy.
+Remote Provider and Codex CLI receipts preserve the returned raw response before local
+Schema validation and normalization. A local crash after receipt persistence reuses
+that response under its frozen output Schema identity; it does not authorize a second
+generation call. Protocol or semantic rejection retains the raw result and failure
+evidence for explicit, bounded repair. A remote `UNKNOWN` outcome still requires
+reconciliation under its original idempotency identity.
 
 For transaction errors, `DatabaseRetryClass.SAFE_RETRY` covers only explicitly safe
 SQLSTATEs. `RECONCILIATION_REQUIRED` means the commit result may be unknown and must be
