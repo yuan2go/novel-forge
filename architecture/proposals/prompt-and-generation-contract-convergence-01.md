@@ -13,10 +13,10 @@
 |---|---|
 | 目标仓库 | `yuan2go/novel-forge` |
 | 核验日期 | 2026-09-30，UTC+8 |
-| 核验分支 | `main` |
-| 代码基线 | `dbaadc19688d22f8547aea6ae407d2e1c6c3eb0f` |
-| Git tree | `29f2db788a455a69d3fdd97e3302ea98e1d6e3ad` |
-| 当前事实核验 | 针对性源代码、合同、装配与仓库规则阅读；未启动应用、未执行数据库回归、未调用真实 Provider |
+| 核验分支 | `codex/real-prose-quality-closure-01` |
+| 当前生命周期代码基线 | `ca34b2d0872da06592eb1da79dc37d2d04831c39` |
+| Git tree | `5fdf9e3af2a70d0c310150334c01df92381c4eee` |
+| 当前事实核验 | 源代码、冻结合同、正式装配及定向单测/PostgreSQL 回归；现有持久库仅只读核验，未调用真实 Provider |
 | 实现及效果状态 | 规格形成时仅交付需求；后续工程实现已进入正式主链，真实 Provider 与文学收益仍未验证。当前状态以代码、冻结合同和当次验收为准 |
 | 规格边界 | 现有小说生成主链的职责、Prompt、输出、Context、方法及下游消费收敛；不是整个 Industrial Autonomous Novel OS 的一次性交付蓝图 |
 
@@ -28,8 +28,8 @@
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
   "reality_baseline": {
-    "sha": "c2756022d53094a7a2e5f42c07d1f61ec8f39560",
-    "implementation_tree_sha": "sha256:da172db318b41ab6b9e3e84dc01ccb6aabf080e43b3c413ee10406d8e369c9ae"
+    "sha": "ca34b2d0872da06592eb1da79dc37d2d04831c39",
+    "implementation_tree_sha": "sha256:45c4063b378b2d7096360b222247478f0a5813c8b35e4d13d74204cb4e982942"
   },
   "scope": [
     "src/novel_forge/modules/chapter_authority",
@@ -41,29 +41,62 @@
     "src/novel_forge/modules/story_planning_runtime",
     "src/novel_forge/modules/book_followup_authority",
     "config/capability_packs",
-    "skills"
+    "skills",
+    "src/novel_forge/modules/creative",
+    "src/novel_forge/modules/mkaos_authority"
   ],
   "implemented_refs": [
-    {"path": "src/novel_forge/modules/chapter_authority/execution_gateway.py", "symbol": "ChapterCapabilityPreflight"},
-    {"path": "src/novel_forge/modules/chapter_authority/provider_output_contracts.py", "symbol": "chapter_provider_output_schema"},
-    {"path": "src/novel_forge/modules/chapter_authority/realization_composition.py", "symbol": "derive_targeted_revision_slots"},
-    {"path": "src/novel_forge/modules/book_authority/production.py", "symbol": "PostgresBookAuthority.accept_chapter"}
+    {
+      "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+      "symbol": "ChapterCapabilityPreflight"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/provider_output_contracts.py",
+      "symbol": "chapter_provider_output_schema"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/realization_composition.py",
+      "symbol": "derive_targeted_revision_slots"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/production.py",
+      "symbol": "PostgresBookAuthority.accept_chapter"
+    },
+    {
+      "path": "src/novel_forge/modules/production_execution/backends.py",
+      "symbol": "RemoteProviderExecutionBackend._record_provider_result"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+      "symbol": "_project_prose_skill"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/realization_composition.py",
+      "symbol": "_scene_craft_tasks"
+    },
+    {
+      "path": "src/novel_forge/modules/review/cross_model_binding.py",
+      "symbol": "freeze_review_requirement"
+    }
   ],
   "superseding_refs": [],
   "remaining_decisions": [],
   "remaining_work": [
     {
       "id": "real-provider-and-editorial-validation",
-      "description": "在另行有效授权下，以真实 Provider 和独立编辑评价验证创作收益、连续章节消费与长期稳定性；工程验收不能替代该证据。",
+      "description": "在本轮有效作品、模型、预算、期限和人工审批授权下，完成原生真实正文审读、必要修订、接纳后后续 Context 消费，再以有界盲评前后对照验证实际阅读收益。尚无本轮正文和对照，不将工程检查、历史授权或已部署旧 Pack 当成真实作品与质量证据；长期稳定性仍需独立样本。",
       "evidence_refs": [
-        {"path": "src/novel_forge/modules/chapter_authority/candidate_selection.py", "symbol": "bind_selected_review"}
+        {
+          "path": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+          "symbol": "bind_selected_review"
+        }
       ]
     }
   ]
 }
 -->
 
-生命周期中的 implementation identity 取自基线仓库的 Reality projection；本次没有独立重算全仓 identity。Codex 应通过仓库现有工具核对，不得把该值或提案生命周期当成生产资格。review_due 是现有提案检查器所需的维护日期，不是开发期限、生产排期或定时任务。
+生命周期中的 implementation identity 由仓库现有 implementation_tree_identity 工具对精确提交重算，并由生命周期检查器核对。该值与提案生命周期均不授予生产资格。review_due 是现有提案检查器所需的维护日期，不是开发期限、生产排期或定时任务。
 
 ## 1. 审查结论与可读取材料边界
 

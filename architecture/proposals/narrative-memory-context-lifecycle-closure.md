@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `5bb9d91dcb64260956c901a50316badca560094e`
+Reality baseline: `ca34b2d0872da06592eb1da79dc37d2d04831c39`
 Baseline implementation identity:
-`sha256:eefb6fcb8676064f5d75c7dd91ab501e99a67a0c6281dc1c5e4cd727c8eeecfc`
+`sha256:45c4063b378b2d7096360b222247478f0a5813c8b35e4d13d74204cb4e982942`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-09-30",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "c2756022d53094a7a2e5f42c07d1f61ec8f39560",
-    "implementation_tree_sha": "sha256:da172db318b41ab6b9e3e84dc01ccb6aabf080e43b3c413ee10406d8e369c9ae"
+    "sha": "ca34b2d0872da06592eb1da79dc37d2d04831c39",
+    "implementation_tree_sha": "sha256:45c4063b378b2d7096360b222247478f0a5813c8b35e4d13d74204cb4e982942"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
