@@ -1,0 +1,91 @@
+{
+  "at": "2026-09-28T09:02:45.513603+00:00",
+  "status": "DEPLOYED_WITH_DISPATCH_BRAKE",
+  "release_sha": "88f2a4fbf9dfc92f091be55a2d6a1bb1fd7d3b0d",
+  "prior_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+  "build_id": "wp02-author-88f2a4fbf9df",
+  "api": "http://127.0.0.1:8143",
+  "ui": "http://127.0.0.1:3143",
+  "brake": true,
+  "project_pause": [
+    "PAUSED",
+    27
+  ],
+  "migrations": {
+    "count": 149,
+    "head": "20260928_0148_author_supervised_design",
+    "this_deployment_applied": 0
+  },
+  "packs": [
+    {
+      "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "compilation_id": "compilation:wp02-author:88f2a4fbf9df:wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "deployment_id": "deployment:wp02-author:88f2a4fbf9df:wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "previous_activation_version": 13,
+      "activation_version": 14,
+      "scope": "TECHNICAL_RELEASE_ONLY_NO_MODEL_AUTHORIZATION_NO_LITERARY_QUALIFICATION"
+    },
+    {
+      "pack_id": "wp02-author-supervised-chapter",
+      "compilation_id": "compilation:wp02-author:88f2a4fbf9df:wp02-author-supervised-chapter",
+      "deployment_id": "deployment:wp02-author:88f2a4fbf9df:wp02-author-supervised-chapter",
+      "previous_activation_version": 2,
+      "activation_version": 3,
+      "scope": "TECHNICAL_RELEASE_ONLY_NO_MODEL_AUTHORIZATION_NO_LITERARY_QUALIFICATION"
+    },
+    {
+      "pack_id": "wp02-author-supervised-prose-review",
+      "compilation_id": "compilation:wp02-author:88f2a4fbf9df:wp02-author-supervised-prose-review",
+      "deployment_id": "deployment:wp02-author:88f2a4fbf9df:wp02-author-supervised-prose-review",
+      "previous_activation_version": 2,
+      "activation_version": 3,
+      "scope": "TECHNICAL_RELEASE_ONLY_NO_MODEL_AUTHORIZATION_NO_LITERARY_QUALIFICATION"
+    }
+  ],
+  "native_nodes_resolved": 34,
+  "necessary_workers_ready": true,
+  "global_readiness": "DEGRADED existing default chapter Pack readiness and unrelated historical worker fleet; no unrelated workers started",
+  "formal_ui_build": {
+    "release_sha": "88f2a4fbf9dfc92f091be55a2d6a1bb1fd7d3b0d",
+    "command": "next build --webpack",
+    "exit_code": 0,
+    "api_url": "http://127.0.0.1:8143",
+    "build_id": "BFRGy_mqSYXhOR28mvRQc",
+    "log": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/88f2a4fbf9dfc92f091be55a2d6a1bb1fd7d3b0d/web-production-build.log"
+  },
+  "business_and_execution_fingerprint": {
+    "tables": 18,
+    "equal": true,
+    "dispatches_before": 414,
+    "dispatches_after": 414
+  },
+  "object_store": {
+    "endpoint": "127.0.0.1:61961",
+    "bucket": "novel-forge-artifacts",
+    "exists": true,
+    "object_count": 359
+  },
+  "cli_inspect_exit": 0,
+  "loaded_process_code_verified": true,
+  "new_model_dispatches": 0,
+  "native_budget_policy_mutations": 0,
+  "author_manuscript_approvals": 0,
+  "model_configuration": {
+    "generation_candidate": "deepseek:deepseek-v4-pro:high",
+    "review_candidate": "codex-cli:gpt-5.6-terra:high",
+    "authorization_ref": "wp02-author-start-20260928T084022Z",
+    "fixed_window": [
+      "2026-09-28T08:40:22Z",
+      "2026-09-29T08:40:22Z"
+    ],
+    "router_per_task_token_limit": 100000,
+    "router_per_task_money_limit_usd": "0.5",
+    "generic_money_caps": {},
+    "monetary_cap_enforcement": "Native CreativeBudget v5 must be selected before scoped model execution; no native budget policy created by deployment",
+    "project_cumulative_calls_cap": 87,
+    "project_cumulative_tokens_cap": 4083008
+  },
+  "restart_validation": "Not repeated; b305 existing same-config recovery proof retained. New API/CLI/workers exact frozen code imports verified.",
+  "prior_owned_processes_retired": 6,
+  "prior_release_history_preserved": true
+}

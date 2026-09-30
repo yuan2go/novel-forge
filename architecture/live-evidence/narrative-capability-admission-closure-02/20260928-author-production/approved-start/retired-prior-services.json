@@ -1,0 +1,54 @@
+{
+  "retired": [
+    {
+      "kind": "api",
+      "pid": 62577,
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "state": "EXITED_AFTER_OWNED_SIGTERM"
+    },
+    {
+      "kind": "content",
+      "pid": 62578,
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "state": "EXITED_AFTER_OWNED_SIGTERM"
+    },
+    {
+      "kind": "chapter",
+      "pid": 62579,
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "state": "EXITED_AFTER_OWNED_SIGTERM"
+    },
+    {
+      "kind": "book",
+      "pid": 62580,
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "state": "EXITED_AFTER_OWNED_SIGTERM"
+    },
+    {
+      "kind": "book_followup",
+      "pid": 62581,
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "state": "EXITED_AFTER_OWNED_SIGTERM"
+    },
+    {
+      "kind": "web",
+      "pid": 62582,
+      "sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+      "state": "EXITED_AFTER_OWNED_SIGTERM"
+    }
+  ],
+  "unrelated_or_persistent_endpoints_preserved": {
+    "8137": {
+      "listening": true
+    },
+    "3138": {
+      "listening": true
+    },
+    "61959": {
+      "listening": true
+    },
+    "61961": {
+      "listening": true
+    }
+  }
+}

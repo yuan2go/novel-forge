@@ -1,0 +1,8 @@
+{
+  "release_sha": "88f2a4fbf9dfc92f091be55a2d6a1bb1fd7d3b0d",
+  "command": "next build --webpack",
+  "exit_code": 0,
+  "api_url": "http://127.0.0.1:8143",
+  "build_id": "BFRGy_mqSYXhOR28mvRQc",
+  "log": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/88f2a4fbf9dfc92f091be55a2d6a1bb1fd7d3b0d/web-production-build.log"
+}
