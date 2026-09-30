@@ -1772,16 +1772,20 @@ def _decode_agent_json_envelope(
     return decoded
 
 
-def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
+def _normalize_model_output(stage: str, raw: dict[str, Any], *, output_schema_ref: str = "") -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise KernelError("MODEL_RESPONSE_INVALID", "model response must be an object")
     if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
         return dict(raw)
     if stage == "draft":
         text = str(raw.get("text") or "")
-        if not text.strip():
-            raise KernelError("MODEL_RESPONSE_INVALID", "draft response has no text")
-        return {"text": text, "scene_artifacts": raw.get("scene_artifacts", [])}
+        artifacts = raw.get("scene_artifacts")
+        if not text.strip() and not artifacts:
+            raise KernelError("MODEL_RESPONSE_INVALID", "draft response has no prose")
+        return {
+            **({"text": text} if "text" in raw else {}),
+            "scene_artifacts": artifacts if isinstance(artifacts, list) else [],
+        }
     if stage == "agent_session":
         message = str(raw.get("message") or "").strip()
         action = str(raw.get("action") or "").strip().upper()
@@ -1913,7 +1917,11 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             validate_chapter_provider_output_semantics,
         )
 
-        raw = validate_chapter_provider_output_semantics(stage, raw)
+        raw = validate_chapter_provider_output_semantics(
+            stage, raw,
+            host_bind_known_metadata=output_schema_ref.startswith("schema:chapter-provider-output:canon_extraction:v20")
+            or output_schema_ref.startswith("schema:chapter-provider-output:canon_extraction:v21"),
+        )
         fields = canon_provider_array_fields()
         normalized_extraction: dict[str, list[dict[str, Any]]] = {}
         for field in fields:
@@ -2067,21 +2075,21 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
         for item in raw.get("resolved_issue_codes", [])
         if str(item).strip()
     ]
-    if not text.strip():
+    if not text.strip() and not raw.get("scene_artifacts"):
         raise KernelError(
-            "MODEL_RESPONSE_INVALID", "revision response has no revised text"
+            "MODEL_RESPONSE_INVALID", "revision response has no revised prose"
         )
     return {
-        "text": text,
+        **({"text": text} if "text" in raw or "revised_text" in raw else {}),
         "resolved_issue_codes": resolved,
         "scene_artifacts": raw.get("scene_artifacts", []),
         **({"edits": raw["edits"]} if "edits" in raw else {}),
     }
 
 
-def normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
+def normalize_model_output(stage: str, raw: dict[str, Any], *, output_schema_ref: str = "") -> dict[str, Any]:
 
-    return _normalize_model_output(stage, raw)
+    return _normalize_model_output(stage, raw, output_schema_ref=output_schema_ref)
 
 
 def _review_severity(value: str) -> str:

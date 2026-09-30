@@ -271,17 +271,25 @@ def default_chapter_artifact_resolver(
     root = Path(repository_root).resolve()
     artifacts: list[ResolvedArtifact] = []
     skill_sources = (
-        ("chapter-outline", "chapter-plan-skill-v1", "skills/chapter-outline/SKILL.md"),
+        ("chapter-outline", "chapter-plan-skill-v1", "skills/chapter-outline/legacy-v1.md"),
+        ("chapter-outline", "chapter-plan-skill-v2", "skills/chapter-outline/SKILL.md"),
         (
             "context-builder-source-isolation",
             "context-builder-source-isolation-v1",
             "skills/context-builder-source-isolation/SKILL.md",
         ),
-        ("prose-generation", "prose-generation-v1", "skills/prose-generation/SKILL.md"),
-        ("quality-review", "quality-review-v1", "skills/quality-review/SKILL.md"),
+        ("prose-generation", "prose-generation-v1", "skills/prose-generation/legacy-v1.md"),
+        ("prose-generation", "prose-generation-v2", "skills/prose-generation/SKILL.md"),
+        ("quality-review", "quality-review-v1", "skills/quality-review/legacy-v1.md"),
+        ("quality-review", "quality-review-v2", "skills/quality-review/SKILL.md"),
         (
             "canon-continuity-graph",
             "canon-continuity-graph-v1",
+            "skills/canon-continuity-graph/legacy-v1.md",
+        ),
+        (
+            "canon-continuity-graph",
+            "canon-continuity-graph-v2",
             "skills/canon-continuity-graph/SKILL.md",
         ),
         (
@@ -306,12 +314,24 @@ def default_chapter_artifact_resolver(
             ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
             "prompt-system:chapter-generation-pack",
             "v1",
+            "config/capability_packs/artifacts/chapter_generation_system_instruction_v1.md",
+        ),
+        (
+            ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+            "prompt-system:chapter-generation-pack",
+            "v2",
             "config/capability_packs/artifacts/chapter_generation_system_instruction.md",
         ),
         (
             ArtifactKind.PROMPT_TEMPLATE,
             "prompt-template:chapter-generation-pack",
             "v2",
+            "config/capability_packs/artifacts/chapter_generation_template_v2.md",
+        ),
+        (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:chapter-generation-pack",
+            "v3",
             "config/capability_packs/artifacts/chapter_generation_template.md",
         ),
         (

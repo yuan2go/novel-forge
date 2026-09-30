@@ -8,6 +8,7 @@ from novel_forge.modules.context_builder.production_retrieval import (
     build_retrieval_query_plan,
     build_retrieval_result,
 )
+from novel_forge.modules.chapter_authority.handlers import deterministic_retrieval_coverage_fast_path
 
 
 def _intent() -> dict[str, object]:
@@ -65,6 +66,17 @@ def _document() -> dict[str, object]:
         "embedding_projection_version": "accepted-retrieval-embedding-v1",
         "candidate_channels": ["FTS", "VECTOR"],
     }
+
+
+def test_deterministic_fast_path_requires_coverage_and_budget() -> None:
+    plan = build_retrieval_query_plan(intent=_intent(), memo=_memo())
+    arguments = dict(project_id="project:novel", book_id="book:novel",
+                     intent_asset_version_id="intent:v1", memo_asset_version_id="memo:v1",
+                     query_plan=plan, documents=[_document()], semantic_status={})
+    assert deterministic_retrieval_coverage_fast_path(**arguments, context_token_budget=6000)
+    assert not deterministic_retrieval_coverage_fast_path(**arguments, context_token_budget=10)
+    assert not deterministic_retrieval_coverage_fast_path(**{**arguments, "documents": []}, context_token_budget=6000)
+    assert not deterministic_retrieval_coverage_fast_path(**{**arguments, "query_plan": {**plan, "semantic_policy": "REQUIRED"}}, context_token_budget=6000)
 
 
 def test_memo_is_the_authoritative_retrieval_query_input() -> None:

@@ -19,6 +19,7 @@ from novel_forge.modules.chapter_authority.model_effects import (
     ModelProviderResult,
 )
 from novel_forge.modules.chapter_authority.orchestrator import (
+    ChapterNode,
     SingleChapterRequest,
 )
 from novel_forge.modules.chapter_quality_authority import (
@@ -1134,6 +1135,23 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             )
             def synthetic_evidence(**scope):
                 from novel_forge.modules.production_execution.cost_routing import REFERENCE_TASKS, task_policy
+                if task_policy(scope["task_type"]).quality_metric == "GENERATOR_SCORE":
+                    return [replace(
+                        row,
+                        evidence_ref=f"fixture:generator-routing:{tokens}:{index}",
+                        quality_score=None, accepted=None, domain_gate_accepted=None,
+                        evidence_class="BENCHMARK_CHALLENGER", production_eligible=False,
+                        experiment_partition="CALIBRATION",
+                        producer_contract_hash=scope["producer_contract_hash"],
+                        sample_identity=f"fixture:generator:{tokens}:{index}",
+                        independence_group=f"fixture:input:{tokens}:{index}",
+                        generator_quality_score=.99,
+                        generator_protocol_hash="sha256:" + "1" * 64,
+                        generator_risk=task_policy(scope["task_type"]).risk,
+                        generator_context_tokens=tokens,
+                        outcome_refs=(f"fixture:synthetic-label:{tokens}:{index}",),
+                    ) for tokens in (1000, 10000, 40000, 150000, 600000)
+                        for index, row in enumerate(observations[:80])]
                 if scope["task_type"] not in REFERENCE_TASKS:
                     return observations
                 return [replace(row, evidence_ref=row.evidence_ref + ":" + str(tokens), quality_score=None, accepted=None,
@@ -1315,8 +1333,10 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(result.root_status, "SUCCEEDED")
             self.assertEqual(result.saga_status, "SUCCEEDED")
             self.assertTrue(execution.gateway.production_execution_gateway_backed)
+            export_version = result.outputs[ChapterNode.EXPORT].asset_version_id
             exported = (
-                Path(directory) / "objects" / f"chapters/{project_id}/1/chapter.txt"
+                Path(directory) / "objects"
+                / f"chapters/{project_id}/1/versions/{export_version}/chapter.txt"
             )
             self.assertIn("only safe route home", exported.read_text())
 

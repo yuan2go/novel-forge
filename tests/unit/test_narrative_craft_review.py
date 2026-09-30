@@ -402,7 +402,7 @@ def test_review_schema_is_selected_from_actual_frozen_inputs_and_legacy_stays_co
         schema, ref = gateway._provider_output_contract(
             stage=stage, request_payload={"input": {"draft": draft}}
         )
-        assert ref.endswith(":narrative-craft-v1")
+        assert ref.endswith(":narrative-craft-v2")
         assert ("edits" if stage == "revision" else "craft_checks") in schema[
             "required"
         ]
@@ -428,7 +428,7 @@ def test_review_schema_is_selected_from_actual_frozen_inputs_and_legacy_stays_co
     )
     raw = review_output(draft)
     schema = extend_craft_provider_schema(
-        chapter_provider_output_schema("review"), "review"
+        chapter_provider_output_schema("review", legacy_contract=True), "review", legacy_contract=True
     )
     assert validate_chapter_provider_output_against_schema("review", schema, raw) == raw
     raw.pop("craft_checks")
@@ -461,6 +461,24 @@ class ControlledProvider:
             raw = repair_output(payload["draft"])
         else:
             raw = rereview_output(payload["revision"])
+        raw = deepcopy(raw)
+        if stage == "revision":
+            raw.pop("text", None)
+            for edit in raw.get("edits", []):
+                edit.pop("start", None)
+                edit.pop("end", None)
+        else:
+            def quotes_only(value):
+                if isinstance(value, dict):
+                    if "quote" in value and "start" in value and "end" in value:
+                        value.pop("start")
+                        value.pop("end")
+                    for child in value.values():
+                        quotes_only(child)
+                elif isinstance(value, list):
+                    for child in value:
+                        quotes_only(child)
+            quotes_only(raw)
         schema, _ = object.__new__(
             PostgresChapterExecutionContractBinder
         )._provider_output_contract(stage=stage, request_payload={"input": payload})

@@ -66,7 +66,7 @@ def _registered_version_and_snapshot():
     skill = resolver.resolve(
         ArtifactKind.SKILL,
         "prose-generation",
-        "prose-generation-v1",
+        "prose-generation-v2",
     )
     context = resolver.resolve(
         ArtifactKind.CONTEXT_POLICY,
@@ -103,7 +103,7 @@ def _registered_version_and_snapshot():
         execution_capability_hash=HASH,
         prompt_bundle_ref=system.ref,
         prompt_bundle_hash=system.content_hash,
-        skill_bundle_ref="prose-generation@prose-generation-v1",
+        skill_bundle_ref="prose-generation@prose-generation-v2",
         skill_bundle_hash=skill.content_hash,
         tool_policy_ref=tool.ref,
         tool_policy_hash=canonical_hash(manifest_dict["tool_permissions"]),
@@ -126,7 +126,7 @@ def _registered_version_and_snapshot():
         prompt_system_instruction_hash=system.content_hash,
         prompt_template_ref=f"{template.ref}@{template.version}",
         prompt_template_hash=template.content_hash,
-        prompt_compiler_version="chapter-prompt-compiler:v2",
+        prompt_compiler_version="chapter-prompt-compiler:v3",
         skill_ref=skill.ref,
         skill_version=skill.version,
         skill_content_hash=skill.content_hash,
@@ -155,7 +155,7 @@ def test_materializes_exact_provider_content_from_registered_pack_version() -> N
     result = materialize_registered_pack_version(snapshot, registered)
 
     assert (
-        "admitted Chapter Authority stage" in result.system_instruction.content["text"]
+        "frozen Novel Forge stage" in result.system_instruction.content["text"]
     )
     assert "{{context_bundle}}" in result.prompt_template.content["text"]
     assert "prose-generation" in result.skill.ref
@@ -163,9 +163,41 @@ def test_materializes_exact_provider_content_from_registered_pack_version() -> N
     assert result.tool_policy.ref == snapshot.tool_policy_ref
     assert result.output_schema.ref == snapshot.output_contract_ref
     assert [item.ref for item in result.required_knowledge] == [
-        "knowledge:chapter-causal-cost:v1"
+        "knowledge:chapter-causal-cost:v2"
     ]
     assert result.materialization_hash.startswith("sha256:")
+
+
+def test_current_draft_request_renders_single_body_contract_without_operator_policy() -> None:
+    from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema
+
+    registered, snapshot = _registered_version_and_snapshot()
+    pack = materialize_registered_pack_version(snapshot, registered)
+    *_, request = contracts(
+        backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+    )
+    prompt, evidence = _materialize_chapter_codex_prompt(
+        request=request, stage="draft",
+        inputs={"plan": {}, "style": {}, "chapter_memo": {}, "realization_contract": {}},
+        materialization={
+            "materialization_hash": HASH,
+            "pack_artifacts": {
+                "system_instruction": pack.system_instruction.to_dict(),
+                "prompt_template": pack.prompt_template.to_dict(),
+                "skill": pack.skill.to_dict(),
+            },
+            "context_selection": [{"asset_version_id": "context:v1", "content": {"context_segments": []}}],
+            "knowledge_selection": [item.to_dict() for item in pack.required_knowledge],
+            "tool_permissions": {"allowed": ["model.provider.invoke"], "denied": []},
+            "output_schema": {"ref": "schema:chapter-provider-output:draft:v3", "content_hash": HASH,
+                              "content": chapter_provider_output_schema("draft")},
+        },
+    )
+    assert "<tool_policy>" not in prompt
+    assert "second chapter text" in prompt
+    assert "operator handoff" not in prompt.lower()
+    assert '"required":["scene_artifacts"]' in prompt
+    assert evidence["prompt_template"]["version"] == "v3"
 
 
 @pytest.mark.parametrize("policy_key", CHAPTER_MODEL_POLICY_KEYS)
@@ -223,7 +255,7 @@ def test_materialization_rejects_missing_required_knowledge() -> None:
     catalog["artifacts"] = [
         item
         for item in catalog["artifacts"]
-        if item["ref"] != "knowledge:chapter-causal-cost:v1"
+        if item["ref"] != "knowledge:chapter-causal-cost:v2"
     ]
     registered["artifact_catalog"] = catalog
     registered["artifact_catalog_hash"] = canonical_hash(catalog)

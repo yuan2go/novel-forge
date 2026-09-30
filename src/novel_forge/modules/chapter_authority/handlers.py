@@ -379,6 +379,53 @@ class _MemoHandler:
         return _model_output(ChapterNode.MEMO, content, request=request, generated=generated)
 
 
+def deterministic_retrieval_coverage_fast_path(
+    *, project_id: str, book_id: str, intent_asset_version_id: str,
+    memo_asset_version_id: str, query_plan: dict[str, Any],
+    documents: list[dict[str, Any]], semantic_status: dict[str, Any],
+    context_token_budget: int,
+) -> bool:
+    if query_plan.get("semantic_policy") != "FALLBACK_ALLOWED":
+        return False
+    preview = build_retrieval_result(
+        project_id=project_id,
+        book_id=book_id,
+        intent_asset_version_id=intent_asset_version_id,
+        memo_asset_version_id=memo_asset_version_id,
+        query_plan=query_plan,
+        documents=documents,
+        discovery_rejections=(),
+        semantic_status=semantic_status,
+    )
+    selected = preview["selected_documents"]
+    coverage = evaluate_retrieval_coverage(
+        contract=dict(query_plan.get("coverage_contract") or {}),
+        documents=selected,
+    )
+    return bool(coverage.get("sufficient")) and (
+        bool(selected)
+        or int(dict(query_plan.get("accepted_boundary") or {}).get("accepted_through_chapter") or 0) == 0
+    ) and sum(
+        max(0, int(item.get("output_characters") or 0))
+        for item in selected
+    ) <= 2 * context_token_budget
+
+
+def bind_quality_prose_evidence(
+    locations: list[dict[str, Any]], *, text: str, target_asset_version_id: str,
+) -> list[dict[str, Any]]:
+    from novel_forge.modules.review.diagnostics import validate_location
+
+    return [
+        {
+            **validate_location({"quote": evidence.get("quote")}, text),
+            "claim": evidence.get("claim"),
+            "target_asset_version_id": target_asset_version_id,
+        }
+        for evidence in locations
+    ]
+
+
 @dataclass(frozen=True, slots=True)
 class _RetrievalHandler:
     provider: ChapterModelPort
@@ -436,8 +483,21 @@ class _RetrievalHandler:
             query_embedding_dimensions = 0
             query_embedding_evidence: dict[str, Any] = {}
             semantic_enabled = query_plan.get("semantic_policy") != "DISABLED"
+            deterministic_coverage = deterministic_retrieval_coverage_fast_path(
+                project_id=request.project_id,
+                book_id=str(plan.content.get("book_id") or f"book:{request.project_id}"),
+                intent_asset_version_id=intent.asset_version_id,
+                memo_asset_version_id=memo.asset_version_id,
+                query_plan=query_plan,
+                documents=documents,
+                semantic_status=semantic_status,
+                context_token_budget=int(request.command.get("context_token_budget") or 6000),
+            )
+            if deterministic_coverage:
+                semantic_status["deterministic_coverage_fast_path"] = True
             if (
                 semantic_enabled
+                and not deterministic_coverage
                 and int(semantic_status.get("ready_document_count") or 0) > 0
                 and self.semantic_provider_bound
             ):
@@ -1294,13 +1354,16 @@ class _DraftHandler:
         from .realization_composition import compile_realization_contract
         from .craft_execution import require_craft_delivery
         require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=context.content)
+        realization_contract = compile_realization_contract(plan.content, build_draft_style_view(context.content))
+        if not realization_contract["slots"]:
+            raise KernelError("REALIZATION_PLAN_UNBOUND", "model Draft requires frozen Scene slots")
         generated = self.provider.invoke(
             request,
             stage="draft",
             payload={
                 "plan": build_draft_plan_view(plan.content),
                 "style": build_draft_style_view(context.content),
-                "realization_contract": compile_realization_contract(plan.content, build_draft_style_view(context.content)),
+                "realization_contract": realization_contract,
                 "execution_intent": intent.content,
                 "chapter_memo": memo.content,
             },
@@ -1848,10 +1911,24 @@ class _QualityGroupHandler:
             reference_calibration = admitted_reference_calibration(request, generated,
                 stage=f"quality_{self.group}", target_asset_version_id=revision.asset_version_id)
             provider_entries = []
+            schema_ref = str((generated.capability_evidence or {}).get("output_schema_ref") or "")
+            current_quality_contract = schema_ref.startswith(f"schema:chapter-provider-output:quality_{self.group}:v3")
             for item in generated.output.get("dimensions", []):
+                located = list(item.get("evidence_locations") or [])
+                if current_quality_contract:
+                    located = bind_quality_prose_evidence(
+                        located, text=str(revision.content.get("text") or ""),
+                        target_asset_version_id=revision.asset_version_id,
+                    )
+                    if item.get("gate_status") in {"PASSED", "FAILED"} and not located:
+                        raise KernelError(
+                            "QUALITY_EVIDENCE_LOCATION_MISSING",
+                            "a decisive model Quality status requires located candidate prose",
+                        )
                 provider_entries.append(
                     {
                         **dict(item),
+                        "evidence_locations": located,
                         "target_asset_version_id": revision.asset_version_id,
                         "calibration_status": "REFERENCE_CALIBRATED" if reference_calibration else "PROVIDER_UNCALIBRATED",
                         "provider_verified": True, "human_verified": False,
@@ -2688,6 +2765,7 @@ def _canon_provider_extraction(result: ModelProviderResult) -> dict[str, Any]:
         "prompt_version": result.prompt_version,
     }
     return {
+        "provider_output_schema_ref": str((result.capability_evidence or {}).get("output_schema_ref") or ""),
         **{key: value for key, value in result.output.items() if not isinstance(value, list)},
         **{field: [{**dict(item), **identity} for item in values]
         for field, values in result.output.items()

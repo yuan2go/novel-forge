@@ -192,6 +192,30 @@ def grounded_payoff():
     return extract(text, output)['obligation_changes'][0]
 
 
+def test_current_contract_binds_prose_payoff_identity_after_semantic_extraction():
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_semantics
+    text = "她归还了借来的钱。"
+    claim = payoff(text, None)
+    claim.pop("evidence_start")
+    claim.pop("evidence_end")
+    validate_chapter_provider_output_semantics("canon_extraction", {
+        "extraction_status": "EXTRACTED", "obligation_changes": [claim],
+    }, host_bind_known_metadata=True)
+    with pytest.raises(KernelError):
+        validate_chapter_provider_output_semantics("canon_extraction", {
+            "extraction_status": "EXTRACTED", "obligation_changes": [claim],
+        })
+    result = extract(text, {
+        "provider_output_schema_ref": "schema:chapter-provider-output:canon_extraction:v20",
+        "extraction_status": "EXTRACTED",
+        "obligation_changes": [claim],
+    })
+    bound = result["obligation_changes"][0]
+    assert bound["evidence_start"] == 0
+    assert bound["payoff_evidence"]["asset_version_id"] == "final-candidate"
+    assert bound["payoff_evidence"]["event_id"] == bound["grounded_claim_id"]
+
+
 def payoff_events(change):
     from novel_forge.modules.narrative_state.contracts import events_from_canon_patch
     return events_from_canon_patch(

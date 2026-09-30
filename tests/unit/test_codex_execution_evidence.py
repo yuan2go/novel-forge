@@ -15,7 +15,7 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
 from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
-    validate_chapter_provider_output_schema,
+    validate_chapter_provider_output_against_schema,
 )
 from novel_forge.modules.production_execution import ExecutionOutcome
 from novel_forge.modules.production_execution.backends import (
@@ -401,7 +401,7 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
     )
 
     def validator(stage, schema, value):  # type: ignore[no-untyped-def]
-        validate_chapter_provider_output_schema(stage, value)
+        validate_chapter_provider_output_against_schema(stage, schema, value)
         return normalize_model_output(stage, dict(value))
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -445,7 +445,7 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
                         timeout_seconds=5,
                         output_schema_version="schema:chapter-provider-output:draft:v2",
                         command=command,
-                        output_schema=chapter_provider_output_schema("draft"),
+                        output_schema=chapter_provider_output_schema("draft", legacy_contract=True),
                         capability_evidence={
                             "fully_rendered_prompt_hash": prompt_hash,
                             "materialization_hash": "sha256:" + "a" * 64,
@@ -546,7 +546,7 @@ def test_codex_backend_schema_failure_is_not_a_success_receipt(
                         output_schema_version="schema:chapter-provider-output:draft:v2",
                         command=command,
                         allowed_tools=("model.provider.invoke",),
-                        output_schema=chapter_provider_output_schema("draft"),
+                        output_schema=chapter_provider_output_schema("draft", legacy_contract=True),
                         capability_evidence={
                             "fully_rendered_prompt_hash": "sha256:"
                             + hashlib.sha256(b"prompt").hexdigest(),
@@ -563,14 +563,14 @@ def test_codex_backend_schema_failure_is_not_a_success_receipt(
                 maximum_result_bytes=1_000_000,
             ),
             account_entitlement=_entitlement(),
-            structured_result_validator=lambda stage, schema, value: (
-                validate_chapter_provider_output_schema(stage, value)
-            ),
+                structured_result_validator=lambda stage, schema, value: (
+                    validate_chapter_provider_output_against_schema(stage, schema, value)
+                ),
         )
 
         result = backend.reconcile(backend.submit(request))
 
-    assert result.outcome is ExecutionOutcome.RETRYABLE_FAILURE, store.get_record(
+    assert result.outcome is ExecutionOutcome.FINAL_FAILURE, store.get_record(
         request.execution_id
     ).raw_evidence.get("failure_code")
     assert (

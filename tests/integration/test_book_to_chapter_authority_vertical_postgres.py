@@ -955,9 +955,10 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             self.assertEqual(
                 chapter_two_retrieval["semantic_status"]["query_embedding_status"],
-                "READY",
+                "NOT_READY",
             )
-            self.assertEqual(query_embedding_effects, (1, 1))
+            self.assertTrue(chapter_two_retrieval["semantic_status"]["deterministic_coverage_fast_path"])
+            self.assertEqual(query_embedding_effects, (0, 0))
             self.assertTrue(
                 all(
                     int(item["accepted_from_chapter"]) <= 1

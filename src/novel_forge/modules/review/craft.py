@@ -338,7 +338,7 @@ def validate_craft_checks(
 
 
 def craft_revision_contract(
-    draft: Mapping[str, Any], review: Mapping[str, Any]
+    draft: Mapping[str, Any], review: Mapping[str, Any], *, compact_contract: bool = False,
 ) -> dict[str, Any]:
     targets = craft_review_targets(draft)
     if not targets:
@@ -349,6 +349,17 @@ def craft_revision_contract(
         raise KernelError(
             "CRAFT_REVISION_SELECTION_CHANGED",
             "revision must retain the originally reviewed frozen Craft strategy",
+        )
+    if compact_contract:
+        instructions = (
+            "Return ordered non-overlapping edits inside existing diagnosed Unicode spans with the exact old quote, replacement and issue_codes. The host verifies the joined Scene Slot prose equals applying those edits; preserve all other prose exactly. Keep Canon, POV, voice, character knowledge, causal sequence, accepted planning and previously achieved Craft. Do not force optional aesthetic suggestions or add new story facts. ReReview decides resolution."
+        )
+    else:
+        instructions = (
+            "Return ordered non-overlapping edits inside existing diagnosed Unicode spans with the exact old quote, "
+            "replacement and issue_codes. Returned text must equal applying those edits; preserve all other prose exactly. "
+            "Keep Canon, POV, voice, character knowledge, causal sequence, accepted planning and previously achieved Craft. "
+            "Do not force optional aesthetic suggestions or add new story facts. ReReview decides resolution."
         )
     return {
         "contract_version": "narrative-craft-targeted-repair.v1",
@@ -370,12 +381,7 @@ def craft_revision_contract(
             }
             for item in targets
         ],
-        "instructions": (
-            "Return ordered non-overlapping edits inside existing diagnosed Unicode spans with the exact old quote, "
-            "replacement and issue_codes. Returned text must equal applying those edits; preserve all other prose exactly. "
-            "Keep Canon, POV, voice, character knowledge, causal sequence, accepted planning and previously achieved Craft. "
-            "Do not force optional aesthetic suggestions or add new story facts. ReReview decides resolution."
-        ),
+        "instructions": instructions,
     }
 
 
@@ -455,7 +461,7 @@ def craft_rereview_preservation(
     }
 
 
-def extend_craft_provider_schema(schema: dict[str, Any], stage: str, *, phase_transitions: bool = False) -> dict[str, Any]:
+def extend_craft_provider_schema(schema: dict[str, Any], stage: str, *, phase_transitions: bool = False, legacy_contract: bool = False) -> dict[str, Any]:
     result = deepcopy(schema)
     if stage == "revision":
         from .cross_chapter import extend_provider_schema
@@ -463,7 +469,7 @@ def extend_craft_provider_schema(schema: dict[str, Any], stage: str, *, phase_tr
         return (
             result
             if "edits" in result["properties"]
-            else extend_provider_schema(result, stage)
+            else extend_provider_schema(result, stage, legacy_contract=legacy_contract)
         )
     text = {"type": "string", "minLength": 1}
 
@@ -477,11 +483,7 @@ def extend_craft_provider_schema(schema: dict[str, Any], stage: str, *, phase_tr
 
     strings = {"type": "array", "items": text}
     location = obj(
-        {
-            "start": {"type": "integer", "minimum": 0},
-            "end": {"type": "integer", "minimum": 1},
-            "quote": text,
-        }
+        {**({"start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 1}} if legacy_contract else {}), "quote": text}
     )
     side = obj(
         {
