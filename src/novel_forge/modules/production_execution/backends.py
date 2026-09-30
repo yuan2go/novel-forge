@@ -1196,6 +1196,7 @@ class RemoteProviderExecutionBackend:
         )
         record.handle = handle
         record.provider_result = provider_result
+        record.raw_evidence["submission_phase"] = "PROVIDER_RESULT_OBSERVED"
         self.record_store.save_record(record)
         self._record_provider_result(record, provider_result)
         return handle
@@ -1233,9 +1234,13 @@ class RemoteProviderExecutionBackend:
                         correlation_id=record.request.correlation_id,
                     )
                 )
+                record.provider_result = provider_result
+                record.raw_evidence["submission_phase"] = "PROVIDER_RESULT_OBSERVED"
+                self.record_store.save_record(record)
                 self._record_provider_result(record, provider_result)
                 provider_result = record.provider_result
-        if not record.frozen_output_contract:
+        if (not record.frozen_output_contract
+                or record.raw_evidence.get("submission_phase") != "PROVIDER_RESULT_RECORDED"):
             self._record_provider_result(record, provider_result)
             provider_result = record.provider_result
         if provider_result.outcome == "success" and self.structured_result_validator is not None:

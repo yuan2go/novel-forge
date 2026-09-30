@@ -1395,6 +1395,10 @@ from the original frozen request through existing admission and payload resoluti
 without another generation call. Downstream normalization uses that recorded contract
 rather than a generic domain asset Schema. Pack-free scripted fixtures retain the
 explicit legacy Provider semantic contract and cannot prove real Provider behavior.
+An observed Provider result is checkpointed before response processing; restart completes
+that checkpoint from the saved result even when response-artifact persistence was
+interrupted. Chapter, Planning and Source treat this phase as a sent request, and budget
+accounting holds an unresolved reservation until reconciliation rather than releasing it.
 
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen

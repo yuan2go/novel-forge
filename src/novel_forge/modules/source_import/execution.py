@@ -184,6 +184,7 @@ class _SourceGatewayEffectAdapter:
             request_sent = request_sent or submission_phase in {
                 "PROVIDER_INVOKING",
                 "PROVIDER_OUTCOME_UNKNOWN",
+                "PROVIDER_RESULT_OBSERVED",
                 "PROVIDER_RESULT_RECORDED",
                 "PROCESS_STARTING",
                 "PROCESS_OUTCOME_UNKNOWN",

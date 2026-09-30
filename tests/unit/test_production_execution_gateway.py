@@ -77,6 +77,7 @@ class _RemoteTransport:
         self.result = result
         self.last_request = None
         self.execute_calls = 0
+        self.query_calls = 0
 
     def execute(self, request):
         self.last_request = request
@@ -99,6 +100,7 @@ class _RemoteTransport:
         }
 
     def query(self, request):
+        self.query_calls += 1
         return {
             "outcome": "success",
             "request_sent": True,

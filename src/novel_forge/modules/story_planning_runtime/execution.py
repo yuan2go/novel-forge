@@ -2890,6 +2890,7 @@ class _PlanningGatewayEffectAdapter:
             request_sent = request_sent or submission_phase in {
                 "PROVIDER_INVOKING",
                 "PROVIDER_OUTCOME_UNKNOWN",
+                "PROVIDER_RESULT_OBSERVED",
                 "PROVIDER_RESULT_RECORDED",
                 "PROCESS_STARTING",
                 "PROCESS_OUTCOME_UNKNOWN",
@@ -3156,6 +3157,8 @@ def _planning_failed_provider_submission_state(
         production.get("process_evidence") if isinstance(production, Mapping) else None
     )
     process = process if isinstance(process, Mapping) else {}
+    if process.get("submission_phase") == "PROVIDER_RESULT_OBSERVED":
+        return "AMBIGUOUS"
     declared = [
         value
         for value in (

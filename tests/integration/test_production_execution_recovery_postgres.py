@@ -153,6 +153,12 @@ class ProductionExecutionRecoveryPostgresTests(unittest.TestCase):
             self.assertEqual(cursor.fetchone(), (2, 1, "EXECUTING"))
 
     def test_saved_provider_response_reuses_frozen_contract_after_local_failure_and_restart(self):
+        for interruption in ("validation", "submit_checkpoint", "query_checkpoint"):
+            with self.subTest(interruption=interruption):
+                self._assert_saved_provider_response_recovery(interruption)
+
+    def _assert_saved_provider_response_recovery(self, interruption):
+        from unittest.mock import patch
         from novel_forge.api.authority_dependencies import validate_production_structured_result
         from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema
         from novel_forge.modules.production_execution.backends import RemoteProviderExecutionBackend, StaticExecutionPayloadResolver
@@ -172,7 +178,7 @@ class ProductionExecutionRecoveryPostgresTests(unittest.TestCase):
             model_profiles=(profile,), route_policies=(policy,), input_manifests=(manifest,)),
             StaticAttemptFenceVerifier({(operation_id, request.attempt_id): request.fencing_token}))
         raw = {"scene_artifacts": [{"slot_id": "scene:1:skeleton", "text": "她守住了灯号。", "used_fact_ids": []}]}
-        adapter, transport = _remote_adapter("success", raw)
+        adapter, transport = _remote_adapter("unknown_after_send" if interruption == "query_checkpoint" else "success", raw)
         payload = replace(_admitted_remote_payload(request, "frozen draft"),
             output_schema_version="schema:chapter-provider-output:draft:v3", output_schema=chapter_provider_output_schema("draft"))
         resolver = StaticExecutionPayloadResolver({request.execution_id: payload})
@@ -184,11 +190,23 @@ class ProductionExecutionRecoveryPostgresTests(unittest.TestCase):
         backend = RemoteProviderExecutionBackend(backend_id="remote-provider", capability_profile=capability,
             provider_adapter=adapter, admission=admission, payload_resolver=resolver, record_store=store,
             structured_result_validator=unavailable)
-        handle = backend.submit(request)
-        with self.assertRaisesRegex(RuntimeError, "local processing interrupted"):
-            backend.reconcile(handle)
+        if interruption == "submit_checkpoint":
+            with patch.object(backend, "_record_provider_result", side_effect=RuntimeError("local processing interrupted")):
+                with self.assertRaisesRegex(RuntimeError, "local processing interrupted"):
+                    backend.submit(request)
+            handle = store.get_record(request.execution_id).handle
+        else:
+            handle = backend.submit(request)
+            if interruption == "query_checkpoint":
+                with patch.object(backend, "_record_provider_result", side_effect=RuntimeError("local processing interrupted")):
+                    with self.assertRaisesRegex(RuntimeError, "local processing interrupted"):
+                        backend.reconcile(handle)
+            else:
+                with self.assertRaisesRegex(RuntimeError, "local processing interrupted"):
+                    backend.reconcile(handle)
         frozen = store.get_record(request.execution_id).frozen_output_contract
-        raw_ref = store.get_record(request.execution_id).raw_evidence["provider_response_ref"]
+        saved_result = store.get_record(request.execution_id).provider_result
+        self.assertEqual(saved_result.evidence["result"], raw)
         restarted_store = AuthorityExecutionRecoveryStore(DATABASE_URL, project_id=project_id)
         restarted = RemoteProviderExecutionBackend(backend_id="remote-provider", capability_profile=capability,
             provider_adapter=adapter, admission=admission, payload_resolver=resolver, record_store=restarted_store,
@@ -197,9 +215,11 @@ class ProductionExecutionRecoveryPostgresTests(unittest.TestCase):
         self.assertEqual(result.outcome, ExecutionOutcome.SUCCEEDED)
         self.assertEqual(restarted.reconcile(handle), result)
         self.assertEqual(restarted_store.get_record(request.execution_id).frozen_output_contract, frozen)
+        raw_ref = restarted_store.get_record(request.execution_id).raw_evidence["provider_response_ref"]
         self.assertEqual(restarted_store.read_evidence(raw_ref)["evidence"]["result"], raw)
         self.assertEqual(restarted_store.read_evidence(result.normalized_output_ref), raw)
         self.assertEqual(transport.execute_calls, 1)
+        self.assertEqual(transport.query_calls, 1 if interruption == "query_checkpoint" else 0)
 
     def test_same_execution_id_with_different_request_contract_fails_closed(self) -> None:
         project_id, operation_id = self._operation()
