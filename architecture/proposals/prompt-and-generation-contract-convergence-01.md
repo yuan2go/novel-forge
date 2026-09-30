@@ -14,8 +14,8 @@
 | 目标仓库 | `yuan2go/novel-forge` |
 | 核验日期 | 2026-10-01，UTC+8 |
 | 核验分支 | `codex/real-prose-quality-closure-01` |
-| 当前生命周期代码基线 | `6235f95b8f8e749c027f86514c9e983336e21564` |
-| Git tree | `712e8820288ee3a68855ef47c7461a48bb846745` |
+| 当前生命周期代码基线 | `54621ff6ec2e709c579fd91d303b2abbf0f79b4c` |
+| Git tree | `efd9dc25ed2651860a0a50c6f0196fe769687145` |
 | 当前事实核验 | 源代码、冻结合同、正式装配及定向单测/PostgreSQL 回归；现有持久库仅只读核验，未调用真实 Provider |
 | 实现及效果状态 | 规格形成时仅交付需求；后续工程实现已进入正式主链，真实 Provider 与文学收益仍未验证。当前状态以代码、冻结合同和当次验收为准 |
 | 规格边界 | 现有小说生成主链的职责、Prompt、输出、Context、方法及下游消费收敛；不是整个 Industrial Autonomous Novel OS 的一次性交付蓝图 |
@@ -28,8 +28,8 @@
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
   "reality_baseline": {
-    "sha": "6235f95b8f8e749c027f86514c9e983336e21564",
-    "implementation_tree_sha": "sha256:0acc7c04d046f49936aaf422b368b5effc39a0ddff05e23b6806e885c9ccb1fb"
+    "sha": "54621ff6ec2e709c579fd91d303b2abbf0f79b4c",
+    "implementation_tree_sha": "sha256:f22c8c91399b203648d83fc657b9897ecb9c9eae543c9f55af388c20493d72e1"
   },
   "scope": [
     "src/novel_forge/modules/chapter_authority",
@@ -77,6 +77,14 @@
     {
       "path": "src/novel_forge/modules/review/cross_model_binding.py",
       "symbol": "freeze_review_requirement"
+    },
+    {
+      "path": "src/novel_forge/modules/provider_callback_authority/service.py",
+      "symbol": "ProviderCallbackAuthorityService.consume_pending"
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+      "symbol": "reconcile_external_effect"
     }
   ],
   "superseding_refs": [],
@@ -89,6 +97,16 @@
         {
           "path": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
           "symbol": "bind_selected_review"
+        }
+      ]
+    },
+    {
+      "id": "applicable-engineering-qualification",
+      "description": "完整适用验收尚未通过。旧 0103 快照测试在升级前调用了依赖后续迁移的当前 Runtime；十二章夹具的必需 accepted 因果证据超过冻结 world-production-policy.v1 的 16000 字节预算。兼容语义与预算适用性仍需按真实记录闭合，不绕过当前授权、删除必需来源或改写历史迁移。",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/context_builder/reality_projection.py",
+          "symbol": "project_role_context"
         }
       ]
     }
