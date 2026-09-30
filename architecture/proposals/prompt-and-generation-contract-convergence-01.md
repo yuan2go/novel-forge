@@ -28,8 +28,8 @@
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
   "reality_baseline": {
-    "sha": "dbaadc19688d22f8547aea6ae407d2e1c6c3eb0f",
-    "implementation_tree_sha": "sha256:346ea469976f181a45487fdcdf253b9d1a16f7ae25803b90344eeb80c2141199"
+    "sha": "c2756022d53094a7a2e5f42c07d1f61ec8f39560",
+    "implementation_tree_sha": "sha256:da172db318b41ab6b9e3e84dc01ccb6aabf080e43b3c413ee10406d8e369c9ae"
   },
   "scope": [
     "src/novel_forge/modules/chapter_authority",
