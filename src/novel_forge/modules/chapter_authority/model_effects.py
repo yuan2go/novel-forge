@@ -1919,8 +1919,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any], *, output_schema_re
 
         raw = validate_chapter_provider_output_semantics(
             stage, raw,
-            host_bind_known_metadata=output_schema_ref.startswith("schema:chapter-provider-output:canon_extraction:v20")
-            or output_schema_ref.startswith("schema:chapter-provider-output:canon_extraction:v21"),
+            output_schema_ref=output_schema_ref,
         )
         fields = canon_provider_array_fields()
         normalized_extraction: dict[str, list[dict[str, Any]]] = {}
@@ -2075,14 +2074,18 @@ def _normalize_model_output(stage: str, raw: dict[str, Any], *, output_schema_re
         for item in raw.get("resolved_issue_codes", [])
         if str(item).strip()
     ]
-    if not text.strip() and not raw.get("scene_artifacts"):
+    from .provider_output_contracts import is_targeted_revision_schema_ref
+    targeted_edits_only = is_targeted_revision_schema_ref(output_schema_ref)
+    if not text.strip() and not raw.get("scene_artifacts") and not (
+        targeted_edits_only and raw.get("edits")
+    ):
         raise KernelError(
             "MODEL_RESPONSE_INVALID", "revision response has no revised prose"
         )
     return {
         **({"text": text} if "text" in raw or "revised_text" in raw else {}),
         "resolved_issue_codes": resolved,
-        "scene_artifacts": raw.get("scene_artifacts", []),
+        **({"scene_artifacts": raw["scene_artifacts"]} if "scene_artifacts" in raw else {}),
         **({"edits": raw["edits"]} if "edits" in raw else {}),
     }
 

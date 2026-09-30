@@ -68,13 +68,13 @@ def _document() -> dict[str, object]:
     }
 
 
-def test_deterministic_fast_path_requires_coverage_and_budget() -> None:
+def test_deterministic_fast_path_requires_coverage_and_leaves_budget_to_admission() -> None:
     plan = build_retrieval_query_plan(intent=_intent(), memo=_memo())
     arguments = dict(project_id="project:novel", book_id="book:novel",
                      intent_asset_version_id="intent:v1", memo_asset_version_id="memo:v1",
                      query_plan=plan, documents=[_document()], semantic_status={})
     assert deterministic_retrieval_coverage_fast_path(**arguments, context_token_budget=6000)
-    assert not deterministic_retrieval_coverage_fast_path(**arguments, context_token_budget=10)
+    assert deterministic_retrieval_coverage_fast_path(**arguments, context_token_budget=10)
     assert not deterministic_retrieval_coverage_fast_path(**{**arguments, "documents": []}, context_token_budget=6000)
     assert not deterministic_retrieval_coverage_fast_path(**{**arguments, "query_plan": {**plan, "semantic_policy": "REQUIRED"}}, context_token_budget=6000)
 

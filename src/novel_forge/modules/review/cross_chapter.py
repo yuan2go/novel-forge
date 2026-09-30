@@ -278,13 +278,14 @@ def apply_targeted_edits(
         previous_end = location["end"]
     pieces.append(text[previous_end:])
     repaired = "".join(pieces)
-    if result.get("text") != repaired:
+    if "text" in result and result["text"] != repaired:
         raise KernelError(
             "REVISION_TARGETED_EDIT_INVALID",
             "returned prose differs from exact diagnosed edits",
         )
     return {
         "targeted_edits": located_edits,
+        "repaired_text": repaired,
         **({"source_window_hash": review["cross_chapter_window"]["source_window_hash"],
             "preservation_requirements": deepcopy(review["cross_chapter_window"]["preservation_requirements"])}
            if review.get("cross_chapter_window") else {}),
@@ -305,6 +306,8 @@ def extend_provider_schema(schema: dict[str, Any], stage: str, *, legacy_contrac
         }
 
     if stage == "revision":
+        if "edits" in result["properties"]:
+            return result
         result["properties"]["edits"] = {
             "type": "array",
             "items": obj(

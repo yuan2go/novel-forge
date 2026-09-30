@@ -7,7 +7,7 @@
 > 主工作包：`WP-PROMPT-AND-GENERATION-CONTRACT-CONVERGENCE-01`
 >
 > 需求就绪状态：`READY_FOR_IMPLEMENTATION`，仅适用于本文件 R-001～R-016。
-> 仓库提案生命周期：`ACTIVE`。本文件不是功能完成报告，也不授予运行、审批、发布或付费调用权限。
+> 仓库提案生命周期：`PARTIALLY_IMPLEMENTED`。本文件不是功能完成报告，也不授予运行、审批、发布或付费调用权限。
 
 | 文档信息 | 内容 |
 |---|---|
@@ -17,13 +17,13 @@
 | 代码基线 | `dbaadc19688d22f8547aea6ae407d2e1c6c3eb0f` |
 | Git tree | `29f2db788a455a69d3fdd97e3302ea98e1d6e3ad` |
 | 当前事实核验 | 针对性源代码、合同、装配与仓库规则阅读；未启动应用、未执行数据库回归、未调用真实 Provider |
-| 实现及效果状态 | 本次仅交付规格；本包变更未实施，真实运行与文学收益未验证 |
+| 实现及效果状态 | 规格形成时仅交付需求；后续工程实现已进入正式主链，真实 Provider 与文学收益仍未验证。当前状态以代码、冻结合同和当次验收为准 |
 | 规格边界 | 现有小说生成主链的职责、Prompt、输出、Context、方法及下游消费收敛；不是整个 Industrial Autonomous Novel OS 的一次性交付蓝图 |
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
-  "status": "ACTIVE",
+  "status": "PARTIALLY_IMPLEMENTED",
   "reviewed_on": "2026-09-30",
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
@@ -43,32 +43,20 @@
     "config/capability_packs",
     "skills"
   ],
-  "implemented_refs": [],
+  "implemented_refs": [
+    {"path": "src/novel_forge/modules/chapter_authority/execution_gateway.py", "symbol": "ChapterCapabilityPreflight"},
+    {"path": "src/novel_forge/modules/chapter_authority/provider_output_contracts.py", "symbol": "chapter_provider_output_schema"},
+    {"path": "src/novel_forge/modules/chapter_authority/realization_composition.py", "symbol": "derive_targeted_revision_slots"},
+    {"path": "src/novel_forge/modules/book_authority/production.py", "symbol": "PostgresBookAuthority.accept_chapter"}
+  ],
   "superseding_refs": [],
   "remaining_decisions": [],
   "remaining_work": [
     {
-      "id": "task-and-output-convergence",
-      "description": "完成模型职责隔离、单份正文、程序装配和证据定位；现有函数是修改入口，不是本包完成证据。",
+      "id": "real-provider-and-editorial-validation",
+      "description": "在另行有效授权下，以真实 Provider 和独立编辑评价验证创作收益、连续章节消费与长期稳定性；工程验收不能替代该证据。",
       "evidence_refs": [
-        {"path": "src/novel_forge/modules/chapter_authority/provider_output_contracts.py", "symbol": "_draft_schema"},
-        {"path": "src/novel_forge/modules/chapter_authority/execution_gateway.py", "symbol": "_stage_semantic_contract"}
-      ]
-    },
-    {
-      "id": "context-and-method-integration",
-      "description": "在既有主链落实执行简化、有条件的 Context 快速路径、任务相关方法与策略适用性。",
-      "evidence_refs": [
-        {"path": "src/novel_forge/modules/chapter_authority/handlers.py", "symbol": "_ContextHandler"},
-        {"path": "src/novel_forge/modules/chapter_authority/creative_memo.py", "symbol": "qualify_creative_memo"}
-      ]
-    },
-    {
-      "id": "downstream-and-real-work-validation",
-      "description": "保全现有下游与历史合同，完成必要回归，并在另行有效授权下交付真实对照和连续章节消费证据。",
-      "evidence_refs": [
-        {"path": "src/novel_forge/modules/chapter_authority/candidate_selection.py", "symbol": "bind_selected_review"},
-        {"path": "src/novel_forge/modules/book_authority/production.py", "symbol": "PostgresBookAuthority.accept_chapter"}
+        {"path": "src/novel_forge/modules/chapter_authority/candidate_selection.py", "symbol": "bind_selected_review"}
       ]
     }
   ]

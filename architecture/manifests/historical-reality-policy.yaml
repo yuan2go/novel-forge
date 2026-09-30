@@ -149,5 +149,35 @@
     "src/novel_forge/storage/migrations/versions/**",
     "tests/architecture/test_retired_compatibility_runtime.py",
     "tests/unit/test_historical_reality.py"
-  ]
+  ],
+  "immutable_historical_authorization_evidence": {
+    "config/production/narrative-closure/authorization-amendment-token100k-20260928.json": {
+      "sha256": "d96f4776f48f5e12ed87b235f386ac7362477ffb82f4a43a8f0dbf7ddc1b07c6",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    },
+    "config/production/narrative-closure/authorization-approved-p0-20260927.json": {
+      "sha256": "3fe3d4504eda79e57807d7b61cd0887f4c7bdca51a9d38214aa00ec716494893",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    },
+    "config/production/narrative-closure/authorization-completion-continuation-20260928.json": {
+      "sha256": "8c4a905b156c55ffd7befb5b44af9d5daf441a1b8c2c9c6c777e9881bb4921b8",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    },
+    "config/production/narrative-closure/authorization-deepseek-100cny-20260928.json": {
+      "sha256": "6c74071a4f498b85dabd25da70e7682a1c2cfe3b3d6db31015de8e5d934611fa",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    },
+    "config/production/narrative-closure/authorization-deepseek-docs-20260928.json": {
+      "sha256": "b99f7a96bfdcb84be9b41a57798b15f250aaf771956bf98327a64775ea782b5f",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    },
+    "config/production/narrative-closure/authorization-request-p0-20260927.json": {
+      "sha256": "e8c5a3fcae552d38eef8ba2a5cbf70040d3a9fc32c60028ebfe2949acc4e604a",
+      "disposition": "NON_AUTHORIZATION_REQUEST"
+    },
+    "config/production/narrative-closure/authorization-strict-output-20260928.json": {
+      "sha256": "fec4a85e5ee53d9d6cb623f6b2cd75103818a481c7c79f68fd57e4cc779acd04",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    }
+  }
 }

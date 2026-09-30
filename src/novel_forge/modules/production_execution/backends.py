@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 import hashlib
+import inspect
 import json
 from pathlib import Path
 import subprocess
@@ -246,6 +247,18 @@ class CodexStructuredResultValidator(Protocol):
         output_schema: Mapping[str, Any],
         value: Mapping[str, Any],
     ) -> Mapping[str, Any]: ...
+
+
+def _validate_frozen_structured_result(
+    validator: CodexStructuredResultValidator,
+    stage: str,
+    schema: Mapping[str, Any],
+    value: Mapping[str, Any],
+    schema_ref: str,
+) -> Mapping[str, Any]:
+    if "output_schema_ref" in inspect.signature(validator).parameters:
+        return validator(stage, schema, value, output_schema_ref=schema_ref)
+    return validator(stage, schema, value)
 
 
 _CODEX_TOOL_ITEM_TYPES = {
@@ -1126,20 +1139,8 @@ class RemoteProviderExecutionBackend:
             ),
         )
         evidence = dict(provider_result.evidence)
-        if provider_result.outcome == "success" and self.structured_result_validator is not None:
-            try:
-                evidence["result"] = dict(self.structured_result_validator(
-                    request.stage, payload.output_schema or {}, evidence.get("result")))
-            except ValueError as exc:
-                evidence["failure_class"] = "SCHEMA_REJECTION"
-                evidence["output_validation_error"] = {
-                    "code": getattr(exc, "code", "SCHEMA_REJECTION"),
-                    "detail": str(exc)[:2048],
-                }
-                provider_result = replace(provider_result, outcome="final_failure", evidence=evidence)
-            else:
-                provider_result = replace(provider_result, evidence=evidence)
         evidence.setdefault("output_schema_version", payload.output_schema_version)
+        evidence["output_schema"] = dict(payload.output_schema or {})
         evidence["submission_phase"] = "PROVIDER_RESULT_RECORDED"
         record.handle = handle
         record.raw_evidence = evidence
@@ -1179,7 +1180,32 @@ class RemoteProviderExecutionBackend:
                     )
                 )
                 record.provider_result = provider_result
-                record.raw_evidence = dict(provider_result.evidence)
+                record.raw_evidence = {
+                    **dict(provider_result.evidence),
+                    "output_schema_version": record.raw_evidence.get("output_schema_version"),
+                    "output_schema": record.raw_evidence.get("output_schema"),
+                    "submission_phase": "PROVIDER_RESULT_RECORDED",
+                }
+                self.record_store.save_record(record)
+        if provider_result.outcome == "success" and self.structured_result_validator is not None:
+            evidence = dict(record.raw_evidence)
+            try:
+                evidence["result"] = dict(_validate_frozen_structured_result(
+                    self.structured_result_validator, record.request.stage,
+                    evidence.get("output_schema") or {}, evidence.get("result"),
+                    str(evidence.get("output_schema_version") or ""),
+                ))
+            except ValueError as exc:
+                evidence["failure_class"] = "SCHEMA_REJECTION"
+                evidence["output_validation_error"] = {
+                    "code": getattr(exc, "code", "SCHEMA_REJECTION"),
+                    "detail": str(exc)[:2048],
+                }
+                provider_result = replace(provider_result, outcome="final_failure", evidence=evidence)
+            else:
+                provider_result = replace(provider_result, evidence=evidence)
+            record.raw_evidence = evidence
+            record.provider_result = provider_result
         provider_ref = self.record_store.put_evidence(
             "provider-receipt",
             handle.execution_id,
@@ -1604,6 +1630,7 @@ class CodexCliExecutionBackend:
         )
         if record.result is not None:
             return record.result
+        self.record_store.save_record(record)
         if (
             recovery.receipt.status
             in {ProcessReceiptStatus.SUCCEEDED, ProcessReceiptStatus.CORRUPT_RESULT}
@@ -1921,12 +1948,11 @@ class CodexCliExecutionBackend:
                     retryable=False,
                 )
             try:
-                normalized = self.structured_result_validator(
-                    stage,
-                    output_schema,
-                    parsed,
+                normalized = _validate_frozen_structured_result(
+                    self.structured_result_validator, stage, output_schema, parsed,
+                    str(record.raw_evidence.get("output_schema_version") or ""),
                 )
-            except Exception as exc:
+            except ValueError as exc:
                 code = str(getattr(exc, "code", ""))
                 failure_code = (
                     "OUTPUT_SCHEMA_FAILURE"

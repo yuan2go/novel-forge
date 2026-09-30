@@ -229,7 +229,7 @@ def _review_schema(*, legacy: bool = False) -> dict[str, Any]:
     }, required=("score", "issues", "resolution_checks", "knowledge_checks"))
 
 
-def _revision_schema(*, legacy: bool = False) -> dict[str, Any]:
+def _revision_schema(*, legacy: bool = False, targeted: bool = False) -> dict[str, Any]:
     if legacy:
         return _object_schema(
             {
@@ -247,6 +247,15 @@ def _revision_schema(*, legacy: bool = False) -> dict[str, Any]:
             },
             required=("text", "resolved_issue_codes", "scene_artifacts"),
         )
+    if targeted:
+        return _object_schema({
+            "resolved_issue_codes": {"type": "array", "items": {"type": "string", "minLength": 1}},
+            "edits": {"type": "array", "minItems": 1, "items": _object_schema({
+                "quote": {"type": "string", "minLength": 1},
+                "replacement": {"type": "string"},
+                "issue_codes": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+            }, required=("quote", "replacement", "issue_codes"))},
+        }, required=("resolved_issue_codes", "edits"))
     return _object_schema(
         {
             "scene_artifacts": {**_scene_artifacts_schema(), "minItems": 1},
@@ -867,7 +876,7 @@ def _retrieval_query_expansion_schema() -> dict[str, Any]:
     )
 
 
-def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False, legacy_contract: bool = False) -> dict[str, Any]:
+def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False, legacy_contract: bool = False, targeted_revision: bool = False) -> dict[str, Any]:
 
     if stage == "memo":
         from .creative_memo import creative_memo_schema
@@ -879,7 +888,7 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False, le
     elif stage in {"review", "rereview"}:
         schema = _review_schema(legacy=legacy_contract)
     elif stage == "revision":
-        schema = _revision_schema(legacy=legacy_contract)
+        schema = _revision_schema(legacy=legacy_contract, targeted=targeted_revision)
     elif stage == "canon_extraction":
         schema = _canon_schema(causal_batch=causal_batch, legacy=legacy_contract)
     elif stage == "canon_support":
@@ -915,14 +924,14 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False, le
     return {"$schema": _SCHEMA_DIALECT, **schema}
 
 
-def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False, legacy_contract: bool = False) -> str:
-    chapter_provider_output_schema(stage, causal_batch=causal_batch, legacy_contract=legacy_contract)
+def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False, legacy_contract: bool = False, targeted_revision: bool = False) -> str:
+    chapter_provider_output_schema(stage, causal_batch=causal_batch, legacy_contract=legacy_contract, targeted_revision=targeted_revision)
     version = (
         (("v19" if causal_batch else "v18") if legacy_contract else ("v21" if causal_batch else "v20"))
         if stage == "canon_extraction"
         else ("v4" if legacy_contract else "v5")
         if stage in {"review", "rereview"}
-        else ("v2" if legacy_contract else "v3")
+        else ("v2" if legacy_contract else "v4" if targeted_revision and stage == "revision" else "v3")
         if stage in {"draft", "revision"}
         else ("v2" if legacy_contract else "v3")
         if stage in _QUALITY_STAGES
@@ -933,6 +942,14 @@ def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False
     if stage == "memo" and not legacy_contract:
         version = "v2"
     return f"schema:chapter-provider-output:{stage}:{version}"
+
+
+def is_targeted_revision_schema_ref(schema_ref: str) -> bool:
+    return re.fullmatch(
+        r"schema:chapter-provider-output:revision:(?:v4|cross-chapter-v4)"
+        r"(?::quality-targeted-v2)?(?::narrative-craft-v[23])?",
+        schema_ref,
+    ) is not None
 
 
 def canon_provider_array_fields() -> tuple[str, ...]:
@@ -971,11 +988,20 @@ def validate_chapter_provider_output_against_schema(
 def validate_chapter_provider_output_semantics(
     stage: str,
     value: Mapping[str, Any],
-    *, host_bind_known_metadata: bool = False,
+    *, host_bind_known_metadata: bool = False, output_schema_ref: str = "",
 ) -> dict[str, Any]:
 
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
     if stage == "canon_extraction":
+        if output_schema_ref:
+            if output_schema_ref not in {
+                "schema:chapter-provider-output:canon_extraction:v18",
+                "schema:chapter-provider-output:canon_extraction:v19",
+                "schema:chapter-provider-output:canon_extraction:v20",
+                "schema:chapter-provider-output:canon_extraction:v21",
+            }:
+                raise KernelError("CHAPTER_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED", "unknown frozen Canon output contract")
+            host_bind_known_metadata = output_schema_ref.endswith((":v20", ":v21"))
         normalized = _without_null_object_properties(normalized)
         try:
             normalized["character_knowledge_changes"] = (
@@ -1121,8 +1147,18 @@ def validate_chapter_provider_output_semantics(
     if stage != "revision":
         return normalized
 
-    text = str(normalized.get("text") or "").strip()
-    if not text:
+    from .realization_composition import prose_from_output
+    targeted = is_targeted_revision_schema_ref(output_schema_ref)
+    if output_schema_ref.startswith("schema:chapter-provider-output:revision:") and (
+        "v4" in output_schema_ref and not targeted
+    ):
+        raise KernelError("CHAPTER_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED", "unknown frozen targeted Revision contract")
+    if targeted:
+        replacements = [str(item["replacement"]) for item in normalized["edits"]]
+        text = "\n".join(replacements).strip()
+    else:
+        text = prose_from_output(normalized).strip()
+    if not text and not targeted:
         raise KernelError(
             "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
             "Revision output has no reader-facing prose",

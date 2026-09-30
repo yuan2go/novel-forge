@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 from fnmatch import fnmatch
+from hashlib import sha256
 import json
 from pathlib import Path
 import re
@@ -111,6 +113,55 @@ def _surface_files(root: Path, policy: Mapping[str, Any]) -> tuple[Path, ...]:
     )
 
 
+def _historical_authorization_evidence(
+    root: Path, policy: Mapping[str, Any]
+) -> tuple[set[Path], list[str]]:
+    excluded: set[Path] = set()
+    errors: list[str] = []
+    entries = policy.get("immutable_historical_authorization_evidence", {})
+    if not isinstance(entries, Mapping):
+        return excluded, ["immutable historical authorization evidence must be a map"]
+    for relative, identity in entries.items():
+        name = str(relative)
+        path = root / name
+        if (
+            not name.startswith("config/production/narrative-closure/authorization-")
+            or path.suffix != ".json"
+            or not path.resolve().is_relative_to(root)
+        ):
+            errors.append(f"invalid historical authorization path: {relative}")
+            continue
+        try:
+            raw = path.read_bytes()
+            payload = json.loads(raw)
+        except (OSError, json.JSONDecodeError):
+            errors.append(f"historical authorization is missing or invalid: {relative}")
+            continue
+        if (
+            not isinstance(payload, Mapping)
+            or not isinstance(identity, Mapping)
+            or sha256(raw).hexdigest() != identity.get("sha256")
+        ):
+            errors.append(f"historical authorization content changed: {relative}")
+            continue
+        disposition = identity.get("disposition")
+        if disposition == "NON_AUTHORIZATION_REQUEST":
+            valid = payload.get("status") == "NOT_AUTHORIZATION"
+        elif disposition == "EXPIRED_AUTHORIZATION":
+            try:
+                expiry = datetime.fromisoformat(str(payload["expires_at"]).replace("Z", "+00:00"))
+                valid = expiry.tzinfo is not None and expiry < datetime.now(timezone.utc)
+            except (KeyError, TypeError, ValueError):
+                valid = False
+        else:
+            valid = False
+        if valid:
+            excluded.add(path)
+        else:
+            errors.append(f"historical authorization disposition is not established: {relative}")
+    return excluded, errors
+
+
 def _walk_machine_fields(value: object) -> Iterable[str]:
     if isinstance(value, Mapping):
         for key, child in value.items():
@@ -212,7 +263,8 @@ def check_historical_reality(repo_root: str | Path) -> dict[str, Any]:
             "status": "FAIL",
             "errors": [f"cannot load historical reality policy: {exc}"],
         }
-    files = _surface_files(root, policy)
+    historical_evidence, historical_errors = _historical_authorization_evidence(root, policy)
+    files = tuple(path for path in _surface_files(root, policy) if path not in historical_evidence)
     retired_tokens = tuple(str(value) for value in policy["retired_current_ontology"])
     token_violations: list[str] = []
     stale_delivery: list[str] = []
@@ -277,6 +329,7 @@ def check_historical_reality(repo_root: str | Path) -> dict[str, Any]:
             + [f"historical test authority remains: {value}" for value in historical_tests]
             + [f"historical instruction remains: {value}" for value in instruction_violations]
             + projection_errors
+            + historical_errors
         )
     )
     return {

@@ -209,6 +209,40 @@ def prose_from_output(result: Mapping[str, Any], *, separators: Any = None) -> s
     return str(result.get("text") or "")
 
 
+def derive_targeted_revision_slots(
+    source: Mapping[str, Any], edits: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    artifacts = source.get("scene_artifacts")
+    if not isinstance(artifacts, list) or not artifacts:
+        raise KernelError("REVISION_TARGETED_SLOT_REQUIRED", "targeted repair needs frozen Scene slots")
+    joins = realization_separators(artifacts, source.get("scene_separators"))
+    ranges: list[tuple[int, int]] = []
+    offset = 0
+    for index, artifact in enumerate(artifacts):
+        if index:
+            offset += len(joins[index - 1])
+        end = offset + len(artifact["text"])
+        ranges.append((offset, end))
+        offset = end
+    copied = [dict(item) for item in artifacts]
+    by_slot: dict[int, list[dict[str, Any]]] = {}
+    for edit in edits:
+        start, end = edit["start"], edit["end"]
+        index = next((i for i, (low, high) in enumerate(ranges)
+                      if low <= start < end <= high), None)
+        if index is None:
+            raise KernelError("REVISION_TARGETED_SLOT_BOUNDARY", "targeted edit crosses a frozen Slot or separator")
+        by_slot.setdefault(index, []).append(edit)
+    for index, slot_edits in by_slot.items():
+        low, _ = ranges[index]
+        old = artifacts[index]["text"]
+        for edit in reversed(slot_edits):
+            start, end = edit["start"] - low, edit["end"] - low
+            old = old[:start] + edit["replacement"] + old[end:]
+        copied[index]["text"] = old
+    return copied
+
+
 def integrate_realization(
     *, contract: Mapping[str, Any], artifacts: Any, text: str, separators: Any = None
 ) -> dict[str, Any]:
