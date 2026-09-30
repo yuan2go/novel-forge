@@ -1386,6 +1386,21 @@ generation call. Protocol or semantic rejection retains the raw result and failu
 evidence for explicit, bounded repair. A remote `UNKNOWN` outcome still requires
 reconciliation under its original idempotency identity.
 
+Remote submit, query and callback use the host's persisted output contract: Schema,
+Schema reference, request hash and execution identity. Provider evidence cannot replace
+those fields. Conflicts retain the original response and rejection evidence; conflicting
+or cancelled late callbacks cannot replace terminal results. Repeated callbacks bind
+both the receipt identity and actual evidence hash. Older records recover their contract
+from the original frozen request through existing admission and payload resolution,
+without another generation call. Downstream normalization uses that recorded contract
+rather than a generic domain asset Schema. Pack-free scripted fixtures retain the
+explicit legacy Provider semantic contract and cannot prove real Provider behavior.
+
+Changing repository Pack, Prompt or Skill files does not activate them in an existing
+database or change an old request. Inspect the actual deployment, activation and frozen
+materialization before an authorized run. Chapter Pack 2.6.0 requires the v5 Prompt and
+prose-generation-v3 identities; historical artifacts remain available for recovery.
+
 For transaction errors, `DatabaseRetryClass.SAFE_RETRY` covers only explicitly safe
 SQLSTATEs. `RECONCILIATION_REQUIRED` means the commit result may be unknown and must be
 resolved from durable evidence before replay.

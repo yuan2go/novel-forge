@@ -752,6 +752,7 @@ class ProductionProviderRouter:
         outcome_projection: Callable[..., dict[str, dict[str, Any]]] | None = None,
         execution_environment: str = "production",
         provider_auth_profiles: Mapping[str, str] | None = None,
+        review_requirement_resolver: Callable[..., dict[str, Any]] | None = None,
     ) -> None:
         self.registry = PostgresRoutingRegistry(
             database_url, outcome_projection=outcome_projection
@@ -765,6 +766,7 @@ class ProductionProviderRouter:
         self.call_caps = dict(call_caps or {})
         self.execution_environment = execution_environment
         self.provider_auth_profiles = dict(provider_auth_profiles or {})
+        self.review_requirement_resolver = review_requirement_resolver
         money_limit = Decimal(task_money_limit)
         if self.task_token_limit <= 0 or not money_limit.is_finite() or money_limit < 0:
             raise ValueError("ROUTING_NONNEGATIVE_MONEY_AND_POSITIVE_TOKEN_BUDGET_REQUIRED")
@@ -995,7 +997,7 @@ class ProductionProviderRouter:
             )
         else:
             from .author_supervision import matching_grant
-            from .cross_model_review import REVIEW_TASKS, freeze_review_requirement
+            from .cross_model_review import REVIEW_TASKS
             supervised_book = any(book["book_id"] == work_id for book in policy_snapshot.get("policy", {}).get("author_supervised_books", []))
             if task_type in REVIEW_TASKS and (supervised_book or matching_grant(asdict(task), now=now)):
                 grant = matching_grant(asdict(task), now=now)
@@ -1003,8 +1005,10 @@ class ProductionProviderRouter:
                     and candidate.candidate_id == grant["candidate_id"] and candidate.model_revision == grant["model_revision"]]
                 authorized_reviewer = ({key: reviewers[0][key] for key in ("candidate_id", "provider", "model", "model_revision")}
                     if len(reviewers) == 1 else None)
+                if self.review_requirement_resolver is None:
+                    raise KernelError("CROSS_MODEL_REVIEW_BINDER_REQUIRED", "Production review requires its domain-owned source binder")
                 with AuthorityUnitOfWork(self.registry.database_url) as uow:
-                    cross_review = freeze_review_requirement(uow.cursor, project_id=project_id,
+                    cross_review = self.review_requirement_resolver(uow.cursor, project_id=project_id,
                         book_id=work_id, operation_id=operation_id, task_type=task_type,
                         request_input=request_input or {}, authorized_reviewer=authorized_reviewer)
                 task = replace(task, declared_requirements={**task.declared_requirements, "cross_model_review": cross_review})

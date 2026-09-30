@@ -894,7 +894,9 @@ Missing reviewer authorization leaves a blocked routing decision available for t
 task approval entry. Diagnostic and fixture prose cannot acquire production provenance
 through editing or edition reuse. Direct model drafts retain the v1 opposite-Provider
 rule; ReReview targets the actual model revision and Canon support binds extraction plus
-its exact supporting prose. Existing frozen review contracts remain unchanged.
+its exact supporting prose. Review owns source and manuscript binding; the production
+Router receives that binder from production composition and fails closed when it is
+absent. Existing frozen review contracts remain unchanged.
 
 `scene-screenplay.v2` is a separate scene/action/dialogue contract with approved Craft references, located realization and effect/interference review; frozen v1 retains its original contract. Its explicit source range,
 scene plan, preservation/adaptation policy and character/reader knowledge bind one validated
@@ -1060,6 +1062,13 @@ most three append-only rounds, and alone decides sufficiency and termination. Th
 cannot name admissible AssetVersions or expand the accepted boundary. Context Authority
 admits only the frozen union after coverage is sufficient and continues to enforce the
 configured token budget; the default final retrieval limit remains 24.
+
+The deterministic coverage fast path skips only the optional query-embedding call when
+semantic policy is FALLBACK_ALLOWED and the selected accepted documents satisfy the
+required coverage contract. REQUIRED semantic retrieval continues through its Provider
+path. Source isolation, actor knowledge, accepted boundaries, final Context admission
+and the complete rendered Prompt/Skill/Schema/output reserve remain enforced. This
+optimization does not replace Context composition or prove narrative coherence.
 
 ## Context governance and Provider admission
 
@@ -1323,7 +1332,15 @@ carry actor-local knowledge. Draft requires complete slot coverage; targeted Rev
 edits one frozen candidate and deterministically derives updated Slot representation.
 Mechanical Slot joining does not establish narrative coherence. A revision retains the frozen
 contract, identifies changed slots and reruns the existing Review, Quality and Actual
-reconciliation chain. Voice contracts distinguish Book, Narrator, POV, Character,
+reconciliation chain. Chapter Pack 2.6.0 binds Prompt v5 and prose-generation-v3. Its
+renderer projects shared prose rules plus either Draft/full Revision or edits-only
+targeted Revision; the latter never asks for another Slot or whole-chapter copy.
+Scene Craft v2 uses the frozen chapter function, Scene, actor, author intent, Arc and
+accepted due obligations to guide technique applicability. Explicit requirements and
+accepted facts remain binding; omitting an inapplicable technique is not a review
+failure. Frozen v1 Scene Craft and older Prompt/Skill artifacts retain their versions.
+These method contracts establish engineering behavior, not improved reading quality.
+Voice contracts distinguish Book, Narrator, POV, Character,
 Dialogue and Genre layers; current drift checks prove explicit textual constraints,
 not literary voice quality. These are capabilities within governed generation, not a
 fixed population of autonomous specialist Agents.

@@ -29,7 +29,7 @@ class _StoryDesignCapture:
     def require(self, *, project_id: str, asset_version_id: str) -> dict[str, Any]:
         assert (project_id, asset_version_id) == ("project-1", "candidate:v1")
         self.require_count += 1
-        if self.require_count == 1:
+        if self.require_count <= 2:
             return {
                 "lifecycle": "MATERIALIZED",
                 "approval": "APPROVED",
@@ -39,6 +39,7 @@ class _StoryDesignCapture:
             "lifecycle": "ACTIVE",
             "approval": "APPROVED",
             "version": 8,
+            "updated_by_operation_id": "story-transition:activate:v7",
         }
 
     def prepare_transition(

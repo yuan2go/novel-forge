@@ -12,8 +12,6 @@ def solve_candidates(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if type(search_budget) is not int or search_budget < 1:
         raise ValueError("Craft search budget must be a positive integer")
-    if len(ranked) > 256:
-        raise KernelError("CRAFT_SEARCH_SCOPE_EXCEEDED", "Candidate pool exceeds the supported 256-card search scope; feasibility is unknown")
     identities = [item["knowledge_card_asset_version_id"] for item in ranked]
     if len(set(identities)) != len(identities):
         raise KernelError("CRAFT_SEARCH_INPUT_INVALID", "Candidate versions must be unique")
@@ -22,6 +20,17 @@ def solve_candidates(
     required = {index for index, identity in enumerate(identities) if identity in required_ids}
     if required_ids - set(identities):
         raise KernelError("MKAOS_REQUIRED_KNOWLEDGE_UNAVAILABLE", "Required cards absent from eligible pool: " + ", ".join(sorted(required_ids - set(identities))))
+    if not any(mechanisms):
+        if len(required) > limit:
+            raise KernelError("MKAOS_REQUIRED_KNOWLEDGE_UNAVAILABLE", "Required cards exceed the frozen selection capacity")
+        chosen = required | set([index for index in range(len(ranked)) if index not in required][:limit - len(required)])
+        return [item for index, item in enumerate(ranked) if index in chosen], [
+            {"knowledge_card_asset_version_id": identities[index], "content_hash": item["content_hash"],
+             "reason": "NARRATIVE_BANDWIDTH_LIMIT", "applicability_assessment": item["applicability_assessment"]}
+            for index, item in enumerate(ranked) if index not in chosen
+        ]
+    if len(ranked) > 256:
+        raise KernelError("CRAFT_SEARCH_SCOPE_EXCEEDED", "Candidate pool exceeds the supported 256-card search scope; feasibility is unknown")
     dependencies = [set(item["composition"]["requires"]) if item else set() for item in mechanisms]
     conflicts = [set(item["composition"]["conflicting"]) if item else set() for item in mechanisms]
     precedes = [set(item["composition"]["precedes"]) if item else set() for item in mechanisms]

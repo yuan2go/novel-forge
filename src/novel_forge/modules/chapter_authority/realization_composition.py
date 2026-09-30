@@ -168,14 +168,17 @@ def compile_realization_contract(
     }
     policies = [fact["value"] for policy in style.get("policies", []) for fact in policy.get("structured_facts", []) if isinstance(fact, dict) and fact.get("key") == "realization_policy"]
     if policies:
-        if len(policies) != 1 or policies[0] != {"contract_version": "scene-craft-tasks.v1", "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS"}:
+        if len(policies) != 1 or policies[0] not in [
+            {"contract_version": version, "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS"}
+            for version in ("scene-craft-tasks.v1", "scene-craft-tasks.v2")
+        ]:
             raise KernelError("REALIZATION_CRAFT_POLICY_INVALID", "Creative realization requires one supported frozen policy")
         body["contract_version"] = "scene-realization-composition.v2"
-        body["craft_tasks"] = _scene_craft_tasks(scenes, slots, voices)
+        body["craft_tasks"] = _scene_craft_tasks(scenes, slots, voices, version=policies[0]["contract_version"], plan=plan)
         body["composition_method"] = "Write and edit the chapter as one narrative; slots serialize the final prose and are not a proof of integration."
     if "craft_strategy" in plan:
         from .craft_execution import bind_craft_realization
-        body = bind_craft_realization(body, plan["craft_strategy"], scenes=scenes)
+        body = bind_craft_realization(body, plan["craft_strategy"], scenes=scenes, plan=plan)
     return {**body, "contract_digest": narrative_hash(body)}
 
 
@@ -400,7 +403,7 @@ _CRAFT_OBJECTIVES = {
 }
 
 
-def _scene_craft_tasks(scenes, slots, voices):
+def _legacy_scene_craft_tasks(scenes, slots, voices):
     by_scene = {scene["scene_id"]: scene for scene in scenes}
     tasks = []
     for slot in slots:
@@ -417,3 +420,40 @@ def _scene_craft_tasks(scenes, slots, voices):
     return {"contract_version": "scene-craft-tasks.v1", "tasks": tasks,
             "chapter_edit": ["Assess scene junctions together", "Retain causal and epistemic sequence", "Remove redundant recaps", "Preserve unresolved uncertainty"],
             "semantic_proof": "NOT_CLAIMED_BY_SLOT_COVERAGE_OR_DECLARED_FACT_IDS"}
+
+
+_APPLICABLE_CRAFT_OBJECTIVES = {
+    "SKELETON": ("Render the frozen scene's events in causal order", ["follow the scene's function", "show motive and consequences when a planned choice calls for them", "cause before consequence"]),
+    "DIALOGUE": ("Let each speaker participate in the actual exchange", ["follow the speaker's purpose and established voice", "use persuasion or subtext only when the exchange calls for it", "only this actor's available knowledge"]),
+    "ACTION": ("Make the planned action spatially legible", ["starting positions and available resources", "show resistance and cost when supported by the frozen scene", "no unexplained movement or capability"]),
+    "INTERIOR": ("Render the viewpoint's relevant perception and thought", ["distinguish perception from belief", "use pressured value choices only when relevant", "avoid repeating narration without a reader purpose"]),
+    "DESCRIPTION": ("Select details that serve the scene's function", ["viewpoint-directed sensory detail", "relevant setting, obstacle or affordance", "avoid unneeded exposition"]),
+    "TRANSITION": ("Carry the actual scene state into the next scene", ["consistent elapsed time and location", "retain relevant emotional residue", "do not restage completed events"]),
+    "INTEGRATION": _CRAFT_OBJECTIVES["INTEGRATION"],
+}
+
+
+def _scene_craft_tasks(scenes, slots, voices, *, version="scene-craft-tasks.v2", plan=None):
+    if version == "scene-craft-tasks.v1":
+        return _legacy_scene_craft_tasks(scenes, slots, voices)
+    if version != "scene-craft-tasks.v2":
+        raise KernelError("REALIZATION_CRAFT_POLICY_INVALID", "Unknown frozen Scene Craft method")
+    result = _legacy_scene_craft_tasks(scenes, slots, voices)
+    result["contract_version"] = version
+    plan = plan or {}
+    result["applicability"] = {
+        "classification": "CONFIGURABLE_POLICY",
+        "sources": {key: plan[key] for key in (
+            "objective", "chapter_intent", "reader_experience", "required_arc_contributions",
+        ) if key in plan},
+        "instruction": (
+            "Apply cost, pressured choice, growth, reversal, reward and hook only when the frozen chapter function, "
+            "Scene, actor, author intent, Arc or due accepted obligation calls for them. Use the delivered accepted "
+            "Context for obligations. Do not add a technique or penalize its absence merely to fill a template. "
+            "An explicit author requirement, accepted fact or due obligation remains binding and cannot be declared inapplicable."
+        ),
+    }
+    for task in result["tasks"]:
+        goal, checks = _APPLICABLE_CRAFT_OBJECTIVES[task["specialism"]]
+        task["objective"], task["craft_checks"] = goal, list(checks)
+    return result

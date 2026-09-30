@@ -7625,11 +7625,11 @@
           "symbol": "constrain_diagnosis_schema"
         },
         {
-          "path": "src/novel_forge/modules/production_execution/cross_model_review.py",
+          "path": "src/novel_forge/modules/review/cross_model_binding.py",
           "symbol": "freeze_review_requirement"
         },
         {
-          "path": "src/novel_forge/modules/production_execution/review_sources.py",
+          "path": "src/novel_forge/modules/review/review_sources.py",
           "symbol": "adopted_source"
         }
       ],
@@ -9191,7 +9191,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:da172db318b41ab6b9e3e84dc01ccb6aabf080e43b3c413ee10406d8e369c9ae"
+    "implementation_tree_sha": "sha256:45c4063b378b2d7096360b222247478f0a5813c8b35e4d13d74204cb4e982942"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

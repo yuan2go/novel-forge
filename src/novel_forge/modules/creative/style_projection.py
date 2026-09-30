@@ -73,7 +73,7 @@ def compile_foundation_style(request: AuthorityHandlerRequest) -> dict:
     return {
         "type": "style_policy",
         "profile_id": f"foundation-style:{design.asset_version_id}",
-        "contract_version": "foundation-style-projection.v1",
+        "contract_version": "foundation-style-projection.v2",
         "project_id": request.project_id,
         "book_id": sources["CREATIVE_FOUNDATION"].content["book_id"],
         "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
@@ -84,7 +84,7 @@ def compile_foundation_style(request: AuthorityHandlerRequest) -> dict:
             {
                 "key": "realization_policy",
                 "value": {
-                    "contract_version": "scene-craft-tasks.v1",
+                    "contract_version": "scene-craft-tasks.v2",
                     "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
                 },
             },

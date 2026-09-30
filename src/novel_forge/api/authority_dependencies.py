@@ -1261,12 +1261,14 @@ def build_production_execution_composition(
                 quota_remaining=int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
                 authorization_ref=codex_entitlement.authorization_ref,
             ))
+        from novel_forge.modules.review.cross_model_binding import freeze_review_requirement
         model_gateway.provider_router = ProductionProviderRouter(
             settings.database_url, candidates=candidates, execution_environment=environment,
             task_money_limit=max_cost_per_call or "0",
             task_token_limit=int(values.get("NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT") or 0),
             soft_money_limit=str(values.get("NOVEL_FORGE_ROUTER_SOFT_COST_PER_TASK") or "") or None,
             outcome_projection=domain_gate_outcomes,
+            review_requirement_resolver=freeze_review_requirement,
             provider_auth_profiles={
                 **({"codex-cli": next(iter(routes.values())).auth_profile_ref} if codex_router_enabled else {}),
                 **({"deepseek": "provider-account:deepseek:credential-sha256:"

@@ -122,3 +122,27 @@ def test_legacy_plan_keeps_its_frozen_realization_contract():
     contract = compile_realization_contract(plan, {"policies": []})
     assert contract["contract_version"] == "scene-realization-composition.v1"
     assert "craft_strategy" not in contract
+
+
+@pytest.mark.parametrize("objective", ["安静地辨认渡口的灯号", "作出代价明确的公开选择"])
+def test_scene_craft_applicability_reaches_writer_and_reviewer(objective):
+    from novel_forge.modules.chapter_authority.execution_gateway import _stage_semantic_contract_v3
+
+    plan = craft_plan()
+    plan["objective"] = objective
+    style = {"policies": [{"structured_facts": [{"key": "realization_policy", "value": {
+        "contract_version": "scene-craft-tasks.v2", "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+    }}]}]}
+    contract = compile_realization_contract(plan, style)
+    tasks = contract["craft_tasks"]
+    assert tasks["applicability"]["sources"]["objective"] == objective
+    assert "cannot be declared inapplicable" in tasks["applicability"]["instruction"]
+    assert tasks["tasks"][0]["objective"] == "Render the frozen scene's events in causal order"
+    writer = build_provider_task_view("draft", {"plan": plan, "realization_contract": contract}, compact_contract=True)
+    assert writer["realization_contract"]["craft_tasks"] == tasks
+    for stage in ("review", "rereview"):
+        assert "do not penalize omitted cost" in _stage_semantic_contract_v3(stage)
+    style["policies"][0]["structured_facts"][0]["value"]["contract_version"] = "scene-craft-tasks.v1"
+    old = compile_realization_contract(plan, style)
+    assert old["craft_tasks"]["contract_version"] == "scene-craft-tasks.v1"
+    assert old["craft_tasks"]["tasks"][0]["objective"] == "Render the scene's consequential choice"

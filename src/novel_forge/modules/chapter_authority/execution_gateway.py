@@ -801,7 +801,7 @@ class PostgresChapterExecutionContractBinder:
             attempt_snapshot
         )
         supported_templates = {
-            "prompt-template:chapter-generation-pack": {"v2", "v3", "v4"},
+            "prompt-template:chapter-generation-pack": {"v2", "v3", "v4", "v5"},
             "prompt-template:agent-session-pack": {"v1"},
             "prompt-template:story-planning-pack": {"v1"},
             "prompt-template:reader-outcome-pack": {"v2"},
@@ -1144,7 +1144,7 @@ class PostgresChapterExecutionContractBinder:
             (inputs.get("execution_expectations") or {}).get("world_preparation")
         )
         targeted_revision = bool(
-            stage == "revision" and prompt_contract_version == "v4" and (
+            stage == "revision" and prompt_contract_version in {"v4", "v5"} and (
                 inputs.get("quality_edit_contract")
                 or (
                     ((inputs.get("review") or {}).get("issues") or
@@ -3224,6 +3224,10 @@ class PostgresProductionExecutionPayloadResolver:
         else:
             input_text = _canonical({"stage": stage, "input": inputs})
             output_schema = None
+            fixture_schema_ref = (
+                chapter_provider_output_schema_ref(stage, legacy_contract=True)
+                if stage == "canon_extraction" else admission.route_snapshot.output_schema_ref
+            )
             tool_permissions = {}
             prompt_evidence = None
             resolved_payload = {
@@ -3249,7 +3253,7 @@ class PostgresProductionExecutionPayloadResolver:
             output_schema_version=(
                 str(output_schema.get("ref") or "")
                 if isinstance(output_schema, Mapping)
-                else admission.route_snapshot.output_schema_ref
+                else fixture_schema_ref
             ),
             command=self.command,
             output_schema=(
@@ -4131,6 +4135,20 @@ def _bind_language_contract(contract: str, required_language: str | None) -> str
     return f"{language_contract} {contract}" if language_contract else contract
 
 
+def _project_prose_skill(text: str, *, stage: str, targeted: bool) -> str:
+    sections = {}
+    for part in text.split("\n## ")[1:]:
+        heading, separator, body = part.partition("\n")
+        if not separator or heading in sections:
+            raise KernelError("PROSE_SKILL_PROJECTION_INVALID", "The frozen method sections must be distinct")
+        sections[heading] = body.strip()
+    selected = "Targeted revision" if targeted else "Draft and full revision"
+    if stage not in {"draft", "revision"} or "Shared rules" not in sections or selected not in sections:
+        raise KernelError("PROSE_SKILL_PROJECTION_INVALID", "Prose method requires the declared Draft or Revision task")
+    return "# Prose Generation\n\n" + sections["Shared rules"] + "\n\n" + sections[selected]
+
+
+
 def _materialize_production_codex_prompt(
     *,
     request: ExecutionRequest | None = None,
@@ -4173,7 +4191,7 @@ def _materialize_production_codex_prompt(
     system_text, system = required_text("system_instruction")
     template_text, template = required_text("prompt_template")
     skill_text, skill = required_text("skill")
-    compact_contract = str(template.get("version") or "") in {"v3", "v4"}
+    compact_contract = str(template.get("version") or "") in {"v3", "v4", "v5"}
     context = materialization.get("context_selection")
     knowledge = materialization.get("knowledge_selection")
     tools = materialization.get("tool_permissions")
@@ -4205,9 +4223,13 @@ def _materialize_production_codex_prompt(
     targeted_edits_only = stage == "revision" and is_targeted_revision_schema_ref(
         str(schema.get("ref") or "")
     )
+    project_methods = str(template.get("version") or "") == "v5"
+    if skill.get("ref") == "prose-generation" and skill.get("version") == "prose-generation-v3":
+        skill_text = _project_prose_skill(skill_text, stage=stage, targeted=targeted_edits_only)
     task_view = build_provider_task_view(
         stage, inputs, compact_contract=compact_contract,
         targeted_edits_only=targeted_edits_only,
+        project_methods=project_methods,
     )
     context_view = build_provider_context_view(stage, context_content, task_view)
     context_manifest = context_content.get("context_manifest")
@@ -4371,7 +4393,7 @@ def _materialize_production_codex_prompt(
         + len("</governed_skill>".encode()),
         "fully_rendered_prompt_hash": prompt_hash,
         "required_reader_facing_language": required_language,
-        "provider_prompt_projection_version": "authority-projection-task-provider-v2" if compact_contract else "authority-projection-task-provider-v1",
+        "provider_prompt_projection_version": "authority-projection-task-provider-v3" if project_methods else "authority-projection-task-provider-v2" if compact_contract else "authority-projection-task-provider-v1",
         "rendered_prompt_bytes": prompt_bytes,
         "rendered_prompt_estimated_tokens": prompt_estimated_tokens,
         "system_instruction": {
@@ -5187,7 +5209,11 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             raw = session.evidence_store.read_evidence(result.normalized_output_ref)
             evidence["result"] = normalize_model_output(
                 binding.request.stage, raw,
-                output_schema_ref=binding.route_snapshot.output_schema_ref,
+                output_schema_ref=str(
+                    execution_record.frozen_output_contract.get("output_schema_version")
+                    or execution_record.raw_evidence.get("output_schema_version")
+                    or binding.route_snapshot.output_schema_ref
+                ),
             )
         if result.output_manifest_ref:
             evidence["production_execution"]["output_manifest"] = (

@@ -125,7 +125,7 @@ def test_native_author_design_is_approved_without_independent_qualification():
             asset_version_id=result.asset_version_id, content_hash=result.content_hash)
         assert layer.selection_basis == "AUTHOR_DIRECTION"
         assert layer.candidate_asset_version_ids == (result.asset_version_id,)
-        from novel_forge.modules.production_execution.cross_model_review import generator_identity
+        from novel_forge.modules.review.cross_model_binding import generator_identity
         with pytest.raises(KernelError, match="CROSS_MODEL_REVIEW_SOURCE_REQUIRED"):
             generator_identity(uow.cursor, project_id=project, book_id=book, asset_version_id=result.asset_version_id, content_hash=result.content_hash)
         from novel_forge.modules.story_design_authority.author_supervision import reusable_qualified_design_receipt

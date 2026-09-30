@@ -26,6 +26,7 @@ class ExecutionRecord:
     result: ExecutionResult | None = None
     callback_receipts: dict[str, tuple[str, str]] = field(default_factory=dict)
     cancellation: ExecutionCancellationResult | None = None
+    frozen_output_contract: dict[str, Any] = field(default_factory=dict)
 
 
 class ExecutionRecordStore(Protocol):

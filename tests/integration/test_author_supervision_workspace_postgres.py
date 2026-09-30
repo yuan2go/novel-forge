@@ -157,7 +157,8 @@ def test_author_review_grant_recovers_new_attempt_without_rewriting_frozen_block
         "NOVEL_FORGE_APPLICATION_BUILD_ID": "review-recovery-test", "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(tmp_path)})
     base_route = composition.gateway.routes["review"]
     model = deepseek_candidates(available=True)[0]
-    router = ProductionProviderRouter(DATABASE_URL, candidates=[model], task_money_limit="1", task_token_limit=200000,
+    from novel_forge.modules.review.cross_model_binding import freeze_review_requirement
+    router = ProductionProviderRouter(DATABASE_URL, review_requirement_resolver=freeze_review_requirement, candidates=[model], task_money_limit="1", task_token_limit=200000,
         token_caps={"work_total": 1000000}, call_caps={"work_total": 10}, execution_environment="development")
     first = start_native_attempt()
     arguments = dict(task_type="review", project_id=project, work_id=book, operation_id=operation,

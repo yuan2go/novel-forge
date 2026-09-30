@@ -7,7 +7,8 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 def bind_craft_realization(
-    contract: Mapping[str, Any], strategy: Mapping[str, Any], *, scenes: list
+    contract: Mapping[str, Any], strategy: Mapping[str, Any], *, scenes: list,
+    plan: Mapping[str, Any] | None = None
 ) -> dict[str, Any]:
     from novel_forge.modules.mkaos_authority.craft_selection import validate_craft_strategy
     from .realization_composition import _scene_craft_tasks
@@ -19,7 +20,7 @@ def bind_craft_realization(
     result["contract_version"] = "scene-realization-composition.v2"
     result["craft_strategy"] = frozen
     tasks = result.get("craft_tasks") or _scene_craft_tasks(
-        scenes, result["slots"], result["voices"]
+        scenes, result["slots"], result["voices"], plan=plan
     )
     tasks["strategy_digest"] = frozen["strategy_digest"]
     slots = {slot["slot_id"]: slot for slot in result["slots"]}
