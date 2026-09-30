@@ -488,6 +488,8 @@ def test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_recei
                     stage == "revision"
                     and ":cross-chapter-v4" in admitted_binding["output_schema_ref"]
                 ),
+                project_methods=(admitted["prompt_materialization"]["provider_prompt_projection_version"]
+                                 == "authority-projection-task-provider-v3"),
             )
             assert admitted["prompt_materialization"]["provider_view"][
                 "component_hashes"
