@@ -437,7 +437,10 @@ def test_creative_memo_choices_are_bound_to_frozen_scene_participants(actor):
         memo = qualify_creative_memo(intent=intent, intent_asset_version_id="intent-v5", result=result, execution_evidence={"receipt_ref": "receipt:memo"})
         assert memo["creative_guidance"]["character_choices"][0]["cost"] == "lose anonymity"
         assert memo["source_chapter_execution_intent_asset_version_id"] == "intent-v5"
-    else:
-        with pytest.raises(KernelError, match="CHAPTER_MEMO_CHARACTER_DRIFT" if actor else "CHAPTER_MEMO_CHOICE_REQUIRED"):
+    elif actor:
+        with pytest.raises(KernelError, match="CHAPTER_MEMO_CHARACTER_DRIFT"):
             qualify_creative_memo(intent=intent, intent_asset_version_id="intent-v5", result=result, execution_evidence={})
+    else:
+        memo = qualify_creative_memo(intent=intent, intent_asset_version_id="intent-v5", result=result, execution_evidence={})
+        assert memo["creative_guidance"]["character_choices"] == []
     assert intent == original

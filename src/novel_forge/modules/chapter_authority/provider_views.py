@@ -352,7 +352,9 @@ def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[
     }
 
 
-def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
+def build_provider_task_view(
+    stage: str, inputs: Mapping[str, Any], *, compact_contract: bool = False,
+) -> dict[str, Any]:
 
     if stage == "retrieval_query_expansion":
         boundary = inputs.get("accepted_boundary")
@@ -633,18 +635,22 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
     if stage == "draft":
         from novel_forge.modules.canon_graph.background import without_private_world
         from novel_forge.modules.story_design_authority.author_input import without_author_private
+        memo_view = {
+            "guidance": deepcopy((inputs.get("chapter_memo") or {}).get("creative_guidance") or {}),
+            "scene_directives": deepcopy((inputs.get("chapter_memo") or {}).get("scene_directives") or []),
+            **({} if compact_contract else {
+                "source_memo_fingerprint": str((inputs.get("chapter_memo") or {}).get("memo_fingerprint") or ""),
+                **({"craft_strategy_digest": inputs["chapter_memo"]["craft_strategy"]["strategy_digest"]} if (inputs.get("chapter_memo") or {}).get("craft_strategy") else {}),
+                "authority": "CREATIVE_SUGGESTION_ONLY",
+            }),
+        }
+        realization = deepcopy(inputs.get("realization_contract"))
         return _task(
             stage,
             chapter_plan=_compact(without_private_world(without_author_private(inputs.get("plan")))),
             style=_compact(inputs.get("style")),
-            creative_memo={
-                "guidance": deepcopy((inputs.get("chapter_memo") or {}).get("creative_guidance") or {}),
-                "scene_directives": deepcopy((inputs.get("chapter_memo") or {}).get("scene_directives") or []),
-                "source_memo_fingerprint": str((inputs.get("chapter_memo") or {}).get("memo_fingerprint") or ""),
-                **({"craft_strategy_digest": inputs["chapter_memo"]["craft_strategy"]["strategy_digest"]} if (inputs.get("chapter_memo") or {}).get("craft_strategy") else {}),
-                "authority": "CREATIVE_SUGGESTION_ONLY",
-            },
-            realization_contract=deepcopy(inputs.get("realization_contract")),
+            creative_memo=memo_view,
+            realization_contract=realization,
         )
     if stage == "review":
         from novel_forge.modules.review.craft import craft_provider_task
@@ -660,7 +666,8 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             payload["scene_artifacts"] = deepcopy(source["scene_artifacts"])
             if "scene_separators" in source:
                 payload["scene_separators"] = list(source["scene_separators"])
-            payload["composition_digest"] = source["composition_digest"]
+            if not compact_contract:
+                payload["composition_digest"] = source["composition_digest"]
         if inputs.get("required_actions") is not None:
             payload["required_actions"] = _compact(inputs.get("required_actions"))
             payload["quality_decision"] = _compact(inputs.get("quality"))
@@ -672,10 +679,18 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
                     "required_actions": deepcopy(decision.get("required_actions", [])),
                     "evidence_reports": [deepcopy(item) for item in decision.get("evidence_reports", []) if item.get("dimension") in observations]}
                 payload["quality_targeted_repair"] = deepcopy(inputs["quality_edit_contract"])
-                payload["chapter"]["text"] = str(source.get("text") or "")
+                if not compact_contract:
+                    payload["chapter"]["text"] = str(source.get("text") or "")
         else:
             from novel_forge.modules.review.diagnostics import open_diagnoses
-            payload["review_issues"] = _compact(open_diagnoses(dict(inputs.get("review") or {})))
+            diagnoses = open_diagnoses(dict(inputs.get("review") or {}))
+            payload["review_issues"] = (
+                [
+                    {key: issue[key] for key in ("code", "severity", "category", "judgment_kind", "revision_goal", "preserve", "acceptance_criteria") if key in issue}
+                    | {"evidence_quote": str((issue.get("evidence_locator") or {}).get("quote") or "")}
+                    for issue in diagnoses
+                ] if compact_contract else _compact(diagnoses)
+            )
             if (source.get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v2":
                 payload["targeted_editing"] = {
                     "mode": "DIAGNOSIS_DIRECTED_ONLY",
@@ -699,14 +714,20 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
                 "source_window_hash": review["cross_chapter_window"]["source_window_hash"],
                 "accepted_source_window": deepcopy(review["cross_chapter_window"]),
                 "preservation_requirements": deepcopy(review["cross_chapter_window"]["preservation_requirements"]),
-                "instructions": "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. Return text equal to applying those edits only. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition.",
+                "instructions": (
+                    "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. The host verifies that the joined Scene Slot prose equals applying those edits. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
+                    if compact_contract else
+                    "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. Return text equal to applying those edits only. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
+                ),
             }
-            payload["chapter"]["text"] = str(source.get("text") or "")
+            if not compact_contract:
+                payload["chapter"]["text"] = str(source.get("text") or "")
         if review.get("craft_targets") and inputs.get("required_actions") is None:
             from novel_forge.modules.review.craft import craft_revision_contract
-            payload["craft_targeted_repair"] = craft_revision_contract(source, review)
+            payload["craft_targeted_repair"] = craft_revision_contract(source, review, compact_contract=compact_contract)
             payload["craft_checks"] = deepcopy(review["craft_checks"])
-            payload["chapter"]["text"] = str(source.get("text") or "")
+            if not compact_contract:
+                payload["chapter"]["text"] = str(source.get("text") or "")
         return _task(stage, **payload)
     if stage == "rereview":
         from novel_forge.modules.review.craft import craft_provider_task

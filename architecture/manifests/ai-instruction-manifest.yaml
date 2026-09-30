@@ -21,7 +21,8 @@
     {
       "id": "runtime-skills",
       "patterns": [
-        "skills/*/SKILL.md"
+        "skills/*/SKILL.md",
+        "skills/*/legacy-v1.md"
       ],
       "kind": "RUNTIME_SKILL_SOURCE",
       "owner": "skill-governance",
@@ -56,6 +57,8 @@
         "src/novel_forge/modules/source_import/execution.py",
         "src/novel_forge/modules/story_planning_runtime/execution.py",
         "src/novel_forge/modules/chapter_authority/provider_views.py",
+        "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+        "src/novel_forge/modules/mkaos_authority/craft_context_projection.py",
         "src/novel_forge/modules/source_import/corpus_ingestion/narrative_contracts.py",
         "src/novel_forge/modules/review/craft.py",
         "src/novel_forge/modules/revision/domain.py",

@@ -86,10 +86,20 @@ def prose_hash(text: str) -> str:
 
 def validate_location(location: dict[str, Any], text: str) -> dict[str, Any]:
     start, end = location.get("start"), location.get("end")
+    quote = location.get("quote")
+    if start is None and end is None:
+        if not isinstance(quote, str) or not quote:
+            raise KernelError("REVIEW_EVIDENCE_INVALID", "evidence quote is required")
+        start = text.find(quote)
+        if start < 0:
+            raise KernelError("REVIEW_EVIDENCE_INVALID", "evidence quote is absent from its exact candidate")
+        if text.find(quote, start + 1) >= 0:
+            raise KernelError("REVIEW_EVIDENCE_AMBIGUOUS", "evidence quote occurs more than once in its exact candidate")
+        end = start + len(quote)
     if (type(start) is not int or type(end) is not int
-        or not 0 <= start < end <= len(text) or location.get("quote") != text[start:end]):
+        or not 0 <= start < end <= len(text) or quote != text[start:end]):
         raise KernelError("REVIEW_EVIDENCE_INVALID", "diagnosis requires a literal Unicode code-point span in its exact candidate")
-    return {**location, "excerpt_digest": prose_hash(text[start:end]), "offset_unit": "UNICODE_CODE_POINT"}
+    return {**location, "start": start, "end": end, "excerpt_digest": prose_hash(text[start:end]), "offset_unit": "UNICODE_CODE_POINT"}
 
 
 def validate_diagnosis(issue: dict[str, Any], text: str) -> dict[str, Any]:

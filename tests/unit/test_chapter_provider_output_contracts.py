@@ -278,15 +278,15 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     assert "at least one concrete evidence location" in contract
     assert (
         chapter_provider_output_schema_ref("quality_platform")
-        == "schema:chapter-provider-output:quality_platform:v2"
+        == "schema:chapter-provider-output:quality_platform:v3"
     )
     assert (
         chapter_provider_output_schema_ref("draft")
-        == "schema:chapter-provider-output:draft:v2"
+        == "schema:chapter-provider-output:draft:v3"
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v18"
+        == "schema:chapter-provider-output:canon_extraction:v20"
     )
 
 
@@ -322,7 +322,7 @@ def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
     assert "final candidate prose" in contract
     assert "chars:<start>-<end>:<summary>" in contract
     assert "Planning context alone never proves observation" in contract
-    schema = chapter_provider_output_schema("canon_extraction")
+    schema = chapter_provider_output_schema("canon_extraction", legacy_contract=True)
     resolution = schema["properties"]["arc_evidence"]["items"]["properties"][
         "resolution_evidence"
     ]
@@ -445,7 +445,7 @@ def test_canon_semantics_normalizes_initial_resource_balance() -> None:
         }
     ]
 
-    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    structural = validate_chapter_provider_output_against_schema("canon_extraction", chapter_provider_output_schema("canon_extraction", legacy_contract=True), value)
     normalized = validate_chapter_provider_output_semantics(
         "canon_extraction", structural
     )
@@ -484,7 +484,7 @@ def test_canon_accepts_typed_unified_obligation_payoff_evidence() -> None:
         }
     ]
 
-    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    structural = validate_chapter_provider_output_against_schema("canon_extraction", chapter_provider_output_schema("canon_extraction", legacy_contract=True), value)
     normalized = validate_chapter_provider_output_semantics(
         "canon_extraction", structural
     )
@@ -494,19 +494,19 @@ def test_canon_accepts_typed_unified_obligation_payoff_evidence() -> None:
     value["obligation_changes"][0]["payoff_evidence"] = {
         "asset_version_id": "another-book:draft", "event_id": "invented:accepted-event",
     }
-    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    structural = validate_chapter_provider_output_against_schema("canon_extraction", chapter_provider_output_schema("canon_extraction", legacy_contract=True), value)
     with pytest.raises(KernelError, match="payoff"):
         validate_chapter_provider_output_semantics("canon_extraction", structural)
 
     value["obligation_changes"][0]["payoff_evidence"] = None
-    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    structural = validate_chapter_provider_output_against_schema("canon_extraction", chapter_provider_output_schema("canon_extraction", legacy_contract=True), value)
     with pytest.raises(KernelError, match="typed payoff evidence"):
         validate_chapter_provider_output_semantics("canon_extraction", structural)
 
 
 def test_canon_semantics_atomizes_legacy_character_knowledge_bundle() -> None:
     value = _valid("canon_extraction")
-    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+    change_schema = chapter_provider_output_schema("canon_extraction", legacy_contract=True)["properties"][
         "character_knowledge_changes"
     ]["items"]
     bundled = {
@@ -537,7 +537,7 @@ def test_canon_semantics_atomizes_legacy_character_knowledge_bundle() -> None:
     }
     value["character_knowledge_changes"] = [bundled]
 
-    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    structural = validate_chapter_provider_output_against_schema("canon_extraction", chapter_provider_output_schema("canon_extraction", legacy_contract=True), value)
     normalized = validate_chapter_provider_output_semantics(
         "canon_extraction", structural
     )
@@ -561,7 +561,7 @@ def test_canon_semantics_atomizes_legacy_character_knowledge_bundle() -> None:
 
 def test_canon_schema_rejects_character_knowledge_state_alias() -> None:
     value = _valid("canon_extraction")
-    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+    change_schema = chapter_provider_output_schema("canon_extraction", legacy_contract=True)["properties"][
         "character_knowledge_changes"
     ]["items"]
     change = {
@@ -581,14 +581,14 @@ def test_canon_schema_rejects_character_knowledge_state_alias() -> None:
     value["character_knowledge_changes"] = [change]
 
     with pytest.raises(KernelError) as error:
-        validate_chapter_provider_output_schema("canon_extraction", value)
+        validate_chapter_provider_output_against_schema("canon_extraction", chapter_provider_output_schema("canon_extraction", legacy_contract=True), value)
 
     assert error.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
 
 
 def test_canon_schema_requires_typed_character_belief_stance() -> None:
     value = _valid("canon_extraction")
-    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+    change_schema = chapter_provider_output_schema("canon_extraction", legacy_contract=True)["properties"][
         "character_belief_changes"
     ]["items"]
     change = {
@@ -621,7 +621,7 @@ def test_canon_schema_requires_typed_character_belief_stance() -> None:
     }
     value["character_belief_changes"] = [change]
 
-    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    structural = validate_chapter_provider_output_against_schema("canon_extraction", chapter_provider_output_schema("canon_extraction", legacy_contract=True), value)
     normalized = validate_chapter_provider_output_semantics(
         "canon_extraction", structural
     )
@@ -634,7 +634,7 @@ def test_canon_schema_requires_typed_character_belief_stance() -> None:
 
 def test_canon_schema_rejects_character_belief_status_alias() -> None:
     value = _valid("canon_extraction")
-    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+    change_schema = chapter_provider_output_schema("canon_extraction", legacy_contract=True)["properties"][
         "character_belief_changes"
     ]["items"]
     change = {
@@ -668,14 +668,14 @@ def test_canon_schema_rejects_character_belief_status_alias() -> None:
     value["character_belief_changes"] = [change]
 
     with pytest.raises(KernelError) as error:
-        validate_chapter_provider_output_schema("canon_extraction", value)
+        validate_chapter_provider_output_against_schema("canon_extraction", chapter_provider_output_schema("canon_extraction", legacy_contract=True), value)
 
     assert error.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
 
 
 def test_canon_schema_requires_typed_relationship_endpoints() -> None:
     value = _valid("canon_extraction")
-    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+    change_schema = chapter_provider_output_schema("canon_extraction", legacy_contract=True)["properties"][
         "relationship_changes"
     ]["items"]
     assert change_schema["properties"]["source_id"] == {
@@ -715,14 +715,14 @@ def test_canon_schema_requires_typed_relationship_endpoints() -> None:
     value["relationship_changes"] = [change]
 
     with pytest.raises(KernelError) as error:
-        validate_chapter_provider_output_schema("canon_extraction", value)
+        validate_chapter_provider_output_against_schema("canon_extraction", chapter_provider_output_schema("canon_extraction", legacy_contract=True), value)
 
     assert error.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
     assert "character_id" in str(error.value)
 
     change["character_id"] = None
     change["source_id"] = "lin-qiao"
-    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    structural = validate_chapter_provider_output_against_schema("canon_extraction", chapter_provider_output_schema("canon_extraction", legacy_contract=True), value)
     normalized = validate_chapter_provider_output_semantics(
         "canon_extraction", structural
     )
@@ -756,7 +756,7 @@ def test_canon_schema_requires_each_domain_identity(
     field: str,
     identity_fields: tuple[str, ...],
 ) -> None:
-    properties = chapter_provider_output_schema("canon_extraction")["properties"][
+    properties = chapter_provider_output_schema("canon_extraction", legacy_contract=True)["properties"][
         field
     ]["items"]["properties"]
 
@@ -766,7 +766,7 @@ def test_canon_schema_requires_each_domain_identity(
 
 
 def test_canon_schema_exposes_epistemic_and_presentation_changes() -> None:
-    schema = chapter_provider_output_schema("canon_extraction")
+    schema = chapter_provider_output_schema("canon_extraction", legacy_contract=True)
 
     assert "reader_knowledge_changes" not in schema["properties"]
     assert "disclosure_events" in schema["properties"]
@@ -903,12 +903,12 @@ def _valid(stage: str) -> dict[str, object]:
 def test_every_model_stage_has_a_strict_schema_and_accepts_its_contract(
     stage: str,
 ) -> None:
-    schema = chapter_provider_output_schema(stage)
+    schema = chapter_provider_output_schema(stage, legacy_contract=True)
 
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
     assert schema["type"] == "object"
     assert schema["additionalProperties"] is False
-    assert validate_chapter_provider_output_schema(stage, _valid(stage)) == _valid(
+    assert validate_chapter_provider_output_against_schema(stage, schema, _valid(stage)) == _valid(
         stage
     )
 
@@ -963,7 +963,7 @@ def test_schema_validation_rejects_additional_properties() -> None:
     value["untrusted"] = True
 
     with pytest.raises(KernelError) as raised:
-        validate_chapter_provider_output_schema("draft", value)
+        validate_chapter_provider_output_against_schema("draft", chapter_provider_output_schema("draft", legacy_contract=True), value)
 
     assert raised.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
     assert "untrusted" in str(raised.value)
@@ -974,7 +974,7 @@ def test_schema_validation_does_not_treat_boolean_as_number() -> None:
     value["dimensions"][0]["confidence"] = True  # type: ignore[index]
 
     with pytest.raises(KernelError) as raised:
-        validate_chapter_provider_output_schema("quality_structural", value)
+        validate_chapter_provider_output_against_schema("quality_structural", chapter_provider_output_schema("quality_structural", legacy_contract=True), value)
 
     assert raised.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
     assert "confidence" in str(raised.value)
@@ -982,7 +982,7 @@ def test_schema_validation_does_not_treat_boolean_as_number() -> None:
 
 def test_schema_validation_supports_nullable_boolean_canon_fields() -> None:
     value = deepcopy(_valid("canon_extraction"))
-    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+    change_schema = chapter_provider_output_schema("canon_extraction", legacy_contract=True)["properties"][
         "character_state_changes"
     ]["items"]
     value["character_state_changes"] = [
@@ -1012,13 +1012,13 @@ def test_schema_validation_supports_nullable_boolean_canon_fields() -> None:
         }
     ]
 
-    assert validate_chapter_provider_output_schema("canon_extraction", value) == value
+    assert validate_chapter_provider_output_against_schema("canon_extraction", chapter_provider_output_schema("canon_extraction", legacy_contract=True), value) == value
     normalized = validate_chapter_provider_output_semantics("canon_extraction", value)
     assert normalized["character_state_changes"][0]["resurrection_authorized"] is False
 
 
 def test_quality_schema_requires_evidence_for_every_dimension() -> None:
-    schema = chapter_provider_output_schema("quality_platform")
+    schema = chapter_provider_output_schema("quality_platform", legacy_contract=True)
     locations = schema["properties"]["dimensions"]["items"]["properties"][
         "evidence_locations"
     ]
@@ -1027,7 +1027,7 @@ def test_quality_schema_requires_evidence_for_every_dimension() -> None:
     value["dimensions"][0]["evidence_locations"] = []  # type: ignore[index]
 
     with pytest.raises(KernelError) as raised:
-        validate_chapter_provider_output_schema("quality_platform", value)
+        validate_chapter_provider_output_against_schema("quality_platform", schema, value)
 
     assert raised.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
     assert "at least 1 items" in str(raised.value)
@@ -1176,7 +1176,7 @@ def test_canon_semantics_rejects_conflicting_disclosure_identity() -> None:
 
 
 def test_revision_schema_tells_provider_text_is_reader_facing_prose_only() -> None:
-    text_schema = chapter_provider_output_schema("revision")["properties"]["text"]
+    text_schema = chapter_provider_output_schema("revision", legacy_contract=True)["properties"]["text"]
 
     assert "reader-facing" in text_schema["description"]
     assert "metadata" in text_schema["description"]

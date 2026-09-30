@@ -154,10 +154,15 @@ def _scene_artifacts_schema() -> dict[str, Any]:
     }, required=("slot_id", "text", "used_fact_ids"))}
 
 
-def _draft_schema() -> dict[str, Any]:
+def _draft_schema(*, legacy: bool = False) -> dict[str, Any]:
+    if legacy:
+        return _object_schema(
+            {"text": {"type": "string", "minLength": 1}, "scene_artifacts": _scene_artifacts_schema()},
+            required=("text", "scene_artifacts"),
+        )
     return _object_schema(
-        {"text": {"type": "string", "minLength": 1}, "scene_artifacts": _scene_artifacts_schema()},
-        required=("text", "scene_artifacts"),
+        {"scene_artifacts": {**_scene_artifacts_schema(), "minItems": 1}},
+        required=("scene_artifacts",),
     )
 
 
@@ -186,12 +191,15 @@ def _agent_session_schema() -> dict[str, Any]:
     )
 
 
-def _review_schema() -> dict[str, Any]:
+def _review_schema(*, legacy: bool = False) -> dict[str, Any]:
     from novel_forge.modules.review.diagnostics import constrain_diagnosis_schema
     text = {"type": "string", "minLength": 1, "maxLength": 2000}
-    location = _object_schema({"start": {"type": "integer", "minimum": 0},
-                               "end": {"type": "integer", "minimum": 1}, "quote": text},
-                              required=("start", "end", "quote"))
+    location = (
+        _object_schema({"start": {"type": "integer", "minimum": 0},
+                        "end": {"type": "integer", "minimum": 1}, "quote": text},
+                       required=("start", "end", "quote"))
+        if legacy else _object_schema({"quote": text}, required=("quote",))
+    )
     issue_fields = {
         "code": text, "severity": {"enum": ["blocking", "major", "minor"]},
         "message": text, "category": text,
@@ -221,35 +229,43 @@ def _review_schema() -> dict[str, Any]:
     }, required=("score", "issues", "resolution_checks", "knowledge_checks"))
 
 
-def _revision_schema() -> dict[str, Any]:
+def _revision_schema(*, legacy: bool = False) -> dict[str, Any]:
+    if legacy:
+        return _object_schema(
+            {
+                "text": {
+                    "type": "string", "minLength": 1,
+                    "description": (
+                        "Final reader-facing revised chapter prose only. Do not embed "
+                        "JSON, analysis, self-checks, change logs, evidence appendices, "
+                        "or other operator metadata in this string."
+                    ),
+                },
+                "scene_artifacts": _scene_artifacts_schema(),
+                "resolved_issue_codes": {"type": "array", "minItems": 0,
+                                         "items": {"type": "string", "minLength": 1}},
+            },
+            required=("text", "resolved_issue_codes", "scene_artifacts"),
+        )
     return _object_schema(
         {
-            "text": {
-                "type": "string",
-                "minLength": 1,
-                "description": (
-                    "Final reader-facing revised chapter prose only. Do not embed "
-                    "JSON, analysis, self-checks, change logs, evidence appendices, "
-                    "or other operator metadata in this string."
-                ),
-            },
-            "scene_artifacts": _scene_artifacts_schema(),
+            "scene_artifacts": {**_scene_artifacts_schema(), "minItems": 1},
             "resolved_issue_codes": {
                 "type": "array",
                 "minItems": 0,
                 "items": {"type": "string", "minLength": 1},
             },
         },
-        required=("text", "resolved_issue_codes", "scene_artifacts"),
+        required=("resolved_issue_codes", "scene_artifacts"),
     )
 
 
-def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
+def _canon_schema(*, causal_batch: bool = False, legacy: bool = False) -> dict[str, Any]:
     evidence_fields = {
         "evidence_quote": {"type": "string", "minLength": 1},
         "claim_kind": {"enum": ["OBJECTIVE_EVENT", "OBJECTIVE_STATE", "KNOWLEDGE_ACQUISITION", "BELIEF", "SUSPICION", "HEARSAY", "DIALOGUE_ASSERTION", "READER_DISCLOSURE"]},
-        "evidence_start": {"type": "integer", "minimum": 0},
-        "evidence_end": {"type": "integer", "minimum": 1},
+        **({"evidence_start": {"type": "integer", "minimum": 0},
+            "evidence_end": {"type": "integer", "minimum": 1}} if legacy else {}),
         "confidence": {"type": "number", "minimum": 0, "maximum": 1},
         "impact_type": {"type": "string", "minLength": 1},
     }
@@ -406,6 +422,7 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
                     "description": (
                         "For OBSERVED only: final_candidate Unicode code-point-span references "
                         "encoded as chars:<start>-<end>:<summary>; empty otherwise."
+                        if legacy else "For OBSERVED only: literal final-candidate prose quotes; empty otherwise."
                     ),
                 },
                 "completion_criterion_ids": {
@@ -443,11 +460,12 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
                     "type": "array",
                     "items": _object_schema(
                         {
-                            "start": {"type": "integer", "minimum": 0},
-                            "end": {"type": "integer", "minimum": 1},
+                            **({"start": {"type": "integer", "minimum": 0},
+                                "end": {"type": "integer", "minimum": 1}} if legacy else
+                               {"quote": {"type": "string", "minLength": 1}}),
                             "summary": {"type": "string", "minLength": 1},
                         },
-                        required=("start", "end", "summary"),
+                        required=("start", "end", "summary") if legacy else ("quote", "summary"),
                     ),
                 },
                 "observed_consequence": _nullable({"type": "string", "minLength": 1}),
@@ -540,9 +558,9 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
                     _object_schema(
                         {
                             "asset_version_id": {"type": "string", "minLength": 1,
-                                "description": "Use $FINAL_CANDIDATE for prose payoff; CAUSAL_DEBT uses its exact accepted prerequisite draft."},
+                                "description": "Use $FINAL_CANDIDATE for prose payoff; CAUSAL_DEBT uses its exact accepted prerequisite draft." if legacy else "For CAUSAL_DEBT only: select the accepted prerequisite draft."},
                             "event_id": {"type": "string", "minLength": 1,
-                                "description": "Use $CURRENT_CLAIM for prose payoff; CAUSAL_DEBT uses its exact accepted prerequisite event."},
+                                "description": "Use $CURRENT_CLAIM for prose payoff; CAUSAL_DEBT uses its exact accepted prerequisite event." if legacy else "For CAUSAL_DEBT only: select the accepted prerequisite event."},
                         },
                         required=("asset_version_id", "event_id"),
                     )
@@ -573,11 +591,11 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
     for field in ("arc_evidence", "realization_evidence"):
         properties[field]["items"]["properties"].update({
             "claim_kind": _nullable({"type": "string", "enum": ["NARRATIVE_OBSERVATION", None]}),
-            "evidence_start": _nullable({"type": "integer", "minimum": 0}),
-            "evidence_end": _nullable({"type": "integer", "minimum": 1}),
             "evidence_quote": _nullable({"type": "string", "minLength": 1}),
+            **({"evidence_start": _nullable({"type": "integer", "minimum": 0}),
+                "evidence_end": _nullable({"type": "integer", "minimum": 1})} if legacy else {}),
         })
-        properties[field]["items"]["required"].extend(("claim_kind", "evidence_start", "evidence_end", "evidence_quote"))
+        properties[field]["items"]["required"].extend(("claim_kind", "evidence_start", "evidence_end", "evidence_quote") if legacy else ("claim_kind", "evidence_quote"))
     properties.update({"extraction_status": {"enum": ["EXTRACTED", "NO_CHANGE"]}, "no_change_reason": {"type": "string"}})
     schema = _object_schema(
         properties,
@@ -681,14 +699,17 @@ def _canon_schema(*, causal_batch: bool = False) -> dict[str, Any]:
     return schema
 
 
-def _quality_schema() -> dict[str, Any]:
+def _quality_schema(*, legacy: bool = False) -> dict[str, Any]:
     location = _object_schema(
-        {
+        ({
             "start": {"type": "number", "minimum": 0},
             "end": {"type": "number", "minimum": 1},
             "claim": {"type": "string", "minLength": 1},
-        },
-        required=("start", "end", "claim"),
+        } if legacy else {
+            "quote": {"type": "string", "minLength": 1},
+            "claim": {"type": "string", "minLength": 1},
+        }),
+        required=("start", "end", "claim") if legacy else ("quote", "claim"),
     )
     dimension = _object_schema(
         {
@@ -707,7 +728,7 @@ def _quality_schema() -> dict[str, Any]:
             "confidence": {"type": "number", "minimum": 0, "maximum": 1},
             "evidence_locations": {
                 "type": "array",
-                "minItems": 1,
+                "minItems": 1 if legacy else 0,
                 "items": location,
             },
             "issue_codes": {
@@ -846,21 +867,21 @@ def _retrieval_query_expansion_schema() -> dict[str, Any]:
     )
 
 
-def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False) -> dict[str, Any]:
+def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False, legacy_contract: bool = False) -> dict[str, Any]:
 
     if stage == "memo":
         from .creative_memo import creative_memo_schema
-        schema = creative_memo_schema()
+        schema = creative_memo_schema(legacy=legacy_contract)
     elif stage == "draft":
-        schema = _draft_schema()
+        schema = _draft_schema(legacy=legacy_contract)
     elif stage == "agent_session":
         schema = _agent_session_schema()
     elif stage in {"review", "rereview"}:
-        schema = _review_schema()
+        schema = _review_schema(legacy=legacy_contract)
     elif stage == "revision":
-        schema = _revision_schema()
+        schema = _revision_schema(legacy=legacy_contract)
     elif stage == "canon_extraction":
-        schema = _canon_schema(causal_batch=causal_batch)
+        schema = _canon_schema(causal_batch=causal_batch, legacy=legacy_contract)
     elif stage == "canon_support":
         schema = _object_schema({
             "coverage": {"enum": ["COMPLETE", "INCOMPLETE"]},
@@ -873,7 +894,7 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False) ->
             }, required=("claim_id", "assessment", "observed_kind", "reason"))},
         }, required=("coverage", "no_change_supported", "claims"))
     elif stage in _QUALITY_STAGES:
-        schema = _quality_schema()
+        schema = _quality_schema(legacy=legacy_contract)
     elif stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
         from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
         schema = screenplay_output_schema(stage)
@@ -894,17 +915,23 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False) ->
     return {"$schema": _SCHEMA_DIALECT, **schema}
 
 
-def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False) -> str:
-    chapter_provider_output_schema(stage, causal_batch=causal_batch)
+def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False, legacy_contract: bool = False) -> str:
+    chapter_provider_output_schema(stage, causal_batch=causal_batch, legacy_contract=legacy_contract)
     version = (
-        ("v19" if causal_batch else "v18")
+        (("v19" if causal_batch else "v18") if legacy_contract else ("v21" if causal_batch else "v20"))
         if stage == "canon_extraction"
-        else "v4"
+        else ("v4" if legacy_contract else "v5")
         if stage in {"review", "rereview"}
+        else ("v2" if legacy_contract else "v3")
+        if stage in {"draft", "revision"}
+        else ("v2" if legacy_contract else "v3")
+        if stage in _QUALITY_STAGES
         else "v2"
-        if stage in _QUALITY_STAGES | {"draft", "revision", "review", "rereview", "screenplay_generate", "screenplay_review", "screenplay_revision"}
+        if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}
         else "v1"
     )
+    if stage == "memo" and not legacy_contract:
+        version = "v2"
     return f"schema:chapter-provider-output:{stage}:{version}"
 
 
@@ -944,6 +971,7 @@ def validate_chapter_provider_output_against_schema(
 def validate_chapter_provider_output_semantics(
     stage: str,
     value: Mapping[str, Any],
+    *, host_bind_known_metadata: bool = False,
 ) -> dict[str, Any]:
 
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
@@ -979,6 +1007,10 @@ def validate_chapter_provider_output_semantics(
                 from novel_forge.modules.narrative_state.causal_obligations import causal_obligation_requirement
                 causal_obligation_requirement(obligation)
             from novel_forge.modules.canon_graph.grounding import validate_payoff_reference
+            if (host_bind_known_metadata and obligation.get("status") == "FULFILLED"
+                and obligation.get("obligation_type") != "CAUSAL_DEBT"
+                and obligation.get("payoff_evidence") is None):
+                continue
             try:
                 validate_payoff_reference(obligation)
             except KernelError as error:

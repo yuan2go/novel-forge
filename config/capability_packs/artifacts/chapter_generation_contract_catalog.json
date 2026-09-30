@@ -19,6 +19,21 @@
       }
     },
     {
+      "kind": "KNOWLEDGE",
+      "ref": "knowledge:chapter-causal-cost:v2",
+      "version": "v2",
+      "content": {
+        "schema_version": "novelos.capability_knowledge.v1",
+        "knowledge_id": "chapter-causal-cost",
+        "usage_role": "PRINCIPLE",
+        "source_eligibility": "NOT_SOURCE_DERIVED",
+        "rules": [
+          "Show the consequence of a consequential action when the frozen chapter function, author intent, Arc or due obligation makes it relevant; no universal irreversible cost is required.",
+          "Review the actual causal support and explicit hard constraints. Do not fail a chapter solely for omitting an inapplicable cost technique."
+        ]
+      }
+    },
+    {
       "kind": "SCHEMA",
       "ref": "chapter-plan-authority.v1",
       "version": "v1",

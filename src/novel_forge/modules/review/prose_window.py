@@ -255,7 +255,7 @@ def validate_support(evidence: Any, window: dict[str, Any]) -> list[dict[str, An
         if (
             source is None
             or any(
-                item.get(key) != source.get(key)
+                key in item and item[key] != source.get(key)
                 for key in ("chapter_number", "content_hash", "text_hash")
             )
             or not str(item.get("relation_to_issue") or "").strip()
@@ -265,11 +265,22 @@ def validate_support(evidence: Any, window: dict[str, Any]) -> list[dict[str, An
                 "support must name an exact frozen accepted source",
             )
         start, end = item.get("start"), item.get("end")
-        if type(start) is not int or type(end) is not int:
-            raise KernelError(
-                "CROSS_CHAPTER_REVIEW_EVIDENCE_INVALID",
-                "Unicode source offsets required",
-            )
+        if start is None and end is None:
+            quote = item.get("quote")
+            if not isinstance(quote, str) or not quote:
+                raise KernelError("CROSS_CHAPTER_REVIEW_EVIDENCE_INVALID", "literal accepted-prose quote required")
+            matches: set[tuple[int, int]] = set()
+            for part in source["excerpts"]:
+                cursor = part["text"].find(quote)
+                while cursor >= 0:
+                    absolute_start = part["start"] + cursor
+                    matches.add((absolute_start, absolute_start + len(quote)))
+                    cursor = part["text"].find(quote, cursor + 1)
+            if len(matches) != 1:
+                raise KernelError("CROSS_CHAPTER_REVIEW_EVIDENCE_INVALID", "accepted-prose quote is absent or ambiguous in the frozen window")
+            start, end = next(iter(matches))
+        elif type(start) is not int or type(end) is not int:
+            raise KernelError("CROSS_CHAPTER_REVIEW_EVIDENCE_INVALID", "Unicode source offsets required")
         excerpt = next(
             (
                 part
@@ -294,6 +305,11 @@ def validate_support(evidence: Any, window: dict[str, Any]) -> list[dict[str, An
         normalized.append(
             {
                 **item,
+                "chapter_number": source["chapter_number"],
+                "content_hash": source["content_hash"],
+                "text_hash": source["text_hash"],
+                "start": start,
+                "end": end,
                 "offset_unit": validated["offset_unit"],
                 "excerpt_digest": validated["excerpt_digest"],
             }

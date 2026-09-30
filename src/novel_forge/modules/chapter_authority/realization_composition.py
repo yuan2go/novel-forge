@@ -195,6 +195,20 @@ def serialize_realization(artifacts: list[dict[str, Any]], separators: Any = Non
                    for index, item in enumerate(artifacts))
 
 
+def prose_from_output(result: Mapping[str, Any], *, separators: Any = None) -> str:
+    artifacts = result.get("scene_artifacts")
+    if isinstance(artifacts, list) and artifacts:
+        text = serialize_realization(artifacts, separators)
+        supplied = result.get("text")
+        if supplied is not None and supplied != text:
+            raise KernelError(
+                "REALIZATION_INTEGRATION_DRIFT",
+                "legacy candidate text differs from its frozen Scene slots",
+            )
+        return text
+    return str(result.get("text") or "")
+
+
 def integrate_realization(
     *, contract: Mapping[str, Any], artifacts: Any, text: str, separators: Any = None
 ) -> dict[str, Any]:
@@ -325,7 +339,7 @@ def reconcile_revision_composition(
     integrated = integrate_realization(
         contract=contract,
         artifacts=result.get("scene_artifacts"),
-        text=str(result.get("text") or ""),
+        text=prose_from_output(result, separators=source.get("scene_separators")),
         separators=source.get("scene_separators"),
     )
     previous = {item["slot_id"]: item for item in source["scene_artifacts"]}

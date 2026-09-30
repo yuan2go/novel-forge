@@ -415,6 +415,15 @@ def build_production_execution_composition(
     repository_artifacts = (
         default_chapter_artifact_resolver(settings.root) if controlled else None
     )
+    pack_binding = (
+        json.loads((settings.root / "config/capability_packs/chapter_generation_pack.json").read_text())
+        if controlled else {}
+    )
+    prompt_binding = dict(pack_binding.get("prompt_binding") or {})
+    skill_versions = {
+        str(item["skill_ref"]): str(item["version"])
+        for item in (pack_binding.get("skill_binding") or {}).get("skills") or ()
+    }
     stage_routes = [
         ("memo", "NOVEL_FORGE_MEMO_PROVIDER", "NOVEL_FORGE_MEMO_MODEL"),
         (
@@ -737,18 +746,17 @@ def build_production_execution_composition(
             system_artifact = repository_artifacts.resolve(
                 ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
                 "prompt-system:chapter-generation-pack",
-                "v1",
+                str(prompt_binding["system_instruction_version"]),
             )
             template_artifact = repository_artifacts.resolve(
                 ArtifactKind.PROMPT_TEMPLATE,
                 "prompt-template:chapter-generation-pack",
-                "v2",
+                str(prompt_binding["template_version"]),
             )
-            skill_artifact = next(
-                item
-                for item in repository_artifacts.artifacts()
-                if item.kind is ArtifactKind.SKILL
-                and item.ref == _PACK_SKILL_FOR_STAGE[stage]
+            skill_artifact = repository_artifacts.resolve(
+                ArtifactKind.SKILL,
+                _PACK_SKILL_FOR_STAGE[stage],
+                skill_versions[_PACK_SKILL_FOR_STAGE[stage]],
             )
             prompt_version = f"{system_artifact.ref}@{system_artifact.version}"
             skill_version = f"{skill_artifact.ref}@{skill_artifact.version}"
@@ -801,9 +809,9 @@ def build_production_execution_composition(
             system_instruction_hash=system_instruction_hash,
             template_hash=template_hash,
             skill_content_hash=skill_content_hash,
-            prompt_compiler_version=str(
-                values.get("NOVEL_FORGE_PROMPT_COMPILER_VERSION")
-                or "chapter-prompt-compiler:v2"
+            prompt_compiler_version=(
+                str(prompt_binding["compiler_version"])
+                if prompt_binding else str(values.get("NOVEL_FORGE_PROMPT_COMPILER_VERSION") or "chapter-prompt-compiler:v2")
             ),
             output_schema_ref=capability_definition.output_schema_ref,
             release_sha=release_sha,

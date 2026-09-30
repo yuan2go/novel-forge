@@ -522,6 +522,21 @@ Source Observation or original catalog → MKAOS Candidate → explicit Approval
 → Book Acceptance → read-only effect/receipt/accepted-manuscript trace
 ```
 
+The Chapter Generation Pack `2.4.0` binds Prompt Template v3, task-matched
+creative Skill v2 and stage output schemas for new governed deployments, independently
+of earlier requests. Draft and Revision
+return one prose body per frozen Scene Slot; Chapter Authority joins it with frozen
+separators and verifies Slot, actor, POV and knowledge scope. Review, ReReview and
+Canon extraction return literal evidence quotes. The host locates unique Unicode
+spans against the exact candidate and binds candidate, accepted-source and payoff
+identities before domain validation; missing or ambiguous evidence blocks progress.
+Older frozen Pack artifacts and output schemas remain addressable by their exact
+versions, while accepted chapters remain immutable. Retrieval may skip optional
+semantic embedding when deterministic ranking already selects relevant accepted
+evidence, frozen coverage is sufficient, and selected text fits the conservative
+Context budget. The same RetrievalResult, ContextBundle and Provider admission
+boundaries still govern the downstream request.
+
 Plan, Intent and Memo must retain the same strategy. Draft admission checks exact selected
 Card versions in the frozen Context. Only adopted mechanisms reach its realization task;
 the whole catalog is never injected. Capability Pack, Context, Provider entitlement/token/
