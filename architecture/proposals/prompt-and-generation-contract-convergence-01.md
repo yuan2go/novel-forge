@@ -14,8 +14,8 @@
 | 目标仓库 | `yuan2go/novel-forge` |
 | 核验日期 | 2026-10-01，UTC+8 |
 | 核验分支 | `codex/real-prose-quality-closure-01` |
-| 当前生命周期代码基线 | `868f197ec97a957b433859f4c6ef174f4a2b0f55` |
-| Git tree | `1606eb4704fbd6b37e6e74087b2466a45cd240db` |
+| 当前生命周期代码基线 | `5c0e2fa33e64cdee8d4b93e8e682363e06025ce2` |
+| Git tree | `3a6039883ea21009412bd88987f1e6c2f7d2a165` |
 | 当前事实核验 | 源代码、冻结合同、正式装配及定向单测/PostgreSQL 回归；现有持久库仅只读核验，未调用真实 Provider |
 | 实现及效果状态 | 规格形成时仅交付需求；后续工程实现已进入正式主链，真实 Provider 与文学收益仍未验证。当前状态以代码、冻结合同和当次验收为准 |
 | 规格边界 | 现有小说生成主链的职责、Prompt、输出、Context、方法及下游消费收敛；不是整个 Industrial Autonomous Novel OS 的一次性交付蓝图 |
@@ -28,8 +28,8 @@
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
   "reality_baseline": {
-    "sha": "868f197ec97a957b433859f4c6ef174f4a2b0f55",
-    "implementation_tree_sha": "sha256:5a8e42f340292bfe663706f7427fda244f96667368ffd02a911098bc8afa7298"
+    "sha": "5c0e2fa33e64cdee8d4b93e8e682363e06025ce2",
+    "implementation_tree_sha": "sha256:7d805ffd02d21d5ddc990a9bbd4f09674daf2138d4d3b5aeb7287ddadf50cf86"
   },
   "scope": [
     "src/novel_forge/modules/chapter_authority",
