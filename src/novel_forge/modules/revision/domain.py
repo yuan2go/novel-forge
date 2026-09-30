@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.chapter_authority.realization_composition import reconcile_revision_composition
+from novel_forge.modules.chapter_authority.realization_composition import prose_from_output, reconcile_revision_composition
 
 
 def apply_revision_result(
@@ -27,14 +27,14 @@ def apply_revision_result(
             or review.get("context_bundle_version_id") != context_bundle_version_id
             or review.get("target_text_hash") != prose_hash(str(draft.get("text") or ""))):
             raise KernelError("REVISION_DIAGNOSIS_STALE", "revision must consume diagnostics for its exact source candidate and Context")
+    text = prose_from_output(result, separators=draft.get("scene_separators"))
     targeted = {}
     if review.get("cross_chapter_window") or review.get("craft_targets"):
         from novel_forge.modules.review.cross_chapter import apply_targeted_edits
-        targeted = apply_targeted_edits(draft=draft, review=review, result=result)
+        targeted = apply_targeted_edits(draft=draft, review=review, result={**result, "text": text})
     if review.get("craft_targets"):
         from novel_forge.modules.review.craft import craft_revision_contract
         targeted["craft_revision_contract"] = craft_revision_contract(draft, review)
-    text = str(result.get("text") or "")
     resolved = sorted({str(item) for item in result.get("resolved_issue_codes", []) if str(item).strip()})
     open_blocking = {
         str(item.get("code") or "")
@@ -112,7 +112,7 @@ def apply_quality_revision_result(
             "QUALITY_REVISION_INPUT_INVALID",
             "Quality correction requires versioned target, decision, task, and context lineage",
         )
-    text = str(result.get("text") or "")
+    text = prose_from_output(result, separators=revision.get("scene_separators"))
     if not text.strip():
         raise KernelError(
             "QUALITY_REVISION_INCOMPLETE", "Quality correction produced no revised text"
@@ -161,7 +161,7 @@ def apply_quality_revision_result(
     targeted = {}
     if scope is not None:
         from novel_forge.modules.review.cross_chapter import apply_targeted_edits
-        targeted = apply_targeted_edits(draft=revision, review={"target_text_hash": scope["target_text_hash"], "issues": scope["permitted_ranges"]}, result=result)
+        targeted = apply_targeted_edits(draft=revision, review={"target_text_hash": scope["target_text_hash"], "issues": scope["permitted_ranges"]}, result={**result, "text": text})
     return {
         **revision,
         **reconcile_revision_composition(revision, result),
@@ -250,7 +250,7 @@ def quality_edit_contract(*, revision: dict[str, Any], revision_asset_version_id
             "instructions": "Return exact ordered non-overlapping edits, naming the permitted range code in issue_codes. Edit only inside those frozen ranges. Keep every other Unicode code point unchanged, including whitespace. Preserve adopted Craft, facts and accepted history. Updated scene artifacts must reconstruct the same resulting text. Unresolved or unlocated evidence requires author review, never wider edits."}
 
 
-def extend_quality_rereview_schema(schema: dict[str, Any]) -> dict[str, Any]:
+def extend_quality_rereview_schema(schema: dict[str, Any], *, legacy_contract: bool = False) -> dict[str, Any]:
     from copy import deepcopy
     result = deepcopy(schema)
     fields = {
@@ -258,8 +258,8 @@ def extend_quality_rereview_schema(schema: dict[str, Any]) -> dict[str, Any]:
         "status": {"type": "string", "enum": ["SATISFIED", "UNRESOLVED", "UNCERTAIN"]},
         "preservation": {"type": "string", "enum": ["PRESERVED", "REGRESSED", "UNCERTAIN"]},
         "evidence": {"type": "object", "properties": {
-            "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 1},
-            "quote": {"type": "string", "minLength": 1}}, "required": ["start", "end", "quote"], "additionalProperties": False},
+            **({"start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 1}} if legacy_contract else {}),
+            "quote": {"type": "string", "minLength": 1}}, "required": (["start", "end", "quote"] if legacy_contract else ["quote"]), "additionalProperties": False},
         "reason": {"type": "string", "minLength": 1},
     }
     result["properties"]["quality_resolution_checks"] = {"type": "array", "minItems": 1,

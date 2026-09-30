@@ -1881,7 +1881,7 @@ class CodexCliExecutionBackend:
                 raise _CodexResultFailure(
                     "CODEX_JSONL_EVIDENCE_INVALID",
                     str(exc),
-                    retryable=True,
+                    retryable=False,
                 ) from exc
             record.raw_evidence.update(runtime_evidence)
             if runtime_evidence["unauthorized_tools"]:
@@ -1895,20 +1895,20 @@ class CodexCliExecutionBackend:
             or receipt.result_integrity is not ResultIntegrity.VALID
         ):
             raise _CodexResultFailure(
-                "INVALID_JSON", "Codex result is missing or corrupt", retryable=True
+                "INVALID_JSON", "Codex result is missing or corrupt", retryable=False
             )
         self.execution_policy.assert_result(receipt.result_path)
         try:
             parsed = json.loads(Path(receipt.result_path).read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
             raise _CodexResultFailure(
-                "INVALID_JSON", "Codex last message is not valid JSON", retryable=True
+                "INVALID_JSON", "Codex last message is not valid JSON", retryable=False
             ) from exc
         if not isinstance(parsed, Mapping):
             raise _CodexResultFailure(
                 "OUTPUT_SCHEMA_FAILURE",
                 "Codex result must be a JSON object",
-                retryable=True,
+                retryable=False,
             )
         output_schema = record.raw_evidence.get("output_schema")
         stage = str(record.raw_evidence.get("stage") or record.request.stage)
@@ -1936,13 +1936,13 @@ class CodexCliExecutionBackend:
                 raise _CodexResultFailure(
                     failure_code,
                     "structured output failed " + failure_code,
-                    retryable=True,
+                    retryable=False,
                 ) from exc
         if not isinstance(normalized, Mapping) or not normalized:
             raise _CodexResultFailure(
                 "OUTPUT_SEMANTIC_FAILURE",
                 "Codex semantic validator returned no structured result",
-                retryable=True,
+                retryable=False,
             )
         record.raw_evidence["result"] = json.loads(_canonical_json(normalized))
         materialization_ref = (

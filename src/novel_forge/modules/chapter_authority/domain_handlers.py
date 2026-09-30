@@ -539,7 +539,8 @@ def normalize_draft_result(
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
 ) -> dict[str, Any]:
-    text = str(result.get("text") or "")
+    from .realization_composition import prose_from_output
+    text = prose_from_output(result, separators=result.get("scene_separators"))
     if not text.strip():
         raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "draft result has no text")
     lineage: dict[str, Any] = {}

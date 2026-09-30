@@ -800,6 +800,11 @@ class PostgresChapterExecutionContractBinder:
         materialization = self.pack_resolver.materialize_attempt_artifacts(
             attempt_snapshot
         )
+        if materialization.prompt_template.version not in {"v2", "v3"}:
+            raise KernelError(
+                "CHAPTER_PROMPT_CONTRACT_UNSUPPORTED",
+                "frozen Chapter Prompt Template version has no output contract adapter",
+            )
         artifacts = self._artifacts(metadata)
         selected_inputs = self._materialize_selected_inputs(
             project_id=project_id,
@@ -851,6 +856,7 @@ class PostgresChapterExecutionContractBinder:
         provider_schema, provider_schema_ref = self._provider_output_contract(
             stage=stage,
             request_payload=request_payload,
+            legacy_contract=materialization.prompt_template.version == "v2",
         )
         schema_hash = canonical_hash(provider_schema)
         embedding_output_contract = (
@@ -1118,13 +1124,14 @@ class PostgresChapterExecutionContractBinder:
         *,
         stage: str,
         request_payload: Mapping[str, Any],
+        legacy_contract: bool = False,
     ) -> tuple[dict[str, Any], str]:
         inputs = request_payload.get("input") or {}
         causal_batch = bool(
             (inputs.get("execution_expectations") or {}).get("world_preparation")
         )
-        schema = chapter_provider_output_schema(stage, causal_batch=causal_batch)
-        schema_ref = chapter_provider_output_schema_ref(stage, causal_batch=causal_batch)
+        schema = chapter_provider_output_schema(stage, causal_batch=causal_batch, legacy_contract=legacy_contract)
+        schema_ref = chapter_provider_output_schema_ref(stage, causal_batch=causal_batch, legacy_contract=legacy_contract)
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
             contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")
@@ -1134,22 +1141,22 @@ class PostgresChapterExecutionContractBinder:
             schema_ref = "schema:chapter-provider-output:" + stage + (":v2" if contract == "screenplay-source.v2" else ":v1")
         if inputs.get("cross_chapter_window") or (stage == "revision" and inputs.get("required_actions") is None and (inputs.get("review") or {}).get("cross_chapter_window")):
             from novel_forge.modules.review.cross_chapter import extend_provider_schema
-            schema, schema_ref = extend_provider_schema(schema, stage), f"schema:chapter-provider-output:{stage}:cross-chapter-v2"
+            schema, schema_ref = extend_provider_schema(schema, stage, legacy_contract=legacy_contract), f"schema:chapter-provider-output:{stage}:cross-chapter-{'v2' if legacy_contract else 'v3'}"
         if stage == "revision" and inputs.get("quality_edit_contract"):
             from novel_forge.modules.review.cross_chapter import extend_provider_schema
-            schema = extend_provider_schema(schema, stage)
+            schema = extend_provider_schema(schema, stage, legacy_contract=legacy_contract)
             schema_ref += ":quality-targeted-v1"
         if stage == "rereview" and (inputs.get("revision") or {}).get("quality_edit_contract"):
             from novel_forge.modules.revision.domain import extend_quality_rereview_schema
-            schema = extend_quality_rereview_schema(schema)
+            schema = extend_quality_rereview_schema(schema, legacy_contract=legacy_contract)
             schema_ref += ":quality-resolution-v1"
         if stage in {"review", "revision", "rereview"}:
             from novel_forge.modules.review.craft import craft_review_targets, extend_craft_provider_schema
             candidate = inputs.get("revision") or inputs.get("draft") or {}
             if craft_review_targets(candidate) and not (stage == "revision" and inputs.get("required_actions") is not None):
                 phase_transitions = any(target.get("usage", {}).get("type_policy", {}).get("transition_policy") for target in craft_review_targets(candidate))
-                schema = extend_craft_provider_schema(schema, stage, phase_transitions=phase_transitions)
-                schema_ref += ":narrative-craft-v2" if phase_transitions else ":narrative-craft-v1"
+                schema = extend_craft_provider_schema(schema, stage, phase_transitions=phase_transitions, legacy_contract=legacy_contract)
+                schema_ref += (":narrative-craft-v2" if phase_transitions else ":narrative-craft-v1") if legacy_contract else (":narrative-craft-v3" if phase_transitions else ":narrative-craft-v2")
         return schema, schema_ref
 
     def bind(
@@ -3549,6 +3556,94 @@ def _language_semantic_contract(required_language: str | None) -> str:
     )
 
 
+def _stage_semantic_contract_v3(
+    stage: str, *, required_language: str | None = None,
+    embedding_output_contract: Mapping[str, Any] | None = None,
+) -> str:
+    if stage == "memo":
+        return (
+            "Suggest concrete creative guidance for the frozen Chapter mission and Scene roles. "
+            "A choice, cost, emotional turn, reward, reversal, or hook is applicable only when "
+            "the chapter function, author intent, Arc or due obligation calls for it. Use null "
+            "for an inapplicable optional guidance field and [] when no character choice is needed. "
+            "Provide at least one task-relevant retrieval query for accepted history. "
+            "Accepted facts and explicit author constraints remain binding. Do not claim an "
+            "outcome occurred or that the Memo changed the active Plan."
+        )
+    if stage in {"draft", "revision"}:
+        instruction = (
+            "Return one JSON result with scene_artifacts in exact frozen Slot order. "
+            "Each Slot has one reader-facing prose text and only the in-scope used_fact_ids. "
+            "Do not return a second chapter text, Markdown, self-check, change log, or "
+            "approval claim. The host joins Slot text and binds identities and receipts. "
+            "Respect actor, POV, source and knowledge boundaries, accepted facts, explicit "
+            "author constraints, and due obligations. Use optional craft techniques only "
+            "where relevant to this Chapter."
+        )
+        if stage == "revision":
+            instruction += (
+                " Preserve every unaffected Slot and the chapter's narrative scale. "
+                "Address evidenced blocking issues; report a resolved code only when "
+                "the revised prose actually addresses it. For targeted edits, quote the "
+                "exact old passage; the host locates it and enforces frozen ranges."
+            )
+        return _bind_language_contract(instruction, required_language)
+    if stage in {"review", "rereview"}:
+        instruction = (
+            "Judge this exact candidate against applicable author, accepted-state, "
+            "knowledge, Scene and due-obligation constraints. For evidence return a "
+            "literal quote only; the host locates Unicode spans against the frozen "
+            "candidate and rejects missing or ambiguous quotes. A quote alone is not "
+            "semantic support. Separate conflicts, uncertainty, and taste; do not "
+            "penalize omitted cost, growth, reversal, reward or hook techniques when "
+            "they are not required by this Chapter. Never claim human approval."
+        )
+        if stage == "rereview":
+            instruction += " Check every prior diagnosis against revised prose and preserve successful content."
+        return _bind_language_contract(instruction, required_language)
+    if stage.startswith("quality_"):
+        return _stage_semantic_contract(stage, required_language=required_language).replace(
+            "Every returned dimension must include at least one concrete evidence location, including policy-compliance dimensions.",
+            "PASSED and FAILED dimensions require literal candidate-prose quotes. "
+            "For other statuses return [] when no prose supports a location. Explain "
+            "policy and context support in claim. The host binds Unicode positions "
+            "and candidate identity; a literal match alone is not semantic support."
+        )
+    if stage == "canon_extraction":
+        contract = _stage_semantic_contract(stage, required_language=required_language)
+        contract = contract.replace(
+            "FULFILLED requires a typed payoff_evidence object.",
+            "FULFILLED requires a supported payoff: null for a prose payoff that the host binds, or a typed accepted prerequisite for CAUSAL_DEBT.",
+        )
+        contract = contract.replace("accepted revision visibly executes", "selected candidate visibly executes")
+        contract = contract.replace(
+            "For a prose payoff use the literal "
+            "asset_version_id=$FINAL_CANDIDATE and event_id=$CURRENT_CLAIM; the Authority "
+            "binds these to this final candidate and grounded claim. Never invent an "
+            "AssetVersion or accepted event identity.",
+            "For a non-CAUSAL_DEBT prose payoff set payoff_evidence to null; the host "
+            "binds this candidate and grounded claim. For CAUSAL_DEBT select only an "
+            "exact accepted prerequisite source and event from governed context."
+        )
+        contract = contract.replace(
+            "An OBSERVED Arc item must include at least one resolution_evidence string "
+            "encoded as chars:<start>-<end>:<summary>, where start and end are valid "
+            "Unicode code-point offsets into final_candidate; otherwise return zero ",
+            "An OBSERVED Arc item must include at least one unique literal final-candidate "
+            "prose quote in resolution_evidence; the host binds its location. Otherwise return zero ",
+        )
+        return contract.replace(
+            "accepted_prose_evidence list with valid final_candidate Unicode code-point "
+            "offsets plus the observed event identity",
+            "accepted_prose_evidence list with unique literal final-candidate quotes "
+            "plus the observed event identity",
+        )
+    return _stage_semantic_contract(
+        stage, required_language=required_language,
+        embedding_output_contract=embedding_output_contract,
+    )
+
+
 def _stage_semantic_contract(
     stage: str,
     *,
@@ -4051,6 +4146,7 @@ def _materialize_production_codex_prompt(
     system_text, system = required_text("system_instruction")
     template_text, template = required_text("prompt_template")
     skill_text, skill = required_text("skill")
+    compact_contract = str(template.get("version") or "") == "v3"
     context = materialization.get("context_selection")
     knowledge = materialization.get("knowledge_selection")
     tools = materialization.get("tool_permissions")
@@ -4078,7 +4174,7 @@ def _materialize_production_codex_prompt(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
             "Capability Context selection has no ContextBundle content",
         )
-    task_view = build_provider_task_view(stage, inputs)
+    task_view = build_provider_task_view(stage, inputs, compact_contract=compact_contract)
     context_view = build_provider_context_view(stage, context_content, task_view)
     context_manifest = context_content.get("context_manifest")
     if isinstance(context_manifest, Mapping):
@@ -4141,7 +4237,7 @@ def _materialize_production_codex_prompt(
             "RETRIEVAL_EMBEDDING_OUTPUT_CONTRACT_MISSING",
             "controlled retrieval prompt requires a frozen embedding output contract",
         )
-    stage_semantic_contract = _stage_semantic_contract(
+    stage_semantic_contract = (_stage_semantic_contract_v3 if compact_contract else _stage_semantic_contract)(
         stage,
         required_language=required_language,
         embedding_output_contract=(
@@ -4169,23 +4265,27 @@ def _materialize_production_codex_prompt(
             "query is needed). Returning FINAL before this governed accepted-boundary "
             "query is semantically invalid."
         )
-    prompt = "\n\n".join(
-        (
+    prompt_sections = [
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
             "<governed_skill>\n" + skill_text + "\n</governed_skill>",
             "<required_knowledge>\n"
             + _canonical(knowledge_view)
             + "\n</required_knowledge>",
+    ]
+    if not compact_contract or stage == "agent_session":
+        prompt_sections.append(
             "<tool_policy>\n"
             + _canonical(tools)
-            + "\nDo not invoke shell, file, MCP, web, or any other tool.\n</tool_policy>",
+            + "\nDo not invoke shell, file, MCP, web, or any other tool.\n</tool_policy>"
+        )
+    prompt_sections.extend((
             "<prompt_template>\n" + rendered_template + "\n</prompt_template>",
             "<stage_semantic_contract>\n"
             + stage_semantic_contract
             + "\n</stage_semantic_contract>",
             "<output_schema>\n" + _canonical(schema["content"]) + "\n</output_schema>",
-        )
-    )
+    ))
+    prompt = "\n\n".join(prompt_sections)
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
     prompt_bytes = len(prompt.encode("utf-8"))
     prompt_estimated_tokens = max(1, (prompt_bytes + 2) // 3)
@@ -4195,7 +4295,7 @@ def _materialize_production_codex_prompt(
         "provider_knowledge": _canonical(knowledge_view),
         "provider_task_view": _canonical(task_view),
         "provider_context_view": _canonical(context_view),
-        "tool_policy": _canonical(tools),
+        "tool_policy": _canonical(tools) if not compact_contract or stage == "agent_session" else "",
         "stage_semantic_contract": stage_semantic_contract,
         "output_schema": _canonical(schema["content"]),
         "fully_rendered_prompt": prompt,
@@ -4228,7 +4328,7 @@ def _materialize_production_codex_prompt(
         + len("</governed_skill>".encode()),
         "fully_rendered_prompt_hash": prompt_hash,
         "required_reader_facing_language": required_language,
-        "provider_prompt_projection_version": "authority-projection-task-provider-v1",
+        "provider_prompt_projection_version": "authority-projection-task-provider-v2" if compact_contract else "authority-projection-task-provider-v1",
         "rendered_prompt_bytes": prompt_bytes,
         "rendered_prompt_estimated_tokens": prompt_estimated_tokens,
         "system_instruction": {
@@ -4281,7 +4381,7 @@ def _materialize_production_codex_prompt(
                 component_tokens["fully_rendered_prompt"] / semantic_input_tokens,
                 6,
             ),
-            "representation_policy": "authority-projection-task-provider-v1",
+            "representation_policy": "authority-projection-task-provider-v2" if compact_contract else "authority-projection-task-provider-v1",
         },
     }
     return prompt, evidence
@@ -5042,7 +5142,10 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             evidence["tools"] = dict(tool_evidence)
         if result.normalized_output_ref:
             raw = session.evidence_store.read_evidence(result.normalized_output_ref)
-            evidence["result"] = normalize_model_output(binding.request.stage, raw)
+            evidence["result"] = normalize_model_output(
+                binding.request.stage, raw,
+                output_schema_ref=binding.route_snapshot.output_schema_ref,
+            )
         if result.output_manifest_ref:
             evidence["production_execution"]["output_manifest"] = (
                 session.evidence_store.read_evidence(result.output_manifest_ref)

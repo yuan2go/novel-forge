@@ -1031,6 +1031,50 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             self.assertFalse(self._model_call_evidence(contract_set, gateway,
                 record_store, handle, result, eligible=False)["real_model_call"])
 
+    def test_returned_invalid_json_schema_is_retained_without_automatic_recall(self) -> None:
+        from novel_forge.modules.chapter_authority.provider_output_contracts import (
+            chapter_provider_output_schema, validate_chapter_provider_output_against_schema,
+        )
+
+        capability, profile, policy, route, manifest, request = contracts(
+            backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+        )
+        admission = AdmissionController(
+            StaticExecutionContractSource(route_snapshots=(route,), model_profiles=(profile,),
+                                          route_policies=(policy,), input_manifests=(manifest,)),
+            StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = PersistentExecutionDirectory(Path(tmp) / "executions")
+            record_store = InMemoryExecutionRecordStore()
+            result_path = directory.prepare(request.execution_id).result_path("result.json")
+            command = (sys.executable, "-c", "import json,sys; json.dump({'text':'missing slots'},open(sys.argv[1],'w'))", str(result_path))
+            backend = CodexCliExecutionBackend(
+                admission=admission,
+                payload_resolver=StaticExecutionPayloadResolver({request.execution_id: ResolvedExecutionPayload(
+                    request_payload={"input": {"chapter": 1}}, input_text="frozen prompt",
+                    working_directory=tmp, timeout_seconds=5,
+                    output_schema_version="schema:chapter-provider-output:draft:v3",
+                    output_schema=chapter_provider_output_schema("draft"), command=command,
+                )}),
+                record_store=record_store, supervisor=CodexProcessSupervisor(directory),
+                execution_policy=LocalProcessExecutionPolicy(
+                    fixed_working_directory=tmp, allowed_command_prefixes=((sys.executable,),),
+                    maximum_result_bytes=1_000_000,
+                ),
+                structured_result_validator=validate_chapter_provider_output_against_schema,
+            )
+            registry = ExecutionBackendRegistry()
+            registry.register(backend)
+            gateway = ProductionExecutionGateway(registry, admission)
+            handle = gateway.submit(request)
+            result = gateway.reconcile(handle)
+            self.assertEqual(result.outcome, ExecutionOutcome.FINAL_FAILURE)
+            self.assertEqual(record_store.get_record(request.execution_id).raw_evidence["failure_code"], "OUTPUT_SCHEMA_FAILURE")
+            rejected = record_store.read_evidence(result.raw_output_ref)
+            self.assertEqual(rejected["validation"], "REJECTED")
+            self.assertEqual(gateway.reconcile(handle), result)
+
     def test_codex_cli_backend_cancels_running_verified_process_only(self) -> None:
         contract_set = contracts(
             backend_id="codex-cli",

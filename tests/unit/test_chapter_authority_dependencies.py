@@ -548,10 +548,10 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self.assertEqual(codex[0].quota_remaining, 3)
         from dataclasses import asdict
         base = next(iter(execution.gateway.routes.values()))
-        selected = router._selected_route(base, {"status": "SELECTED", "selected": {"candidate": asdict(deepseek[0])}})
+        selected = router._selected_route(base, {"status": "SELECTED", "task": {"declared_requirements": {}}, "selected": {"candidate": asdict(deepseek[0])}})
         self.assertEqual(selected.auth_profile_ref, "provider-account:deepseek:credential-sha256:"
                          + hashlib.sha256(environment["DEEPSEEK_API_KEY"].encode()).hexdigest())
-        codex_selected = router._selected_route(base, {"status": "SELECTED", "selected": {"candidate": asdict(codex[0])}})
+        codex_selected = router._selected_route(base, {"status": "SELECTED", "task": {"declared_requirements": {}}, "selected": {"candidate": asdict(codex[0])}})
         self.assertIn(":codex:", codex_selected.auth_profile_ref)
         self.assertNotEqual(codex_selected.auth_profile_ref, selected.auth_profile_ref)
         self.assertEqual(execution.cost_accounting_basis, "PRICED")

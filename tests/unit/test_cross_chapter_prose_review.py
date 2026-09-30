@@ -405,8 +405,8 @@ def test_provider_views_isolate_history_and_schema_keeps_legacy_contract():
     review = build_provider_task_view("review", payload)
     assert review["cross_chapter_window"]["sources"][0]["excerpts"][0]["text"] == SOURCE
     assert SOURCE not in str(build_provider_task_view("draft", payload))
-    old = chapter_provider_output_schema("review")
-    new = extend_provider_schema(old, "review")
+    old = chapter_provider_output_schema("review", legacy_contract=True)
+    new = extend_provider_schema(old, "review", legacy_contract=True)
     assert "preservation_checks" not in old["properties"]
     response = {
         "score": 60,
@@ -441,7 +441,7 @@ def test_normal_chinese_chapter_uses_token_estimate_then_complete_admission():
 def test_schema_normalization_and_domain_agree_on_judgment_combinations():
     from itertools import product
     from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
-    schema = extend_provider_schema(chapter_provider_output_schema("review"), "review")
+    schema = extend_provider_schema(chapter_provider_output_schema("review", legacy_contract=True), "review", legacy_contract=True)
     judgments = ["SEMANTIC_CONFLICT", "SEMANTIC_CONTRADICTION", "LIKELY_CONTINUITY_PROBLEM", "AESTHETIC_SUGGESTION", "UNCERTAIN"]
     for category, judgment, severity, confidence, interpretation in product(
         ["CRAFT_EFFECT", "CAUSAL_CARRYOVER"], judgments, ["blocking", "major", "minor"],

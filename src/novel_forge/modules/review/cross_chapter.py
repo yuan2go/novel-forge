@@ -246,6 +246,7 @@ def apply_targeted_edits(
             "targeted repair requires located edits",
         )
     previous_end, pieces = 0, []
+    located_edits: list[dict[str, Any]] = []
     for edit in edits:
         location = validate_location(edit, text)
         codes = edit.get("issue_codes")
@@ -273,6 +274,7 @@ def apply_targeted_edits(
                     "repair cannot change prose outside diagnosed locations",
                 )
         pieces.extend((text[previous_end : location["start"]], edit["replacement"]))
+        located_edits.append({**edit, "start": location["start"], "end": location["end"]})
         previous_end = location["end"]
     pieces.append(text[previous_end:])
     repaired = "".join(pieces)
@@ -282,21 +284,17 @@ def apply_targeted_edits(
             "returned prose differs from exact diagnosed edits",
         )
     return {
-        "targeted_edits": deepcopy(edits),
+        "targeted_edits": located_edits,
         **({"source_window_hash": review["cross_chapter_window"]["source_window_hash"],
             "preservation_requirements": deepcopy(review["cross_chapter_window"]["preservation_requirements"])}
            if review.get("cross_chapter_window") else {}),
     }
 
 
-def extend_provider_schema(schema: dict[str, Any], stage: str) -> dict[str, Any]:
+def extend_provider_schema(schema: dict[str, Any], stage: str, *, legacy_contract: bool = False) -> dict[str, Any]:
     result = deepcopy(schema)
     text = {"type": "string", "minLength": 1}
-    location = {
-        "start": {"type": "integer", "minimum": 0},
-        "end": {"type": "integer", "minimum": 1},
-        "quote": text,
-    }
+    location = {**({"start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 1}} if legacy_contract else {}), "quote": text}
 
     def obj(fields: dict[str, Any]) -> dict[str, Any]:
         return {
@@ -324,10 +322,9 @@ def extend_provider_schema(schema: dict[str, Any], stage: str) -> dict[str, Any]
         "items": obj(
             {
                 **location,
-                "chapter_number": {"type": "integer", "minimum": 1},
+                **({"chapter_number": {"type": "integer", "minimum": 1}} if legacy_contract else {}),
                 "asset_version_id": text,
-                "content_hash": text,
-                "text_hash": text,
+                **({"content_hash": text, "text_hash": text} if legacy_contract else {}),
                 "relation_to_issue": text,
             }
         ),
@@ -354,9 +351,10 @@ def extend_provider_schema(schema: dict[str, Any], stage: str) -> dict[str, Any]
     }
     issue["properties"].update(additions)
     issue["required"].extend(additions)
-    target = issue["properties"]["evidence"]
-    target["properties"].update({"asset_version_id": text, "text_hash": text})
-    target["required"].extend(["asset_version_id", "text_hash"])
+    if legacy_contract:
+        target = issue["properties"]["evidence"]
+        target["properties"].update({"asset_version_id": text, "text_hash": text})
+        target["required"].extend(["asset_version_id", "text_hash"])
     check = result["properties"]["resolution_checks"]["items"]
     check["properties"]["status"]["enum"] = [
         "RESOLVED",

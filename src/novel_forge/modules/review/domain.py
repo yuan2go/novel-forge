@@ -57,7 +57,7 @@ def evaluate_review_result(
         diagnosis = validate_diagnosis(item, str(prose_text)) if actionable and cross_chapter_window is None else {}
         if cross_chapter_window is not None:
             target = item.get("evidence") or {}
-            if target.get("asset_version_id") != target_asset_version_id or target.get("text_hash") != prose_hash(str(prose_text)):
+            if ("asset_version_id" in target and target["asset_version_id"] != target_asset_version_id) or ("text_hash" in target and target["text_hash"] != prose_hash(str(prose_text))):
                 raise KernelError("REVIEW_EVIDENCE_INVALID", "target evidence must bind the exact candidate version and hash")
             from .cross_chapter import paired_diagnosis
             diagnosis = paired_diagnosis(item, text=str(prose_text), window=cross_chapter_window, prior=prior_review)
@@ -66,7 +66,9 @@ def evaluate_review_result(
             raise KernelError("REVIEW_ISSUE_IDENTITY_INVALID", "review issue codes must be unique so distinct diagnoses survive revision")
         seen_codes.add(code)
         code_bindings.setdefault(provider_code, []).append(code)
-        evidence = item.get("evidence", {}) if isinstance(item.get("evidence"), dict) else {}
+        evidence = diagnosis.get("evidence_locator", {}) if actionable else (
+            item.get("evidence", {}) if isinstance(item.get("evidence"), dict) else {}
+        )
         fingerprint = f"{project_id}:{target_asset_version_id}:{code}:{ordinal}".encode()
         normalized.append(
             {
@@ -237,7 +239,10 @@ def evaluate_rereview_result(
         "initial_review_version_id": initial_review_version_id,
         "revision_version_id": revision_version_id,
         "issue_lineage": issue_lineage,
-        "resolution_checks": list(result.get("resolution_checks") or []),
+        "resolution_checks": [
+            {**check, "evidence": relocated[check["code"]]} if check.get("code") in relocated else dict(check)
+            for check in result.get("resolution_checks") or []
+        ],
         **({"quality_resolution_checks": quality_checks,
             "prior_review_evidence": {"asset_version_id": initial_review_version_id,
                 "target_asset_version_id": initial_review.get("target_asset_version_id"),
@@ -246,7 +251,10 @@ def evaluate_rereview_result(
                 "issue_lineage": list(initial_review.get("issue_lineage") or []),
                 "prior_review_evidence": initial_review.get("prior_review_evidence")}}
            if quality_checks else {}),
-        **({"preservation_checks": result["preservation_checks"]} if initial_review.get("cross_chapter_window") else {}),
+        **({"preservation_checks": [
+            {**check, "evidence": validate_location(dict(check.get("evidence") or {}), str(revision.get("text") or ""))}
+            for check in result["preservation_checks"]
+        ]} if initial_review.get("cross_chapter_window") else {}),
         "resolved_issue_codes": sorted(resolved),
         "remaining_issue_codes": sorted(remaining),
         "unresolved_issues": [

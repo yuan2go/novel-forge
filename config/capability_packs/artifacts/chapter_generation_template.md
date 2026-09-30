@@ -1,6 +1,4 @@
-Stage: {{stage}}
-Target: {{target_scope}}
-Provider task view: {{input_manifest}}
-Provider context view: {{context_bundle}}
-Required output schema: {{output_schema_ref}}
-Return only the schema-backed stage result and its evidence references.
+Task: {{stage}}
+Frozen task inputs: {{input_manifest}}
+Authorized Context: {{context_bundle}}
+Return only the stage result in the declared JSON schema.
