@@ -1,0 +1,92 @@
+{
+  "schema_version": "runtime-ledger-inspection.v1",
+  "database_identity": {
+    "database": "novel_forge_[REDACTED_PRIVATE_CONFIGURATION]_test",
+    "role": "novel_forge",
+    "address": "172.17.0.2/32",
+    "port": 5432,
+    "server_started_at": "2026-09-26 16:10:04.899810+00:00",
+    "database_oid": 16384
+  },
+  "project_id": "narrative-closure-02-admission-20260927",
+  "migration_head_expected": "20260928_0148_author_supervised_design",
+  "migration_head_present": true,
+  "applied_migration_count": 149,
+  "books": [
+    "duanchao-guan-zheng-deng-reference-01"
+  ],
+  "book_production": [],
+  "effect_counts": {
+    "CANCELLED": 2,
+    "FAILED_FINAL": 4,
+    "SUCCEEDED": 3
+  },
+  "unresolved_effects": [
+    {
+      "external_effect_id": "4bb43443-0f31-4175-9056-c58c823a1c8f",
+      "status": "FAILED_FINAL",
+      "effect_type": "model.invoke",
+      "provider": "production_execution_gateway",
+      "model_id": "deepseek-flash",
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "6c3ebe16-2509-4bd0-bf1b-0d1b17532eda",
+      "status": "FAILED_FINAL",
+      "effect_type": "model.invoke",
+      "provider": "production_execution_gateway",
+      "model_id": "deepseek-flash",
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "8bb574fb-3daa-45f2-a68c-7555dc4af83c",
+      "status": "FAILED_FINAL",
+      "effect_type": "model.invoke",
+      "provider": "production_execution_gateway",
+      "model_id": "deepseek-flash",
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "df35e16d-955b-4d14-9f27-55a18194129e",
+      "status": "FAILED_FINAL",
+      "effect_type": "model.invoke",
+      "provider": "production_execution_gateway",
+      "model_id": "deepseek-flash",
+      "manual_resolution_required": false
+    }
+  ],
+  "unresolved_list_truncated": false,
+  "budget_reservations": [
+    {
+      "status": "RELEASED",
+      "accounting_basis": "ACCOUNT_ENTITLEMENT",
+      "cost_status": "PENDING",
+      "count": 1,
+      "actual_tokens": "0",
+      "reserved_amount": null,
+      "settled_amount": null
+    },
+    {
+      "status": "SETTLED",
+      "accounting_basis": "ACCOUNT_ENTITLEMENT",
+      "cost_status": "UNKNOWN",
+      "count": 2,
+      "actual_tokens": "39674",
+      "reserved_amount": null,
+      "settled_amount": null
+    },
+    {
+      "status": "SETTLED",
+      "accounting_basis": "PRICED",
+      "cost_status": "KNOWN",
+      "count": 5,
+      "actual_tokens": "43334",
+      "reserved_amount": "0.10476090",
+      "settled_amount": "0.01988532"
+    }
+  ],
+  "budget_scopes": [],
+  "production_authorization": "NOT_ESTABLISHED_BY_INSPECTION",
+  "provider_dispatches": 0,
+  "recovery": "Use the existing owner-specific recovery and Effect reconciliation commands; inspection never resends or releases reservations."
+}

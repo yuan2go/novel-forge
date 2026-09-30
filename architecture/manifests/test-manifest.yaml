@@ -8,6 +8,30 @@
   ],
   "classification_rules": [
     {
+      "id": "provider-budget-renewal-integration",
+      "patterns": [
+        "tests/integration/test_creative_budget_renewal_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "command-kernel",
+      "capability": "provider-budget-renewal",
+      "production_target": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "provider-budget-renewal-unit",
+      "patterns": [
+        "tests/unit/test_creative_budget_renewal.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "command-kernel",
+      "capability": "provider-budget-renewal",
+      "production_target": "src/novel_forge/modules/command_kernel/creative_budget_contract.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
       "id": "author-supervision-workspace-postgres",
       "patterns": [
         "tests/integration/test_author_supervision_workspace_postgres.py"

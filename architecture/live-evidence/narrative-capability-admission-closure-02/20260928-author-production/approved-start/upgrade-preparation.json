@@ -1,0 +1,35 @@
+{
+  "prior_sha": "b305d7c7093eee95482105f8cf82f9f21cb959bc",
+  "candidate_sha": "88f2a4fbf9dfc92f091be55a2d6a1bb1fd7d3b0d",
+  "candidate_directory": "/Users/yuan/novel-runtime/wp02-author-supervised-20260928/deployments/88f2a4fbf9dfc92f091be55a2d6a1bb1fd7d3b0d",
+  "prior_archive_preserved": true,
+  "profile_checks": [
+    {
+      "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "manifest_version": "2.3.15",
+      "unchanged_profile": true
+    },
+    {
+      "pack_id": "wp02-author-supervised-chapter",
+      "manifest_version": "2.3.3",
+      "unchanged_profile": true
+    },
+    {
+      "pack_id": "wp02-author-supervised-prose-review",
+      "manifest_version": "1.1.0",
+      "unchanged_profile": true
+    }
+  ],
+  "running_services_unchanged": true,
+  "dispatch_brake": true,
+  "new_native_approvals": 0,
+  "new_dispatches": 0,
+  "next_steps": [
+    "candidate normal production web build",
+    "candidate native technical Pack compile/approve/activate at exact new SHA",
+    "candidate pre-switch fingerprint and mixed-lane configuration validation",
+    "stop-own verified b305 only; start candidate API/4workers/UI",
+    "native CLI + exact SHA import/API/worker/object/UI/34-node probes",
+    "verify no dispatch or budget mutation across deployment; keep global brake and project pause"
+  ]
+}

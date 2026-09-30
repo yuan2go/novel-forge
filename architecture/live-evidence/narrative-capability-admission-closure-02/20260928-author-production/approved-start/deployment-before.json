@@ -1,0 +1,74 @@
+{
+  "authority_external_effect": {
+    "count": 416,
+    "digest": "4d821fe980a1cdd765b30319c4923d88"
+  },
+  "authority_external_effect_dispatch": {
+    "count": 414,
+    "digest": "7d0d418cf815984bb3a4dc59ed6fcc78"
+  },
+  "authority_external_receipt": {
+    "count": 408,
+    "digest": "4a601142dc6c80780c21c2c32ae564a8"
+  },
+  "authority_budget_reservation": {
+    "count": 37,
+    "digest": "46f0922c37934effe31f846b20dd2739"
+  },
+  "authority_provider_budget_scope": {
+    "count": 2,
+    "digest": "60c1fd41a7c6e64fa01a2e81c027878d"
+  },
+  "authority_runtime_dispatch_control": {
+    "count": 2,
+    "digest": "5070664a0880ef434bf70c0718304100"
+  },
+  "authority_runtime_dispatch_event": {
+    "count": 28,
+    "digest": "2ea84bc2290aa36849c6f8b71e4a36b6"
+  },
+  "authority_runtime_job": {
+    "count": 28,
+    "digest": "a13d74bbb572b81e074bb1265e843918"
+  },
+  "authority_runtime_job_attempt": {
+    "count": 28,
+    "digest": "17f71262629b0d96746dd5fb79f0c70d"
+  },
+  "authority_runtime_job_checkpoint": {
+    "count": 42,
+    "digest": "6843c7e9202648595e235bcbabb03c37"
+  },
+  "authority_book": {
+    "count": 3,
+    "digest": "ba238e01488c946e36438335d5d024ed"
+  },
+  "authority_book_production": {
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "authority_book_chapter_acceptance": {
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "authority_book_edition": {
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "authority_book_edition_event": {
+    "count": 0,
+    "digest": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "authority_runtime_policy_version": {
+    "count": 20,
+    "digest": "9bd6666481e192cb884ca0783b6c844d"
+  },
+  "authority_runtime_policy_selection": {
+    "count": 4,
+    "digest": "b73c1e77ec5e1a07a3d095ad13ac623a"
+  },
+  "authority_runtime_policy_binding": {
+    "count": 37,
+    "digest": "3c9407217140f682d6825c2a12f3bc07"
+  }
+}
