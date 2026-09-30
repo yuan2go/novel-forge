@@ -46,7 +46,10 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 
 @pytest.mark.parametrize("author_guided,result_repair,runtime_recovery,evaluation_recovery,manual_review", [(False, False, False, False, False), (True, False, False, False, False), (False, True, False, False, False), (False, False, True, False, False), (False, False, False, True, False), pytest.param(False, False, False, False, True, id="manual-second-candidate")])
 def test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery, evaluation_recovery, manual_review):
-    harness = CapabilityPackPostgresHarness("synthesis-formation-author" if author_guided else "synthesis-formation")
+    harness = CapabilityPackPostgresHarness(
+        "synthesis-formation-author" if author_guided else "synthesis-formation",
+        production_profile={"world_production_policy": {"context_token_budget": 16000}},
+    )
     from copy import copy
 
     chapter_pack = copy(harness)

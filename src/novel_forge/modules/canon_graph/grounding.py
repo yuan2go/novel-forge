@@ -66,14 +66,19 @@ def _validate_claim(
 def _bind_claim_location(item: dict[str, Any], text: str) -> None:
     from novel_forge.modules.review.diagnostics import validate_location
 
-    location = validate_location(
-        {
-            "quote": item.get("evidence_quote"),
-            **({"start": item["evidence_start"], "end": item["evidence_end"]}
-               if "evidence_start" in item or "evidence_end" in item else {}),
-        },
-        text,
-    )
+    try:
+        location = validate_location(
+            {
+                "quote": item.get("evidence_quote"),
+                **({"start": item["evidence_start"], "end": item["evidence_end"]}
+                   if "evidence_start" in item or "evidence_end" in item else {}),
+            },
+            text,
+        )
+    except KernelError as error:
+        if error.code != "REVIEW_EVIDENCE_INVALID":
+            raise
+        raise KernelError("CANON_GROUNDING_INVALID", error.message) from error
     item["evidence_start"] = location["start"]
     item["evidence_end"] = location["end"]
 

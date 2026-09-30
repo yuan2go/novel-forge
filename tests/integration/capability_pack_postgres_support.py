@@ -807,7 +807,13 @@ class CapabilityPackPostgresHarness:
             ("PROMPT_TEMPLATE", "template_ref", "template_version", "template_hash"),
         ):
             original = by_identity[(kind, prompt[ref_key], prompt[version_key])]
-            new_version = f"v{generation}"
+            if kind == "PROMPT_TEMPLATE":
+                alternative = by_identity.get((kind, prompt[ref_key], f"v{generation}"))
+                if alternative is not None:
+                    prompt[version_key] = alternative["version"]
+                    prompt[hash_key] = alternative["content_hash"]
+                continue
+            new_version = f"{original['version']}-fixture-{generation}"
             original["version"] = new_version
             original["content"]["text"] += f"\nFixture generation {generation}."
             original["content_hash"] = canonical_hash(original["content"])
@@ -815,7 +821,7 @@ class CapabilityPackPostgresHarness:
             prompt[hash_key] = original["content_hash"]
         for binding in manifest["skill_binding"]["skills"]:
             original = by_identity[("SKILL", binding["skill_ref"], binding["version"])]
-            new_version = f"{binding['skill_ref']}-v{generation}"
+            new_version = f"{original['version']}-fixture-{generation}"
             original["version"] = new_version
             original["content"]["text"] += f"\nFixture generation {generation}."
             original["content_hash"] = canonical_hash(original["content"])

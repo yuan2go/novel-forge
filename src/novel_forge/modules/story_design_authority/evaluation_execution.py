@@ -166,6 +166,8 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         *,
         stage: str,
         request_payload: Mapping[str, Any],
+        legacy_contract: bool = False,
+        prompt_contract_version: str = "v3",
     ) -> tuple[dict[str, Any], str]:
         if stage != NARRATIVE_EVALUATION_STAGE:
             raise KernelError(
