@@ -993,6 +993,7 @@ class AgentAuthorityScheduler:
                 context,
                 effect_id=effect_id,
                 adapter=recovery_adapter,
+                attempt_command=worker,
             )
             if result["outcome"] == "ambiguous":
                 raise KernelError(
