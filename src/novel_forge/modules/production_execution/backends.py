@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 import subprocess
 from threading import Lock
-from typing import Any, Mapping, Protocol
+from typing import Any, Callable, Mapping, Protocol
 
 from novel_forge.modules.provider_control.contracts import (
     ProviderCancellationRequest,
@@ -912,6 +912,7 @@ class RemoteProviderExecutionBackend:
         payload_resolver: ExecutionPayloadResolver,
         record_store: ExecutionRecordStore,
         structured_result_validator: Any = None,
+        callback_consumer: Callable[..., Any] | None = None,
     ) -> None:
         if capability_profile.backend_id != backend_id:
             raise ValueError("remote backend capability identity mismatch")
@@ -981,6 +982,7 @@ class RemoteProviderExecutionBackend:
         self.payload_resolver = payload_resolver
         self.record_store = record_store
         self.structured_result_validator = structured_result_validator
+        self.callback_consumer = callback_consumer
         self._callback_lock = Lock()
 
     def _record_provider_result(
@@ -1201,10 +1203,22 @@ class RemoteProviderExecutionBackend:
         self._record_provider_result(record, provider_result)
         return handle
 
-    def reconcile(self, handle: ExecutionHandle) -> ExecutionResult:
+    def reconcile(self, handle: ExecutionHandle, *, _consume_callback: bool = True) -> ExecutionResult:
         record = self.record_store.get_record(handle.execution_id)
         if record.handle.contract_hash != handle.contract_hash:
             raise ValueError("execution handle differs from its frozen recovery record")
+        if _consume_callback and self.callback_consumer is not None and self.capability_profile.supports_callback and handle.provider_request_id:
+            callback_result = self.callback_consumer(
+                project_id=record.request.project_id,
+                external_effect_id=record.request.external_effect_id,
+                provider=self.provider_adapter.provider,
+                provider_request_id=handle.provider_request_id,
+                operation_id=record.request.operation_id,
+                attempt_id=record.request.attempt_id,
+                consume=lambda receipt: self.accept_callback(handle, receipt),
+            )
+            if callback_result is not None:
+                return callback_result
         if record.result is not None and record.result.outcome is not ExecutionOutcome.UNKNOWN:
             return record.result
         if (
@@ -1435,7 +1449,7 @@ class RemoteProviderExecutionBackend:
         record.raw_evidence.setdefault("callback_evidence_hashes", {})[receipt.message_id] = evidence_hash
         record.result = None
         self.record_store.save_record(record)
-        return self.reconcile(handle)
+        return self.reconcile(handle, _consume_callback=False)
 
 
 class _CodexResultFailure(ValueError):

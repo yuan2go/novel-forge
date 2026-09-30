@@ -166,6 +166,7 @@ from novel_forge.modules.provider_control import (
     normalize_provider_id,
 )
 from novel_forge.modules.provider_control.contracts import ProviderControlLevel
+from novel_forge.modules.provider_callback_authority import ProviderCallbackAuthorityService
 from novel_forge.modules.production_execution import (
     AdmissionController,
     AuthorityExecutionRecoveryStore,
@@ -1173,6 +1174,9 @@ def build_production_execution_composition(
                     ),
                     record_store=store,
                     structured_result_validator=validate_production_structured_result,
+                    callback_consumer=ProviderCallbackAuthorityService(
+                        settings.database_url, registry
+                    ).consume_pending,
                 )
             )
         gateway = ProductionExecutionGateway(backends, admission)

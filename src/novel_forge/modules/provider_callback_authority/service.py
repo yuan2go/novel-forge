@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 from dataclasses import asdict, dataclass
-from typing import Mapping
+from typing import Any, Callable, Mapping
 from uuid import uuid4
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -95,6 +96,17 @@ class ProviderCallbackAuthorityService:
         callback_receipt_id = str(binding["callback_receipt_id"])
         project_id = str(binding["project_id"])
         operation_id = str(binding["operation_id"])
+        if binding["processing_status"] in {"FAILED_FINAL", "CONFLICTED"}:
+            raise KernelError("PROVIDER_CALLBACK_TERMINAL", "Rejected callback requires a new versioned receipt")
+        if binding["effect_provider"] == "production_execution_gateway":
+            if binding["status"] in {"SUCCEEDED", "FAILED_FINAL", "CANCELLED"}:
+                attempt_id = str(uuid4())
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.repositories.provider_callbacks.begin_attempt(callback_receipt_id, project_id, command.worker_id, attempt_id)
+                    uow.commit()
+                self._finish(callback_receipt_id, project_id, attempt_id, "FAILED_FINAL", "PROVIDER_CALLBACK_EFFECT_TERMINAL", "Late callback cannot change a terminal Effect")
+                raise KernelError("PROVIDER_CALLBACK_EFFECT_TERMINAL", "Late callback cannot change a terminal Effect")
+            return {**binding, "replayed": binding["disposition"] == "REPLAY", "reconciliation_required": True}
         attempt_id = str(uuid4())
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.provider_callbacks.begin_attempt(
@@ -110,6 +122,7 @@ class ProviderCallbackAuthorityService:
             causation_id=callback_receipt_id,
         )
         try:
+            outcome, evidence = receipt.outcome, dict(receipt.evidence)
             accepted = accept_external_effect_receipt(
                 self.database_url,
                 context,
@@ -120,15 +133,15 @@ class ProviderCallbackAuthorityService:
                 payload_hash=receipt.payload_hash,
                 provider_correlation_id=receipt.provider_request_id,
                 generation=int(binding["generation"]),
-                outcome=receipt.outcome,
-                evidence=dict(receipt.evidence),
+                outcome=outcome,
+                evidence=evidence,
             )
             resolve_external_effect_receipt_budget(
                 self.database_url,
                 project_id=project_id,
                 effect_id=str(binding["external_effect_id"]),
-                outcome=receipt.outcome,
-                evidence=dict(receipt.evidence),
+                outcome=outcome,
+                evidence=evidence,
             )
         except KernelError as exc:
             self._finish(
@@ -140,6 +153,10 @@ class ProviderCallbackAuthorityService:
                 str(exc),
             )
             raise
+        except Exception as exc:
+            code = "PROVIDER_CALLBACK_LOCAL_PROCESSING_FAILED"
+            self._finish(callback_receipt_id, project_id, attempt_id, "FAILED_RETRYABLE", code, type(exc).__name__)
+            raise KernelError(code, "Saved callback requires reconciliation under its original identity") from exc
         self._finish(callback_receipt_id, project_id, attempt_id, "PROCESSED", "", "")
         return {
             **binding,
@@ -147,6 +164,43 @@ class ProviderCallbackAuthorityService:
             "effect_receipt_replayed": bool(accepted.get("replayed")),
             "replayed": False,
         }
+
+    def consume_pending(
+        self, *, project_id: str, external_effect_id: str, provider: str,
+        provider_request_id: str, operation_id: str, attempt_id: str,
+        consume: Callable[[ProviderReceipt], Any],
+    ) -> Any:
+        callback_attempt_id = str(uuid4())
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT callback_receipt_id, normalized_receipt
+                FROM authority_provider_callback_receipt
+                WHERE project_id=%s AND external_effect_id=%s AND provider=%s
+                  AND provider_request_id=%s AND signature_status='VERIFIED'
+                  AND processing_status IN ('PENDING','FAILED_RETRYABLE','PROCESSING')
+                ORDER BY received_at, callback_receipt_id LIMIT 1 FOR UPDATE""",
+                [project_id, external_effect_id, provider, provider_request_id],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                return None
+            callback_receipt_id, normalized = row
+            uow.cursor.execute("SELECT attempt.worker_id FROM authority_attempt attempt JOIN authority_operation operation USING(operation_id) WHERE attempt.attempt_id=%s AND operation.operation_id=%s AND operation.project_id=%s", [attempt_id, operation_id, project_id])
+            worker = uow.cursor.fetchone()
+            if worker is None or not worker[0]:
+                raise KernelError("CALLBACK_RECOVERY_ATTEMPT_REQUIRED", "Callback consumption requires its owning recovery Attempt")
+            uow.repositories.provider_callbacks.begin_attempt(callback_receipt_id, project_id, str(worker[0]), callback_attempt_id)
+            uow.commit()
+        try:
+            result = consume(ProviderReceipt(**normalized))
+        except ValueError as exc:
+            self._finish(callback_receipt_id, project_id, callback_attempt_id, "FAILED_FINAL", "PROVIDER_CALLBACK_CONTRACT_CONFLICT", str(exc))
+            raise
+        except Exception as exc:
+            self._finish(callback_receipt_id, project_id, callback_attempt_id, "FAILED_RETRYABLE", "PROVIDER_CALLBACK_LOCAL_PROCESSING_FAILED", type(exc).__name__)
+            raise
+        self._finish(callback_receipt_id, project_id, callback_attempt_id, "PROCESSED", "", "")
+        return result
 
     def _bind_and_record(
         self,
@@ -187,10 +241,7 @@ class ProviderCallbackAuthorityService:
                 )
             )
             if disposition == "CONFLICT":
-                uow.cursor.execute(
-                    "UPDATE authority_provider_callback_receipt SET processing_status='CONFLICTED', updated_at=NOW() WHERE callback_receipt_id=%s",
-                    [stored["callback_receipt_id"]],
-                )
+                self._record_event(uow, binding, command, "provider.callback.conflicted", {"callback_receipt_id": stored["callback_receipt_id"], "rejected_payload_hash": receipt.payload_hash})
             if disposition == "INSERTED":
                 self._record_event(
                     uow,
@@ -263,7 +314,7 @@ class ProviderCallbackAuthorityService:
             "payload_hash": receipt.payload_hash,
             "signature_status": signature_status,
             "outcome": receipt.outcome,
-            "raw_metadata": {"headers": safe_headers, "body_size": len(command.body)},
+            "raw_metadata": {"headers": safe_headers, "body_size": len(command.body), "body_base64": base64.b64encode(command.body).decode("ascii")},
             "normalized_receipt": asdict(receipt),
             "processing_status": processing_status,
             "trace_id": command.trace_id,

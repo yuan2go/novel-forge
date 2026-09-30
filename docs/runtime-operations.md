@@ -1400,6 +1400,15 @@ that checkpoint from the saved result even when response-artifact persistence wa
 interrupted. Chapter, Planning and Source treat this phase as a sent request, and budget
 accounting holds an unresolved reservation until reconciliation rather than releasing it.
 
+The signed callback API persists the original body and verified receipt. Gateway-backed
+Effects remain unresolved at ingress. The existing worker consumes that receipt through
+the remote Backend under the original frozen contract and a current recovery Lease/Fence.
+Kernel reconciliation moves recoverable work to `EXECUTING` before evidence processing;
+local failure checkpoints it again without another generation. Duplicate payloads replay
+their original receipt, and a conflicting message appends rejection evidence without
+rewriting successful callback history. This path does not qualify a Provider whose
+configured capability profile disables callbacks.
+
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
 materialization before an authorized run. Chapter Pack 2.6.0 requires the v5 Prompt and
