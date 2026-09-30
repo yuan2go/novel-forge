@@ -19,7 +19,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import EffectCom
 from novel_forge.modules.mkaos_authority import MkaosAuthorityApplication
 from novel_forge.modules.mkaos_authority.query import MkaosAuthorityQuery
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier, insert_definition, insert_operation, seed_authority_project_book, transaction
-from tests.integration.test_d0_provider_qualification_authority_postgres import _ContractOnlyLiveGateway, _RecordingObjectStore
+from tests.integration.test_d0_provider_qualification_authority_postgres import _ContractOnlyLiveGateway, _RecordingObjectStore, _fenced_source_worker
 from tests.integration import test_mkaos_authority_postgres as mkaos_fixture
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -97,7 +97,7 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
                 definition_name=source_definition,
                 project_id=project_id,
                 workspace_id=workspace_id,
-                status="EXECUTING",
+                status="READY",
             )
         prompt_hash = "sha256:" + "d" * 64
         instruction_hash = "sha256:" + "e" * 64
@@ -172,6 +172,7 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
         )
+        worker = _fenced_source_worker(context)
         payload = {
             "stage": "source.mkaos.extract",
             "_source_intelligence": {"kind": "mkaos"},
@@ -233,6 +234,7 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
             context,
             effect_id=str(effect["external_effect_id"]),
             adapter=adapter,
+            attempt_command=worker,
         )
         evidence = D0LiveQualificationEvidence.from_mapping(
             {
