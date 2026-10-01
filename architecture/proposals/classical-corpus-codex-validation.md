@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `e616140756d2d6ef2357aa0ed0cd0d7ce98168af`
+Reality baseline: `7bdecb57d2f7a060c2a1f72bc6a03812b8757a86`
 Baseline implementation identity:
-`sha256:06f6c417ef4374bb9505aa1c94f4d9fa2cc74469ed45485ac0e34ddc2ea2e765`
+`sha256:94447c2e79f4e57388047f8717ec6ae42b017c39f1998c71a2f7eb4e0f4fcef1`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "e616140756d2d6ef2357aa0ed0cd0d7ce98168af",
-    "implementation_tree_sha": "sha256:06f6c417ef4374bb9505aa1c94f4d9fa2cc74469ed45485ac0e34ddc2ea2e765"
+    "sha": "7bdecb57d2f7a060c2a1f72bc6a03812b8757a86",
+    "implementation_tree_sha": "sha256:94447c2e79f4e57388047f8717ec6ae42b017c39f1998c71a2f7eb4e0f4fcef1"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -110,7 +110,7 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-10-01): Task-scoped Context, 512,000-token system support, governed extractive compression/fidelity and frozen Provider recovery refine the existing consumers. They do not execute G3/G4, supply real corpus observations, authorize spend or prove literary gain.  Implemented identity, entitlement, corpus-ingestion
+Current scope review (2026-10-01): Task-scoped Context, 512,000-token system support, governed extractive compression/fidelity and frozen Provider recovery refine the existing consumers. Published sampling contracts and Pack identities remain readable alongside separately versioned new samples; this compatibility does not execute a campaign. They do not execute G3/G4, supply real corpus observations, authorize spend or prove literary gain.  Implemented identity, entitlement, corpus-ingestion
 and Source/MKAOS mechanics are documented only in [current-system](../../docs/current-system.md).
 The completed G1/G2 implementation plans and historical review paragraphs have been
 removed. G3/G4 below specify a proposed bounded real-Provider campaign, not observed

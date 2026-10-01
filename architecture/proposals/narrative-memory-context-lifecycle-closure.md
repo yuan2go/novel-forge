@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `e616140756d2d6ef2357aa0ed0cd0d7ce98168af`
+Reality baseline: `7bdecb57d2f7a060c2a1f72bc6a03812b8757a86`
 Baseline implementation identity:
-`sha256:06f6c417ef4374bb9505aa1c94f4d9fa2cc74469ed45485ac0e34ddc2ea2e765`
+`sha256:94447c2e79f4e57388047f8717ec6ae42b017c39f1998c71a2f7eb4e0f4fcef1`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-10-01",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "e616140756d2d6ef2357aa0ed0cd0d7ce98168af",
-    "implementation_tree_sha": "sha256:06f6c417ef4374bb9505aa1c94f4d9fa2cc74469ed45485ac0e34ddc2ea2e765"
+    "sha": "7bdecb57d2f7a060c2a1f72bc6a03812b8757a86",
+    "implementation_tree_sha": "sha256:94447c2e79f4e57388047f8717ec6ae42b017c39f1998c71a2f7eb4e0f4fcef1"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -146,7 +146,7 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-10-01): Task worksets, directed required dependencies, source-bound extractive compression/fidelity and frozen receipt recovery refine Gate A consumers. They do not implement the remaining Digest, retention, representation-generation or purge gates.  Gate A and current role Context/Provider behavior
+Current scope review (2026-10-01): Task worksets, directed required dependencies, source-bound extractive compression/fidelity and frozen receipt recovery refine Gate A consumers. Frozen World accounting and exact published Chapter/sample recovery preserve those consumers without introducing memory lifecycle owners. They do not implement the remaining Digest, retention, representation-generation or purge gates.  Gate A and current role Context/Provider behavior
 are projected in [current-system](../../docs/current-system.md). Implemented Gate A
 design, former reality matrices and duplicate final-architecture tables have been
 removed. Craft uses the existing Context owner and adds no Digest, retention, GC,
