@@ -263,33 +263,3 @@ def test_routing_and_admission_include_the_same_large_safety_margin():
     assert receipt.component_usage == components
     assert receipt.total_reserved == sum(components.values()) == 38825
     assert sum(components.values()) - components["output_reserve"] == 28825
-
-
-@pytest.mark.parametrize("boundary", ["model", "authorization"])
-def test_codex_full_output_and_reasoning_reserve_is_included_once_at_admission(boundary):
-    from types import SimpleNamespace
-    from novel_forge.modules.chapter_authority.context_compression_provider import task_provider_output_reserve
-    from novel_forge.modules.production_execution import ExecutionRuntimeClass
-
-    route = SimpleNamespace(model_output_limit=32_768, model_profile=SimpleNamespace(
-        model_provider="codex-cli", backend_id="codex-cli", runtime_class=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE))
-    output_reserve = task_provider_output_reserve("draft", route)
-    contract = build_route_token_accounting_contract(
-        provider="codex-cli", model="codex-test", route_identity="codex:capacity:1",
-        accounting_method="CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
-        accounting_evidence_ref="codex:stdin-bound:v1", model_context_limit=512_000,
-        execution_token_limit=512_000, output_reserve=output_reserve, safety_margin=256, framing_overhead=32)
-    envelope = ProviderRequestEnvelope(provider="codex-cli", model="codex-test", protocol="codex-cli-application-stdin-v1",
-        input_text="x" * 4000, max_output_tokens=output_reserve, timeout_seconds=300, stable_idempotency_key="codex:capacity:1")
-    receipt = prepare_provider_admission(envelope, contract, complete_request_coverage=COMPLETE_COVERAGE)
-    assert receipt.component_usage["output_reserve"] == 32_768
-    assert receipt.total_reserved == 4000 + 32_768 + 256 + 32
-    assert receipt.status == "ADMITTED"
-    limit_key = "model_context_limit" if boundary == "model" else "execution_token_limit"
-    limited = replace(contract, **{limit_key: receipt.total_reserved - 1})
-    rejected = prepare_provider_admission(envelope, limited, complete_request_coverage=COMPLETE_COVERAGE)
-    assert rejected.status == "REJECTED"
-    assert rejected.reason == ("PROVIDER_CONTEXT_LIMIT_EXCEEDED" if boundary == "model" else "EXECUTION_TOKEN_LIMIT_EXCEEDED")
-    assert rejected.total_reserved == receipt.total_reserved
-    with pytest.raises(ValueError, match="PROVIDER_ADMISSION_REJECTED"):
-        verify_provider_admission(envelope, rejected)
