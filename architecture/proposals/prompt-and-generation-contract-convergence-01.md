@@ -14,7 +14,7 @@
 | 目标仓库 | `yuan2go/novel-forge` |
 | 核验日期 | 2026-10-01，UTC+8 |
 | 核验分支 | `codex/wp-task-context-512k-01` |
-| 当前生命周期代码基线 | `7ae0b027919d8b1aa547bb993b0f37ccb33cdc3f` |
+| 当前生命周期代码基线 | `2bcfe01e4d6219479748f379b25b6eceac6cf89c` |
 | Git tree | `d21d5d8ba1b152bfb43ea93bb3053b67e434a1a9` |
 | 当前事实核验 | 源代码、冻结合同、正式装配及定向单测/PostgreSQL 回归；现有持久库仅只读核验，未调用真实 Provider |
 | 实现及效果状态 | 规格形成时仅交付需求；后续工程实现已进入正式主链，真实 Provider 与文学收益仍未验证。当前状态以代码、冻结合同和当次验收为准 |
@@ -28,8 +28,8 @@
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
   "reality_baseline": {
-    "sha": "7ae0b027919d8b1aa547bb993b0f37ccb33cdc3f",
-    "implementation_tree_sha": "sha256:d69235eb23159d78d19d4d2a261746a35bb137085f375c48c1da3f32845bfdef"
+    "sha": "2bcfe01e4d6219479748f379b25b6eceac6cf89c",
+    "implementation_tree_sha": "sha256:077ce01912efbeae4fbc7c4aead8d5d4cdfe72b0c7a12c7ccd78a412c42a67ba"
   },
   "scope": [
     "src/novel_forge/modules/chapter_authority",
