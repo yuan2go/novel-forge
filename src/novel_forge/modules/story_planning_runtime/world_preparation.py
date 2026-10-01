@@ -382,11 +382,13 @@ class PlanningWorldPreparation:
     def _task(
         source: Mapping[str, Any], source_ref: Mapping[str, str], role: str
     ) -> dict[str, Any]:
+        from novel_forge.modules.context_builder.task_context import world_task_scope
+
         projection = project_role_context(
             reality=source["reality"],
             role=role,
             token_budget=source["policy"]["context_token_budget"],
-            task={"chapter": int(source["reality"]["chapter_number"]) + 1, "intent": source["intent"], "planning_window": source["planning_window"]} if source.get("provider_projection_version") == "world-role-delivery.v3" else None,
+            task=world_task_scope(chapter=int(source["reality"]["chapter_number"]) + 1, intent=source["intent"], planning_window=source["planning_window"], world_foundation=source["world_foundation"]) if source.get("provider_projection_version") == "world-role-delivery.v3" else None,
             required_event_ids=tuple(sorted({entry["source_event_id"] for kind, entries in source["reality"]["current_state"].items() if kind in ROLE_STATE_KINDS.get(role, ()) for entry in entries})) if source.get("provider_projection_version") == "world-role-delivery.v2" else (),
         )
         return {

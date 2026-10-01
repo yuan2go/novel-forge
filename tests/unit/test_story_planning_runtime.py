@@ -3099,3 +3099,138 @@ def test_model_profile_does_not_coerce_or_rewrite_invalid_retained_contract(inva
     with pytest.raises(KernelError, match="EXECUTION_CONTRACT_FROZEN_CONFLICT"):
         preparer._select_model_profile("project-1", profile)
     assert document.content == before
+
+
+def _assembled_static_planning_route(monkeypatch, *, changed_model=False, routed=False, runtime=None, provider=None, backend=None):
+    from novel_forge.api import authority_dependencies as dependencies
+    from novel_forge.infrastructure.environment import RuntimeEnvironment
+    from novel_forge.infrastructure.settings import IndustrialSettings
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+    from tests.unit.test_production_execution_gateway import contracts
+
+    runtime = runtime or ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+    backend = backend or "codex-cli"
+    _, profile, _, _, _, _ = contracts(backend_id=backend, runtime=runtime)
+    profile = replace(profile, model_provider=provider or "codex-cli", model_id="model:confirmed", reasoning_effort="high")
+    base = SimpleNamespace(model_profile=profile, backend_version="1", runtime_host_id="host:confirmed", auth_profile_ref="auth:confirmed",
+        release_sha="a" * 40, model_context_limit=512_000, model_output_limit=32_768,
+        token_accounting_method="CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1", token_accounting_evidence_ref="capacity:confirmed-model",
+        token_safety_margin=256, token_framing_overhead=32)
+    transport = SimpleNamespace(routes={"draft": base}, provider_router=object() if routed else None,
+        production_execution_gateway_backed=True, cost_accounting_basis="PRICED")
+    execution = SimpleNamespace(gateway=transport, runtime_environment=RuntimeEnvironment.VALIDATION,
+        max_cost_per_call="1", budget_caps=lambda: {})
+    monkeypatch.setattr(dependencies, "PostgresPlanningExecutionBundleResolver", lambda *args, **kwargs: SimpleNamespace(**kwargs))
+    monkeypatch.setattr(dependencies, "CapabilityPackBackedPlanningExecutionBinder", lambda resolver: resolver)
+    monkeypatch.setattr(dependencies, "StoryPlanningGenerationApplication", lambda *args, **kwargs: SimpleNamespace(**kwargs))
+    monkeypatch.setattr(dependencies, "build_narrative_semantic_evaluation_execution_port", lambda *args, **kwargs: None)
+    monkeypatch.setattr(dependencies, "build_trusted_principal_resolver", lambda **kwargs: SimpleNamespace(resolve_narrative_evaluator_principal=lambda: None))
+    application = dependencies.build_story_planning_generation_application(
+        IndustrialSettings(root=".", database_url="postgresql://unused", environment="validation"), execution=execution,
+        env={"NOVEL_FORGE_ENVIRONMENT": "validation", "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-capacity-binding-test",
+             "NOVEL_FORGE_COMMIT_SHA": "a" * 40, "NOVEL_FORGE_PLANNING_PROVIDER": profile.model_provider,
+             "NOVEL_FORGE_PLANNING_MODEL": "model:unconfirmed" if changed_model else profile.model_id,
+             "NOVEL_FORGE_PLANNING_REASONING_EFFORT": "high"})
+    preparer = application.execution_binder.execution_preparer
+    return preparer.planning_route, base, preparer
+
+
+@pytest.mark.parametrize("routed", [False, True])
+def test_same_static_planning_model_preserves_only_its_own_capacity_binding(monkeypatch, routed):
+    from novel_forge.modules.production_execution import ModelProfileStatus
+    route, base, _ = _assembled_static_planning_route(monkeypatch, routed=routed)
+    assert route.model_profile.model_id == base.model_profile.model_id
+    assert route.model_profile.status is ModelProfileStatus.ACTIVE
+    assert route.model_profile.capability_probe_ref == base.model_profile.capability_probe_ref
+    assert route.model_output_limit == base.model_output_limit
+    assert route.model_context_limit == base.model_context_limit
+    assert route.token_accounting_evidence_ref == base.token_accounting_evidence_ref
+
+
+@pytest.mark.parametrize("backend,provider,runtime_name", [("codex-cli", "codex-cli", "LOCAL_CLI_REMOTE_INFERENCE"),
+    ("remote-provider-openai", "openai", "REMOTE_PROVIDER_API"),
+    ("remote-provider-spoof", "scripted_provider_v2", "REMOTE_PROVIDER_API"),
+    ("scripted-fixture", "scripted_provider_v2", "LOCAL_CLI_REMOTE_INFERENCE"),
+    ("remote-provider-spoof", "scripted_provider_v2", "SCRIPTED_FIXTURE")])
+def test_changed_static_planning_model_has_no_unrelated_draft_capacity_or_probe(monkeypatch, backend, provider, runtime_name):
+    from novel_forge.modules.chapter_authority.context_compression_provider import require_task_output_reserve, require_task_reasoning
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass, ModelProfileStatus
+    route, _, _ = _assembled_static_planning_route(monkeypatch, changed_model=True, backend=backend, provider=provider,
+        runtime=getattr(ExecutionRuntimeClass, runtime_name))
+    assert route.model_profile.status is ModelProfileStatus.CANDIDATE
+    assert route.model_profile.capability_probe_ref == ""
+    assert (route.model_output_limit, route.model_context_limit) == (0, 0)
+    assert route.token_accounting_method == route.token_accounting_evidence_ref == ""
+    require_task_reasoning(route, task_scoped=True)
+    if provider != "scripted_provider_v2":
+        with pytest.raises(KernelError, match="OUTPUT_CAPACITY_UNKNOWN"):
+            require_task_output_reserve("book_plan.generate", route, 8192, capacity_error_code="OUTPUT_CAPACITY_EXCEEDED")
+    with pytest.raises(KernelError, match="REASONING_REQUIRED"):
+        require_task_reasoning(replace(route, model_profile=replace(route.model_profile, reasoning_effort="low")), task_scoped=True)
+
+
+def test_scripted_planning_virtual_model_labels_retain_backend_fixture_capacity(monkeypatch):
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass, ModelProfileStatus
+    route, base, _ = _assembled_static_planning_route(monkeypatch, changed_model=True, backend="scripted-fixture",
+        provider="scripted_provider_v2", runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE)
+    assert route.model_profile.status is ModelProfileStatus.ACTIVE
+    assert route.model_profile.capability_probe_ref == base.model_profile.capability_probe_ref
+    assert route.model_context_limit == base.model_context_limit
+    assert route.model_output_limit == base.model_output_limit
+
+
+def test_routed_planning_model_uses_the_selected_candidates_own_capacities(monkeypatch):
+    from novel_forge.modules.chapter_authority.context_compression_provider import require_task_output_reserve, task_provider_output_reserve
+    from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+    route, base, _ = _assembled_static_planning_route(monkeypatch, changed_model=True, routed=True)
+    assert route.model_profile.model_id == base.model_profile.model_id
+    router = object.__new__(ProductionProviderRouter)
+    router.provider_auth_profiles = {}
+    candidate = {"provider": "codex-cli", "model": "model:routed", "reasoning": "high", "context_limit": 256_000,
+        "output_limit": 65_536, "capability_version": "capacity:routed-model"}
+    selected = router._selected_route(route, {"status": "SELECTED", "task": {"declared_requirements": {}}, "selected": {"candidate": candidate}})
+    assert selected.model_profile.model_id == candidate["model"]
+    assert selected.model_context_limit == candidate["context_limit"]
+    assert selected.model_output_limit == candidate["output_limit"]
+    assert selected.token_accounting_evidence_ref == candidate["capability_version"]
+    assert task_provider_output_reserve("book_plan.generate", selected) == candidate["output_limit"]
+    with pytest.raises(KernelError, match="CLI_OUTPUT_RESERVATION_INSUFFICIENT"):
+        require_task_output_reserve("book_plan.generate", selected, base.model_output_limit, capacity_error_code="OUTPUT_CAPACITY_EXCEEDED")
+
+
+@pytest.mark.parametrize("current_reasoning", ["high", "low"])
+def test_changed_static_candidate_configuration_can_restore_original_active_planning_receipt(monkeypatch, current_reasoning):
+    from novel_forge.modules.production_execution import ModelProfileStatus
+    route, base, preparer = _assembled_static_planning_route(monkeypatch, changed_model=True)
+    route = replace(route, model_profile=replace(route.model_profile, reasoning_effort=current_reasoning))
+    preparer.planning_route = route
+    assert route.model_profile.status is ModelProfileStatus.CANDIDATE
+    original_profile = replace(base.model_profile, profile_id="planning.original")
+    original_policy = replace(route.route_policy, default_model_profile_id=original_profile.profile_id,
+        allowed_model_profile_ids=(original_profile.profile_id,))
+    original = replace(route, model_profile=original_profile, route_policy=original_policy)
+    from tests.unit.test_production_execution_gateway import contracts
+    _, _, _, snapshot, _, _ = contracts(backend_id=base.model_profile.backend_id, runtime=base.model_profile.runtime_class)
+    snapshot = replace(snapshot, model_profile_id=original.model_profile.profile_id, model_profile_hash=original.model_profile.contract_hash,
+        model_provider=original.model_profile.model_provider, model_id=original.model_profile.model_id, reasoning_effort="high",
+        requested_reasoning_effort="high", policy_id=original_policy.policy_id, route_policy_hash=original_policy.contract_hash,
+        fallback_policy_ref=original.fallback_policy.policy_id, fallback_policy_version=original.fallback_policy.policy_version)
+    documents = {f"production_execution/model_profiles/{original.model_profile.profile_id}/v1": SimpleNamespace(asset_type="model_profile", content={"contract": original.model_profile.to_dict()}),
+        f"production_execution/route_policies/{original_policy.policy_id}/v1": SimpleNamespace(asset_type="route_policy", content={"contract": original_policy.to_dict()}),
+        f"production_execution/fallback_policies/{original.fallback_policy.policy_id}/v1": SimpleNamespace(asset_type="fallback_policy", content={"contract": original.fallback_policy.to_dict()})}
+    read = []
+    def require(**kwargs):
+        read.append(kwargs["logical_ref"])
+        return documents[kwargs["logical_ref"]]
+    preparer.query = SimpleNamespace(require=require)
+    receipt = {"provider_evidence": {"provider_id": original.model_profile.model_provider, "model_id": original.model_profile.model_id,
+        "production_execution": {"route_snapshot": snapshot.to_dict()}}}
+    before = deepcopy(receipt)
+    recovered = preparer._recovered_planning_route(recovered_completion=receipt, project_id="project:original", current_route=route)
+    assert recovered.model_profile == original.model_profile
+    assert recovered.model_profile.status is ModelProfileStatus.ACTIVE
+    assert recovered.model_profile.reasoning_effort == "high"
+    assert recovered.route_policy == original_policy
+    assert receipt == before
+    assert read == list(documents)
+    assert recovered.model_context_limit == recovered.model_output_limit == 0

@@ -86,7 +86,7 @@ from novel_forge.storage.authority_asset_store import (
     AuthorityAssetWriter,
 )
 from novel_forge.modules.chapter_authority.context_compression_provider import (
-    CONTEXT_MODEL_STAGES, require_task_reasoning, task_provider_output_reserve,
+    CONTEXT_MODEL_STAGES, require_task_reasoning, require_task_output_reserve,
 )
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
@@ -1062,8 +1062,9 @@ class PostgresChapterExecutionContractBinder:
         ) or str(metadata.get("task_context_profile") or "") == "draft-context-profile-v4"
         require_task_reasoning(route, task_scoped=task_scoped and stage != "retrieval")
         if task_scoped and stage != "retrieval":
-            if output_reserve > task_provider_output_reserve(stage, route):
-                raise KernelError("TASK_CONTEXT_MODEL_OUTPUT_LIMIT_EXCEEDED", "frozen output reserve exceeds the selected task or model bound")
+            require_task_output_reserve(
+                stage, route, output_reserve, capacity_error_code="TASK_CONTEXT_MODEL_OUTPUT_LIMIT_EXCEEDED",
+            )
         envelope = ProviderRequestEnvelope(
             provider=route.model_profile.model_provider,
             reasoning_effort=route.model_profile.reasoning_effort if route.model_profile.model_provider in {"deepseek", "openai"} else "",

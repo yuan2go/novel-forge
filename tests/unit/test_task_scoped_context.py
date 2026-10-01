@@ -113,6 +113,161 @@ def test_far_referenced_promise_includes_planting_latest_advance_and_causal_pred
     assert receipt["required_event_ids"] == ["advance", "cause", "plant"]
 
 
+def background_reality(unrelated_count=0):
+    def background(identity, chapter, key="world_state_id=inquiry", causes=()):
+        row = event(identity, "world_state", {"fact_origin": {"kind": "GOVERNED_BACKGROUND"}, "status": "OPEN"}, chapter)
+        row["identity"]["entity_key"] = key
+        row["mutation"]["payload"]["world_transition"] = {"payload_json": __import__("json").dumps({"cause_refs": list(causes)})}
+        return row
+    events = [background("plant", 1, causes=["cause"]), background("middle", 10), background("latest", 20), event("cause", "resource_state", {"condition": "only after payment"}, 1)]
+    events += [background(f"irrelevant:{index}", 19, f"world_state_id=other:{index}") for index in range(unrelated_count)]
+    return {"project_id": "project", "book_id": "book", "revision_id": "revision:20", "chapter_number": 20, "events": events, "foundation_cause_refs": [], "current_state": {"world_state": [{"entity_key": row["identity"]["entity_key"], "source_event_id": row["event_id"], "state": row["mutation"]["payload"]} for row in events if row["state_kind"] == "world_state" and row["event_id"] not in {"plant", "middle"}]}}
+
+
+def test_required_entity_retains_unrevealed_planting_without_restoring_all_history():
+    source = background_reality(3000)
+    rows, receipt = task_reality_workset(source, task={"chapter": 21, "state_entity_refs": ["world_state_id=inquiry"]}, role_kinds=("world_state", "resource_state"), auxiliary_limit=0)
+    assert {row[2]["source_event_id"] for row in rows} == {"plant", "latest", "cause"}
+    assert receipt["required_event_ids"] == ["cause", "latest", "plant"]
+    assert source["events"][0]["coordinate"]["source_chapter"] == 1
+    unrelated, receipt = task_reality_workset(source, task={"chapter": 21}, role_kinds=("world_state", "resource_state"), auxiliary_limit=1)
+    assert len(unrelated) == 1 and not receipt["required_event_ids"]
+    assert all(row[3] != "UNDISCLOSED_BACKGROUND_PLANTING_OR_ADVANCE" for row in unrelated)
+
+
+@pytest.mark.parametrize("mode,retained", [("CONFIRM", False), ("HINT", True), ("PARTIAL", True), ("MISDIRECT", True), ("WITHHOLD", True)])
+def test_only_reader_confirmation_releases_historical_disclosure_requirement(mode, retained):
+    source = background_reality()
+    source["current_state"]["reader_knowledge"] = [{"entity_key": "fact_id=plant", "source_event_id": "knowledge", "state": {"fact_id": "plant", "status": "KNOWN"}}]
+    source["current_state"]["disclosure_event"] = [{"entity_key": "disclosure_id=plant", "source_event_id": "disclosure", "state": {"fact_id": "plant", "audience": "READER", "disclosure_mode": mode}}]
+    rows, receipt = task_reality_workset(source, task={"state_entity_refs": ["world_state_id=inquiry"]}, role_kinds=("world_state", "resource_state"), auxiliary_limit=0)
+    assert ("plant" in receipt["required_event_ids"]) is retained
+    assert "middle" not in receipt["required_event_ids"] if retained else "middle" in receipt["required_event_ids"]
+    assert all(row[0] not in {"reader_knowledge", "disclosure_event"} for row in rows)
+
+
+@pytest.mark.parametrize("status,mode", [("SUSPECTED", "CONFIRM"), ("MISDIRECTED", "CONFIRM"), ("KNOWN", "HINT"), ("KNOWN", "MISDIRECT")])
+def test_past_confirmation_cannot_override_current_reader_uncertainty(status, mode):
+    source = background_reality()
+    source["current_state"]["reader_knowledge"] = [{"entity_key": "fact_id=plant", "source_event_id": "knowledge", "state": {"fact_id": "plant", "status": status}}]
+    source["current_state"]["disclosure_event"] = [{"entity_key": f"disclosure_id={index}", "source_event_id": f"disclosure:{index}", "state": {"fact_id": "plant", "audience": "READER", "disclosure_mode": value}} for index, value in enumerate(("CONFIRM", mode))]
+    _, receipt = task_reality_workset(source, task={"state_entity_refs": ["world_state_id=inquiry"]}, role_kinds=("world_state", "resource_state"), auxiliary_limit=0)
+    assert "plant" in receipt["required_event_ids"]
+
+
+def test_historical_entity_closure_respects_role_and_future_boundary():
+    source = background_reality()
+    with pytest.raises(KernelError, match="outside the role"):
+        task_reality_workset(source, task={"state_entity_refs": ["world_state_id=inquiry"]}, role_kinds=("world_state",), auxiliary_limit=0)
+    source["events"][3]["coordinate"]["source_chapter"] = 21
+    with pytest.raises(KernelError, match="accepted boundary"):
+        task_reality_workset(source, task={"state_entity_refs": ["world_state_id=inquiry"]}, role_kinds=("world_state", "resource_state"), auxiliary_limit=0)
+
+
+@pytest.mark.parametrize("field", ["required_event_ids", "required_event_refs", "required_source_event_ids"])
+def test_typed_required_events_fail_closed_when_omitted_or_denied(field):
+    source = background_reality(300)
+    task = {"planning_window": [{"content": {field: ["cause"]}}]}
+    rows, receipt = task_reality_workset(source, task=task, role_kinds=("resource_state",), auxiliary_limit=0)
+    assert [row[2]["source_event_id"] for row in rows] == ["cause"]
+    assert receipt["required_event_ids"] == ["cause"]
+    with pytest.raises(KernelError, match="outside the role"):
+        task_reality_workset(source, task=task, role_kinds=("world_state",), auxiliary_limit=0)
+    source["events"] = [row for row in source["events"] if row["event_id"] != "cause"]
+    with pytest.raises(KernelError, match="unavailable"):
+        task_reality_workset(source, task=task, role_kinds=("resource_state",), auxiliary_limit=0)
+
+
+@pytest.mark.parametrize("malformed", [{"x": "cause"}, [{}], [None], [""], [["cause"]], 1, "cause"])
+def test_typed_required_event_shape_cannot_silently_erase_dependencies(malformed):
+    from novel_forge.modules.context_builder.task_context import required_task_event_ids
+    with pytest.raises(KernelError, match="collection of exact"):
+        required_task_event_ids({"planning_window": [{"content": {"required_event_refs": malformed}}]})
+    assert required_task_event_ids({"required_event_refs": []}) == set()
+
+
+def test_world_task_selectors_use_frozen_hard_predicates_and_preserve_legacy():
+    from novel_forge.modules.context_builder.task_context import world_task_scope
+    task = world_task_scope(chapter=21, intent={}, planning_window=[], world_foundation={"rules": [
+        {"enforcement": "HARD", "predicate": {"entity_key": "world_state_id=inquiry"}},
+        {"enforcement": "SOFT_CAUSAL", "predicate": {"entity_key": "world_state_id=other:0"}},
+    ]})
+    rows, receipt = task_reality_workset(background_reality(1), task=task, role_kinds=("world_state", "resource_state"), auxiliary_limit=0)
+    assert receipt["required_event_ids"] == ["cause", "latest", "plant"]
+    assert {row[2]["source_event_id"] for row in rows} == {"cause", "latest", "plant"}
+
+
+def test_directed_world_sources_fetch_explicit_cause_outside_recent_history(monkeypatch):
+    from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
+    from novel_forge.modules.context_builder.task_context import required_task_event_ids
+
+    source = background_reality(300)
+    source["book_run_id"] = "book-run"
+    original = source["events"]
+    source["events"] = original[-128:]
+    assert all(row["event_id"] != "cause" for row in source["events"])
+    class Cursor:
+        def execute(self, query, parameters):
+            assert "authority_book_acceptance_lineage" in query
+            assert parameters[2:4] == ["book-run", 20]
+        def fetchall(self):
+            return []
+    repository = NarrativeRealityRepository(Cursor())
+    calls = []
+    def exact_sources(**scope):
+        assert scope["book_run_id"] == "book-run" and scope["through_chapter"] == 20
+        calls.append(scope["event_ids"])
+        return [row for row in original if row["event_id"] in scope["event_ids"]]
+    monkeypatch.setattr(repository, "event_sources", exact_sources)
+    requested = tuple(required_task_event_ids({"planning_window": [{"content": {"required_event_refs": ["cause"]}}]}))
+    result = repository.task_background_sources(reality=source, entity_keys=(), required_event_ids=requested)
+    assert [row["event_id"] for row in result] == ["cause"]
+    assert calls == [("cause",)]
+    with pytest.raises(KernelError, match="unavailable"):
+        repository.task_background_sources(reality=source, entity_keys=(), required_event_ids=("missing",))
+
+
+def test_necessary_world_closure_host_bound_blocks_instead_of_truncating():
+    source = background_reality()
+    source["events"] = [event(f"depth:{index}", "resource_state", {}, 1, [f"depth:{index - 1}"] if index else ()) for index in range(33)]
+    source["current_state"] = {}
+    with pytest.raises(KernelError, match="explicit host bound"):
+        task_reality_workset(source, task={"required_event_refs": ["depth:32"]}, role_kinds=("resource_state",), auxiliary_limit=0)
+    from novel_forge.storage.narrative_reality_repositories import NarrativeRealityRepository
+    with pytest.raises(KernelError, match="explicit host bound"):
+        NarrativeRealityRepository(None).task_background_sources(reality=source, entity_keys=tuple(("world_state", f"world:{index}") for index in range(2049)), required_event_ids=())
+
+
+def test_serialized_local_world_cause_binds_exact_same_chapter_batch():
+    source = background_reality()
+    predecessor = event("local:accepted", "resource_state", {"causal_batch": {"local_id": "paid"}}, 20)
+    unrelated_prior = event("local:old", "resource_state", {"causal_batch": {"local_id": "paid"}}, 1)
+    source["events"][2]["mutation"]["payload"]["world_transition"] = {"payload_json": __import__("json").dumps({"cause_refs": ["local:paid"]})}
+    source["events"] = [source["events"][2], predecessor, unrelated_prior]
+    source["current_state"] = {}
+    rows, receipt = task_reality_workset(source, task={"required_event_refs": ["latest"]}, role_kinds=("world_state", "resource_state"), auxiliary_limit=0)
+    assert receipt["required_event_ids"] == ["latest", "local:accepted"]
+    assert {row[2]["source_event_id"] for row in rows} == {"latest", "local:accepted"}
+
+
+@pytest.mark.parametrize("kind", ["world_state", "narrative_obligation"])
+@pytest.mark.parametrize("ordered", [True, False])
+def test_same_chapter_history_uses_frozen_entity_versions_and_retains_ambiguous_originals(kind, ordered):
+    source = background_reality()
+    records = []
+    for identity, version in [("z:plant", 1), ("a:middle", 2), ("m:latest", 3)]:
+        row = event(identity, kind, {"fact_origin": {"kind": "GOVERNED_BACKGROUND"}, "obligation_id": "old-promise", "status": "OPEN"}, 20)
+        row["identity"]["entity_key"] = "old-promise" if kind == "narrative_obligation" else "world_state_id=inquiry"
+        row["version"] = {"event": 3, "entity": version if ordered else 1}
+        records.append(row)
+    source["events"] = [records[2], records[0], records[1]]
+    source["current_state"] = {kind: [{"entity_key": records[2]["identity"]["entity_key"], "source_event_id": "m:latest", "state": records[2]["mutation"]["payload"]}]}
+    task = {"obligation_refs": ["old-promise"]} if kind == "narrative_obligation" else {"state_entity_refs": ["world_state_id=inquiry"]}
+    rows, receipt = task_reality_workset(source, task=task, role_kinds=(kind,), auxiliary_limit=0)
+    assert set(receipt["required_event_ids"]) == ({"z:plant", "m:latest"} if ordered else {"z:plant", "a:middle", "m:latest"})
+    assert {row[2]["source_event_id"] for row in rows} == set(receipt["required_event_ids"])
+
+
 def test_role_projection_does_not_promote_all_readable_state_to_required():
     view = project_role_context(reality=reality(2000), role="DIRECTOR", token_budget=4096, task={"chapter": 21, "obligation_refs": ["old-promise"]})
     assert len(view["selection"]) == 3

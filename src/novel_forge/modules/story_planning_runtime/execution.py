@@ -4203,9 +4203,8 @@ class PostgresPlanningExecutionPreparer:
                 raise KernelError("PLANNING_PROVIDER_TOKEN_CEILING_INVALID", "complete Planning input exceeds the system support cap")
             from novel_forge.modules.chapter_authority.context_compression_provider import task_provider_output_reserve
 
-            requested_output_token_ceiling = min(
-                int(context_document.content.get("token_budget") or 16_000),
-                task_provider_output_reserve(stage_name, planning_route, router_binding_pending=provider_router is not None),
+            requested_output_token_ceiling = task_provider_output_reserve(
+                stage_name, planning_route, router_binding_pending=provider_router is not None,
             )
         if existing_intent is not None:
             provider_token_contract = dict(existing_intent["request_payload"].get("provider_token_contract") or {})
@@ -4226,6 +4225,8 @@ class PostgresPlanningExecutionPreparer:
                 accounting_basis=self.cost_accounting_basis,
                 cost_authorization_ref=self.account_authorization_ref,
             )
+        if existing_intent is None and requested_output_token_ceiling is not None and int(provider_token_contract.get("max_output_tokens") or 0) < requested_output_token_ceiling:
+            raise KernelError("PROVIDER_TOKEN_RESERVATION_INSUFFICIENT", "authorized Planning output reservation is smaller than the task Provider output requirement")
         contract_amount = provider_token_contract["estimated_cost_amount"]
         provider_reservation_amount = (
             None
@@ -4328,11 +4329,12 @@ class PostgresPlanningExecutionPreparer:
                     lineage_operation_ids=routing_lineage,
                 )
             if frozen.context_policy_ref == "context-policy:chapter-generation-pack:v2":
-                from novel_forge.modules.chapter_authority.context_compression_provider import require_task_reasoning, task_provider_output_reserve
+                from novel_forge.modules.chapter_authority.context_compression_provider import require_task_reasoning, require_task_output_reserve
 
                 require_task_reasoning(planning_route, task_scoped=True)
-                if output_reserve > task_provider_output_reserve(stage_name, planning_route):
-                    raise KernelError("TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_EXCEEDED", "Planning output reserve exceeds the final bound model capacity")
+                require_task_output_reserve(
+                    stage_name, planning_route, output_reserve, capacity_error_code="TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_EXCEEDED",
+                )
             route_identity = ":".join(
                 (
                     command.generator_operation_name,

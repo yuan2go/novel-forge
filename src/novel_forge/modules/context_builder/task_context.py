@@ -47,6 +47,25 @@ def task_references(value: Any) -> set[str]:
     return references
 
 
+def required_task_event_ids(value: Any) -> set[str]:
+    required: set[str] = set()
+
+    def visit(item: Any, field: str = "") -> None:
+        if field in {"required_event_ids", "required_event_refs", "required_source_event_ids"}:
+            if not isinstance(item, (list, tuple)) or any(not isinstance(ref, str) or not ref for ref in item):
+                raise KernelError("TASK_CONTEXT_DEPENDENCY_INVALID", "required event references must be a collection of exact accepted event identities")
+            required.update(item)
+        elif isinstance(item, Mapping):
+            for key, child in item.items():
+                visit(child, str(key))
+        elif isinstance(item, (list, tuple)):
+            for child in item:
+                visit(child, field)
+
+    visit(value)
+    return required
+
+
 def source_identity(entry: Mapping[str, Any]) -> str:
     return str(entry.get("source_event_id") or entry.get("source_identity") or "")
 
@@ -60,6 +79,51 @@ def fact_aliases(fact: Mapping[str, Any]) -> set[str]:
     ) if value}
 
 
+def world_task_scope(*, chapter: int, intent: Mapping[str, Any], planning_window: Any, world_foundation: Mapping[str, Any]) -> dict[str, Any]:
+    return {"chapter": chapter, "intent": intent, "planning_window": planning_window,
+            "world_rules": [rule for rule in world_foundation.get("rules", ()) if rule.get("enforcement") != "SOFT_CAUSAL"]}
+
+
+def required_background_entities(reality: Mapping[str, Any], task: Mapping[str, Any], role_kinds: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
+    selectors = task_references(task)
+    return tuple(sorted({(kind, entry["entity_key"]) for kind, entries in reality["current_state"].items() if kind in role_kinds
+                         for entry in entries if source_identity(entry) in selectors or selectors.intersection(task_references({"entity_key": entry["entity_key"], "state": entry.get("state") or {}}))}))
+
+
+def confirmed_reader_facts(reality: Mapping[str, Any]) -> set[str]:
+    disclosures = [entry["state"] for entry in reality["current_state"].get("disclosure_event", ()) if entry["state"].get("audience") == "READER"]
+    return {entry["state"]["fact_id"] for entry in reality["current_state"].get("reader_knowledge", ())
+            if entry["state"].get("status") == "KNOWN" and entry["state"].get("fact_id")
+            and not any(row.get("fact_id") == entry["state"]["fact_id"] and row.get("disclosure_mode") != "CONFIRM" for row in disclosures)}
+
+
+def world_event_causes(event: Mapping[str, Any]) -> tuple[str, ...]:
+    transition = (event.get("mutation") or {}).get("payload", {}).get("world_transition") or {}
+    if "payload_json" in transition:
+        try:
+            transition = json.loads(transition["payload_json"])
+        except (TypeError, ValueError) as exc:
+            raise KernelError("TASK_CONTEXT_DEPENDENCY_INVALID", "accepted World transition requires its exact structured causal contract") from exc
+    if not isinstance(transition, Mapping):
+        raise KernelError("TASK_CONTEXT_DEPENDENCY_INVALID", "accepted World transition requires an object contract")
+    return tuple(sorted(set(transition.get("cause_refs") or ())))
+
+
+def historical_endpoints(history: list[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    if not history:
+        return []
+    chapters = [int(event["coordinate"]["source_chapter"]) for event in history]
+    selected: dict[str, Mapping[str, Any]] = {}
+    for chapter, first in ((min(chapters), True), (max(chapters), False)):
+        group = [event for event in history if int(event["coordinate"]["source_chapter"]) == chapter]
+        versions = [(event.get("version") or {}).get("entity") for event in group]
+        if all(type(version) is int and version > 0 for version in versions) and len(set(versions)) == len(versions):
+            endpoint = (min if first else max)(versions)
+            group = [event for event in group if event["version"]["entity"] == endpoint]
+        selected.update({event["event_id"]: event for event in group})
+    return [selected[key] for key in sorted(selected)]
+
+
 def task_reality_workset(
     reality: Mapping[str, Any], *, task: Mapping[str, Any], role_kinds: tuple[str, ...],
     required_event_ids: tuple[str, ...] = (), auxiliary_limit: int = 12,
@@ -69,7 +133,7 @@ def task_reality_workset(
     selectors = task_references(task)
     events = {str(event["event_id"]): event for event in reality.get("events", [])}
     selected: dict[str, tuple[str, str, dict[str, Any], str]] = {}
-    required = set(required_event_ids)
+    required = set(required_event_ids) | required_task_event_ids(task)
     auxiliary = []
     for kind, entries in sorted(reality["current_state"].items()):
         if kind not in role_kinds:
@@ -102,19 +166,29 @@ def task_reality_workset(
     obligation_ids = {row[2]["state"].get("obligation_id") for row in selected.values() if row[0] == "narrative_obligation"}
     for obligation_id in sorted(value for value in obligation_ids if value):
         history = [event for event in events.values() if event["state_kind"] == "narrative_obligation" and event["mutation"]["payload"].get("obligation_id") == obligation_id and int(event["coordinate"]["source_chapter"]) <= boundary]
-        history.sort(key=lambda event: (int(event["coordinate"]["source_chapter"]), event["event_id"]))
-        for event in history[:1] + history[-1:]:
+        for event in historical_endpoints(history):
             event_id = event["event_id"]
             selected.setdefault(event_id, (event["state_kind"], event["identity"]["entity_key"], {"source_event_id": event_id, "state": deepcopy(event["mutation"]["payload"])}, "OBLIGATION_PLANTING_OR_ADVANCE"))
             required.add(event_id)
-    pending = sorted(required | (selectors & set(events)))
-    for event_id in pending:
+    confirmed = confirmed_reader_facts(reality)
+    for kind, entity_key in required_background_entities(reality, task, role_kinds):
+        history = [event for event in events.values() if event["state_kind"] == kind and event["identity"]["entity_key"] == entity_key
+                   and event["mutation"]["payload"].get("fact_origin", {}).get("kind") == "GOVERNED_BACKGROUND"
+                   and event["event_id"] not in confirmed and int(event["coordinate"]["source_chapter"]) <= boundary]
+        for event in historical_endpoints(history):
+            event_id = event["event_id"]
+            selected.setdefault(event_id, (kind, entity_key, {"source_event_id": event_id, "state": deepcopy(event["mutation"]["payload"])}, "UNDISCLOSED_BACKGROUND_PLANTING_OR_ADVANCE"))
+            required.add(event_id)
+    pending = [(event_id, 0) for event_id in sorted(required | (selectors & set(events)))]
+    for event_id, _ in pending:
         required.add(event_id)
     visited: set[str] = set()
     while pending:
-        event_id = pending.pop(0)
+        event_id, depth = pending.pop(0)
         if event_id in visited:
             continue
+        if len(visited) >= 2048 or depth >= 32:
+            raise KernelError("TASK_CONTEXT_DEPENDENCY_UNBOUNDED", "necessary causal closure exceeds its explicit host bound")
         visited.add(event_id)
         event = events.get(event_id)
         if event is None:
@@ -128,11 +202,16 @@ def task_reality_workset(
         selected.setdefault(event_id, (event["state_kind"], event["identity"]["entity_key"], {
             "source_event_id": event_id, "state": deepcopy(event["mutation"]["payload"]),
         }, "ACCEPTED_HISTORICAL_EVENT"))
-        transition = event["mutation"]["payload"].get("world_transition") or {}
-        for dependency in sorted(set(transition.get("cause_refs") or ())):
+        for dependency in world_event_causes(event):
+            if dependency.startswith("local:"):
+                matches = [item["event_id"] for item in events.values() if item["coordinate"]["source_chapter"] == event["coordinate"]["source_chapter"]
+                           and item["mutation"]["payload"].get("causal_batch", {}).get("local_id") == dependency[6:]]
+                if len(matches) != 1:
+                    raise KernelError("TASK_CONTEXT_DEPENDENCY_UNAVAILABLE", "causal local predecessor requires one exact accepted batch event")
+                dependency = matches[0]
             if dependency in events:
                 required.add(dependency)
-                pending.append(dependency)
+                pending.append((dependency, depth + 1))
             elif dependency not in reality.get("foundation_cause_refs", []):
                 raise KernelError("TASK_CONTEXT_DEPENDENCY_UNAVAILABLE", "causal predecessor is absent from the frozen accepted source")
     auxiliary.sort(key=lambda row: (-int((events.get(source_identity(row[2])) or {}).get("coordinate", {}).get("source_chapter") or 0), row[0], row[1]))

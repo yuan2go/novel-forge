@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.production_execution.contracts import ExecutionRuntimeClass
 
 
 CONTEXT_MODEL_STAGES = frozenset({"context_compress", "context_fidelity"})
@@ -90,6 +91,15 @@ def require_task_reasoning(route: Any, *, task_scoped: bool) -> None:
         raise KernelError("TASK_CONTEXT_REASONING_DOWNGRADE_FORBIDDEN", "task-scoped execution cannot permit a reasoning downgrade")
 
 
+def requires_full_output_reserve(route: Any) -> bool:
+    profile = getattr(route, "model_profile", None)
+    return (
+        getattr(profile, "backend_id", "") == "codex-cli"
+        and getattr(profile, "runtime_class", None)
+        == ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+    )
+
+
 def task_provider_output_reserve(stage: str, route: Any, *, router_binding_pending: bool = False) -> int:
     target = 4096 if stage == "context_compress" else 2048 if stage == "context_fidelity" else 16_384 if stage in {
         "draft", "revision", "review", "rereview", "screenplay_generate", "screenplay_revision",
@@ -98,7 +108,18 @@ def task_provider_output_reserve(stage: str, route: Any, *, router_binding_pendi
     if route is not None and route.model_profile.model_provider == "scripted_provider_v2":
         model_limit = model_limit or 262_144
     if model_limit <= 0:
-        if router_binding_pending:
+        if router_binding_pending and not requires_full_output_reserve(route):
             return target
         raise KernelError("TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_UNKNOWN", "task-scoped Provider output capacity must be explicitly bound")
-    return min(target, model_limit)
+    return model_limit if requires_full_output_reserve(route) else min(target, model_limit)
+
+
+def require_task_output_reserve(
+    stage: str, route: Any, output_reserve: int, *, capacity_error_code: str,
+) -> None:
+    required_reserve = task_provider_output_reserve(stage, route)
+    if requires_full_output_reserve(route):
+        if output_reserve < required_reserve:
+            raise KernelError("TASK_CONTEXT_CLI_OUTPUT_RESERVATION_INSUFFICIENT", "Codex CLI requires the full selected model output and reasoning capacity to be reserved")
+    elif output_reserve > required_reserve:
+        raise KernelError(capacity_error_code, "frozen output reserve exceeds the selected task or model bound")

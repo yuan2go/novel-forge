@@ -555,7 +555,12 @@ model window and authorized execution limit. Unknown capacity blocks. UTF-8 byte
 upper bounds are explicitly conservative token estimates, not exact tokenization;
 the independent 8 MiB serialization guard is a byte limit. Provider-specific output
 and reasoning accounting avoid treating the Context target as output reserve or
-charging the same reasoning reservation twice. These are engineering contracts;
+charging the same reasoning reservation twice. API stage output targets are
+enforced in the sent request. Since Codex CLI does not enforce a per-request output
+ceiling, new task contracts reserve its full confirmed model output capacity,
+including reasoning once; unknown capacity or insufficient frozen reservation blocks.
+Successful frozen requests recover under their original contract without new I/O.
+These are engineering contracts;
 fixture execution does not establish real Provider capacity or literary improvement.
 
 Persistent Actor intentions use `world-actor-experiment.v2` and

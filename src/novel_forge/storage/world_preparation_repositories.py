@@ -610,6 +610,17 @@ class WorldPreparationRepository:
                 event["event_id"]: event for event in [*reality["events"], *history]
             }
             reality["events"] = [combined[key] for key in sorted(combined)]
+            if provider_projection_version == "world-role-delivery.v3":
+                from novel_forge.modules.context_builder.reality_projection import ROLE_STATE_KINDS
+                from novel_forge.modules.context_builder.task_context import required_background_entities, required_task_event_ids, task_references, world_task_scope
+
+                task = world_task_scope(chapter=chapter + 1, intent=intent, planning_window=planning_window, world_foundation=world["world_foundation"])
+                entities = required_background_entities(reality, task, ROLE_STATE_KINDS["DIRECTOR"])
+                current_ids = {entry["source_event_id"] for kind, entries in reality["current_state"].items() for entry in entries if (kind, entry["entity_key"]) in entities and entry.get("source_event_id")}
+                required_ids = tuple(sorted(required_task_event_ids(task) | current_ids | (task_references(task) & {event["event_id"] for event in reality["events"]})))
+                directed = repository.task_background_sources(reality=reality, entity_keys=entities, required_event_ids=required_ids)
+                combined.update({event["event_id"]: event for event in directed})
+                reality["events"] = [combined[key] for key in sorted(combined)]
         continuations = (
             self.preparation_sources(reality=reality, limit=policy.max_candidates)
             if contract_version == "world-preparation-source.v2" and chapter

@@ -451,9 +451,9 @@ class ExternalEffectChapterModelPort:
         elif task_scoped:
             from .context_compression_provider import task_provider_output_reserve
 
-            output_target = min(task_provider_output_reserve(
+            output_target = task_provider_output_reserve(
                 stage, route, router_binding_pending=getattr(self.adapter, "provider_router", None) is not None,
-            ), bounded_reservation_tokens)
+            )
         frozen_reservation = frozen_metadata.get("provider_reservation_policy")
         if existing_intent is not None and isinstance(frozen_reservation, Mapping):
             reservation_contract = dict(frozen_reservation)
@@ -472,6 +472,8 @@ class ExternalEffectChapterModelPort:
                 accounting_basis=self.cost_accounting_basis,
                 cost_authorization_ref=self.account_authorization_ref,
             )
+        if task_scoped and existing_intent is None and int(reservation_contract.get("max_output_tokens") or 0) < output_target:
+            raise KernelError("PROVIDER_TOKEN_RESERVATION_INSUFFICIENT", "authorized output reservation is smaller than the task Provider output requirement")
         provider_output_token_ceiling = output_target if task_scoped else bounded_reservation_tokens
         budget_scope_id = ""
         budget_scope_revision = None

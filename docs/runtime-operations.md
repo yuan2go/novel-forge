@@ -187,8 +187,18 @@ Configure each actual route with its confirmed model Context and output limits,
 accounting method/evidence, and supported high reasoning. The system supports a
 maximum of 512,000 tokens; the effective complete-request window is the minimum
 of that maximum, the selected model window and the existing authorized execution
-limit. OpenAI reasoning shares its output reserve; DeepSeek requires its supported
-reasoning budget semantics; CLI admission labels application-visible coverage.
+limit. Output reservation is independent of the task Context target. API stages
+use their stage output target, bounded by confirmed model capacity and enforced
+in the sent request. OpenAI reasoning shares that output reserve; DeepSeek uses
+its supported reasoning budget semantics. Codex CLI has no enforced per-request
+output ceiling, so new task contracts reserve the full confirmed model output
+capacity, including reasoning once. Unknown CLI output capacity, insufficient
+authorization or a final route whose output capacity exceeds the frozen reserve
+blocks before dispatch. CLI admission labels application-visible coverage.
+A static Planning model may inherit capacity evidence only when it uses the
+same confirmed model as Draft. To select a different real Planning model, use
+the existing router with that candidate's own verified capacity and permission;
+changing only its model identifier leaves capacity unknown and blocks new work.
 Missing capacity, unsupported reasoning or an unqualified route blocks before
 external dispatch. Context compression uses the same authorized Provider and
 cumulative cost/token ledger; it does not grant extra calls or silently change models.
@@ -198,6 +208,19 @@ and accounting method. A newer base Planning Pack does not reinterpret the legac
 World estimate or replace its allocation with the Planning target. World v4 uses
 explicit conservative token accounting; complete Provider admission remains a
 separate check for every rendered request.
+
+For task-scoped World work, frozen hard-rule entity references identify necessary
+background. The existing accepted-lineage repository fetches that entity's first
+and latest unconfirmed background events using accepted chapter and frozen entity
+versions, plus exact causal dependencies, even
+when they fall outside the recent discovery page. Intermediate and unrelated
+history stays outside the task. When a boundary chapter lacks a unique causal
+order, its original events are retained; hashes and input array positions do not
+stand in for semantic order. Current reader knowledge and disclosure evidence
+keep confirmation separate from hints and misdirection. Typed required event
+references are validated before lookup. A necessary set exceeding the explicit
+2,048-event or 32-round host bound blocks rather than losing dependencies. These
+are bounded task policy limits, not new story Authorities.
 
 Inspect the frozen Context `task_context_receipt` and role `task_workset` for task,
 source version/hash, accepted boundary, necessary refs, selected/excluded history,

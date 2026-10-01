@@ -314,6 +314,7 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults(retr
             require_codex_invocation=True,
         )
 
+    assert not any("max_output_tokens" in argument or "model_max_output" in argument for argument in prepared.command)
     assert prepared.command[prepared.command.index("--model") + 1] == route.model_id
     assert f"model_reasoning_effort={route.reasoning_effort}" in prepared.command
     assert "--ignore-user-config" in prepared.command

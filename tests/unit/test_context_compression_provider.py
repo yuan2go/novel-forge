@@ -173,3 +173,107 @@ def test_semantic_task_reuses_author_and_world_private_source_isolation():
     assert "幕后借用真相" not in str(view) and "第七章旧申请" not in str(view)
     assert "world-secret" not in str(view) and "transport-secret" not in str(view)
     assert view["task"]["plan"]["author_design_guidance"]["fragments"]
+
+
+@pytest.mark.parametrize('stage', ['draft', 'context_compress', 'context_fidelity', 'book_plan.generate'])
+def test_codex_backend_reserves_the_known_full_output_capacity(stage):
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+    route = SimpleNamespace(model_output_limit=32_768, model_context_limit=512_000,
+        model_profile=SimpleNamespace(model_provider='codex-cli', backend_id='codex-cli',
+            runtime_class=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE))
+    assert task_provider_output_reserve(stage, route) == 32_768
+    route.model_output_limit = 0
+    with pytest.raises(KernelError, match='OUTPUT_CAPACITY_UNKNOWN'):
+        task_provider_output_reserve(stage, route, router_binding_pending=True)
+
+
+def test_output_reserve_uses_the_backend_contract_instead_of_the_provider_label():
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+    route = SimpleNamespace(model_output_limit=32_768,
+        model_profile=SimpleNamespace(model_provider='codex-cli', backend_id='remote-provider-openai',
+            runtime_class=ExecutionRuntimeClass.REMOTE_PROVIDER_API))
+    assert task_provider_output_reserve('draft', route) == 16_384
+
+
+@pytest.mark.parametrize('backend,output_limit,expected', [('codex-cli', 32_768, 32_768), ('remote-provider-openai', 32_768, 16_384)])
+def test_new_model_effect_output_is_independent_of_its_context_target(monkeypatch, backend, output_limit, expected):
+    from novel_forge.modules.chapter_authority import model_effects
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+    route = SimpleNamespace(model_output_limit=output_limit, model_profile=SimpleNamespace(backend_id=backend,
+        model_provider='codex-cli' if backend == 'codex-cli' else 'openai', runtime_class=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+        if backend == 'codex-cli' else ExecutionRuntimeClass.REMOTE_PROVIDER_API))
+    port = model_effects.ExternalEffectChapterModelPort('unused', adapter=SimpleNamespace(provider='controlled', routes={'draft': route}),
+        worker_id='worker', max_cost_per_call='1')
+    request = ChapterHandlerRequest(operation_id='operation', project_id='project', workspace_id='workspace', trace_id='trace',
+        correlation_id='correlation', command={'context_token_budget': 1000, 'draft_profile_version': 'draft-context-profile-v4'},
+        inputs=(), attempt_id='attempt', fencing_token=7, worker_id='worker')
+    monkeypatch.setattr(model_effects, 'read_external_effect_intent', lambda *args, **kwargs: None)
+    seen = []
+    class ReservationObserved(Exception):
+        pass
+    def reserve(*args, **kwargs):
+        seen.append(kwargs)
+        raise ReservationObserved()
+    monkeypatch.setattr(model_effects, 'resolve_provider_token_reservation_contract', reserve)
+    with pytest.raises(ReservationObserved):
+        port.invoke(request, stage='draft', payload={})
+    assert seen[0]['requested_output_token_ceiling'] == expected
+    assert seen[0]['frozen_request_token_ceiling'] == 1
+
+
+@pytest.mark.parametrize("stage", ["draft", "context_compress", "context_fidelity", "book_plan.generate"])
+def test_final_codex_route_capacity_growth_cannot_outgrow_its_frozen_reservation(stage):
+    from novel_forge.modules.chapter_authority.context_compression_provider import require_task_output_reserve
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+
+    route = SimpleNamespace(model_output_limit=32_768, model_profile=SimpleNamespace(
+        backend_id="codex-cli", runtime_class=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+        model_provider="codex-cli"))
+    require_task_output_reserve(stage, route, 32_768, capacity_error_code="FINAL_OUTPUT_CAPACITY_EXCEEDED")
+    route.model_output_limit = 65_536
+    with pytest.raises(KernelError, match="CLI_OUTPUT_RESERVATION_INSUFFICIENT"):
+        require_task_output_reserve(stage, route, 32_768, capacity_error_code="FINAL_OUTPUT_CAPACITY_EXCEEDED")
+    route.model_output_limit = 16_384
+    require_task_output_reserve(stage, route, 32_768, capacity_error_code="FINAL_OUTPUT_CAPACITY_EXCEEDED")
+    route.model_output_limit = 0
+    with pytest.raises(KernelError, match="OUTPUT_CAPACITY_UNKNOWN"):
+        require_task_output_reserve(stage, route, 32_768, capacity_error_code="FINAL_OUTPUT_CAPACITY_EXCEEDED")
+
+
+def test_final_api_output_reserve_keeps_the_sent_token_bound():
+    from novel_forge.modules.chapter_authority.context_compression_provider import require_task_output_reserve
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+
+    route = SimpleNamespace(model_output_limit=32_768, model_profile=SimpleNamespace(
+        backend_id="remote-provider-openai", runtime_class=ExecutionRuntimeClass.REMOTE_PROVIDER_API,
+        model_provider="openai"))
+    require_task_output_reserve("draft", route, 16_384, capacity_error_code="FINAL_OUTPUT_CAPACITY_EXCEEDED")
+    with pytest.raises(KernelError, match="FINAL_OUTPUT_CAPACITY_EXCEEDED"):
+        require_task_output_reserve("draft", route, 32_768, capacity_error_code="FINAL_OUTPUT_CAPACITY_EXCEEDED")
+
+
+@pytest.mark.parametrize("backend", ["codex-cli", "remote-provider-openai"])
+def test_authorization_cannot_shrink_the_new_output_requirement(monkeypatch, backend):
+    from novel_forge.modules.chapter_authority import model_effects
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+    from unittest.mock import Mock
+
+    route = SimpleNamespace(model_output_limit=32_768, model_profile=SimpleNamespace(backend_id=backend,
+        model_provider="codex-cli" if backend == "codex-cli" else "openai", runtime_class=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+        if backend == "codex-cli" else ExecutionRuntimeClass.REMOTE_PROVIDER_API))
+    port = model_effects.ExternalEffectChapterModelPort("unused", adapter=SimpleNamespace(provider="controlled", routes={"draft": route}),
+        worker_id="worker", max_cost_per_call="1")
+    request = ChapterHandlerRequest(operation_id="operation", project_id="project", workspace_id="workspace", trace_id="trace",
+        correlation_id="correlation", command={"context_token_budget": 1000, "draft_profile_version": "draft-context-profile-v4"},
+        inputs=(), attempt_id="attempt", fencing_token=7, worker_id="worker")
+    monkeypatch.setattr(model_effects, "read_external_effect_intent", lambda *args, **kwargs: None)
+    def reserve(*args, **kwargs):
+        return {"source": "BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY", "max_output_tokens": kwargs["requested_output_token_ceiling"] - 1}
+    monkeypatch.setattr(model_effects, "resolve_provider_token_reservation_contract", reserve)
+    plan = Mock()
+    monkeypatch.setattr(model_effects, "plan_external_effect", plan)
+    with pytest.raises(KernelError, match="PROVIDER_TOKEN_RESERVATION_INSUFFICIENT"):
+        port.invoke(request, stage="draft", payload={})
+    plan.assert_not_called()

@@ -2471,6 +2471,7 @@ def test_real_provider_planning_candidate_is_independently_evaluated_and_activat
             "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
             "NOVEL_FORGE_MODEL_PROVIDER": "openai",
             "NOVEL_FORGE_PLANNING_PROVIDER": "openai",
+            "NOVEL_FORGE_DRAFT_MODEL": "gpt-planning-proof",
             "NOVEL_FORGE_PLANNING_MODEL": "gpt-planning-proof",
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "openai",
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "gpt-evaluator-proof",

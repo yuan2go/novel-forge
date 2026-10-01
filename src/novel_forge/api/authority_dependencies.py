@@ -2285,6 +2285,14 @@ def build_story_planning_generation_application(
         raise RuntimeError(
             "Planning Provider must use the shared Production Execution Gateway backend"
         )
+    planning_model_capability_bound = (
+        planning_model == base_route.model_profile.model_id
+        or (
+            base_route.model_profile.backend_id == "scripted-fixture"
+            and base_route.model_profile.runtime_class
+            is ExecutionRuntimeClass.SCRIPTED_FIXTURE
+        )
+    )
     planning_definition = default_capability_registry().resolve(
         "planning.book.generate"
     )
@@ -2300,8 +2308,8 @@ def build_story_planning_generation_application(
         workspace_policy_ref="workspace:story-planning:v1",
         output_policy_ref="output:story-planning:structured:v1",
         fallback_policy="FAIL_CLOSED",
-        status=ModelProfileStatus.ACTIVE,
-        capability_probe_ref=base_route.model_profile.capability_probe_ref,
+        status=ModelProfileStatus.ACTIVE if planning_model_capability_bound else ModelProfileStatus.CANDIDATE,
+        capability_probe_ref=base_route.model_profile.capability_probe_ref if planning_model_capability_bound else "",
     )
     planning_policy = RoutePolicy(
         policy_id="story-planning.route",
@@ -2327,10 +2335,10 @@ def build_story_planning_generation_application(
         runtime_host_id=base_route.runtime_host_id,
         auth_profile_ref=base_route.auth_profile_ref,
         release_sha=base_route.release_sha,
-        model_context_limit=base_route.model_context_limit,
-        model_output_limit=base_route.model_output_limit,
-        token_accounting_method=base_route.token_accounting_method,
-        token_accounting_evidence_ref=base_route.token_accounting_evidence_ref,
+        model_context_limit=base_route.model_context_limit if planning_model_capability_bound else 0,
+        model_output_limit=base_route.model_output_limit if planning_model_capability_bound else 0,
+        token_accounting_method=base_route.token_accounting_method if planning_model_capability_bound else "",
+        token_accounting_evidence_ref=base_route.token_accounting_evidence_ref if planning_model_capability_bound else "",
         token_safety_margin=base_route.token_safety_margin,
         token_framing_overhead=base_route.token_framing_overhead,
     )
