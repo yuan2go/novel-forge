@@ -249,7 +249,7 @@ class TokenAccountingContract:
     safety_margin: int
     framing_overhead: int
     execution_token_limit: int = 0
-    contract_version: str = "provider-token-accounting-v2"
+    contract_version: str = "provider-token-accounting-v3"
 
     def __post_init__(self) -> None:
         if not all(
@@ -270,6 +270,7 @@ class TokenAccountingContract:
         if self.contract_version not in {
             "provider-token-accounting-v1",
             "provider-token-accounting-v2",
+            "provider-token-accounting-v3",
         }:
             raise ValueError("TokenAccountingContract version is unsupported")
         if (
@@ -278,7 +279,7 @@ class TokenAccountingContract:
         ):
             object.__setattr__(self, "execution_token_limit", self.model_context_limit)
         if (
-            self.contract_version == "provider-token-accounting-v2"
+            self.contract_version in {"provider-token-accounting-v2", "provider-token-accounting-v3"}
             and self.execution_token_limit <= 0
         ):
             raise ValueError(
@@ -552,7 +553,7 @@ def prepare_provider_admission(
         status, reason = "REJECTED", "TOKEN_ACCOUNTING_UNPROVEN"
     elif envelope.max_output_tokens != contract.output_reserve:
         status, reason = "REJECTED", "OUTPUT_RESERVE_MISMATCH"
-    elif contract.contract_version == "provider-token-accounting-v2" and (
+    elif contract.contract_version in {"provider-token-accounting-v2", "provider-token-accounting-v3"} and (
         not _REQUIRED_COMPLETE_COVERAGE.issubset(coverage)
         or not coverage.intersection({"context_bundle", "source_analysis_input"})
     ):
@@ -566,6 +567,7 @@ def prepare_provider_admission(
     )
     total = sum(components.values())
     applicable_limit = min(
+        512_000 if contract.contract_version == "provider-token-accounting-v3" else contract.model_context_limit,
         contract.model_context_limit,
         contract.execution_token_limit,
     )

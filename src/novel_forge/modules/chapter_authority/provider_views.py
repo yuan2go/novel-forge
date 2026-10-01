@@ -17,6 +17,8 @@ from novel_forge.modules.narrative_state import (
 _MAX_SEGMENTS = 24
 _MAX_FACTS_PER_SEGMENT = 32
 _MAX_PROVIDER_CONTEXT_CHARACTERS = 65_536
+_TASK_PROVIDER_SERIALIZATION_BYTES = 8_388_608
+_PLANNING_TASK_CAPACITY_POLICY = "context-policy:chapter-generation-pack:v2"
 _MAX_FOUNDATION_EVALUATION_CONTEXT_CHARACTERS = 131_072
 _MAX_PROVIDER_KNOWLEDGE_CHARACTERS = 65_536
 _STATE_ASSET_TYPES = {"story_state_snapshot", "canon_snapshot"}
@@ -358,6 +360,10 @@ def build_provider_task_view(
     project_methods: bool = False,
 ) -> dict[str, Any]:
 
+    if stage in {"context_compress", "context_fidelity"}:
+        from .context_compression_provider import context_compression_task_view
+
+        return context_compression_task_view(stage, inputs)
     if stage == "retrieval_query_expansion":
         boundary = inputs.get("accepted_boundary")
         coverage = inputs.get("coverage")
@@ -445,7 +451,7 @@ def build_provider_task_view(
             }
         if projected_task["contract_version"] == "world-provider-task.v2":
             projection = projected_task["context_projection"]
-            audit = {key: projection.pop(key) for key in ("policy", "rejections", "estimated_tokens", "token_accounting", "provider_admission") if key in projection}
+            audit = {key: projection.pop(key) for key in ("policy", "rejections", "estimated_tokens", "token_accounting", "provider_admission", "task_workset") if key in projection}
             state_provenance = {}
             for index, item in enumerate(projection.get("selection", [])):
                 state = item.get("state")
@@ -813,7 +819,7 @@ def build_provider_task_view(
     )
 
 
-def build_task_narrative_projection(plan: Mapping[str, Any]) -> dict[str, Any]:
+def build_task_narrative_projection(plan: Mapping[str, Any], *, task_scoped: bool = False) -> dict[str, Any]:
 
     characters: set[str] = set()
     arcs: set[str] = set()
@@ -891,7 +897,8 @@ def build_task_narrative_projection(plan: Mapping[str, Any]) -> dict[str, Any]:
         "world_preparation", {}
     ).get("action", {}).get("contract_version") == "world-production-action.v2"
     return {
-        "contract_version": "chapter-task-narrative-projection-v1",
+        "contract_version": "chapter-task-narrative-projection-v2" if task_scoped else "chapter-task-narrative-projection-v1",
+        **({"required_event_refs": sorted(str(value) for value in plan.get("required_long_distance_fact_ids") or ()), "policy_version": "task-scoped-context.v1"} if task_scoped else {}),
         "chapter": int(plan["chapter"]),
         "narrative_segment_ref": {
             key: str(segment_ref.get(key) or "")
@@ -989,7 +996,7 @@ def project_narrative_state_facts(
         else item
         for item in materialized
     ]
-    if projection.get("contract_version") == "chapter-task-narrative-projection-v1":
+    if projection.get("contract_version") in {"chapter-task-narrative-projection-v1", "chapter-task-narrative-projection-v2"}:
         accessible = set(projection.get("authorized_epistemic_fact_refs") or ())
         scoped = projection.get("scene_epistemic_scopes")
         projected = []
@@ -1027,6 +1034,9 @@ def project_narrative_state_facts(
                 )
         materialized = projected
     selectors = _selectors(projection, {})
+    if projection.get("contract_version") == "chapter-task-narrative-projection-v2":
+        from novel_forge.modules.context_builder.task_context import project_task_state_facts
+        return project_task_state_facts(materialized, projection=projection, chapter=chapter)
     if not selectors:
         if len(materialized) <= _MAX_FACTS_PER_SEGMENT:
             return deepcopy(materialized)
@@ -1037,7 +1047,7 @@ def project_narrative_state_facts(
     selected = [
         item for item in materialized if _state_fact_relevant(item, selectors, chapter)
     ]
-    if len(selected) > _MAX_FACTS_PER_SEGMENT:
+    if projection.get("contract_version") != "chapter-task-narrative-projection-v2" and len(selected) > _MAX_FACTS_PER_SEGMENT:
         raise KernelError(
             "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
             "Chapter execution selectors resolve more than the bounded fact limit",
@@ -1061,6 +1071,21 @@ def build_provider_context_view(
     task_view: Mapping[str, Any],
 ) -> dict[str, Any]:
 
+    if stage in {"context_compress", "context_fidelity"}:
+        from .context_compression_provider import compression_boundary_identity
+
+        if (
+            compression_boundary_identity(context_bundle.get("accepted_boundary") or {})
+            != compression_boundary_identity(task_view.get("accepted_boundary") or {})
+            or str(context_bundle.get("memo_fingerprint") or "") != str(task_view.get("memo_fingerprint") or "")
+        ):
+            raise KernelError("CONTEXT_COMPRESSION_BOUNDARY_DRIFT", "compression must use the frozen Memo boundary")
+        return {
+            "contract_version": "provider-context-view-v4", "stage": stage,
+            "accepted_boundary": deepcopy(context_bundle["accepted_boundary"]),
+            "memo_fingerprint": context_bundle["memo_fingerprint"],
+            "source_isolation": "FROZEN_TASK_CHUNK_ONLY", "protected": True,
+        }
     if stage == "memo":
         intent = task_view.get("frozen_intent") or {}
         if intent.get("intent_fingerprint") != context_bundle.get("intent_fingerprint"):
@@ -1102,6 +1127,7 @@ def build_provider_context_view(
         }
     if stage in {"world_candidates.generate", "world_candidates.evaluate", "world_candidates.actor_0", "world_candidates.actor_1", "world_candidates.actor_2"}:
         task = task_view.get("world_preparation") or {}
+        task_capacity = dict(task.get("policy") or {}).get("version") == "world-production-policy.v4"
         if context_bundle.get("world_preparation") != task:
             raise KernelError(
                 "WORLD_CONTEXT_IDENTITY_MISMATCH",
@@ -1182,8 +1208,18 @@ def build_provider_context_view(
             token_budget = context_bundle.get("token_budget")
             if type(token_budget) is not int or token_budget <= 0:
                 raise KernelError("WORLD_PROVIDER_CONTEXT_BUDGET_INVALID", "World author context requires its frozen token budget")
-            if _serialized_character_count(view) > min(_MAX_PROVIDER_CONTEXT_CHARACTERS, token_budget * 4):
+            if not task_capacity and _serialized_character_count(view) > min(_MAX_PROVIDER_CONTEXT_CHARACTERS, token_budget * 4):
                 raise KernelError("WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "Protected World author context exceeds its frozen budget; narrow the governed scope")
+        if task_capacity:
+            token_budget = context_bundle.get("token_budget")
+            if type(token_budget) is not int or not 0 < token_budget <= 512_000 or token_budget != task["policy"].get("context_token_budget"):
+                raise KernelError("WORLD_PROVIDER_CONTEXT_BUDGET_INVALID", "World task capacity requires its exact frozen token budget")
+            view["contract_version"] = "provider-context-view-v4"
+            view["capacity_policy"] = {"version": "world-production-policy.v4", "task_target_tokens": token_budget,
+                                       "token_accounting": "utf8-byte-upper-bound.v1", "maximum_serialized_bytes": _TASK_PROVIDER_SERIALIZATION_BYTES}
+            measured = _serialized_byte_count(view)
+            if measured > _TASK_PROVIDER_SERIALIZATION_BYTES or measured > token_budget:
+                raise KernelError("WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "Required World Provider view exceeds its serialized byte guard or conservative task token budget")
         frozen = (context_bundle.get("context_manifest") or {}).get("provider_context_view")
         if isinstance(frozen, Mapping) and isinstance(frozen.get("compiled_view"), Mapping) and frozen["compiled_view"].get("stage") == stage:
             if frozen["compiled_view"] != view or frozen.get("content_hash") != _projection_hash(view) or frozen.get("source_input_hash") != planning_context_source_hash(context_bundle):
@@ -1308,13 +1344,14 @@ def build_provider_context_view(
             "state-bearing ContextBundle requires a task narrative projection; "
             "rebuild Context from the accepted checkpoint",
         )
-    extended_context = context_bundle.get("context_profile_version") == "draft-context-profile-v3"
+    task_scoped_context = context_bundle.get("context_profile_version") == "draft-context-profile-v4"
+    extended_context = task_scoped_context or context_bundle.get("context_profile_version") == "draft-context-profile-v3"
     maximum_characters = _MAX_PROVIDER_CONTEXT_CHARACTERS
     if extended_context:
         budget = context_bundle.get("token_budget")
-        if type(budget) is not int or not 0 < budget <= 24_000:
+        if type(budget) is not int or not 0 < budget <= (512_000 if task_scoped_context else 24_000):
             raise KernelError("CHAPTER_PROVIDER_CONTEXT_BUDGET_INVALID", "Draft Context v3 requires its exact bounded frozen token budget")
-        maximum_characters = budget * 4
+        maximum_characters = 8_192_000 if task_scoped_context else budget * 4
     rendered: list[dict[str, Any]] = []
     omitted_facts = 0
     omitted_segments = 0
@@ -1351,14 +1388,14 @@ def build_provider_context_view(
                         or 0
                     ),
                 )
-                if "disclosure_field_projections" in projection
+                if task_scoped_context or "disclosure_field_projections" in projection
                 else facts
             )
             selected_facts = [
                 item
                 for item in bounded_facts
                 if item.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"
-                if _state_fact_relevant(
+                if task_scoped_context or _state_fact_relevant(
                     item,
                     selectors,
                     int(
@@ -1369,7 +1406,7 @@ def build_provider_context_view(
                     ),
                 )
             ]
-        if len(selected_facts) > _MAX_FACTS_PER_SEGMENT:
+        if not task_scoped_context and len(selected_facts) > _MAX_FACTS_PER_SEGMENT:
             raise KernelError(
                 "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
                 "relevant accepted facts exceed the Provider segment budget; "
@@ -1394,7 +1431,7 @@ def build_provider_context_view(
         if not summary and not selected_facts:
             omitted_segments += 1
             continue
-        if len(rendered) >= _MAX_SEGMENTS:
+        if not task_scoped_context and len(rendered) >= _MAX_SEGMENTS:
             raise KernelError(
                 "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
                 "eligible Context segments exceed the Provider budget; "
@@ -1421,7 +1458,7 @@ def build_provider_context_view(
         else {}
     )
     view = {
-        "contract_version": "provider-context-view-v3" if extended_context else "provider-context-view-v2",
+        "contract_version": "provider-context-view-v4" if task_scoped_context else "provider-context-view-v3" if extended_context else "provider-context-view-v2",
         "stage": stage,
         "narrative_position": {
             key: position[key]
@@ -1442,17 +1479,17 @@ def build_provider_context_view(
         "task_narrative_projection": _compact(dict(projection)),
         "segments": rendered,
         "selection_explanation": {
-            "policy": "minimum-sufficient-context-v4" if extended_context else "minimum-sufficient-context-v3",
+            "policy": "task-scoped-context.v1" if task_scoped_context else "minimum-sufficient-context-v4" if extended_context else "minimum-sufficient-context-v3",
             "included_segment_count": len(rendered),
             "included_fact_count": sum(
                 len(item["structured_facts"]) for item in rendered
             ),
             "omitted_segment_count": omitted_segments,
             "omitted_fact_count": omitted_facts,
-            "maximum_segments": _MAX_SEGMENTS,
-            "maximum_facts_per_segment": _MAX_FACTS_PER_SEGMENT,
-            "maximum_serialized_characters": maximum_characters,
-            **({"context_profile_version": "draft-context-profile-v3",
+            "maximum_segments": None if task_scoped_context else _MAX_SEGMENTS,
+            "maximum_facts_per_segment": None if task_scoped_context else _MAX_FACTS_PER_SEGMENT,
+            **({"maximum_serialized_bytes": 8_388_608} if task_scoped_context else {"maximum_serialized_characters": maximum_characters}),
+            **({"context_profile_version": context_bundle["context_profile_version"],
                 "frozen_context_token_budget": context_bundle["token_budget"],
                 "duplicate_state_summary_count": duplicate_state_summaries} if extended_context else {}),
         },
@@ -1460,7 +1497,9 @@ def build_provider_context_view(
             (correctness or {}).get("receipt_hash") or ""
         ),
     }
-    if _serialized_character_count(view) > maximum_characters:
+    serialized_size = len(json.dumps(view, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")) if task_scoped_context else _serialized_character_count(view)
+    serialization_limit = 8_388_608 if task_scoped_context else maximum_characters
+    if serialized_size > serialization_limit:
         raise KernelError(
             "CHAPTER_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
             "projected Provider Context exceeds its deterministic size boundary; "
@@ -1823,6 +1862,10 @@ def _build_planning_context_view(
             "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
             "Planning Provider Context requires the canonical Planning ContextBundle",
         )
+    capacity_policy = context_bundle.get("planning_context_policy_version")
+    if capacity_policy is not None and capacity_policy != _PLANNING_TASK_CAPACITY_POLICY:
+        raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_INVALID", "Planning capacity requires a supported frozen policy version")
+    task_capacity = capacity_policy == _PLANNING_TASK_CAPACITY_POLICY
     frozen = (context_bundle.get("context_manifest") or {}).get("provider_context_view")
     if isinstance(frozen, Mapping) and "compiled_view" in frozen:
         view = frozen["compiled_view"]
@@ -1859,7 +1902,7 @@ def _build_planning_context_view(
             "Planning frozen inputs exceed the bounded segment limit",
         )
     chapter = _planning_chapter(context_bundle)
-    selectors = _planning_selectors(raw_inputs, chapter=chapter, stage=stage)
+    selectors = _planning_selectors(raw_inputs, chapter=chapter, stage=stage, task_capacity=task_capacity)
     repair_context = context_bundle.get("repair_context")
     if repair_context is not None and not isinstance(repair_context, Mapping):
         raise KernelError(
@@ -1884,6 +1927,7 @@ def _build_planning_context_view(
             selectors=selectors,
             loss_records=losses,
             source=raw,
+            task_capacity=task_capacity,
         )
         omitted_items += omitted
         truncated_characters += truncated
@@ -1900,7 +1944,7 @@ def _build_planning_context_view(
         context_bundle, raw_inputs
     )
     view = {
-        "contract_version": "provider-context-view-v2",
+        "contract_version": "provider-context-view-v4" if task_capacity else "provider-context-view-v2",
         "stage": stage,
         "narrative_position": {
             "book_id": str(context_bundle.get("book_id") or ""),
@@ -1929,8 +1973,9 @@ def _build_planning_context_view(
             "field_classes": {**_REQUIRED_PLANNING_FIELDS, **{field: "OPTIONAL_GUIDANCE" for field in sorted(_OPTIONAL_PLANNING_FIELDS)}},
             "loss_records": losses,
             "maximum_segments": _MAX_SEGMENTS,
-            "maximum_facts_per_segment": _MAX_FACTS_PER_SEGMENT,
-            "maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS,
+            "maximum_facts_per_segment": None if task_capacity else _MAX_FACTS_PER_SEGMENT,
+            **({"capacity_policy_version": capacity_policy, "maximum_serialized_bytes": _TASK_PROVIDER_SERIALIZATION_BYTES,
+                "token_accounting": "utf8-byte-upper-bound.v1"} if task_capacity else {"maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS}),
         },
     }
     if context_bundle.get("author_design_projection"):
@@ -1940,7 +1985,7 @@ def _build_planning_context_view(
         if input_projection != "planning-input-role-references.v1":
             raise KernelError("PLANNING_PROVIDER_CONTEXT_VIEW_INVALID", "Planning input references require an explicit supported frozen version")
         _reference_planning_matrix_source(view, sources=raw_inputs, chapter=chapter)
-        view["contract_version"] = "provider-context-view-v3"
+        view["contract_version"] = "provider-context-view-v4" if task_capacity else "provider-context-view-v3"
         view["selection_explanation"]["compiler_version"] = "scope-preserving-planning-context-v2"
     if context_bundle.get("edition_execution"):
         view["edition_execution"] = deepcopy(context_bundle["edition_execution"])
@@ -1975,6 +2020,7 @@ def _build_planning_context_view(
             selectors=selectors,
             loss_records=losses,
             source=source,
+            task_capacity=task_capacity,
         )
         repair_view = {
             "contract_version": str(repair_context.get("contract_version") or ""),
@@ -1996,17 +2042,26 @@ def _build_planning_context_view(
     token_budget = context_bundle.get("token_budget")
     if token_budget is not None and (not isinstance(token_budget, int) or isinstance(token_budget, bool) or token_budget <= 0):
         raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_INVALID", "Planning token budget must be a positive integer")
+    if task_capacity and (type(token_budget) is not int or not 0 < token_budget <= 512_000):
+        raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_INVALID", "Planning task capacity requires a frozen target within system support")
+    if task_capacity:
+        view["selection_explanation"]["task_target_tokens"] = token_budget
     character_budget = min(_MAX_PROVIDER_CONTEXT_CHARACTERS, token_budget * 4) if token_budget is not None else _MAX_PROVIDER_CONTEXT_CHARACTERS
     _compact_qualified_foundation_planning(view, sources=raw_inputs, stage=stage, project_id=str(context_bundle.get("project_id") or ""))
     _compact_planning_loss_sources(view)
     source_hash = planning_context_source_hash(context_bundle) if projection_audit is not None else ""
-    _prune_optional_planning_context(view, sources=raw_inputs, character_budget=character_budget, audit_source_hash=source_hash)
+    _prune_optional_planning_context(view, sources=raw_inputs, character_budget=character_budget,
+                                    task_token_budget=token_budget if task_capacity else None, audit_source_hash=source_hash)
     if input_projection:
         _reference_planning_matrix_source(view, sources=raw_inputs, chapter=chapter)
     if projection_audit is not None:
         view, audit = _planning_view_with_audit_receipt(view, source_input_hash=source_hash)
         projection_audit.update(audit)
-    if _serialized_character_count(view) > character_budget:
+    if task_capacity:
+        measured = _serialized_byte_count(view)
+        if measured > _TASK_PROVIDER_SERIALIZATION_BYTES or measured > token_budget:
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "required Planning Provider Context exceeds its conservative task token budget or serialized byte guard")
+    elif _serialized_character_count(view) > character_budget:
         raise KernelError(
             "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
             "required Planning Provider Context exceeds its budget boundary; narrow the governed scope before sending: "
@@ -2188,7 +2243,7 @@ def _planning_view_with_audit_receipt(view: Mapping[str, Any], *, source_input_h
     return compiled, audit
 
 
-def _prune_optional_planning_context(view: dict[str, Any], *, sources: Iterable[Mapping[str, Any]], character_budget: int, audit_source_hash: str = "") -> None:
+def _prune_optional_planning_context(view: dict[str, Any], *, sources: Iterable[Mapping[str, Any]], character_budget: int, audit_source_hash: str = "", task_token_budget: int | None = None) -> None:
     source_by_id = {str(source.get("asset_version_id") or ""): source for source in sources}
     optional: list[tuple[dict[str, Any], str, str, Mapping[str, Any]]] = []
 
@@ -2210,7 +2265,7 @@ def _prune_optional_planning_context(view: dict[str, Any], *, sources: Iterable[
         visit(segment["content"], "", source_by_id.get(segment["asset_version_id"], segment))
     for parent, key, path, source in reversed(optional):
         measured_view = _planning_view_with_audit_receipt(view, source_input_hash=audit_source_hash)[0] if audit_source_hash else view
-        if _serialized_character_count(measured_view) <= character_budget:
+        if (task_token_budget is not None and _serialized_byte_count(measured_view) <= min(task_token_budget, _TASK_PROVIDER_SERIALIZATION_BYTES)) or (task_token_budget is None and _serialized_character_count(measured_view) <= character_budget):
             break
         removed = parent.pop(key)
         loss = _loss_record(source, path=path, value=removed, reason="OPTIONAL_CONTEXT_BUDGET")
@@ -2284,7 +2339,7 @@ def _planning_chapter(context_bundle: Mapping[str, Any]) -> int:
 
 
 def _planning_selectors(
-    raw_inputs: Iterable[Mapping[str, Any]], *, chapter: int, stage: str
+    raw_inputs: Iterable[Mapping[str, Any]], *, chapter: int, stage: str, task_capacity: bool = False,
 ) -> frozenset[str]:
     references: set[str] = set()
 
@@ -2316,19 +2371,19 @@ def _planning_selectors(
         content = raw.get("content")
         if not isinstance(content, Mapping):
             continue
-        projected, _, _ = _project_planning_content(stage=stage, role=role, content=content, chapter=chapter, selectors=frozenset())
+        projected, _, _ = _project_planning_content(stage=stage, role=role, content=content, chapter=chapter, selectors=frozenset(), task_capacity=task_capacity)
         visit(projected)
     return frozenset(references)
 
 
-def project_world_planning_window(inputs: Iterable[Mapping[str, Any]], *, chapter: int, window: int) -> list[dict[str, Any]]:
+def project_world_planning_window(inputs: Iterable[Mapping[str, Any]], *, chapter: int, window: int, context_policy_version: str = "") -> list[dict[str, Any]]:
     result = []
     for item in inputs:
         content = deepcopy(item["content"])
         if item["role"] == "chapter_group_plan":
             content["chapter_function_matrix"] = [row for row in content.get("chapter_function_matrix", []) if chapter <= int(row["chapter_number"]) < chapter + window]
         losses: list[dict[str, Any]] = []
-        projected, omitted, truncated = _project_planning_content(stage="chapter_plan.generate", role=item["role"], content=content, chapter=0 if item["role"] == "chapter_group_plan" else chapter, selectors=frozenset(), loss_records=losses, source=item)
+        projected, omitted, truncated = _project_planning_content(stage="chapter_plan.generate", role=item["role"], content=content, chapter=0 if item["role"] == "chapter_group_plan" else chapter, selectors=frozenset(), loss_records=losses, source=item, task_capacity=context_policy_version == "world-production-policy.v4")
         explanation = {"loss_records": losses}
         _compact_planning_loss_sources({"selection_explanation": explanation})
         result.append({"role": item["role"], "asset_version_id": item["asset_version_id"], "content_hash": item["content_hash"], "content": projected, "omitted_items": omitted, "truncated_characters": truncated, **explanation})
@@ -2344,6 +2399,7 @@ def _project_planning_content(
     selectors: frozenset[str],
     loss_records: list[dict[str, Any]] | None = None,
     source: Mapping[str, Any] | None = None,
+    task_capacity: bool = False,
 ) -> tuple[dict[str, Any], int, int]:
     from novel_forge.modules.story_design_authority.author_input import without_author_private
     content = without_author_private(content)
@@ -2367,7 +2423,7 @@ def _project_planning_content(
         from novel_forge.modules.worldbuilding.foundation import WorldFoundation
         WorldFoundation.from_mapping(payload["world_foundation"])
         world = deepcopy(payload["world_foundation"])
-        if _serialized_character_count(world) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
+        if (_serialized_byte_count(world) > _TASK_PROVIDER_SERIALIZATION_BYTES if task_capacity else _serialized_character_count(world) > _MAX_PROVIDER_CONTEXT_CHARACTERS):
             raise KernelError("WORLD_FOUNDATION_SCOPE_TOO_BROAD", "compile a smaller world scope before Provider admission")
         return {"authority": "QUALIFIED_DESIGN_CONSTRAINTS", "world_foundation": world}, 0, 0
     if role.startswith("narrative_governance_action:") and content.get("contract_version") == "causal-planning-action.v1":
@@ -2386,7 +2442,7 @@ def _project_planning_content(
     ):
         facts = project_narrative_state_facts(
             compact_current_state_facts(dict(content)),
-            projection={"state_entity_refs": sorted(selectors)},
+            projection={"state_entity_refs": sorted(selectors), **({"contract_version": "chapter-task-narrative-projection-v2"} if task_capacity else {})},
             chapter=chapter,
         )
         return (
@@ -2405,7 +2461,7 @@ def _project_planning_content(
     ):
         facts = project_narrative_state_facts(
             compact_canon_facts(dict(content)),
-            projection={"state_entity_refs": sorted(selectors)},
+            projection={"state_entity_refs": sorted(selectors), **({"contract_version": "chapter-task-narrative-projection-v2"} if task_capacity else {})},
             chapter=chapter,
         )
         return (
@@ -2562,6 +2618,10 @@ def _serialized_character_count(value: Any) -> int:
             separators=(",", ":"),
         )
     )
+
+
+def _serialized_byte_count(value: Any) -> int:
+    return len(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8"))
 
 
 def _selectors(

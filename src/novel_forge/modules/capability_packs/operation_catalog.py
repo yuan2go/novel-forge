@@ -280,7 +280,7 @@ _NON_PROVIDER_CAPABILITIES = {
     "memo": "planning.chapter.generate",
     "retrieval": "retrieval.embed",
     "best_candidate": "planning.chapter.generate",
-    "context": "retrieval.index.query",
+    "context": "context.task.compile",
     "canon_proposal": "canon.extract",
     "canon": "canon.extract",
     "quality": "quality.aggregate",

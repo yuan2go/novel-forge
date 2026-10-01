@@ -694,6 +694,7 @@ class PlanningExecutionRoute:
     auth_profile_ref: str
     release_sha: str
     model_context_limit: int = 0
+    model_output_limit: int = 0
     token_accounting_method: str = ""
     token_accounting_evidence_ref: str = ""
     token_safety_margin: int = 256
@@ -725,6 +726,7 @@ class PlanningExecutionRoute:
         if (
             min(
                 self.model_context_limit,
+                self.model_output_limit,
                 self.token_safety_margin,
                 self.token_framing_overhead,
             )
@@ -3728,8 +3730,11 @@ class PostgresPlanningExecutionPreparer:
         )
         action = None
         if command.world_preparation_request:
+            context_policy_content = self.pack_runtime.materialize_attempt_artifacts(attempt_snapshot).context_policy.content
             knowledge_context, _ = self._context_bundle(
-                operation_id=operation_id, attempt_id=attempt_id, command=command, inputs=inputs
+                operation_id=operation_id, attempt_id=attempt_id, command=command, inputs=inputs,
+                context_policy_ref=attempt_snapshot.execution_snapshot.context_policy_ref,
+                planning_task_token_budget=json.loads(attempt_snapshot.execution_snapshot.context_policy_payload_json).get("planning_task_token_budget", context_policy_content.get("planning_task_token_budget")),
             )
 
             def execute_stage(stage):
@@ -3789,6 +3794,7 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_CAPABILITY_PACK_NODE_INVALID",
                 "Planning Pack capability differs from the Generator",
             )
+        pack_materialization = self.pack_runtime.materialize_attempt_artifacts(attempt_snapshot)
         if frozen_world_sample is not None:
             from .world_sampling import require_frozen_world_execution
 
@@ -3807,6 +3813,8 @@ class PostgresPlanningExecutionPreparer:
                 attempt_id=attempt_id,
                 command=command,
                 inputs=inputs,
+                context_policy_ref=frozen.context_policy_ref,
+                planning_task_token_budget=json.loads(frozen.context_policy_payload_json).get("planning_task_token_budget", pack_materialization.context_policy.content.get("planning_task_token_budget")),
             )
         if provider_stage is not None and frozen_world_sample is None:
             context_document, source_document = self._world_context_bundle(
@@ -3842,9 +3850,6 @@ class PostgresPlanningExecutionPreparer:
                     "CHAPTER_SCHEDULE_BINDING_INVALID",
                     "Frozen Scheduling input does not contain one complete Chapter row",
                 ) from exc
-        pack_materialization = self.pack_runtime.materialize_attempt_artifacts(
-            attempt_snapshot
-        )
         tools = json.loads(frozen.tool_policy_payload_json)
         allowed_tools = self._allowed_tools(tools, stage_name if frozen_world_sample is not None else command.generator_operation_name)
         if allowed_tools != ("model.provider.invoke",):
@@ -4049,28 +4054,7 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_PROVIDER_TOKEN_CEILING_INVALID",
                 "frozen Planning context policy has no valid token ceiling",
             ) from exc
-        provider_token_contract = resolve_provider_token_reservation_contract(
-            self.database_url,
-            operation_id=operation_id,
-            project_id=command.project_id,
-            currency=(
-                "UNKNOWN"
-                if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
-                else "USD"
-            ),
-            frozen_request_token_ceiling=frozen_request_token_ceiling,
-            accounting_basis=self.cost_accounting_basis,
-            cost_authorization_ref=self.account_authorization_ref,
-        )
-        contract_amount = provider_token_contract["estimated_cost_amount"]
-        provider_reservation_amount = (
-            None
-            if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
-            else str(contract_amount or self.max_cost_per_call)
-        )
-        provider_reservation_tokens = int(
-            provider_token_contract["estimated_total_tokens"]
-        )
+        provider_token_contract = {"max_output_tokens": 1}
         stable_request_payload = {
             "stage": stage_name,
             "max_output_tokens": provider_token_contract["max_output_tokens"],
@@ -4193,11 +4177,67 @@ class PostgresPlanningExecutionPreparer:
                 )
             )
         existing_intent = read_external_effect_intent(
-            self.database_url,
-            effect_context,
-            effect_type="model.invoke",
-            stable_idempotency_key=stable_key,
+            self.database_url, effect_context, effect_type="model.invoke", stable_idempotency_key=stable_key,
         )
+        requested_output_token_ceiling = None
+        if existing_intent is None and frozen.context_policy_ref == "context-policy:chapter-generation-pack:v2":
+            target_scope = TargetScope(
+                scope_kind=command.planning_scope.value.lower(),
+                scope_id=command.logical_key,
+                project_id=command.project_id,
+                book_id=command.book_id,
+            )
+            complete_prompt, _ = _materialize_production_codex_prompt(
+                target_scope=target_scope.to_dict(), stage=stage_name,
+                inputs=stable_request_payload["input"], materialization=materialization,
+            )
+            output_modes = dict(dict(context_policy.get("provider_output_modes") or {}).get(stage_name) or {})
+            transport_schema = json.dumps(output_schema, sort_keys=True, ensure_ascii=False) if output_modes.get("deepseek") else ""
+            components = provider_request_token_components(
+                complete_prompt, output_schema_json=transport_schema,
+                output_reserve=1, safety_margin=planning_route.token_safety_margin,
+                framing_overhead=planning_route.token_framing_overhead,
+            )
+            frozen_request_token_ceiling = sum(components.values()) - 1
+            if frozen_request_token_ceiling > int(context_policy["max_tokens"]):
+                raise KernelError("PLANNING_PROVIDER_TOKEN_CEILING_INVALID", "complete Planning input exceeds the system support cap")
+            from novel_forge.modules.chapter_authority.context_compression_provider import task_provider_output_reserve
+
+            requested_output_token_ceiling = task_provider_output_reserve(
+                stage_name, planning_route, router_binding_pending=provider_router is not None,
+            )
+        if existing_intent is not None:
+            provider_token_contract = dict(existing_intent["request_payload"].get("provider_token_contract") or {})
+            if int(provider_token_contract.get("max_output_tokens") or 0) <= 0:
+                raise KernelError("PLANNING_EFFECT_INTENT_INVALID", "frozen Planning intent has no valid output reservation contract")
+        else:
+            provider_token_contract = resolve_provider_token_reservation_contract(
+                self.database_url,
+                operation_id=operation_id,
+                project_id=command.project_id,
+                currency=(
+                    "UNKNOWN"
+                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else "USD"
+                ),
+                frozen_request_token_ceiling=frozen_request_token_ceiling,
+                requested_output_token_ceiling=requested_output_token_ceiling,
+                accounting_basis=self.cost_accounting_basis,
+                cost_authorization_ref=self.account_authorization_ref,
+            )
+        if existing_intent is None and requested_output_token_ceiling is not None and int(provider_token_contract.get("max_output_tokens") or 0) < requested_output_token_ceiling:
+            raise KernelError("PROVIDER_TOKEN_RESERVATION_INSUFFICIENT", "authorized Planning output reservation is smaller than the task Provider output requirement")
+        contract_amount = provider_token_contract["estimated_cost_amount"]
+        provider_reservation_amount = (
+            None
+            if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+            else str(contract_amount or self.max_cost_per_call)
+        )
+        provider_reservation_tokens = int(
+            provider_token_contract["estimated_total_tokens"]
+        )
+        stable_request_payload["max_output_tokens"] = provider_token_contract["max_output_tokens"]
+        stable_request_payload["provider_token_contract"] = provider_token_contract
         if existing_intent is None:
             materialization_document = self._ensure_contract(
                 operation_id=operation_id,
@@ -4288,6 +4328,13 @@ class PostgresPlanningExecutionPreparer:
                     input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(),
                     lineage_operation_ids=routing_lineage,
                 )
+            if frozen.context_policy_ref == "context-policy:chapter-generation-pack:v2":
+                from novel_forge.modules.chapter_authority.context_compression_provider import require_task_reasoning, require_task_output_reserve
+
+                require_task_reasoning(planning_route, task_scoped=True)
+                require_task_output_reserve(
+                    stage_name, planning_route, output_reserve, capacity_error_code="TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_EXCEEDED",
+                )
             route_identity = ":".join(
                 (
                     command.generator_operation_name,
@@ -4300,7 +4347,7 @@ class PostgresPlanningExecutionPreparer:
             envelope = ProviderRequestEnvelope(
                 provider=planning_route.model_profile.model_provider,
                 reasoning_effort=planning_route.model_profile.reasoning_effort
-                if planning_route.model_profile.model_provider == "deepseek"
+                if planning_route.model_profile.model_provider in {"deepseek", "openai"}
                 else "",
                 pricing_policy_json=json.dumps(
                     routing_decision["selected"]["candidate"]["pricing"], sort_keys=True
@@ -4496,13 +4543,17 @@ class PostgresPlanningExecutionPreparer:
                     "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
                     "Planning retry materialization differs from the frozen Effect",
                 )
-        cost_accounting_basis = self.cost_accounting_basis
-        account_authorization_ref = self.account_authorization_ref
+        cost_accounting_basis = str(provider_token_contract["accounting_basis"])
+        account_authorization_ref = str(provider_token_contract["cost_authorization_ref"])
         if provider_router is not None:
             from novel_forge.modules.production_execution.routing_runtime import routed_reservation, validate_routed_reservation
 
             routing_decision = request_payload["_production_execution"]["capability_runtime"]["routing_decision"]
             planning_route, routing_decision = provider_router.select_for_payload(self.planning_route, request_payload)
+            if frozen.context_policy_ref == "context-policy:chapter-generation-pack:v2":
+                from novel_forge.modules.chapter_authority.context_compression_provider import require_task_reasoning
+
+                require_task_reasoning(planning_route, task_scoped=True)
             selected = routing_decision["selected"]["candidate"]
             cost_accounting_basis = selected["pricing"]["accounting_basis"]
             account_authorization_ref = selected.get("authorization_ref", "")
@@ -4514,7 +4565,7 @@ class PostgresPlanningExecutionPreparer:
                     routing_decision, reserved_tokens=provider_reservation_tokens,
                     reserved_amount=provider_reservation_amount,
                 )
-            if provider_reservation_amount is not None and Decimal(provider_reservation_amount) > Decimal(self.max_cost_per_call):
+            if (existing_intent is None or existing_intent["status"] != "SUCCEEDED") and provider_reservation_amount is not None and Decimal(provider_reservation_amount) > Decimal(self.max_cost_per_call):
                 raise KernelError("BUDGET_HARD_LIMIT", "routed Planning call exceeds the per-call cap")
         effect = plan_external_effect(
             self.database_url,
@@ -4527,11 +4578,13 @@ class PostgresPlanningExecutionPreparer:
             max_attempts=PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS,
             reversible=False,
             completion_policy="synchronous_final",
-            model_id=planning_route.model_profile.model_id,
-            request_timeout_seconds=STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
-            reconciliation_mode=self.execution_transport.reconciliation_mode,
+            model_id=str((existing_intent or {}).get("model_id") or planning_route.model_profile.model_id),
+            request_timeout_seconds=int((existing_intent or {}).get("request_timeout_seconds") or STORY_PLANNING_OPERATION_TIMEOUT_SECONDS),
+            reconciliation_mode=str((existing_intent or {}).get("reconciliation_mode") or self.execution_transport.reconciliation_mode),
             provider_capability_profile=(
-                self.execution_transport.capability_profile.to_dict()
+                dict(existing_intent["provider_capability_profile"])
+                if existing_intent is not None
+                else self.execution_transport.capability_profile.to_dict()
             ),
         )
         effect_id = str(effect["external_effect_id"])
@@ -4589,6 +4642,11 @@ class PostgresPlanningExecutionPreparer:
             reservation_id = str(reservation["reservation_id"])
         else:
             reservation_id = str(recovered_completion["budget_reservation_id"])
+            planning_route = self._recovered_planning_route(
+                recovered_completion=recovered_completion,
+                project_id=command.project_id,
+                current_route=planning_route,
+            )
             # INVARIANT: A durable Provider result must be settled against the original
             # Budget Authority contract.  Runtime configuration may have
             # changed since the first send, but it cannot rewrite the frozen
@@ -4663,6 +4721,39 @@ class PostgresPlanningExecutionPreparer:
             commit_policy_ref=capability.commit_policy_ref,
             timeout_policy_ref=capability.timeout_policy_ref,
         )
+
+    def _recovered_planning_route(
+        self, *, recovered_completion: Mapping[str, Any], project_id: str,
+        current_route: PlanningExecutionRoute,
+    ) -> PlanningExecutionRoute:
+        evidence = dict(recovered_completion.get("provider_evidence") or {})
+        frozen = dict(evidence.get("production_execution") or {}).get("route_snapshot")
+        if not isinstance(frozen, Mapping):
+            raise KernelError("PLANNING_RECOVERY_ROUTE_MISSING", "successful Planning receipt must retain its original route")
+        route = RouteSnapshot.from_dict(dict(frozen))
+        profile_document = self.query.require(
+            project_id=project_id,
+            logical_ref=f"production_execution/model_profiles/{route.model_profile_id}/v{route.model_profile_version}",
+        )
+        policy_document = self.query.require(
+            project_id=project_id,
+            logical_ref=f"production_execution/route_policies/{route.policy_id}/v{route.policy_version}",
+        )
+        fallback_document = self.query.require(
+            project_id=project_id,
+            logical_ref=f"production_execution/fallback_policies/{route.fallback_policy_ref}/v{route.fallback_policy_version}",
+        )
+        profile = ModelProfile.from_dict(profile_document.content["contract"])
+        policy = RoutePolicy.from_dict(policy_document.content["contract"])
+        fallback = FallbackPolicy.from_dict(fallback_document.content["contract"])
+        if (profile_document.asset_type != "model_profile" or policy_document.asset_type != "route_policy"
+                or fallback_document.asset_type != "fallback_policy" or profile.contract_hash != route.model_profile_hash
+                or policy.contract_hash != route.route_policy_hash or profile.model_id != evidence.get("model_id")
+                or profile.model_provider != evidence.get("provider_id") or profile.reasoning_effort != route.reasoning_effort):
+            raise KernelError("PLANNING_RECOVERY_ROUTE_DRIFT", "successful Planning route differs from its exact governed contracts")
+        return replace(current_route, model_profile=profile, route_policy=policy, fallback_policy=fallback,
+                       backend_version=route.backend_version, runtime_host_id=route.runtime_host_id,
+                       auth_profile_ref=route.auth_profile_ref, release_sha=route.release_sha)
 
     def _execution_binding(
         self,
@@ -4936,6 +5027,8 @@ class PostgresPlanningExecutionPreparer:
         attempt_id: str,
         command: StoryPlanningGenerationCommand,
         inputs: tuple[FrozenPlanningInput, ...],
+        context_policy_ref: str = "",
+        planning_task_token_budget: int | None = None,
     ) -> tuple[AuthorityAssetDocument, tuple[AuthorityAssetDocument, ...]]:
         documents: list[AuthorityAssetDocument] = []
         selected: list[dict[str, Any]] = []
@@ -5067,6 +5160,7 @@ class PostgresPlanningExecutionPreparer:
                 context=frozen_context,
                 command=command,
                 selected_inputs=selected,
+                context_policy_ref=context_policy_ref,
             )
             selection = frozen_context.content.get("narrative_intelligence")
             if not isinstance(selection, Mapping):
@@ -5149,6 +5243,12 @@ class PostgresPlanningExecutionPreparer:
             selected_inputs=selected,
             knowledge_access_policy=knowledge_access_policy,
         )
+        if context_policy_ref == "context-policy:chapter-generation-pack:v2" and (
+            isinstance(planning_task_token_budget, bool)
+            or not isinstance(planning_task_token_budget, int)
+            or not 0 < planning_task_token_budget <= 512_000
+        ):
+            raise KernelError("PLANNING_TASK_TOKEN_BUDGET_INVALID", "new Planning policy requires an explicit bounded task token target")
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
             "project_id": command.project_id,
@@ -5180,7 +5280,9 @@ class PostgresPlanningExecutionPreparer:
                 }
             ),
             **({"repair_context": repair_context} if repair_context else {}),
-            "token_budget": 16000,
+            "token_budget": planning_task_token_budget if context_policy_ref == "context-policy:chapter-generation-pack:v2" else 16000,
+            **({"planning_context_policy_version": context_policy_ref}
+               if context_policy_ref == "context-policy:chapter-generation-pack:v2" else {}),
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
             "narrative_qualification_profiles": [
                 {
@@ -5313,6 +5415,11 @@ class PostgresPlanningExecutionPreparer:
             else command.generator_operation_name
         )
         token_budget = int(content.get("token_budget") or 0)
+        task_byte_accounting = (
+            dict(provider_stage.task.get("policy") or {}).get("version") == "world-production-policy.v4"
+            if provider_stage is not None
+            else content.get("planning_context_policy_version") == "context-policy:chapter-generation-pack:v2"
+        )
         if provider_stage is None:
             provider_view, projection_audit = compile_planning_provider_context(stage_name, content)
         else:
@@ -5362,7 +5469,7 @@ class PostgresPlanningExecutionPreparer:
                     physical_asset_type=physical_asset_type,
                     project_id=command.project_id,
                     book_id=command.book_id,
-                    estimated_tokens=max(1, (len(rendered) + 3) // 4),
+                    estimated_tokens=max(1, len(rendered.encode("utf-8")) if task_byte_accounting else (len(rendered) + 3) // 4),
                     content_digest=projection_hash,
                     source_revision=source_revision,
                     source_identity=source_identity,
@@ -5526,6 +5633,7 @@ class PostgresPlanningExecutionPreparer:
             "allowed": list(allowed),
             "required": list(required),
             "token_budget": token_budget,
+            **({"token_accounting": "utf8-byte-upper-bound.v1"} if task_byte_accounting else {}),
         }
         snapshots = (
             ContextPolicySnapshot(
@@ -5636,7 +5744,8 @@ class PostgresPlanningExecutionPreparer:
                 dict(item) for item in selection.deduplications
             ],
             "truncation_decisions": [dict(item) for item in selection.truncations],
-            "token_accounting": dict(selection.token_accounting),
+            "token_accounting": {**dict(selection.token_accounting),
+                                 **({"method": "utf8-byte-upper-bound.v1"} if task_byte_accounting else {})},
         }
         manifest["context_fingerprint"] = canonical_hash(manifest)
         return manifest
@@ -5738,6 +5847,7 @@ class PostgresPlanningExecutionPreparer:
         context: AuthorityAssetDocument,
         command: StoryPlanningGenerationCommand,
         selected_inputs: list[dict[str, Any]],
+        context_policy_ref: str = "",
     ) -> None:
         content = context.content
         frozen_inputs = content.get("input_versions")
@@ -5753,6 +5863,9 @@ class PostgresPlanningExecutionPreparer:
             or content.get("logical_key") != command.logical_key
             or content.get("arc_working_set") != dict(command.arc_working_set or {})
             or content.get("narrative_search") != command.narrative_search_snapshot
+            or str(content.get("planning_context_policy_version") or "") != (
+                context_policy_ref if context_policy_ref == "context-policy:chapter-generation-pack:v2" else ""
+            )
             or not isinstance(frozen_inputs, list)
             or frozen_inputs[: len(selected_inputs)] != selected_inputs
         ):

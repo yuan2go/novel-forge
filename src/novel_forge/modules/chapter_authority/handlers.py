@@ -928,8 +928,25 @@ class _RetrievalHandler:
         return result
 
 
+def merge_task_retrieval_projections(metadata: dict[str, Any], documents: list[dict[str, Any]]) -> dict[str, Any]:
+    facts = list(metadata.get("structured_facts") or ())
+    summaries = [str(metadata.get("safe_summary") or "")]
+    refs = set(metadata.get("task_dependency_matched_refs") or ())
+    reasons = set(metadata.get("retrieval_reasons") or ())
+    for document in sorted(documents, key=lambda item: str(item.get("retrieval_document_id") or "")):
+        if str(document.get("source_content_hash") or "") != str(metadata.get("content_hash") or ""):
+            raise KernelError("CONTEXT_RETRIEVAL_SOURCE_DRIFT", "same-source task projections must bind the exact frozen content hash")
+        facts.extend(fact for fact in (document.get("metadata") or {}).get("structured_facts", ()) if isinstance(fact, dict))
+        summaries.append(str(document.get("safe_summary") or ""))
+        refs.update(document.get("task_dependency_matched_refs") or ())
+        reasons.update(document.get("retrieval_reasons") or ())
+    return {**metadata, "structured_facts": list({json.dumps(fact, ensure_ascii=False, sort_keys=True): fact for fact in facts}.values()), "safe_summary": "\n\n".join(dict.fromkeys(text for text in summaries if text)), "task_dependency_matched_refs": sorted(refs), "retrieval_reasons": sorted(reasons)}
+
+
 @dataclass(frozen=True, slots=True)
 class _ContextHandler:
+    provider: ChapterModelPort
+
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         plan = next(
             (item for item in request.inputs if item.asset_type == "chapter_plan"), None
@@ -1033,6 +1050,8 @@ class _ContextHandler:
                 "Context cannot admit evidence until deterministic coverage is "
                 f"sufficient; missing={json.dumps(missing, sort_keys=True)}",
             )
+        task_scoped_context = str(((request.command.get("preparation_report") or {}).get("stage_context_profile_versions") or {}).get("draft")) == "draft-context-profile-v4"
+        task_dependency_refs = sorted(set((retrieval.content.get("query_plan") or {}).get("task_dependency_discovery", {}).get("required_refs") or ()))
         selected_documents: dict[str, list[dict[str, Any]]] = {}
         for document in retrieval.content.get("selected_documents") or ():
             if isinstance(document, dict):
@@ -1041,6 +1060,8 @@ class _ContextHandler:
                 ).append(dict(document))
         for source_id, documents in selected_documents.items():
             if source_id in candidate_metadata:
+                if task_scoped_context:
+                    candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents)
                 continue
             best = max(
                 documents,
@@ -1110,6 +1131,9 @@ class _ContextHandler:
                     else []
                 ),
             }
+        if task_scoped_context:
+            for source_id, documents in selected_documents.items():
+                candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents)
         frozen_candidates = [
             item
             for item in request.inputs
@@ -1141,7 +1165,13 @@ class _ContextHandler:
                 )
             if str(metadata.get("asset_type") or "") in {"narrative_retrieval_document", "story_state_snapshot", "canon_snapshot"}:
                 from .provider_views import build_task_narrative_projection, project_retrieved_state_context
-                metadata = project_retrieved_state_context({**metadata, "structured_facts": item.content.get("structured_facts") or metadata.get("structured_facts") or []}, projection=build_task_narrative_projection(plan.content), chapter=int(plan.content["chapter"]))
+                projection = build_task_narrative_projection(plan.content, task_scoped=task_scoped_context)
+                if task_scoped_context:
+                    projection["required_event_refs"] = sorted(set(projection.get("required_event_refs") or ()) | set(task_dependency_refs) | set(metadata.get("task_dependency_matched_refs") or ()))
+                facts = list(item.content.get("structured_facts") or ())
+                if task_scoped_context:
+                    facts = list({json.dumps(fact, ensure_ascii=False, sort_keys=True): fact for fact in [*facts, *(metadata.get("structured_facts") or ())]}.values())
+                metadata = project_retrieved_state_context({**metadata, "structured_facts": facts or metadata.get("structured_facts") or []}, projection=projection, chapter=int(plan.content["chapter"]))
                 source_content = metadata
             else:
                 source_content = item.content
@@ -1193,6 +1223,19 @@ class _ContextHandler:
         )
         if int(plan.content["chapter"]) > 1:
             required_candidate_types.update(CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES)
+        def context_model_call(stage: str, task: dict[str, Any]) -> dict[str, Any]:
+            frozen = replace(request, command={
+                **request.command, "_context_compression_task": task,
+                "_effect_instance": _content_hash({"stage": stage, "task": task}),
+            })
+            result = self.provider.invoke(frozen, stage=stage, payload={
+                "chapter_plan": plan.content, "context_compression_task": task,
+            })
+            return {**result.output, "_execution_evidence": dict(result.execution_evidence or {})}
+
+        routes = getattr(getattr(self.provider, "adapter", None), "routes", {})
+        compression_routes = [routes.get(stage) for stage in ("context_compress", "context_fidelity")]
+        compression_allocation = min((int(getattr(route, "model_context_limit", 0)) // 4 for route in compression_routes), default=0)
         bundle = build_context_bundle(
             plan=plan.content,
             plan_asset_version_id=plan.asset_version_id,
@@ -1210,6 +1253,8 @@ class _ContextHandler:
             ),
             token_budget=int(request.command.get("context_token_budget", 6000)),
             context_profile_version=str(((request.command.get("preparation_report") or {}).get("stage_context_profile_versions") or {}).get("draft") or "draft-context-profile-v2"),
+            context_model_call=context_model_call,
+            compression_input_tokens=compression_allocation,
             book_id=str(
                 request.command.get("book_id")
                 or plan.content.get("book_id")
@@ -2635,7 +2680,7 @@ def build_chapter_handler_registry(
             expansion_provider_bound,
         ),
     )
-    registry.register(ChapterNode.CONTEXT, _ContextHandler())
+    registry.register(ChapterNode.CONTEXT, _ContextHandler(provider))
     registry.register(ChapterNode.DRAFT, _DraftHandler(provider))
     registry.register(ChapterNode.REVIEW, _ReviewHandler(provider))
     registry.register(ChapterNode.REVISION, _RevisionHandler(provider))

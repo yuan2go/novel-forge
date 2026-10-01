@@ -56,6 +56,7 @@ class CapabilityId(StrEnum):
     RETRIEVAL_QUERY_EXPAND = "retrieval.query.expand"
     RETRIEVAL_INDEX_UPSERT = "retrieval.index.upsert"
     RETRIEVAL_INDEX_QUERY = "retrieval.index.query"
+    CONTEXT_TASK_COMPILE = "context.task.compile"
     LONGFORM_RECAP_ANALYZE = "longform.recap.analyze"
     LONGFORM_PLAN_VS_ACTUAL_JUDGE = "longform.plan_vs_actual.judge"
     LONGFORM_ARC_CLOSURE_JUDGE = "longform.arc_closure.judge"

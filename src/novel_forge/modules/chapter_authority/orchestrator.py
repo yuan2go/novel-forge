@@ -890,10 +890,38 @@ def _retrieval_admission_snapshot(
         dict(request.context_version_refs or {}).get("semantic_retrieval_policy")
         or "FALLBACK_ALLOWED"
     )
+    dependencies = None
+    if str(dict(dict(request.preparation_report or {}).get("stage_context_profile_versions") or {}).get("draft") or "") == "draft-context-profile-v4":
+        from novel_forge.modules.context_builder.production_retrieval import build_task_dependency_refs
+
+        current_candidates = [
+            dict(item) for item in request.context_candidates
+            if item.get("asset_type") in {"canon_snapshot", "story_state_snapshot", "creative_foundation", "world_bible", "character_cards", "character_cast"}
+        ]
+        with AuthorityUnitOfWork(database_url) as uow:
+            for candidate in current_candidates:
+                uow.cursor.execute(
+                    """SELECT version.content_hash, version.lifecycle,
+                              version.eligibility, version.governance
+                    FROM authority_asset_version AS version
+                    JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                    WHERE version.asset_version_id=%s AND asset.project_id=%s""",
+                    [candidate["asset_version_id"], request.project_id],
+                )
+                row = uow.cursor.fetchone()
+                if (row is None or str(row[0]) != str(candidate.get("content_hash") or "")
+                    or str(row[1]) not in {"ACTIVE", "SUPERSEDED"}
+                    or str(row[2]) != "ELIGIBLE" or str(row[3]) != "CLEAR"
+                    or candidate.get("project_id") != request.project_id
+                    or candidate.get("book_id") != request.book_id
+                    or dict(candidate.get("accepted_boundary") or {}) != dict(intent.get("accepted_boundary") or {})):
+                    raise KernelError("RETRIEVAL_TASK_SOURCE_BINDING_INVALID", "task dependency facts require eligible frozen sources at the task boundary")
+        dependencies = build_task_dependency_refs(plan=plan, current_candidates=current_candidates)
     query_plan = build_retrieval_query_plan(
         intent=intent,
         memo=memo,
         semantic_policy=semantic_policy,
+        task_dependency_refs=dependencies,
     )
     if query_plan["semantic_policy"] == "REQUIRED" and not semantic_provider_bound:
         raise KernelError(

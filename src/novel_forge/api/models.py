@@ -919,7 +919,8 @@ class AuthorityChapterCommandRequest(BaseModel):
     requested_quality_profile: str = "default"
     requested_platform_profile: str = "default"
     operator_decision: dict[str, Any] = Field(default_factory=dict)
-    context_token_budget: int = Field(default=6000, ge=1)
+    context_token_budget: int = Field(default=6000, ge=1, le=512_000)
+    context_profile_version: Literal["draft-context-profile-v2", "draft-context-profile-v3", "draft-context-profile-v4"] = "draft-context-profile-v2"
     actor_id: str = ""  # SECURITY: compatibility metadata is never trusted.
     trace_id: str = ""
     correlation_id: str = ""

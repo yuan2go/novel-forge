@@ -472,6 +472,15 @@ def default_capability_registry() -> CapabilityRegistry:
                 risk=risk,
             )
         )
+    definitions.append(
+        _definition(
+            CapabilityId.CONTEXT_TASK_COMPILE, ExecutionDomain.RETRIEVAL,
+            runtimes=(ExecutionRuntimeClass.AUTHORITY_IN_PROCESS,),
+            backends=("chapter-authority",),
+            prompt_bundle_type="NO_PROMPT_BUNDLE", skill_bundle_type="NO_SKILL_BUNDLE",
+            query=False, cancel=False, callback=False, risk=RiskClass.HIGH,
+        )
+    )
     return CapabilityRegistry(definitions)
 
 

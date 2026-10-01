@@ -1,0 +1,225 @@
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping
+from dataclasses import replace
+import json
+from typing import Any
+
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.context_contracts import ContextCandidate, ContextClass
+from novel_forge.modules.narrative_state.reality import narrative_hash
+
+from .task_context import (
+    SYSTEM_CONTEXT_WINDOW_TOKENS,
+    TASK_CONTEXT_POLICY_VERSION,
+    serialized_token_upper_bound,
+    task_references,
+    fact_aliases,
+)
+
+_HISTORY = frozenset({"narrative_retrieval_document", "chapter_episodic_summary", "scene_episodic_summary", "character_timeline", "relationship_timeline"})
+_EXACT = frozenset({"draft_chapter", "draft_version", "best_draft_candidate", "review_report", "review_issue"})
+ModelCall = Callable[[str, dict[str, Any]], Mapping[str, Any]]
+
+
+def _payload(candidate: ContextCandidate) -> dict[str, Any]:
+    return {
+        "safe_summary": candidate.safe_summary,
+        "structured_facts": [fact for fact in candidate.structured_facts if fact.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"],
+    }
+
+
+def _units(candidate: ContextCandidate, task: Mapping[str, Any]) -> list[dict[str, Any]]:
+    units = []
+    try:
+        document = json.loads(candidate.safe_summary)
+    except (ValueError, TypeError):
+        document = None
+    if isinstance(document, dict):
+        engineering = {"provider_evidence", "context_bundle_id", "context_bundle_content_hash", "context_fingerprint", "retrieval_result_asset_version_id", "retrieval_result_fingerprint", "created_by_operation_id", "validation_evidence", "model_call_log", "cost_ledger"}
+        for field, value in sorted(document.items()):
+            if field in engineering:
+                continue
+            if field in {"scene_artifacts", "scenes", "scene_summaries"} and isinstance(value, list):
+                for index, scene in enumerate(value):
+                    units.append({"unit_id": f"json:{field}:{index}", "text": json.dumps(scene, ensure_ascii=False, sort_keys=True, separators=(",", ":")), "kind": "SOURCE_SCENE_OR_CAUSAL_UNIT", "field": "safe_summary", "source_path": [field, index]})
+            elif field in {"text", "safe_summary", "summary"} and isinstance(value, str):
+                for index, paragraph in enumerate(value.split("\n\n")):
+                    if paragraph:
+                        units.append({"unit_id": f"json:{field}:{index}", "text": paragraph, "kind": "SOURCE_PARAGRAPH", "field": "safe_summary", "source_path": [field], "index": index})
+            else:
+                units.append({"unit_id": f"json:{field}", "text": json.dumps({field: value}, ensure_ascii=False, sort_keys=True, separators=(",", ":")), "kind": "SOURCE_CAUSAL_FIELD", "field": "safe_summary", "source_path": [field], "required": True})
+    else:
+        for index, text in enumerate(candidate.safe_summary.split("\n\n")):
+            if text:
+                units.append({"unit_id": f"text:{index}", "text": text, "kind": "SOURCE_PARAGRAPH", "field": "safe_summary", "index": index})
+    for index, fact in enumerate(candidate.structured_facts):
+        if fact.get("provider_visibility") == "INTERNAL_QUALITY_ONLY":
+            continue
+        units.append({"unit_id": f"fact:{index}", "text": json.dumps(fact, ensure_ascii=False, sort_keys=True, separators=(",", ":")), "kind": "STATE_OR_CAUSAL_UNIT", "field": "structured_facts", "index": index})
+    quotes = tuple(task.get("preserve_quotes") or ())
+    for unit in units:
+        unit["required"] = bool(unit.get("required")) or candidate.required or unit["field"] == "structured_facts" or any(quote in unit["text"] for quote in quotes)
+    return units
+
+
+def validate_task_dependencies(candidates: list[ContextCandidate], *, task: Mapping[str, Any]) -> dict[str, Any]:
+    facts = [fact for candidate in candidates if candidate.allowed_use != "evidence_only" for fact in candidate.structured_facts if fact.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"]
+    available = set().union(*(fact_aliases(fact) for fact in facts)) if facts else set()
+    foundation_types = {"creative_foundation", "world_bible", "character_cards", "character_cast"}
+    foundation = {
+        "foundation:" + str(identity)
+        for candidate in candidates if candidate.asset_type in foundation_types
+        for identity in (candidate.asset_version_id, (candidate.provenance or {}).get("authority_asset_version_id")) if identity
+    }
+    required = set((task.get("plan") or {}).get("required_long_distance_fact_ids") or ())
+    required.update(ref for fact in facts for ref in (fact.get("state") or {}).get("world_transition", {}).get("cause_refs", ()))
+    missing = required - available - foundation
+    if missing:
+        raise KernelError("TASK_CONTEXT_DEPENDENCY_UNAVAILABLE", "necessary explicit Context dependencies remain unavailable after governed directed retrieval: " + ", ".join(sorted(missing)))
+    return {"required_refs": sorted(required), "available_refs": sorted(available), "verified_foundation_refs": sorted(foundation), "coverage": "COMPLETE"}
+
+
+def compile_task_context(
+    candidates: list[ContextCandidate], *, task: Mapping[str, Any], token_budget: int,
+    required_asset_types: tuple[str, ...], model_call: ModelCall | None = None,
+    compression_input_tokens: int = 0, maximum_chunks: int = 8,
+    admitted_source_ids: frozenset[str] | None = None,
+) -> tuple[list[ContextCandidate], dict[str, Any]]:
+    from .domain import context_candidate_class, deduplicate_context_candidates, resolve_context_profile
+
+    if not 0 < token_budget <= SYSTEM_CONTEXT_WINDOW_TOKENS:
+        raise KernelError("TASK_CONTEXT_BUDGET_INVALID", "task target must fit the system context support ceiling")
+    boundary = dict(task.get("accepted_boundary") or {})
+    if not boundary or "accepted_through_chapter" not in boundary:
+        raise KernelError("TASK_CONTEXT_BOUNDARY_REQUIRED", "task Context must freeze an accepted source boundary")
+    selectors = task_references(task)
+    working = []
+    excluded = []
+    auxiliary = []
+    denied = []
+    for candidate in sorted(candidates, key=lambda item: item.asset_version_id):
+        if admitted_source_ids is not None and candidate.asset_version_id not in admitted_source_ids:
+            denied.append(candidate)
+            continue
+        if dict(candidate.accepted_boundary or {}) != boundary:
+            raise KernelError("TASK_CONTEXT_SOURCE_BOUNDARY_CHANGED", "Context source does not match its frozen task boundary")
+        protected = context_candidate_class(candidate) is ContextClass.PROTECTED or candidate.asset_type in _EXACT
+        required = protected or candidate.required or candidate.asset_type in required_asset_types
+        selected = required or candidate.asset_type not in _HISTORY or bool(selectors & task_references(candidate.structured_facts)) or any(reason.startswith("required_") for reason in candidate.retrieval_reasons) or candidate.relevance_score > 0 or any(quote in candidate.safe_summary for quote in task.get("preserve_quotes") or ())
+        if selected:
+            working.append(candidate)
+        else:
+            auxiliary.append(candidate)
+    auxiliary.sort(key=lambda item: (-item.relevance_score, item.asset_version_id))
+    working.extend(auxiliary[:12])
+    excluded.extend(auxiliary[12:])
+    normalized = []
+    for candidate in working:
+        amount = 1 if candidate.allowed_use == "evidence_only" else max(1, serialized_token_upper_bound(_payload(candidate)))
+        normalized.append(replace(candidate, estimated_tokens=amount, truncation_strategy=""))
+    normalized, deduplications = deduplicate_context_candidates(normalized, required_logical_kinds=set(required_asset_types) | resolve_context_profile("draft").required_asset_types)
+    duplicated_ids = {receipt["asset_version_id"] for receipt in deduplications}
+    excluded.extend(item for item in working if item.asset_version_id in duplicated_ids)
+    protected = [item for item in normalized if context_candidate_class(item) is ContextClass.PROTECTED or item.required or item.asset_type in required_asset_types or item.asset_type in _EXACT]
+    optional_auxiliary_ids = {item.asset_version_id for item in auxiliary[:12]}
+    needed_refs = set((task.get("plan") or {}).get("required_long_distance_fact_ids") or ())
+    needed_refs.update(ref for item in normalized if item.asset_version_id not in optional_auxiliary_ids for fact in item.structured_facts for ref in (fact.get("state") or {}).get("world_transition", {}).get("cause_refs", ()))
+    if sum(item.estimated_tokens for item in normalized) > token_budget:
+        for item in sorted((item for item in normalized if item.asset_version_id in optional_auxiliary_ids), key=lambda item: (item.relevance_score, item.asset_version_id)):
+            if needed_refs.intersection(set().union(*(fact_aliases(fact) for fact in item.structured_facts)) if item.structured_facts else set()):
+                continue
+            normalized.remove(item)
+            excluded.append(item)
+            if sum(value.estimated_tokens for value in normalized) <= token_budget:
+                break
+    dependencies = validate_task_dependencies(normalized, task=task)
+    protected_tokens = sum(item.estimated_tokens for item in protected)
+    if protected_tokens > token_budget:
+        raise KernelError("TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED", f"necessary exact task content requires conservative {protected_tokens} tokens; target={token_budget}")
+    before = sum(item.estimated_tokens for item in normalized)
+    traces = []
+    if before > token_budget:
+        eligible = [item for item in normalized if item not in protected and item.asset_type in _HISTORY and not item.compression_trace]
+        if not eligible or model_call is None or compression_input_tokens <= 0:
+            raise KernelError("TASK_CONTEXT_COMPRESSION_NOT_AUTHORIZED", "overflow requires a qualified controlled compressor route or a revised authorized task budget")
+        protected_ids = {item.asset_version_id for item in protected}
+        untouched_tokens = sum(item.estimated_tokens for item in normalized if item not in eligible)
+        if untouched_tokens >= token_budget:
+            raise KernelError("TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED", "exact sources and non-recompressible evidence exceed the task target")
+        remaining = token_budget - untouched_tokens
+        replacements = {}
+        call_count = 0
+        for candidate in eligible:
+            units = _units(candidate, task)
+            groups = []
+            group = []
+            for unit in units:
+                visible = {key: unit[key] for key in ("unit_id", "text", "kind", "required")}
+                if serialized_token_upper_bound(visible) > compression_input_tokens:
+                    raise KernelError("TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE", "one complete source unit exceeds the compressor input allocation")
+                if group and (len(group) >= 256 or serialized_token_upper_bound([*group, visible]) > compression_input_tokens):
+                    groups.append(group)
+                    group = []
+                group.append(visible)
+            if group:
+                groups.append(group)
+            for index, original in enumerate(tuple(groups)):
+                neighbours = [*(groups[index - 1][-2:] if index else []), *(groups[index + 1][:2] if index + 1 < len(groups) else [])]
+                expanded = list({unit["unit_id"]: unit for unit in [*original, *neighbours]}.values())
+                if len(expanded) <= 256 and serialized_token_upper_bound(expanded) <= compression_input_tokens:
+                    groups[index] = expanded
+            if len(groups) + call_count > maximum_chunks:
+                raise KernelError("TASK_CONTEXT_COMPRESSION_CALL_BOUND", "task compression exceeds its bounded chunk allowance")
+            keep = set()
+            restored = set()
+            evidence = []
+            for group_index, group in enumerate(groups):
+                chunk = {
+                    "contract_version": "task-context-compression.v1", "policy_version": TASK_CONTEXT_POLICY_VERSION,
+                    "accepted_boundary": boundary, "memo_fingerprint": str(task.get("memo_fingerprint") or ""), "task": dict(task), "units": group,
+                    "required_unit_ids": [unit["unit_id"] for unit in group if unit["required"]],
+                    "target_tokens": max(1, remaining * candidate.estimated_tokens // max(1, sum(item.estimated_tokens for item in eligible))),
+                    "source_binding": {"asset_version_id": candidate.asset_version_id, "content_hash": candidate.content_digest, "source_revision": candidate.source_revision},
+                    "chunk_index": group_index,
+                }
+                selected_result = dict(model_call("context_compress", chunk))
+                selected = selected_result.get("selected_unit_ids")
+                allowed = {unit["unit_id"] for unit in group}
+                required = set(chunk["required_unit_ids"])
+                if not isinstance(selected, list) or any(not isinstance(value, str) for value in selected) or len(set(selected)) != len(selected) or not set(selected).issubset(allowed):
+                    raise KernelError("TASK_CONTEXT_COMPRESSOR_IDENTITY_INVALID", "compressor may select only distinct host-bound source unit identities")
+                chosen = set(selected) | required
+                restored.update(required - set(selected))
+                verdict = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen)}))
+                missing = set(verdict.get("missing_unit_ids") or ())
+                distorted = set(verdict.get("distorted_unit_ids") or ())
+                if not (missing | distorted).issubset(allowed):
+                    chosen = allowed
+                    restored.update(allowed)
+                elif missing or distorted or verdict.get("supported") is not True or verdict.get("coverage_complete") is not True:
+                    if missing and not distorted and verdict.get("supported") is True:
+                        chosen.update(missing)
+                        check = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen)}))
+                        evidence.append(dict(check.get("_execution_evidence") or {}))
+                        if check.get("supported") is not True or check.get("coverage_complete") is not True or check.get("missing_unit_ids") or check.get("distorted_unit_ids"):
+                            chosen = allowed
+                    else:
+                        chosen = allowed
+                    restored.update(chosen - set(selected))
+                keep.update(chosen)
+                evidence.extend([dict(selected_result.get("_execution_evidence") or {}), dict(verdict.get("_execution_evidence") or {})])
+                call_count += 1
+            texts = [unit["text"] for unit in units if unit["unit_id"] in keep and unit["field"] == "safe_summary"]
+            facts = tuple(candidate.structured_facts[unit["index"]] for unit in units if unit["unit_id"] in keep and unit["field"] == "structured_facts") + tuple(fact for fact in candidate.structured_facts if fact.get("provider_visibility") == "INTERNAL_QUALITY_ONLY")
+            payload = {"safe_summary": "\n\n".join(texts), "structured_facts": list(facts)}
+            trace = {"source_asset_version_id": candidate.asset_version_id, "source_content_hash": candidate.content_digest, "source_revision": candidate.source_revision, "task_hash": narrative_hash(task), "accepted_boundary": boundary, "policy_version": TASK_CONTEXT_POLICY_VERSION, "method": "host-bound-extractive-semantic.v1", "selected_unit_ids": sorted(keep), "source_units": [{"unit_id": unit["unit_id"], "source_path": unit.get("source_path", [unit["field"]]), "index": unit.get("index"), "unit_hash": narrative_hash(unit["text"]), "kind": unit["kind"]} for unit in units if unit["unit_id"] in keep], "restored_unit_ids": sorted(restored), "result_content_hash": narrative_hash(payload), "forward_check": "EXACT_HOST_SOURCE_UNITS", "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE", "model_execution_evidence": evidence}
+            replacements[candidate.asset_version_id] = replace(candidate, safe_summary=payload["safe_summary"], structured_facts=facts, estimated_tokens=max(1, serialized_token_upper_bound(payload)), context_class=ContextClass.COMPRESSIBLE, compression_method=trace["method"], compression_trace=(trace,))
+            traces.append(trace)
+        normalized = [replacements.get(item.asset_version_id, item) for item in normalized]
+        if sum(item.estimated_tokens for item in normalized) > token_budget:
+            raise KernelError("TASK_CONTEXT_FIDELITY_RESTORE_EXCEEDS_BUDGET", "faithful restored Context exceeds its authorized task target; no required source was silently discarded")
+        assert not protected_ids.intersection(replacements)
+    result = [*normalized, *denied] + [replace(item, provenance={**dict(item.provenance or {}), "task_excluded": True}) for item in excluded]
+    receipt = {"policy_version": TASK_CONTEXT_POLICY_VERSION, "task_hash": narrative_hash(task), "accepted_boundary": boundary, "source_bindings": [{"asset_version_id": item.asset_version_id, "source_revision": item.source_revision, "content_hash": item.content_digest} for item in candidates], "system_context_window_tokens": SYSTEM_CONTEXT_WINDOW_TOKENS, "task_target_tokens": token_budget, "token_accounting": "utf8-byte-upper-bound.v1", "before_estimated_tokens": before, "after_estimated_tokens": sum(item.estimated_tokens for item in normalized), "protected_estimated_tokens": protected_tokens, "dependency_coverage": dependencies, "deduplications": deduplications, "excluded_asset_version_ids": [item.asset_version_id for item in excluded], "compression_trace": traces, "fast_path": not traces, "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY", "fact_mutation_allowed": False}
+    return result, {**receipt, "receipt_hash": narrative_hash(receipt)}

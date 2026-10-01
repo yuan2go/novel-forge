@@ -213,8 +213,11 @@ def chapter_provider_sampling_manifest(
         raise ValueError("Chapter sample targets require reference sampling")
     version = CHAPTER_REFERENCE_SAMPLE_VERSION if reference_samples else CHAPTER_SAMPLE_DEFINITION_VERSION
     manifest = deepcopy(dict(source))
+    source_version = str(manifest["identity"]["version"]).split(".")
+    sampling_pack_version = ".".join([str(int(source_version[0]) + 1), *source_version[1:]])
     manifest["identity"].update({
         "pack_id": str(manifest["identity"]["pack_id"]) + (".reference_samples" if reference_samples else ".reference_sampling" if reference else ".provider_sampling"),
+        "version": sampling_pack_version,
         "name": "Chapter Provider Sampling Pack",
         "description": "Governed isolated samples using the frozen Chapter generation contracts.",
     })

@@ -681,6 +681,90 @@ def test_planning_provider_context_blocks_oversized_required_semantics() -> None
         )
 
 
+def test_new_planning_capacity_preserves_large_required_sources_and_freezes_policy() -> None:
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.provider_views import compile_planning_provider_context, planning_context_source_hash, _projection_hash
+    from novel_forge.modules.worldbuilding.foundation_schema import world_foundation_example
+
+    world = world_foundation_example(compiled_scope="BOOK")
+    world["rules"][0]["statement"] = "Required condition, exception and consequence. " * 1800
+    context = {"schema_version": "novelos.planning_context_bundle.v1", "book_id": "book:capacity",
+               "logical_key": "book:capacity", "planning_scope": "BOOK", "token_budget": 200_000,
+               "input_versions": [{"role": "world_bible", "asset_version_id": "world:capacity:v1",
+                   "asset_type": "world_bible", "content_hash": "sha256:" + "a" * 64,
+                   "content": {"world_foundation": world}}]}
+    with pytest.raises(KernelError) as legacy:
+        compile_planning_provider_context("book_plan.generate", context)
+    assert legacy.value.code == "WORLD_FOUNDATION_SCOPE_TOO_BROAD"
+    current = {**context, "planning_context_policy_version": "context-policy:chapter-generation-pack:v2"}
+    view, audit = compile_planning_provider_context("book_plan.generate", current)
+    assert len(json.dumps(view, ensure_ascii=False)) > 65_536
+    assert view["segments"][0]["content"]["world_foundation"] == world
+    assert view["contract_version"] == "provider-context-view-v4"
+    assert view["selection_explanation"]["maximum_serialized_bytes"] == 8_388_608
+    assert "maximum_serialized_characters" not in view["selection_explanation"]
+    frozen = {**current, "context_manifest": {"projection_audit": audit, "provider_context_view": {
+        "compiled_view": view, "content_hash": _projection_hash(view), "source_input_hash": planning_context_source_hash(current)}}}
+    assert compile_planning_provider_context("book_plan.generate", frozen)[0] == view
+    changed = deepcopy(frozen)
+    changed.pop("planning_context_policy_version")
+    with pytest.raises(KernelError) as drift:
+        compile_planning_provider_context("book_plan.generate", changed)
+    assert drift.value.code == "PROVIDER_CONTEXT_VIEW_IDENTITY_MISMATCH"
+    with pytest.raises(KernelError) as overflow:
+        compile_planning_provider_context("book_plan.generate", {**current, "token_budget": 70_000})
+    assert overflow.value.code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+
+
+def test_new_planning_capacity_keeps_legacy_replay_and_independent_utf8_guard() -> None:
+    from novel_forge.modules.chapter_authority.provider_views import compile_planning_provider_context, project_world_planning_window
+    from novel_forge.modules.worldbuilding.foundation_schema import world_foundation_example
+
+    source = {"role": "book_design", "asset_version_id": "design:capacity", "asset_type": "book_design",
+              "content": {"premise": "界" * 70_000}}
+    context = {"schema_version": "novelos.planning_context_bundle.v1", "token_budget": 200_000,
+               "input_versions": [source], "planning_context_policy_version": "context-policy:chapter-generation-pack:v2"}
+    with pytest.raises(KernelError) as overflow:
+        compile_planning_provider_context("book_plan.generate", context)
+    assert overflow.value.code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+    world = world_foundation_example(compiled_scope="BOOK")
+    world["rules"][0]["statement"] = "界" * 2_800_000
+    source = {"role": "world_bible", "asset_version_id": "world:large", "content_hash": "sha256:" + "b" * 64,
+              "content": {"world_foundation": world}}
+    with pytest.raises(KernelError) as guard:
+        project_world_planning_window([source], chapter=1, window=1, context_policy_version="world-production-policy.v4")
+    assert guard.value.code == "WORLD_FOUNDATION_SCOPE_TOO_BROAD"
+
+
+def test_world_v4_author_view_preserves_large_mandatory_text_and_blocks_task_overflow() -> None:
+    from copy import deepcopy
+    from novel_forge.modules.story_design_authority.author_input import bind_author_design, project_author_design
+    from tests.unit.test_author_design_adoption import _world_author_context, design, digest
+
+    stage_name = "world_candidates.generate"
+    _, _, content = _world_author_context(stage_name)
+    source = design()
+    text = "Mandatory current action with exception and timing. " * 1600
+    source["documents"][0].update(content=text, content_hash=digest(text))
+    source["fragments"] = [{**source["fragments"][0], "start": 0, "end": len(text), "content_hash": digest(text)}]
+    projection = project_author_design(bind_author_design(source, asset_version_id="brief:capacity", content_hash=digest("brief:capacity")), target="CHAPTER", chapter=1)
+    task = deepcopy(content["world_preparation"])
+    task["policy"] = {"version": "world-production-policy.v4", "context_token_budget": 200_000}
+    current = {**content, "world_preparation": task, "token_budget": 200_000, "author_design_projection": projection}
+    view = build_provider_context_view(stage_name, current, {"world_preparation": task})
+    assert len(json.dumps(view, ensure_ascii=False)) > 65_536
+    assert view["author_design_projection"]["fragments"][0]["text"] == text
+    assert view["capacity_policy"]["token_accounting"] == "utf8-byte-upper-bound.v1"
+    legacy_task = {**task, "policy": {"version": "world-production-policy.v3", "context_token_budget": 200_000}}
+    with pytest.raises(KernelError) as legacy:
+        build_provider_context_view(stage_name, {**current, "world_preparation": legacy_task}, {"world_preparation": legacy_task})
+    assert legacy.value.code == "WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+    too_small = {**task, "policy": {"version": "world-production-policy.v4", "context_token_budget": 70_000}}
+    with pytest.raises(KernelError) as overflow:
+        build_provider_context_view(stage_name, {**current, "world_preparation": too_small, "token_budget": 70_000}, {"world_preparation": too_small})
+    assert overflow.value.code == "WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+
+
 def test_planning_provider_context_projects_frozen_accepted_boundary() -> None:
     view = build_provider_context_view(
         "chapter_plan.generate",

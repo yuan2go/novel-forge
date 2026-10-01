@@ -14,7 +14,7 @@ def chapter_context_policy(content: dict[str, Any]) -> dict[str, Any] | None:
         "version", "draft_profile", "draft_token_budget", "quality_token_budget"
     } or value.get("version") != "book-chapter-context.v1":
         raise KernelError("BOOK_CONTEXT_POLICY_INVALID", "Chapter Context requires its complete versioned policy")
-    maximum = {"draft-context-profile-v2": 16000, "draft-context-profile-v3": 24000}.get(value["draft_profile"]) if isinstance(value["draft_profile"], str) else None
+    maximum = {"draft-context-profile-v2": 16000, "draft-context-profile-v3": 24000, "draft-context-profile-v4": 512000}.get(value["draft_profile"]) if isinstance(value["draft_profile"], str) else None
     if (maximum is None or type(value["draft_token_budget"]) is not int
         or not 1 <= value["draft_token_budget"] <= maximum
         or type(value["quality_token_budget"]) is not int or value["quality_token_budget"] <= 0):
@@ -45,6 +45,6 @@ def validate_author_configuration(content: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(actor, dict):
             raise KernelError("WORLD_ACTOR_POLICY_INVALID", "Actor policy must be an object")
         result["world_actor_experiment"] = validate_actor_policy(actor, character_ids=actor.get("actor_ids", []), policy=world)
-    elif world.version != "world-production-policy.v1":
+    elif world.version not in {"world-production-policy.v1", "world-production-policy.v4"}:
         raise KernelError("WORLD_ACTOR_POLICY_REQUIRED", "Actor World policy requires explicit bounded Actor selection")
     return result

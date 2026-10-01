@@ -8,8 +8,8 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `5c0e2fa33e64cdee8d4b93e8e682363e06025ce2`
-Baseline implementation identity: `sha256:7d805ffd02d21d5ddc990a9bbd4f09674daf2138d4d3b5aeb7287ddadf50cf86`
+Current-reality baseline: `e616140756d2d6ef2357aa0ed0cd0d7ce98168af`
+Baseline implementation identity: `sha256:06f6c417ef4374bb9505aa1c94f4d9fa2cc74469ed45485ac0e34ddc2ea2e765`
 
 <!-- proposal-lifecycle
 {
@@ -18,8 +18,8 @@ Baseline implementation identity: `sha256:7d805ffd02d21d5ddc990a9bbd4f09674daf21
   "reviewed_on": "2026-10-01",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "5c0e2fa33e64cdee8d4b93e8e682363e06025ce2",
-    "implementation_tree_sha": "sha256:7d805ffd02d21d5ddc990a9bbd4f09674daf2138d4d3b5aeb7287ddadf50cf86"
+    "sha": "2bcfe01e4d6219479748f379b25b6eceac6cf89c",
+    "implementation_tree_sha": "sha256:077ce01912efbeae4fbc7c4aead8d5d4cdfe72b0c7a12c7ccd78a412c42a67ba"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -321,7 +321,7 @@ Baseline implementation identity: `sha256:7d805ffd02d21d5ddc990a9bbd4f09674daf21
 }
 -->
 
-Current scope review (2026-09-21): Native author candidates, exact cross-chapter/Craft
+Current scope review (2026-10-01): Task selection, dependency closure, bounded compression/fidelity and complete request admission use the existing Chapter/Provider/Kernel chain. Frozen recovery preserves exact source and route contracts. These changes add no Authority and do not settle the remaining design decisions, independent evaluation or production proof.  Native author candidates, exact cross-chapter/Craft
 repair, bounded prose-review windows, Plan Change semantic candidates, optional isolated
 actors and versioned editorial signatures are projected in
 [current-system](../../docs/current-system.md). The execution checklist for

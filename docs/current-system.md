@@ -516,6 +516,64 @@ retains all selected facts, and omits their duplicate generated JSON summary. Le
 Provider views retain their fixed 65,536-character bound and representation. These
 local estimates remain separate from actual Provider token accounting.
 
+
+New Chapter Generation Pack `2.7.0` supports explicit `draft-context-profile-v4`
+and `world-production-policy.v4`. The system maximum is **512,000 tokens**.
+This is `CONFIGURABLE_POLICY`, not a target per call or proof that any selected
+model has that window. The author production profile, Chapter preparation report,
+role projection, ContextBundle and final Provider request freeze the chosen policy.
+Old v2/v3 profiles and already frozen Pack/request identities retain their contracts.
+The new role delivery `world-role-delivery.v3` selects relevant state first; it does
+not promote all role-readable current state or accepted history to required input.
+Initial author state retains its exact frozen source binding and is not labeled an
+accepted event. Required dependencies, unresolved referenced promises' planting and
+latest advances, and causal predecessors are preserved within the accepted boundary.
+Character knowledge and belief projection runs before task selection. Required
+current-state selection and directed source discovery use the same predicate.
+Referenced or due ordinary obligations fetch original planting and actual latest
+advance from immutable accepted events, independently of recent-history candidates.
+Frozen initial observations retain their original artifact/version/hash bindings;
+they are not relabeled accepted Chapter events. Untouched initial obligations with
+both typed origin coordinates zero are verified against the exact frozen State
+artifact before being exempted from accepted-history discovery. Advanced obligations
+require their accepted planting and latest advance. After immutable source validation,
+the new frozen retrieval coverage contract carries the verified initial obligation
+evidence into campaign sufficiency. Existing frozen contracts are not recomputed.
+Unknown causal aliases still block.
+
+The existing Context Operation applies `task-scoped-context.v1`: freeze the task
+and accepted boundary, select relevant inputs with bounded auxiliary history, close
+explicit dependencies, deduplicate, and compare that workset with the task target.
+A fitting workset follows a deterministic path without semantic calls. Overflow may
+use host-bound extractive semantic compression of original historical projections.
+Complete paragraphs and causal/state units remain whole. The host binds source
+version/hash, unit positions, task and policy; the compressor selects units rather
+than inventing prose facts or computing source offsets. Exact drafts, Review/Revision
+objects, required facts and preserved voice quotes remain intact. A separate bounded
+semantic check assesses missing or changed meaning; uncertain results restore the
+local original units. A faithful result that still exceeds its target blocks. A
+compressed derivative never mutates Canon and is not unconditionally recompressed.
+
+Compression and fidelity calls use existing Chapter Provider Runtime, Pack/PEP,
+Kernel ExternalEffect, cost reservation, Lease/Fence and durable result reconciliation.
+They create no new Authority or acceptance path. Task source eligibility gates run
+before either model sees input. Internal quality facts stay in host evidence only.
+New model requests require a supported `high` or higher reasoning setting; fallback
+cannot silently lower it. Final SDK/CLI arguments and complete rendered Prompt,
+Skill, Schema, protocol, output reserve and safety margin pass Provider admission.
+The new accounting contract caps the window at the minimum of 512,000, the confirmed
+model window and authorized execution limit. Unknown capacity blocks. UTF-8 byte
+upper bounds are explicitly conservative token estimates, not exact tokenization;
+the independent 8 MiB serialization guard is a byte limit. Provider-specific output
+and reasoning accounting avoid treating the Context target as output reserve or
+charging the same reasoning reservation twice. API stage output targets are
+enforced in the sent request. Since Codex CLI does not enforce a per-request output
+ceiling, new task contracts reserve its full confirmed model output capacity,
+including reasoning once; unknown capacity or insufficient frozen reservation blocks.
+Successful frozen requests recover under their original contract without new I/O.
+These are engineering contracts;
+fixture execution does not establish real Provider capacity or literary improvement.
+
 Persistent Actor intentions use `world-actor-experiment.v2` and
 `world-actor-task.v3`. A newly approved `world-production-policy.v3` may bound its
 complete World role projection at up to 24,000 estimated tokens; v1/v2 retain their

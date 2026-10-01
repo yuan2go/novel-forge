@@ -248,6 +248,7 @@ class ProductionPreparationService:
             production_input_manifest=asdict(manifest),
             risks=tuple(asdict(item) for item in risks),
             chapter_plan_qualification_profile={},
+            stage_context_profile_versions={"draft": request.context_profile_version},
         )
         if decision is not ProductionPreparationDecision.READY:
             return ProductionPreparationResult(report=report, command=None)
@@ -325,7 +326,7 @@ class ProductionPreparationService:
             self._context_candidate(
                 item,
                 evidence_only_types=profile.evidence_only_types,
-                task_narrative_projection=build_task_narrative_projection(chapter_plan),
+                task_narrative_projection=build_task_narrative_projection(chapter_plan, task_scoped=request.context_profile_version == "draft-context-profile-v4"),
                 chapter=request.chapter,
                 book_id=request.book_id,
                 accepted_boundary=accepted_boundary,
@@ -1174,6 +1175,8 @@ class ProductionPreparationService:
 
     @staticmethod
     def _validate(request: ProductionPreparationRequest) -> None:
+        if request.context_profile_version not in {"draft-context-profile-v2", "draft-context-profile-v3", "draft-context-profile-v4"}:
+            raise ValueError("unknown frozen draft Context profile")
         if request.stage not in STAGE_PROFILES:
             raise ValueError("unknown production preparation stage")
         if (

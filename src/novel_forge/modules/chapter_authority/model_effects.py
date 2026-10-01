@@ -67,6 +67,7 @@ MODEL_CAPABILITY_STAGES = frozenset(
     }
 )
 LEGACY_AGENT_BOUND_MODEL_STAGES = MODEL_CAPABILITY_STAGES
+CONTEXT_MODEL_STAGES = frozenset({"context_compress", "context_fidelity"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -377,7 +378,7 @@ class ExternalEffectChapterModelPort:
         reservation_tokens: int | None = None,
         pre_send_assertion: Callable[[], None] | None = None,
     ) -> ModelProviderResult:
-        if stage not in MODEL_CAPABILITY_STAGES | {"reader_outcome", "longform_prose_review", "screenplay_generate", "screenplay_review", "screenplay_revision"}:
+        if stage not in MODEL_CAPABILITY_STAGES | CONTEXT_MODEL_STAGES | {"reader_outcome", "longform_prose_review", "screenplay_generate", "screenplay_review", "screenplay_revision"}:
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}"
             )
@@ -386,59 +387,11 @@ class ExternalEffectChapterModelPort:
             if isinstance(request.command.get("payload"), dict)
             else request.command
         )
-        default_reservation_tokens = resolve_stage_context_token_budget(
-            business_payload, stage, default=0
-        )
-        bounded_reservation_amount = self._bounded_reservation_amount(
-            reservation_amount
-        )
-        bounded_reservation_tokens = self._bounded_reservation_tokens(
-            reservation_tokens,
-            default=default_reservation_tokens,
-        )
-        if bounded_reservation_tokens <= 0:
-            raise KernelError(
-                "MODEL_EFFECT_PROVIDER_TOKEN_CEILING_REQUIRED",
-                "model Provider execution requires a positive frozen token ceiling",
-            )
-        reservation_contract = resolve_provider_token_reservation_contract(
-            self.database_url,
-            operation_id=request.operation_id,
-            project_id=request.project_id,
-            currency=(
-                "UNKNOWN"
-                if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
-                else "USD"
-            ),
-            frozen_request_token_ceiling=bounded_reservation_tokens,
-            accounting_basis=self.cost_accounting_basis,
-            cost_authorization_ref=self.account_authorization_ref,
-        )
-        provider_output_token_ceiling = bounded_reservation_tokens
-        budget_scope_id = ""
-        budget_scope_revision = None
-        if reservation_contract["source"] == ("BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY"):
-            bounded_reservation_tokens = int(
-                reservation_contract["estimated_total_tokens"]
-            )
-            provider_output_token_ceiling = int(
-                reservation_contract["max_output_tokens"]
-            )
-            contract_amount = reservation_contract["estimated_cost_amount"]
-            bounded_reservation_amount = (
-                str(contract_amount) if contract_amount is not None else None
-            )
-            budget_scope_id = str(reservation_contract["budget_scope_id"])
-            budget_scope_revision = int(reservation_contract["budget_scope_revision"])
-        route = getattr(self.adapter, "routes", {}).get(stage)
-        route_context_limit = int(getattr(route, "model_context_limit", 0) or 0)
-        provider_admission_token_limit = (
-            int(reservation_contract["estimated_total_tokens"])
-            if reservation_contract["source"]
-            == "BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY"
-            else route_context_limit
-            or int(reservation_contract["estimated_total_tokens"])
-        )
+        if stage in CONTEXT_MODEL_STAGES:
+            source = dict(dict(payload.get("context_compression_task") or {}).get("source_binding") or {})
+            bound = next((item for item in request.inputs if item.asset_version_id == source.get("asset_version_id")), None)
+            if bound is None or not source.get("content_hash") or bound.content_hash != source["content_hash"]:
+                raise KernelError("CONTEXT_COMPRESSION_SOURCE_DRIFT", "compression source must retain its exact frozen input version and hash on replay")
         context = EffectCommandContext(
             operation_id=request.operation_id,
             project_id=request.project_id,
@@ -462,6 +415,89 @@ class ExternalEffectChapterModelPort:
                 "attempt-v1",
             )
             if item
+        )
+        existing_intent = read_external_effect_intent(
+            self.database_url, context, effect_type="model.invoke", stable_idempotency_key=stable_key,
+        )
+        frozen_metadata = dict((existing_intent or {}).get("request_payload", {}).get("_production_execution") or {})
+        default_reservation_tokens = resolve_stage_context_token_budget(
+            business_payload, stage, default=0
+        )
+        bounded_reservation_amount = (
+            frozen_metadata["provider_reservation_amount"]
+            if existing_intent is not None and "provider_reservation_amount" in frozen_metadata
+            else self._bounded_reservation_amount(reservation_amount)
+        )
+        bounded_reservation_tokens = self._bounded_reservation_tokens(
+            reservation_tokens,
+            default=default_reservation_tokens,
+        )
+        if bounded_reservation_tokens <= 0:
+            raise KernelError(
+                "MODEL_EFFECT_PROVIDER_TOKEN_CEILING_REQUIRED",
+                "model Provider execution requires a positive frozen token ceiling",
+            )
+        task_profile = str(
+            dict(business_payload.get("preparation_report") or {}).get("stage_context_profile_versions", {}).get("draft")
+            or business_payload.get("draft_profile_version") or ""
+        )
+        task_scoped = task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES
+        route = getattr(self.adapter, "routes", {}).get(stage)
+        output_target = None
+        if task_scoped and existing_intent is not None:
+            output_target = int(existing_intent["request_payload"].get("max_output_tokens") or 0)
+            if output_target <= 0:
+                raise KernelError("MODEL_EFFECT_INTENT_INVALID", "frozen Provider intent has no positive output reserve")
+        elif task_scoped:
+            from .context_compression_provider import task_provider_output_reserve
+
+            output_target = task_provider_output_reserve(
+                stage, route, router_binding_pending=getattr(self.adapter, "provider_router", None) is not None,
+            )
+        frozen_reservation = frozen_metadata.get("provider_reservation_policy")
+        if existing_intent is not None and isinstance(frozen_reservation, Mapping):
+            reservation_contract = dict(frozen_reservation)
+        else:
+            reservation_contract = resolve_provider_token_reservation_contract(
+                self.database_url,
+                operation_id=request.operation_id,
+                project_id=request.project_id,
+                currency=(
+                    "UNKNOWN"
+                    if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                    else "USD"
+                ),
+                frozen_request_token_ceiling=1 if task_scoped else bounded_reservation_tokens,
+                requested_output_token_ceiling=output_target,
+                accounting_basis=self.cost_accounting_basis,
+                cost_authorization_ref=self.account_authorization_ref,
+            )
+        if task_scoped and existing_intent is None and int(reservation_contract.get("max_output_tokens") or 0) < output_target:
+            raise KernelError("PROVIDER_TOKEN_RESERVATION_INSUFFICIENT", "authorized output reservation is smaller than the task Provider output requirement")
+        provider_output_token_ceiling = output_target if task_scoped else bounded_reservation_tokens
+        budget_scope_id = ""
+        budget_scope_revision = None
+        if reservation_contract["source"] == ("BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY"):
+            bounded_reservation_tokens = int(
+                reservation_contract["estimated_total_tokens"]
+            )
+            provider_output_token_ceiling = int(
+                reservation_contract["max_output_tokens"]
+            )
+            contract_amount = reservation_contract["estimated_cost_amount"]
+            bounded_reservation_amount = (
+                str(contract_amount) if contract_amount is not None else None
+            )
+            budget_scope_id = str(reservation_contract["budget_scope_id"])
+            budget_scope_revision = int(reservation_contract["budget_scope_revision"])
+        route = getattr(self.adapter, "routes", {}).get(stage)
+        route_context_limit = int(getattr(route, "model_context_limit", 0) or 0)
+        provider_admission_token_limit = (
+            int(reservation_contract["estimated_total_tokens"])
+            if reservation_contract["source"]
+            == "BOOK_OPENING_IMMUTABLE_PER_CALL_POLICY"
+            else route_context_limit
+            or int(reservation_contract["estimated_total_tokens"])
         )
         execution_fencing_token, execution_worker_id = self._execution_identity(
             request,
@@ -523,8 +559,15 @@ class ExternalEffectChapterModelPort:
                         lambda _stage: self.adapter.provider,
                     )(stage)
                 ),
+                "task_context_profile": str(
+                    dict(business_payload.get("preparation_report") or {})
+                    .get("stage_context_profile_versions", {}).get("draft")
+                    or business_payload.get("draft_profile_version") or ""
+                ),
                 "execution_binding_domain": self.execution_binding_domain,
                 "provider_request_timeout_seconds": provider_request_timeout_seconds,
+                "provider_reservation_policy": dict(reservation_contract),
+                "provider_reservation_amount": bounded_reservation_amount,
                 "provider_token_limit": provider_admission_token_limit,
                 "input_artifacts": [
                     {
@@ -553,13 +596,7 @@ class ExternalEffectChapterModelPort:
         )
         provider_admission_required = bool(
             getattr(self.adapter, "production_execution_gateway_backed", False)
-            and route_provider != "scripted_provider_v2"
-        )
-        existing_intent = read_external_effect_intent(
-            self.database_url,
-            context,
-            effect_type="model.invoke",
-            stable_idempotency_key=stable_key,
+            and (route_provider != "scripted_provider_v2" or task_scoped)
         )
         if self.agent_binding_required and binder is None and existing_intent is None:
             raise KernelError(
@@ -676,8 +713,8 @@ class ExternalEffectChapterModelPort:
                 "Production Execution has no Provider admission binder",
             )
         routing_decision = dict(effect_request_payload.get("_production_execution", {}).get("capability_runtime", {}).get("routing_decision") or {})
-        cost_accounting_basis = self.cost_accounting_basis
-        account_authorization_ref = self.account_authorization_ref
+        cost_accounting_basis = str(reservation_contract["accounting_basis"])
+        account_authorization_ref = str(reservation_contract["cost_authorization_ref"])
         if routing_decision:
             from novel_forge.modules.production_execution.routing_runtime import routed_reservation
 
@@ -687,7 +724,11 @@ class ExternalEffectChapterModelPort:
             selected = routing_decision["selected"]["candidate"]
             cost_accounting_basis = selected["pricing"]["accounting_basis"]
             account_authorization_ref = selected.get("authorization_ref", "")
-            bounded_reservation_amount = None if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else self._bounded_reservation_amount(upper_bound)
+            bounded_reservation_amount = (
+                None if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                else upper_bound if existing_intent is not None and existing_intent["status"] == "SUCCEEDED"
+                else self._bounded_reservation_amount(upper_bound)
+            )
         selected_model = (routing_decision.get("selected") or {}).get("candidate", {}).get("model")
         effect = plan_external_effect(
             self.database_url,
@@ -700,13 +741,15 @@ class ExternalEffectChapterModelPort:
             max_attempts=2,
             reversible=False,
             completion_policy="synchronous_final",
-            model_id=str(selected_model or
+            model_id=str((existing_intent or {}).get("model_id") or selected_model or
                 getattr(self.adapter, "model_id_for_stage", lambda _stage: "")(stage)
             ),
-            request_timeout_seconds=provider_request_timeout_seconds,
-            reconciliation_mode=str(self.adapter.reconciliation_mode),
+            request_timeout_seconds=int((existing_intent or {}).get("request_timeout_seconds") or provider_request_timeout_seconds),
+            reconciliation_mode=str((existing_intent or {}).get("reconciliation_mode") or self.adapter.reconciliation_mode),
             provider_capability_profile=(
-                self.adapter.capability_profile.to_dict()
+                dict(existing_intent["provider_capability_profile"])
+                if existing_intent is not None
+                else self.adapter.capability_profile.to_dict()
                 if isinstance(
                     self.adapter.capability_profile, ProviderCapabilityProfile
                 )
@@ -784,7 +827,10 @@ class ExternalEffectChapterModelPort:
         )
         execution_binding = None
         frozen_work_order = None
-        if self.agent_binding_recorder is not None:
+        if stage in CONTEXT_MODEL_STAGES:
+            if binder is None:
+                raise KernelError("CONTEXT_COMPRESSION_PEP_REQUIRED", "compression requires the governed Provider binder")
+        elif self.agent_binding_recorder is not None:
             if binder is None:
                 raise KernelError(
                     "CHAPTER_AGENT_BINDING_PEP_REQUIRED",
@@ -1860,7 +1906,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any], *, output_schema_re
             "embedding_model": str(raw.get("embedding_model") or ""),
             "embedding_dimensions": dimensions,
         }
-    if stage == "retrieval_query_expansion":
+    if stage in {"retrieval_query_expansion", *CONTEXT_MODEL_STAGES}:
         return dict(raw)
     if stage in {"review", "rereview"}:
         score_value = raw.get("score")

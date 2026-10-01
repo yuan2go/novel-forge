@@ -80,7 +80,7 @@ def exercise_world_generator_sample(app, harness, *, book_id, source_operation_i
         trace_id="fixture", correlation_id="fixture", application_build_id=app.application_build_id,
         commit_sha=app.commit_sha, principal=operator)
     configure_owned_policy(**common, owner="CREATIVE_EXPERIMENT_BUDGET", content=policy, idempotency_key=project_id + ":world-budget")
-    candidate = deepseek_candidates(available=True)[0]
+    candidate = next(item for item in deepseek_candidates(available=True) if item.reasoning == "high")
     grant = dict(authorization_id=command.authorization_id, reason="scripted World boundary regression", environment="validation",
         book_id=book_id, task_type=command.stage, logical_key=source_operation_id, generation_idempotency_key=command.idempotency_key,
         input_versions_hash=prepared["input_versions_hash"], command_hash=prepared["command_hash"], producer_contract_hash=prepared["producer_contract_hash"],
@@ -96,7 +96,15 @@ def exercise_world_generator_sample(app, harness, *, book_id, source_operation_i
 
     def invoke(adapter, **kwargs):
         calls.append(kwargs)
-        assert kwargs["request_payload"]["_production_execution"]["capability_runtime"]["routing_decision"]["task"]["producer_contract"] == prepared["producer_contract"]
+        runtime = kwargs["request_payload"]["_production_execution"]["capability_runtime"]
+        assert runtime["routing_decision"]["task"]["producer_contract"] == prepared["producer_contract"]
+        assert adapter.binding.route_snapshot.reasoning_effort == candidate.reasoning == "high"
+        assert adapter.binding.route_snapshot.model_id == candidate.model
+        admission = preparer.query.require(project_id=project_id,
+            asset_version_id=runtime["provider_admission_asset_version_id"]).content
+        request_identity = admission.get("contract", admission)["provider_request_identity"]
+        assert request_identity["reasoning_effort"] == "high"
+        assert request_identity["model"] == candidate.model
         evidence = deepcopy(original_evidence)
         evidence.update(fixture_protocol_only=True, real_model_call=False, production_verified=False)
         evidence["production_execution"]["execution_request"] = adapter.binding.request.to_dict()

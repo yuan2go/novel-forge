@@ -312,7 +312,9 @@ CAPABILITY_PACK_V1_CONTRACT = _object(
                     }
                 ),
                 "external_models": _object(
-                    {"allowed": BOOLEAN, "route_policy_ref": NULLABLE_STRING}
+                    {"allowed": BOOLEAN, "route_policy_ref": NULLABLE_STRING,
+                     "context_substages": STRING_ARRAY},
+                    required=frozenset({"allowed", "route_policy_ref"}),
                 ),
                 "retrieval": _object(
                     {"allowed": BOOLEAN, "source_policy_ref": NULLABLE_STRING}

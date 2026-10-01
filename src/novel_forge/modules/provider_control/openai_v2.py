@@ -177,6 +177,8 @@ class OpenAISdkTransport:
             "extra_headers": {"Idempotency-Key": envelope.stable_idempotency_key},
         }
         request_options["max_output_tokens"] = envelope.max_output_tokens
+        if envelope.reasoning_effort:
+            request_options["reasoning"] = {"effort": envelope.reasoning_effort}
         response = self.client.responses.create(
             **request_options,
         )

@@ -124,6 +124,12 @@ def test_native_router_applies_book_authorization_gate_with_no_grants(monkeypatc
     from novel_forge.modules.command_kernel import routing_bootstrap
     from tests.unit.test_cost_aware_routing import generator_samples
 
+    class FrozenDatetime(routing_runtime.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW.astimezone(tz) if tz is not None else NOW.replace(tzinfo=None)
+
+    monkeypatch.setattr(routing_runtime, "datetime", FrozenDatetime)
     scope, model = prepared("draft")
     policy = deepcopy(scope.policy_snapshot)
     policy["policy"]["author_supervised_authorizations"] = []

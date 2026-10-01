@@ -9,9 +9,9 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `5c0e2fa33e64cdee8d4b93e8e682363e06025ce2`
+Reality baseline: `2bcfe01e4d6219479748f379b25b6eceac6cf89c`
 Baseline implementation identity:
-`sha256:7d805ffd02d21d5ddc990a9bbd4f09674daf2138d4d3b5aeb7287ddadf50cf86`
+`sha256:077ce01912efbeae4fbc7c4aead8d5d4cdfe72b0c7a12c7ccd78a412c42a67ba`
 
 <!-- proposal-lifecycle
 {
@@ -21,8 +21,8 @@ Baseline implementation identity:
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "5c0e2fa33e64cdee8d4b93e8e682363e06025ce2",
-    "implementation_tree_sha": "sha256:7d805ffd02d21d5ddc990a9bbd4f09674daf2138d4d3b5aeb7287ddadf50cf86"
+    "sha": "2bcfe01e4d6219479748f379b25b6eceac6cf89c",
+    "implementation_tree_sha": "sha256:077ce01912efbeae4fbc7c4aead8d5d4cdfe72b0c7a12c7ccd78a412c42a67ba"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -110,7 +110,7 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-09-21): Implemented identity, entitlement, corpus-ingestion
+Current scope review (2026-10-01): Task-scoped Context, 512,000-token system support, governed extractive compression/fidelity and frozen Provider recovery refine the existing consumers. Published sampling contracts and Pack identities remain readable alongside separately versioned new samples; this compatibility does not execute a campaign. They do not execute G3/G4, supply real corpus observations, authorize spend or prove literary gain.  Implemented identity, entitlement, corpus-ingestion
 and Source/MKAOS mechanics are documented only in [current-system](../../docs/current-system.md).
 The completed G1/G2 implementation plans and historical review paragraphs have been
 removed. G3/G4 below specify a proposed bounded real-Provider campaign, not observed

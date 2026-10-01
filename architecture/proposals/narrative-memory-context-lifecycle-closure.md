@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `5c0e2fa33e64cdee8d4b93e8e682363e06025ce2`
+Reality baseline: `2bcfe01e4d6219479748f379b25b6eceac6cf89c`
 Baseline implementation identity:
-`sha256:7d805ffd02d21d5ddc990a9bbd4f09674daf2138d4d3b5aeb7287ddadf50cf86`
+`sha256:077ce01912efbeae4fbc7c4aead8d5d4cdfe72b0c7a12c7ccd78a412c42a67ba`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-10-01",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "5c0e2fa33e64cdee8d4b93e8e682363e06025ce2",
-    "implementation_tree_sha": "sha256:7d805ffd02d21d5ddc990a9bbd4f09674daf2138d4d3b5aeb7287ddadf50cf86"
+    "sha": "2bcfe01e4d6219479748f379b25b6eceac6cf89c",
+    "implementation_tree_sha": "sha256:077ce01912efbeae4fbc7c4aead8d5d4cdfe72b0c7a12c7ccd78a412c42a67ba"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -59,6 +59,14 @@ Baseline implementation identity:
     {
       "path": "src/novel_forge/modules/narrative_state/information.py",
       "symbol": "disclosed_fact_projection"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/task_compression.py",
+      "symbol": "compile_task_context"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/production_retrieval.py",
+      "symbol": "build_task_dependency_refs"
     }
   ],
   "superseding_refs": [],
@@ -138,7 +146,7 @@ Baseline implementation identity:
 }
 -->
 
-Current scope review (2026-09-21): Gate A and current role Context/Provider behavior
+Current scope review (2026-10-01): Task worksets, directed required dependencies, source-bound extractive compression/fidelity and frozen receipt recovery refine Gate A consumers. Frozen World accounting and exact published Chapter/sample recovery preserve those consumers without introducing memory lifecycle owners. They do not implement the remaining Digest, retention, representation-generation or purge gates.  Gate A and current role Context/Provider behavior
 are projected in [current-system](../../docs/current-system.md). Implemented Gate A
 design, former reality matrices and duplicate final-architecture tables have been
 removed. Craft uses the existing Context owner and adds no Digest, retention, GC,

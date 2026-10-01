@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state.reality import narrative_hash
 from novel_forge.modules.worldbuilding.dynamics import state_index
+from .task_context import SYSTEM_CONTEXT_WINDOW_TOKENS, serialized_token_upper_bound, source_identity, task_reality_workset
 from .governance import (
     ContextBudgetLimits,
     ContextPolicySnapshot,
@@ -60,11 +60,14 @@ def project_role_context(
     character_ids: tuple[str, ...] = (),
     entity_keys: tuple[str, ...] = (),
     required_event_ids: tuple[str, ...] = (),
+    task: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    task_scoped = task is not None
+    maximum = SYSTEM_CONTEXT_WINDOW_TOKENS if task_scoped else 32768
     if (
         role not in ROLE_STATE_KINDS
         or type(token_budget) is not int
-        or not 0 < token_budget <= 32768
+        or not 0 < token_budget <= maximum
     ):
         raise KernelError(
             "REALITY_CONTEXT_POLICY_INVALID",
@@ -82,19 +85,19 @@ def project_role_context(
     policy_body = {
         "role": role,
         "allowed_kinds": list(kinds),
-        "maximum_bytes": 32768,
-        "version": "reality-role-policy.v1",
+        "maximum_tokens" if task_scoped else "maximum_bytes": maximum,
+        "version": "reality-role-policy.v2" if task_scoped else "reality-role-policy.v1",
     }
     role_policy = ContextPolicySnapshot(
         identity=PolicyIdentity(
             f"reality-role:{role}",
             "context-policy-v1",
             narrative_hash(policy_body),
-            "reality-role-policy.v1",
+            policy_body["version"],
         ),
         allowed_logical_kinds=kinds,
         allowed_physical_types=("story_state_snapshot",),
-        limits=ContextBudgetLimits(total=32768),
+        limits=ContextBudgetLimits(total=maximum),
         permitted_truncation_strategies=(),
     )
     caller_policy = ContextPolicySnapshot(
@@ -117,12 +120,17 @@ def project_role_context(
         (kind, key, entry, "CURRENT_STATE")
         for (kind, key), entry in sorted(state_index(reality).items())
     ]
+    workset = None
+    if task_scoped:
+        scoped_entries, workset = task_reality_workset(reality, task=task, role_kinds=kinds, required_event_ids=required_event_ids)
+        required_event_ids = tuple(workset["required_event_ids"])
     current_event_ids = {
         str(entry.get("source_event_id") or "") for _, _, entry, _ in scoped_entries
     }
     for event in reality.get("events", []):
         if (
-            event.get("event_id") in required_event_ids
+            not task_scoped
+            and event.get("event_id") in required_event_ids
             and event["event_id"] not in current_event_ids
         ):
             scoped_entries.append(
@@ -137,7 +145,7 @@ def project_role_context(
                 )
             )
     for kind, key, entry, evidence_role in scoped_entries:
-        event_id = str(entry.get("source_event_id") or "")
+        event_id = source_identity(entry) if task_scoped else str(entry.get("source_event_id") or "")
         state = dict(entry.get("state") or {})
         reason = ""
         if kind not in policy.allowed_logical_kinds:
@@ -175,14 +183,15 @@ def project_role_context(
             {
                 "state_kind": kind,
                 "entity_key": key,
-                "source_event_id": event_id,
+                "source_event_id": str(entry.get("source_event_id") or ""),
+                **({"source_identity": event_id, "source_binding": entry["source_binding"]} if task_scoped and evidence_role == "FROZEN_INITIAL_STATE" else {}),
                 "state": state,
                 "evidence_role": evidence_role,
             }
         )
     candidates.sort(
         key=lambda c: (
-            c["source_event_id"] not in required_event_ids,
+            source_identity(c) not in required_event_ids,
             c["state_kind"],
             c["entity_key"],
         )
@@ -195,11 +204,7 @@ def project_role_context(
         if digest in seen:
             continue
         seen.add(digest)
-        amount = len(
-            json.dumps(
-                candidate, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-            ).encode()
-        )
+        amount = serialized_token_upper_bound(candidate)
         if consumed + amount > policy.limits.total:
             rejected.append(
                 {
@@ -211,14 +216,14 @@ def project_role_context(
         selected.append(candidate)
         consumed += amount
     if not set(required_event_ids).issubset(
-        {item["source_event_id"] for item in selected}
+        {source_identity(item) for item in selected}
     ):
         raise KernelError(
             "REALITY_CONTEXT_REQUIRED_SOURCE_UNAVAILABLE",
             "required causal evidence cannot be omitted or truncated",
         )
     body = {
-        "contract_version": "narrative-role-context.v1",
+        "contract_version": "narrative-role-context.v2" if task_scoped else "narrative-role-context.v1",
         "project_id": reality["project_id"],
         "book_id": reality["book_id"],
         "reality_revision_id": reality["revision_id"],
@@ -227,6 +232,7 @@ def project_role_context(
         "character_ids": list(character_ids),
         "entity_keys": list(entity_keys),
         "policy": policy.to_dict(),
+        **({"task_workset": workset} if workset is not None else {}),
         "selection": selected,
         "rejections": rejected,
         "estimated_tokens": consumed,

@@ -168,6 +168,91 @@ passing exact-revision run proves the listed current backend capabilities at
 `LONGITUDINAL_NARRATIVE_STABILITY`, or `PRODUCTION_OPERATION`. These are evidence
 boundaries, not a product or narrative development sequence.
 
+
+## Task Context capacity and assembly
+
+For future Chapter work, author `book-chapter-context.v1` with
+`draft_profile: draft-context-profile-v4`, a positive `draft_token_budget` at most
+512,000, and the desired quality task budget. World/Director roles may use
+`world-production-policy.v4` with independently chosen Context allocation. Deploy
+and select Chapter Generation Pack `2.7.0` through the existing Pack Authority;
+then verify its compiled snapshot and the Chapter preparation report's
+`stage_context_profile_versions.draft`. Its frozen Context policy explicitly sets
+the Planning task target to 64,000 tokens; this does not increase the authorized
+Provider token or money ledger. Changing process defaults does not update
+an old Book, Pack, preparation report or sent request. Old frozen contracts recover
+with their original hashes and semantics.
+
+Configure each actual route with its confirmed model Context and output limits,
+accounting method/evidence, and supported high reasoning. The system supports a
+maximum of 512,000 tokens; the effective complete-request window is the minimum
+of that maximum, the selected model window and the existing authorized execution
+limit. Output reservation is independent of the task Context target. API stages
+use their stage output target, bounded by confirmed model capacity and enforced
+in the sent request. OpenAI reasoning shares that output reserve; DeepSeek uses
+its supported reasoning budget semantics. Codex CLI has no enforced per-request
+output ceiling, so new task contracts reserve the full confirmed model output
+capacity, including reasoning once. Unknown CLI output capacity, insufficient
+authorization or a final route whose output capacity exceeds the frozen reserve
+blocks before dispatch. CLI admission labels application-visible coverage.
+A static Planning model may inherit capacity evidence only when it uses the
+same confirmed model as Draft. To select a different real Planning model, use
+the existing router with that candidate's own verified capacity and permission;
+changing only its model identifier leaves capacity unknown and blocks new work.
+Missing capacity, unsupported reasoning or an unqualified route blocks before
+external dispatch. Context compression uses the same authorized Provider and
+cumulative cost/token ledger; it does not grant extra calls or silently change models.
+
+A derived World Context uses its own frozen World policy for the selection budget
+and accounting method. A newer base Planning Pack does not reinterpret the legacy
+World estimate or replace its allocation with the Planning target. World v4 uses
+explicit conservative token accounting; complete Provider admission remains a
+separate check for every rendered request.
+
+For task-scoped World work, frozen hard-rule entity references identify necessary
+background. The existing accepted-lineage repository fetches that entity's first
+and latest unconfirmed background events using accepted chapter and frozen entity
+versions, plus exact causal dependencies, even
+when they fall outside the recent discovery page. Intermediate and unrelated
+history stays outside the task. When a boundary chapter lacks a unique causal
+order, its original events are retained; hashes and input array positions do not
+stand in for semantic order. Current reader knowledge and disclosure evidence
+keep confirmation separate from hints and misdirection. Typed required event
+references are validated before lookup. A necessary set exceeding the explicit
+2,048-event or 32-round host bound blocks rather than losing dependencies. These
+are bounded task policy limits, not new story Authorities.
+
+Inspect the frozen Context `task_context_receipt` and role `task_workset` for task,
+source version/hash, accepted boundary, necessary refs, selected/excluded history,
+estimated token method, fast path and compression/recovery trace. Prompt/Skill/Schema
+and protocol overhead are checked again in the materialized Provider admission
+receipt. A local compressor parse/coverage problem reuses a durable successful Effect;
+UNKNOWN outcomes require reconciliation. Source changes require a new versioned
+request, not mutation of the dispatched identity. Keep exact Review/Revision text
+and citations; faithful required overflow is an explicit block.
+
+The compatibility tests construct current Runtime evidence separately from exact
+historical 0103 schema assertions, upgrade that window through the real migration,
+and only then run the current Runtime. They do not add later tables to the old
+window or promise current Runtime support for every historical schema.
+On the current schema, recovery of the published formal model-required Chapter
+`3.4.1` contract retains its original Operation, workflow/Pack snapshot, 60-second
+Context policy and successful Provider Effect. The current handler codec accepts
+that exact predecessor alongside the current contract; other stale versions,
+handler/name mismatches and stale Fences remain rejected. It does not recreate
+historical definitions or update the frozen request to `3.5.0`.
+
+For credentialed prose verification, read the selected author Foundation, typed
+Book chapter target, production profile, Pack snapshot, author-supervised permission,
+route/model/reasoning and finite budget expiry before execution. Preserve dispatch
+brakes until authorized conditions hold. The formal proof remains generation,
+Review, necessary edits-only Revision/ReReview, Book Acceptance and next-chapter
+consumption of accepted Canon/Narrative State. A missing or expired grant keeps
+real execution `NOT_RUN`. Finite paired Context comparisons must retain original
+and revised text, independent evaluation, exact task/source/model boundaries, full
+chain token/cost receipts and latency. Controlled fixture success cannot establish
+literary gain or long-term production.
+
 ## Corpus metadata commands
 
 The existing Authority API accepts `POST /product/source-governance/corpus/commands`.
@@ -578,7 +663,8 @@ Chapter generator sampling uses `POST /product/production/chapter-authority/prov
 with `project_id`, `actor_id`, `source_operation_id`, `authorization_id`, `idempotency_key`
 and optional `predecessor_operation_id`. The trusted Principal supplies the effective actor.
 The source must be an existing frozen native `chapter.memo.generate`, `chapter.draft.generate`,
-`chapter.revision.apply` or `chapter.canon.extract` Operation at definition version `3.4.1`.
+`chapter.revision.apply` or `chapter.canon.extract` Operation at the current formal
+definition version `3.5.0` or its supported published predecessor `3.4.1`.
 The returned task types are respectively `memo`, `draft`, `revision` and `canon_extraction`;
 use the returned book, command and input identities in the same campaign grant. Dry-run
 performs no admission or Provider call. Admit the identical request without `dry_run`.
@@ -588,10 +674,20 @@ advance the source Chapter Saga. The worker root is the single registered Saga s
 Saga coordination follows terminal worker completion, so ordinary Chapter orchestration
 cannot admit production descendants from a sample.
 
-Install the separately approved `chapter_provider_sampling@1.0.0` binding through
+Install the separately approved `chapter_provider_sampling@2.0.0` binding through
 `install_chapter_validation_pack(..., provider_sampling=True)` in the existing Capability
 Pack authority workflow. It derives `<configured_chapter_pack_id>.provider_sampling`
 from the supplied Chapter pack and retains its Prompt, Skill, Schema and source isolation.
+New sampler definitions use version `2.0.0`; sample-target review/rereview use `2.1.0`.
+Their derived Pack advances the supplied Pack major version (currently `2.7.0` to
+`3.7.0`) under its distinct sampler Pack ID. Published `1.0.0`/`1.1.0` definitions,
+original source `3.4.1`, and frozen Pack snapshots retain their original identities and
+hashes. Idempotent replay selects the persisted definition and successful receipts; it
+does not register a replacement definition or dispatch another call. Unknown definition
+versions fail closed before materialized-result recovery. Reference preflight uses the
+persisted request version and its earlier frozen Pack when a recovery Attempt has no
+snapshot. Without any snapshot it requires that exact version's approved deployment;
+a newer binding cannot substitute for a missing historical binding.
 Only the four generator nodes remain; their typed completion requires an `INELIGIBLE`
 `chapter_provider_sample` and its successful model Effect. The expanded external input
 contract accepts the frozen predecessor artifacts but never commits those sampled outputs
@@ -682,7 +778,7 @@ and rereview use respectively `review_decision` and `rereview_decision`. Freeze 
 `REFERENCE_EVALUATION` grant with the exact binding and producer contract. Install the
 approved `<configured_chapter_pack_id>.reference_sampling` pack with
 `install_chapter_validation_pack(..., provider_sampling=True, reference_sampling=True)`;
-its native binding is `chapter_reference_sampling@1.0.0`. Reference labels are checked
+its native binding is `chapter_reference_sampling@2.0.0`. Reference labels are checked
 before inference and compared with the exact successful ModelCallLog afterward. They
 never enter Provider task inputs. The sample retains status agreement, score-range
 agreement and all reference hashes separately, with `calibration_claim_allowed: false`
@@ -719,7 +815,7 @@ and independent `reference_evaluation` adjudications targeting that sample. The 
 native generator must be respectively `chapter.draft.generate` or `chapter.revision.apply`.
 Install the approved Pack with `install_chapter_validation_pack(...,
 provider_sampling=True, reference_sampling=True, reference_samples=True)`; this uses
-`.reference_samples`, `chapter_reference_sampling@1.1.0` and version `1.1.0` of the
+`.reference_samples`, `chapter_reference_sampling@2.1.0` and version `2.1.0` of the
 native review sample definitions. Preflight returns the actual reviewer producer identity,
 including its Skill and Schema, for the grant. It performs no persistent admission or
 Provider call; any provisional Pack canary assignment is rolled back with its read unit

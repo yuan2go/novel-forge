@@ -31,15 +31,37 @@ CHAPTER_REFERENCE_TASKS = {
        for group in ("structural", "commercial", "source_originality", "longform", "platform")},
 }
 CHAPTER_BOOTSTRAP_TASKS = {**CHAPTER_GENERATOR_TASKS, **CHAPTER_REFERENCE_TASKS}
-CHAPTER_SAMPLE_DEFINITION_VERSION = "1.0.0"
+CHAPTER_LEGACY_SAMPLE_DEFINITION_VERSION = "1.0.0"
+CHAPTER_SAMPLE_DEFINITION_VERSION = "2.0.0"
 CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE = "book:chapter-provider-sample"
 CHAPTER_SAMPLE_SOURCE_VERSION = "3.4.1"
 SCREENPLAY_SAMPLE_TASKS = {"screenplay_generate", "screenplay_review", "screenplay_revision"}
 WORLD_SAMPLE_TASKS = {"world_candidates.generate", "world_candidates.evaluate", *("world_candidates.actor_" + str(index) for index in range(3))}
 WORLD_SAMPLE_IDEMPOTENCY_SCOPE = "book:world-provider-sample"
 WORLD_SAMPLE_DEFINITION_VERSION = "1.0.0"
-CHAPTER_REFERENCE_SAMPLE_VERSION = "1.1.0"
+CHAPTER_LEGACY_REFERENCE_SAMPLE_VERSION = "1.1.0"
+CHAPTER_REFERENCE_SAMPLE_VERSION = "2.1.0"
 CHAPTER_REFERENCE_SAMPLE_SOURCES = {"review": "chapter.draft.generate", "rereview": "chapter.revision.apply"}
+
+CHAPTER_SAMPLE_DEFINITION_VERSIONS = frozenset({CHAPTER_LEGACY_SAMPLE_DEFINITION_VERSION, CHAPTER_SAMPLE_DEFINITION_VERSION})
+CHAPTER_REFERENCE_SAMPLE_VERSIONS = frozenset({CHAPTER_LEGACY_REFERENCE_SAMPLE_VERSION, CHAPTER_REFERENCE_SAMPLE_VERSION})
+CHAPTER_SAMPLE_READABLE_VERSIONS = tuple(sorted(CHAPTER_SAMPLE_DEFINITION_VERSIONS | CHAPTER_REFERENCE_SAMPLE_VERSIONS))
+
+
+def chapter_sample_definition_supported(name: str, version: str, *, reference_samples: bool | None = None) -> bool:
+    ordinary = version in CHAPTER_SAMPLE_DEFINITION_VERSIONS and name in {
+        chapter_sample_definition_name(stage) for stage in CHAPTER_BOOTSTRAP_TASKS.values()
+    }
+    reference = version in CHAPTER_REFERENCE_SAMPLE_VERSIONS and name in {
+        chapter_sample_definition_name(stage) for stage in CHAPTER_REFERENCE_SAMPLE_SOURCES
+    }
+    return reference if reference_samples is True else ordinary if reference_samples is False else ordinary or reference
+
+
+def chapter_sample_source_version_supported(version: Any) -> bool:
+    from novel_forge.modules.chapter_authority.definitions import CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
+
+    return isinstance(version, str) and version in {CHAPTER_SAMPLE_SOURCE_VERSION, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION}
 
 
 def chapter_sample_definition_name(task_type: str) -> str:
@@ -414,7 +436,7 @@ def validate_chapter_sample_origin(
         if "reference_evaluation" in payload:
             metadata.add("reference_evaluation")
         if (
-            definition not in CHAPTER_BOOTSTRAP_TASKS or version != CHAPTER_SAMPLE_SOURCE_VERSION
+            definition not in CHAPTER_BOOTSTRAP_TASKS or not chapter_sample_source_version_supported(version)
             or not isinstance(command, Mapping) or not command.get("book_id")
             or any(key in command for key in ("chapter_sampling", "routing_bootstrap_authorization_id"))
             or payload.get("project_id") != project_id
@@ -528,9 +550,10 @@ def load_bootstrap_authorization(
             raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Source sampling requires its native task contract")
     if payload.get("chapter_sampling"):
         try:
-            contract = (chapter_sample_definition_name(payload.get("generator_operation_name")),
-                        CHAPTER_REFERENCE_SAMPLE_VERSION if payload["chapter_sampling"].get("generation_sample") is not None else CHAPTER_SAMPLE_DEFINITION_VERSION,
-                        CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE)
+            name = chapter_sample_definition_name(payload.get("generator_operation_name"))
+            if not chapter_sample_definition_supported(name, row[2], reference_samples=payload["chapter_sampling"].get("generation_sample") is not None):
+                raise ValueError("unsupported sample version")
+            contract = (name, row[2], CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE)
         except ValueError as exc:
             raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Chapter sampling requires its native task contract") from exc
     if payload.get("world_sampling"):
@@ -587,7 +610,10 @@ def load_bootstrap_authorization(
             "SELECT definition_name,definition_version,command_payload,input_asset_snapshot FROM authority_operation WHERE project_id=%s AND operation_id=%s",
             [project_id, payload["chapter_sampling"].get("source_operation_id")],
         )
-        validate_chapter_sample_origin(payload, cursor.fetchone(), project_id=project_id)
+        origin = cursor.fetchone()
+        validate_chapter_sample_origin(payload, origin, project_id=project_id)
+        if row[2] in {CHAPTER_LEGACY_SAMPLE_DEFINITION_VERSION, CHAPTER_LEGACY_REFERENCE_SAMPLE_VERSION} and origin[1] != CHAPTER_SAMPLE_SOURCE_VERSION:
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "legacy samples require their original published source version")
         if payload["chapter_sampling"].get("generation_sample") is not None:
             from novel_forge.modules.chapter_quality_authority.reference_subject import require_chapter_sample_target
 

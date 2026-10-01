@@ -129,6 +129,8 @@ from tests.integration.migration_window_postgres_support import (
     WORKFLOW_MIGRATION_ID,
     assert_database_at_migration,
     disposable_database_at_migration,
+    materialize_historical_fixture_at_migration,
+    restore_post_window_fixture_tables,
 )
 import tests.integration.authority_postgres_support as authority_postgres_support
 import tests.integration.capability_pack_postgres_support as capability_pack_support
@@ -138,14 +140,14 @@ RELEASE_SHA = os.environ.get("NOVEL_FORGE_TEST_RELEASE_SHA", "e" * 40)
 
 
 @pytest.fixture()
-def pre_workflow_migration_database(
+def current_runtime_fixture_database(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Iterator[str]:
     base_database_url = DATABASE_URL
     with disposable_database_at_migration(
         base_database_url,
         prefix="nf_core_functional_0103",
-        target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+        target_migration_id=LATEST_MIGRATION_ID,
     ) as database_url:
         monkeypatch.setattr(
             authority_postgres_support,
@@ -162,7 +164,7 @@ def pre_workflow_migration_database(
             "ensure_migrated",
             lambda: assert_database_at_migration(
                 database_url,
-                target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+                target_migration_id=LATEST_MIGRATION_ID,
             ),
         )
         monkeypatch.setitem(globals(), "DATABASE_URL", database_url)
@@ -2469,6 +2471,7 @@ def test_real_provider_planning_candidate_is_independently_evaluated_and_activat
             "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
             "NOVEL_FORGE_MODEL_PROVIDER": "openai",
             "NOVEL_FORGE_PLANNING_PROVIDER": "openai",
+            "NOVEL_FORGE_DRAFT_MODEL": "gpt-planning-proof",
             "NOVEL_FORGE_PLANNING_MODEL": "gpt-planning-proof",
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "openai",
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "gpt-evaluator-proof",
@@ -2482,6 +2485,7 @@ def test_real_provider_planning_candidate_is_independently_evaluated_and_activat
             ),
             "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
             "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "131072",
+            "NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT": "8192",
             "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD": (
                 "OPENAI_UTF8_BYTES_UPPER_BOUND_V1"
             ),
@@ -2675,11 +2679,32 @@ def test_planning_retry_reuses_frozen_pack_after_provider_result(
                 supports_cost_receipt=False,
             )
 
-        result = planning.generate(command, principal=principal)
+        preparer = planning.execution_binder.resolver.execution_preparer
+        original_route = preparer.planning_route
+        preparer.planning_route = replace(
+            preparer.planning_route,
+            model_output_limit=128 if failure_checkpoint == "after_provider_receipt_before_budget_settlement" else 0,
+            model_profile=replace(original_route.model_profile, reasoning_effort="low"),
+            runtime_host_id="changed-current-host",
+            auth_profile_ref="changed-current-auth",
+        )
+        with patch("novel_forge.modules.chapter_authority.context_compression_provider.task_provider_output_reserve", side_effect=AssertionError("successful frozen Planning effects must reuse original capacity")):
+            result = planning.generate(command, principal=principal)
         execution.close()
 
     assert result.status is PlanningGenerationStatus.APPROVAL_PENDING
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("""
+            SELECT version.content->'contract'->>'reasoning_effort',
+                   version.content->'contract'->>'runtime_host_id',
+                   version.content->'contract'->>'auth_profile_ref'
+            FROM authority_operation_output_asset AS binding
+            JOIN authority_asset_version AS version ON version.asset_version_id=binding.asset_version_id
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            WHERE binding.operation_id=%s AND asset.asset_type='route_snapshot'
+        """, [result.generation_operation_id])
+        routes = uow.cursor.fetchall()
+        assert routes and all(row == (original_route.model_profile.reasoning_effort, original_route.runtime_host_id, original_route.auth_profile_ref) for row in routes)
         uow.cursor.execute(
             """
             SELECT attempt.attempt_number, attempt.status,
@@ -3256,7 +3281,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     request: pytest.FixtureRequest,
     runtime_path: str,
     monkeypatch: pytest.MonkeyPatch,
-    pre_workflow_migration_database: str,
+    current_runtime_fixture_database: str,
 ) -> None:
     harness = CapabilityPackPostgresHarness("book-input-resolver")
     deployment_id = _activate_planning_pack(harness)
@@ -3575,23 +3600,44 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         snapshot.design_qualification
     )
     assert deployment_id in snapshot.capability_pack_deployment_refs
+
+    later_fixture_tables = materialize_historical_fixture_at_migration(
+        current_runtime_fixture_database,
+        target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+    )
     with pytest.raises(psycopg.errors.CheckViolation):
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
                 "UPDATE authority_book_production_input_snapshot SET release_sha=%s WHERE snapshot_id=%s",
                 ["f" * 40, snapshot.snapshot_id],
             )
-
     assert_database_at_migration(
-        pre_workflow_migration_database,
+        current_runtime_fixture_database,
         target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
     )
-    migration_status = run_migrations(pre_workflow_migration_database)
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT snapshot_id,project_id,workspace_id,book_id,snapshot_hash,
+                   book_plan_version,design_qualification_hash
+            FROM authority_book_production_input_snapshot WHERE snapshot_id=%s
+            """,
+            [snapshot.snapshot_id],
+        )
+        assert cursor.fetchone() == (
+            snapshot.snapshot_id, project_id, workspace_id, book_id,
+            snapshot.snapshot_hash, snapshot.book_plan_version,
+            snapshot.design_qualification_hash,
+        )
+    migration_status = run_migrations(current_runtime_fixture_database)
     assert migration_status["ok"] is True
     assert migration_status["current"] == LATEST_MIGRATION_ID
     assert WORKFLOW_MIGRATION_ID in {
         item["migration_id"] for item in migration_status["applied"]
     }
+    restore_post_window_fixture_tables(
+        current_runtime_fixture_database, later_fixture_tables
+    )
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """

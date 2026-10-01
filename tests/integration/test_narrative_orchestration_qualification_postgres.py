@@ -67,6 +67,8 @@ from tests.integration.migration_window_postgres_support import (
     WORKFLOW_MIGRATION_ID,
     assert_database_at_migration,
     disposable_database_at_migration,
+    materialize_historical_fixture_at_migration,
+    restore_post_window_fixture_tables,
 )
 from tests.integration.test_core_functional_loops_postgres import (
     RELEASE_SHA,
@@ -82,14 +84,14 @@ import tests.integration.test_core_functional_loops_postgres as core_functional_
 
 
 @pytest.fixture()
-def pre_workflow_migration_database(
+def current_runtime_fixture_database(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Iterator[str]:
     base_database_url = DATABASE_URL
     with disposable_database_at_migration(
         base_database_url,
         prefix="nf_narrative_0103",
-        target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+        target_migration_id=LATEST_MIGRATION_ID,
     ) as database_url:
         monkeypatch.setattr(
             authority_postgres_support,
@@ -106,7 +108,7 @@ def pre_workflow_migration_database(
             "ensure_migrated",
             lambda: assert_database_at_migration(
                 database_url,
-                target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+                target_migration_id=LATEST_MIGRATION_ID,
             ),
         )
         monkeypatch.setattr(
@@ -259,6 +261,8 @@ def _qualification_chapter_response(
         "The protagonist tells the witnesses the price of the ledger. "
         "Hearing the public admission, the ally takes back the promised escort."
     )
+    public_cost_quote = "The choice is public, and the irreversible cost is witnessed."
+    payoff_text = "By refusing the safe escape before the witnesses, the protagonist kept yesterday's public promise."
     if stage == "draft" and (inputs.get("plan") or {}).get("knowledge_translations"):
         scenes = payload.get("scene_artifacts") or []
         if scenes:
@@ -281,7 +285,6 @@ def _qualification_chapter_response(
                 "issue_codes": [],
             } for item in targets]
     if stage == "revision" and int(dict(inputs.get("draft") or {}).get("chapter") or 0) == 2:
-        payoff_text = "By refusing the safe escape before the witnesses, the protagonist kept yesterday's public promise."
         scenes = payload.get("scene_artifacts") or []
         if scenes:
             scenes[-1]["text"] += " " + payoff_text
@@ -314,6 +317,7 @@ def _qualification_chapter_response(
     criteria = [
         str(item["criterion_id"]) for item in truth.get("completion_criteria") or ()
     ]
+    assert public_cost_quote in str(revision["text"])
     payload["arc_evidence"] = [
         {
             "arc_plan_version_id": str(truth["arc_plan_version_id"]),
@@ -326,12 +330,13 @@ def _qualification_chapter_response(
                 f"observed costly choice at chapter {chapter_number}"
             ],
             "obligation_ids": [],
-            "resolution_evidence": [f"chapter:{chapter_number}:scene:1"],
+            "resolution_evidence": [public_cost_quote],
             "completion_criterion_ids": [criteria[chapter_number - 1]],
             "phase_to": "CRISIS" if chapter_number == 1 else "PAYOFF",
         }
     ]
     if chapter_number == 2 and obligation is not None:
+        assert payoff_text in str(revision["text"])
         obligation_criteria = [
             str(item["criterion_id"])
             for item in obligation.get("completion_criteria") or ()
@@ -348,7 +353,7 @@ def _qualification_chapter_response(
                     "the overdue public promise is settled by the same witnessed choice"
                 ],
                 "obligation_ids": ["promise:late"],
-                "resolution_evidence": ["chapter:2:scene:1"],
+                "resolution_evidence": [payoff_text],
                 "completion_criterion_ids": obligation_criteria,
                 "phase_to": "PAYOFF",
             }
@@ -916,7 +921,7 @@ def test_planning_retry_freezes_narrative_intelligence_and_honors_revocation(
 
 def test_accepted_reality_closes_three_chapter_orchestration_loop(
     monkeypatch: pytest.MonkeyPatch,
-    pre_workflow_migration_database: str,
+    current_runtime_fixture_database: str,
 ) -> None:
     monkeypatch.setattr(
         authority_dependencies,
@@ -1157,16 +1162,37 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             activated["arc_obligation"],
             activated["arc_countermove"],
         }
-        assert_database_at_migration(
-            pre_workflow_migration_database,
+        later_fixture_tables = materialize_historical_fixture_at_migration(
+            current_runtime_fixture_database,
             target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
         )
-        migration_status = run_migrations(pre_workflow_migration_database)
+        assert_database_at_migration(
+            current_runtime_fixture_database,
+            target_migration_id=PRE_WORKFLOW_MIGRATION_ID,
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT snapshot_id,project_id,workspace_id,book_id,snapshot_hash,
+                       book_plan_version,design_qualification_hash
+                FROM authority_book_production_input_snapshot WHERE snapshot_id=%s
+                """,
+                [snapshot.snapshot_id],
+            )
+            assert cursor.fetchone() == (
+                snapshot.snapshot_id, project_id, workspace_id, book_id,
+                snapshot.snapshot_hash, snapshot.book_plan_version,
+                snapshot.design_qualification_hash,
+            )
+        migration_status = run_migrations(current_runtime_fixture_database)
         assert migration_status["ok"] is True
         assert migration_status["current"] == LATEST_MIGRATION_ID
         assert WORKFLOW_MIGRATION_ID in {
             item["migration_id"] for item in migration_status["applied"]
         }
+        restore_post_window_fixture_tables(
+            current_runtime_fixture_database, later_fixture_tables
+        )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """

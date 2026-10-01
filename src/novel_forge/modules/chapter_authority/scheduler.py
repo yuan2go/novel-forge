@@ -471,16 +471,14 @@ class ChapterAuthorityScheduler:
         self, project_id: str, root: dict[str, Any], saga: dict[str, Any],
     ) -> ChapterSchedulerTick:
         from novel_forge.modules.command_kernel.routing_bootstrap import (
-            CHAPTER_BOOTSTRAP_TASKS, CHAPTER_SAMPLE_DEFINITION_VERSION,
-            CHAPTER_REFERENCE_SAMPLE_VERSION, CHAPTER_REFERENCE_SAMPLE_SOURCES, chapter_sample_definition_name,
+            CHAPTER_BOOTSTRAP_TASKS, chapter_sample_definition_supported, chapter_sample_definition_name,
         )
 
         definition = root["definition_snapshot"]
         source_name = definition["policy"].get("source_definition_name")
         stage = CHAPTER_BOOTSTRAP_TASKS.get(source_name)
         if (stage is None or definition["name"] != chapter_sample_definition_name(stage)
-            or definition["definition_version"] not in {CHAPTER_SAMPLE_DEFINITION_VERSION, CHAPTER_REFERENCE_SAMPLE_VERSION}
-            or (definition["definition_version"] == CHAPTER_REFERENCE_SAMPLE_VERSION and stage not in CHAPTER_REFERENCE_SAMPLE_SOURCES)):
+            or not chapter_sample_definition_supported(definition["name"], definition["definition_version"])):
             raise KernelError("CHAPTER_SAMPLE_DEFINITION_INVALID", "sample definition identity is invalid")
         operation_id = str(root["operation_id"])
         operation = self._child(operation_id, project_id)
@@ -505,6 +503,8 @@ class ChapterAuthorityScheduler:
     def pending_roots(self, *, limit: int = 20) -> tuple[tuple[str, str], ...]:
         if limit <= 0:
             raise ValueError("pending root limit must be positive")
+        from novel_forge.modules.command_kernel.routing_bootstrap import CHAPTER_SAMPLE_READABLE_VERSIONS
+
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -517,7 +517,7 @@ class ChapterAuthorityScheduler:
                      AND operation.status IN ('EXECUTING', 'WAITING_CHILDREN',
                        'FAILED_RETRYABLE', 'CANCELLATION_REQUESTED', 'WAITING_GATE'))
                     OR (operation.definition_name LIKE 'chapter.provider.sample.%%'
-                        AND operation.definition_version = '1.0.0')
+                        AND operation.definition_version = ANY(%s))
                   )
                   AND saga.status NOT IN (
                     'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED',
@@ -526,7 +526,7 @@ class ChapterAuthorityScheduler:
                 ORDER BY operation.created_at, operation.operation_id
                 LIMIT %s
                 """,
-                [limit],
+                [list(CHAPTER_SAMPLE_READABLE_VERSIONS), limit],
             )
             rows = uow.cursor.fetchall()
         return tuple((str(row[0]), str(row[1])) for row in rows)

@@ -5,6 +5,7 @@ from typing import Any
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.modules.command_kernel.routing_bootstrap import (
     CHAPTER_BOOTSTRAP_TASKS,
+    CHAPTER_SAMPLE_SOURCE_VERSION,
     CHAPTER_SAMPLE_DEFINITION_VERSION,
     CHAPTER_REFERENCE_SAMPLE_VERSION,
     CHAPTER_REFERENCE_SAMPLE_SOURCES,
@@ -14,7 +15,8 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
 
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.2.1"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.4.1"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.5.0"
+CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION = "3.4.1"
 CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION = "3.4.1-author-input.v1"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_ID = "chapter_authority_slice"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION = CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
@@ -41,6 +43,7 @@ CHAPTER_QUALITY_GROUP_TIMEOUT_SECONDS = CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS 
 )
 CHAPTER_LONG_TIMEOUT_POLICY_NODES = frozenset(
     {
+        ChapterNode.CONTEXT,
         ChapterNode.DRAFT,
         ChapterNode.REVIEW,
         ChapterNode.REVISION,
@@ -125,7 +128,7 @@ def chapter_provider_sample_definitions(
             "projection_consumers": ["operation_timeline", "provider_routing_campaign"],
             "policy": {
                 "source_definition_name": node.definition_name,
-                "source_definition_version": CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+                "source_definition_versions": sorted({CHAPTER_SAMPLE_SOURCE_VERSION, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION}),
                 "routing_bootstrap_sample": True,
                 "production_eligible": False,
                 **({"chapter_reference_sample_input_allowed": True} if reference_samples else {}),
@@ -354,6 +357,8 @@ def _definition(
             )
         )
     if node is ChapterNode.CONTEXT:
+        if model_effects_required:
+            external_capabilities = ["model.context_compress", "model.context_fidelity"]
         completion["required_asset_selectors"].append(
             {
                 "selector": "context_manifest_consistency_report",

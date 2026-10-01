@@ -98,7 +98,7 @@ class PostgresBookProductionSupervisor:
             and quality_context_token_budget <= 0
         ):
             raise ValueError("quality_context_token_budget must be positive")
-        if draft_context_profile_version not in {"draft-context-profile-v2", "draft-context-profile-v3"}:
+        if draft_context_profile_version not in {"draft-context-profile-v2", "draft-context-profile-v3", "draft-context-profile-v4"}:
             raise ValueError("unsupported draft Context profile version")
         self.draft_context_profile_version = draft_context_profile_version
         self.authority = authority
@@ -704,6 +704,7 @@ class PostgresBookProductionSupervisor:
             capability_required_asset_types=("character_cast", "reader_promise"),
             context_token_budget=context_policy["draft_token_budget"] if context_policy else self.context_token_budget,
             knowledge_access_policy=knowledge_access_policy,
+            context_profile_version=context_policy["draft_profile"] if context_policy else self.draft_context_profile_version,
         )
 
     @staticmethod

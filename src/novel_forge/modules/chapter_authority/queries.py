@@ -16,8 +16,8 @@ class ChapterAuthorityQuery:
 
     def require_provider_sample(self, *, project_id: str, operation_id: str) -> dict[str, Any]:
         from novel_forge.modules.command_kernel.routing_bootstrap import (
-            CHAPTER_BOOTSTRAP_TASKS, CHAPTER_SAMPLE_DEFINITION_VERSION, chapter_sample_definition_name,
-            CHAPTER_REFERENCE_SAMPLE_VERSION,
+            CHAPTER_BOOTSTRAP_TASKS, CHAPTER_SAMPLE_READABLE_VERSIONS, chapter_sample_definition_name,
+            chapter_sample_definition_supported,
         )
 
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -27,10 +27,10 @@ class ChapterAuthorityQuery:
                    FROM authority_operation WHERE project_id=%s AND operation_id=%s
                      AND definition_name=ANY(%s) AND definition_version=ANY(%s)""",
                 [project_id, operation_id, [chapter_sample_definition_name(stage) for stage in CHAPTER_BOOTSTRAP_TASKS.values()],
-                 [CHAPTER_SAMPLE_DEFINITION_VERSION, CHAPTER_REFERENCE_SAMPLE_VERSION]],
+                 list(CHAPTER_SAMPLE_READABLE_VERSIONS)],
             )
             row = uow.cursor.fetchone()
-            if row is None:
+            if row is None or not chapter_sample_definition_supported(row[2], row[3], reference_samples=(row[4].get("chapter_sampling") or {}).get("generation_sample") is not None):
                 raise KernelError("CHAPTER_SAMPLE_NOT_FOUND", "Chapter sample is absent from the authorized project")
             result = dict(zip(("operation_id", "status", "definition_name", "definition_version", "input_snapshot",
                                "trace_id", "correlation_id", "causation_operation_id"), row, strict=True))

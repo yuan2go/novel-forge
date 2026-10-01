@@ -38,13 +38,14 @@ class WorldProductionPolicy:
             (self.max_paths_per_candidate, 8),
             (self.max_preparation_steps, 16),
             (self.planning_window_chapters, 32),
-            (self.context_token_budget, 24000 if self.version == "world-production-policy.v3" else 16000),
+            (self.context_token_budget, 512000 if self.version == "world-production-policy.v4" else 24000 if self.version == "world-production-policy.v3" else 16000),
             (self.max_world_time_advance, 1_000_000),
         )
         if (
-            self.version not in {"world-production-policy.v1", "world-production-policy.v2", "world-production-policy.v3"}
+            self.version not in {"world-production-policy.v1", "world-production-policy.v2", "world-production-policy.v3", "world-production-policy.v4"}
             or (self.version == "world-production-policy.v1" and self.max_provider_stages != 2)
             or (self.version in {"world-production-policy.v2", "world-production-policy.v3"} and (type(self.max_provider_stages) is not int or not 3 <= self.max_provider_stages <= 5))
+            or (self.version == "world-production-policy.v4" and (type(self.max_provider_stages) is not int or not 2 <= self.max_provider_stages <= 5))
             or any(
                 isinstance(value, bool)
                 or not isinstance(value, int)

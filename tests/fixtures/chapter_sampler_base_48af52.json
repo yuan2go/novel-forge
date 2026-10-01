@@ -1,0 +1,286 @@
+{
+  "base_sha": "48af52ea4afdbea6bb59e1ed84306d9708df2f98",
+  "definitions": [
+    {
+      "application_build_id": "published-base-sampler",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "commit_sha": "48af52ea4afdbea6bb59e1ed84306d9708df2f98",
+      "compensation_policy": {
+        "reason": "append_only_sample_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "INELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.provider.sample",
+            "role": "primary",
+            "selector": "chapter_provider_sample"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.provider.sample.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "capability": "model.draft"
+          }
+        ],
+        "required_outbox_events": [
+          "chapter.provider.sample.materialized"
+        ],
+        "version": "chapter.provider.sample.draft.completion.v1"
+      },
+      "concurrency_key_template": "book:{book_id}:chapter-sample:{logical_key}",
+      "definition_status": "implemented",
+      "definition_version": "1.0.0",
+      "enabled": true,
+      "execution_mode": "worker",
+      "external_capabilities": [
+        "model.draft"
+      ],
+      "family": "chapter_authority",
+      "handler_contract_version": "chapter-provider-sample.v1",
+      "handler_key": "novel_forge.chapter_authority.sample.draft",
+      "idempotency_scope": "book:chapter-provider-sample",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "migration_owner": "chapter-authority",
+      "name": "chapter.provider.sample.draft",
+      "output_contract": {
+        "asset_type": "chapter_provider_sample",
+        "output_key": "chapter.provider.sample"
+      },
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "production_eligible": false,
+        "routing_bootstrap_sample": true,
+        "source_definition_name": "chapter.draft.generate",
+        "source_definition_version": "3.4.1"
+      },
+      "projection_consumers": [
+        "operation_timeline",
+        "provider_routing_campaign"
+      ],
+      "published_hash": "sha256:e96f1c23528ee7eb4793f4b76f57ae6c586fb60cd6b82b94da26a5144d582725",
+      "result_schema": {
+        "type": "object"
+      },
+      "retry_policy": {
+        "dead_letter_on_exhausted": true,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 600
+      }
+    },
+    {
+      "application_build_id": "published-base-sampler",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "commit_sha": "48af52ea4afdbea6bb59e1ed84306d9708df2f98",
+      "compensation_policy": {
+        "reason": "append_only_sample_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "INELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.provider.sample",
+            "role": "primary",
+            "selector": "chapter_provider_sample"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.provider.sample.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "capability": "model.review"
+          }
+        ],
+        "required_outbox_events": [
+          "chapter.provider.sample.materialized"
+        ],
+        "version": "chapter.provider.sample.review.completion.v1"
+      },
+      "concurrency_key_template": "book:{book_id}:chapter-sample:{logical_key}",
+      "definition_status": "implemented",
+      "definition_version": "1.1.0",
+      "enabled": true,
+      "execution_mode": "worker",
+      "external_capabilities": [
+        "model.review"
+      ],
+      "family": "chapter_authority",
+      "handler_contract_version": "chapter-provider-sample.v1",
+      "handler_key": "novel_forge.chapter_authority.sample.review",
+      "idempotency_scope": "book:chapter-provider-sample",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "migration_owner": "chapter-authority",
+      "name": "chapter.provider.sample.review",
+      "output_contract": {
+        "asset_type": "chapter_provider_sample",
+        "output_key": "chapter.provider.sample"
+      },
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "chapter_reference_sample_input_allowed": true,
+        "production_eligible": false,
+        "routing_bootstrap_sample": true,
+        "source_definition_name": "chapter.review.evaluate",
+        "source_definition_version": "3.4.1"
+      },
+      "projection_consumers": [
+        "operation_timeline",
+        "provider_routing_campaign"
+      ],
+      "published_hash": "sha256:e3095803788843687f9ee91d634c29c058d425687e40aa105081f565f49cdd57",
+      "result_schema": {
+        "type": "object"
+      },
+      "retry_policy": {
+        "dead_letter_on_exhausted": true,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 600
+      }
+    }
+  ]
+}

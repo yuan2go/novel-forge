@@ -945,6 +945,123 @@
         "hard_stop_on_exhaustion": true,
         "aggregate_causation_lineage": true
       }
+    },
+    {
+      "kind": "CONTEXT_POLICY",
+      "ref": "context-policy:chapter-generation-pack:v2",
+      "version": "v2",
+      "content": {
+        "policy_id": "context-policy:chapter-generation-pack:v2",
+        "max_tokens": 512000,
+        "planning_task_token_budget": 64000,
+        "source_isolation": "ABSTRACT_ASSETS_ONLY",
+        "reject_cross_project": true,
+        "required_version_refs": [
+          "canon_snapshot_version_id",
+          "chapter_plan_asset_version_id"
+        ],
+        "allowed_asset_types": [
+          "book_design",
+          "canon_snapshot",
+          "chapter_execution_intent",
+          "chapter_memo",
+          "chapter_plan",
+          "chapter_plan_version",
+          "context_bundle",
+          "knowledge_pack",
+          "story_state"
+        ],
+        "forbidden_asset_types": [
+          "raw_source_chunk",
+          "raw_source_document"
+        ]
+      }
+    },
+    {
+      "kind": "TOOL_POLICY",
+      "ref": "tools:chapter-generation-pack:v2",
+      "version": "v2",
+      "content": {
+        "policy_id": "tools:chapter-generation-pack:v2",
+        "default": "DENY",
+        "empty_allowlist_semantics": "DENY_ALL",
+        "audit_high_and_critical": true,
+        "critical_requires_approval": true,
+        "inline_auth_material_allowed": false,
+        "explicit_tool_refs": [
+          "model.provider.invoke",
+          "storage.object.put"
+        ]
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:context-bundle:v2",
+      "version": "v2",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/context-bundle/v2",
+        "type": "object",
+        "required": [
+          "project_id",
+          "asset_version_refs",
+          "source_isolation",
+          "token_count"
+        ],
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "asset_version_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "source_isolation": {
+            "const": "ABSTRACT_ASSETS_ONLY"
+          },
+          "token_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 512000
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:context-task-compile:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:context-task-compile:v1",
+        "operation_timeout_seconds": 600,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.5.0"
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:context-task-compile:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:context-task-compile:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true
+      }
     }
   ]
 }

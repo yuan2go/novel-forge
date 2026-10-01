@@ -99,6 +99,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     requested_platform_profile=request.requested_platform_profile,
                     operator_decision=dict(request.operator_decision),
                     context_token_budget=request.context_token_budget,
+                    context_profile_version=request.context_profile_version,
                 )
             )
             if preparation.command is None:

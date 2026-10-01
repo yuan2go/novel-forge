@@ -916,6 +916,21 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False, le
         schema = _retrieval_embedding_schema()
     elif stage == "retrieval_query_expansion":
         schema = _retrieval_query_expansion_schema()
+    elif stage == "context_compress":
+        schema = _object_schema({
+            "selected_unit_ids": {"type": "array", "maxItems": 256, "uniqueItems": True,
+                                  "items": {"type": "string", "minLength": 1, "maxLength": 200}},
+        }, required=("selected_unit_ids",))
+    elif stage == "context_fidelity":
+        identity_array = {"type": "array", "maxItems": 256, "uniqueItems": True,
+                          "items": {"type": "string", "minLength": 1, "maxLength": 200}}
+        schema = _object_schema({
+            "supported": {"type": "boolean"},
+            "coverage_complete": {"type": "boolean"},
+            "missing_unit_ids": identity_array,
+            "distorted_unit_ids": identity_array,
+            "reason": {"type": "string", "minLength": 1, "maxLength": 4000},
+        }, required=("supported", "coverage_complete", "missing_unit_ids", "distorted_unit_ids", "reason"))
     else:
         raise KernelError(
             "CHAPTER_PROVIDER_OUTPUT_SCHEMA_UNSUPPORTED",

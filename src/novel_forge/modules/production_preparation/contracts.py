@@ -34,6 +34,7 @@ class ProductionPreparationRequest:
     requested_platform_profile: str = "default"
     operator_decision: dict[str, Any] = field(default_factory=dict)
     context_token_budget: int = 6000
+    context_profile_version: str = "draft-context-profile-v2"
     stage: str = "draft"
     capability_required_asset_types: tuple[str, ...] = ()
     knowledge_access_policy: dict[str, Any] = field(default_factory=dict)
@@ -153,6 +154,7 @@ class ProductionPreparationReport:
     production_input_manifest: dict[str, Any] = field(default_factory=dict)
     risks: tuple[dict[str, Any], ...] = ()
     chapter_plan_qualification_profile: dict[str, Any] = field(default_factory=dict)
+    stage_context_profile_versions: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)

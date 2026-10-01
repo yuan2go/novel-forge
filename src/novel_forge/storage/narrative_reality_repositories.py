@@ -287,6 +287,74 @@ class NarrativeRealityRepository:
         )
         return [dict(row[0]) for row in self.cursor.fetchall()]
 
+    def task_background_sources(self, *, reality: dict[str, Any], entity_keys: tuple[tuple[str, str], ...], required_event_ids: tuple[str, ...]) -> list[dict[str, Any]]:
+        from novel_forge.modules.context_builder.task_context import confirmed_reader_facts, initial_dependency_sources, world_event_causes
+
+        if len(entity_keys) > 2048 or len(required_event_ids) > 2048:
+            raise KernelError("TASK_CONTEXT_DEPENDENCY_UNBOUNDED", "necessary source discovery exceeds its explicit host bound")
+        self.cursor.execute(
+            """
+            WITH requested AS (SELECT * FROM unnest(%s::text[],%s::text[]) AS scope(state_kind,entity_key)),
+            sources AS (
+                SELECT v.content->'state_events'->i.event_ordinal AS event,
+                       i.state_kind,i.entity_key,i.accepted_chapter,
+                       CASE WHEN jsonb_typeof(v.content->'state_events'->i.event_ordinal->'version'->'entity')='number'
+                                 AND (v.content->'state_events'->i.event_ordinal->'version'->>'entity') ~ '^[1-9][0-9]*$'
+                            THEN (v.content->'state_events'->i.event_ordinal->'version'->>'entity')::numeric END AS entity_version
+                FROM authority_book_acceptance_lineage(%s) accepted
+                JOIN authority_narrative_reality_revision r ON r.acceptance_id=accepted.acceptance_id
+                JOIN authority_reality_event_index i ON i.revision_id=r.revision_id
+                JOIN requested scope ON (scope.state_kind,scope.entity_key)=(i.state_kind,i.entity_key)
+                JOIN authority_asset_version v ON v.asset_version_id=r.outcome_version_id
+                WHERE i.accepted_chapter<=%s
+                  AND (i.state_kind='narrative_obligation' OR
+                       (i.fact_origin_kind='GOVERNED_BACKGROUND' AND NOT (i.event_id=ANY(%s))))
+            ), chapters AS (
+                SELECT state_kind,entity_key,accepted_chapter,
+                       count(*)=count(entity_version) AND count(*)=count(DISTINCT entity_version) AS ordered,
+                       min(entity_version) AS first_version,max(entity_version) AS latest_version
+                FROM sources GROUP BY state_kind,entity_key,accepted_chapter
+            ), boundaries AS (
+                SELECT state_kind,entity_key,min(accepted_chapter) AS first_chapter,max(accepted_chapter) AS latest_chapter
+                FROM sources GROUP BY state_kind,entity_key
+            ) SELECT source.event FROM sources source
+              JOIN chapters USING(state_kind,entity_key,accepted_chapter)
+              JOIN boundaries USING(state_kind,entity_key)
+              WHERE (source.accepted_chapter=first_chapter AND (NOT ordered OR source.entity_version=first_version))
+                 OR (source.accepted_chapter=latest_chapter AND (NOT ordered OR source.entity_version=latest_version))
+            """,
+            [[kind for kind, _ in entity_keys], [key for _, key in entity_keys], reality["book_run_id"], reality["chapter_number"], sorted(confirmed_reader_facts(reality))],
+        )
+        found = {event["event_id"]: dict(event) for (event,) in self.cursor.fetchall()}
+        initial_refs = set(initial_dependency_sources(reality))
+        pending = (set(required_event_ids) | set(found)) - initial_refs
+        visited: set[str] = set()
+        for _ in range(32):
+            batch = tuple(sorted(pending - visited))
+            if not batch:
+                return [found[key] for key in sorted(found)]
+            if len(visited | set(batch)) > 2048:
+                raise KernelError("TASK_CONTEXT_DEPENDENCY_UNBOUNDED", "necessary causal closure exceeds its explicit host bound")
+            rows = self.event_sources(book_run_id=reality["book_run_id"], through_chapter=reality["chapter_number"], event_ids=batch)
+            if set(batch) - {row["event_id"] for row in rows}:
+                raise KernelError("TASK_CONTEXT_DEPENDENCY_UNAVAILABLE", "required accepted event is unavailable at the frozen Book boundary")
+            visited.update(batch)
+            pending = set()
+            for event in rows:
+                found[event["event_id"]] = event
+                for ref in world_event_causes(event):
+                    if ref.startswith("local:"):
+                        self.cursor.execute("SELECT parent.event_id FROM authority_reality_event_index child JOIN authority_reality_event_index parent ON parent.revision_id=child.revision_id WHERE child.book_run_id=authority_book_source_run(%s,child.accepted_chapter) AND child.event_id=%s AND child.accepted_chapter<=%s AND parent.batch_local_id=%s", [reality["book_run_id"], event["event_id"], reality["chapter_number"], ref[6:]])
+                        matches = self.cursor.fetchall()
+                        if len(matches) != 1:
+                            raise KernelError("TASK_CONTEXT_DEPENDENCY_UNAVAILABLE", "local cause requires one exact accepted batch event")
+                        pending.add(str(matches[0][0]))
+                    elif ref not in reality.get("foundation_cause_refs", ()) and ref not in initial_refs:
+                        pending.add(ref)
+        if pending - visited:
+            raise KernelError("TASK_CONTEXT_DEPENDENCY_UNBOUNDED", "necessary causal closure exceeds its explicit host depth")
+        return [found[key] for key in sorted(found)]
+
     def why_sources(self, *, reality: dict[str, Any], event_id: str) -> dict[str, Any]:
         events: dict[str, Any] = {}
         pending = [event_id]
