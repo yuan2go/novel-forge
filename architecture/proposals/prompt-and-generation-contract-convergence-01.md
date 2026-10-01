@@ -13,9 +13,9 @@
 |---|---|
 | 目标仓库 | `yuan2go/novel-forge` |
 | 核验日期 | 2026-10-01，UTC+8 |
-| 核验分支 | `codex/real-prose-quality-closure-01` |
-| 当前生命周期代码基线 | `5c0e2fa33e64cdee8d4b93e8e682363e06025ce2` |
-| Git tree | `3a6039883ea21009412bd88987f1e6c2f7d2a165` |
+| 核验分支 | `codex/wp-task-context-512k-01` |
+| 当前生命周期代码基线 | `e616140756d2d6ef2357aa0ed0cd0d7ce98168af` |
+| Git tree | `99303f7d7c79c22ce0f3bd65f50de8239568b725` |
 | 当前事实核验 | 源代码、冻结合同、正式装配及定向单测/PostgreSQL 回归；现有持久库仅只读核验，未调用真实 Provider |
 | 实现及效果状态 | 规格形成时仅交付需求；后续工程实现已进入正式主链，真实 Provider 与文学收益仍未验证。当前状态以代码、冻结合同和当次验收为准 |
 | 规格边界 | 现有小说生成主链的职责、Prompt、输出、Context、方法及下游消费收敛；不是整个 Industrial Autonomous Novel OS 的一次性交付蓝图 |
@@ -28,8 +28,8 @@
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
   "reality_baseline": {
-    "sha": "5c0e2fa33e64cdee8d4b93e8e682363e06025ce2",
-    "implementation_tree_sha": "sha256:7d805ffd02d21d5ddc990a9bbd4f09674daf2138d4d3b5aeb7287ddadf50cf86"
+    "sha": "e616140756d2d6ef2357aa0ed0cd0d7ce98168af",
+    "implementation_tree_sha": "sha256:06f6c417ef4374bb9505aa1c94f4d9fa2cc74469ed45485ac0e34ddc2ea2e765"
   },
   "scope": [
     "src/novel_forge/modules/chapter_authority",
@@ -85,6 +85,14 @@
     {
       "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
       "symbol": "reconcile_external_effect"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/task_compression.py",
+      "symbol": "compile_task_context"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/production_retrieval.py",
+      "symbol": "build_task_dependency_refs"
     }
   ],
   "superseding_refs": [],
@@ -102,7 +110,7 @@
     },
     {
       "id": "applicable-engineering-qualification",
-      "description": "完整适用验收尚未通过。旧 0103 快照测试在升级前调用了依赖后续迁移的当前 Runtime；十二章夹具的必需 accepted 因果证据超过冻结 world-production-policy.v1 的 16000 字节预算。兼容语义与预算适用性仍需按真实记录闭合，不绕过当前授权、删除必需来源或改写历史迁移。",
+      "description": "完整适用验收仍须绑定最终提交通过。旧 0103 数据构造、原窗口断言、真实迁移升级与当前 Runtime 已分开；连续十二章已在原预算下通过任务工作集、依赖闭包和精确来源的定向验证。定向通过不替代完整 P0，旧冻结合同和授权边界保持有效。",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/context_builder/reality_projection.py",
