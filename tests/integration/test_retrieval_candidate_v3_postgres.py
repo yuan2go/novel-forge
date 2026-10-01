@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 
 import psycopg
 import pytest
@@ -104,15 +105,20 @@ def _seed_document(
     entity_ids: tuple[str, ...] = (),
     projection_version: str = SEMANTIC_PROJECTION_VERSION,
     metadata: dict[str, object] | None = None,
+    obligation_ids: tuple[str, ...] = (),
+    source_artifact_type: str = "best_draft_candidate",
+    source_content: dict[str, object] | None = None,
+    memory_layer: str = "L0",
 ) -> tuple[str, str, str]:
     asset_id = f"asset:{label}"
     asset_version_id = f"asset-version:{label}"
-    content_hash = _sha(f"content:{label}")
+    content = source_content if source_content is not None else {"text": text}
+    content_hash = _sha(json.dumps(content, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
     document_id = f"retrieval-document:{label}"
     effect_id = f"embedding-effect:{label}"
     cursor.execute(
-        "INSERT INTO authority_asset(asset_id, project_id, asset_type) VALUES (%s,%s,'best_draft_candidate')",
-        [asset_id, project_id],
+        "INSERT INTO authority_asset(asset_id, project_id, asset_type) VALUES (%s,%s,%s)",
+        [asset_id, project_id, source_artifact_type],
     )
     cursor.execute(
         """
@@ -121,7 +127,7 @@ def _seed_document(
             eligibility, governance, content, content_hash, schema_version
         ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'draft.v1')
         """,
-        [asset_version_id, asset_id, Jsonb({"text": text}), content_hash],
+        [asset_version_id, asset_id, Jsonb(content), content_hash],
     )
     cursor.execute(
         """
@@ -133,8 +139,8 @@ def _seed_document(
             arc_plan_version_ids, obligation_ids, temporal_coordinate,
             metadata, projection_hash, created_by_operation_id
         ) VALUES (
-            %s,%s,%s,%s,'best_draft_candidate',%s,%s,'L0',%s,%s,
-            '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,%s,
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+            '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,%s,%s,
             %s,%s,%s
         )
         """,
@@ -143,10 +149,13 @@ def _seed_document(
             project_id,
             book_id,
             asset_version_id,
+            source_artifact_type,
             chapter,
             accepted_to,
+            memory_layer,
             text,
             Jsonb(list(entity_ids)),
+            Jsonb(list(obligation_ids)),
             Jsonb({"accepted_chapter": chapter}),
             Jsonb(metadata or {}),
             _sha(f"document:{label}"),
@@ -569,3 +578,186 @@ def test_task_dependencies_use_exact_planting_advance_and_causal_closure_outside
         ]))
     protected = discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=protected_plan)
     assert protected.query_plan["task_dependency_discovery"]["protected_resolved_refs"] == ["current:exact"]
+
+
+def test_obligation_only_dependencies_read_actual_events_not_inherited_active_ids() -> None:
+    ensure_migrated()
+    project_id = identifier("obligation-only-project")
+    book_id = f"book:{project_id}"
+    seed_authority_project_book(project_id=project_id, workspace_id=f"workspace:{project_id}", book_id=book_id)
+    definition = identifier("obligation-only-definition")
+    operation_id = identifier("obligation-only-operation")
+    obligation = "obligation:old-promise"
+    endpoints = {}
+    with transaction() as connection, connection.cursor() as cursor:
+        insert_definition(cursor, definition)
+        insert_operation(cursor, operation_id=operation_id, definition_name=definition, project_id=project_id, status="SUCCEEDED")
+        for chapter, event_id, status in ((1, "event:plant", "OPEN"), (4, "event:advance", "DEVELOPING")):
+            event = {"event_id": event_id, "state_kind": "narrative_obligation", "identity": {"entity_key": f"obligation_id={obligation}"},
+                     "coordinate": {"source_chapter": chapter}, "version": {"entity": 1 if chapter == 1 else 2},
+                     "mutation": {"payload": {"obligation_id": obligation, "status": status, "priority": "LOW"}},
+                     "causality": {"cause_refs": [f"draft:{chapter}"]}}
+            unrelated = {**event, "event_id": f"unrelated:{chapter}", "state_kind": "character_belief",
+                         "mutation": {"payload": {"subject_id": "unrelated", "belief": "Do not project this unrelated belief."}}}
+            prose = f"Exact original prose {chapter}: only if the old promise remains unpaid."
+            prose_id, prose_version, prose_hash = _seed_document(
+                cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+                label=identifier(f"obligation-prose-{chapter}"), chapter=chapter, text=prose,
+                vector=(1.0, 0.0, 0.0), obligation_ids=(obligation,),
+            )
+            content = {"state_events": [unrelated, event], "unrelated_metadata": "Do not require whole Outcome.",
+                       "accepted_draft_asset_version_id": prose_version}
+            outcome_id, outcome_version, outcome_hash = _seed_document(
+                cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+                label=identifier(f"obligation-outcome-{chapter}"), chapter=chapter,
+                text=json.dumps(content), vector=(1.0, 0.0, 0.0), source_artifact_type="chapter_outcome",
+                source_content=content, memory_layer="L6", obligation_ids=(obligation,),
+            )
+            endpoints[chapter] = (outcome_id, outcome_version, outcome_hash, prose_id, prose_version, prose_hash, prose, event_id)
+        for chapter in range(10, 280):
+            _seed_document(cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+                           label=identifier(f"obligation-inherited-{chapter}"), chapter=chapter,
+                           text="Recent material retaining the still-active obligation ID.", vector=(1.0, 0.0, 0.0), obligation_ids=(obligation,))
+    intent = {"chapter": 301, "intent_fingerprint": _sha("obligation-intent"), "accepted_boundary": {"accepted_through_chapter": 300},
+              "required_arc_contributions": [], "active_obligations": [{"state": {"obligation_id": obligation}}], "retrieval_graph": {}}
+    memo = {"chapter": 301, "qualification": "QUALIFIED", "memo_fingerprint": _sha("obligation-memo"), "accepted_boundary": intent["accepted_boundary"],
+            "retrieval_queries": ["Recent material"], "arc_actions": [], "obligation_actions": [{"obligation_id": obligation}]}
+    plan = build_retrieval_query_plan(intent=intent, memo=memo, semantic_policy="DISABLED",
+        task_dependency_refs=build_task_dependency_refs(plan={"chapter": 301, "obligation_refs": [obligation]}, current_candidates=[]))
+    discovery = discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=plan)
+    by_id = {item["retrieval_document_id"]: item for item in discovery.documents}
+    endpoint_ids = {values[index] for values in endpoints.values() for index in (0, 3)}
+    assert endpoint_ids <= set(by_id)
+    assert len(by_id) == 260
+    for outcome_id, outcome_version, outcome_hash, prose_id, prose_version, prose_hash, prose, event_id in endpoints.values():
+        outcome = by_id[outcome_id]
+        assert (outcome["source_asset_version_id"], outcome["source_content_hash"]) == (outcome_version, outcome_hash)
+        assert outcome["metadata"]["task_dependency_projection"]["event_ids"] == [event_id]
+        assert outcome["task_dependency_matched_refs"] == [event_id]
+        assert "Do not project" not in outcome["content_text"] and "Do not require whole" not in outcome["content_text"]
+        assert (by_id[prose_id]["source_asset_version_id"], by_id[prose_id]["source_content_hash"]) == (prose_version, prose_hash)
+        assert by_id[prose_id]["content_text"] == prose
+    trace = discovery.query_plan["task_dependency_discovery"]
+    assert trace["required_obligation_ids"] == [obligation]
+    assert set(trace["matched_documents_by_obligation"][obligation]) == endpoint_ids
+    result = build_retrieval_result(project_id=project_id, book_id=book_id, intent_asset_version_id="intent:obligation", memo_asset_version_id="memo:obligation",
+        query_plan=discovery.query_plan, documents=discovery.documents, discovery_rejections=discovery.rejected_documents, semantic_status=discovery.semantic_status)
+    assert endpoint_ids <= {item["retrieval_document_id"] for item in result["selected_documents"]}
+    assert len(result["selected_documents"]) == 28
+    from novel_forge.modules.chapter_authority.provider_views import build_task_narrative_projection, project_retrieved_state_context
+    for document in result["selected_documents"]:
+        if document["retrieval_document_id"] in {values[0] for values in endpoints.values()}:
+            projection = build_task_narrative_projection({"chapter": 301, "obligation_refs": [obligation]}, task_scoped=True)
+            projection["required_event_refs"] = document["task_dependency_matched_refs"]
+            consumed = project_retrieved_state_context(document["metadata"], projection=projection, chapter=301)
+            assert {fact["source_event_id"] for fact in consumed["structured_facts"]} == set(document["task_dependency_matched_refs"])
+    arguments = dict(project_id=project_id, book_id=book_id, intent_asset_version_id="intent:obligation", memo_asset_version_id="memo:obligation",
+                     query_plan=discovery.query_plan, discovery_rejections=[], semantic_status={})
+    with pytest.raises(KernelError) as omitted:
+        build_retrieval_result(**arguments, documents=[item for item in discovery.documents if item["retrieval_document_id"] != endpoints[1][0]])
+    assert omitted.value.code == "RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE"
+    replay = discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=discovery.query_plan)
+    assert replay.query_plan == discovery.query_plan
+    assert replay.documents == discovery.documents
+    missing = build_retrieval_query_plan(intent=intent, memo=memo, semantic_policy="DISABLED",
+        task_dependency_refs=build_task_dependency_refs(plan={"chapter": 301, "required_obligation_ids": ["obligation:missing"]}, current_candidates=[]))
+    with pytest.raises(KernelError) as unavailable:
+        discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=missing)
+    assert unavailable.value.code == "RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE"
+    bad_boundary = {**intent["accepted_boundary"], "story_state_asset_version_id": "state:not-accepted", "canon_snapshot_asset_version_id": "canon:not-accepted"}
+    unknown_lineage = build_retrieval_query_plan(intent={**intent, "accepted_boundary": bad_boundary}, memo={**memo, "accepted_boundary": bad_boundary}, semantic_policy="DISABLED",
+        task_dependency_refs=build_task_dependency_refs(plan={"chapter": 301, "obligation_refs": [obligation]}, current_candidates=[]))
+    with pytest.raises(KernelError) as wrong_lineage:
+        discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=unknown_lineage)
+    assert wrong_lineage.value.code == "RETRIEVAL_TASK_SOURCE_BINDING_INVALID"
+    retrieval_operation, worker = _start_retrieval_attempt(project_id)
+    frozen_arguments = dict(database_url=DATABASE_URL, project_id=project_id, book_id=book_id,
+        operation_id=retrieval_operation, attempt_id=worker.attempt_id, fencing_token=worker.fencing_token,
+        worker_id=worker.worker_id, query_plan=discovery.query_plan, base_documents=discovery.documents,
+        semantic_status=discovery.semantic_status)
+    frozen = freeze_retrieval_candidate_union(**frozen_arguments)
+    recovered = freeze_retrieval_candidate_union(**frozen_arguments)
+    assert recovered.replayed and recovered.snapshot_hash == frozen.snapshot_hash
+    assert recovered.documents == frozen.documents
+    frozen_by_id = {item["retrieval_document_id"]: item for item in frozen.documents}
+    for identity in endpoint_ids:
+        for field in ("content_text", "metadata", "source_asset_version_id", "source_content_hash", "projection_hash", "task_dependency_matched_refs"):
+            assert frozen_by_id[identity][field] == by_id[identity][field]
+    with transaction() as connection, connection.cursor() as cursor:
+        late_content = {"accepted_draft_asset_version_id": endpoints[4][4], "state_events": [
+            {"event_id": "event:late-old-projection", "state_kind": "narrative_obligation", "coordinate": {"source_chapter": 1},
+             "identity": {"entity_key": f"obligation_id={obligation}"}, "mutation": {"payload": {"obligation_id": obligation}}},
+        ]}
+        late_id, _, _ = _seed_document(cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+            label=identifier("obligation-late-cutoff"), chapter=1, text=json.dumps(late_content), vector=(1.0, 0.0, 0.0),
+            source_content=late_content, source_artifact_type="chapter_outcome", memory_layer="L6", obligation_ids=(obligation,))
+        future_content = {**late_content, "state_events": [{**late_content["state_events"][0], "event_id": "event:future",
+                          "coordinate": {"source_chapter": 301}}]}
+        future_id, _, _ = _seed_document(cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+            label=identifier("obligation-future-cutoff"), chapter=301, text=json.dumps(future_content), vector=(1.0, 0.0, 0.0),
+            source_content=future_content, source_artifact_type="chapter_outcome", memory_layer="L6", obligation_ids=(obligation,))
+    replay = discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=discovery.query_plan)
+    assert replay.documents == discovery.documents and replay.query_plan == discovery.query_plan
+    assert {late_id, future_id}.isdisjoint({item["retrieval_document_id"] for item in replay.documents})
+    for version in (endpoints[1][1], endpoints[1][4]):
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("UPDATE authority_asset_version SET eligibility='REVOKED' WHERE asset_version_id=%s", [version])
+        try:
+            with pytest.raises(KernelError) as revoked:
+                discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=discovery.query_plan)
+            assert revoked.value.code == "RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE"
+        finally:
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute("UPDATE authority_asset_version SET eligibility='ELIGIBLE' WHERE asset_version_id=%s", [version])
+
+
+@pytest.mark.parametrize("versions,expected", [
+    ((3, 2, 1), {"event:plant", "event:latest"}),
+    ((None, None, None), {"event:plant", "event:middle", "event:latest"}),
+    ((3, 1, 1), {"event:plant", "event:middle", "event:latest"}),
+    ((3, 2, 1), None),
+])
+def test_obligation_same_chapter_endpoints_use_entity_versions_or_keep_uncertain_boundary(versions, expected) -> None:
+    ensure_migrated()
+    project_id = identifier("obligation-order-project")
+    book_id = f"book:{project_id}"
+    seed_authority_project_book(project_id=project_id, workspace_id=f"workspace:{project_id}", book_id=book_id)
+    definition, operation = identifier("obligation-order-definition"), identifier("obligation-order-operation")
+    obligation = "obligation:reverse-order"
+    with transaction() as connection, connection.cursor() as cursor:
+        insert_definition(cursor, definition)
+        insert_operation(cursor, operation_id=operation, definition_name=definition, project_id=project_id, status="SUCCEEDED")
+        prose_id, prose_version, prose_hash = _seed_document(cursor, project_id=project_id, book_id=book_id, source_operation_id=operation,
+            label=identifier("obligation-order-prose"), chapter=1, text="Exact planting and advances in one scene.", vector=(1.0, 0.0, 0.0), obligation_ids=(obligation,))
+        events = [{"event_id": identity, "state_kind": "narrative_obligation", "identity": {"entity_key": f"obligation_id={obligation}"},
+                   "coordinate": {"source_chapter": 1}, "version": {"entity": version} if version else {},
+                   "mutation": {"payload": {"obligation_id": obligation, "status": "OPEN"}}}
+                  for identity, version in zip(("event:latest", "event:middle", "event:plant"), versions)]
+        if expected is None:
+            events[0]["mutation"]["payload"]["provider_visibility"] = "INTERNAL_QUALITY_ONLY"
+        content = {"accepted_draft_asset_version_id": prose_version, "state_events": events}
+        outcome_id, outcome_version, outcome_hash = _seed_document(cursor, project_id=project_id, book_id=book_id, source_operation_id=operation,
+            label=identifier("obligation-order-outcome"), chapter=1, text=json.dumps(content), vector=(1.0, 0.0, 0.0),
+            source_artifact_type="chapter_outcome", source_content=content, memory_layer="L6", obligation_ids=(obligation,))
+    intent = {"chapter": 2, "intent_fingerprint": _sha("order-intent"), "accepted_boundary": {"accepted_through_chapter": 1},
+              "active_obligations": [{"state": {"obligation_id": obligation}}]}
+    memo = {"chapter": 2, "qualification": "QUALIFIED", "memo_fingerprint": _sha("order-memo"), "accepted_boundary": intent["accepted_boundary"],
+            "retrieval_queries": ["one scene"]}
+    query = build_retrieval_query_plan(intent=intent, memo=memo, semantic_policy="DISABLED",
+        task_dependency_refs=build_task_dependency_refs(plan={"chapter": 2, "obligation_refs": [obligation]}, current_candidates=[]))
+    if expected is None:
+        with pytest.raises(KernelError) as hidden:
+            discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=query)
+        assert hidden.value.code == "RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE"
+        return
+    discovery = discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=query)
+    by_id = {document["retrieval_document_id"]: document for document in discovery.documents}
+    assert set(by_id) == {outcome_id, prose_id}
+    outcome = by_id[outcome_id]
+    assert set(outcome["task_dependency_matched_refs"]) == expected
+    assert {event["event_id"] for event in json.loads(outcome["content_text"])["state_events"]} == expected
+    assert outcome["metadata"]["task_dependency_projection"]["event_ordinals"] == [
+        next(index for index, event in enumerate(events) if event["event_id"] == identity) for identity in sorted(expected)
+    ]
+    assert (outcome["source_asset_version_id"], outcome["source_content_hash"]) == (outcome_version, outcome_hash)
+    assert (by_id[prose_id]["source_asset_version_id"], by_id[prose_id]["source_content_hash"]) == (prose_version, prose_hash)

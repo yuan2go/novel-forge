@@ -184,7 +184,7 @@ def project_role_context(
                 "state_kind": kind,
                 "entity_key": key,
                 "source_event_id": str(entry.get("source_event_id") or ""),
-                **({"source_identity": event_id, "source_binding": entry["source_binding"]} if task_scoped and not entry.get("source_event_id") else {}),
+                **({"source_identity": event_id, "source_binding": entry["source_binding"]} if task_scoped and evidence_role == "FROZEN_INITIAL_STATE" else {}),
                 "state": state,
                 "evidence_role": evidence_role,
             }

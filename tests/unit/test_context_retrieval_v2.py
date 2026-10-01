@@ -144,7 +144,7 @@ def test_task_dependency_refs_bind_fact_aliases_causes_and_foundation_sources() 
     )
     assert dependencies["required_refs"] == ["event:planting", "fact:hook", "foundation:world:v1"]
     assert dependencies["protected_fact_aliases"] == ["event:advance", "fact:hook", "foundation:world:v1", "proposition:hook"]
-    plan = build_retrieval_query_plan(intent=_intent(), memo=_memo(), task_dependency_refs=dependencies)
+    plan = build_retrieval_query_plan(intent={**_intent(), "active_obligations": []}, memo={**_memo(), "obligation_actions": []}, task_dependency_refs=dependencies)
     assert plan["contract_version"] == "retrieval-query-plan-v6"
     assert plan["task_dependency_refs"] == dependencies
     assert plan["candidate_limit"] == 256 and plan["result_limit"] == 24
@@ -153,7 +153,7 @@ def test_task_dependency_refs_bind_fact_aliases_causes_and_foundation_sources() 
 
 def test_required_task_documents_survive_optional_rank_limit_without_text_truncation() -> None:
     dependencies = build_task_dependency_refs(plan={"required_long_distance_fact_ids": ["fact:hook"]}, current_candidates=[])
-    plan = build_retrieval_query_plan(intent=_intent(), memo=_memo(), task_dependency_refs=dependencies)
+    plan = build_retrieval_query_plan(intent={**_intent(), "active_obligations": []}, memo={**_memo(), "obligation_actions": []}, task_dependency_refs=dependencies)
     required = {**_document(), "retrieval_document_id": "required:planting",
                 "source_asset_version_id": "required:planting:v1", "accepted_from_chapter": 1,
                 "content_text": "A precise planting survives. " * 250,
@@ -181,6 +181,41 @@ def test_task_dependency_ref_limit_fails_closed() -> None:
     with pytest.raises(KernelError) as failure:
         build_task_dependency_refs(plan={"required_long_distance_fact_ids": [f"fact:{index}" for index in range(2049)]}, current_candidates=[])
     assert failure.value.code == "RETRIEVAL_TASK_DEPENDENCY_LIMIT"
+
+
+def test_task_obligation_dependencies_select_explicit_due_and_participating_states_only() -> None:
+    def obligation(identity, *, status="OPEN", priority="LOW", window=None, linked=(), visibility=""):
+        return {"state_kind": "narrative_obligation", "entity_key": f"obligation_id={identity}", "source_event_id": f"event:{identity}",
+                "provider_visibility": visibility, "state": {"obligation_id": identity, "status": status, "priority": priority,
+                "target_window": window or {"status": "UNSCHEDULED"}, "linked_character_ids": list(linked)}}
+    dependencies = build_task_dependency_refs(
+        plan={"chapter": 21, "obligation_refs": ["explicit"], "required_obligation_ids": ["required"], "cast": ["character:mei"]},
+        current_candidates=[{"asset_type": "story_state_snapshot", "asset_version_id": "state:20", "content_hash": "sha256:" + "a" * 64,
+                             "structured_facts": [obligation("explicit"), obligation("due", window={"status": "SCHEDULED", "to_chapter": 21}),
+                                                  obligation("high", priority="HIGH"), obligation("related", linked=("character:mei",)),
+                                                  obligation("unrelated"), obligation("finished", status="FULFILLED", priority="HIGH"),
+                                                  obligation("internal", priority="HIGH", visibility="INTERNAL_QUALITY_ONLY")]}],
+    )
+    assert dependencies["required_obligation_ids"] == ["due", "explicit", "high", "related", "required"]
+    assert dependencies["required_refs"] == []
+    assert dependencies["source_bindings"] == [{"asset_version_id": "state:20", "content_hash": "sha256:" + "a" * 64}]
+    switched = build_task_dependency_refs(plan={"chapter": 21}, current_candidates=[
+        {"asset_type": "story_state_snapshot", "asset_version_id": "state:20", "content_hash": "sha256:" + "a" * 64,
+         "structured_facts": [obligation("related", linked=("character:mei",))]},
+    ])
+    assert switched["required_obligation_ids"] == []
+    with pytest.raises(KernelError) as unbounded:
+        build_task_dependency_refs(plan={"required_obligation_ids": [f"obligation:{index}" for index in range(2049)]}, current_candidates=[])
+    assert unbounded.value.code == "RETRIEVAL_TASK_DEPENDENCY_LIMIT"
+
+
+def test_only_established_planned_or_memo_obligations_become_historical_dependencies() -> None:
+    dependencies = build_task_dependency_refs(plan={"chapter": 9, "obligation_refs": ["new:setup", "promise:return-key"]}, current_candidates=[])
+    assert dependencies["required_obligation_ids"] == []
+    query = build_retrieval_query_plan(intent=_intent(), memo=_memo(), task_dependency_refs=dependencies)
+    assert query["task_dependency_refs"]["required_obligation_ids"] == ["promise:return-key"]
+    legacy = {key: value for key, value in dependencies.items() if key not in {"required_obligation_ids", "referenced_obligation_ids"}}
+    assert build_retrieval_query_plan(intent=_intent(), memo=_memo(), task_dependency_refs=legacy)["task_dependency_refs"] == legacy
 
 
 def test_frozen_task_result_rejects_omitted_dependency_documents_and_aliases() -> None:
@@ -270,3 +305,37 @@ def test_semantic_required_policy_is_explicit_not_a_silent_fallback() -> None:
         build_retrieval_query_plan(
             intent=_intent(), memo=_memo(), semantic_policy="BEST_EFFORT"
         )
+
+
+@pytest.mark.parametrize("source_event_id", ["", "initial:original-promise"])
+def test_initial_obligations_are_exact_protected_state_dependencies_not_accepted_planting(source_event_id) -> None:
+    boundary = {"accepted_through_chapter": 0, "story_state_asset_version_id": "initial-state:1", "canon_snapshot_asset_version_id": "initial-canon:1"}
+    state = {"obligation_id": "initial-promise", "status": "OPEN", "priority": "HIGH", "condition": "only if the key returns"}
+    dependencies = build_task_dependency_refs(plan={"chapter": 1, "obligation_refs": ["initial-promise"]}, current_candidates=[
+        {"asset_type": "story_state_snapshot", "asset_version_id": "initial-state:1", "content_hash": "sha256:" + "a" * 64,
+         "accepted_boundary": boundary, "structured_facts": [{"state_kind": "narrative_obligation", "entity_key": "obligation_id=initial-promise", "source_event_id": source_event_id, "source_chapter": 0, "effective_from_chapter": 0, "state": state}]},
+    ])
+    assert dependencies["required_obligation_ids"] == ["initial-promise"]
+    protected = dependencies["protected_initial_obligations"]
+    assert len(protected) == 1 and protected[0]["obligation_id"] == "initial-promise"
+    assert (protected[0]["asset_version_id"], protected[0]["content_hash"], protected[0]["source_event_id"]) == ("initial-state:1", "sha256:" + "a" * 64, source_event_id)
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+    assert protected[0]["state_hash"] == narrative_hash(state)
+    intent = {**_intent(), "chapter": 1, "accepted_boundary": boundary, "active_obligations": [{"state": state}]}
+    memo = {**_memo(), "chapter": 1, "accepted_boundary": boundary, "obligation_actions": [{"obligation_id": "initial-promise"}]}
+    query = build_retrieval_query_plan(intent=intent, memo=memo, semantic_policy="DISABLED", task_dependency_refs=dependencies)
+    query["task_dependency_discovery"] = {"protected_initial_obligation_ids": ["initial-promise"], "protected_initial_obligation_sources": protected}
+    result = build_retrieval_result(project_id="project", book_id="book", intent_asset_version_id="intent:1", memo_asset_version_id="memo:1", query_plan=query, documents=[], discovery_rejections=[], semantic_status={})
+    assert result["selected_documents"] == []
+    for changed in (
+        {**dependencies, "source_bindings": []},
+        {**dependencies, "source_bindings": [{"asset_version_id": "initial-state:1", "content_hash": "sha256:" + "b" * 64}]},
+        {**dependencies, "required_obligation_ids": ["unknown-promise"]},
+        {**dependencies, "protected_initial_obligations": []},
+    ):
+        with pytest.raises(KernelError) as missing:
+            build_retrieval_result(project_id="project", book_id="book", intent_asset_version_id="intent:1", memo_asset_version_id="memo:1", query_plan={**query, "task_dependency_refs": changed}, documents=[], discovery_rejections=[], semantic_status={})
+        assert missing.value.code in {"RETRIEVAL_TASK_SOURCE_BINDING_INVALID", "RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE"}
+    with pytest.raises(KernelError) as later:
+        build_retrieval_result(project_id="project", book_id="book", intent_asset_version_id="intent:1", memo_asset_version_id="memo:1", query_plan={**query, "accepted_boundary": {**boundary, "accepted_through_chapter": 1}}, documents=[], discovery_rejections=[], semantic_status={})
+    assert later.value.code == "RETRIEVAL_TASK_SOURCE_BINDING_INVALID"

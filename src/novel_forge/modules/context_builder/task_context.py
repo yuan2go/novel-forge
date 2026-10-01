@@ -15,7 +15,7 @@ _REFERENCE_FIELDS = frozenset({
     "cause_refs", "required_event_ids", "required_fact_ids", "required_long_distance_fact_ids",
     "source_event_id", "event_id", "fact_id", "proposition_id", "obligation_id",
     "obligation_refs", "required_obligation_ids", "rule_id", "world_rule_refs",
-    "character_id", "character_ids", "actor_id", "entity_id", "entity_ids",
+    "character_id", "character_ids", "linked_character_ids", "linked_arc_ids", "actor_id", "entity_id", "entity_ids",
     "entity_key", "relationship_id", "thread_id", "arc_id", "arc_refs",
     "arc_plan_version_id", "accessible_knowledge", "known_fact_ids", "belief_refs",
     "fact_refs", "state_entity_refs", "required_event_refs", "required_source_event_ids",
@@ -84,10 +84,48 @@ def world_task_scope(*, chapter: int, intent: Mapping[str, Any], planning_window
             "world_rules": [rule for rule in world_foundation.get("rules", ()) if rule.get("enforcement") != "SOFT_CAUSAL"]}
 
 
+def initial_dependency_sources(reality: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    sources: dict[str, Mapping[str, Any]] = {}
+    for source in reality.get("initial_state_sources", ()):
+        identity = source.get("source_event_id")
+        if not identity:
+            continue
+        binding = source.get("source_binding") or {}
+        if not isinstance(identity, str) or not binding.get("asset_version_id") or not binding.get("content_hash") or not source.get("state_kind") or not source.get("entity_key") or source.get("state_hash") != narrative_hash(source.get("state") or {}):
+            raise KernelError("TASK_CONTEXT_INITIAL_SOURCE_INVALID", "initial dependency requires its exact frozen artifact and original state hash")
+        if identity in sources and sources[identity] != source:
+            raise KernelError("TASK_CONTEXT_INITIAL_SOURCE_INVALID", "initial dependency alias must bind one exact original state")
+        sources[identity] = source
+    return sources
+
+
+def provider_visible_state(value: Mapping[str, Any]) -> bool:
+    state = value.get("state") or (value.get("mutation") or {}).get("payload") or {}
+    return value.get("provider_visibility") != "INTERNAL_QUALITY_ONLY" and state.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"
+
+
+def required_current_entry(kind: str, entry: Mapping[str, Any], *, selectors: set[str], required: set[str], chapter: int) -> bool:
+    state = entry.get("state") or {}
+    if not provider_visible_state(entry):
+        return False
+    if kind == "canon_fact" and state.get("predicate") in _BOOKKEEPING_PREDICATES:
+        return False
+    window = state.get("target_window") or {}
+    due = kind == "narrative_obligation" and state.get("status") not in {"FULFILLED", "CANCELLED"} and (
+        state.get("priority") in {"HIGH", "CRITICAL"}
+        or (window.get("status") == "SCHEDULED" and int(window.get("to_chapter") or 0) <= chapter)
+    )
+    return source_identity(entry) in required | selectors or kind in _CORE_KINDS or due or bool(
+        selectors.intersection(task_references({"entity_key": entry["entity_key"], "state": state}))
+    )
+
+
 def required_background_entities(reality: Mapping[str, Any], task: Mapping[str, Any], role_kinds: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
     selectors = task_references(task)
+    required = required_task_event_ids(task)
+    chapter = int(task.get("chapter") or int(reality["chapter_number"]) + 1)
     return tuple(sorted({(kind, entry["entity_key"]) for kind, entries in reality["current_state"].items() if kind in role_kinds
-                         for entry in entries if source_identity(entry) in selectors or selectors.intersection(task_references({"entity_key": entry["entity_key"], "state": entry.get("state") or {}}))}))
+                         for entry in entries if required_current_entry(kind, entry, selectors=selectors, required=required, chapter=chapter)}))
 
 
 def confirmed_reader_facts(reality: Mapping[str, Any]) -> set[str]:
@@ -132,6 +170,7 @@ def task_reality_workset(
     chapter = int(task.get("chapter") or boundary + 1)
     selectors = task_references(task)
     events = {str(event["event_id"]): event for event in reality.get("events", [])}
+    initial_sources = initial_dependency_sources(reality)
     selected: dict[str, tuple[str, str, dict[str, Any], str]] = {}
     required = set(required_event_ids) | required_task_event_ids(task)
     auxiliary = []
@@ -139,6 +178,8 @@ def task_reality_workset(
         if kind not in role_kinds:
             continue
         for entry in entries:
+            if not provider_visible_state(entry):
+                continue
             entry = deepcopy(dict(entry))
             event_id = source_identity(entry)
             if not event_id:
@@ -148,17 +189,16 @@ def task_reality_workset(
                 entry["source_binding"] = deepcopy(initial_source["source_binding"] if initial_source else reality.get("initial_state_binding") or {"reality_revision_id": reality["revision_id"]})
                 entry["source_identity"] = "initial:" + narrative_hash({"binding": entry["source_binding"], "kind": kind, "entity_key": entry["entity_key"]})
                 event_id = entry["source_identity"]
+            original = initial_sources.get(event_id) if event_id not in events else None
+            if original:
+                if original["state_kind"] != kind or original["entity_key"] != entry["entity_key"] or original["state_hash"] != narrative_hash(entry.get("state") or {}):
+                    raise KernelError("TASK_CONTEXT_INITIAL_SOURCE_INVALID", "current initial alias changed its frozen original state")
+                entry["source_binding"] = deepcopy(original["source_binding"])
             state = entry.get("state") or {}
             if kind == "canon_fact" and state.get("predicate") in _BOOKKEEPING_PREDICATES:
                 continue
-            refs = task_references({"entity_key": entry["entity_key"], "state": state})
-            window = state.get("target_window") or {}
-            due = kind == "narrative_obligation" and state.get("status") not in {"FULFILLED", "CANCELLED"} and (
-                state.get("priority") in {"HIGH", "CRITICAL"}
-                or (window.get("status") == "SCHEDULED" and int(window.get("to_chapter") or 0) <= chapter)
-            )
-            row = (kind, entry["entity_key"], deepcopy(dict(entry)), "CURRENT_STATE" if entry.get("source_event_id") else "FROZEN_INITIAL_STATE")
-            if event_id in required or kind in _CORE_KINDS or due or selectors.intersection(refs):
+            row = (kind, entry["entity_key"], deepcopy(dict(entry)), "FROZEN_INITIAL_STATE" if original or not entry.get("source_event_id") else "CURRENT_STATE")
+            if required_current_entry(kind, entry, selectors=selectors, required=required, chapter=chapter):
                 selected[event_id] = row
                 required.add(event_id)
             else:
@@ -192,12 +232,18 @@ def task_reality_workset(
         visited.add(event_id)
         event = events.get(event_id)
         if event is None:
+            original = initial_sources.get(event_id)
+            if original:
+                if original["state_kind"] not in role_kinds or not provider_visible_state(original):
+                    raise KernelError("TASK_CONTEXT_DEPENDENCY_DENIED", "initial dependency is outside the role read scope")
+                selected[event_id] = (original["state_kind"], original["entity_key"], {"source_event_id": event_id, "state": deepcopy(original["state"]), "source_binding": deepcopy(original["source_binding"])}, "FROZEN_INITIAL_STATE")
+                continue
             if event_id in selected:
                 continue
             raise KernelError("TASK_CONTEXT_DEPENDENCY_UNAVAILABLE", "a required accepted event is unavailable at the frozen boundary")
         if int(event["coordinate"]["source_chapter"]) > boundary:
             raise KernelError("TASK_CONTEXT_FUTURE_DEPENDENCY", "required event exceeds the accepted boundary")
-        if event["state_kind"] not in role_kinds:
+        if event["state_kind"] not in role_kinds or not provider_visible_state(event):
             raise KernelError("TASK_CONTEXT_DEPENDENCY_DENIED", "required dependency is outside the role read scope")
         selected.setdefault(event_id, (event["state_kind"], event["identity"]["entity_key"], {
             "source_event_id": event_id, "state": deepcopy(event["mutation"]["payload"]),
@@ -209,7 +255,7 @@ def task_reality_workset(
                 if len(matches) != 1:
                     raise KernelError("TASK_CONTEXT_DEPENDENCY_UNAVAILABLE", "causal local predecessor requires one exact accepted batch event")
                 dependency = matches[0]
-            if dependency in events:
+            if dependency in events or dependency in initial_sources:
                 required.add(dependency)
                 pending.append((dependency, depth + 1))
             elif dependency not in reality.get("foundation_cause_refs", []):
@@ -223,9 +269,9 @@ def task_reality_workset(
         "task_hash": narrative_hash(task), "source_revision": reality["revision_id"],
         "source_hash": narrative_hash(reality), "accepted_through_chapter": boundary,
         "required_event_ids": sorted(required), "selectors": sorted(selectors),
-        "selected_event_ids": [row[2]["source_event_id"] for row in rows if row[2].get("source_event_id")],
+        "selected_event_ids": [row[2]["source_event_id"] for row in rows if row[2].get("source_event_id") and row[3] != "FROZEN_INITIAL_STATE"],
         "selected_source_ids": [source_identity(row[2]) for row in rows],
-        "initial_source_ids": [source_identity(row[2]) for row in rows if not row[2].get("source_event_id")],
+        "initial_source_ids": [source_identity(row[2]) for row in rows if row[3] == "FROZEN_INITIAL_STATE"],
         "auxiliary_limit": auxiliary_limit, "candidate_count": len(rows),
         "full_current_state_count": sum(len(entries) for entries in reality["current_state"].values()),
         "compression": "LOSSLESS_TASK_PROJECTION", "fact_mutation_allowed": False,
@@ -240,7 +286,9 @@ def project_task_state_facts(
 
     selectors = _selectors(projection, {})
     explicit = set(projection.get("required_event_refs") or ())
-    materialized = [fact for fact in facts if (fact.get("state") or {}).get("predicate") not in _BOOKKEEPING_PREDICATES]
+    if any(not provider_visible_state(fact) and explicit.intersection(fact_aliases(fact)) for fact in facts):
+        raise KernelError("TASK_CONTEXT_DEPENDENCY_DENIED", "required task fact is outside the Provider read scope")
+    materialized = [fact for fact in facts if provider_visible_state(fact) and (fact.get("state") or {}).get("predicate") not in _BOOKKEEPING_PREDICATES]
     by_id = {alias: fact for fact in materialized for alias in (fact_aliases(fact) or {"projection:" + narrative_hash(fact)})}
     selected = {
         event_id: fact for event_id, fact in by_id.items()

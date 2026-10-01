@@ -18,7 +18,9 @@ from novel_forge.modules.context_builder.retrieval_campaign import (
     RetrievalCampaignPolicy,
     build_retrieval_coverage_contract,
 )
-from novel_forge.modules.context_builder.task_context import fact_aliases
+from novel_forge.modules.context_builder.task_context import (
+    fact_aliases, historical_endpoints, provider_visible_state, required_current_entry, task_references,
+)
 from psycopg.types.json import Jsonb
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -54,7 +56,14 @@ class FrozenRetrievalCandidateUnion:
 def build_task_dependency_refs(
     *, plan: Mapping[str, Any], current_candidates: Iterable[Mapping[str, Any]],
 ) -> dict[str, Any]:
+    from novel_forge.modules.chapter_authority.provider_views import build_task_narrative_projection
+
     required = set(_ids(plan.get("required_long_distance_fact_ids")))
+    projection = build_task_narrative_projection({"chapter": 0, **plan}, task_scoped=True)
+    selectors = task_references(plan) | task_references(projection)
+    obligations = set(_ids(plan.get("required_obligation_ids")))
+    referenced_obligations = set(_ids(plan.get("obligation_refs"))) | set(_ids(projection.get("obligation_refs")))
+    initial_obligations: list[dict[str, Any]] = []
     aliases: set[str] = set()
     bindings: set[tuple[str, str]] = set()
     for candidate in current_candidates:
@@ -72,13 +81,29 @@ def build_task_dependency_refs(
             if not isinstance(fact, Mapping) or fact.get("provider_visibility") == "INTERNAL_QUALITY_ONLY":
                 continue
             aliases.update(fact_aliases(fact))
+            state = dict(fact.get("state") or {})
+            if (fact.get("state_kind") == "narrative_obligation"
+                and state.get("obligation_id")
+                and state.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"
+                and required_current_entry("narrative_obligation", fact, selectors=selectors, required=required, chapter=int(plan.get("chapter") or 0))):
+                obligations.add(str(state["obligation_id"]))
+            initial_boundary = dict(candidate.get("accepted_boundary") or {})
+            if (candidate.get("asset_type") == "story_state_snapshot"
+                and initial_boundary.get("story_state_asset_version_id") == candidate["asset_version_id"]
+                and fact.get("state_kind") == "narrative_obligation" and state.get("obligation_id")
+                and fact.get("source_chapter") == 0 and fact.get("effective_from_chapter") == 0
+                and provider_visible_state(fact)):
+                initial_obligations.append(_initial_obligation_binding(fact, candidate, initial_boundary))
             transition = dict(dict(fact.get("state") or {}).get("world_transition") or {})
             required.update(_ids(transition.get("cause_refs")))
-    if len(required) > _TASK_DEPENDENCY_REF_LIMIT:
+    if len(required) + len(obligations) > _TASK_DEPENDENCY_REF_LIMIT or len(initial_obligations) > _TASK_DEPENDENCY_REF_LIMIT:
         raise KernelError("RETRIEVAL_TASK_DEPENDENCY_LIMIT", "required task dependency set exceeds the bounded discovery contract")
     return {
         "contract_version": _TASK_DEPENDENCY_CONTRACT,
         "required_refs": sorted(required),
+        "required_obligation_ids": sorted(obligations),
+        "referenced_obligation_ids": sorted(referenced_obligations),
+        "protected_initial_obligations": sorted(initial_obligations, key=lambda item: (item["obligation_id"], item["asset_version_id"], item["state_hash"])),
         "protected_fact_aliases": sorted(aliases),
         "source_bindings": [
             {"asset_version_id": identity, "content_hash": content_hash}
@@ -194,7 +219,14 @@ def build_retrieval_query_plan(
         dependencies = dict(task_dependency_refs)
         if dependencies.get("contract_version") != _TASK_DEPENDENCY_CONTRACT:
             raise KernelError("RETRIEVAL_TASK_DEPENDENCY_CONTRACT_INVALID", "task dependency discovery requires its versioned frozen contract")
-        if len(_ids(dependencies.get("required_refs"))) > _TASK_DEPENDENCY_REF_LIMIT:
+        if "required_obligation_ids" in dependencies:
+            historical = {str(item.get("obligation_id") or (item.get("state") or {}).get("obligation_id") or "")
+                          for item in intent.get("active_obligations") or () if isinstance(item, Mapping)}
+            referenced = set(_ids(dependencies.get("referenced_obligation_ids"))) | {
+                str(item.get("obligation_id") or "") for item in memo.get("obligation_actions") or () if isinstance(item, Mapping)
+            }
+            dependencies["required_obligation_ids"] = sorted(set(_ids(dependencies.get("required_obligation_ids"))) | (referenced & (historical - {""})))
+        if len(_ids(dependencies.get("required_refs"))) + len(_ids(dependencies.get("required_obligation_ids"))) > _TASK_DEPENDENCY_REF_LIMIT:
             raise KernelError("RETRIEVAL_TASK_DEPENDENCY_LIMIT", "required task dependency set exceeds the bounded discovery contract")
         plan.update({
             "contract_version": "retrieval-query-plan-v6",
@@ -563,7 +595,9 @@ def discover_accepted_retrieval_candidates(
                 item = {**item, **existing,
                         "candidate_channels": sorted(set(existing["candidate_channels"]) | set(item["candidate_channels"])),
                         "retrieval_reasons": item["retrieval_reasons"],
-                        "task_dependency_matched_refs": item["task_dependency_matched_refs"]}
+                        "task_dependency_matched_refs": item["task_dependency_matched_refs"],
+                        **({"content_text": item["content_text"], "metadata": item["metadata"]}
+                           if item["metadata"].get("task_dependency_projection") else {})}
             merged[identity] = item
         documents = tuple(merged[identity] for identity in sorted(merged))
     inputs = tuple(
@@ -630,6 +664,246 @@ def discover_accepted_retrieval_candidates(
     )
 
 
+def _initial_obligation_binding(fact: Mapping[str, Any], source: Mapping[str, Any], boundary: Mapping[str, Any]) -> dict[str, Any]:
+    return {"obligation_id": str(fact["state"]["obligation_id"]), "entity_key": str(fact.get("entity_key") or ""),
+        "asset_version_id": str(source["asset_version_id"]), "content_hash": str(source["content_hash"]),
+        "state_hash": _hash(fact["state"]), "source_event_id": str(fact.get("source_event_id") or ""),
+        "source_chapter": 0, "effective_from_chapter": 0, "accepted_through_chapter": boundary["accepted_through_chapter"]}
+
+
+def _protected_initial_obligation_ids(dependencies: Mapping[str, Any], accepted_boundary: Mapping[str, Any]) -> set[str]:
+    required = set(_ids(dependencies.get("required_obligation_ids")))
+    bindings = {(str(item.get("asset_version_id") or ""), str(item.get("content_hash") or "")) for item in dependencies.get("source_bindings") or ()}
+    protected: set[str] = set()
+    for item in dependencies.get("protected_initial_obligations") or ():
+        identity = str(item.get("obligation_id") or "")
+        if identity not in required:
+            continue
+        source = str(item.get("asset_version_id") or "")
+        content_hash = str(item.get("content_hash") or "")
+        if (not source or not content_hash or not item.get("state_hash") or not item.get("entity_key")
+            or item.get("source_chapter") != 0 or item.get("effective_from_chapter") != 0
+            or item.get("accepted_through_chapter") != accepted_boundary.get("accepted_through_chapter")
+            or source != accepted_boundary.get("story_state_asset_version_id") or (source, content_hash) not in bindings):
+            raise KernelError("RETRIEVAL_TASK_SOURCE_BINDING_INVALID", "initial obligation requires its exact frozen State version and hash")
+        protected.add(identity)
+    return protected
+
+
+def _validate_initial_obligation_sources(
+    uow: AuthorityUnitOfWork, *, project_id: str, book_id: str,
+    dependencies: Mapping[str, Any], accepted_boundary: Mapping[str, Any],
+) -> set[str]:
+    from novel_forge.modules.narrative_state import compact_current_state_facts
+
+    protected = _protected_initial_obligation_ids(dependencies, accepted_boundary)
+    if not protected:
+        return set()
+    declared = [item for item in dependencies["protected_initial_obligations"] if item["obligation_id"] in protected]
+    uow.cursor.execute(
+        """SELECT version.content_hash, version.content, asset.asset_type,
+                  version.lifecycle, version.eligibility, version.governance
+        FROM authority_asset_version version JOIN authority_asset asset ON asset.asset_id=version.asset_id
+        WHERE version.asset_version_id=%s AND asset.project_id=%s""",
+        [accepted_boundary["story_state_asset_version_id"], project_id],
+    )
+    row = uow.cursor.fetchone()
+    if (row is None or row[2] != "story_state_snapshot" or row[3] not in {"ACTIVE", "SUPERSEDED"}
+        or row[4] != "ELIGIBLE" or row[5] != "CLEAR" or any(item["content_hash"] != row[0] for item in declared)):
+        raise KernelError("RETRIEVAL_TASK_SOURCE_BINDING_INVALID", "initial obligation source is not the exact eligible frozen State")
+    content = dict(row[1])
+    if (content.get("project_id") != project_id or content.get("book_id") != book_id
+        or content.get("accepted_through_chapter") != accepted_boundary.get("accepted_through_chapter")):
+        raise KernelError("RETRIEVAL_TASK_SOURCE_BINDING_INVALID", "initial obligation State changed its frozen scope or boundary")
+    original = [entry for entry in content.get("current_state", {}).get("narrative_obligation", ())
+                if provider_visible_state(entry) and entry.get("source_chapter") == 0 and entry.get("effective_from_chapter") == 0]
+    facts = compact_current_state_facts({**content, "current_state": {"narrative_obligation": original}})
+    actual = [_initial_obligation_binding(fact, {"asset_version_id": accepted_boundary["story_state_asset_version_id"], "content_hash": row[0]}, accepted_boundary) for fact in facts if provider_visible_state(fact)]
+    if any(item not in actual for item in declared):
+        raise KernelError("RETRIEVAL_TASK_SOURCE_BINDING_INVALID", "declared initial obligation does not match its original compact State and provenance")
+    return protected
+
+
+def _obligation_accepted_lineage(
+    uow: AuthorityUnitOfWork, *, project_id: str, book_id: str,
+    boundary: int, accepted_boundary: Mapping[str, Any], require_frozen: bool = False,
+) -> str | None:
+    state = str(accepted_boundary.get("story_state_asset_version_id") or "")
+    canon = str(accepted_boundary.get("canon_snapshot_asset_version_id") or "")
+    if not state and not canon:
+        if require_frozen:
+            raise KernelError("RETRIEVAL_TASK_SOURCE_BINDING_INVALID", "bound obligation sources require a frozen accepted State and Canon frontier")
+        return None
+    if not state or not canon:
+        raise KernelError("RETRIEVAL_TASK_SOURCE_BINDING_INVALID", "obligation discovery requires both frozen accepted State and Canon")
+    uow.cursor.execute(
+        """
+        SELECT DISTINCT revision.book_run_id
+        FROM authority_narrative_reality_revision revision
+        JOIN authority_book_chapter_acceptance accepted ON accepted.acceptance_id=revision.acceptance_id
+        JOIN authority_book_narrative_projection_set projection ON projection.projection_set_id=revision.projection_set_id
+        WHERE revision.project_id=%s AND revision.book_id=%s AND revision.chapter_number=%s
+          AND revision.state_version_id=%s AND revision.canon_version_id=%s
+          AND accepted.status='COMMITTED' AND projection.status='COMPLETE'
+          AND accepted.chapter_outcome_asset_version_id=revision.outcome_version_id
+          AND accepted.story_state_asset_version_id=revision.state_version_id
+          AND accepted.canon_snapshot_asset_version_id=revision.canon_version_id
+          AND accepted.longform_projection_set_id=revision.projection_set_id
+        """,
+        [project_id, book_id, boundary, state, canon],
+    )
+    rows = uow.cursor.fetchall()
+    if len(rows) != 1:
+        raise KernelError("RETRIEVAL_TASK_SOURCE_BINDING_INVALID", "frozen accepted State and Canon do not identify one exact source lineage")
+    return str(rows[0][0])
+
+
+def _discover_obligation_dependencies(
+    uow: AuthorityUnitOfWork, *, project_id: str, book_id: str,
+    boundary: int, cutoff: Any, obligation_ids: set[str], accepted_boundary: Mapping[str, Any], require_frozen: bool = False,
+) -> tuple[dict[str, dict[str, Any]], dict[str, list[str]]]:
+    if not obligation_ids:
+        return {}, {}
+    lineage = _obligation_accepted_lineage(uow, project_id=project_id, book_id=book_id, boundary=boundary, accepted_boundary=accepted_boundary, require_frozen=require_frozen)
+    uow.cursor.execute(
+        """
+        WITH eligible AS NOT MATERIALIZED (
+            SELECT document.*, version.content_hash AS source_content_hash,
+                   version.lifecycle AS source_lifecycle, version.eligibility AS source_eligibility,
+                   version.governance AS source_governance,
+                   version.content AS source_content
+            FROM authority_narrative_retrieval_document document
+            JOIN authority_asset_version version ON version.asset_version_id=document.source_asset_version_id
+            JOIN authority_asset asset ON asset.asset_id=version.asset_id
+            WHERE document.project_id=%s AND document.book_id=%s AND document.created_at<=%s
+              AND document.accepted_from_chapter<=%s
+              AND (document.accepted_to_chapter IS NULL OR document.accepted_to_chapter>=%s)
+              AND asset.project_id=document.project_id AND asset.asset_type='chapter_outcome'
+              AND document.source_artifact_type='chapter_outcome' AND document.memory_layer='L6'
+              AND (%s::text IS NULL OR EXISTS (
+                  SELECT 1 FROM authority_book_acceptance_lineage(%s) accepted
+                  WHERE accepted.chapter_outcome_asset_version_id=document.source_asset_version_id
+                    AND accepted.chapter_number=document.accepted_from_chapter
+              ))
+        ), events AS (
+            SELECT document.retrieval_document_id, event.value AS event,
+                   event.ordinality AS event_ordinal, ref.value AS obligation_id,
+                   document.accepted_from_chapter AS source_chapter
+            FROM eligible document CROSS JOIN LATERAL jsonb_array_elements(
+                CASE WHEN jsonb_typeof(document.source_content->'state_events')='array'
+                     THEN document.source_content->'state_events' ELSE '[]'::jsonb END
+            ) WITH ORDINALITY event(value,ordinality)
+            JOIN unnest(%s::text[]) ref(value) ON ref.value=event.value->'mutation'->'payload'->>'obligation_id'
+            WHERE event.value->>'state_kind'='narrative_obligation'
+              AND event.value->'coordinate'->>'source_chapter'=document.accepted_from_chapter::text
+        ), boundaries AS (
+            SELECT obligation_id, min(source_chapter) AS first_chapter, max(source_chapter) AS latest_chapter
+            FROM events GROUP BY obligation_id
+        ) SELECT document.retrieval_document_id, document.source_asset_version_id,
+                 document.source_artifact_type, document.accepted_from_chapter, document.accepted_to_chapter,
+                 document.memory_layer, document.content_text, document.entity_ids, document.relationship_ids,
+                 document.character_ids, document.arc_plan_version_ids, document.obligation_ids,
+                 document.temporal_coordinate, document.metadata, document.source_content_hash,
+                 document.projection_hash, 0::double precision, '[]'::jsonb, '', '', 0, '', '', '',
+                 ARRAY['TASK_DEPENDENCY']::text[], events.event, events.event_ordinal,
+                 events.obligation_id, events.source_chapter=boundaries.first_chapter,
+                 events.source_chapter=boundaries.latest_chapter,
+                 document.source_content->>'accepted_draft_asset_version_id',
+                 document.source_lifecycle, document.source_eligibility, document.source_governance
+          FROM events JOIN eligible document USING(retrieval_document_id)
+          JOIN boundaries USING(obligation_id)
+          WHERE events.source_chapter=boundaries.first_chapter OR events.source_chapter=boundaries.latest_chapter
+          ORDER BY events.obligation_id, document.accepted_from_chapter, events.event_ordinal
+          LIMIT %s
+        """,
+        [project_id, book_id, cutoff, boundary, boundary, lineage, lineage, sorted(obligation_ids), _TASK_DEPENDENCY_REF_LIMIT * 2 + 1],
+    )
+    documents: dict[str, dict[str, Any]] = {}
+    resolved: dict[str, set[str]] = {identity: set() for identity in obligation_ids}
+    selected_events: dict[str, list[dict[str, Any]]] = {}
+    prose_bindings: dict[str, set[str]] = {}
+    rows = uow.cursor.fetchall()
+    if len(rows) > _TASK_DEPENDENCY_REF_LIMIT * 2:
+        raise KernelError("RETRIEVAL_TASK_DEPENDENCY_LIMIT", "obligation boundary events exceed the bounded discovery contract")
+    endpoints = {obligation: {event["event_id"] for event in historical_endpoints([row[25] for row in rows if row[27] == obligation])}
+                 for obligation in obligation_ids}
+    for row in rows:
+        if row[25]["event_id"] not in endpoints[str(row[27])]:
+            continue
+        document = documents.setdefault(str(row[0]), _document_from_row(row))
+        event = dict(row[25])
+        obligation = str(row[27])
+        if (row[31] not in {"ACTIVE", "SUPERSEDED"} or row[32] != "ELIGIBLE" or row[33] != "CLEAR"
+            or event.get("provider_visibility") == "INTERNAL_QUALITY_ONLY"
+            or event["mutation"]["payload"].get("provider_visibility") == "INTERNAL_QUALITY_ONLY"):
+            raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "required obligation endpoint is outside the eligible Provider source scope")
+        if not event.get("event_id") or not row[30]:
+            raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "required obligation event lacks its original accepted source identity")
+        resolved[obligation].add(document["retrieval_document_id"])
+        prose_bindings.setdefault(str(row[30]), set()).add(obligation)
+        selected_events.setdefault(document["retrieval_document_id"], []).append({"ordinal": int(row[26]) - 1, "event": event})
+        document["retrieval_reasons"] = sorted({
+            *document.get("retrieval_reasons", ()), "required_task_dependency",
+            *(("required_dependency_planting",) if row[28] else ()),
+            *(("required_dependency_advance",) if row[29] else ()),
+        })
+    if any(not identities for identities in resolved.values()):
+        raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "a required obligation has no exact accepted planting or advance")
+    for identity, rows in selected_events.items():
+        document = documents[identity]
+        unique = {str(row["event"]["event_id"]): row for row in rows}
+        events = [unique[key]["event"] for key in sorted(unique)]
+        content = {"state_events": events}
+        document["content_text"] = json.dumps(content, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        document["task_dependency_matched_refs"] = sorted(unique)
+        document["metadata"] = {
+            **document["metadata"],
+            "structured_facts": [{"state_kind": "narrative_obligation", "entity_key": event["identity"]["entity_key"],
+                                  "source_event_id": event["event_id"], "source_chapter": event["coordinate"]["source_chapter"],
+                                  "state": dict(event["mutation"]["payload"])} for event in events],
+            "task_dependency_projection": {"contract_version": "obligation-event-projection-v1",
+                "source_asset_version_id": document["source_asset_version_id"], "source_content_hash": document["source_content_hash"],
+                "accepted_lineage_book_run_id": lineage,
+                "source_projection_hash": document["projection_hash"], "event_ids": sorted(unique),
+                "event_ordinals": [unique[key]["ordinal"] for key in sorted(unique)], "content_hash": _hash(content)},
+        }
+    uow.cursor.execute(
+        """
+        SELECT document.retrieval_document_id, document.source_asset_version_id,
+               document.source_artifact_type, document.accepted_from_chapter, document.accepted_to_chapter,
+               document.memory_layer, document.content_text, document.entity_ids, document.relationship_ids,
+               document.character_ids, document.arc_plan_version_ids, document.obligation_ids,
+               document.temporal_coordinate, document.metadata, version.content_hash,
+               document.projection_hash, 0::double precision, '[]'::jsonb, '', '', 0, '', '', '',
+               ARRAY['TASK_DEPENDENCY']::text[]
+        FROM authority_narrative_retrieval_document document
+        JOIN authority_asset_version version ON version.asset_version_id=document.source_asset_version_id
+        JOIN authority_asset asset ON asset.asset_id=version.asset_id
+        WHERE document.project_id=%s AND document.book_id=%s AND document.created_at<=%s
+          AND document.accepted_from_chapter<=%s
+          AND (document.accepted_to_chapter IS NULL OR document.accepted_to_chapter>=%s)
+          AND version.lifecycle IN ('ACTIVE','SUPERSEDED') AND version.eligibility='ELIGIBLE' AND version.governance='CLEAR'
+          AND asset.project_id=document.project_id AND asset.asset_type='best_draft_candidate'
+          AND document.source_artifact_type='best_draft_candidate' AND document.memory_layer='L0'
+          AND document.source_asset_version_id=ANY(%s::text[])
+        ORDER BY document.source_asset_version_id, document.retrieval_document_id
+        """,
+        [project_id, book_id, cutoff, boundary, boundary, sorted(prose_bindings)],
+    )
+    found_prose: set[str] = set()
+    for row in uow.cursor.fetchall():
+        document = _document_from_row(row)
+        source = document["source_asset_version_id"]
+        found_prose.add(source)
+        document["retrieval_reasons"] = ["required_task_dependency", "required_obligation_original_prose"]
+        documents[document["retrieval_document_id"]] = document
+        for obligation in prose_bindings[source]:
+            resolved[obligation].add(document["retrieval_document_id"])
+    if set(prose_bindings) - found_prose:
+        raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "required obligation original prose is unavailable at the frozen accepted boundary")
+    return documents, {identity: sorted(documents) for identity, documents in sorted(resolved.items())}
+
+
 def _discover_task_dependencies(
     uow: AuthorityUnitOfWork, *, project_id: str, book_id: str,
     boundary: int, cutoff: Any, query_plan: Mapping[str, Any],
@@ -638,14 +912,27 @@ def _discover_task_dependencies(
     if dependencies.get("contract_version") != _TASK_DEPENDENCY_CONTRACT:
         raise KernelError("RETRIEVAL_TASK_DEPENDENCY_CONTRACT_INVALID", "task dependency discovery requires its versioned frozen contract")
     required = set(_ids(dependencies.get("required_refs")))
+    obligations = set(_ids(dependencies.get("required_obligation_ids")))
+    if len(required) + len(obligations) > _TASK_DEPENDENCY_REF_LIMIT:
+        raise KernelError("RETRIEVAL_TASK_DEPENDENCY_LIMIT", "required task dependency set exceeds the bounded discovery contract")
     protected = set(_ids(dependencies.get("protected_fact_aliases")))
+    initial_obligations = _validate_initial_obligation_sources(uow, project_id=project_id, book_id=book_id,
+        dependencies=dependencies, accepted_boundary=dict(query_plan.get("accepted_boundary") or {}))
+    documents, obligation_documents = _discover_obligation_dependencies(
+        uow, project_id=project_id, book_id=book_id, boundary=boundary, cutoff=cutoff, obligation_ids=obligations - initial_obligations,
+        accepted_boundary=dict(query_plan.get("accepted_boundary") or {}),
+        require_frozen=bool(dependencies.get("source_bindings")),
+    )
+    for document in documents.values():
+        document.setdefault("task_dependency_matched_refs", [])
+        for fact in document["metadata"].get("structured_facts") or ():
+            required.update(_ids(dict(dict(fact.get("state") or {}).get("world_transition") or {}).get("cause_refs")))
     pending = set(required)
-    documents: dict[str, dict[str, Any]] = {}
     resolved: dict[str, list[str]] = {}
     rounds = 0
     while pending:
         rounds += 1
-        if rounds > _TASK_DEPENDENCY_CLOSURE_LIMIT or len(required) > _TASK_DEPENDENCY_REF_LIMIT:
+        if rounds > _TASK_DEPENDENCY_CLOSURE_LIMIT or len(required) + len(obligations) > _TASK_DEPENDENCY_REF_LIMIT:
             raise KernelError("RETRIEVAL_TASK_DEPENDENCY_LIMIT", "required causal closure exceeds the bounded discovery contract")
         refs = sorted(pending)
         pending.clear()
@@ -713,6 +1000,8 @@ def _discover_task_dependencies(
                 document = _document_from_row(row)
                 identity = document["retrieval_document_id"]
                 previous = documents.get(identity, {})
+                if dict(previous.get("metadata") or {}).get("task_dependency_projection"):
+                    document.update({"content_text": previous["content_text"], "metadata": previous["metadata"]})
                 document["task_dependency_matched_refs"] = sorted({*previous.get("task_dependency_matched_refs", ()), ref})
                 document["retrieval_reasons"] = sorted({
                     *previous.get("retrieval_reasons", ()), "required_task_dependency",
@@ -733,6 +1022,10 @@ def _discover_task_dependencies(
         "required_refs": sorted(required),
         "protected_resolved_refs": sorted(required & protected),
         "matched_documents_by_ref": resolved,
+        **({"required_obligation_ids": sorted(obligations), "matched_documents_by_obligation": obligation_documents}
+           if "required_obligation_ids" in dependencies else {}),
+        **({"protected_initial_obligation_ids": sorted(initial_obligations), "protected_initial_obligation_sources": [item for item in dependencies["protected_initial_obligations"] if item["obligation_id"] in initial_obligations]}
+           if "protected_initial_obligations" in dependencies else {}),
         "closure_rounds": rounds,
         "required_document_count": len(documents),
     }
@@ -1256,7 +1549,8 @@ def build_retrieval_result(
         dependency_trace = dict(query_plan.get("task_dependency_discovery") or {})
         expected_required_ids = {
             str(identity)
-            for identities in dict(dependency_trace.get("matched_documents_by_ref") or {}).values()
+            for identities in [*dict(dependency_trace.get("matched_documents_by_ref") or {}).values(),
+                               *dict(dependency_trace.get("matched_documents_by_obligation") or {}).values()]
             for identity in identities
         }
         if expected_required_ids - set(by_id):
@@ -1292,6 +1586,23 @@ def build_retrieval_result(
                     available_refs.update(fact_aliases(fact))
         if required_refs - available_refs:
             raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "ranked task evidence omitted a required exact dependency alias")
+        required_obligations = set(_ids(dependencies.get("required_obligation_ids")))
+        initial_obligations = _protected_initial_obligation_ids(dependencies, dict(query_plan.get("accepted_boundary") or {}))
+        initial_sources = [item for item in dependencies.get("protected_initial_obligations") or () if item["obligation_id"] in initial_obligations]
+        if (initial_obligations != set(_ids(dependency_trace.get("protected_initial_obligation_ids")))
+            or initial_sources != list(dependency_trace.get("protected_initial_obligation_sources") or ())):
+            raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "initial obligation coverage changed its frozen host source evidence")
+        resolved_obligations = initial_obligations |  {identity for identity, documents in dict(dependency_trace.get("matched_documents_by_obligation") or {}).items() if documents}
+        if required_obligations - resolved_obligations:
+            raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "required obligations lack frozen host endpoint discovery evidence")
+        available_obligations = initial_obligations | {
+            str(fact["state"]["obligation_id"])
+            for item in ranked for fact in dict(item.get("metadata") or {}).get("structured_facts", ())
+            if isinstance(fact, Mapping) and fact.get("state_kind") == "narrative_obligation"
+            and (fact.get("state") or {}).get("obligation_id") and fact.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"
+        }
+        if required_obligations - available_obligations:
+            raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "ranked task evidence omitted a required exact obligation event")
     else:
         ranked = all_ranked
     selected_ids = {str(item["retrieval_document_id"]) for item in ranked}

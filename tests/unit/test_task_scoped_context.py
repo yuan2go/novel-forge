@@ -398,3 +398,98 @@ def test_same_source_required_projection_union_preserves_both_aliases():
     assert len(merged["structured_facts"]) == 2 and merged["task_dependency_matched_refs"] == ["fact:1", "fact:2"]
     with pytest.raises(KernelError, match="exact frozen content hash"):
         merge_task_retrieval_projections({"content_hash": "changed"}, documents)
+
+
+@pytest.mark.parametrize("task,state,selected", [
+    ({"obligation_refs": ["old-promise"]}, {"status": "OPEN", "priority": "LOW"}, True),
+    ({"required_event_refs": ["advance"]}, {"status": "OPEN", "priority": "LOW"}, True),
+    ({"character_ids": ["hero"]}, {"status": "OPEN", "priority": "LOW", "linked_character_ids": ["hero"]}, True),
+    ({"arc_refs": ["arc:1"]}, {"status": "OPEN", "priority": "LOW", "linked_arc_ids": ["arc:1"]}, True),
+    ({}, {"status": "OPEN", "priority": "HIGH"}, True),
+    ({}, {"status": "OPEN", "target_window": {"status": "SCHEDULED", "to_chapter": 21}}, True),
+    ({}, {"status": "OPEN", "priority": "LOW"}, False),
+    ({}, {"status": "FULFILLED", "priority": "HIGH"}, False),
+])
+def test_required_source_entities_match_projection_for_referenced_and_due_obligations(task, state, selected):
+    from novel_forge.modules.context_builder.task_context import required_background_entities
+    source = reality()
+    source["current_state"]["narrative_obligation"][0]["state"] = {"obligation_id": "old-promise", **state}
+    scope = {"chapter": 21, **task}
+    assert (("narrative_obligation", "old-promise") in required_background_entities(source, scope, ("narrative_obligation",))) is selected
+    assert not required_background_entities(source, scope, ("canon_fact",))
+
+
+def initial_alias_reality():
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+    source = background_reality()
+    source["events"][2]["mutation"]["payload"]["world_transition"] = {"cause_refs": ["original-observation"]}
+    state = {"character_id": "hero", "fact_id": "inquiry", "status": "KNOWN", "condition": "only after payment"}
+    source["events"] = [source["events"][2]]
+    source["current_state"] = {}
+    source["initial_state_sources"] = [{"state_kind": "character_knowledge", "entity_key": "character_id=hero|fact_id=inquiry", "source_event_id": "original-observation", "state": state, "state_hash": narrative_hash(state), "source_binding": {"asset_version_id": "approved-initial:1", "content_hash": "sha256:" + "c" * 64}}]
+    return source
+
+
+def test_initial_observation_dependency_retains_exact_original_binding_without_faking_acceptance():
+    source = initial_alias_reality()
+    rows, receipt = task_reality_workset(source, task={"required_event_refs": ["latest"]}, role_kinds=("world_state", "character_knowledge"), auxiliary_limit=0)
+    original = next(row for row in rows if row[2]["source_event_id"] == "original-observation")
+    assert original[0] == "character_knowledge" and original[3] == "FROZEN_INITIAL_STATE"
+    assert original[2]["state"] == source["initial_state_sources"][0]["state"]
+    assert original[2]["source_binding"] == source["initial_state_sources"][0]["source_binding"]
+    assert receipt["required_event_ids"] == ["latest", "original-observation"]
+    assert not any(event["event_id"] == "original-observation" for event in source["events"])
+    view = project_role_context(reality=source, role="DIRECTOR", token_budget=4096, task={"required_event_refs": ["latest"]})
+    fact = next(item for item in view["selection"] if item["source_event_id"] == "original-observation")
+    assert fact["source_binding"] == original[2]["source_binding"]
+    assert fact["evidence_role"] == "FROZEN_INITIAL_STATE"
+    assert view["task_workset"]["selected_event_ids"] == ["latest"]
+    assert view["task_workset"]["initial_source_ids"] == ["original-observation"]
+    with pytest.raises(KernelError, match="outside the role"):
+        task_reality_workset(source, task={"required_event_refs": ["latest"]}, role_kinds=("world_state",), auxiliary_limit=0)
+
+
+@pytest.mark.parametrize("fault", ["hash", "binding", "ambiguous", "unknown_alias"])
+def test_initial_observation_does_not_bypass_exact_identity_or_state_validation(fault):
+    source = initial_alias_reality()
+    original = source["initial_state_sources"][0]
+    if fault == "hash":
+        original["state"]["condition"] = "without payment"
+    elif fault == "binding":
+        original["source_binding"] = {}
+    elif fault == "ambiguous":
+        source["initial_state_sources"].append({**original, "entity_key": "another-entity"})
+    else:
+        source["events"][0]["mutation"]["payload"]["world_transition"]["cause_refs"] = ["original-observation:unknown"]
+    with pytest.raises(KernelError):
+        task_reality_workset(source, task={"required_event_refs": ["latest"]}, role_kinds=("world_state", "character_knowledge"), auxiliary_limit=0)
+
+
+@pytest.mark.parametrize("location", ["entry", "state", "event", "event_state"])
+def test_task_workset_never_promotes_internal_quality_to_story_input(location):
+    source = reality()
+    entry = source["current_state"]["narrative_obligation"][0]
+    if location in {"entry", "state"}:
+        (entry if location == "entry" else entry["state"])["provider_visibility"] = "INTERNAL_QUALITY_ONLY"
+        rows, receipt = task_reality_workset(source, task={"obligation_refs": ["old-promise"]}, role_kinds=("narrative_obligation", "resource_state"), auxiliary_limit=0)
+        assert not rows and not receipt["required_event_ids"]
+    else:
+        plant = source["events"][1]
+        (plant if location == "event" else plant["mutation"]["payload"])["provider_visibility"] = "INTERNAL_QUALITY_ONLY"
+        with pytest.raises(KernelError, match="outside the role"):
+            task_reality_workset(source, task={"obligation_refs": ["old-promise"]}, role_kinds=("narrative_obligation", "resource_state"), auxiliary_limit=0)
+
+
+def test_task_fact_projection_rejects_exact_private_alias_and_omits_optional_private_fact():
+    from novel_forge.modules.context_builder.task_context import project_task_state_facts
+    fact = {"state_kind": "world_rule", "source_event_id": "private", "state": {"provider_visibility": "INTERNAL_QUALITY_ONLY", "condition": "private evaluator guidance"}}
+    assert project_task_state_facts([fact], projection={"contract_version": "chapter-task-narrative-projection-v2"}, chapter=21) == []
+    with pytest.raises(KernelError, match="Provider read scope"):
+        project_task_state_facts([fact], projection={"required_event_refs": ["private"], "contract_version": "chapter-task-narrative-projection-v2"}, chapter=21)
+
+
+def test_initial_dependency_cannot_erase_original_private_scope():
+    source = initial_alias_reality()
+    source["initial_state_sources"][0]["provider_visibility"] = "INTERNAL_QUALITY_ONLY"
+    with pytest.raises(KernelError, match="outside the role"):
+        task_reality_workset(source, task={"required_event_refs": ["latest"]}, role_kinds=("world_state", "character_knowledge"), auxiliary_limit=0)

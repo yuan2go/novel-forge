@@ -503,9 +503,9 @@ class WorldPreparationRepository:
                     refs.append(initial_binding)
             reality["initial_state_binding"] = initial_binding
             reality["initial_state_sources"] = [
-                {"state_kind": kind, "entity_key": entry["entity_key"], "state_hash": narrative_hash(entry.get("state") or {}), "source_binding": initial_binding}
+                {"state_kind": kind, "entity_key": entry["entity_key"], "state_hash": narrative_hash(entry.get("state") or {}), "state": entry.get("state") or {}, "source_event_id": entry.get("source_event_id") or "", "source_binding": initial_binding, **({"provider_visibility": entry["provider_visibility"]} if "provider_visibility" in entry else {})}
                 for kind, entries in (initial or {}).get("current_state", {}).items()
-                for entry in entries if not entry.get("source_event_id")
+                for entry in entries
             ]
         cast = by_role["CHARACTER_CAST"]
         cast = cast.get("candidate_payload", cast)

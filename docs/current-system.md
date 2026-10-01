@@ -528,7 +528,15 @@ not promote all role-readable current state or accepted history to required inpu
 Initial author state retains its exact frozen source binding and is not labeled an
 accepted event. Required dependencies, unresolved referenced promises' planting and
 latest advances, and causal predecessors are preserved within the accepted boundary.
-Character knowledge and belief projection runs before task selection.
+Character knowledge and belief projection runs before task selection. Required
+current-state selection and directed source discovery use the same predicate.
+Referenced or due ordinary obligations fetch original planting and actual latest
+advance from immutable accepted events, independently of recent-history candidates.
+Frozen initial observations retain their original artifact/version/hash bindings;
+they are not relabeled accepted Chapter events. Untouched initial obligations with
+both typed origin coordinates zero are verified against the exact frozen State
+artifact before being exempted from accepted-history discovery. Advanced obligations
+require their accepted planting and latest advance. Unknown causal aliases still block.
 
 The existing Context Operation applies `task-scoped-context.v1`: freeze the task
 and accepted boundary, select relevant inputs with bounded auxiliary history, close
