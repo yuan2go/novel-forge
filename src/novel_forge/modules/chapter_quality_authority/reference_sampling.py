@@ -286,6 +286,10 @@ def chapter_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list
 
 
 def admitted_reference_calibration(request: Any, result: Any, *, stage: str, target_asset_version_id: str) -> dict[str, Any] | None:
+    from novel_forge.modules.chapter_authority.definitions import (
+        CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+        CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION,
+    )
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
     evidence = result.to_evidence()
@@ -313,7 +317,7 @@ def admitted_reference_calibration(request: Any, result: Any, *, stage: str, tar
             JOIN authority_operation_output_asset routing ON routing.operation_id=effect.operation_id
               AND routing.asset_version_id=decision.asset_version_id AND routing.content_hash=decision.content_hash AND routing.role='routing_evidence'
             WHERE effect.project_id=%s AND effect.operation_id=%s AND effect.external_effect_id=%s AND effect.status='SUCCEEDED'
-              AND operation.definition_name=%s AND operation.definition_version='3.4.1'
+              AND operation.definition_name=%s AND operation.definition_version=ANY(%s)
               AND effect.provider_capability_profile->>'real_provider_validation_eligible'='true'
               AND effect.model_id=model.content #>> '{provider_evidence,model_id}'
               AND effect.capability='model.' || (model.content->>'stage')
@@ -322,7 +326,9 @@ def admitted_reference_calibration(request: Any, result: Any, *, stage: str, tar
               AND effect.request_payload #>> '{input,quality_context,target_revision_asset_version_id}'=%s
               AND model.governance='CLEAR' AND decision.governance='CLEAR'""",
             [request.project_id, request.operation_id, native["external_effect_id"],
-             "chapter.quality." + stage.removeprefix("quality_") + ".evaluate", stage, request.attempt_id, target_asset_version_id])
+             "chapter.quality." + stage.removeprefix("quality_") + ".evaluate",
+             [CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION],
+             stage, request.attempt_id, target_asset_version_id])
         rows = uow.cursor.fetchall()
         uow.cursor.execute("SELECT request_payload #> '{_production_execution,capability_runtime,routing_decision}' FROM authority_external_effect WHERE project_id=%s AND external_effect_id=%s",
             [request.project_id, native["external_effect_id"]])

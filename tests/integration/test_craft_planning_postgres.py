@@ -82,7 +82,7 @@ def test_pg_frozen_selection_production_planning_handler_derives_exact_scene_str
 
 
 @pytest.mark.parametrize("continue_after_acceptance,typed_usage", [(False, False), (True, False), (True, True), (True, "explicit"), (False, "reselection")])
-def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(request, monkeypatch, continue_after_acceptance, typed_usage, budget_stop=""):
+def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(request, monkeypatch, continue_after_acceptance, typed_usage, budget_stop="", budget_calibration=None, budget_probe_result=None, original_budget_cap=False):
     from copy import deepcopy
 
     from novel_forge.modules.runtime_job import RuntimeJobAuthority
@@ -177,7 +177,8 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
         if budget_stop:
             from tests.integration.craft_reselection_budget_support import run_reselection_budget_probe
             state["native_proof"] = run_reselection_budget_probe(composition=composition, snapshot=snapshot,
-                admitted=admitted, transport=transport, monkeypatch=monkeypatch, stop=budget_stop)
+                admitted=admitted, transport=transport, monkeypatch=monkeypatch, stop=budget_stop,
+                calibration=budget_calibration, original_cap=original_budget_cap)
             return state["native_proof"]
         jobs = RuntimeJobAuthority(DATABASE_URL)
         generation_operation = ""
@@ -349,9 +350,32 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
     monkeypatch.setattr(native, "execute_native_reality_vertical", drive_native_planning)
     core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
     assert state["native_proof"]["budget_exhaustion" if budget_stop else "candidate_asset_version_id"]
+    if budget_probe_result is not None:
+        budget_probe_result.update(state["native_proof"])
 
 
 @pytest.mark.parametrize("stop", ["calls", "tokens"])
 def test_pg_craft_reselection_preserves_cumulative_campaign_budget(request, monkeypatch, stop):
+    from itertools import count
+    from uuid import UUID
+    from novel_forge.modules.command_kernel import service
+
+    suffix = uuid4().int & ((1 << 96) - 1)
+    sequence = count(1)
+
+    def ordered_fixture_asset_identity():
+        return UUID(int=(next(sequence) << 96) | suffix, version=4)
+
+    monkeypatch.setattr(service, "uuid4", ordered_fixture_asset_identity)
+    calibration = {}
+    with monkeypatch.context() as calibration_patch:
+        test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(
+            request, calibration_patch, continue_after_acceptance=False, typed_usage="reselection", budget_stop="calibration", budget_probe_result=calibration)
     test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(
-        request, monkeypatch, continue_after_acceptance=False, typed_usage="reselection", budget_stop=stop)
+        request, monkeypatch, continue_after_acceptance=False, typed_usage="reselection", budget_stop=stop, budget_calibration=calibration)
+
+
+@pytest.mark.parametrize("stop", ["calls", "tokens"])
+def test_pg_craft_reselection_blocks_original_insufficient_request_budget(request, monkeypatch, stop):
+    test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(
+        request, monkeypatch, continue_after_acceptance=False, typed_usage="reselection", budget_stop=stop, original_budget_cap=True)

@@ -53,7 +53,8 @@ def run_native_actor_sample(request, monkeypatch, *, persistent_intents):
     monkeypatch.setattr(core, "CapabilityPackPostgresHarness", harness)
     monkeypatch.setattr(core, "build_book_production_composition", composition)
     actors.run_actor_receipt_recovery(request, monkeypatch, persistent_intents=persistent_intents)
-    exercise_actor_sample(captured["app"], captured["harness"], actor_version="v3" if persistent_intents else "v2")
+    parameters = exercise_actor_sample(captured["app"], captured["harness"], actor_version="v3" if persistent_intents else "v2")
+    request.node.user_properties.append(("world_sample_final_reasoning", json.dumps(parameters, sort_keys=True)))
 
 
 def exercise_actor_sample(app, harness, *, actor_version="v2"):
@@ -90,7 +91,7 @@ def exercise_actor_sample(app, harness, *, actor_version="v2"):
     preparer = resolver.execution_preparer
     preparer.max_cost_per_call = "1"
     preparer.planning_route = replace(preparer.planning_route, model_context_limit=200000)
-    candidate = deepseek_candidates(available=True)[0]
+    candidate = next(item for item in deepseek_candidates(available=True) if item.model == "deepseek-v4-pro" and item.reasoning == "high")
     preparer.execution_transport.provider_router = ProductionProviderRouter(database_url,
         candidates=(candidate,), execution_environment="validation", task_money_limit="1", task_token_limit=200000)
     command = WorldProviderSampleCommand(project_id, book_id, operator.principal_id, source_operation_id,
@@ -138,6 +139,7 @@ def exercise_actor_sample(app, harness, *, actor_version="v2"):
     admitted = admit_world_sample(app, command, principal=operator)
     assert admit_world_sample(app, command, principal=operator)["operation_id"] == admitted["operation_id"]
     calls = []
+    final_parameters = []
 
     def invoke(adapter, **kwargs):
         calls.append(kwargs)
@@ -145,6 +147,16 @@ def exercise_actor_sample(app, harness, *, actor_version="v2"):
         assert decision["task"]["producer_contract"] == prepared["producer_contract"]
         assert decision["selected"]["candidate"]["candidate_id"] == candidate.candidate_id
         assert decision["task"]["producer_contract"]["output_schema"]["ref"] == f"schema:world_candidates.actor_0:{actor_version}"
+        assert adapter.binding.route_snapshot.requested_reasoning_effort == adapter.binding.route_snapshot.reasoning_effort == "high"
+        runtime = kwargs["request_payload"]["_production_execution"]["capability_runtime"]
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute("SELECT content->'contract'->'provider_request_identity' FROM authority_asset_version WHERE asset_version_id=%s", [runtime["provider_admission_asset_version_id"]])
+            identity = uow.cursor.fetchone()[0]
+        assert identity["reasoning_effort"] == "high" and identity["model"] == candidate.model
+        final_parameters.append({"candidate_id": candidate.candidate_id, "actor_contract": actor_version,
+            "requested_reasoning_effort": adapter.binding.route_snapshot.requested_reasoning_effort,
+            "route_reasoning_effort": adapter.binding.route_snapshot.reasoning_effort,
+            "provider_request_identity": identity})
         evidence = deepcopy(original_evidence)
         # WHY: Native-shaped synthetic receipts exercise feedback joins, not a real Provider claim.
         evidence.update(fixture_protocol_only=False, real_model_call=True, production_verified=False)
@@ -209,6 +221,8 @@ def exercise_actor_sample(app, harness, *, actor_version="v2"):
             "sample": sample, "feedback": feedback, "effects": effects, "provider_dispatches": len(calls),
             "unresolved_effects": unresolved, "ineligible_production_consumer_rejected": True}
         Path(path).write_text(json.dumps(evidence, ensure_ascii=False, indent=2, default=str) + "\n")
+    return {"proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY", "actual_real_model_calls": 0,
+        "provider_dispatches": len(calls), "final_parameters": final_parameters}
 
 
 def actor_reference(app, harness, *, frozen, target, contract):

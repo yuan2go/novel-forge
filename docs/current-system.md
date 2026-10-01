@@ -171,7 +171,9 @@ only with the matching successful native Effect, Attempt, ModelCallLog, target, 
 and served model identity. Its group report retains these references and marks those
 dimensions `REFERENCE_CALIBRATED`; Context and Provider JSON cannot assert this status.
 Missing or changed receipts fail closed. Sampling cannot acquire that status or activate
-a global Quality profile. Generator feedback now projects independent adjudications of native samples into task-scoped `GENERATOR_SCORE`; Narrative
+a global Quality profile. Native reference calibration recognizes the current Chapter
+definition `3.5.0` and recoverable frozen `3.4.1`; other versions remain ineligible.
+Generator feedback now projects independent adjudications of native samples into task-scoped `GENERATOR_SCORE`; Narrative
 operator proxy labels alone cannot qualify a semantic evaluator.
 For a Planning benchmark candidate, native Content annotation version `2.4.0` binds
 HumanEvaluation and AdjudicatedEvaluation to the exact ineligible generation and its
