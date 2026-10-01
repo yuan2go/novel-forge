@@ -64,13 +64,14 @@ def contract():
     return payload, grant, snapshot
 
 
-def test_chapter_sample_rejects_changed_source_inputs_or_book_scope():
+@pytest.mark.parametrize("source_version", ["3.4.1", "3.5.0"])
+def test_chapter_sample_rejects_changed_source_inputs_or_book_scope(source_version):
     from copy import deepcopy
     from novel_forge.modules.command_kernel.routing_bootstrap import validate_chapter_sample_origin
 
     source = {"book_id": "book", "chapter": 3, "preparation_report": {"craft": "approved"}}
     inputs = [{"asset_version_id": "context:v1", "content_hash": "sha256:" + "a" * 64}]
-    origin = ("chapter.draft.generate", "3.4.1", source, inputs)
+    origin = ("chapter.draft.generate", source_version, source, inputs)
     payload = {
         **source, "project_id": "project", "generator_operation_name": "draft",
         "logical_key": "native-draft", "idempotency_key": "sample-1",
@@ -737,3 +738,10 @@ def test_routing_complete_request_meter_rejects_oversized_diagnostic_before_sele
     assert "BENCHMARK_AUTHORIZATION_BUDGET_EXCEEDED" in result["candidates"][0]["rejected_reasons"]
     task_limited = CostAwareRouter().explain(replace(task, remaining_tokens=32768), [candidate], {}).to_dict()
     assert "BUDGET_HARD_LIMIT" in task_limited["candidates"][0]["rejected_reasons"]
+
+
+@pytest.mark.parametrize("version", ["3.3.0", "3.4.0", "3.4.2", "3.6.0", "4.0.0", "3.4.1-author-input.v1", None, []])
+def test_chapter_sample_source_versions_reject_unsupported_contracts(version):
+    from novel_forge.modules.command_kernel.routing_bootstrap import chapter_sample_source_version_supported
+
+    assert not chapter_sample_source_version_supported(version)

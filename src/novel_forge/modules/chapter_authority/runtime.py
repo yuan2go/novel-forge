@@ -19,12 +19,14 @@ from novel_forge.modules.chapter_authority.contracts import (
 )
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION,
+    CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+    CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION,
     chapter_definition_version,
 )
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.routing_bootstrap import (
-    CHAPTER_SAMPLE_DEFINITION_VERSION, chapter_sample_definition_name, load_bootstrap_authorization,
+    CHAPTER_SAMPLE_DEFINITION_VERSION, chapter_sample_definition_name, chapter_sample_definition_supported, load_bootstrap_authorization,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -32,6 +34,26 @@ from .definitions import CHAPTER_SAMPLE_COMPLETION_TOPIC, CHAPTER_SAMPLE_OUTPUT_
 
 
 ChapterExecutionResult = AuthorityExecutionResult
+
+
+def _handler_definition_version(
+    database_url: str, *, command: WorkerLeaseCommand, node: ChapterNode,
+    registry: ChapterHandlerRegistry, author_input: bool,
+) -> str:
+    expected = (
+        CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
+        if author_input and node is ChapterNode.DRAFT
+        else chapter_definition_version(registry.model_effects_required)
+    )
+    if registry.model_effects_required and expected == CHAPTER_MODEL_EFFECT_DEFINITION_VERSION:
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute("""SELECT operation.definition_version FROM authority_operation operation
+                JOIN authority_attempt attempt USING(operation_id) WHERE attempt.attempt_id=%s AND operation.project_id=%s""",
+                [command.attempt_id, command.project_id])
+            row = uow.cursor.fetchone()
+        if row is not None and str(row[0]) == CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION:
+            return CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION
+    return expected
 
 
 @dataclass(frozen=True, slots=True)
@@ -167,15 +189,18 @@ def execute_chapter_handler(
                 JOIN authority_attempt attempt USING(operation_id) WHERE attempt.attempt_id=%s AND operation.project_id=%s""",
                 [command.attempt_id, command.project_id])
             sample_version = uow.cursor.fetchone()[0]
+        if not chapter_sample_definition_supported(chapter_sample_definition_name(stage), sample_version):
+            raise KernelError("AUTHORITY_HANDLER_CONTRACT_STALE", "sample definition version is not supported by the runtime codec")
     return execute_authority_handler(
         database_url,
         command=command,
         execution_probe=execution_probe,
         registration=AuthorityHandlerRegistration(
             definition_name=chapter_sample_definition_name(stage) if sampling else node.definition_name,
-            definition_version=(sample_version if sampling else
-                CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION if author_input and node is ChapterNode.DRAFT
-                else chapter_definition_version(registry.model_effects_required)),
+            definition_version=sample_version if sampling else _handler_definition_version(
+                database_url, command=command, node=node, registry=registry,
+                author_input=author_input,
+            ),
             handler_key="novel_forge.chapter_authority.sample." + stage if sampling else node.handler_key,
             handler_contract_version="chapter-provider-sample.v1" if sampling else "chapter-authority-handler-v2",
             output_asset_type="chapter_provider_sample" if sampling else node.asset_type,

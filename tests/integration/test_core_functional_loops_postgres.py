@@ -2484,6 +2484,7 @@ def test_real_provider_planning_candidate_is_independently_evaluated_and_activat
             ),
             "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
             "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "131072",
+            "NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT": "8192",
             "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD": (
                 "OPENAI_UTF8_BYTES_UPPER_BOUND_V1"
             ),

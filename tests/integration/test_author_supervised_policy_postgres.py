@@ -16,15 +16,24 @@ from novel_forge.modules.production_execution.routing_runtime import PostgresRou
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier, seed_authority_project_book
 from tests.unit.test_author_supervised_routing import prepared
+from tests.unit.test_cost_aware_routing import NOW
 
 
-def test_native_author_policy_provenance_frozen_replay_and_nonrenewal():
+def test_native_author_policy_provenance_frozen_replay_and_nonrenewal(monkeypatch):
+    from novel_forge.modules.production_execution import author_supervision
+
+    class FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW.astimezone(tz) if tz is not None else NOW.replace(tzinfo=None)
+
+    monkeypatch.setattr(author_supervision, "datetime", FrozenDatetime)
     ensure_migrated()
     project = identifier("author-supervised")
     seed_authority_project_book(project_id=project, book_id="book", workspace_id="workspace:" + project)
     author = Principal("author", PrincipalType.LOCAL_OPERATOR, frozenset({"book.authority.execute"}), frozenset({project}), "isolated-test")
     scope, model = prepared()
-    now = datetime.now(timezone.utc)
+    now = NOW
     policy = deepcopy(scope.policy_snapshot["policy"])
     policy["author_supervised_authorizations"][0]["expires_at"] = (now + timedelta(hours=1)).isoformat()
     def configure(value, actor=author, key="one"):
@@ -42,6 +51,7 @@ def test_native_author_policy_provenance_frozen_replay_and_nonrenewal():
     frozen = PostgresRoutingRegistry(DATABASE_URL).policy(project)
     task = replace(scope, project_id=project, policy_snapshot=frozen)
     decision = supervised_decision(CostAwareRouter().explain(task, [model], {}, now=now), now=now).to_dict()
+    assert decision["status"] == "AUTHOR_SUPERVISED_SELECTED"
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         verify_policy_provenance(uow.cursor, decision)
         assert selected_book_supervision(uow.cursor, project_id=project, book_id="other") is None

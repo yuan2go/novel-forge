@@ -19,7 +19,8 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
     CHAPTER_REFERENCE_TASKS,
     CHAPTER_SAMPLE_DEFINITION_VERSION,
     CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE,
-    CHAPTER_SAMPLE_SOURCE_VERSION,
+    chapter_sample_source_version_supported,
+    chapter_sample_definition_supported,
     CHAPTER_REFERENCE_SAMPLE_VERSION,
     CHAPTER_REFERENCE_SAMPLE_SOURCES,
     authorization_hash,
@@ -36,10 +37,9 @@ from novel_forge.modules.command_kernel.service import (
     admit_command_in_uow,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.authority_repositories import definition_hash
 
 from .definitions import (
-    CHAPTER_SAMPLE_WORKFLOW_REF,
-    CHAPTER_REFERENCE_WORKFLOW_REF,
     chapter_provider_sample_definitions,
 )
 
@@ -89,7 +89,7 @@ def prepare_provider_sample(
     if (
         not source
         or source[0] not in CHAPTER_BOOTSTRAP_TASKS
-        or source[1] != CHAPTER_SAMPLE_SOURCE_VERSION
+        or not chapter_sample_source_version_supported(source[1])
     ):
         raise KernelError(
             "CHAPTER_SAMPLE_TASK_UNSUPPORTED",
@@ -137,6 +137,14 @@ def prepare_provider_sample(
             require_chapter_reference(uow.cursor, project_id=command.project_id, stage=stage,
                 input_versions=inputs, binding=command.reference_evaluation,
                 evaluator_actor_id=command.actor_id, chapter=source[2]["chapter"], generation_sample=subject)
+    definition_name = chapter_sample_definition_name(stage)
+    definition_version = CHAPTER_REFERENCE_SAMPLE_VERSION if command.generation_sample else CHAPTER_SAMPLE_DEFINITION_VERSION
+    with AuthorityUnitOfWork(app.database_url) as uow:
+        existing_definition = _existing_sample_definition(uow, project_id=command.project_id,
+            idempotency_key=command.idempotency_key, definition_name=definition_name,
+            reference_samples=command.generation_sample is not None)
+    if existing_definition is not None:
+        definition_version = existing_definition["definition_version"]
     producer = reference_sample_producer_identity(app, payload=payload, workspace_id=source[4]) if command.generation_sample else None
     generator_evaluation = None
     if not reference:
@@ -151,8 +159,8 @@ def prepare_provider_sample(
     return {
         "status": "PREPARED_NO_PROVIDER_CALL",
         "provider_calls": 0,
-        "definition_name": chapter_sample_definition_name(stage),
-        "definition_version": CHAPTER_REFERENCE_SAMPLE_VERSION if command.generation_sample else CHAPTER_SAMPLE_DEFINITION_VERSION,
+        "definition_name": definition_name,
+        "definition_version": definition_version,
         "workspace_id": source[4],
         "book_id": payload["book_id"],
         "command_payload": payload,
@@ -160,11 +168,28 @@ def prepare_provider_sample(
         "command_hash": bootstrap_command_hash(payload),
         "input_versions_hash": authorization_hash(inputs),
         **({"producer_contract": producer, "producer_contract_hash": authorization_hash(producer)} if producer else {}),
-        "required_workflow_ref": "chapter_reference_sampling@" + CHAPTER_REFERENCE_SAMPLE_VERSION if command.generation_sample else
-            CHAPTER_REFERENCE_WORKFLOW_REF if reference else CHAPTER_SAMPLE_WORKFLOW_REF,
+        "required_workflow_ref": ("chapter_reference_sampling" if reference else "chapter_provider_sampling") + "@" + definition_version,
         "production_eligible": False,
         **({"generator_evaluation_contract": generator_evaluation} if generator_evaluation else {}),
     }
+
+
+def _existing_sample_definition(uow: Any, *, project_id: str, idempotency_key: str,
+    definition_name: str, reference_samples: bool) -> dict[str, Any] | None:
+    uow.cursor.execute("""SELECT definition_name,definition_version,definition_snapshot FROM authority_operation
+        WHERE project_id=%s AND idempotency_scope=%s AND idempotency_key=%s""",
+        [project_id, CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE, idempotency_key])
+    row = uow.cursor.fetchone()
+    if row is None:
+        return None
+    if row[0] != definition_name or not chapter_sample_definition_supported(row[0], row[1], reference_samples=reference_samples):
+        raise KernelError("AUTHORITY_HANDLER_CONTRACT_STALE", "sample replay requires its published handler contract")
+    definition = uow.repositories.definitions.get(row[0], row[1])
+    if (definition is None or definition_hash(definition) != definition["definition_hash"]
+        or row[2].get("definition_hash") != definition["definition_hash"]
+        or row[2].get("handler_key") != definition["handler_key"]):
+        raise KernelError("AUTHORITY_HANDLER_CONTRACT_STALE", "sample replay requires its unchanged registered definition")
+    return definition
 
 
 def reference_sample_producer_identity(app: Any, *, payload: dict[str, Any], workspace_id: str) -> dict[str, Any]:
@@ -195,24 +220,41 @@ def reference_sample_producer_identity(app: Any, *, payload: dict[str, Any], wor
     _, context, _, _, provider_input = prepare_native_review(request, stage=stage)
     schema, schema_ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage=stage, request_payload={"input": provider_input})
     with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute("""SELECT operation.command_payload->'payload',attempt.attempt_id
-            FROM authority_operation operation JOIN authority_attempt attempt USING(operation_id)
+        existing_definition = _existing_sample_definition(uow, project_id=payload["project_id"],
+            idempotency_key=payload["idempotency_key"], definition_name=chapter_sample_definition_name(stage), reference_samples=True)
+        definition_version = existing_definition["definition_version"] if existing_definition else CHAPTER_REFERENCE_SAMPLE_VERSION
+        uow.cursor.execute("""SELECT operation.operation_id,operation.command_payload->'payload',attempt.attempt_id,operation.definition_version
+            FROM authority_operation operation LEFT JOIN authority_attempt attempt USING(operation_id)
             WHERE operation.project_id=%s AND operation.idempotency_scope=%s AND operation.idempotency_key=%s
             ORDER BY attempt.attempt_number DESC LIMIT 1""",
             [payload["project_id"], CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE, payload["idempotency_key"]])
         existing = uow.cursor.fetchone()
         stored = None
         if existing:
-            if {key: value for key, value in existing[0].items() if key != "routing_bootstrap_authorization"} != payload:
-                raise KernelError("CHAPTER_SAMPLE_INPUT_DRIFT", "reference replay requires its original admitted command")
-            stored = uow.repositories.capability_packs.find_attempt_snapshot(existing[1])
-        snapshot = stored["snapshot"] if stored else binder.pack_resolver.resolve_in_uow(uow, CapabilityPackResolutionRequest(
-            project_id=payload["project_id"], workspace_id=workspace_id, book_id=payload["book_id"],
-            workflow_definition_ref="chapter_reference_sampling@" + CHAPTER_REFERENCE_SAMPLE_VERSION,
-            workflow_node_id=stage, environment=binder.pack_environment, runtime_profile=binder.pack_runtime_profile,
-            release_channel=binder.pack_release_channel, release_sha=binder.routes[stage].release_sha,
-            operation_definition_ref=chapter_sample_definition_name(stage) + "@" + CHAPTER_REFERENCE_SAMPLE_VERSION,
-            pack_id=binder.capability_pack_id + ".reference_samples"))
+            if (existing_definition is None or existing[3] != definition_version
+                or {key: value for key, value in existing[1].items() if key != "routing_bootstrap_authorization"} != payload):
+                raise KernelError("CHAPTER_SAMPLE_INPUT_DRIFT", "reference replay requires its original admitted command and definition")
+            if existing[2]:
+                stored = uow.repositories.capability_packs.find_attempt_snapshot(existing[2])
+                if stored is None:
+                    stored = uow.repositories.capability_packs.find_latest_operation_attempt_snapshot(
+                        existing[0], excluding_attempt_id=existing[2])
+        elif existing_definition is not None:
+            raise KernelError("CHAPTER_SAMPLE_INPUT_DRIFT", "reference operation changed after its definition was read")
+        operation_ref = chapter_sample_definition_name(stage) + "@" + definition_version
+        workflow_ref = "chapter_reference_sampling@" + definition_version
+        if stored is not None:
+            snapshot = stored["snapshot"]
+            if (stored["operation_id"] != existing[0] or snapshot.operation_definition_ref != operation_ref
+                or snapshot.workflow_definition_ref != workflow_ref or snapshot.workflow_node_id != stage):
+                raise KernelError("CHAPTER_SAMPLE_PRODUCER_DRIFT", "reference replay Pack does not match its original operation contract")
+        else:
+            snapshot = binder.pack_resolver.resolve_in_uow(uow, CapabilityPackResolutionRequest(
+                project_id=payload["project_id"], workspace_id=workspace_id, book_id=payload["book_id"],
+                workflow_definition_ref=workflow_ref,
+                workflow_node_id=stage, environment=binder.pack_environment, runtime_profile=binder.pack_runtime_profile,
+                release_channel=binder.pack_release_channel, release_sha=binder.routes[stage].release_sha,
+                operation_definition_ref=operation_ref, pack_id=binder.capability_pack_id + ".reference_samples"))
         version = uow.repositories.capability_packs.require_version(snapshot.pack_id, snapshot.pack_version)
         artifacts = materialize_registered_pack_version(snapshot, version)
         uow.cursor.execute("""SELECT version.content,version.content_hash FROM authority_operation_output_asset output
@@ -280,7 +322,15 @@ def admit_provider_sample(
         "routing_bootstrap_authorization": snapshot,
     }
     with AuthorityUnitOfWork(app.database_url, coordinate_nested=True) as uow:
-        uow.repositories.definitions.register(definition)
+        existing_definition = _existing_sample_definition(uow, project_id=command.project_id,
+            idempotency_key=command.idempotency_key, definition_name=prepared["definition_name"],
+            reference_samples=command.generation_sample is not None)
+        if existing_definition is None:
+            if definition["definition_version"] != prepared["definition_version"]:
+                raise KernelError("AUTHORITY_HANDLER_CONTRACT_STALE", "sample admission contract changed after preflight")
+            uow.repositories.definitions.register(definition)
+        else:
+            definition = existing_definition
         identity = authorization_hash(
             [
                 command.project_id,
@@ -298,7 +348,7 @@ def admit_provider_sample(
             uow,
             {
                 "definition_name": definition["name"],
-                "definition_version": prepared["definition_version"],
+                "definition_version": definition["definition_version"],
                 "project_id": command.project_id,
                 "workspace_id": prepared["workspace_id"],
                 "book_id": prepared["book_id"],

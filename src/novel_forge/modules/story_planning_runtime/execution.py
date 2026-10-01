@@ -5414,8 +5414,9 @@ class PostgresPlanningExecutionPreparer:
         )
         token_budget = int(content.get("token_budget") or 0)
         task_byte_accounting = (
-            content.get("planning_context_policy_version") == "context-policy:chapter-generation-pack:v2"
-            or provider_stage is not None and dict(provider_stage.task.get("policy") or {}).get("version") == "world-production-policy.v4"
+            dict(provider_stage.task.get("policy") or {}).get("version") == "world-production-policy.v4"
+            if provider_stage is not None
+            else content.get("planning_context_policy_version") == "context-policy:chapter-generation-pack:v2"
         )
         if provider_stage is None:
             provider_view, projection_audit = compile_planning_provider_context(stage_name, content)

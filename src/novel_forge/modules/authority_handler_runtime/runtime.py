@@ -319,10 +319,10 @@ def _load_request(
         payload = dict(operation["command_payload"].get("payload") or {})
         if policy.get("chapter_reference_sample_input_allowed") is True:
             from novel_forge.modules.command_kernel.routing_bootstrap import (
-                CHAPTER_REFERENCE_SAMPLE_VERSION, CHAPTER_REFERENCE_SAMPLE_SOURCES, chapter_sample_definition_name,
+                CHAPTER_REFERENCE_SAMPLE_VERSIONS, CHAPTER_REFERENCE_SAMPLE_SOURCES, chapter_sample_definition_name,
                 load_bootstrap_authorization,
             )
-            if (operation["definition_version"] != CHAPTER_REFERENCE_SAMPLE_VERSION
+            if (operation["definition_version"] not in CHAPTER_REFERENCE_SAMPLE_VERSIONS
                 or operation["definition_name"] not in {chapter_sample_definition_name(stage) for stage in CHAPTER_REFERENCE_SAMPLE_SOURCES}):
                 raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "Chapter reference sampling requires its exact versioned definition")
             grant = load_bootstrap_authorization(uow.cursor, project_id=operation["project_id"],

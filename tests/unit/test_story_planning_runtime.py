@@ -2467,6 +2467,60 @@ def test_planning_context_rejects_duplicate_authority_representation() -> None:
         )
 
 
+@pytest.mark.parametrize("planning_policy", [False, True], ids=["historical-pack", "task-pack-v2"])
+@pytest.mark.parametrize("world_policy", ["world-production-policy.v1", "world-production-policy.v4"])
+def test_world_context_accounting_remains_bound_to_its_frozen_policy(
+    planning_policy: bool, world_policy: str,
+) -> None:
+    from novel_forge.modules.story_planning_runtime.world_preparation import PlanningProviderStage
+
+    command = replace(_command("chapter_plan.generate"), logical_key="chapter:1")
+    budget = 16_000 if world_policy == "world-production-policy.v1" else 64_000
+    required_action = "界" * 6_000
+    source = SimpleNamespace(
+        asset_version_id="world-source:v1", content_hash=HASH,
+        asset_type="world_preparation_source", content={},
+    )
+    task = {
+        "contract_version": "world-provider-task.v1", "fact_mutation_allowed": False,
+        "role": "WORLD_REASONER", "accepted_through_chapter": 0,
+        "baseline_id": "baseline:v1", "baseline_kind": "CANON",
+        "source_ref": {"asset_version_id": source.asset_version_id, "content_hash": HASH},
+        "projection_identity": HASH,
+        "policy": {"version": world_policy, "context_token_budget": budget},
+        "intent": {"required_action": required_action},
+    }
+    stage = PlanningProviderStage("world_candidates.generate", task, {})
+    base = SimpleNamespace(content={
+        "project_id": command.project_id, "workspace_id": command.workspace_id,
+        "book_id": command.book_id, "planning_scope": command.planning_scope.value,
+        "logical_key": command.logical_key, "token_budget": 64_000,
+        **({"planning_context_policy_version": "context-policy:chapter-generation-pack:v2"}
+           if planning_policy else {}),
+    })
+
+    content = PostgresPlanningExecutionPreparer._world_context_content(
+        command=command, base=base, stage=stage, source=source,
+    )
+
+    assert content["token_budget"] == budget
+    assert content["world_preparation"] == stage.task
+    assert content["world_preparation"]["intent"]["required_action"] == required_action
+    assert content["input_versions"][0]["content_hash"] == HASH
+    manifest = content["context_manifest"]
+    assert manifest["token_accounting"]["accepted_tokens"] <= budget
+    candidate = next(item for item in manifest["selected_inputs"]
+                     if item["logical_context_kind"] == "world_role_task")
+    import json
+    rendered = json.dumps(stage.task, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    if world_policy == "world-production-policy.v1":
+        assert manifest["token_accounting"].get("method") != "utf8-byte-upper-bound.v1"
+        assert candidate["estimated_tokens"] == (len(rendered) + 3) // 4
+    else:
+        assert manifest["token_accounting"]["method"] == "utf8-byte-upper-bound.v1"
+        assert candidate["estimated_tokens"] == len(rendered.encode("utf-8"))
+
+
 @pytest.mark.parametrize("generator", sorted(GENERATOR_INPUT_ROLES))
 def test_five_planning_generators_require_exact_authority_input_roles(
     generator: str,

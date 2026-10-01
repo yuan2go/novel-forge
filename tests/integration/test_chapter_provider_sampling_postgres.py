@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.command_kernel.routing_bootstrap import authorization_hash
+from novel_forge.modules.command_kernel.routing_bootstrap import CHAPTER_REFERENCE_SAMPLE_VERSION, authorization_hash
 from novel_forge.modules.chapter_authority.execution_gateway import (
     _RecoveryAuthorizedGatewayAdapter,
     chapter_producer_contract_identity,
@@ -679,7 +679,7 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
         cold_command = replace(command, generation_sample=target, reference_stage=cold_stage, reference_evaluation=labels,
             authorization_id="fixture-review-coldstart", idempotency_key=h.project_id + ":review-coldstart")
         prepared = app.prepare_provider_sample(cold_command, principal=principal)
-        assert prepared["definition_version"] == "1.1.0"
+        assert prepared["definition_version"] == CHAPTER_REFERENCE_SAMPLE_VERSION
         grants.append({**grants[0], "authorization_id": cold_command.authorization_id, "task_type": cold_stage,
             "generation_idempotency_key": cold_command.idempotency_key, "command_hash": prepared["command_hash"],
             "input_versions_hash": prepared["input_versions_hash"], "producer_contract_hash": prepared["producer_contract_hash"],
@@ -747,3 +747,23 @@ def test_native_chapter_sample_replays_without_formal_chapter_mutation(
     cumulative = get_creative_budget(DATABASE_URL, h.project_id)["budget_usage"]
     assert cumulative["project_total"]["calls_used_or_reserved"] == expected_calls + original_calls
     assert cumulative["phases"][sampling_phase]["calls_used_or_reserved"] == expected_calls - int(cold_start)
+
+
+def test_published_sampler_definition_hashes_coexist_with_new_release():
+    import json
+    from novel_forge.modules.chapter_authority.definitions import chapter_provider_sample_definitions
+    from novel_forge.storage.authority_repositories import definition_hash
+
+    historical = json.loads((ROOT / 'tests/fixtures/chapter_sampler_base_48af52.json').read_text())
+    assert historical['base_sha'] == '48af52ea4afdbea6bb59e1ed84306d9708df2f98'
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        for definition in historical['definitions']:
+            assert definition_hash(definition) == definition['published_hash']
+            uow.repositories.definitions.register(definition)
+        for reference in (False, True):
+            for definition in chapter_provider_sample_definitions(application_build_id='new-release-fixture', commit_sha='e' * 40, reference_samples=reference):
+                uow.repositories.definitions.register(definition)
+        for definition in historical['definitions']:
+            stored = uow.repositories.definitions.get(definition['name'], definition['definition_version'])
+            assert stored['definition_hash'] == definition['published_hash'] == definition_hash(stored)
+        uow.commit()

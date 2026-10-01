@@ -10,6 +10,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Callable, Mapping, Protocol
 
+from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -1997,13 +1998,20 @@ class PostgresChapterExecutionContractBinder:
             raise ExternalEffectAdapterError(
                 "Chapter gateway operation has no Authority Saga", request_sent=False
             )
-        from .definitions import CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
+        from .definitions import CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION, CHAPTER_SLICE_DEFINITION_VERSION
+        from novel_forge.modules.command_kernel.routing_bootstrap import (
+            chapter_sample_definition_supported,
+        )
 
-        if (
-            str(row[0]).startswith("chapter.")
-            and str(row[1]).startswith("3.")
-            and str(row[1]) != CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
-        ):
+        compatible = (
+            str(row[0]) in {node.definition_name for node in ChapterNode}
+            and str(row[1]) in {
+                CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+                CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION,
+                CHAPTER_SLICE_DEFINITION_VERSION,
+            }
+        )
+        if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
             raise KernelError(
                 "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",
                 "unfinished legacy Chapter execution requires current prepared input; accepted history and confirmed receipts remain unchanged",
@@ -2036,14 +2044,18 @@ class PostgresChapterExecutionContractBinder:
             raise KernelError("CHAPTER_SAMPLE_PACK_REQUIRED", "Chapter sampling requires its approved validation pack")
         if not self.capability_pack_id:
             return None
-        from .definitions import CHAPTER_SAMPLE_WORKFLOW_REF, CHAPTER_REFERENCE_WORKFLOW_REF
         from novel_forge.modules.command_kernel.routing_bootstrap import CHAPTER_REFERENCE_TASKS
 
         reference = sampling and stage in CHAPTER_REFERENCE_TASKS.values()
-        reference_samples = reference and graph["definition_version"] == "1.1.0"
-        workflow_ref = CHAPTER_REFERENCE_WORKFLOW_REF if reference else CHAPTER_SAMPLE_WORKFLOW_REF if sampling else self.workflow_definition_ref
-        if reference_samples:
-            workflow_ref = "chapter_reference_sampling@1.1.0"
+        from novel_forge.modules.command_kernel.routing_bootstrap import CHAPTER_REFERENCE_SAMPLE_VERSIONS
+
+        reference_samples = reference and graph["definition_version"] in CHAPTER_REFERENCE_SAMPLE_VERSIONS
+        workflow_ref = ("chapter_reference_sampling" if reference else "chapter_provider_sampling") + "@" + graph["definition_version"] if sampling else self.workflow_definition_ref
+        from .definitions import CHAPTER_MODEL_WORKFLOW_DEFINITION_ID, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION
+
+        if (not sampling and graph["definition_name"] in {node.definition_name for node in ChapterNode}
+            and graph["definition_version"] == CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION):
+            workflow_ref = f"{CHAPTER_MODEL_WORKFLOW_DEFINITION_ID}@{CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION}"
         pack_id = self.capability_pack_id + (".reference_samples" if reference_samples else ".reference_sampling" if reference else ".provider_sampling") if sampling else self.capability_pack_id
         try:
             return self.pack_resolver.freeze_attempt_snapshot(
