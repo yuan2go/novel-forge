@@ -22,7 +22,8 @@ from novel_forge.modules.command_kernel.external_effect_adapters import FakeDete
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution.author_supervision import supervised_decision, verify_frozen_supervision
 from novel_forge.modules.production_execution.cost_routing import CostAwareRouter
-from novel_forge.modules.production_execution.cross_model_review import freeze_review_requirement, reviewer_rejection
+from novel_forge.modules.review.cross_model_binding import freeze_review_requirement
+from novel_forge.modules.production_execution.cross_model_review import reviewer_rejection
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.migrations import run_migrations
 from tests.integration.authority_postgres_support import DATABASE_URL, identifier, insert_definition, insert_operation, seed_authority_project_book
@@ -357,6 +358,7 @@ def test_model_and_author_edited_sources_use_native_router_effect_and_distinct_h
     app = build_chapter_authority_application(settings, execution=execution, env=env)
     binder = app._model_port.capability_binder
     router = ProductionProviderRouter(DATABASE_URL, candidates=[model], execution_environment="development",
+        review_requirement_resolver=freeze_review_requirement,
         task_money_limit="1", task_token_limit=200000, token_caps={"work_total": 1000000}, call_caps={"work_total": 10})
     app._model_port.max_cost_per_call = "1"
     worker = replace(author, principal_id="source-model-worker", principal_type=PrincipalType.WORKER)
@@ -508,7 +510,7 @@ def generator_receipt_boundary():
 
 
 def test_generator_receipt_boundary_accepts_one_intact_verified_success(generator_receipt_boundary):
-    from novel_forge.modules.production_execution.cross_model_review import generator_identity
+    from novel_forge.modules.review.cross_model_binding import generator_identity
     from novel_forge.modules.production_execution.cost_routing import snapshot_hash
     sample = generator_receipt_boundary
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -518,7 +520,7 @@ def test_generator_receipt_boundary_accepts_one_intact_verified_success(generato
 
 
 def test_generator_receipt_boundary_ignores_failed_dispatch_before_verified_success(generator_receipt_boundary):
-    from novel_forge.modules.production_execution.cross_model_review import generator_identity
+    from novel_forge.modules.review.cross_model_binding import generator_identity
     from novel_forge.modules.production_execution.cost_routing import snapshot_hash
     sample = generator_receipt_boundary
     failed = {"real_model_call": True, "provider_id": "deepseek", "failure_class": "PROVIDER_UNAVAILABLE",
@@ -533,7 +535,7 @@ def test_generator_receipt_boundary_ignores_failed_dispatch_before_verified_succ
 
 @pytest.mark.parametrize("damage", ["missing", "received", "rejected", "wrong_hash", "different_payload", "duplicate_verified"])
 def test_generator_receipt_boundary_rejects_unverified_or_inconsistent_receipts(generator_receipt_boundary, damage):
-    from novel_forge.modules.production_execution.cross_model_review import generator_identity
+    from novel_forge.modules.review.cross_model_binding import generator_identity
     from novel_forge.modules.production_execution.cost_routing import snapshot_hash
     sample = generator_receipt_boundary
     with AuthorityUnitOfWork(DATABASE_URL) as uow:

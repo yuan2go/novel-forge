@@ -327,8 +327,12 @@ def test_rollout_and_rollback_do_not_reassign_historical_runtime_evidence() -> N
     assert candidate_runtime["deployment_id"] == candidate.deployment_id
     assert candidate_runtime["binding_set_hash"] == candidate.binding_set_hash
     assert candidate_runtime["draft_content"] != historical["draft_content"]
-    assert "@v1" in str(historical["draft_content"])
-    assert "@v2" in str(candidate_runtime["draft_content"])
+    for proof, runtime in ((version_1, historical), (version_2, candidate_runtime)):
+        template = next(item for item in proof.compiled["resolved_artifacts"] if item["kind"] == "PROMPT_TEMPLATE")
+        system = next(item for item in proof.compiled["resolved_artifacts"] if item["kind"] == "PROMPT_SYSTEM_INSTRUCTION")
+        assert runtime["snapshot_payload"]["prompt_template_ref"] == f"{template['ref']}@{template['version']}"
+        assert runtime["snapshot_payload"]["prompt_template_hash"] == template["content_hash"]
+        assert runtime["draft_content"]["provider_evidence"]["prompt_version"] == f"{system['ref']}@{system['version']}"
     harness.execute(
         "capability_pack.rollout.complete",
         principal=harness.compiler,

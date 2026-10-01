@@ -339,6 +339,7 @@ def validate_craft_checks(
 
 def craft_revision_contract(
     draft: Mapping[str, Any], review: Mapping[str, Any], *, compact_contract: bool = False,
+    targeted_edits_only: bool = False,
 ) -> dict[str, Any]:
     targets = craft_review_targets(draft)
     if not targets:
@@ -350,7 +351,14 @@ def craft_revision_contract(
             "CRAFT_REVISION_SELECTION_CHANGED",
             "revision must retain the originally reviewed frozen Craft strategy",
         )
-    if compact_contract:
+    if targeted_edits_only:
+        instructions = (
+            "Return only ordered non-overlapping edits inside diagnosed spans with exact old quotes, replacement prose "
+            "and issue codes. The host derives Slot and chapter prose, preserving unaffected text exactly. "
+            "Keep Canon, POV, voice, character knowledge, causal sequence, accepted planning and previously achieved Craft. "
+            "Do not force optional aesthetic suggestions or add facts. ReReview decides resolution."
+        )
+    elif compact_contract:
         instructions = (
             "Return ordered non-overlapping edits inside existing diagnosed Unicode spans with the exact old quote, replacement and issue_codes. The host verifies the joined Scene Slot prose equals applying those edits; preserve all other prose exactly. Keep Canon, POV, voice, character knowledge, causal sequence, accepted planning and previously achieved Craft. Do not force optional aesthetic suggestions or add new story facts. ReReview decides resolution."
         )
@@ -362,7 +370,7 @@ def craft_revision_contract(
             "Do not force optional aesthetic suggestions or add new story facts. ReReview decides resolution."
         )
     return {
-        "contract_version": "narrative-craft-targeted-repair.v1",
+        "contract_version": "narrative-craft-targeted-repair.v2" if targeted_edits_only else "narrative-craft-targeted-repair.v1",
         "selection_digest": targets[0]["selection_digest"],
         "source_text_hash": review["target_text_hash"],
         "preservation_dimensions": list(PRESERVATION_DIMENSIONS),

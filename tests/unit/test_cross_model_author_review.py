@@ -6,7 +6,8 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution.author_supervision import supervised_decision, verify_frozen_supervision
 from novel_forge.modules.production_execution.cost_routing import CostAwareRouter
 from novel_forge.modules.production_execution.cost_routing import snapshot_hash
-from novel_forge.modules.production_execution.cross_model_review import generator_identity, reviewer_rejection
+from novel_forge.modules.review.cross_model_binding import generator_identity
+from novel_forge.modules.production_execution.cross_model_review import reviewer_rejection
 from tests.unit.test_author_supervised_routing import prepared
 from tests.unit.test_cost_aware_routing import NOW
 
@@ -147,14 +148,14 @@ def test_trial_reviewer_cannot_be_used_for_strict_qualification():
 @pytest.mark.parametrize("frozen", [None, "AUTHOR_ADVISORY"])
 def test_review_purpose_is_read_from_native_frozen_command(frozen):
     from unittest.mock import patch
-    from novel_forge.modules.production_execution.cross_model_review import freeze_review_requirement
+    from novel_forge.modules.review.cross_model_binding import freeze_review_requirement
     class Cursor:
         def execute(self, sql, args):
             assert args == ["project", "operation"]
         def fetchall(self):
             return [("exact-draft", "hash", "chapter_plan", {},
                      {"payload": {"evaluation_purpose": frozen}})]
-    with patch("novel_forge.modules.production_execution.cross_model_review.generator_identity", return_value={**contract(),"purpose":"AUTHOR_ADVISORY"}):
+    with patch("novel_forge.modules.review.cross_model_binding.generator_identity", return_value={**contract(),"purpose":"AUTHOR_ADVISORY"}):
         result = freeze_review_requirement(Cursor(), project_id="project", book_id="book", operation_id="operation",
             task_type="narrative_semantic_evaluation", request_input={"evaluation_target":{"candidate_asset_version_id":"exact-draft"},
                 "evaluation_purpose":"AUTHOR_ADVISORY"})

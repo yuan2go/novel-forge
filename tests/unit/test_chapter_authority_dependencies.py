@@ -334,13 +334,11 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self,
     ) -> None:
         repository_root = Path(__file__).resolve().parents[2]
-        executable = Path("/Applications/ChatGPT.app/Contents/Resources/codex")
-        if not executable.is_file():
-            self.skipTest("application Codex CLI is not installed")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            workspace = root / "isolated-workspace"
-            workspace.mkdir()
+            fixture = _mixed_router_environment(root)
+            executable = Path(fixture["NOVEL_FORGE_CODEX_EXECUTABLE"])
+            workspace = Path(fixture["NOVEL_FORGE_CODEX_WORKSPACE"])
             environment = {
                 "NOVEL_FORGE_ENVIRONMENT": "validation",
                 "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",
@@ -401,24 +399,14 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
 
     def test_codex_account_entitlement_composes_without_fake_pricing(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
-        executable = Path("/Applications/ChatGPT.app/Contents/Resources/codex")
-        if not executable.is_file():
-            self.skipTest("application Codex CLI is not installed")
-        with executable.open("rb") as executable_stream:
-            executable_sha256 = (
-                "sha256:" + hashlib.file_digest(executable_stream, "sha256").hexdigest()
-            )
-        cli_version = subprocess.run(
-            (str(executable), "--version"),
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=15,
-        ).stdout.strip()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            workspace = root / "isolated-workspace"
-            workspace.mkdir()
+            fixture = _mixed_router_environment(root)
+            executable = Path(fixture["NOVEL_FORGE_CODEX_EXECUTABLE"])
+            workspace = Path(fixture["NOVEL_FORGE_CODEX_WORKSPACE"])
+            executable_sha256 = fixture["NOVEL_FORGE_CODEX_EXECUTABLE_SHA256"]
+            cli_version = subprocess.run((str(executable), "--version"), check=True,
+                                         capture_output=True, text=True).stdout.strip()
             environment = {
                 "NOVEL_FORGE_ENVIRONMENT": "validation",
                 "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",

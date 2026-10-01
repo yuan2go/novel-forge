@@ -355,6 +355,7 @@ def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[
 def build_provider_task_view(
     stage: str, inputs: Mapping[str, Any], *, compact_contract: bool = False,
     targeted_edits_only: bool = False,
+    project_methods: bool = False,
 ) -> dict[str, Any]:
 
     if stage == "retrieval_query_expansion":
@@ -731,7 +732,7 @@ def build_provider_task_view(
                 payload["chapter"]["text"] = str(source.get("text") or "")
         if review.get("craft_targets") and inputs.get("required_actions") is None:
             from novel_forge.modules.review.craft import craft_revision_contract
-            payload["craft_targeted_repair"] = craft_revision_contract(source, review, compact_contract=compact_contract)
+            payload["craft_targeted_repair"] = craft_revision_contract(source, review, compact_contract=compact_contract, targeted_edits_only=targeted_edits_only and project_methods)
             payload["craft_checks"] = deepcopy(review["craft_checks"])
             if not compact_contract:
                 payload["chapter"]["text"] = str(source.get("text") or "")

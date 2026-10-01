@@ -56,10 +56,13 @@ class ProviderCallbackRepository:
             SELECT callback_receipt_id, payload_hash, provider_request_id,
                    outcome, processing_status, project_id, external_effect_id, dispatch_id
             FROM authority_provider_callback_receipt
-            WHERE provider=%s AND provider_message_id=%s
+            WHERE provider=%s AND (provider_message_id=%s
+                OR (provider_request_id=%s AND payload_hash=%s))
+            ORDER BY (provider_message_id=%s) DESC LIMIT 1
             FOR UPDATE
             """,
-            [row["provider"], row["provider_message_id"]],
+            [row["provider"], row["provider_message_id"], row["provider_request_id"],
+             row["payload_hash"], row["provider_message_id"]],
         )
         existing = self.cursor.fetchone()
         if existing is not None:
@@ -107,6 +110,7 @@ class ProviderCallbackRepository:
             UPDATE authority_provider_callback_receipt
             SET attempt_count=attempt_count+1, processing_status='PROCESSING', updated_at=NOW()
             WHERE callback_receipt_id=%s AND project_id=%s
+              AND processing_status IN ('PENDING','PROCESSING','FAILED_RETRYABLE')
             RETURNING attempt_count
             """,
             [callback_receipt_id, project_id],
@@ -151,8 +155,11 @@ class ProviderCallbackRepository:
             SET processing_status=%s, processed_at=CASE WHEN %s='PROCESSED' THEN NOW() ELSE processed_at END,
                 last_error=%s, updated_at=NOW()
             WHERE callback_receipt_id=%s AND project_id=%s
+              AND processing_status='PROCESSING'
+              AND attempt_count=(SELECT attempt_number FROM authority_provider_callback_attempt
+                  WHERE callback_attempt_id=%s AND project_id=%s)
             """,
-            [status, status, error_detail, callback_receipt_id, project_id],
+            [status, status, error_detail, callback_receipt_id, project_id, attempt_id, project_id],
         )
 
 

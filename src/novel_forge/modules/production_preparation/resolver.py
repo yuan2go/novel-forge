@@ -422,6 +422,13 @@ class PostgresProductionAssetResolver:
         with AuthorityUnitOfWork(self.database_url) as uow:
             from novel_forge.storage.book_edition_repositories import BookEditionRepository
             if book_id:
+                if not book_run_id:
+                    uow.cursor.execute("""SELECT
+                        EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s),
+                        EXISTS(SELECT 1 FROM authority_book_edition_head WHERE book_id=%s)""",
+                        [project_id, book_id, book_id])
+                    if not any(uow.cursor.fetchone()):
+                        return ()
                 books = [book_id]
             else:
                 uow.cursor.execute("""SELECT DISTINCT production.book_id FROM authority_book_production production

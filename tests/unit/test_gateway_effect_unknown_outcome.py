@@ -80,6 +80,7 @@ def _assert_unknown_after_send(adapter: object) -> None:
     [
         "PROVIDER_INVOKING",
         "PROVIDER_OUTCOME_UNKNOWN",
+        "PROVIDER_RESULT_OBSERVED",
         "PROVIDER_RESULT_RECORDED",
         "PROCESS_STARTING",
         "PROCESS_OUTCOME_UNKNOWN",
@@ -109,6 +110,7 @@ def test_planning_gateway_uses_durable_submission_phase_after_lost_response(
     [
         "PROVIDER_INVOKING",
         "PROVIDER_OUTCOME_UNKNOWN",
+        "PROVIDER_RESULT_OBSERVED",
         "PROVIDER_RESULT_RECORDED",
         "PROCESS_STARTING",
         "PROCESS_OUTCOME_UNKNOWN",
@@ -224,6 +226,14 @@ def test_planning_scripted_fixture_preserves_authoritative_zero_usage() -> None:
                     }
                 },
             },
+            "HOLD_UNKNOWN",
+        ),
+        (
+            {"outcome": "retryable_failure", "provider_evidence": {
+                "request_sent": False, "production_execution": {"process_evidence": {
+                    "submission_phase": "PROVIDER_RESULT_OBSERVED",
+                }},
+            }},
             "HOLD_UNKNOWN",
         ),
     ],

@@ -1199,18 +1199,44 @@ def reconcile_external_effect(
         )
     _validate_frozen_adapter_capability(effect, adapter)
 
-    result = adapter.query(
-        stable_idempotency_key=effect["stable_idempotency_key"],
-        capability=effect["capability"],
-        request_payload={
-            **effect["request_payload"],
-            "provider_request_id": str(effect.get("provider_request_id") or ""),
-            "external_effect_id": effect["external_effect_id"],
-            "operation_id": effect["operation_id"],
-            "trace_id": context.trace_id,
-            "correlation_id": context.correlation_id,
-        },
-    )
+    fenced_gateway = bool(getattr(adapter, "production_execution_gateway_backed", False))
+    if fenced_gateway:
+        if effect["operation_id"] != context.operation_id:
+            raise KernelError("EFFECT_OPERATION_CONFLICT", "Recovery must use the original owning Operation")
+        if attempt_command is None:
+            raise KernelError("ATTEMPT_RECONCILIATION_COMMAND_REQUIRED", "Gateway reconciliation requires the current recovery Attempt fence")
+        with AuthorityUnitOfWork(database_url) as uow:
+            runtime = uow.repositories.attempt_runtime
+            attempt = runtime.get_for_update(attempt_command.attempt_id, context.project_id)
+            valid, _ = runtime.current_fence(attempt_command.attempt_id, attempt_command.worker_id, attempt_command.fencing_token)
+            if not valid or attempt_command.project_id != context.project_id or attempt["operation_id"] != context.operation_id:
+                raise KernelError("ATTEMPT_FENCING_TOKEN_STALE", "Gateway reconciliation requires the owning active recovery lease")
+            operation = runtime.operation_state(context.operation_id, context.project_id)
+            if operation["status"] in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}:
+                _cas_operation(uow, operation_id=context.operation_id, project_id=context.project_id,
+                    expected_status=operation["status"], expected_version=int(operation["version"]), target_status="EXECUTING",
+                    actor_id=attempt_command.worker_id, reason="fenced execution evidence reconciliation",
+                    trace_id=context.trace_id, correlation_id=context.correlation_id, causation_id=effect_id)
+            elif operation["status"] != "EXECUTING":
+                raise KernelError("OPERATION_STATUS_CONFLICT", "Gateway evidence reconciliation requires recoverable durable work")
+            uow.commit()
+    try:
+        result = adapter.query(
+            stable_idempotency_key=effect["stable_idempotency_key"],
+            capability=effect["capability"],
+            request_payload={
+                **effect["request_payload"],
+                "provider_request_id": str(effect.get("provider_request_id") or ""),
+                "external_effect_id": effect["external_effect_id"],
+                "operation_id": effect["operation_id"],
+                "trace_id": context.trace_id,
+                "correlation_id": context.correlation_id,
+            },
+        )
+    except Exception as exc:
+        if fenced_gateway:
+            raise KernelError("EXTERNAL_EFFECT_RECONCILIATION_REQUIRED", redact_secret_text(str(exc))) from exc
+        raise
 
     if result.outcome not in {
         "success",

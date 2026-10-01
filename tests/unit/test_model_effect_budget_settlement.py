@@ -166,14 +166,15 @@ def test_failed_provider_proven_no_send_releases_reservation() -> None:
     }
 
 
-def test_failed_provider_ambiguous_submission_holds_reservation() -> None:
+@pytest.mark.parametrize("phase", ["PROVIDER_OUTCOME_UNKNOWN", "PROVIDER_RESULT_OBSERVED"])
+def test_failed_provider_ambiguous_submission_holds_reservation(phase) -> None:
     decision = _model_failed_provider_budget_decision(
         dispatched={
             "outcome": "retryable_failure",
             "provider_evidence": {
                 "production_execution": {
                     "process_evidence": {
-                        "submission_phase": "PROVIDER_OUTCOME_UNKNOWN",
+                        "submission_phase": phase,
                     }
                 }
             },

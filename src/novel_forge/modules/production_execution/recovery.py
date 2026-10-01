@@ -133,6 +133,7 @@ def _record_to_dict(record: ExecutionRecord) -> dict[str, Any]:
         "handle": record.handle.to_dict(),
         "started_at": record.started_at,
         "raw_evidence": dict(record.raw_evidence),
+        "frozen_output_contract": dict(record.frozen_output_contract),
         "provider_result": _provider_result_to_dict(record.provider_result),
         "external_result": _external_result_to_dict(record.external_result),
         "process_receipt": (
@@ -175,6 +176,7 @@ def _record_from_dict(payload: Mapping[str, Any]) -> ExecutionRecord:
         handle=ExecutionHandle.from_dict(dict(payload.get("handle") or {})),
         started_at=str(payload.get("started_at") or ""),
         raw_evidence=dict(payload.get("raw_evidence") or {}),
+        frozen_output_contract=dict(payload.get("frozen_output_contract") or {}),
         provider_result=_provider_result_from_dict(
             payload.get("provider_result")
             if isinstance(payload.get("provider_result"), Mapping)

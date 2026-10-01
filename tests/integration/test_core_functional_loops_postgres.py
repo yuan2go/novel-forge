@@ -1552,9 +1552,10 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
         book_id,
         target_chapter_count=180 if autonomous_world == "long_novel_pilot" else 6 if autonomous_world == "operator_plan_change" else 3,
         world_foundation=approved_world,
-        world_production_policy={"planning_window_chapters": 2}
-        if autonomous_world == "preparation_expiry"
-        else None,
+        world_production_policy={
+            "context_token_budget": 16000,
+            **({"planning_window_chapters": 2} if autonomous_world == "preparation_expiry" else {}),
+        },
     )
     from tests.integration.test_postgresql_only_chapter_slice import (
         PostgreSQLOnlyChapterSliceTests,

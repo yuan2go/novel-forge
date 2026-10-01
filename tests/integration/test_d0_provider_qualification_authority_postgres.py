@@ -96,6 +96,23 @@ class _ContractOnlyLiveGateway:
         )
 
 
+def _fenced_source_worker(context: EffectCommandContext):
+    from novel_forge.modules.command_kernel.attempt_runtime import (
+        WorkerLeaseCommand, acquire_attempt_lease, create_attempt, queue_attempt, start_attempt,
+    )
+
+    identity = {"project_id": context.project_id, "trace_id": context.trace_id,
+                "correlation_id": context.correlation_id}
+    attempt = create_attempt(DATABASE_URL, operation_id=context.operation_id, max_attempts=1, **identity)
+    queue_attempt(DATABASE_URL, attempt_id=attempt["attempt_id"], **identity)
+    lease = acquire_attempt_lease(DATABASE_URL, attempt_id=attempt["attempt_id"],
+        worker_id="d0-live-effect-worker", lease_seconds=120, **identity)
+    worker = WorkerLeaseCommand(attempt_id=attempt["attempt_id"], worker_id="d0-live-effect-worker",
+        fencing_token=lease["fencing_token"], causation_id=context.operation_id, **identity)
+    start_attempt(DATABASE_URL, worker)
+    return worker
+
+
 class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -272,7 +289,7 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
                 definition_name=source_definition,
                 project_id=project_id,
                 workspace_id=workspace_id,
-                status="EXECUTING",
+                status="READY",
             )
         prompt_hash = "sha256:" + "d" * 64
         instruction_hash = "sha256:" + "e" * 64
@@ -341,6 +358,7 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
         )
+        worker = _fenced_source_worker(context)
         payload = {
             "stage": "d0_qualification",
             "input": {"probe": "d0"},
@@ -378,6 +396,7 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
             context,
             effect_id=str(effect["external_effect_id"]),
             adapter=adapter,
+            attempt_command=worker,
         )
         evidence = D0LiveQualificationEvidence.from_mapping(
             {

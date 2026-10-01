@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 import subprocess
 from threading import Lock
-from typing import Any, Mapping, Protocol
+from typing import Any, Callable, Mapping, Protocol
 
 from novel_forge.modules.provider_control.contracts import (
     ProviderCancellationRequest,
@@ -71,6 +71,17 @@ def _sha256(payload: Mapping[str, Any]) -> str:
     )
 
 
+def _freeze_output_contract(
+    request: ExecutionRequest, payload: ResolvedExecutionPayload, request_hash: str,
+) -> dict[str, Any]:
+    body = {
+        "schema_version": "provider-frozen-output-contract.v1",
+        "output_schema": json.loads(_canonical_json(payload.output_schema or {})),
+        "output_schema_version": payload.output_schema_version,
+        "request_hash": request_hash,
+        "execution_request_hash": request.contract_hash,
+    }
+    return {**body, "contract_hash": _sha256(body)}
 def observe_codex_cli_version(
     executable: str | Path,
     *,
@@ -901,6 +912,7 @@ class RemoteProviderExecutionBackend:
         payload_resolver: ExecutionPayloadResolver,
         record_store: ExecutionRecordStore,
         structured_result_validator: Any = None,
+        callback_consumer: Callable[..., Any] | None = None,
     ) -> None:
         if capability_profile.backend_id != backend_id:
             raise ValueError("remote backend capability identity mismatch")
@@ -970,6 +982,50 @@ class RemoteProviderExecutionBackend:
         self.payload_resolver = payload_resolver
         self.record_store = record_store
         self.structured_result_validator = structured_result_validator
+        self.callback_consumer = callback_consumer
+        self._callback_lock = Lock()
+
+    def _record_provider_result(
+        self, record: ExecutionRecord, result: ProviderInvocationResult,
+        *, reject_conflict: bool = False,
+    ) -> None:
+        raw_ref = self.record_store.put_evidence(
+            "provider-response", record.request.execution_id,
+            {"outcome": result.outcome, "request_sent": result.request_sent,
+             "evidence": dict(result.evidence)},
+        )
+        if not record.frozen_output_contract:
+            admission = self.admission._admit_frozen_contracts(record.request, self.capability_profile)
+            payload = self.payload_resolver.resolve(record.request, admission)
+            from .provider_admission import ProviderRequestEnvelope
+            envelope = ProviderRequestEnvelope.from_dict(payload.request_payload)
+            record.frozen_output_contract = _freeze_output_contract(record.request, payload, envelope.envelope_hash)
+        frozen = record.frozen_output_contract
+        body = {key: value for key, value in frozen.items() if key != "contract_hash"}
+        if frozen.get("contract_hash") != _sha256(body) or frozen.get("execution_request_hash") != record.request.contract_hash:
+            raise ValueError("PROVIDER_FROZEN_CONTRACT_CORRUPT: reconcile the original frozen request")
+        host = {key: frozen[key] for key in ("output_schema", "output_schema_version", "request_hash", "execution_request_hash")}
+        host.update({"operation_id": record.request.operation_id, "attempt_id": record.request.attempt_id,
+                     "fencing_token": record.request.fencing_token, "stage": record.request.stage,
+                     "external_effect_id": record.request.external_effect_id,
+                     "stable_idempotency_key": record.request.stable_idempotency_key,
+                     "provider_request_id": record.handle.provider_request_id,
+                     "provider_response_ref": raw_ref, "submission_phase": "PROVIDER_RESULT_RECORDED",
+                     "callback_evidence_hashes": record.raw_evidence.get("callback_evidence_hashes", {})})
+        evidence = dict(result.evidence)
+        conflicts = [key for key, value in host.items() if key in evidence and evidence[key] != value]
+        if "frozen_output_contract" in evidence and evidence["frozen_output_contract"] != frozen:
+            conflicts.append("frozen_output_contract")
+        if conflicts:
+            rejection = {"code": "PROVIDER_FROZEN_CONTRACT_CONFLICT", "fields": sorted(conflicts), "provider_response_ref": raw_ref}
+            self.record_store.put_evidence("provider-contract-rejection", record.request.execution_id, rejection)
+            if reject_conflict:
+                raise ValueError("PROVIDER_FROZEN_CONTRACT_CONFLICT: " + ", ".join(sorted(conflicts)))
+            evidence.update(failure_class="SCHEMA_REJECTION", output_validation_error=rejection)
+            result = replace(result, outcome="final_failure")
+        record.raw_evidence = {**evidence, **host}
+        record.provider_result = replace(result, evidence=record.raw_evidence)
+        self.record_store.save_record(record)
 
     def submit(self, request: ExecutionRequest) -> ExecutionHandle:
         admission = self.admission.admit(request, self.capability_profile)
@@ -1079,7 +1135,9 @@ class RemoteProviderExecutionBackend:
             request=request,
             handle=provisional_handle,
             started_at=_utc_now(),
+            frozen_output_contract=_freeze_output_contract(request, payload, envelope.envelope_hash),
             raw_evidence={
+                "output_schema": dict(payload.output_schema or {}),
                 "submission_phase": "PROVIDER_INVOKING",
                 "manual_resolution_required_on_restart": True,
                 "output_schema_version": payload.output_schema_version,
@@ -1138,19 +1196,30 @@ class RemoteProviderExecutionBackend:
                 else CapabilityAvailability.UNSUPPORTED
             ),
         )
-        evidence = dict(provider_result.evidence)
-        evidence.setdefault("output_schema_version", payload.output_schema_version)
-        evidence["output_schema"] = dict(payload.output_schema or {})
-        evidence["submission_phase"] = "PROVIDER_RESULT_RECORDED"
         record.handle = handle
-        record.raw_evidence = evidence
         record.provider_result = provider_result
+        record.raw_evidence["submission_phase"] = "PROVIDER_RESULT_OBSERVED"
         self.record_store.save_record(record)
+        self._record_provider_result(record, provider_result)
         return handle
 
-    def reconcile(self, handle: ExecutionHandle) -> ExecutionResult:
+    def reconcile(self, handle: ExecutionHandle, *, _consume_callback: bool = True) -> ExecutionResult:
         record = self.record_store.get_record(handle.execution_id)
-        if record.result is not None:
+        if record.handle.contract_hash != handle.contract_hash:
+            raise ValueError("execution handle differs from its frozen recovery record")
+        if _consume_callback and self.callback_consumer is not None and self.capability_profile.supports_callback and handle.provider_request_id:
+            callback_result = self.callback_consumer(
+                project_id=record.request.project_id,
+                external_effect_id=record.request.external_effect_id,
+                provider=self.provider_adapter.provider,
+                provider_request_id=handle.provider_request_id,
+                operation_id=record.request.operation_id,
+                attempt_id=record.request.attempt_id,
+                consume=lambda receipt: self.accept_callback(handle, receipt),
+            )
+            if callback_result is not None:
+                return callback_result
+        if record.result is not None and record.result.outcome is not ExecutionOutcome.UNKNOWN:
             return record.result
         if (
             record.cancellation is not None
@@ -1180,13 +1249,14 @@ class RemoteProviderExecutionBackend:
                     )
                 )
                 record.provider_result = provider_result
-                record.raw_evidence = {
-                    **dict(provider_result.evidence),
-                    "output_schema_version": record.raw_evidence.get("output_schema_version"),
-                    "output_schema": record.raw_evidence.get("output_schema"),
-                    "submission_phase": "PROVIDER_RESULT_RECORDED",
-                }
+                record.raw_evidence["submission_phase"] = "PROVIDER_RESULT_OBSERVED"
                 self.record_store.save_record(record)
+                self._record_provider_result(record, provider_result)
+                provider_result = record.provider_result
+        if (not record.frozen_output_contract
+                or record.raw_evidence.get("submission_phase") != "PROVIDER_RESULT_RECORDED"):
+            self._record_provider_result(record, provider_result)
+            provider_result = record.provider_result
         if provider_result.outcome == "success" and self.structured_result_validator is not None:
             evidence = dict(record.raw_evidence)
             try:
@@ -1312,11 +1382,19 @@ class RemoteProviderExecutionBackend:
     def accept_callback(
         self, handle: ExecutionHandle, receipt: ProviderReceipt
     ) -> ExecutionResult:
+        with self._callback_lock:
+            return self._accept_callback(handle, receipt)
+
+    def _accept_callback(
+        self, handle: ExecutionHandle, receipt: ProviderReceipt,
+    ) -> ExecutionResult:
         if not self.capability_profile.supports_callback:
             raise ValueError("remote execution route does not support callbacks")
         if receipt.provider_request_id != handle.provider_request_id:
             raise ValueError("provider callback does not match ExecutionHandle")
         record = self.record_store.get_record(handle.execution_id)
+        if record.handle.contract_hash != handle.contract_hash:
+            raise ValueError("execution handle differs from its frozen recovery record")
         if (
             record.cancellation is not None
             and record.cancellation.outcome is CancellationOutcome.CANCELLED
@@ -1338,25 +1416,40 @@ class RemoteProviderExecutionBackend:
         existing_callback = record.callback_receipts.get(receipt.message_id)
         if existing_callback is not None and existing_callback != callback_identity:
             raise ValueError("conflicting callback receipt")
+        evidence_hash = _sha256(dict(receipt.evidence))
+        saved_hash = record.raw_evidence.get("callback_evidence_hashes", {}).get(receipt.message_id)
+        if saved_hash is not None and saved_hash != evidence_hash:
+            raise ValueError("conflicting callback evidence")
         if existing_callback is not None and record.result is not None:
             return record.result
         accept = getattr(self.provider_adapter, "accept_callback", None)
         accepted = accept(receipt) if callable(accept) else receipt
-        record.callback_receipts[receipt.message_id] = callback_identity
-        if record.result is not None and record.raw_evidence == dict(accepted.evidence):
+        if record.result is not None and record.result.outcome is not ExecutionOutcome.UNKNOWN:
+            raw_ref = record.raw_evidence.get("provider_response_ref")
+            original = self.record_store.read_evidence(raw_ref) if raw_ref else {}
+            if original.get("outcome") != accepted.outcome or original.get("evidence") != dict(accepted.evidence):
+                self.record_store.put_evidence("late-provider-callback", handle.execution_id,
+                    {"message_id": receipt.message_id, "payload_hash": receipt.payload_hash,
+                     "outcome": receipt.outcome, "evidence": dict(receipt.evidence)})
+                raise ValueError("conflicting callback after terminal execution")
+            record.callback_receipts[receipt.message_id] = callback_identity
+            record.raw_evidence.setdefault("callback_evidence_hashes", {})[receipt.message_id] = evidence_hash
+            self.record_store.save_record(record)
             return record.result
         prior = record.provider_result
         provider_handle = prior.handle if prior is not None else None
-        record.provider_result = ProviderInvocationResult(
+        provider_result = ProviderInvocationResult(
             accepted.outcome,
             provider_handle,
             dict(accepted.evidence),
             True,
         )
-        record.raw_evidence = dict(accepted.evidence)
+        self._record_provider_result(record, provider_result, reject_conflict=True)
+        record.callback_receipts[receipt.message_id] = callback_identity
+        record.raw_evidence.setdefault("callback_evidence_hashes", {})[receipt.message_id] = evidence_hash
         record.result = None
         self.record_store.save_record(record)
-        return self.reconcile(handle)
+        return self.reconcile(handle, _consume_callback=False)
 
 
 class _CodexResultFailure(ValueError):
@@ -1543,6 +1636,7 @@ class CodexCliExecutionBackend:
             request=request,
             handle=provisional_handle,
             started_at=_utc_now(),
+            frozen_output_contract=_freeze_output_contract(request, payload, _sha256(payload.request_payload)),
             raw_evidence={
                 "submission_phase": "PROCESS_STARTING",
                 "output_schema_version": payload.output_schema_version,
@@ -1937,7 +2031,8 @@ class CodexCliExecutionBackend:
                 "Codex result must be a JSON object",
                 retryable=False,
             )
-        output_schema = record.raw_evidence.get("output_schema")
+        frozen = record.frozen_output_contract or record.raw_evidence
+        output_schema = frozen.get("output_schema")
         stage = str(record.raw_evidence.get("stage") or record.request.stage)
         normalized: Mapping[str, Any] = parsed
         if self.structured_result_validator is not None:
@@ -1950,7 +2045,7 @@ class CodexCliExecutionBackend:
             try:
                 normalized = _validate_frozen_structured_result(
                     self.structured_result_validator, stage, output_schema, parsed,
-                    str(record.raw_evidence.get("output_schema_version") or ""),
+                    str(frozen.get("output_schema_version") or ""),
                 )
             except ValueError as exc:
                 code = str(getattr(exc, "code", ""))

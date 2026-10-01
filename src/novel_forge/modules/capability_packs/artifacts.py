@@ -279,7 +279,8 @@ def default_chapter_artifact_resolver(
             "skills/context-builder-source-isolation/SKILL.md",
         ),
         ("prose-generation", "prose-generation-v1", "skills/prose-generation/legacy-v1.md"),
-        ("prose-generation", "prose-generation-v2", "skills/prose-generation/SKILL.md"),
+        ("prose-generation", "prose-generation-v2", "skills/prose-generation/legacy-v2.md"),
+        ("prose-generation", "prose-generation-v3", "skills/prose-generation/SKILL.md"),
         ("quality-review", "quality-review-v1", "skills/quality-review/legacy-v1.md"),
         ("quality-review", "quality-review-v2", "skills/quality-review/SKILL.md"),
         (
@@ -339,6 +340,12 @@ def default_chapter_artifact_resolver(
             "prompt-template:chapter-generation-pack",
             "v4",
             "config/capability_packs/artifacts/chapter_generation_template.md",
+        ),
+        (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:chapter-generation-pack",
+            "v5",
+            "config/capability_packs/artifacts/chapter_generation_template_v5.md",
         ),
         (
             ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,

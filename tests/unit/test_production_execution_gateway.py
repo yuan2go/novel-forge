@@ -77,6 +77,7 @@ class _RemoteTransport:
         self.result = result
         self.last_request = None
         self.execute_calls = 0
+        self.query_calls = 0
 
     def execute(self, request):
         self.last_request = request
@@ -99,6 +100,7 @@ class _RemoteTransport:
         }
 
     def query(self, request):
+        self.query_calls += 1
         return {
             "outcome": "success",
             "request_sent": True,
@@ -106,7 +108,7 @@ class _RemoteTransport:
             "provider_correlation_id": request.provider_request_id,
             "completion_mode": "synchronous",
             "evidence": {
-                "result": {"text": "queried remote result"},
+                "result": self.result if self.result is not None else {"text": "queried remote result"},
                 "usage": {"input_tokens": 2, "output_tokens": 3},
                 "cost": {"amount": "0.01", "currency": "USD"},
             },
@@ -743,59 +745,127 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         self.assertEqual(transport.execute_calls, 1)
         self.assertEqual(calls, 2)
 
+    def test_remote_provider_cannot_change_frozen_contract_on_completion(self):
+        from novel_forge.api.authority_dependencies import validate_production_structured_result
+        from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema
+
+        for completion in ("sync", "query", "callback"):
+            for key, forged in (("output_schema_version", "schema:chapter-provider-output:draft:v2"),
+                                ("output_schema", {"type": "object"}),
+                                ("fencing_token", 8)):
+                capability, profile, policy, route, manifest, request = contracts(
+                    backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)
+                admission = AdmissionController(StaticExecutionContractSource(
+                    route_snapshots=(route,), model_profiles=(profile,), route_policies=(policy,), input_manifests=(manifest,)),
+                    StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}))
+                adapter, transport = _remote_adapter("success" if completion == "sync" else "unknown_after_send")
+                original_execute = transport.execute
+                original_query = transport.query
+                if completion == "sync":
+                    def execute(value):
+                        response = original_execute(value)
+                        response["evidence"][key] = forged
+                        return response
+                    transport.execute = execute
+                elif completion == "query":
+                    def query(value):
+                        response = original_query(value)
+                        response["evidence"][key] = forged
+                        return response
+                    transport.query = query
+                ref = "schema:chapter-provider-output:draft:v3"
+                payload = replace(_admitted_remote_payload(request, "frozen prose"),
+                                  output_schema_version=ref, output_schema=chapter_provider_output_schema("draft"))
+                backend = RemoteProviderExecutionBackend(backend_id="remote-provider", capability_profile=capability,
+                    provider_adapter=adapter, admission=admission, payload_resolver=StaticExecutionPayloadResolver({request.execution_id: payload}),
+                    record_store=InMemoryExecutionRecordStore(), structured_result_validator=validate_production_structured_result)
+                handle = backend.submit(request)
+                if completion == "callback":
+                    with self.assertRaisesRegex(ValueError, "PROVIDER_FROZEN_CONTRACT_CONFLICT"):
+                        backend.accept_callback(handle, ProviderReceipt(provider_request_id=handle.provider_request_id,
+                            receipt_id="receipt:forged", message_id="message:forged", outcome="success", payload_hash=HASH,
+                            evidence={key: forged, "result": {"text": "forged"}}))
+                else:
+                    self.assertEqual(backend.reconcile(handle).outcome, ExecutionOutcome.FINAL_FAILURE)
+                frozen = backend.record_store.get_record(request.execution_id).frozen_output_contract
+                self.assertEqual(frozen["output_schema_version"], ref)
+                self.assertEqual(frozen["output_schema"], payload.output_schema)
+                self.assertEqual(transport.execute_calls, 1)
+
     def test_remote_backend_uses_frozen_canon_semantics(self):
         from novel_forge.api.authority_dependencies import validate_production_structured_result
         from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema
 
-        for legacy, obligation_type, payoff, expected in (
-            (False, "PROMISE", None, ExecutionOutcome.SUCCEEDED),
-            (True, "PROMISE", None, ExecutionOutcome.FINAL_FAILURE),
-            (False, "CAUSAL_DEBT", None, ExecutionOutcome.FINAL_FAILURE),
-        ):
-            capability, profile, policy, route, manifest, request = contracts(
-                backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)
-            ref = "schema:chapter-provider-output:canon_extraction:" + ("v18" if legacy else "v20")
-            route = replace(route, output_schema_ref=ref)
-            request = replace(request, stage="canon_extraction")
-            schema = chapter_provider_output_schema("canon_extraction", legacy_contract=legacy)
-            result = {
-                key: [] for key in schema["required"]
-                if schema["properties"][key].get("type") == "array"
-            }
-            result.update(extraction_status="EXTRACTED", no_change_reason="")
-            obligation = {
-                "obligation_id": "promise:one", "obligation_type": obligation_type,
-                "causal_requirement": None, "causal_plan_asset_version_id": None,
-                "from_status": "OPEN", "status": "FULFILLED", "priority": "HIGH",
-                "target_window": {"status": "SCHEDULED", "from_chapter": 1, "to_chapter": 1},
-                "payoff_evidence": payoff, "linked_arc_ids": [],
-                "summary": "她兑现了承诺。", "evidence_quote": "她兑现了承诺。",
-                "claim_kind": "OBJECTIVE_EVENT", "confidence": 0.9,
-                "impact_type": "obligation_payoff",
-            }
-            if legacy:
-                obligation.update(evidence_start=0, evidence_end=8)
-            result["obligation_changes"] = [obligation]
-            admission = AdmissionController(
-                StaticExecutionContractSource(
-                    route_snapshots=(route,), model_profiles=(profile,),
-                    route_policies=(policy,), input_manifests=(manifest,)),
-                StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
-            )
-            adapter, transport = _remote_adapter("success", result)
-            payload = replace(_admitted_remote_payload(request, "frozen canon prompt"),
-                              output_schema_version=ref, output_schema=schema)
-            store = InMemoryExecutionRecordStore()
-            backend = RemoteProviderExecutionBackend(
-                backend_id="remote-provider", capability_profile=capability,
-                provider_adapter=adapter, admission=admission,
-                payload_resolver=StaticExecutionPayloadResolver({request.execution_id: payload}),
-                record_store=store, structured_result_validator=validate_production_structured_result,
-            )
-            observed = backend.reconcile(backend.submit(request))
-            self.assertEqual(observed.outcome, expected)
-            self.assertEqual(transport.execute_calls, 1)
-            self.assertEqual(store.get_record(request.execution_id).raw_evidence["output_schema_version"], ref)
+        for completion in ("sync", "query", "callback"):
+            for legacy, obligation_type, payoff, expected in (
+                (False, "PROMISE", None, ExecutionOutcome.SUCCEEDED),
+                (True, "PROMISE", None, ExecutionOutcome.FINAL_FAILURE),
+                (False, "CAUSAL_DEBT", None, ExecutionOutcome.FINAL_FAILURE),
+            ):
+                capability, profile, policy, route, manifest, request = contracts(
+                    backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)
+                ref = "schema:chapter-provider-output:canon_extraction:" + ("v18" if legacy else "v20")
+                route = replace(route, output_schema_ref=ref)
+                request = replace(request, stage="canon_extraction")
+                schema = chapter_provider_output_schema("canon_extraction", legacy_contract=legacy)
+                result = {
+                    key: [] for key in schema["required"]
+                    if schema["properties"][key].get("type") == "array"
+                }
+                result.update(extraction_status="EXTRACTED", no_change_reason="")
+                obligation = {
+                    "obligation_id": "promise:one", "obligation_type": obligation_type,
+                    "causal_requirement": None, "causal_plan_asset_version_id": None,
+                    "from_status": "OPEN", "status": "FULFILLED", "priority": "HIGH",
+                    "target_window": {"status": "SCHEDULED", "from_chapter": 1, "to_chapter": 1},
+                    "payoff_evidence": payoff, "linked_arc_ids": [],
+                    "summary": "她兑现了承诺。", "evidence_quote": "她兑现了承诺。",
+                    "claim_kind": "OBJECTIVE_EVENT", "confidence": 0.9,
+                    "impact_type": "obligation_payoff",
+                }
+                if legacy:
+                    obligation.update(evidence_start=0, evidence_end=8)
+                result["obligation_changes"] = [obligation]
+                admission = AdmissionController(
+                    StaticExecutionContractSource(
+                        route_snapshots=(route,), model_profiles=(profile,),
+                        route_policies=(policy,), input_manifests=(manifest,)),
+                    StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+                )
+                adapter, transport = _remote_adapter("success" if completion == "sync" else "unknown_after_send", result)
+                payload = replace(_admitted_remote_payload(request, "frozen canon prompt"),
+                                  output_schema_version=ref, output_schema=schema)
+                store = InMemoryExecutionRecordStore()
+                backend = RemoteProviderExecutionBackend(
+                    backend_id="remote-provider", capability_profile=capability,
+                    provider_adapter=adapter, admission=admission,
+                    payload_resolver=StaticExecutionPayloadResolver({request.execution_id: payload}),
+                    record_store=store, structured_result_validator=validate_production_structured_result,
+                )
+                handle = backend.submit(request)
+                if legacy:
+                    old_record = store.get_record(request.execution_id)
+                    old_record.frozen_output_contract = {}
+                    old_record.raw_evidence.update(output_schema_version="untrusted:provider-ref", output_schema={})
+                    store.save_record(old_record)
+                if completion == "callback":
+                    observed = backend.accept_callback(handle, ProviderReceipt(
+                        provider_request_id=handle.provider_request_id, receipt_id="receipt:canon",
+                        message_id="message:canon", outcome="success", payload_hash=HASH,
+                        evidence={"result": result},
+                    ))
+                else:
+                    observed = backend.reconcile(handle)
+                self.assertEqual(observed.outcome, expected)
+                self.assertEqual(transport.execute_calls, 1)
+                self.assertEqual(store.get_record(request.execution_id).raw_evidence["output_schema_version"], ref)
+                if expected is ExecutionOutcome.SUCCEEDED:
+                    evidence = self._model_call_evidence(
+                        (capability, profile, policy,
+                         replace(route, output_schema_ref="schema:domain-asset:canon"), manifest, request),
+                        None, store, handle, observed,
+                    )
+                    self.assertEqual(evidence["result"]["obligation_changes"][0]["obligation_type"], "PROMISE")
 
     def test_remote_backend_accepts_edits_only_for_frozen_targeted_revision(self):
         from novel_forge.api.authority_dependencies import validate_production_structured_result
@@ -1393,6 +1463,18 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
 
         self.assertEqual(first.outcome, ExecutionOutcome.SUCCEEDED)
         self.assertEqual(first.contract_hash, duplicate.contract_hash)
+        record = backend.record_store.get_record(handle.execution_id)
+        self.assertEqual(record.raw_evidence["output_schema_version"], "chapter-draft.v1")
+        self.assertEqual(record.raw_evidence["output_schema"], {})
+        self.assertEqual(backend.record_store.read_evidence(record.raw_evidence["provider_response_ref"])["evidence"], receipt.evidence)
+        self.assertEqual(gateway.accept_callback(handle, replace(receipt, message_id="duplicate:new-message")), first)
+        with self.assertRaisesRegex(ValueError, "conflicting callback evidence"):
+            gateway.accept_callback(handle, replace(receipt, evidence={"result": {"text": "changed under same hash"}}))
+        with self.assertRaisesRegex(ValueError, "terminal execution"):
+            gateway.accept_callback(handle, replace(receipt, message_id="conflict:new-message", evidence={"result": {"text": "changed"}}))
+        with self.assertRaises(ValueError):
+            gateway.accept_callback(replace(handle, fencing_token=8), receipt)
+        self.assertEqual(backend.reconcile(handle), first)
 
         conflicting = ProviderReceipt(
             provider_request_id=handle.provider_request_id,

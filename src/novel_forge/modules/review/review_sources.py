@@ -159,7 +159,7 @@ def prose_origin(cursor, document, book_id, depth=0):
         return {"adopted_version": _ref(document), "source": source, "model_origins": models}
     if document.asset_type not in {"draft_chapter", "draft_version"}:
         _invalid("Unknown prose source; select an exact native authored or generated draft")
-    from .cross_model_review import generator_identity
+    from .cross_model_binding import generator_identity
     original = generator_identity(cursor, project_id=document.project_id, book_id=book_id,
         asset_version_id=document.asset_version_id, content_hash=document.content_hash)
     return {"generated_version": _ref(document), "model_origins": [original["generator"]]}
