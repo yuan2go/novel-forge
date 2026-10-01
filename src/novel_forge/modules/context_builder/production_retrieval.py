@@ -583,6 +583,18 @@ def discover_accepted_retrieval_candidates(
     frozen_query_plan["candidate_projection_cutoff"] = cutoff.isoformat()
     if dependency_trace is not None:
         frozen_query_plan["task_dependency_discovery"] = dependency_trace
+        if "task_dependency_discovery" not in query_plan:
+            initial_obligations = set(_ids(dependency_trace.get("protected_initial_obligation_ids")))
+            coverage = dict(frozen_query_plan.get("coverage_contract") or {})
+            required_obligations = set(_ids(dict(coverage.get("required") or {}).get("obligation_ids")))
+            protected_initial = initial_obligations & required_obligations
+            if protected_initial:
+                protected = dict(coverage.get("protected_evidence") or {})
+                protected["obligation_ids"] = sorted(set(_ids(protected.get("obligation_ids"))) | protected_initial)
+                coverage["protected_evidence"] = protected
+                coverage.pop("coverage_contract_fingerprint", None)
+                coverage["coverage_contract_fingerprint"] = _hash(coverage)
+                frozen_query_plan["coverage_contract"] = coverage
     frozen_query_plan.pop("query_plan_fingerprint", None)
     frozen_query_plan["query_plan_fingerprint"] = _hash(frozen_query_plan)
     documents = tuple(_document_from_row(row) for row in rows)

@@ -102,7 +102,7 @@ def test_obligation_boundary_discovery_blocks_instead_of_truncating_excess_event
 
 
 @pytest.mark.parametrize("chapter,alias", [(0, ""), (0, "original-initial-alias"), (1, ""), (1, "original-initial-alias")])
-def test_initial_obligation_discovery_validates_original_state_without_accepted_planting(chapter, alias) -> None:
+def test_initial_obligation_discovery_validates_original_state_without_accepted_planting(chapter, alias, monkeypatch) -> None:
     from copy import deepcopy
     from types import SimpleNamespace
     from novel_forge.modules.context_builder.production_retrieval import _discover_task_dependencies, build_task_dependency_refs
@@ -123,11 +123,15 @@ def test_initial_obligation_discovery_validates_original_state_without_accepted_
             self.row = row
             self.history_queries = 0
         def execute(self, query, parameters):
+            self.query = query
             if "authority_narrative_reality_revision" in query:
                 self.history_queries += 1
-            else:
-                assert "version.content" in query and parameters == ["state:current", "project"]
+            elif "SELECT version.content_hash, version.content" in query:
+                assert parameters == ["state:current", "project"]
         def fetchone(self):
+            if "clock_timestamp()" in self.query:
+                from datetime import datetime, timezone
+                return [datetime(2026, 10, 1, tzinfo=timezone.utc)]
             return self.row
         def fetchall(self):
             return []
@@ -138,6 +142,38 @@ def test_initial_obligation_discovery_validates_original_state_without_accepted_
     assert documents == () and trace["protected_initial_obligation_ids"] == ["initial-promise"]
     assert trace["protected_initial_obligation_sources"] == dependencies["protected_initial_obligations"]
     assert trace["required_obligation_ids"] == ["initial-promise"] and trace["matched_documents_by_obligation"] == {} and cursor.history_queries == 0
+    from novel_forge.modules.context_builder import production_retrieval
+    from novel_forge.modules.context_builder.retrieval_campaign import evaluate_retrieval_coverage
+    class Uow:
+        def __init__(self):
+            self.cursor = Cursor(row)
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+    monkeypatch.setattr(production_retrieval, "AuthorityUnitOfWork", lambda _url: Uow())
+    intent = {"chapter": chapter + 1, "intent_fingerprint": narrative_hash("intent"), "accepted_boundary": boundary,
+              "active_obligations": [{"state": state}], "retrieval_graph": {}, "required_arc_contributions": []}
+    memo = {"chapter": chapter + 1, "qualification": "QUALIFIED", "memo_fingerprint": narrative_hash("memo"), "accepted_boundary": boundary,
+            "retrieval_queries": ["initial promise"], "obligation_actions": [{"obligation_id": "initial-promise"}], "arc_actions": []}
+    query = production_retrieval.build_retrieval_query_plan(intent=intent, memo=memo, semantic_policy="DISABLED", task_dependency_refs=dependencies)
+    original_coverage = deepcopy(query["coverage_contract"])
+    assert original_coverage["protected_evidence"]["obligation_ids"] == []
+    discovery = production_retrieval.discover_accepted_retrieval_candidates("fixture", project_id="project", book_id="book", query_plan=query)
+    coverage = discovery.query_plan["coverage_contract"]
+    assert coverage["protected_evidence"]["obligation_ids"] == (["initial-promise"] if chapter else [])
+    assert evaluate_retrieval_coverage(contract=coverage, documents=())["sufficient"] is True
+    if chapter:
+        assert coverage["coverage_contract_fingerprint"] != original_coverage["coverage_contract_fingerprint"]
+        assert evaluate_retrieval_coverage(contract=original_coverage, documents=())["sufficient"] is False
+    assert discovery.query_plan["query_plan_fingerprint"] != query["query_plan_fingerprint"]
+    replay = production_retrieval.discover_accepted_retrieval_candidates("fixture", project_id="project", book_id="book", query_plan=discovery.query_plan)
+    assert replay.query_plan == discovery.query_plan
+    legacy_frozen = {**discovery.query_plan, "coverage_contract": original_coverage}
+    legacy_frozen.pop("query_plan_fingerprint")
+    legacy_frozen["query_plan_fingerprint"] = narrative_hash(legacy_frozen)
+    legacy = production_retrieval.discover_accepted_retrieval_candidates("fixture", project_id="project", book_id="book", query_plan=legacy_frozen)
+    assert legacy.query_plan == legacy_frozen
     changed_state = deepcopy(original)
     changed_state["current_state"]["narrative_obligation"][0]["state"]["condition"] = "invented candidate condition"
     progressed = deepcopy(original)

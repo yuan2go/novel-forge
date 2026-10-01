@@ -761,3 +761,90 @@ def test_obligation_same_chapter_endpoints_use_entity_versions_or_keep_uncertain
     ]
     assert (outcome["source_asset_version_id"], outcome["source_content_hash"]) == (outcome_version, outcome_hash)
     assert (by_id[prose_id]["source_asset_version_id"], by_id[prose_id]["source_content_hash"]) == (prose_version, prose_hash)
+
+
+def test_unadvanced_initial_obligation_uses_verified_source_in_frozen_campaign_and_replay() -> None:
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset, ChapterNode
+    from novel_forge.modules.chapter_authority.handlers import build_chapter_handler_registry
+    from novel_forge.modules.context_builder.retrieval_campaign import evaluate_retrieval_coverage
+    from novel_forge.modules.context_builder.retrieval_campaign_store import load_retrieval_rounds
+    from novel_forge.modules.narrative_state import compact_current_state_facts
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+    ensure_migrated()
+    project_id = identifier("initial-obligation-campaign-project")
+    book_id = f"book:{project_id}"
+    seed_authority_project_book(project_id=project_id, workspace_id=f"workspace:{project_id}", book_id=book_id)
+    operation, worker = _start_retrieval_attempt(project_id)
+    versions = {role: identifier(f"initial-obligation-{role}") for role in ("state", "canon", "plan", "intent", "memo")}
+    obligation = "promise:unadvanced-initial"
+    state = {"obligation_id": obligation, "status": "OPEN", "priority": "HIGH", "condition": "only if the key returns"}
+    original = {"contract_version": "story-state-snapshot-v2", "project_id": project_id, "book_id": book_id, "accepted_through_chapter": 1,
+                "current_state": {"narrative_obligation": [{"entity_key": f"obligation_id={obligation}", "state": state,
+                    "source_chapter": 0, "effective_from_chapter": 0, "source_event_id": ""}]}}
+    boundary = {"accepted_through_chapter": 1, "story_state_asset_version_id": versions["state"], "canon_snapshot_asset_version_id": versions["canon"]}
+    intent = {"chapter": 2, "intent_fingerprint": narrative_hash("initial intent"), "accepted_boundary": boundary,
+              "active_obligations": [{"state": state}], "required_arc_contributions": [], "retrieval_graph": {}}
+    memo = {"chapter": 2, "qualification": "QUALIFIED", "memo_fingerprint": narrative_hash("initial memo"), "accepted_boundary": boundary,
+            "retrieval_queries": ["initial promise"], "obligation_actions": [{"obligation_id": obligation}], "arc_actions": []}
+    plan = {"project_id": project_id, "book_id": book_id, "chapter": 2}
+    payloads = {"state": original, "canon": {"contract_version": "canon-snapshot-v2", "project_id": project_id, "book_id": book_id, "accepted_through_chapter": 1, "current_facts": []},
+                "plan": plan, "intent": intent, "memo": memo}
+    types = {"state": "story_state_snapshot", "canon": "canon_snapshot", "plan": "chapter_plan", "intent": "chapter_execution_intent", "memo": "chapter_memo"}
+    with transaction() as connection, connection.cursor() as cursor:
+        for role, content in payloads.items():
+            asset = identifier(f"initial-campaign-{role}-asset")
+            cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)", [asset, project_id, types[role]])
+            cursor.execute("""INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version)
+                VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,%s)""", [versions[role], asset, Jsonb(content), narrative_hash(content), f"{types[role]}.v2"])
+    candidate = {"asset_type": "story_state_snapshot", "asset_version_id": versions["state"], "content_hash": narrative_hash(original),
+                 "accepted_boundary": boundary, "structured_facts": compact_current_state_facts(original)}
+    dependencies = build_task_dependency_refs(plan=plan, current_candidates=[candidate])
+    query = build_retrieval_query_plan(intent=intent, memo=memo, semantic_policy="DISABLED", task_dependency_refs=dependencies)
+    original_coverage = deepcopy(query["coverage_contract"])
+    assert evaluate_retrieval_coverage(contract=original_coverage, documents=())["missing"] == {"obligation_ids": [obligation]}
+    discovery = discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=query)
+    assert discovery.documents == ()
+    coverage = discovery.query_plan["coverage_contract"]
+    assert coverage["protected_evidence"]["obligation_ids"] == [obligation]
+    assert coverage["coverage_contract_fingerprint"] != original_coverage["coverage_contract_fingerprint"]
+    assert coverage["coverage_contract_fingerprint"] == narrative_hash({key: value for key, value in coverage.items() if key != "coverage_contract_fingerprint"})
+    assert discovery.query_plan["query_plan_fingerprint"] == narrative_hash({key: value for key, value in discovery.query_plan.items() if key != "query_plan_fingerprint"})
+    class NoModelCalls:
+        calls = 0
+        def invoke(self, *args, **kwargs):
+            self.calls += 1
+            raise AssertionError("verified initial obligation requires no Provider call")
+    provider = NoModelCalls()
+    handler = build_chapter_handler_registry(provider).require(ChapterNode.RETRIEVAL)
+    request = ChapterHandlerRequest(operation_id=operation, project_id=project_id, workspace_id=f"workspace:{project_id}", trace_id=identifier("initial-campaign-trace"),
+        correlation_id=operation, command={"book_id": book_id, "retrieval_snapshot": {"query_plan": discovery.query_plan, "documents": [], "rejected_documents": [], "semantic_status": discovery.semantic_status}},
+        inputs=tuple(ChapterInputAsset(asset_version_id=versions[role], asset_type=types[role], content_hash=narrative_hash(payloads[role]), content=payloads[role]) for role in ("plan", "intent", "memo")),
+        attempt_id=worker.attempt_id, fencing_token=worker.fencing_token, worker_id=worker.worker_id, database_url=DATABASE_URL)
+    first = handler.execute(request)
+    replay = handler.execute(request)
+    assert first.content == replay.content and provider.calls == 0
+    campaign = first.content["retrieval_campaign"]
+    assert campaign["coverage"]["sufficient"] is True and campaign["coverage"]["missing"] == {}
+    assert campaign["coverage"]["protected_evidence"]["obligation_ids"] == [obligation]
+    assert campaign["round_count"] == 1 and campaign["termination_reason"] == "REQUIRED_EVIDENCE_SATISFIED"
+    rounds = load_retrieval_rounds(DATABASE_URL, campaign_id=campaign["campaign_id"])
+    assert len(rounds) == 1 and rounds[0]["query_plan"]["coverage_contract"] == coverage
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s", [operation])
+        assert cursor.fetchone()[0] == 0
+        cursor.execute("SELECT content_hash,content FROM authority_asset_version WHERE asset_version_id=%s", [versions["state"]])
+        assert cursor.fetchone() == (narrative_hash(original), original)
+    tampered = deepcopy(candidate)
+    tampered["structured_facts"][0]["state"]["condition"] = "invented condition"
+    bad_query = build_retrieval_query_plan(intent=intent, memo=memo, semantic_policy="DISABLED", task_dependency_refs=build_task_dependency_refs(plan=plan, current_candidates=[tampered]))
+    with pytest.raises(KernelError) as denied:
+        discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=bad_query)
+    assert denied.value.code == "RETRIEVAL_TASK_SOURCE_BINDING_INVALID"
+    rediscovered = discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=discovery.query_plan)
+    assert rediscovered.query_plan == discovery.query_plan
+    legacy_frozen = {**discovery.query_plan, "coverage_contract": original_coverage}
+    legacy_frozen.pop("query_plan_fingerprint")
+    legacy_frozen["query_plan_fingerprint"] = narrative_hash(legacy_frozen)
+    legacy = discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=legacy_frozen)
+    assert legacy.query_plan == legacy_frozen

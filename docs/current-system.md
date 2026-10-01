@@ -536,7 +536,10 @@ Frozen initial observations retain their original artifact/version/hash bindings
 they are not relabeled accepted Chapter events. Untouched initial obligations with
 both typed origin coordinates zero are verified against the exact frozen State
 artifact before being exempted from accepted-history discovery. Advanced obligations
-require their accepted planting and latest advance. Unknown causal aliases still block.
+require their accepted planting and latest advance. After immutable source validation,
+the new frozen retrieval coverage contract carries the verified initial obligation
+evidence into campaign sufficiency. Existing frozen contracts are not recomputed.
+Unknown causal aliases still block.
 
 The existing Context Operation applies `task-scoped-context.v1`: freeze the task
 and accepted boundary, select relevant inputs with bounded auxiliary history, close
