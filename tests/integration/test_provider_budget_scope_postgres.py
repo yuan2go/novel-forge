@@ -666,6 +666,23 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
             token_contract["input_token_ceiling"] + token_contract["max_output_tokens"],
             token_contract["estimated_total_tokens"],
         )
+        task_contract = resolve_provider_token_reservation_contract(
+            DATABASE_URL,
+            operation_id=fixture["operation_id"],
+            project_id=fixture["project_id"],
+            currency="USD",
+            frozen_request_token_ceiling=1_200,
+            requested_output_token_ceiling=800,
+        )
+        self.assertEqual(task_contract["contract_version"], "provider-token-reservation.v2")
+        self.assertEqual(task_contract["estimated_total_tokens"], 20_000)
+        self.assertEqual(task_contract["input_token_ceiling"], 1_200)
+        self.assertEqual(task_contract["max_output_tokens"], 800)
+        self.assertEqual(task_contract["budget_scope_id"], token_contract["budget_scope_id"])
+        self.assertEqual(task_contract["budget_scope_revision"], token_contract["budget_scope_revision"])
+        unchanged = create_or_get_budget_scope(DATABASE_URL, self._request(fixture))
+        self.assertTrue(unchanged.pop("replayed"))
+        self.assertEqual(unchanged, {key: value for key, value in scope.items() if key != "replayed"})
         with self.assertRaises(KernelError) as insufficient:
             resolve_provider_token_reservation_contract(
                 DATABASE_URL,

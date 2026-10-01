@@ -332,7 +332,7 @@ def test_successful_receipt_is_settled_before_retryable_retrieval_rejection(
     monkeypatch.setattr(
         model_effects,
         "resolve_provider_token_reservation_contract",
-        lambda *_a, **_kw: {"source": "REQUEST", "estimated_total_tokens": 10_000},
+        lambda *_a, **_kw: {"source": "REQUEST", "estimated_total_tokens": 10_000, "accounting_basis": "PRICED", "cost_authorization_ref": ""},
     )
     monkeypatch.setattr(
         model_effects, "read_external_effect_intent", lambda *_a, **_kw: None
@@ -530,7 +530,7 @@ def test_operator_pause_retains_frozen_reservation_without_reclassifying_unknown
     monkeypatch.setattr(port, "_execution_identity", lambda *_a, **_kw: (1, "worker"))
     monkeypatch.setattr(port, "_request_timeout_seconds", lambda _request: 30)
     monkeypatch.setattr(port, "completed_effect_result", lambda *_a: None)
-    monkeypatch.setattr(model_effects, "resolve_provider_token_reservation_contract", lambda *_a, **_kw: {"source": "REQUEST", "estimated_total_tokens": 10000})
+    monkeypatch.setattr(model_effects, "resolve_provider_token_reservation_contract", lambda *_a, **_kw: {"source": "REQUEST", "estimated_total_tokens": 10000, "accounting_basis": "PRICED", "cost_authorization_ref": ""})
     monkeypatch.setattr(model_effects, "read_external_effect_intent", lambda *_a, **_kw: None)
     monkeypatch.setattr(model_effects, "plan_external_effect", lambda *_a, **_kw: {"external_effect_id": "frozen-effect", "replayed": False})
     reserve = Mock(return_value={"reservation_id": "frozen-reservation", "execution_authorized": True})

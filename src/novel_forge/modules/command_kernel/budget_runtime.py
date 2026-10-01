@@ -239,6 +239,7 @@ def resolve_provider_token_reservation_contract(
     project_id: str,
     currency: str,
     frozen_request_token_ceiling: int,
+    requested_output_token_ceiling: int | None = None,
     accounting_basis: str = "PRICED",
     cost_authorization_ref: str = "",
 ) -> dict[str, Any]:
@@ -264,6 +265,9 @@ def resolve_provider_token_reservation_contract(
             "PROVIDER_TOKEN_CEILING_REQUIRED",
             "Provider execution requires a positive frozen token ceiling",
         )
+    output_ceiling = frozen_request_token_ceiling if requested_output_token_ceiling is None else requested_output_token_ceiling
+    if output_ceiling <= 0:
+        raise KernelError("PROVIDER_OUTPUT_TOKEN_CEILING_REQUIRED", "Provider output reserve must be positive")
     with AuthorityUnitOfWork(database_url) as uow:
         binding = resolve_book_opening_budget_scope_in_uow(
             uow,
@@ -311,7 +315,7 @@ def resolve_provider_token_reservation_contract(
                 str(allowance_amount) if allowance_amount is not None else None
             )
         else:
-            estimated_tokens = frozen_request_token_ceiling * 2
+            estimated_tokens = frozen_request_token_ceiling + output_ceiling
             source = "FROZEN_REQUEST_INPUT_PLUS_OUTPUT_CEILING"
             budget_scope_id = ""
             budget_scope_revision = None
@@ -328,11 +332,11 @@ def resolve_provider_token_reservation_contract(
                 "Provider token reservation must cover frozen input and positive output",
             )
         max_output_tokens = min(
-            frozen_request_token_ceiling,
+            output_ceiling,
             remaining_output_tokens,
         )
         contract = {
-            "contract_version": "provider-token-reservation.v1",
+            "contract_version": "provider-token-reservation.v1" if requested_output_token_ceiling is None else "provider-token-reservation.v2",
             "estimated_total_tokens": estimated_tokens,
             "input_token_ceiling": frozen_request_token_ceiling,
             "max_output_tokens": max_output_tokens,

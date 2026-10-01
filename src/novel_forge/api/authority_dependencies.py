@@ -216,6 +216,8 @@ _PACK_SKILL_FOR_STAGE = {
     "agent_session": "agent-loop-governance",
     "retrieval": "context-builder-source-isolation",
     "retrieval_query_expansion": "context-builder-source-isolation",
+    "context_compress": "context-builder-source-isolation",
+    "context_fidelity": "context-builder-source-isolation",
 }
 
 
@@ -508,6 +510,8 @@ def build_production_execution_composition(
         ),
     ]
     stage_routes.extend([
+        ("context_compress", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
+        ("context_fidelity", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
         ("screenplay_generate", "NOVEL_FORGE_DRAFT_PROVIDER", "NOVEL_FORGE_DRAFT_MODEL"),
         ("screenplay_review", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
         ("screenplay_revision", "NOVEL_FORGE_REVISION_PROVIDER", "NOVEL_FORGE_REVISION_MODEL"),
@@ -846,6 +850,11 @@ def build_production_execution_composition(
             model_context_limit=int(
                 values.get(f"NOVEL_FORGE_{stage.upper()}_MODEL_CONTEXT_LIMIT")
                 or values.get("NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT")
+                or 0
+            ),
+            model_output_limit=int(
+                values.get(f"NOVEL_FORGE_{stage.upper()}_MODEL_OUTPUT_LIMIT")
+                or values.get("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT")
                 or 0
             ),
             token_accounting_method=str(
@@ -2319,6 +2328,7 @@ def build_story_planning_generation_application(
         auth_profile_ref=base_route.auth_profile_ref,
         release_sha=base_route.release_sha,
         model_context_limit=base_route.model_context_limit,
+        model_output_limit=base_route.model_output_limit,
         token_accounting_method=base_route.token_accounting_method,
         token_accounting_evidence_ref=base_route.token_accounting_evidence_ref,
         token_safety_margin=base_route.token_safety_margin,

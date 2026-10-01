@@ -437,7 +437,7 @@ def _select_capability_skill(
         else "chapter-outline"
         if capability_id.startswith("planning.")
         else "context-builder-source-isolation"
-        if capability_id.startswith("retrieval.")
+        if capability_id.startswith("retrieval.") or capability_id == "context.task.compile"
         else "prose-generation"
         if capability_id.startswith(("prose.", "revision."))
         else "canon-continuity-graph"

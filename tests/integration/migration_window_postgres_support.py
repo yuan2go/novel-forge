@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import Any
 from uuid import uuid4
 
 import psycopg
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
+from psycopg.types.json import Jsonb
 
 from novel_forge.storage.migrations import MIGRATIONS
 from novel_forge.storage.migrations.runner import Migration, validate_migration_chain
@@ -18,6 +20,7 @@ from tests.integration.conftest import (
 
 PRE_WORKFLOW_MIGRATION_ID = "20260829_0103_book_opening_semantic_runtime_hardening"
 WORKFLOW_MIGRATION_ID = "20260829_0104_book_opening_workflow_nodes"
+_OWNED_MIGRATION_DATABASES: set[str] = set()
 
 
 def _database_url(base_database_url: str, database_name: str) -> str:
@@ -141,6 +144,7 @@ def disposable_database_at_migration(
                 sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database_name))
             )
         created = True
+        _OWNED_MIGRATION_DATABASES.add(test_url)
         _apply_migrations_through(
             test_url,
             target_migration_id=target_migration_id,
@@ -151,6 +155,7 @@ def disposable_database_at_migration(
         )
         yield test_url
     finally:
+        _OWNED_MIGRATION_DATABASES.discard(test_url)
         if created:
             with psycopg.connect(
                 admin_url,
@@ -168,3 +173,239 @@ def disposable_database_at_migration(
                 connection.execute(
                     sql.SQL("DROP DATABASE {}").format(sql.Identifier(database_name))
                 )
+
+
+def _fixture_table_rows(
+    connection: psycopg.Connection,
+) -> dict[str, tuple[tuple[str, ...], tuple[str, ...], list[tuple[Any, ...]]]]:
+    tables = connection.execute(
+        "SELECT table_name FROM information_schema.tables "
+        "WHERE table_schema='public' AND table_type='BASE TABLE' "
+        "AND table_name<>'nf_schema_migrations' ORDER BY table_name"
+    ).fetchall()
+    captured = {}
+    for (table_name,) in tables:
+        metadata = connection.execute(
+            "SELECT column_name,data_type FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position",
+            [table_name],
+        ).fetchall()
+        columns = tuple(str(row[0]) for row in metadata)
+        json_columns = tuple(
+            str(row[0]) for row in metadata if row[1] in {"json", "jsonb"}
+        )
+        ordering = (
+            sql.SQL(" ORDER BY fencing_token")
+            if table_name == "authority_lease_acquisition"
+            else sql.SQL("")
+        )
+        rows = connection.execute(
+            sql.SQL("SELECT {} FROM {}{}").format(
+                sql.SQL(",").join(map(sql.Identifier, columns)),
+                sql.Identifier(table_name),
+                ordering,
+            )
+        ).fetchall()
+        if rows:
+            captured[str(table_name)] = (columns, json_columns, rows)
+    return captured
+
+
+def _insert_historical_fixture_rows(
+    connection: psycopg.Connection,
+    tables: dict[str, tuple[tuple[str, ...], tuple[str, ...], list[tuple[Any, ...]]]],
+) -> None:
+    # WHY: SQL fixture construction obeys historical guards; dependencies can include
+    # trigger lookups beyond declared FKs, so each unsuccessful insert is rolled back.
+    pending = [
+        (name, columns, json_columns, row)
+        for name, (columns, json_columns, rows) in tables.items()
+        for row in rows
+    ]
+    deferred_generation_links = []
+    while pending:
+        remaining = []
+        errors = {}
+        for name, columns, json_columns, row in pending:
+            connection.execute("SAVEPOINT historical_fixture_row")
+            try:
+                inserted_row = list(row)
+                generation_link = None
+                lease_release = None
+                if (
+                    name == "authority_story_planning_generation"
+                    and row[columns.index("candidate_asset_version_id")] is not None
+                ):
+                    # WHY: The generation must exist before its candidate can refer
+                    # back to it; link that candidate after both SQL rows exist.
+                    generation_link = (
+                        row[columns.index("generation_id")],
+                        row[columns.index("candidate_asset_version_id")],
+                    )
+                    inserted_row[columns.index("candidate_asset_version_id")] = None
+                if (
+                    name == "authority_lease_acquisition"
+                    and row[columns.index("status")] != "HELD"
+                ):
+                    # WHY: Historical lease construction follows the original
+                    # HELD -> terminal guard rather than inserting a terminal lease.
+                    lease_release = {
+                        column: row[columns.index(column)]
+                        for column in ("status", "released_at", "release_reason")
+                    }
+                    inserted_row[columns.index("status")] = "HELD"
+                    inserted_row[columns.index("released_at")] = None
+                    inserted_row[columns.index("release_reason")] = ""
+                values = [
+                    Jsonb(value)
+                    if column in json_columns and value is not None
+                    else value
+                    for column, value in zip(columns, inserted_row, strict=True)
+                ]
+                connection.execute(
+                    sql.SQL("INSERT INTO {} ({}) VALUES ({})").format(
+                        sql.Identifier(name),
+                        sql.SQL(",").join(map(sql.Identifier, columns)),
+                        sql.SQL(",").join(sql.Placeholder() for _ in columns),
+                    ),
+                    values,
+                )
+                if lease_release is not None:
+                    connection.execute(
+                        "UPDATE authority_lease_acquisition SET status=%s,released_at=%s,release_reason=%s WHERE lease_id=%s",
+                        [
+                            lease_release["status"],
+                            lease_release["released_at"],
+                            lease_release["release_reason"],
+                            row[columns.index("lease_id")],
+                        ],
+                    )
+                if generation_link is not None:
+                    deferred_generation_links.append(generation_link)
+            except psycopg.Error as error:
+                connection.execute("ROLLBACK TO SAVEPOINT historical_fixture_row")
+                remaining.append((name, columns, json_columns, row))
+                errors[name] = str(error).splitlines()[0]
+            finally:
+                connection.execute("RELEASE SAVEPOINT historical_fixture_row")
+        if len(remaining) == len(pending):
+            raise AssertionError(
+                f"historical fixture dependencies cannot be satisfied: {errors}"
+            )
+        pending = remaining
+    for generation_id, candidate_version_id in deferred_generation_links:
+        connection.execute(
+            "UPDATE authority_story_planning_generation SET candidate_asset_version_id=%s WHERE generation_id=%s",
+            [candidate_version_id, generation_id],
+        )
+
+
+def _advance_fixture_sequences(connection: psycopg.Connection) -> None:
+    columns = connection.execute(
+        "SELECT table_name,column_name,pg_get_serial_sequence(table_name,column_name) "
+        "FROM information_schema.columns WHERE table_schema='public' "
+        "AND (column_default LIKE 'nextval(%' OR is_identity='YES')"
+    ).fetchall()
+    for table_name, column_name, sequence in columns:
+        if sequence is None:
+            continue
+        maximum = connection.execute(
+            sql.SQL("SELECT MAX({}) FROM {}").format(
+                sql.Identifier(column_name), sql.Identifier(table_name)
+            )
+        ).fetchone()[0]
+        if maximum is not None:
+            connection.execute("SELECT setval(%s,%s,true)", [sequence, maximum])
+
+
+def materialize_historical_fixture_at_migration(
+    database_url: str,
+    *,
+    target_migration_id: str,
+) -> dict[str, tuple[tuple[str, ...], tuple[str, ...], list[tuple[Any, ...]]]]:
+    """Construct historical SQL data; this does not execute current Runtime on old DDL.
+
+    Current-schema Runtime only produces controlled fixture data before this boundary.
+    Its compatible columns become historical SQL rows under all original constraints.
+    Later-only tables remain separate until the migration upgrade completes.
+    """
+    from novel_forge.storage.migrations import LATEST_MIGRATION_ID
+
+    assert_database_at_migration(database_url, target_migration_id=LATEST_MIGRATION_ID)
+    parameters = conninfo_to_dict(database_url)
+    database_name = require_disposable_test_database(parameters["dbname"])
+    assert database_url in _OWNED_MIGRATION_DATABASES, (
+        "historical fixture database is not owned by this test"
+    )
+    with psycopg.connect(database_url) as connection:
+        current = _fixture_table_rows(connection)
+    # WHY: Recreating this exact owned disposable database avoids holding hundreds
+    # of DDL locks while projecting current fixture rows into the old schema.
+    with psycopg.connect(
+        _database_url(database_url, "postgres"), autocommit=True
+    ) as connection:
+        connection.execute(
+            sql.SQL("DROP DATABASE {} WITH (FORCE)").format(
+                sql.Identifier(database_name)
+            )
+        )
+        connection.execute(
+            sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database_name))
+        )
+    _apply_migrations_through(database_url, target_migration_id=target_migration_id)
+    assert_database_at_migration(database_url, target_migration_id=target_migration_id)
+    with psycopg.connect(database_url) as connection:
+        if target_migration_id == PRE_WORKFLOW_MIGRATION_ID:
+            assert connection.execute(
+                "SELECT to_regclass('authority_runtime_dispatch_control'), "
+                "to_regclass('authority_book_opening_legacy_snapshot_entitlement')"
+            ).fetchone() == (None, None)
+        historical_columns = connection.execute(
+            "SELECT table_name,column_name FROM information_schema.columns "
+            "WHERE table_schema='public' ORDER BY table_name,ordinal_position"
+        ).fetchall()
+        allowed: dict[str, list[str]] = {}
+        for table_name, column_name in historical_columns:
+            allowed.setdefault(str(table_name), []).append(str(column_name))
+        historical = {}
+        later_tables = {}
+        for name, (columns, json_columns, rows) in current.items():
+            if name not in allowed:
+                later_tables[name] = (columns, json_columns, rows)
+                continue
+            compatible = tuple(column for column in allowed[name] if column in columns)
+            indexes = tuple(columns.index(column) for column in compatible)
+            historical[name] = (
+                compatible,
+                tuple(column for column in json_columns if column in compatible),
+                [tuple(row[index] for index in indexes) for row in rows],
+            )
+        _insert_historical_fixture_rows(connection, historical)
+        _advance_fixture_sequences(connection)
+        actual = _fixture_table_rows(connection)
+        for name, (columns, _, rows) in historical.items():
+            actual_columns, _, actual_rows = actual[name]
+            indexes = tuple(actual_columns.index(column) for column in columns)
+            projected_rows = [
+                tuple(row[index] for index in indexes) for row in actual_rows
+            ]
+            assert sorted(map(repr, projected_rows)) == sorted(map(repr, rows)), name
+    return later_tables
+
+
+def restore_post_window_fixture_tables(
+    database_url: str,
+    tables: dict[str, tuple[tuple[str, ...], tuple[str, ...], list[tuple[Any, ...]]]],
+) -> None:
+    """Restore only later-schema fixture inputs after the historical window is upgraded."""
+    from novel_forge.storage.migrations import LATEST_MIGRATION_ID
+
+    assert_database_at_migration(database_url, target_migration_id=LATEST_MIGRATION_ID)
+    with psycopg.connect(database_url) as connection:
+        for name in tables:
+            count = connection.execute(
+                sql.SQL("SELECT COUNT(*) FROM {}").format(sql.Identifier(name))
+            ).fetchone()[0]
+            assert count == 0, f"upgrade already populated later fixture table: {name}"
+        _insert_historical_fixture_rows(connection, tables)
+        _advance_fixture_sequences(connection)

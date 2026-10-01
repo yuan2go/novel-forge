@@ -511,6 +511,8 @@ def _eligibility_reason(
         return f"QUALIFICATION_{candidate.qualification}"
     if candidate.governance_status != "CLEAR":
         return f"GOVERNANCE_{candidate.governance_status}"
+    if dict(candidate.provenance or {}).get("task_excluded"):
+        return "TASK_CONTEXT_IRRELEVANT"
     if candidate.authority_freshness == "INVALIDATED":
         return "INVALIDATED_REPRESENTATION"
     if candidate.authority_freshness not in {"CURRENT", "VALID_AS_OF"}:
@@ -558,65 +560,17 @@ def _eligibility_reason(
     return ""
 
 
-def select_context_candidates(
-    *,
-    project_id: str,
-    book_id: str = "",
-    profile: ContextProfile,
-    candidates: Iterable[ContextCandidate],
-    token_budget: int,
-    effective_policy: EffectiveContextPolicy | None = None,
-    authority_state_boundary: dict[str, Any] | None = None,
-) -> ContextSelection:
-    if not project_id.strip():
-        raise ValueError("project_id is required")
-    if token_budget <= 0 or token_budget > profile.maximum_token_budget:
-        raise ValueError("token_budget exceeds context profile maximum")
-    compilation = (
-        None
-        if effective_policy is not None
-        else _compile_profile_policy(profile, token_budget=token_budget)
-    )
-    policy = effective_policy or compilation.effective_policy
-    if token_budget > policy.limits.total:
-        raise ValueError("token_budget exceeds effective Context policy")
-    accepted: list[ContextCandidate] = []
-    rejected: list[dict[str, str]] = []
-    decisions: list[dict[str, Any]] = []
-    for candidate in candidates:
-        _validate_context_class_invariants(candidate)
-        reason = _eligibility_reason(
-            project_id,
-            book_id,
-            profile,
-            policy,
-            candidate,
-            authority_state_boundary=authority_state_boundary or {},
-        )
-        if reason:
-            if context_candidate_class(candidate) is ContextClass.PROTECTED:
-                raise ValueError(
-                    f"protected context is unavailable: {candidate.asset_version_id}:{reason}"
-                )
-            rejected.append(
-                {"asset_version_id": candidate.asset_version_id, "reason": reason}
-            )
-            decisions.append(
-                {
-                    "asset_version_id": candidate.asset_version_id,
-                    "decision": "DROPPED",
-                    "reason": reason,
-                }
-            )
-        else:
-            accepted.append(candidate)
+def deduplicate_context_candidates(
+    candidates: Iterable[ContextCandidate], *, required_logical_kinds: Iterable[str],
+) -> tuple[list[ContextCandidate], list[dict[str, Any]]]:
+    accepted = list(candidates)
     class_priority = {
         ContextClass.PROTECTED: 0,
         ContextClass.COMPRESSIBLE: 1,
         ContextClass.RETRIEVABLE: 2,
         ContextClass.EPHEMERAL: 3,
     }
-    required_kinds = set(policy.required_logical_kinds)
+    required_kinds = set(required_logical_kinds)
 
     def ordering(item: ContextCandidate) -> tuple[Any, ...]:
         required = item.required or item.logical_context_kind in required_kinds
@@ -702,15 +656,66 @@ def select_context_candidates(
                     for basis, identity in matches
                 ],
             }
-            decisions.append(receipt)
             deduplications.append(receipt)
+    return sorted(deduplicated, key=ordering), deduplications
+
+
+def select_context_candidates(
+    *,
+    project_id: str,
+    book_id: str = "",
+    profile: ContextProfile,
+    candidates: Iterable[ContextCandidate],
+    token_budget: int,
+    effective_policy: EffectiveContextPolicy | None = None,
+    authority_state_boundary: dict[str, Any] | None = None,
+) -> ContextSelection:
+    if not project_id.strip():
+        raise ValueError("project_id is required")
+    if token_budget <= 0 or token_budget > profile.maximum_token_budget:
+        raise ValueError("token_budget exceeds context profile maximum")
+    compilation = (
+        None
+        if effective_policy is not None
+        else _compile_profile_policy(profile, token_budget=token_budget)
+    )
+    policy = effective_policy or compilation.effective_policy
+    if token_budget > policy.limits.total:
+        raise ValueError("token_budget exceeds effective Context policy")
+    accepted: list[ContextCandidate] = []
+    rejected: list[dict[str, str]] = []
+    decisions: list[dict[str, Any]] = []
+    for candidate in candidates:
+        _validate_context_class_invariants(candidate)
+        reason = _eligibility_reason(
+            project_id,
+            book_id,
+            profile,
+            policy,
+            candidate,
+            authority_state_boundary=authority_state_boundary or {},
+        )
+        if reason:
+            if context_candidate_class(candidate) is ContextClass.PROTECTED:
+                raise ValueError(
+                    f"protected context is unavailable: {candidate.asset_version_id}:{reason}"
+                )
             rejected.append(
+                {"asset_version_id": candidate.asset_version_id, "reason": reason}
+            )
+            decisions.append(
                 {
-                    "asset_version_id": loser.asset_version_id,
-                    "reason": "DUPLICATE_REPRESENTATION",
+                    "asset_version_id": candidate.asset_version_id,
+                    "decision": "DROPPED",
+                    "reason": reason,
                 }
             )
-    accepted = sorted(deduplicated, key=ordering)
+        else:
+            accepted.append(candidate)
+    required_kinds = set(policy.required_logical_kinds)
+    accepted, deduplications = deduplicate_context_candidates(accepted, required_logical_kinds=policy.required_logical_kinds)
+    decisions.extend(deduplications)
+    rejected.extend({"asset_version_id": receipt["asset_version_id"], "reason": receipt["reason"]} for receipt in deduplications)
     selected: list[ContextCandidate] = []
     usage: dict[str, dict[str, int]] = {
         "sections": {},
@@ -1024,6 +1029,7 @@ def build_authority_context_bundle(
     accessible_knowledge_fact_ids: Iterable[str] = (),
     required_long_distance_fact_ids: Iterable[str] = (),
     knowledge_access_policy: dict[str, Any] | None = None,
+    task_context_receipt: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     scoped_book_id = book_id or f"book:{project_id}"
     access = (
@@ -1042,6 +1048,10 @@ def build_authority_context_bundle(
     frozen_candidates = tuple(candidates)
     _validate_context_knowledge_access(frozen_candidates, access)
     profile = resolve_context_profile(stage)
+    if context_profile_version == "draft-context-profile-v4":
+        if profile.name != "draft":
+            raise ValueError("draft-context-profile-v4 is only valid for draft Context")
+        profile = replace(profile, maximum_token_budget=512_000)
     if context_profile_version == "draft-context-profile-v3":
         if profile.name != "draft":
             raise ValueError("draft-context-profile-v3 is only valid for draft Context")
@@ -1344,6 +1354,8 @@ def build_authority_context_bundle(
         "policy_versions": policy_versions,
         "context_correctness": correctness,
     }
+    if task_context_receipt is not None:
+        context_manifest["task_context_receipt"] = dict(task_context_receipt)
     context_manifest["context_fingerprint"] = (
         "sha256:"
         + hashlib.sha256(
@@ -1955,3 +1967,25 @@ __all__ = [
     "replay_context_bundle",
     "select_context_candidates",
 ]
+
+
+def validate_task_context_sources(
+    *, project_id: str, book_id: str, candidates: list[ContextCandidate],
+    token_budget: int, required_asset_types: tuple[str, ...],
+    accepted_boundary: dict[str, Any], knowledge_access_policy: dict[str, Any],
+) -> frozenset[str]:
+    profile = replace(resolve_context_profile("draft"), maximum_token_budget=512_000)
+    required = frozenset(required_asset_types)
+    profile = replace(profile, required_asset_types=profile.required_asset_types | required)
+    compilation = _compile_profile_policy(profile, token_budget=token_budget, required_asset_types=required, stage="draft")
+    _validate_context_knowledge_access(tuple(candidates), knowledge_access_policy)
+    admitted = set()
+    for candidate in candidates:
+        _validate_context_class_invariants(candidate)
+        reason = _eligibility_reason(project_id, book_id, profile, compilation.effective_policy, candidate, authority_state_boundary=accepted_boundary)
+        if reason:
+            if context_candidate_class(candidate) is ContextClass.PROTECTED or candidate.required or candidate.asset_type in required:
+                raise ValueError(f"required task source unavailable: {candidate.asset_version_id}:{reason}")
+        else:
+            admitted.add(candidate.asset_version_id)
+    return frozenset(admitted)

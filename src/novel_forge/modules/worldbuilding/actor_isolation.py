@@ -48,7 +48,7 @@ def validate_actor_policy(value: Mapping[str, Any], *, character_ids: list[str],
     if (not isinstance(actors, list) or not 1 <= len(actors) <= 3
         or any(not isinstance(actor, str) or actor not in character_ids for actor in actors)
         or len(set(actors)) != len(actors) or any(type(value[key]) is not int or value[key] != 1 for key in ("max_rounds", "max_actions_per_actor"))
-        or policy.version not in {"world-production-policy.v2", "world-production-policy.v3"} or policy.max_provider_stages != len(actors) + 2
+        or policy.version not in {"world-production-policy.v2", "world-production-policy.v3", "world-production-policy.v4"} or policy.max_provider_stages != len(actors) + 2
         or policy.max_candidates > len(actors) or policy.max_paths_per_candidate != 1
         or policy.max_preparation_steps != 1 or policy.planning_window_chapters != 1):
         raise KernelError("WORLD_ACTOR_POLICY_INVALID", "experiment admits at most three approved actors, one action each and one frozen round plus judge and Director")
@@ -63,7 +63,7 @@ def actor_task(source: Mapping[str, Any], source_ref: Mapping[str, str], actor_i
         raise KernelError("WORLD_ACTOR_GOAL_UNAVAILABLE", "actor needs its own approved desire before any dispatch")
     traits = {key: cast[key] for key in ACTOR_TRAITS if isinstance(cast.get(key), str)}
     persistent = source.get("actor_experiment", {}).get("version") == "world-actor-experiment.v2"
-    continuous = source.get("provider_projection_version") == "world-role-delivery.v2"
+    continuous = source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3"}
     if persistent and not continuous:
         raise KernelError("WORLD_ACTOR_POLICY_INVALID", "multi-step intentions require the current accepted private projection")
     knowledge_fields = CURRENT_KNOWLEDGE_FIELDS if continuous else KNOWLEDGE_FIELDS

@@ -250,7 +250,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         )
 
     def _release_evidence(
-        self, project_id: str, *, with_mkaos: bool = False, scope_preseeded: bool = False, workspace_id: str = ""
+        self, project_id: str, *, with_mkaos: bool = False, scope_preseeded: bool = False, workspace_id: str = "", extra_context_candidates: tuple[dict[str, object], ...] = ()
     ) -> tuple[dict[str, object], ...]:
         workspace_id = workspace_id or f"workspace:{project_id}"
         if with_mkaos and not scope_preseeded:
@@ -453,6 +453,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     },
                 }
             )
+        candidates.extend(dict(item) for item in extra_context_candidates)
         with transaction() as connection, connection.cursor() as cursor:
             for candidate in candidates:
                 content = dict(
@@ -1254,10 +1255,203 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             project_id=project_id, task_type="draft", candidate=candidate,
         ), [])
 
+    def test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay(self) -> None:
+        from unittest.mock import patch
+
+        from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+        from novel_forge.modules.chapter_authority.handlers import _ContextHandler
+        from novel_forge.modules.context_builder.domain import replay_context_bundle
+        from tests.integration.capability_pack_postgres_support import CapabilityPackPostgresHarness
+
+        harness = CapabilityPackPostgresHarness("context-semantic-subeffects", release_sha="e" * 40)
+        approved = harness.register_compile_approve(
+            "1.0.0", generation=1,
+            approval_scope=harness.approval_scope(environments=("test",), runtime_profiles=("test",)),
+            target_runtime_profile="test",
+        )
+        harness.register_agents(approved.compiled)
+        harness.activate(harness.deploy(approved, environment="test", runtime_profile="test"), environment="test")
+        project_id = harness.project_id
+        semantic_dispatches = []
+        semantic_results = []
+        original_context_execute = _ContextHandler.execute
+
+        def fixture(stage, inputs):
+            if stage in {"context_compress", "context_fidelity"}:
+                semantic_dispatches.append(stage)
+            output = default_chapter_fixture_response(stage, inputs)
+            if stage in {"review", "rereview"}:
+                text = inputs["draft" if stage == "review" else "revision"]["text"]
+                quote = text if stage == "review" else "The protagonist gives up the only safe route home before the witnesses leave."
+                start = text.index(quote)
+                output["knowledge_checks"] = [{
+                    "knowledge_card_asset_version_id": item["knowledge_card_asset_version_id"],
+                    "status": "MISAPPLIED" if stage == "review" else "VERIFIED_IN_PROSE",
+                    "reason": "Fixture checks the witnessed loss of the safe route.",
+                    "evidence": {"start": start, "end": start + len(quote), "quote": quote},
+                    "conditions_checked": ["Public choice costs a concrete safe option."],
+                    "exceptions_checked": [],
+                    "issue_codes": ["COST_NOT_CONCRETE"] if stage == "review" else [],
+                } for item in inputs.get("knowledge_review_targets", [])]
+            return output
+
+        def execute_with_semantic_subeffects(handler, request):
+            plan = request.require_input("chapter_plan")
+            memo = request.require_input("chapter_memo")
+            task = {
+                "contract_version": "task-context-compression.v1",
+                "policy_version": "task-scoped-context.v1",
+                "accepted_boundary": dict(memo.content["accepted_boundary"]),
+                "memo_fingerprint": memo.content["memo_fingerprint"],
+                "task": {"chapter": 1, "goal": plan.content["chapter_objective"]},
+                "target_tokens": 6000,
+                "required_unit_ids": ["unit:objective"],
+                "units": [{"unit_id": "unit:objective", "text": plan.content["chapter_objective"], "required": True, "kind": "task_fact"}],
+                "source_binding": {"asset_version_id": plan.asset_version_id, "content_hash": plan.content_hash},
+                "chunk_index": 0,
+            }
+            for stage in ("context_compress", "context_fidelity"):
+                stage_task = dict(task)
+                if stage == "context_fidelity":
+                    stage_task["selected_unit_ids"] = ["unit:objective"]
+                instance = hashlib.sha256(json.dumps({"stage": stage, "task": stage_task}, sort_keys=True).encode()).hexdigest()
+                frozen_request = replace(request, command={**request.command, "_effect_instance": instance, "_context_compression_task": stage_task})
+                payload = {"chapter_plan": plan.content, "context_compression_task": stage_task}
+                first = handler.provider.invoke(frozen_request, stage=stage, payload=payload)
+                recovered = handler.provider.invoke(frozen_request, stage=stage, payload=payload)
+                self.assertEqual(first.output, recovered.output)
+                self.assertEqual(first.execution_evidence["execution_request"]["external_effect_id"], recovered.execution_evidence["execution_request"]["external_effect_id"])
+                self.assertEqual(first.execution_evidence["route_snapshot"]["reasoning_effort"], "high")
+                adapter_routes = handler.provider.adapter.routes
+                binder_routes = handler.provider.capability_binder.routes
+                original_adapter_route, original_binder_route = adapter_routes[stage], binder_routes[stage]
+                try:
+                    for output_limit in (128, 0):
+                        adapter_routes[stage] = replace(original_adapter_route, model_output_limit=output_limit)
+                        binder_routes[stage] = replace(original_binder_route, model_output_limit=output_limit)
+                        with patch("novel_forge.modules.chapter_authority.context_compression_provider.task_provider_output_reserve", side_effect=AssertionError("successful frozen effects must not recompute current capacity")):
+                            capacity_recovered = handler.provider.invoke(frozen_request, stage=stage, payload=payload)
+                        self.assertEqual(capacity_recovered.output, first.output)
+                        self.assertEqual(capacity_recovered.execution_evidence, first.execution_evidence)
+                finally:
+                    adapter_routes[stage], binder_routes[stage] = original_adapter_route, original_binder_route
+                semantic_results.append(first)
+                with self.assertRaises(KernelError) as fence_error:
+                    handler.provider.invoke(replace(frozen_request, fencing_token=0), stage=stage, payload=payload)
+                self.assertEqual(fence_error.exception.code, "MODEL_EFFECT_EXECUTION_IDENTITY_INVALID")
+                changed = {**payload, "context_compression_task": {**stage_task, "units": [{**stage_task["units"][0], "text": "A different source version must not reuse this effect."}]}}
+                with self.assertRaises(KernelError) as drift_error:
+                    handler.provider.invoke(frozen_request, stage=stage, payload=changed)
+                self.assertEqual(drift_error.exception.code, "MODEL_EFFECT_INTENT_DRIFT")
+                with self.assertRaises(KernelError) as source_drift:
+                    handler.provider.invoke(replace(frozen_request, inputs=tuple(
+                        replace(item, content_hash="changed-source-version-hash") if item.asset_version_id == plan.asset_version_id else item
+                        for item in frozen_request.inputs
+                    )), stage=stage, payload=payload)
+                self.assertEqual(source_drift.exception.code, "CONTEXT_COMPRESSION_SOURCE_DRIFT")
+            return original_context_execute(handler, request)
+
+        with tempfile.TemporaryDirectory() as directory:
+            settings = IndustrialSettings(root=Path(directory), database_url=DATABASE_URL)
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": harness.pack_id,
+                "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
+                "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
+                "NOVEL_FORGE_REVISION_PROVIDER": "mock",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(directory) / "objects"),
+                "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
+                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+                "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "262144",
+            }
+            execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=fixture)
+            application = build_chapter_authority_application(settings, execution=execution, env=env)
+            history = {
+                "asset_version_id": f"{project_id}:episodic-context-source-v1",
+                "asset_type": "chapter_episodic_summary", "project_id": project_id,
+                "safe_summary": "\n\n".join(
+                    f"Scene {index}: " + "The market crowd debates which route may remain open after the public oath; distant vendors argue over coins and weather. " * 3
+                    for index in range(120)
+                ),
+                "structured_facts": [{"key": "witnessed_promise", "value": "The public promise requires an observable irreversible cost.", "arc_plan_version_id": f"{project_id}:fixture-arc-plan-v1"}],
+                "estimated_tokens": 20_000, "narrative_function": "related_episodic_history",
+                "context_class": "RETRIEVABLE", "compression_method": "none",
+                "source_use_mode": "generation", "allowed_use": "generation",
+                "retrieval_reasons": ["task_related_episodic_history"],
+            }
+            candidates = self._release_evidence(
+                project_id, with_mkaos=True, scope_preseeded=True, workspace_id=harness.workspace_id,
+                extra_context_candidates=(history,),
+            )
+            self._seed_intrinsic_semantic_commit_policy(project_id)
+            with patch.object(_ContextHandler, "execute", execute_with_semantic_subeffects):
+                result = application.run(SingleChapterRequest(
+                    project_id=project_id, workspace_id=harness.workspace_id, actor_id="context-semantic-worker",
+                    chapter=1, title="An Extracted Promise", premise="A public promise becomes irreversible.",
+                    trace_id=identifier("trace"), correlation_id=identifier("correlation"),
+                    application_build_id="context-semantic-test", commit_sha="e" * 40,
+                    context_candidates=candidates, context_token_budget=32_768,
+                    preparation_report={"stage_context_profile_versions": {"draft": "draft-context-profile-v4"}},
+                ))
+            self.assertEqual((result.root_status, result.saga_status), ("SUCCEEDED", "SUCCEEDED"))
+        self.assertEqual(semantic_dispatches, ["context_compress", "context_fidelity"] * 2)
+        self.assertEqual(len(semantic_results), 2)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT version.content
+                FROM authority_operation_output_asset AS output
+                JOIN authority_asset_version AS version ON version.asset_version_id = output.asset_version_id
+                JOIN authority_operation AS operation ON operation.operation_id = output.operation_id
+                WHERE operation.project_id = %s AND output.output_key = 'chapter.context'
+            """, [project_id])
+            context = cursor.fetchone()[0]
+            self.assertEqual(replay_context_bundle(context)["status"], "MATCH")
+            task_receipt = context["task_context_receipt"]
+            self.assertGreater(task_receipt["before_estimated_tokens"], context["token_budget"])
+            self.assertLessEqual(task_receipt["after_estimated_tokens"], context["token_budget"])
+            self.assertEqual(len(task_receipt["compression_trace"]), 1)
+            self.assertEqual(task_receipt["compression_trace"][0]["source_asset_version_id"], history["asset_version_id"])
+            self.assertTrue(task_receipt["compression_trace"][0]["model_execution_evidence"])
+            cursor.execute("SELECT content, content_hash FROM authority_asset_version WHERE asset_version_id = %s", [history["asset_version_id"]])
+            original_source, source_hash = cursor.fetchone()
+            self.assertEqual(original_source["safe_summary"], history["safe_summary"])
+            self.assertEqual(task_receipt["compression_trace"][0]["source_content_hash"], source_hash)
+            projected_history = next(item for item in context["stage_context_view"]["segments"] if item["asset_version_id"] == history["asset_version_id"])
+            self.assertEqual(projected_history["structured_facts"], history["structured_facts"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT effect.capability, effect.status, effect.request_payload,
+                       reservation.estimated_tokens
+                FROM authority_external_effect AS effect
+                JOIN authority_budget_reservation AS reservation
+                  ON reservation.external_effect_id = effect.external_effect_id
+                WHERE effect.project_id = %s
+                  AND effect.capability IN ('model.context_compress', 'model.context_fidelity')
+                ORDER BY effect.capability
+            """, [project_id])
+            rows = cursor.fetchall()
+            self.assertEqual(len(rows), 4)
+            for capability, status, frozen, reserved in rows:
+                self.assertEqual(status, "SUCCEEDED")
+                runtime = frozen["_production_execution"]["capability_runtime"]
+                self.assertTrue(runtime["materialization_hash"])
+                self.assertEqual(runtime["provider_admission"]["total_reserved"], reserved)
+                self.assertLess(reserved, 512_000)
+                self.assertGreater(reserved, frozen["max_output_tokens"])
+                self.assertLessEqual(frozen["max_output_tokens"], 4096 if capability.endswith("compress") else 2048)
+                self.assertEqual(runtime["pack_ref"], f"{harness.pack_id}@1.0.0")
+
     def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(
         self,
     ) -> None:
+        self._assert_full_chapter_slice_uses_unified_execution_gateway(task_scoped=False)
+
+    def test_task_scoped_fast_path_freezes_replayable_context_without_semantic_io(self) -> None:
+        self._assert_full_chapter_slice_uses_unified_execution_gateway(task_scoped=True)
+
+    def _assert_full_chapter_slice_uses_unified_execution_gateway(self, *, task_scoped: bool) -> None:
         from tests.integration.capability_pack_postgres_support import CapabilityPackPostgresHarness
+        from novel_forge.modules.context_builder.domain import replay_context_bundle
 
         harness = CapabilityPackPostgresHarness("gateway-model-slice", release_sha="e" * 40)
         approved = harness.register_compile_approve(
@@ -1308,6 +1502,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 ),
                 "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
                 "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+                "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "262144",
             }
             execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=pack_review_fixture)
             application = build_chapter_authority_application(
@@ -1327,6 +1522,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 application_build_id="chapter-gateway-test",
                 commit_sha="e" * 40,
                 context_candidates=context_candidates,
+                **({"context_token_budget": 64_000,
+                    "preparation_report": {"stage_context_profile_versions": {"draft": "draft-context-profile-v4"}}}
+                   if task_scoped else {}),
             )
             result = application.run(chapter_request)
 
@@ -1341,6 +1539,18 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertIn("only safe route home", exported.read_text())
 
         with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT version.content
+                FROM authority_operation_output_asset AS output
+                JOIN authority_asset_version AS version ON version.asset_version_id = output.asset_version_id
+                JOIN authority_operation AS operation ON operation.operation_id = output.operation_id
+                WHERE operation.project_id = %s AND output.output_key = 'chapter.context'
+            """, [project_id])
+            context = cursor.fetchone()[0]
+            self.assertEqual(replay_context_bundle(context)["status"], "MATCH")
+            if task_scoped:
+                self.assertTrue(context["task_context_receipt"]["fast_path"])
+                self.assertEqual(context["task_context_receipt"]["compression_trace"], [])
             cursor.execute(
                 """
                 SELECT capability, status, COUNT(*)

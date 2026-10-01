@@ -17,6 +17,7 @@ from novel_forge.modules.capability_pack_authority.runtime import (
 from novel_forge.modules.capability_packs.artifacts import (
     ArtifactKind,
     default_chapter_artifact_resolver,
+    exact_ref_version,
 )
 from novel_forge.modules.capability_packs.loader import load_capability_pack_payload
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -71,12 +72,12 @@ def _registered_version_and_snapshot():
     context = resolver.resolve(
         ArtifactKind.CONTEXT_POLICY,
         str(manifest.context_sources.policy_id),
-        "v1",
+        exact_ref_version(str(manifest.context_sources.policy_id)),
     )
     tool = resolver.resolve(
         ArtifactKind.TOOL_POLICY,
         str(manifest.tool_permissions.policy_id),
-        "v1",
+        exact_ref_version(str(manifest.tool_permissions.policy_id)),
     )
     snapshot = CapabilityPackExecutionSnapshot(
         deployment_id="deployment-1",

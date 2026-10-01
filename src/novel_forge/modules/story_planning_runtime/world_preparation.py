@@ -57,7 +57,7 @@ class PlanningProviderStage:
         )
         estimated_tokens = (
             ConservativeTokenEstimator().estimate(serialized)
-            if self.task["policy"].get("version") in {"world-production-policy.v2", "world-production-policy.v3"}
+            if self.task["policy"].get("version") in {"world-production-policy.v2", "world-production-policy.v3", "world-production-policy.v4"}
             else (len(serialized) + 3) // 4
         )
         if estimated_tokens > self.task["policy"]["context_token_budget"]:
@@ -349,7 +349,7 @@ class PlanningWorldPreparation:
             schema = actor_judge_schema(schema, actor_proposals)
             task["actor_proposals"] = actor_proposals
             task["actor_judgment_contract"] = "Adjudicate every exact proposal hash. Accept or reject each action and determine conflicts and consequences. Preserve actor_id and intended action verbatim in an executable transition. Do not replace intentions to satisfy the outline. No preparation branches, new actors or missing adjudications. Director may select or reorder feasible proposals but cannot change them."
-            if source.get("provider_projection_version") == "world-role-delivery.v2":
+            if source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3"}:
                 task["actor_judgment_contract"] += " For every CONTINUE commitment disposition, retain source_event_id in transition cause_refs and obligation_id in candidate obligation_refs. DEFER preserves the accepted commitment; it cannot cancel or fulfill it."
             if source.get("actor_experiment", {}).get("version") == "world-actor-experiment.v2":
                 task["actor_judgment_contract"] += " Future intent steps are private proposals, not facts or executable prerequisites. Judge only the selected current action and do not mark intention steps complete. A deferred or abandoned intent with no selected_step_id must be REJECTED and cannot produce a transition."
@@ -386,15 +386,11 @@ class PlanningWorldPreparation:
             reality=source["reality"],
             role=role,
             token_budget=source["policy"]["context_token_budget"],
-            required_event_ids=tuple(sorted({
-                entry["source_event_id"]
-                for kind, entries in source["reality"]["current_state"].items()
-                if kind in ROLE_STATE_KINDS.get(role, ())
-                for entry in entries
-            })) if source.get("provider_projection_version") == "world-role-delivery.v2" else (),
+            task={"chapter": int(source["reality"]["chapter_number"]) + 1, "intent": source["intent"], "planning_window": source["planning_window"]} if source.get("provider_projection_version") == "world-role-delivery.v3" else None,
+            required_event_ids=tuple(sorted({entry["source_event_id"] for kind, entries in source["reality"]["current_state"].items() if kind in ROLE_STATE_KINDS.get(role, ()) for entry in entries})) if source.get("provider_projection_version") == "world-role-delivery.v2" else (),
         )
         return {
-            "contract_version": "world-provider-task.v2" if source.get("provider_projection_version") == "world-role-delivery.v2" else "world-provider-task.v1",
+            "contract_version": "world-provider-task.v2" if source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3"} else "world-provider-task.v1",
             "role": role,
             "source_ref": dict(source_ref),
             "baseline_id": source["reality"]["revision_id"],
@@ -426,7 +422,8 @@ class PlanningWorldPreparation:
                             },
                         }
                         for event in source["reality"].get("events", [])
-                        if event.get("mutation", {})
+                        if (source.get("provider_projection_version") != "world-role-delivery.v3" or event["event_id"] in {row["source_event_id"] for row in projection["selection"]})
+                        and event.get("mutation", {})
                         .get("payload", {})
                         .get("world_transition")
                     ]

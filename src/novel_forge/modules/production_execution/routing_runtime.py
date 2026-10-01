@@ -1212,6 +1212,7 @@ class ProductionProviderRouter:
         if hasattr(base, "model_context_limit"):
             changes.update(
                 model_context_limit=candidate["context_limit"],
+                **({"model_output_limit": candidate["output_limit"]} if hasattr(base, "model_output_limit") else {}),
                 token_accounting_method="DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"
                 if candidate["provider"] == "deepseek"
                 else "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"

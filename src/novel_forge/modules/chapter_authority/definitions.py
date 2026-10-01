@@ -14,7 +14,7 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
 
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.2.1"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.4.1"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.5.0"
 CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION = "3.4.1-author-input.v1"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_ID = "chapter_authority_slice"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION = CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
@@ -41,6 +41,7 @@ CHAPTER_QUALITY_GROUP_TIMEOUT_SECONDS = CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS 
 )
 CHAPTER_LONG_TIMEOUT_POLICY_NODES = frozenset(
     {
+        ChapterNode.CONTEXT,
         ChapterNode.DRAFT,
         ChapterNode.REVIEW,
         ChapterNode.REVISION,
@@ -354,6 +355,8 @@ def _definition(
             )
         )
     if node is ChapterNode.CONTEXT:
+        if model_effects_required:
+            external_capabilities = ["model.context_compress", "model.context_fidelity"]
         completion["required_asset_selectors"].append(
             {
                 "selector": "context_manifest_consistency_report",

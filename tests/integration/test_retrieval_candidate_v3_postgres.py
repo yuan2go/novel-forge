@@ -19,6 +19,7 @@ from novel_forge.modules.context_builder.production_retrieval import (
     build_retrieval_result,
     discover_accepted_retrieval_candidates,
     freeze_retrieval_candidate_union,
+    build_task_dependency_refs,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from tests.integration.authority_postgres_support import (
@@ -102,6 +103,7 @@ def _seed_document(
     accepted_to: int | None = None,
     entity_ids: tuple[str, ...] = (),
     projection_version: str = SEMANTIC_PROJECTION_VERSION,
+    metadata: dict[str, object] | None = None,
 ) -> tuple[str, str, str]:
     asset_id = f"asset:{label}"
     asset_version_id = f"asset-version:{label}"
@@ -133,7 +135,7 @@ def _seed_document(
         ) VALUES (
             %s,%s,%s,%s,'best_draft_candidate',%s,%s,'L0',%s,%s,
             '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,%s,
-            '{}'::jsonb,%s,%s
+            %s,%s,%s
         )
         """,
         [
@@ -146,6 +148,7 @@ def _seed_document(
             text,
             Jsonb(list(entity_ids)),
             Jsonb({"accepted_chapter": chapter}),
+            Jsonb(metadata or {}),
             _sha(f"document:{label}"),
             source_operation_id,
         ],
@@ -484,3 +487,85 @@ def test_semantic_rerank_cannot_expand_frozen_lexical_structured_union() -> None
     assert disabled.query_embedding == ()
     assert disabled.semantic_status["status"] == "RETRIEVAL_SEMANTIC_DISABLED"
     assert disabled.semantic_status["fallback"] == "NONE"
+
+
+def test_task_dependencies_use_exact_planting_advance_and_causal_closure_outside_optional_limits() -> None:
+    ensure_migrated()
+    project_id = identifier("task-retrieval-project")
+    book_id = f"book:{project_id}"
+    seed_authority_project_book(project_id=project_id, workspace_id=f"workspace:{project_id}", book_id=book_id)
+    definition = identifier("task-retrieval-source-definition")
+    operation_id = identifier("task-retrieval-source-operation")
+    with transaction() as connection, connection.cursor() as cursor:
+        insert_definition(cursor, definition)
+        insert_operation(cursor, operation_id=operation_id, definition_name=definition, project_id=project_id, status="SUCCEEDED")
+        planting_text = "Exact distant planting with voice and uncertainty. " * 150
+        planting_id, _, _ = _seed_document(
+            cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+            label=identifier("task-planting"), chapter=1, text=planting_text, vector=(1.0, 0.0, 0.0),
+            metadata={"fact_ids": ["fact:hook"], "structured_facts": [{"source_event_id": "event:planting", "state": {"fact_id": "fact:hook"}}]},
+        )
+        advance_id, _, _ = _seed_document(
+            cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+            label=identifier("task-advance"), chapter=4, text="Latest exact advance.", vector=(1.0, 0.0, 0.0),
+            metadata={"fact_ids": ["fact:hook"], "structured_facts": [{"source_event_id": "event:advance", "state": {"fact_id": "fact:hook", "world_transition": {"cause_refs": ["event:causal"]}}}]},
+        )
+        causal_id, _, _ = _seed_document(
+            cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+            label=identifier("task-causal"), chapter=2, text="Causal predecessor without lexical similarity.", vector=(1.0, 0.0, 0.0),
+            metadata={"structured_facts": [{"source_event_id": "event:causal", "state": {"proposition_id": "proposition:cause"}}]},
+        )
+        future_id, _, _ = _seed_document(
+            cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+            label=identifier("task-future"), chapter=301, text="Future matching identity.", vector=(1.0, 0.0, 0.0), metadata={"fact_ids": ["fact:hook"]},
+        )
+        stale_id, _, _ = _seed_document(
+            cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+            label=identifier("task-stale"), chapter=290, accepted_to=290, text="Stale matching identity.", vector=(1.0, 0.0, 0.0), metadata={"fact_ids": ["fact:hook"]},
+        )
+        for index in range(260):
+            _seed_document(cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+                           label=identifier(f"task-optional-{index}"), chapter=10 + index,
+                           text="optional search material", vector=(1.0, 0.0, 0.0))
+    intent = {"chapter": 301, "intent_fingerprint": _sha("task-intent"),
+              "accepted_boundary": {"accepted_through_chapter": 300},
+              "required_arc_contributions": [], "active_obligations": [], "retrieval_graph": {}}
+    memo = {"chapter": 301, "qualification": "QUALIFIED", "memo_fingerprint": _sha("task-memo"),
+            "accepted_boundary": intent["accepted_boundary"], "retrieval_queries": ["optional search material"],
+            "arc_actions": [], "obligation_actions": []}
+    plan = build_retrieval_query_plan(intent=intent, memo=memo, semantic_policy="DISABLED",
+        task_dependency_refs=build_task_dependency_refs(plan={"required_long_distance_fact_ids": ["fact:hook"]}, current_candidates=[]))
+    discovery = discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=plan)
+    by_id = {item["retrieval_document_id"]: item for item in discovery.documents}
+    assert len(by_id) == 259
+    assert {planting_id, advance_id, causal_id} <= set(by_id)
+    assert future_id not in by_id and stale_id not in by_id
+    assert discovery.query_plan["task_dependency_discovery"]["required_refs"] == ["event:causal", "fact:hook"]
+    assert "required_dependency_planting" in by_id[planting_id]["retrieval_reasons"]
+    assert "required_dependency_advance" in by_id[advance_id]["retrieval_reasons"]
+    result = build_retrieval_result(project_id=project_id, book_id=book_id, intent_asset_version_id="intent:task",
+        memo_asset_version_id="memo:task", query_plan=discovery.query_plan, documents=discovery.documents,
+        discovery_rejections=discovery.rejected_documents, semantic_status=discovery.semantic_status)
+    assert len(result["selected_documents"]) == 27
+    selected = {item["retrieval_document_id"]: item for item in result["selected_documents"]}
+    assert {planting_id, advance_id, causal_id} <= set(selected)
+    assert selected[planting_id]["safe_summary"] == planting_text
+    with transaction() as connection, connection.cursor() as cursor:
+        late_id, _, _ = _seed_document(cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
+            label=identifier("task-created-after-cutoff"), chapter=100, text="Late projection cannot alter frozen discovery.",
+            vector=(1.0, 0.0, 0.0), metadata={"fact_ids": ["fact:hook"]})
+    replay = discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=discovery.query_plan)
+    assert late_id not in {item["retrieval_document_id"] for item in replay.documents}
+    assert replay.query_plan == discovery.query_plan
+    missing_plan = build_retrieval_query_plan(intent=intent, memo=memo, semantic_policy="DISABLED",
+        task_dependency_refs=build_task_dependency_refs(plan={"required_long_distance_fact_ids": ["missing:exact"]}, current_candidates=[]))
+    with pytest.raises(KernelError) as missing:
+        discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=missing_plan)
+    assert missing.value.code == "RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE"
+    protected_plan = build_retrieval_query_plan(intent=intent, memo=memo, semantic_policy="DISABLED",
+        task_dependency_refs=build_task_dependency_refs(plan={"required_long_distance_fact_ids": ["current:exact"]}, current_candidates=[
+            {"asset_type": "canon_snapshot", "asset_version_id": "canon:frozen", "content_hash": _sha("canon:frozen"),
+             "structured_facts": [{"state": {"fact_id": "current:exact"}}]},
+        ]))
+    protected = discover_accepted_retrieval_candidates(DATABASE_URL, project_id=project_id, book_id=book_id, query_plan=protected_plan)
+    assert protected.query_plan["task_dependency_discovery"]["protected_resolved_refs"] == ["current:exact"]

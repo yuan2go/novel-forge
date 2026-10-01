@@ -367,7 +367,7 @@ class WorldPreparationRepository:
         book_id: str,
         request: Mapping[str, Any],
         contract_version: str = "world-preparation-source.v2",
-        provider_projection_version: str = "world-role-delivery.v2",
+        provider_projection_version: str = "world-role-delivery.v3",
     ) -> dict[str, Any]:
         self.cursor.execute(
             """
@@ -492,6 +492,21 @@ class WorldPreparationRepository:
                 "events": [],
                 "world_clock": {},
             }
+        if provider_projection_version == "world-role-delivery.v3":
+            initial_id = str(snapshot.get("initial_story_state_version") or "")
+            initial = repository.initial_state(version_id=initial_id, frozen_versions={initial_id} if initial_id else set())
+            initial_binding = {"input_snapshot_id": request["input_snapshot_id"], "reality_revision_id": reality["revision_id"]}
+            if initial_id:
+                self.cursor.execute("SELECT content_hash FROM authority_asset_version WHERE asset_version_id=%s", [initial_id])
+                initial_binding = {"asset_version_id": initial_id, "content_hash": str(self.cursor.fetchone()[0])}
+                if initial_binding not in refs:
+                    refs.append(initial_binding)
+            reality["initial_state_binding"] = initial_binding
+            reality["initial_state_sources"] = [
+                {"state_kind": kind, "entity_key": entry["entity_key"], "state_hash": narrative_hash(entry.get("state") or {}), "source_binding": initial_binding}
+                for kind, entries in (initial or {}).get("current_state", {}).items()
+                for entry in entries if not entry.get("source_event_id")
+            ]
         cast = by_role["CHARACTER_CAST"]
         cast = cast.get("candidate_payload", cast)
         character_ids = [
@@ -546,7 +561,7 @@ class WorldPreparationRepository:
         if actor_experiment is not None:
             from novel_forge.modules.worldbuilding.actor_isolation import validate_actor_policy
             actor_experiment = validate_actor_policy(actor_experiment, character_ids=character_ids, policy=policy)
-        elif policy.version != "world-production-policy.v1":
+        elif policy.version not in {"world-production-policy.v1", "world-production-policy.v4"}:
             raise KernelError("WORLD_ACTOR_POLICY_REQUIRED", "v2 World policy requires an explicit actor experiment")
         planning_refs = request.get("planning_input_refs") or []
         if not isinstance(planning_refs, list) or not planning_refs:
@@ -582,7 +597,8 @@ class WorldPreparationRepository:
         )
 
         planning_window = project_world_planning_window(
-            planning_inputs, chapter=chapter + 1, window=policy.planning_window_chapters
+            planning_inputs, chapter=chapter + 1, window=policy.planning_window_chapters,
+            context_policy_version=policy.version,
         )
         if contract_version == "world-preparation-source.v2" and chapter:
             history = repository.recent_world_events(
@@ -602,7 +618,7 @@ class WorldPreparationRepository:
         return {
             "contract_version": contract_version,
             **({"provider_projection_version": provider_projection_version}
-                if provider_projection_version == "world-role-delivery.v2" else {}),
+                if provider_projection_version in {"world-role-delivery.v2", "world-role-delivery.v3"} else {}),
             **(
                 {"preparation_sources": continuations}
                 if contract_version == "world-preparation-source.v2"

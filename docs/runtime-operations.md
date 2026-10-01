@@ -168,6 +168,56 @@ passing exact-revision run proves the listed current backend capabilities at
 `LONGITUDINAL_NARRATIVE_STABILITY`, or `PRODUCTION_OPERATION`. These are evidence
 boundaries, not a product or narrative development sequence.
 
+
+## Task Context capacity and assembly
+
+For future Chapter work, author `book-chapter-context.v1` with
+`draft_profile: draft-context-profile-v4`, a positive `draft_token_budget` at most
+512,000, and the desired quality task budget. World/Director roles may use
+`world-production-policy.v4` with independently chosen Context allocation. Deploy
+and select Chapter Generation Pack `2.7.0` through the existing Pack Authority;
+then verify its compiled snapshot and the Chapter preparation report's
+`stage_context_profile_versions.draft`. Its frozen Context policy explicitly sets
+the Planning task target to 64,000 tokens; this does not increase the authorized
+Provider token or money ledger. Changing process defaults does not update
+an old Book, Pack, preparation report or sent request. Old frozen contracts recover
+with their original hashes and semantics.
+
+Configure each actual route with its confirmed model Context and output limits,
+accounting method/evidence, and supported high reasoning. The system supports a
+maximum of 512,000 tokens; the effective complete-request window is the minimum
+of that maximum, the selected model window and the existing authorized execution
+limit. OpenAI reasoning shares its output reserve; DeepSeek requires its supported
+reasoning budget semantics; CLI admission labels application-visible coverage.
+Missing capacity, unsupported reasoning or an unqualified route blocks before
+external dispatch. Context compression uses the same authorized Provider and
+cumulative cost/token ledger; it does not grant extra calls or silently change models.
+
+Inspect the frozen Context `task_context_receipt` and role `task_workset` for task,
+source version/hash, accepted boundary, necessary refs, selected/excluded history,
+estimated token method, fast path and compression/recovery trace. Prompt/Skill/Schema
+and protocol overhead are checked again in the materialized Provider admission
+receipt. A local compressor parse/coverage problem reuses a durable successful Effect;
+UNKNOWN outcomes require reconciliation. Source changes require a new versioned
+request, not mutation of the dispatched identity. Keep exact Review/Revision text
+and citations; faithful required overflow is an explicit block.
+
+The compatibility tests construct current Runtime evidence separately from exact
+historical 0103 schema assertions, upgrade that window through the real migration,
+and only then run the current Runtime. They do not add later tables to the old
+window or promise current Runtime support for every historical schema.
+
+For credentialed prose verification, read the selected author Foundation, typed
+Book chapter target, production profile, Pack snapshot, author-supervised permission,
+route/model/reasoning and finite budget expiry before execution. Preserve dispatch
+brakes until authorized conditions hold. The formal proof remains generation,
+Review, necessary edits-only Revision/ReReview, Book Acceptance and next-chapter
+consumption of accepted Canon/Narrative State. A missing or expired grant keeps
+real execution `NOT_RUN`. Finite paired Context comparisons must retain original
+and revised text, independent evaluation, exact task/source/model boundaries, full
+chain token/cost receipts and latency. Controlled fixture success cannot establish
+literary gain or long-term production.
+
 ## Corpus metadata commands
 
 The existing Authority API accepts `POST /product/source-governance/corpus/commands`.

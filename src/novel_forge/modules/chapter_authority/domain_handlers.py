@@ -12,6 +12,7 @@ from novel_forge.modules.mkaos_authority.domain import (
 from novel_forge.modules.context_builder.domain import (
     ContextCandidate,
     build_authority_context_bundle,
+    validate_task_context_sources,
 )
 from novel_forge.modules.review.domain import (
     evaluate_rereview_result,
@@ -123,9 +124,11 @@ def build_context_bundle(
     retrieval_result_asset_version_id: str = "",
     frozen_arc_plans: dict[str, dict[str, Any]] | None = None,
     knowledge_access_policy: dict[str, Any] | None = None,
+    context_model_call: Any = None,
+    compression_input_tokens: int = 0,
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
-    if context_profile_version not in {"draft-context-profile-v2", "draft-context-profile-v3"}:
+    if context_profile_version not in {"draft-context-profile-v2", "draft-context-profile-v3", "draft-context-profile-v4"}:
         raise ValueError("unsupported frozen draft Context profile version")
     scoped_book_id = book_id or f"book:{project_id}"
     access = (
@@ -384,6 +387,26 @@ def build_context_bundle(
     if execution_intent and execution_intent_asset_version_id:
         from novel_forge.modules.mkaos_authority.craft_context_projection import reference_duplicate_craft_uses
         candidates = reference_duplicate_craft_uses(candidates, intent=execution_intent, intent_asset_version_id=execution_intent_asset_version_id)
+    task_receipt = None
+    if context_profile_version == "draft-context-profile-v4":
+        from novel_forge.modules.context_builder.task_compression import compile_task_context, validate_task_dependencies
+        task = {
+            "stage": "draft", "chapter": int(plan["chapter"]),
+            "plan": plan, "accepted_boundary": dict(assembly_boundary),
+            "memo_fingerprint": str((chapter_memo or {}).get("memo_fingerprint") or ""),
+            "preserve_quotes": list(plan.get("preserve_quotes") or ()),
+        }
+        admitted_source_ids = validate_task_context_sources(
+            project_id=project_id, book_id=book_id, candidates=candidates,
+            token_budget=token_budget, required_asset_types=tuple(required_asset_types),
+            accepted_boundary=dict(assembly_boundary), knowledge_access_policy=access,
+        )
+        candidates, task_receipt = compile_task_context(
+            candidates, task=task, token_budget=token_budget,
+            required_asset_types=tuple(required_asset_types),
+            model_call=context_model_call, compression_input_tokens=compression_input_tokens,
+            admitted_source_ids=admitted_source_ids,
+        )
     governed = build_authority_context_bundle(
         project_id=project_id,
         book_id=book_id,
@@ -412,8 +435,13 @@ def build_context_bundle(
             if str(item)
         ),
         knowledge_access_policy=access,
+        task_context_receipt=task_receipt,
     )
-    task_narrative_projection = build_task_narrative_projection(plan)
+    if task_receipt is not None:
+        selected_ids = set(governed["selected_asset_version_ids"])
+        validate_task_dependencies([candidate for candidate in candidates if candidate.asset_version_id in selected_ids], task=task)
+        governed["task_context_receipt"] = task_receipt
+    task_narrative_projection = build_task_narrative_projection(plan, task_scoped=context_profile_version == "draft-context-profile-v4")
     mission = dict((execution_intent or {}).get("chapter_mission") or {})
     if execution_intent and not mission:
         raise KernelError(

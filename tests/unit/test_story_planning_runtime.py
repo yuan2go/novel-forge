@@ -2364,7 +2364,8 @@ def _inputs(command: StoryPlanningGenerationCommand) -> tuple[FrozenPlanningInpu
     )
 
 
-def test_planning_context_uses_canonical_policy_and_selection_seam() -> None:
+@pytest.mark.parametrize("task_policy", [False, True], ids=["historical", "task-policy-v2"])
+def test_planning_context_uses_canonical_policy_and_selection_seam(task_policy: bool) -> None:
     command = _command("book_plan.generate")
     selected_inputs = [
         {
@@ -2388,7 +2389,8 @@ def test_planning_context_uses_canonical_policy_and_selection_seam() -> None:
         "narrative_search": {},
         "realization_reference_contract": {},
         "narrative_qualification_profiles": [],
-        "token_budget": 16_000,
+        "token_budget": 64_000 if task_policy else 16_000,
+        **({"planning_context_policy_version": "context-policy:chapter-generation-pack:v2"} if task_policy else {}),
     }
     manifest = PostgresPlanningExecutionPreparer._planning_context_manifest(
         command=command,
@@ -2398,12 +2400,14 @@ def test_planning_context_uses_canonical_policy_and_selection_seam() -> None:
 
     assert manifest["contract_version"] == "planning-context-manifest-v1"
     assert manifest["provider_context_view"]["contract_version"] == (
-        "provider-context-view-v2"
+        "provider-context-view-v4" if task_policy else "provider-context-view-v2"
     )
     assert len(manifest["policy_compilation"]["input_policies"]) == 3
     assert manifest["token_accounting"]["accepted_tokens"] > 0
     assert manifest["token_accounting"]["accepted_tokens"] < 16_000
     assert manifest["token_accounting"]["precision"] == "ESTIMATE_ONLY"
+    if task_policy:
+        assert manifest["token_accounting"]["method"] == "utf8-byte-upper-bound.v1"
     compiled = manifest["provider_context_view"]["compiled_view"]
     assert compiled["segments"][0]["content"]["premise"] == "A governed premise"
     assert manifest["projection_audit"]["loss_records"][0]["reason"] == "OPTIONAL_CONTEXT_BUDGET"

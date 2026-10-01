@@ -7,6 +7,7 @@ from novel_forge.modules.context_builder.production_retrieval import (
     build_expanded_retrieval_query_plan,
     build_retrieval_query_plan,
     build_retrieval_result,
+    build_task_dependency_refs,
 )
 from novel_forge.modules.chapter_authority.handlers import deterministic_retrieval_coverage_fast_path
 
@@ -125,6 +126,77 @@ def test_expanded_query_plan_preserves_boundary_cutoff_and_result_limit() -> Non
     assert expanded["result_limit"] == 24
     assert expanded["temporal_range"] == {"from_chapter": 1, "to_chapter": 4}
     assert expanded["query_plan_fingerprint"].startswith("sha256:")
+
+
+def test_task_dependency_refs_bind_fact_aliases_causes_and_foundation_sources() -> None:
+    dependencies = build_task_dependency_refs(
+        plan={"required_long_distance_fact_ids": ["fact:hook"]},
+        current_candidates=[
+            {"asset_type": "story_state_snapshot", "asset_version_id": "state:v8",
+             "content_hash": "sha256:" + "a" * 64,
+             "structured_facts": [{"source_event_id": "event:advance", "entity_key": "fact_id=fact:hook",
+                "state": {"proposition_id": "proposition:hook", "world_transition": {"cause_refs": ["event:planting", "foundation:world:v1"]}}},
+                {"source_event_id": "quality:internal", "provider_visibility": "INTERNAL_QUALITY_ONLY",
+                 "state": {"world_transition": {"cause_refs": ["denied:feedback"]}}}]},
+            {"asset_type": "world_bible", "asset_version_id": "world:v1",
+             "content_hash": "sha256:" + "b" * 64},
+        ],
+    )
+    assert dependencies["required_refs"] == ["event:planting", "fact:hook", "foundation:world:v1"]
+    assert dependencies["protected_fact_aliases"] == ["event:advance", "fact:hook", "foundation:world:v1", "proposition:hook"]
+    plan = build_retrieval_query_plan(intent=_intent(), memo=_memo(), task_dependency_refs=dependencies)
+    assert plan["contract_version"] == "retrieval-query-plan-v6"
+    assert plan["task_dependency_refs"] == dependencies
+    assert plan["candidate_limit"] == 256 and plan["result_limit"] == 24
+    assert "task_dependency_refs" not in build_retrieval_query_plan(intent=_intent(), memo=_memo())
+
+
+def test_required_task_documents_survive_optional_rank_limit_without_text_truncation() -> None:
+    dependencies = build_task_dependency_refs(plan={"required_long_distance_fact_ids": ["fact:hook"]}, current_candidates=[])
+    plan = build_retrieval_query_plan(intent=_intent(), memo=_memo(), task_dependency_refs=dependencies)
+    required = {**_document(), "retrieval_document_id": "required:planting",
+                "source_asset_version_id": "required:planting:v1", "accepted_from_chapter": 1,
+                "content_text": "A precise planting survives. " * 250,
+                "candidate_channels": ["TASK_DEPENDENCY"],
+                "task_dependency_matched_refs": ["fact:hook"],
+                "retrieval_reasons": ["required_dependency_planting"],
+                "metadata": {"structured_facts": [{"fact_id": "fact:hook"}]}}
+    optional = [{**_document(), "retrieval_document_id": f"optional:{index:02d}",
+                 "source_asset_version_id": f"optional:{index}:v1"} for index in range(30)]
+    result = build_retrieval_result(
+        project_id="project:novel", book_id="book:novel", intent_asset_version_id="intent:v1",
+        memo_asset_version_id="memo:v1", query_plan=plan, documents=[required, *optional],
+        discovery_rejections=[], semantic_status={},
+    )
+    assert result["contract_version"] == "chapter-retrieval-result-v6"
+    assert len(result["selected_documents"]) == 25
+    selected = next(item for item in result["selected_documents"] if item["retrieval_document_id"] == "required:planting")
+    assert selected["safe_summary"] == required["content_text"]
+    assert selected["compression_method"] == "none"
+    assert "required_task_dependency" in selected["retrieval_reasons"]
+    assert "required_dependency_planting" in selected["retrieval_reasons"]
+
+
+def test_task_dependency_ref_limit_fails_closed() -> None:
+    with pytest.raises(KernelError) as failure:
+        build_task_dependency_refs(plan={"required_long_distance_fact_ids": [f"fact:{index}" for index in range(2049)]}, current_candidates=[])
+    assert failure.value.code == "RETRIEVAL_TASK_DEPENDENCY_LIMIT"
+
+
+def test_frozen_task_result_rejects_omitted_dependency_documents_and_aliases() -> None:
+    dependencies = build_task_dependency_refs(plan={"required_long_distance_fact_ids": ["fact:missing"]}, current_candidates=[])
+    plan = build_retrieval_query_plan(intent=_intent(), memo=_memo(), task_dependency_refs=dependencies)
+    arguments = dict(project_id="project:novel", book_id="book:novel", intent_asset_version_id="intent:v1",
+        memo_asset_version_id="memo:v1", documents=[_document()], discovery_rejections=[], semantic_status={})
+    with pytest.raises(KernelError) as alias_failure:
+        build_retrieval_result(**arguments, query_plan=plan)
+    assert alias_failure.value.code == "RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE"
+    with pytest.raises(KernelError) as document_failure:
+        build_retrieval_result(**arguments, query_plan={**plan, "task_dependency_discovery": {
+            "matched_documents_by_ref": {"fact:missing": ["missing:document"]},
+        }})
+    assert document_failure.value.code == "RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE"
+
 
 
 def test_retrieval_result_is_reproducible_and_records_all_ranking_provenance() -> None:

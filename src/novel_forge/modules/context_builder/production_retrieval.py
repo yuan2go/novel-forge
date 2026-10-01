@@ -18,6 +18,7 @@ from novel_forge.modules.context_builder.retrieval_campaign import (
     RetrievalCampaignPolicy,
     build_retrieval_coverage_contract,
 )
+from novel_forge.modules.context_builder.task_context import fact_aliases
 from psycopg.types.json import Jsonb
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -25,6 +26,9 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 RETRIEVAL_POLICY_VERSION = "minimum-sufficient-retrieval-v5"
 SEMANTIC_PROJECTION_VERSION = "accepted-retrieval-embedding-v1"
 _SEMANTIC_POLICIES = frozenset({"REQUIRED", "FALLBACK_ALLOWED", "DISABLED"})
+_TASK_DEPENDENCY_CONTRACT = "task-dependency-refs-v1"
+_TASK_DEPENDENCY_REF_LIMIT = 2_048
+_TASK_DEPENDENCY_CLOSURE_LIMIT = 32
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,12 +51,51 @@ class FrozenRetrievalCandidateUnion:
     replayed: bool
 
 
+def build_task_dependency_refs(
+    *, plan: Mapping[str, Any], current_candidates: Iterable[Mapping[str, Any]],
+) -> dict[str, Any]:
+    required = set(_ids(plan.get("required_long_distance_fact_ids")))
+    aliases: set[str] = set()
+    bindings: set[tuple[str, str]] = set()
+    for candidate in current_candidates:
+        if candidate.get("asset_type") in {"creative_foundation", "world_bible", "character_cards", "character_cast"}:
+            bindings.add((str(candidate["asset_version_id"]), str(candidate["content_hash"])))
+            aliases.update(
+                "foundation:" + str(identity)
+                for identity in (candidate["asset_version_id"], dict(candidate.get("provenance") or {}).get("authority_asset_version_id"))
+                if identity
+            )
+        if candidate.get("asset_type") not in {"canon_snapshot", "story_state_snapshot"}:
+            continue
+        bindings.add((str(candidate["asset_version_id"]), str(candidate["content_hash"])))
+        for fact in candidate.get("structured_facts") or ():
+            if not isinstance(fact, Mapping) or fact.get("provider_visibility") == "INTERNAL_QUALITY_ONLY":
+                continue
+            aliases.update(fact_aliases(fact))
+            transition = dict(dict(fact.get("state") or {}).get("world_transition") or {})
+            required.update(_ids(transition.get("cause_refs")))
+    if len(required) > _TASK_DEPENDENCY_REF_LIMIT:
+        raise KernelError("RETRIEVAL_TASK_DEPENDENCY_LIMIT", "required task dependency set exceeds the bounded discovery contract")
+    return {
+        "contract_version": _TASK_DEPENDENCY_CONTRACT,
+        "required_refs": sorted(required),
+        "protected_fact_aliases": sorted(aliases),
+        "source_bindings": [
+            {"asset_version_id": identity, "content_hash": content_hash}
+            for identity, content_hash in sorted(bindings)
+        ],
+        "dependency_ref_limit": _TASK_DEPENDENCY_REF_LIMIT,
+        "closure_round_limit": _TASK_DEPENDENCY_CLOSURE_LIMIT,
+    }
+
+
 def build_retrieval_query_plan(
     *,
     intent: Mapping[str, Any],
     memo: Mapping[str, Any],
     semantic_policy: str = "FALLBACK_ALLOWED",
     campaign_policy: RetrievalCampaignPolicy | None = None,
+    task_dependency_refs: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
 
     policy = semantic_policy.strip().upper()
@@ -147,6 +190,17 @@ def build_retrieval_query_plan(
         "coverage_contract": coverage_contract,
         "campaign_policy": policy_contract.to_dict(),
     }
+    if task_dependency_refs is not None:
+        dependencies = dict(task_dependency_refs)
+        if dependencies.get("contract_version") != _TASK_DEPENDENCY_CONTRACT:
+            raise KernelError("RETRIEVAL_TASK_DEPENDENCY_CONTRACT_INVALID", "task dependency discovery requires its versioned frozen contract")
+        if len(_ids(dependencies.get("required_refs"))) > _TASK_DEPENDENCY_REF_LIMIT:
+            raise KernelError("RETRIEVAL_TASK_DEPENDENCY_LIMIT", "required task dependency set exceeds the bounded discovery contract")
+        plan.update({
+            "contract_version": "retrieval-query-plan-v6",
+            "retrieval_policy_version": "minimum-sufficient-task-retrieval-v6",
+            "task_dependency_refs": dependencies,
+        })
     plan["query_plan_fingerprint"] = _hash(plan)
     return plan
 
@@ -189,7 +243,7 @@ def build_expanded_retrieval_query_plan(
     }
     plan.update(
         {
-            "contract_version": "retrieval-query-plan-v5",
+            "contract_version": str(base_query_plan.get("contract_version") or "retrieval-query-plan-v5"),
             "queries": texts,
             "postgresql_fts_query": " ".join(texts),
             "entity_ids": _expanded_ids(plan, queries, "entity_ids"),
@@ -459,6 +513,14 @@ def discover_accepted_retrieval_candidates(
             ],
         )
         rows = uow.cursor.fetchall()
+        dependency_trace = None
+        if query_plan.get("task_dependency_refs") is not None:
+            dependency_documents, dependency_trace = _discover_task_dependencies(
+                uow, project_id=project_id, book_id=book_id,
+                boundary=boundary, cutoff=cutoff, query_plan=query_plan,
+            )
+        else:
+            dependency_documents = ()
         uow.cursor.execute(
             """
             SELECT document.retrieval_document_id,
@@ -487,15 +549,29 @@ def discover_accepted_retrieval_candidates(
         )
     frozen_query_plan = dict(query_plan)
     frozen_query_plan["candidate_projection_cutoff"] = cutoff.isoformat()
+    if dependency_trace is not None:
+        frozen_query_plan["task_dependency_discovery"] = dependency_trace
     frozen_query_plan.pop("query_plan_fingerprint", None)
     frozen_query_plan["query_plan_fingerprint"] = _hash(frozen_query_plan)
     documents = tuple(_document_from_row(row) for row in rows)
+    if dependency_trace is not None:
+        merged = {item["retrieval_document_id"]: item for item in documents}
+        for item in dependency_documents:
+            identity = item["retrieval_document_id"]
+            if identity in merged:
+                existing = merged[identity]
+                item = {**item, **existing,
+                        "candidate_channels": sorted(set(existing["candidate_channels"]) | set(item["candidate_channels"])),
+                        "retrieval_reasons": item["retrieval_reasons"],
+                        "task_dependency_matched_refs": item["task_dependency_matched_refs"]}
+            merged[identity] = item
+        documents = tuple(merged[identity] for identity in sorted(merged))
     inputs = tuple(
         {
-            "asset_version_id": str(row[1]),
-            "content_hash": str(row[14]),
+            "asset_version_id": str(item["source_asset_version_id"]),
+            "content_hash": str(item["source_content_hash"]),
         }
-        for row in rows
+        for item in documents
     )
     # INVARIANT: one AssetVersion may have multiple memory-layer documents. Operations
     # freeze the source once while the result retains every document identity.
@@ -538,7 +614,7 @@ def discover_accepted_retrieval_candidates(
             "ARC",
             "OBLIGATION",
             "TEMPORAL",
-        ],
+        ] + (["TASK_DEPENDENCY"] if dependency_trace is not None else []),
         "fallback": (
             "LEXICAL_STRUCTURED_DETERMINISTIC"
             if not ready_projection_count and policy == "FALLBACK_ALLOWED"
@@ -552,6 +628,114 @@ def discover_accepted_retrieval_candidates(
         query_plan=frozen_query_plan,
         semantic_status=semantic_status,
     )
+
+
+def _discover_task_dependencies(
+    uow: AuthorityUnitOfWork, *, project_id: str, book_id: str,
+    boundary: int, cutoff: Any, query_plan: Mapping[str, Any],
+) -> tuple[tuple[dict[str, Any], ...], dict[str, Any]]:
+    dependencies = dict(query_plan.get("task_dependency_refs") or {})
+    if dependencies.get("contract_version") != _TASK_DEPENDENCY_CONTRACT:
+        raise KernelError("RETRIEVAL_TASK_DEPENDENCY_CONTRACT_INVALID", "task dependency discovery requires its versioned frozen contract")
+    required = set(_ids(dependencies.get("required_refs")))
+    protected = set(_ids(dependencies.get("protected_fact_aliases")))
+    pending = set(required)
+    documents: dict[str, dict[str, Any]] = {}
+    resolved: dict[str, list[str]] = {}
+    rounds = 0
+    while pending:
+        rounds += 1
+        if rounds > _TASK_DEPENDENCY_CLOSURE_LIMIT or len(required) > _TASK_DEPENDENCY_REF_LIMIT:
+            raise KernelError("RETRIEVAL_TASK_DEPENDENCY_LIMIT", "required causal closure exceeds the bounded discovery contract")
+        refs = sorted(pending)
+        pending.clear()
+        uow.cursor.execute(
+            """
+            WITH eligible AS NOT MATERIALIZED (
+                SELECT document.*, version.content_hash AS source_content_hash
+                FROM authority_narrative_retrieval_document AS document
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=document.source_asset_version_id
+                WHERE document.project_id=%s AND document.book_id=%s
+                  AND document.created_at<=%s
+                  AND document.accepted_from_chapter<=%s
+                  AND (document.accepted_to_chapter IS NULL
+                       OR document.accepted_to_chapter>=%s)
+                  AND version.lifecycle IN ('ACTIVE','SUPERSEDED')
+                  AND version.eligibility='ELIGIBLE' AND version.governance='CLEAR'
+            ), matches AS (
+                SELECT ref.value AS dependency_ref, document.retrieval_document_id,
+                       ROW_NUMBER() OVER (PARTITION BY ref.value
+                         ORDER BY document.accepted_from_chapter,
+                                  document.retrieval_document_id) AS planting_rank,
+                       ROW_NUMBER() OVER (PARTITION BY ref.value
+                         ORDER BY document.accepted_from_chapter DESC,
+                                  document.retrieval_document_id) AS advance_rank
+                FROM unnest(%s::TEXT[]) AS ref(value)
+                JOIN eligible AS document ON (
+                    document.metadata->'fact_ids' ? ref.value OR EXISTS (
+                        SELECT 1 FROM jsonb_array_elements(
+                            CASE WHEN jsonb_typeof(document.metadata->'structured_facts')='array'
+                                 THEN document.metadata->'structured_facts' ELSE '[]'::jsonb END
+                        ) AS fact(value)
+                        WHERE ref.value IN (
+                            fact.value->>'source_event_id', fact.value->>'source_identity',
+                            fact.value->>'fact_id', fact.value->>'proposition_id',
+                            fact.value->'state'->>'fact_id', fact.value->'state'->>'proposition_id'
+                        )
+                    )
+                )
+            )
+            SELECT document.retrieval_document_id, document.source_asset_version_id,
+                   document.source_artifact_type, document.accepted_from_chapter,
+                   document.accepted_to_chapter, document.memory_layer,
+                   document.content_text, document.entity_ids, document.relationship_ids,
+                   document.character_ids, document.arc_plan_version_ids,
+                   document.obligation_ids, document.temporal_coordinate,
+                   document.metadata, document.source_content_hash,
+                   document.projection_hash, 0::DOUBLE PRECISION,
+                   '[]'::jsonb, '', '', 0, '', '', '', ARRAY['TASK_DEPENDENCY']::TEXT[],
+                   matches.dependency_ref, matches.planting_rank=1, matches.advance_rank=1
+            FROM matches JOIN eligible AS document USING(retrieval_document_id)
+            WHERE matches.planting_rank=1 OR matches.advance_rank=1
+            ORDER BY matches.dependency_ref, document.accepted_from_chapter,
+                     document.retrieval_document_id
+            """,
+            [project_id, book_id, cutoff, boundary, boundary, refs],
+        )
+        rows = uow.cursor.fetchall()
+        for ref in refs:
+            matching_rows = [row for row in rows if str(row[25]) == ref]
+            if not matching_rows and ref not in protected:
+                raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "an exact required dependency is unavailable at the frozen accepted boundary")
+            resolved[ref] = sorted({str(row[0]) for row in matching_rows})
+            for row in matching_rows:
+                document = _document_from_row(row)
+                identity = document["retrieval_document_id"]
+                previous = documents.get(identity, {})
+                document["task_dependency_matched_refs"] = sorted({*previous.get("task_dependency_matched_refs", ()), ref})
+                document["retrieval_reasons"] = sorted({
+                    *previous.get("retrieval_reasons", ()), "required_task_dependency",
+                    *( ("required_dependency_planting",) if row[26] else () ),
+                    *( ("required_dependency_advance",) if row[27] else () ),
+                })
+                documents[identity] = document
+                for fact in document["metadata"].get("structured_facts") or ():
+                    if not isinstance(fact, Mapping) or ref not in fact_aliases(fact):
+                        continue
+                    transition = dict(dict(fact.get("state") or {}).get("world_transition") or {})
+                    for cause in _ids(transition.get("cause_refs")):
+                        if cause not in required:
+                            required.add(cause)
+                            pending.add(cause)
+    return tuple(documents[identity] for identity in sorted(documents)), {
+        "contract_version": "task-dependency-discovery-v1",
+        "required_refs": sorted(required),
+        "protected_resolved_refs": sorted(required & protected),
+        "matched_documents_by_ref": resolved,
+        "closure_rounds": rounds,
+        "required_document_count": len(documents),
+    }
 
 
 def load_frozen_retrieval_candidate_union(
@@ -1052,7 +1236,8 @@ def build_retrieval_result(
         or 0
     )
     query_vector = tuple(float(item) for item in query_embedding)
-    ranked = hybrid_retrieve(
+    task_scoped = query_plan.get("task_dependency_refs") is not None
+    all_ranked = hybrid_retrieve(
         HybridRetrievalQuery(
             text=str(query_plan.get("postgresql_fts_query") or ""),
             accepted_through_chapter=boundary,
@@ -1062,10 +1247,53 @@ def build_retrieval_result(
             arc_plan_version_ids=tuple(_ids(query_plan.get("arc_plan_version_ids"))),
             obligation_ids=tuple(_ids(query_plan.get("obligation_ids"))),
             query_embedding=query_vector,
-            limit=int(query_plan.get("result_limit") or 24),
+            limit=len(frozen) if task_scoped else int(query_plan.get("result_limit") or 24),
         ),
         frozen,
     )
+    if task_scoped:
+        by_id = {str(item["retrieval_document_id"]): item for item in frozen}
+        dependency_trace = dict(query_plan.get("task_dependency_discovery") or {})
+        expected_required_ids = {
+            str(identity)
+            for identities in dict(dependency_trace.get("matched_documents_by_ref") or {}).values()
+            for identity in identities
+        }
+        if expected_required_ids - set(by_id):
+            raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "the frozen candidate set omitted an exact required dependency document")
+        required_ids = {
+            identity for identity, item in by_id.items()
+            if "TASK_DEPENDENCY" in item.get("candidate_channels", ())
+        } | expected_required_ids
+        ranked_ids = {str(item["retrieval_document_id"]) for item in all_ranked}
+        if required_ids - ranked_ids:
+            raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "a frozen required dependency no longer satisfies the accepted boundary")
+        required_documents = []
+        optional_documents = []
+        for item in all_ranked:
+            identity = str(item["retrieval_document_id"])
+            if identity in required_ids:
+                required_documents.append({**item, "retrieval_reasons": sorted({
+                    *item.get("retrieval_reasons", ()),
+                    *by_id[identity].get("retrieval_reasons", ()),
+                    "required_task_dependency",
+                })})
+            else:
+                optional_documents.append(item)
+        ranked = tuple(required_documents + optional_documents[:int(query_plan.get("result_limit") or 24)])
+        dependencies = dict(query_plan.get("task_dependency_refs") or {})
+        required_refs = set(_ids(dependencies.get("required_refs"))) | set(_ids(dependency_trace.get("required_refs")))
+        available_refs = set(_ids(dependencies.get("protected_fact_aliases")))
+        for item in ranked:
+            metadata = dict(item.get("metadata") or {})
+            available_refs.update(_ids(metadata.get("fact_ids")))
+            for fact in metadata.get("structured_facts") or ():
+                if isinstance(fact, Mapping) and fact.get("provider_visibility") != "INTERNAL_QUALITY_ONLY":
+                    available_refs.update(fact_aliases(fact))
+        if required_refs - available_refs:
+            raise KernelError("RETRIEVAL_TASK_DEPENDENCY_UNAVAILABLE", "ranked task evidence omitted a required exact dependency alias")
+    else:
+        ranked = all_ranked
     selected_ids = {str(item["retrieval_document_id"]) for item in ranked}
     rejected = [dict(item) for item in discovery_rejections]
     rejected.extend(
@@ -1078,10 +1306,10 @@ def build_retrieval_result(
         for item in frozen
         if str(item["retrieval_document_id"]) not in selected_ids
     )
-    selected = [_selected_document(item) for item in ranked]
+    selected = [_selected_document(item, preserve_text=task_scoped) for item in ranked]
     result = {
         "type": "RetrievalResult",
-        "contract_version": "chapter-retrieval-result-v5",
+        "contract_version": "chapter-retrieval-result-v6" if task_scoped else "chapter-retrieval-result-v5",
         "project_id": project_id,
         "book_id": book_id,
         "accepted_boundary": dict(query_plan.get("accepted_boundary") or {}),
@@ -1190,9 +1418,9 @@ def _document_from_row(row: tuple[Any, ...]) -> dict[str, Any]:
     }
 
 
-def _selected_document(item: Mapping[str, Any]) -> dict[str, Any]:
+def _selected_document(item: Mapping[str, Any], *, preserve_text: bool = False) -> dict[str, Any]:
     content = str(item.get("content_text") or "")
-    maximum = 4_000
+    maximum = len(content) if preserve_text else 4_000
     compressed = len(content) > maximum
     return {
         key: item.get(key)
@@ -1222,6 +1450,7 @@ def _selected_document(item: Mapping[str, Any]) -> dict[str, Any]:
             "embedding_receipt_id",
             "embedding_projection_version",
             "candidate_channels",
+            *( ("task_dependency_matched_refs",) if preserve_text else () ),
         )
     } | {
         "safe_summary": content[:maximum],
@@ -1287,6 +1516,7 @@ __all__ = [
     "FrozenRetrievalCandidateUnion",
     "RetrievalDiscovery",
     "build_retrieval_query_plan",
+    "build_task_dependency_refs",
     "build_expanded_retrieval_query_plan",
     "build_campaign_final_query_plan",
     "build_retrieval_result",

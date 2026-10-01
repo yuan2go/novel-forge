@@ -84,6 +84,9 @@ from novel_forge.storage.authority_asset_store import (
     AuthorityAssetQuery,
     AuthorityAssetWriter,
 )
+from novel_forge.modules.chapter_authority.context_compression_provider import (
+    CONTEXT_MODEL_STAGES, require_task_reasoning, task_provider_output_reserve,
+)
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
     chapter_provider_output_schema_ref,
@@ -121,7 +124,7 @@ _STAGES = frozenset(
     }
 )
 _OPTIONAL_DOMAIN_STAGES = frozenset(
-    {"agent_session", "retrieval", "retrieval_query_expansion"}
+    {"agent_session", "retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES}
 )
 
 _PLANNING_STAGES = frozenset(
@@ -158,6 +161,8 @@ _STAGE_CAPABILITIES = {
     "agent_session": CapabilityId.AGENT_WORKSPACE_EXECUTE,
     "retrieval": CapabilityId.RETRIEVAL_EMBED,
     "retrieval_query_expansion": CapabilityId.RETRIEVAL_QUERY_EXPAND,
+    "context_compress": CapabilityId.REVIEW_CHAPTER_EVALUATE,
+    "context_fidelity": CapabilityId.REVIEW_CHAPTER_EVALUATE,
 }
 
 
@@ -209,7 +214,7 @@ def _provider_context_selection(
             for item in selected_inputs
             if item["artifact_type"] == "chapter_execution_intent"
         ]
-    elif stage in {"retrieval", "retrieval_query_expansion"}:
+    elif stage in {"retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES}:
         context = [
             item for item in selected_inputs if item["artifact_type"] == "chapter_memo"
         ]
@@ -219,6 +224,16 @@ def _provider_context_selection(
             for item in selected_inputs
             if item["artifact_type"] == "context_bundle"
         ]
+    if stage in CONTEXT_MODEL_STAGES and len(context) == 1:
+        from .execution_artifacts import validate_chapter_memo
+
+        intents = [item for item in selected_inputs if item["artifact_type"] == "chapter_execution_intent"]
+        if len(intents) != 1:
+            raise KernelError("CONTEXT_COMPRESSION_INTENT_REQUIRED", "compression requires the exact frozen Intent and Memo")
+        validate_chapter_memo(
+            context[0]["content"], intent=intents[0]["content"],
+            intent_asset_version_id=intents[0]["asset_version_id"],
+        )
     if len(context) != 1:
         raise KernelError(
             "CHAPTER_CAPABILITY_CONTEXT_INVALID",
@@ -234,7 +249,7 @@ def _provider_route_context_types(
         return ("best_draft_candidate",)
     if stage == "memo":
         return ("chapter_execution_intent",)
-    if stage in {"retrieval", "retrieval_query_expansion"}:
+    if stage in {"retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES}:
         return ("chapter_memo",)
     return ("context_bundle",)
 
@@ -366,6 +381,21 @@ def _provider_effective_context_policy(
             "effective_policy": compilation.effective_policy.to_dict(),
             "selected_physical_types": list(selected_physical),
             "intent_fingerprint": content["intent_fingerprint"],
+        }
+    if selected_physical == ("chapter_memo",):
+        from .execution_artifacts import _hash
+
+        memo_body = dict(content)
+        fingerprint = str(memo_body.pop("memo_fingerprint", ""))
+        if content.get("qualification") != "QUALIFIED" or not fingerprint or fingerprint != _hash(memo_body):
+            raise KernelError("CHAPTER_MEMO_FINGERPRINT_INVALID", "Provider context requires an exact qualified Memo")
+        return {
+            "compiler_version": "frozen-memo-context-physical-admission-v1",
+            "memo_fingerprint": content["memo_fingerprint"],
+            "physical_allowed_types": sorted(physical_allowed),
+            "physical_denied_types": sorted(physical_denied),
+            "selected_physical_types": list(selected_physical),
+            "current_policy_compiler_invoked": False,
         }
     bundle_version = str(content.get("context_contract_version") or "")
     if bundle_version == "authority-context-bundle-v7":
@@ -561,7 +591,12 @@ def _stage_tool_permissions(
         if (
             tool_ref
             and str(item.get("permission") or "").upper() in {"EXECUTE", "QUERY"}
-            and ("canon_proposal" if stage == "canon_support" else stage) in operations
+            and (
+                "canon_proposal" if stage == "canon_support" else
+                "context" if stage in CONTEXT_MODEL_STAGES and stage in set(
+                    dict(policy.get("external_models") or {}).get("context_substages") or ()
+                ) else stage
+            ) in operations
         ):
             allowed.add(tool_ref)
         elif tool_ref:
@@ -589,6 +624,7 @@ class ChapterExecutionRoute:
     real_provider_validation_eligible: bool
     embedding_dimensions: int = 0
     model_context_limit: int = 0
+    model_output_limit: int = 0
     token_accounting_method: str = ""
     token_accounting_evidence_ref: str = ""
     token_safety_margin: int = 256
@@ -637,6 +673,7 @@ class ChapterExecutionRoute:
         if (
             min(
                 self.model_context_limit,
+                self.model_output_limit,
                 self.token_safety_margin,
                 self.token_framing_overhead,
             )
@@ -822,6 +859,14 @@ class PostgresChapterExecutionContractBinder:
             artifacts=artifacts,
             reference_operation_id=operation_id, reference_stage=stage,
         )
+        if stage in CONTEXT_MODEL_STAGES:
+            chunk = dict(dict(request_payload.get("input") or {}).get("context_compression_task") or {})
+            source = dict(chunk.get("source_binding") or {})
+            matches = [item for item in selected_inputs
+                       if item["asset_version_id"] == source.get("asset_version_id")
+                       and item["content_hash"] == source.get("content_hash")]
+            if len(matches) != 1:
+                raise KernelError("CONTEXT_COMPRESSION_SOURCE_DRIFT", "compression source must match one exact frozen input version and hash")
         retrieval_projection = (
             str(metadata.get("execution_binding_domain") or "")
             == "retrieval_projection"
@@ -947,8 +992,12 @@ class PostgresChapterExecutionContractBinder:
             **contract_without_hash,
             "materialization_hash": materialization_hash,
         }
+        contract_stage_identity = (
+            str(request_payload.get("stable_idempotency_key") or "")
+            if stage in CONTEXT_MODEL_STAGES else stage
+        )
         token = _identity_token(
-            f"{project_id}:{operation_id}:{attempt_id}:{stage}:capability"
+            f"{project_id}:{operation_id}:{attempt_id}:{contract_stage_identity}:capability"
         )
         logical_ref = f"production_execution/capability_materializations/{token}"
         document = self._ensure_contract(
@@ -1006,9 +1055,17 @@ class PostgresChapterExecutionContractBinder:
                 producer_contract=chapter_producer_contract_identity(prompt_evidence, contract),
                 request_input=provider_inputs, input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(), chapter=int(metadata.get("chapter") or 0))
             route_identity = routing_decision["decision_id"]
+        task_scoped = stage in CONTEXT_MODEL_STAGES or any(
+            str(item.get("content", {}).get("profile_version") or "") == "draft-context-profile-v4"
+            for item in selected_inputs
+        ) or str(metadata.get("task_context_profile") or "") == "draft-context-profile-v4"
+        require_task_reasoning(route, task_scoped=task_scoped and stage != "retrieval")
+        if task_scoped and stage != "retrieval":
+            if output_reserve > task_provider_output_reserve(stage, route):
+                raise KernelError("TASK_CONTEXT_MODEL_OUTPUT_LIMIT_EXCEEDED", "frozen output reserve exceeds the selected task or model bound")
         envelope = ProviderRequestEnvelope(
             provider=route.model_profile.model_provider,
-            reasoning_effort=route.model_profile.reasoning_effort if route.model_profile.model_provider == "deepseek" else "",
+            reasoning_effort=route.model_profile.reasoning_effort if route.model_profile.model_provider in {"deepseek", "openai"} else "",
             pricing_policy_json=json.dumps(routing_decision["selected"]["candidate"]["pricing"], sort_keys=True) if routing_decision else "",
             model=route.model_profile.model_id,
             protocol=provider_request_protocol(route.model_profile.model_provider),
@@ -1229,6 +1286,11 @@ class PostgresChapterExecutionContractBinder:
         route = self.routes[stage]
         if self.provider_router is not None and route.embedding_dimensions == 0:
             route, _routing_decision = self.provider_router.select_for_payload(route, request_payload)
+        require_task_reasoning(
+            route, task_scoped=stage in CONTEXT_MODEL_STAGES or (
+                stage != "retrieval" and str(metadata.get("task_context_profile") or "") == "draft-context-profile-v4"
+            ),
+        )
         definition = default_capability_registry().resolve(
             chapter_stage_capability(stage)
         )
@@ -1342,6 +1404,7 @@ class PostgresChapterExecutionContractBinder:
                 item.artifact_ref
                 for item in artifacts
                 if item.artifact_type == "context_bundle"
+                or (stage in CONTEXT_MODEL_STAGES and item.artifact_type == "chapter_memo")
                 or (
                     domain_materialization
                     and item.artifact_type != "capability_materialization_manifest"
@@ -1349,7 +1412,7 @@ class PostgresChapterExecutionContractBinder:
             ),
             f"context:none:{operation_id}",
         )
-        contract_instance = external_effect_id if stage == "agent_session" else stage
+        contract_instance = external_effect_id if stage == "agent_session" or stage in CONTEXT_MODEL_STAGES else stage
         token = _identity_token(
             f"{project_id}:{operation_id}:{attempt_id}:{contract_instance}"
         )
@@ -1533,6 +1596,7 @@ class PostgresChapterExecutionContractBinder:
                     item.asset_version_id
                     for item in artifacts
                     if item.artifact_type == "context_bundle"
+                    or (stage in CONTEXT_MODEL_STAGES and item.artifact_type == "chapter_memo")
                 ),
                 f"context:none:{operation_id}",
             ),
@@ -1990,7 +2054,7 @@ class PostgresChapterExecutionContractBinder:
                     workflow_definition_ref=workflow_ref,
                     workflow_node_id="canon_proposal"
                     if stage == "canon_support"
-                    else stage,
+                    else "context" if stage in CONTEXT_MODEL_STAGES else stage,
                     environment=self.pack_environment,
                     runtime_profile=self.pack_runtime_profile,
                     release_channel=self.pack_release_channel,
@@ -2597,6 +2661,17 @@ def default_chapter_fixture_response(
             "stop_conditions": [
                 "Stop on a frozen constraint conflict; do not invent a fact to resolve it."
             ],
+        }
+    if stage in CONTEXT_MODEL_STAGES:
+        task = dict(inputs.get("context_compression_task") or {})
+        if stage == "context_compress":
+            return {"selected_unit_ids": list(task.get("required_unit_ids") or ())}
+        selected = set(task.get("selected_unit_ids") or ())
+        missing = sorted(set(task.get("required_unit_ids") or ()) - selected)
+        return {
+            "supported": True, "coverage_complete": not missing,
+            "missing_unit_ids": missing, "distorted_unit_ids": [],
+            "reason": "Scripted fixture checks required extract identities only; semantic fidelity is not proven.",
         }
     if stage == "retrieval_query_expansion":
         coverage = dict(inputs.get("coverage") or {})
@@ -3722,6 +3797,26 @@ def _stage_semantic_contract(
             "provider-unavailable identity, summary, or invented fact. Do not retrieve or "
             "mutate Authority state."
         )
+    if stage == "context_compress":
+        return (
+            "Select exact unit_id values from this bounded chunk that retain the task relevant "
+            "causal meaning. Preserve every required unit and the subject, time, negation, "
+            "condition, exception, uncertainty, and distinction between fact, belief, suspicion "
+            "and plan. Keep task important voice, humor, relationship subtext and promise wording. "
+            "Return unit IDs only; do not rewrite text, invent units, emit source hashes or "
+            "positions, or decide fidelity. This is a derived extract proposal, never Canon. "
+            "If required information cannot fit, preserve it and let the host block. "
+        )
+    if stage == "context_fidelity":
+        return (
+            "Independently inspect the proposed extract against this original source chunk "
+            "and frozen task. Check forward source support and reverse required meaning coverage. "
+            "Check subject, time, negation, conditions, exceptions, uncertainty, epistemic "
+            "status, causal prerequisites, voice, relationship subtext and promises. A legal ID "
+            "alone is not fidelity proof. Report unsupported or distorted selected IDs and "
+            "missing original IDs. Fail closed on uncertainty and give a concrete reason. "
+            "Do not rewrite extracts, mutate story state or rely on a compressor verdict. "
+        )
     if stage == "retrieval_query_expansion":
         return (
             "Return only a bounded retrieval query proposal matching the strict schema. "
@@ -4203,7 +4298,7 @@ def _materialize_production_codex_prompt(
         or not isinstance(knowledge, list)
         or (
             not knowledge
-            and stage not in {"agent_session", "retrieval", "retrieval_query_expansion", *ACTOR_STAGES}
+            and stage not in {"agent_session", "retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES, *ACTOR_STAGES}
         )
         or not isinstance(tools, Mapping)
         or not isinstance(schema, Mapping)
@@ -4249,7 +4344,7 @@ def _materialize_production_codex_prompt(
         item for item in knowledge if isinstance(item, Mapping)
     )
     if not knowledge_view and stage not in {
-        "agent_session", "retrieval", "retrieval_query_expansion", *ACTOR_STAGES,
+        "agent_session", "retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES, *ACTOR_STAGES,
     }:
         raise KernelError(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
