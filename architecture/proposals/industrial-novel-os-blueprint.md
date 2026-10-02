@@ -18,8 +18,8 @@ Baseline implementation identity: `sha256:06f6c417ef4374bb9505aa1c94f4d9fa2cc744
   "reviewed_on": "2026-10-02",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "bc6d5f8bde6882dad105d974e969d8bdb929f777",
-    "implementation_tree_sha": "sha256:ebde25fe57cdd0b4df8dff6a96ab010681964e9faaa9cfb639162f998e99fbf3"
+    "sha": "0dc486f4012ec1a63add40ed9f20677d7760f136",
+    "implementation_tree_sha": "sha256:5edf302a1e6ffaa74ec4ebc56efeaadc70dd9e5eb063d3b7c104126d6b9777b3"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
