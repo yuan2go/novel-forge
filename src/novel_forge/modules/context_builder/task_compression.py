@@ -170,6 +170,8 @@ def compile_task_context(
         replacements = {}
         call_count = 0
         for candidate in eligible:
+            if sum(replacements.get(item.asset_version_id, item).estimated_tokens for item in normalized) <= token_budget:
+                break
             units = _units(candidate, task)
             groups = []
             group = []
