@@ -2,8 +2,8 @@
   "work_package": "WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01",
   "created_at": "2026-10-02T17:19:13.871654+00:00",
   "base_sha": "4dc8b36ed124a835e37ddbb65501df590859c567",
-  "state": "TWO_REAL_CREATIVE_CANDIDATES_PENDING_AUTHOR",
-  "model_calls_in_this_work_package": 2,
+  "state": "AUTHOR_FEEDBACK_REWORK_CANDIDATE_PENDING_READING",
+  "model_calls_in_this_work_package": 3,
   "target_book_decision": "NEW_ORIGINAL_WORK_CONFIRMED",
   "total_book_chapters": null,
   "detailed_planning_and_production_range": [
@@ -347,7 +347,7 @@
     "old_reference_unknown_is_project_scoped": true,
     "new_project_runtime_admission_verified": true,
     "final_wire_payload_verified": true,
-    "scope_limitation": "Two real standalone Creative Foundation candidates via native Story Planning; no Formation/Book Design activation and no chapter production."
+    "scope_limitation": "Three real standalone Creative Foundation candidates via native Story Planning; previous recommendations withdrawn following author feedback; latest candidate has a continuous voice test. No Formation/Book Design activation or formal chapter production."
   },
   "initial_design_allowance": {
     "authorization_ref": "user:WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01:codex-only:20261003",
@@ -364,12 +364,20 @@
     "final_manuscript_acceptance": "AUTHOR_CONFIRMATION_PENDING_AUTO_NOT_SELECTED"
   },
   "actual_usage": {
-    "input_tokens": 37146,
-    "output_tokens": 11776,
-    "reasoning_output_tokens": 4140,
+    "input_tokens": 55905,
+    "output_tokens": 15605,
+    "reasoning_output_tokens": 5692,
     "cached_input_tokens": 36864,
-    "total_tokens": 48922
+    "total_tokens": 71510
   },
   "actual_monetary_cost": "UNAVAILABLE_ACCOUNT_ENTITLEMENT_NOT_FREE",
-  "deepseek_calls": 0
+  "deepseek_calls": 0,
+  "feedback_revision": {
+    "author_feedback_file": "candidates/author-feedback-01.json",
+    "latest_evidence_file": "candidates/feedback-rework-01-evidence.json",
+    "prior_evidence_file": "candidates/execution-evidence.json",
+    "previous_recommendation": "WITHDRAWN",
+    "latest_candidate_asset_version_id": "authority-output:64ed7e2c-2769-4a6e-b022-6c8d44665ce4:story_planning.candidate:v1",
+    "quality": "NOT_ADJUDICATED"
+  }
 }

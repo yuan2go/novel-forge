@@ -1,0 +1,50 @@
+{
+  "source": "direct author message in this conversation",
+  "quote": "怎么说呢，这两本小说都有种不是人写的感觉",
+  "target_candidates": [
+    "authority-output:1d856e7d-443d-46e4-b981-b524734a3925:story_planning.candidate:v1",
+    "authority-output:1dc8758e-4b85-40a3-93f6-cbe5881792ce:story_planning.candidate:v1"
+  ],
+  "disposition": "WITHDRAW_ASSISTANT_RECOMMENDATION_PAUSE_ACTIVATION",
+  "formal_native_rejection": "NOT_SUBMITTED_WITHOUT_EXPLICIT_AUTHOR_DECISION",
+  "new_brief": {
+    "creative_brief_contract_version": "creative-brief-v2",
+    "idea": "作者对前两份候选的直接反馈是：“怎么说呢，这两本小说都有种不是人写的感觉”。这不是作者批准任何方向。现在重新探索一个完全独立的小说候选。先想一个在熟悉的人情处境中会让读者在意的人，以及他眼前想解决的一件事：他想要什么，想瞒住什么，为什么今天特别难办，别人的话为何会刺到他。他可以虚荣、贪便宜、嘴硬、怕丢脸、嫉妒或对一个人偏心；选确实能产生故事的一两种，不把这些缺点列成配方。让他有想变强和改变生活的欲望，利益相碰时仍像具体的人。助手暂提出原创修行长篇作为探索方向，以便检验权力、成长和人情压力；这不是已获作者批准的题材。不要先立一座寓意鲜明的奇异世界，再安排一组职业恰好互补的人演示主题。只交一份短而具体的Creative Foundation候选，让人读完想看看这个人接下来怎么办。objective给朴素暂名与核心处境，narrative_engine说明眼前事情如何牵出更大的矛盾即可，不要提前给所有人安排完整成长结论。style_profile.original_examples仅放一个650—900汉字的连续原创场景，发生在最早的日常冲突中，有动作、对白和没有全说出来的打算；不分成机制示范小条，不在场景后逐句解释笑点或人物美德。它仅是候选声音测试，不是正式第1章。其他字段可以简短回答，total book length仍未定，不为每个字段硬凑新设定。",
+    "genre": "暂探索原创修行长篇，未批准题材或世界",
+    "audience": "希望跟随一个有私心、有情绪、会成长的人读长篇冒险的中文读者",
+    "constraints": [
+      "作者原话是对前两份候选阅读感觉的否定性反馈；不擅自把它细化成已经确认的诊断。本次更改是助手的编辑假设，须通过新的具体场景接受作者判断。",
+      "学习已授权的抽象方法：危险与日常同在，谨慎需要行动，信息不同会造成不同选择，人物关系逐渐变化；把这些当阅读后检查，别在人物出场前按清单装配。",
+      "配角先是各有事情的人，可以误解、打断、记仇、敷衍或对主角根本不感兴趣。职业、能力与目标不必刚好凑成解决问题的小队。角色不必正确理解自己的欲望，也不必在每次对话中提出完善诉求。",
+      "短场景让人物正在办事，允许无意的停顿、失言和岔开话题，但不要用刻意粗俗、堆口头禅或随机缺点冒充真实。少用概念、总结与解释；人物做了什么比作者替他宣布成长更有用。",
+      "人物行动、已有知识、资源、时间仍需成立。不要为消除工程感而制造逻辑断裂；世界规则尚为候选，未来事件不是已发生Canon。",
+      "本次候选不继承过去任何小说，包括前两份迁徙家园候选的人物、世界、标题或具体情节；不使用灯、证据法庭、见证登记主线。禁止复制参考作品人物、原句、特色能力、标志性桥段或独特事件组合。",
+      "当前只是候选Creative Foundation和短声音测试。100章和每章5000—6000汉字属于以后规划与生产范围，本次不生成章纲、正式正文、Book Design、Canon或接纳状态。"
+    ],
+    "source_boundaries": [
+      "输入为本次作者原话、既有作者原则和助手拟定的编辑假设，不将助手假设伪称作者结论。",
+      "参考原文与研究全文不提供给生成器。仅使用作者明确选定的通用机制；研究来源Observation fb28961e-63c0-4543-b15d-79f96753326b、9d480d3e-98e1-4ae8-b3fa-0a02bb46a983、39f705bd-8727-432c-b69f-2796b919110d只是谱系标记，没有作为已批准KnowledgeCard。",
+      "前两份候选、旧小说和未完成研究不作为新故事事实输入。旧UNKNOWN不使用、不重发。所有新产物仍须作者审阅。"
+    ]
+  },
+  "hypotheses_not_human_adjudication": true,
+  "brief_registration": {
+    "operation_id": "5a175077-f8bb-4925-91e0-55b5d2a967d6",
+    "asset_id": "authority-output:5a175077-f8bb-4925-91e0-55b5d2a967d6:creative.brief",
+    "asset_version_id": "authority-output:5a175077-f8bb-4925-91e0-55b5d2a967d6:creative.brief:v1",
+    "content_hash": "sha256:bca336d63676831d95acab2b1943958be33b2e833c2118185b66febc48be449d",
+    "output_key": "creative.brief",
+    "replayed": false,
+    "materialized_outputs": [
+      {
+        "asset_id": "authority-output:5a175077-f8bb-4925-91e0-55b5d2a967d6:creative.brief",
+        "asset_version_id": "authority-output:5a175077-f8bb-4925-91e0-55b5d2a967d6:creative.brief:v1",
+        "asset_type": "creative_brief",
+        "output_key": "creative.brief",
+        "role": "primary",
+        "content_hash": "sha256:bca336d63676831d95acab2b1943958be33b2e833c2118185b66febc48be449d",
+        "replayed": false
+      }
+    ]
+  }
+}
