@@ -9,20 +9,20 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `2bcfe01e4d6219479748f379b25b6eceac6cf89c`
+Reality baseline: `98294f617bee34bc05db7e4ea5f9acda3882ff92`
 Baseline implementation identity:
-`sha256:077ce01912efbeae4fbc7c4aead8d5d4cdfe72b0c7a12c7ccd78a412c42a67ba`
+`sha256:08bf172b0e3b29206698f47558600353e8859bdcd216116c332c52332157daef`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-01",
+  "reviewed_on": "2026-10-02",
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "2bcfe01e4d6219479748f379b25b6eceac6cf89c",
-    "implementation_tree_sha": "sha256:077ce01912efbeae4fbc7c4aead8d5d4cdfe72b0c7a12c7ccd78a412c42a67ba"
+    "sha": "98294f617bee34bc05db7e4ea5f9acda3882ff92",
+    "implementation_tree_sha": "sha256:08bf172b0e3b29206698f47558600353e8859bdcd216116c332c52332157daef"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -192,3 +192,5 @@ deterministic regression evidence.
 
 Model judging runs in isolated sessions against a frozen rubric and is labelled
 `MODEL_JUDGE`. Without a real editor, `HUMAN_EDITORIAL=NOT_RUN`.
+
+Current scope review (2026-10-02): Restricted private Source observation now retains UNKNOWN rights, whole-work integrity issues and exact source slices through analysis admission. Reference Context uses an observation boundary; production still requires accepted Canon. Strict Codex Schema projection and empty optional lineage normalization retain raw responses. These changes do not resolve remaining production, creative-validation or literary-quality qualifications.
