@@ -188,3 +188,36 @@ def test_initial_obligation_discovery_validates_original_state_without_accepted_
     with pytest.raises(KernelError) as missing:
         _discover_task_dependencies(SimpleNamespace(cursor=Cursor(row)), **{**arguments, "query_plan": {"accepted_boundary": boundary, "task_dependency_refs": unknown}})
     assert missing.value.code == "RETRIEVAL_TASK_SOURCE_BINDING_INVALID"
+
+
+def test_reference_observation_compiles_real_source_without_production_canon():
+    import hashlib
+    from dataclasses import replace
+    from novel_forge.modules.context_contracts import ContextCandidate
+    from novel_forge.modules.context_builder.task_compression import compile_task_context
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.source_authority.observation import observation_boundary
+    boundary={'boundary_type':'SOURCE_OBSERVATION','task_id':'task:test','source_id':'source:test','edition_id':'edition:test','processing_id':'processing:test','source_work_asset_version_id':'work:test','source_hash':'sha256:'+'a'*64,'mode':'PREFIX','visible_through_chapter':2,'spans':[{'unit_version_id':'unit:2','chunk_asset_version_id':'chunk:2','byte_start':0,'byte_end':200,'content_hash':'sha256:'+'b'*64,'chapter':2}],'authorization_ref':'user:test','authorized_actor_id':'author:test','expires_at':'2099-01-01T00:00:00+00:00','use':'SOURCE_ANALYSIS','transmission':'PRIVATE_DESIGNATED_ACCOUNT','provider':'codex-cli','model':'gpt-6.1-sol','reasoning_effort':'high'}
+    text='He suspects the gate is open; he has not checked.\n\nA long irrelevant description. '*8
+    candidate=ContextCandidate(asset_version_id='chunk:2',asset_type='source_chunk',project_id='project:test',estimated_tokens=1,raw_source=True,source_use_mode='source_analysis',allowed_use='source_analysis',safe_summary=text,content_digest='sha256:'+hashlib.sha256(text.encode()).hexdigest(),observation_boundary=boundary,provenance={'source':'chunk:2'},relevance_score=1)
+    task={'stage':'reference_analysis','observation_boundary':boundary,'goal':'What does he know?','memo_fingerprint':'observation:test'}
+    selected,receipt=compile_task_context([candidate],task=task,token_budget=5000,required_asset_types=())
+    assert selected[0].safe_summary==text and receipt['fast_path']
+    assert receipt['observation_boundary']==boundary and 'accepted_boundary' not in receipt
+    with pytest.raises(KernelError,match='BOUNDARY_REQUIRED'):
+        compile_task_context([candidate],task={'stage':'draft'},token_budget=5000,required_asset_types=())
+    with pytest.raises(KernelError,match='REFERENCE_SOURCE'):
+        compile_task_context([replace(candidate,source_use_mode='generation')],task=task,token_budget=5000,required_asset_types=())
+    future={**boundary,'visible_through_chapter':1}
+    with pytest.raises(KernelError,match='future'):
+        observation_boundary(future)
+    observed=[]
+    def semantic(stage,chunk):
+        observed.append((stage,chunk))
+        assert 'accepted_boundary' not in chunk and chunk['observation_boundary']==boundary
+        if stage=='context_compress':
+            return {'selected_unit_ids':['text:0']}
+        return {'supported':True,'coverage_complete':True,'missing_unit_ids':[],'distorted_unit_ids':[]}
+    selected,receipt=compile_task_context([candidate],task=task,token_budget=250,required_asset_types=(),model_call=semantic,compression_input_tokens=10000)
+    assert [stage for stage,_ in observed]==['context_compress','context_fidelity']
+    assert receipt['compression_trace'] and selected[0].safe_summary==text.split('\n\n')[0]

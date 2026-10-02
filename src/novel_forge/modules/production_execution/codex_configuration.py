@@ -30,7 +30,7 @@ CODEX_INPUT_ONLY_OVERRIDES = (
 )
 
 
-CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v2"
+CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v3"
 CODEX_NO_RETRY_POLICY = "codex-no-transport-retry.v1"
 
 
@@ -80,6 +80,21 @@ def codex_account_binding_evidence(backend: object) -> dict:
 
 def codex_output_schema(schema: dict) -> dict:
     result = {k: v for k, v in schema.items() if k != "uniqueItems"}
+    if isinstance(result.get("properties"), dict):
+        properties = result["properties"]
+        for key in ("anyOf", "oneOf"):
+            if isinstance(result.get(key), list):
+                result[key] = [
+                    {**branch, "type": "object", "properties": {
+                        **properties, **{name: {**properties.get(name, {}), **value}
+                        for name, value in branch.get("properties", {}).items()}},
+                     "additionalProperties": False}
+                    if "properties" in branch and "type" not in branch else branch
+                    for branch in result[key]
+                ]
+        result["type"] = "object"
+        result["additionalProperties"] = False
+        result["required"] = list(properties)
     choices = [result["const"]] if "const" in result else result.get("enum", [])
     if "type" not in result and choices:
         types = {type(value) for value in choices}

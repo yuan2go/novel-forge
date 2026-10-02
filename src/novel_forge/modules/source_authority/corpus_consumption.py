@@ -10,7 +10,8 @@ from novel_forge.storage.source_authority_repositories import SourceAuthorityRep
 
 
 def require_corpus_consumption(
-    database_url: str, project_id: str, payload: Any, *, source_analysis: bool
+    database_url: str, project_id: str, payload: Any, *, source_analysis: bool,
+    operation_id: str = ""
 ) -> None:
     identities: set[str] = set()
     pending = [(payload, 0)]
@@ -46,10 +47,18 @@ def require_corpus_consumption(
     if not identities:
         return
     with AuthorityUnitOfWork(database_url) as uow:
-        SourceAuthorityRepository(uow.cursor).require_corpus_execution_assets(
+        repository = SourceAuthorityRepository(uow.cursor)
+        inputs = payload.get("input", payload) if isinstance(payload, Mapping) else {}
+        observation = None
+        if inputs.get("observation_boundary"):
+            if not source_analysis or not operation_id:
+                raise KernelError("SOURCE_OBSERVATION_USE", "research scope requires an admitted source Operation")
+            observation = repository.require_source_observation(project_id, operation_id, inputs)
+        repository.require_corpus_execution_assets(
             project_id,
             tuple(sorted(identities)),
             CorpusUse.SOURCE_ANALYSIS
             if source_analysis
             else CorpusUse.ABSTRACT_GENERATION,
+            observation=observation,
         )

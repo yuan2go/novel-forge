@@ -680,3 +680,22 @@ def test_codex_protocol_schema_rejection_is_distinct_from_transient_failure():
     for value in ("[]", "not json", json.dumps({"type": "error", "message": "timeout"}),
         json.dumps({"type": "error", "message": json.dumps({"status": 429, "error": {"code": "rate_limit"}})})):
         assert codex_protocol_failure(value) is None
+
+
+def test_codex_source_schema_projects_partial_alternatives_as_closed_objects():
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+    from novel_forge.modules.source_import.execution_contracts import content_intelligence_output_schema, DECONSTRUCTION_STAGE
+    original=content_intelligence_output_schema(DECONSTRUCTION_STAGE)
+    projected=codex_output_schema(original)
+    finding=projected['properties']['findings']['items']
+    for branch in finding['anyOf']:
+        assert branch['additionalProperties'] is False
+        assert set(branch['required'])==set(branch['properties'])
+    value={'findings':[{'finding_code':'mechanism','statement':'test','evidence_span_ids':['chapter:1'],'input_observation_asset_version_ids':[]}],'confidence':0.5,'knowledge_status':'NOT_ABSTRACTED'}
+    validate_chapter_provider_output_against_schema("source.deconstruction.observe", projected, value)
+    validate_chapter_provider_output_against_schema("source.deconstruction.observe", original, value)
+    value['findings'][0]['evidence_span_ids']=[]
+    with pytest.raises(KernelError, match="SCHEMA"):
+        validate_chapter_provider_output_against_schema("source.deconstruction.observe", projected, value)

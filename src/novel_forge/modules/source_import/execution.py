@@ -1299,6 +1299,7 @@ class PostgresContentIntelligenceExecutionPort:
                 "asset_version_ids": list(spec.artifact_version_ids),
             },
             source_analysis=True,
+            operation_id=worker.causation_id,
         )
         definition = default_capability_registry().resolve(spec.capability)
         graph = self._operation_graph(worker.causation_id, worker.project_id)
@@ -1364,9 +1365,14 @@ class PostgresContentIntelligenceExecutionPort:
                 producer_contract=producer_contract_identity(prompt_evidence, materialization),
                 request_input=spec.input_payload,
                 input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest())
+        if spec.input_payload.get("observation_boundary"):
+            from novel_forge.modules.source_authority.observation import observation_boundary
+            scope = observation_boundary(spec.input_payload["observation_boundary"])
+            if (base_route.model_profile.model_provider, base_route.model_profile.model_id, base_route.model_profile.reasoning_effort) != (scope.provider, scope.model, scope.reasoning_effort):
+                raise KernelError("SOURCE_OBSERVATION_ROUTE", "selected route differs from research permission")
         envelope = ProviderRequestEnvelope(
             provider=base_route.model_profile.model_provider,
-            reasoning_effort=base_route.model_profile.reasoning_effort if base_route.model_profile.model_provider == "deepseek" else "",
+            reasoning_effort=base_route.model_profile.reasoning_effort,
             pricing_policy_json=json.dumps(routing_decision["selected"]["candidate"]["pricing"], sort_keys=True) if routing_decision else "",
             model=base_route.model_profile.model_id,
             protocol=provider_request_protocol(base_route.model_profile.model_provider),
@@ -1609,6 +1615,7 @@ class PostgresContentIntelligenceExecutionPort:
                             "asset_version_ids": list(spec.artifact_version_ids),
                         },
                         source_analysis=True,
+                        operation_id=worker.causation_id,
                     ),
                 ),
             )

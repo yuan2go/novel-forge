@@ -51,6 +51,7 @@ class ContextCandidate:
     semantic_representation_identity: str = ""
     source_revision: str = ""
     accepted_boundary: dict[str, Any] | None = None
+    observation_boundary: dict[str, Any] | None = None
     section: str = "NARRATIVE"
     bucket: str = "GENERAL"
     required: bool = False

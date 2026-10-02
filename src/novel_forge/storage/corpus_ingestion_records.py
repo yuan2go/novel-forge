@@ -125,6 +125,7 @@ class CorpusIngestionRecords(CorpusCatalogRecords):
         use: CorpusUse,
         *,
         require_bridge: bool = True,
+        observation: dict[str, Any] | None = None,
     ) -> dict[str, dict[str, Any]]:
         self.corpus_authorization_lock(project_id)
         result = {}
@@ -157,6 +158,7 @@ class CorpusIngestionRecords(CorpusCatalogRecords):
                     external_work_id=str(row[3]),
                     retired=bool(row[4]),
                     rights_current=bool(row[5]),
+                    restricted_research=bool(observation and use == CorpusUse.SOURCE_ANALYSIS and observation["edition_id"] == str(row[0]) and observation["source_id"] == str(row[9])),
                 )
                 reasons = (
                     list(decision["reasons"]) if decision["decision"] == "DENY" else []
@@ -165,6 +167,7 @@ class CorpusIngestionRecords(CorpusCatalogRecords):
                     reasons.append("CORPUS_BRIDGE_MISSING")
                 if (
                     require_bridge
+                    and not observation
                     and row[10]
                     and row[10].get("completeness") == "REVIEW_REQUIRED"
                 ):
@@ -203,7 +206,8 @@ class CorpusIngestionRecords(CorpusCatalogRecords):
         return decision
 
     def corpus_document_denials(
-        self, project_id: str, document_ids: tuple[str, ...], use: CorpusUse
+        self, project_id: str, document_ids: tuple[str, ...], use: CorpusUse,
+        *, observation: dict[str, Any] | None = None,
     ) -> dict[str, str]:
         self.corpus_authorization_lock(project_id)
         denied: dict[str, str] = {}
@@ -233,7 +237,7 @@ class CorpusIngestionRecords(CorpusCatalogRecords):
             )
             rows = self.cursor.fetchall()
             editions = tuple(str(row[1]) for row in rows if row[1])
-            decisions = self.corpus_edition_uses(project_id, editions, use)
+            decisions = self.corpus_edition_uses(project_id, editions, use, observation=observation)
             for document, edition, tainted, bound in rows:
                 if edition:
                     decision = decisions.get(str(edition))
@@ -247,13 +251,18 @@ class CorpusIngestionRecords(CorpusCatalogRecords):
                     denied[str(document)] = "CORPUS_BRIDGE_MISSING"
         denied.update(self.corpus_unbridged_documents(project_id, document_ids))
         if use != CorpusUse.LOCAL_PROCESSING:
-            denied.update(self.corpus_processing_denials(project_id, document_ids))
+            if observation and use == CorpusUse.SOURCE_ANALYSIS:
+                if set(document_ids) != {observation["source_document_id"]}:
+                    raise KernelError("SOURCE_OBSERVATION_DOCUMENT_SCOPE", "lineage exceeds registered source")
+            else:
+                denied.update(self.corpus_processing_denials(project_id, document_ids))
         return denied
 
     def require_corpus_documents(
-        self, project_id: str, document_ids: tuple[str, ...], use: CorpusUse
+        self, project_id: str, document_ids: tuple[str, ...], use: CorpusUse,
+        *, observation: dict[str, Any] | None = None,
     ) -> None:
-        denied = self.corpus_document_denials(project_id, document_ids, use)
+        denied = self.corpus_document_denials(project_id, document_ids, use, observation=observation)
         if denied:
             raise KernelError("MKAOS_CORPUS_BRIDGE_REQUIRED", str(denied))
 
@@ -304,7 +313,8 @@ class CorpusIngestionRecords(CorpusCatalogRecords):
         return [dict(row[0]) for row in self.cursor.fetchall()]
 
     def require_corpus_execution_assets(
-        self, project_id: str, identities: tuple[str, ...], use: CorpusUse
+        self, project_id: str, identities: tuple[str, ...], use: CorpusUse,
+        *, observation: dict[str, Any] | None = None,
     ) -> None:
         self.corpus_authorization_lock(project_id)
         pending, visited, documents = set(identities), set(), set()
@@ -376,4 +386,4 @@ class CorpusIngestionRecords(CorpusCatalogRecords):
             raise KernelError(
                 "CORPUS_LINEAGE_QUERY_BOUND", "source lineage exceeds supported depth"
             )
-        self.require_corpus_documents(project_id, tuple(sorted(documents)), use)
+        self.require_corpus_documents(project_id, tuple(sorted(documents)), use, observation=observation)

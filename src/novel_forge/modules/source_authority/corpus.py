@@ -480,6 +480,7 @@ def corpus_use_admission(
     external_work_id: str,
     retired: bool,
     rights_current: bool,
+    restricted_research: bool = False,
 ) -> dict[str, Any]:
     effective = effective_work_rights(rights, external_work_id)
     decision = corpus_admission(
@@ -493,8 +494,13 @@ def corpus_use_admission(
     reasons = [] if decision["decision"] == "ALLOW" else list(decision["reasons"])
     if use not in effective.allowed_uses:
         reasons.append("CORPUS_USE_NOT_GRANTED")
+    private_analysis = (restricted_research and use == CorpusUse.SOURCE_ANALYSIS
+        and source_purpose == CorpusPurpose.RESEARCH
+        and effective.underlying_rights != UnderlyingRights.CONFLICTING
+        and effective.underlying_rights != UnderlyingRights.RESTRICTED
+        and set(effective.restrictions).issubset({"PRIVATE_ANALYSIS_ONLY", "NO_RAW_WRITER_INPUT", "NO_PUBLIC_DISTRIBUTION"}))
     if use != CorpusUse.LOCAL_PROCESSING:
-        if (
+        if not private_analysis and (
             effective.underlying_rights
             in {
                 UnderlyingRights.UNKNOWN,

@@ -85,3 +85,29 @@ def test_manifest_is_typed_bounded_and_not_an_acquisition_adapter():
                 "entries": [],
             }
         )
+
+
+def test_restricted_research_preserves_unknown_without_granting_generation():
+    from novel_forge.modules.source_authority.corpus import RightsDeclaration, CorpusUse, CorpusPurpose, corpus_use_admission
+    rights = RightsDeclaration(action='declare_rights', source_id='source:test', dataset_license='user supplied', underlying_rights='UNKNOWN', allowed_purposes=('RESEARCH',), allowed_uses=('SOURCE_ANALYSIS',), restrictions=('PRIVATE_ANALYSIS_ONLY','NO_RAW_WRITER_INPUT','NO_PUBLIC_DISTRIBUTION'), evidence_refs=('user:test',), copyright_boundary='private analysis only', scope='ALL_WORKS_IN_SNAPSHOT')
+    args=dict(rights=rights, source_purpose=CorpusPurpose.RESEARCH, external_work_id='work:test', retired=False, rights_current=True)
+    assert corpus_use_admission(**args, use=CorpusUse.SOURCE_ANALYSIS)['decision']=='DENY'
+    assert corpus_use_admission(**args, use=CorpusUse.SOURCE_ANALYSIS, restricted_research=True)['decision']=='ALLOW'
+    assert rights.underlying_rights=='UNKNOWN'
+    assert corpus_use_admission(**args, use=CorpusUse.ABSTRACT_GENERATION, restricted_research=True)['decision']=='DENY'
+    for changes in ({'retired':True},{'rights_current':False},{'rights':rights.model_copy(update={'restrictions':('NO_TRANSMISSION',)})},{'rights':rights.model_copy(update={'underlying_rights':'CONFLICTING'})}):
+        assert corpus_use_admission(**{**args,**changes}, use=CorpusUse.SOURCE_ANALYSIS, restricted_research=True)['decision']=='DENY'
+
+
+def test_local_observation_keeps_whole_review_and_rejects_intersecting_damage():
+    from novel_forge.modules.source_authority.observation import validate_local_integrity
+    from novel_forge.modules.command_kernel.errors import KernelError
+    import pytest
+    assessment={'acquisition_integrity':'VERIFIED_BYTES','structure_usable':False,'coverage':'REVIEW_REQUIRED','issues':[{'blocking':True,'evidence':[{'locator':{'path':'source.txt','original_byte_offset':100,'original_byte_end':200}}]}]}
+    units=[{'source_locator':{'path':'source.txt','original_byte_offset':0,'original_byte_end':100}}]
+    validate_local_integrity(assessment, units)
+    assert assessment['coverage']=='REVIEW_REQUIRED'
+    with pytest.raises(KernelError,match='intersects'):
+        validate_local_integrity(assessment,[{'source_locator':{'path':'source.txt','original_byte_offset':150,'original_byte_end':300}}])
+    with pytest.raises(KernelError,match='unverified'):
+        validate_local_integrity({**assessment,'acquisition_integrity':'UNKNOWN'}, units)

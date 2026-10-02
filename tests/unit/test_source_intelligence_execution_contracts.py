@@ -685,3 +685,15 @@ def test_neighbor_evidence_cannot_be_counted_as_target_observation():
     bindings = ({**bindings[0], "role": "TARGET"},)
     observed, _ = validate_narrative(output, segments=tuple(inputs["source_segments"]), lower_ids=(), dimensions=["causal_constraints"], unit_bindings=bindings)
     assert observed["findings"][0]["source_unit_evidence"][0]["source_unit_version_id"] == "unit:v1"
+
+
+def test_strict_projection_empty_optional_lineage_normalizes_without_weakening_evidence():
+    from novel_forge.modules.source_import.execution_contracts import content_intelligence_output_schema, validate_content_intelligence_output, DECONSTRUCTION_STAGE
+    value={'findings':[{'finding_code':'mechanism','statement':'conditional inference','evidence_span_ids':['chapter:1'],'input_observation_asset_version_ids':[]}],'confidence':0.7,'knowledge_status':'NOT_ABSTRACTED'}
+    result=validate_content_intelligence_output(DECONSTRUCTION_STAGE,content_intelligence_output_schema(DECONSTRUCTION_STAGE),value)
+    assert result['findings'][0]['evidence_span_ids']==['chapter:1']
+    assert 'input_observation_asset_version_ids' not in result['findings'][0]
+    assert value['findings'][0]['input_observation_asset_version_ids']==[]
+    for changes in ({'evidence_span_ids':[]},{'input_observation_asset_version_ids':['observation:1']}):
+        with pytest.raises(ValueError):
+            validate_content_intelligence_output(DECONSTRUCTION_STAGE,content_intelligence_output_schema(DECONSTRUCTION_STAGE),{**value,'findings':[{**value['findings'][0],**changes}]})
