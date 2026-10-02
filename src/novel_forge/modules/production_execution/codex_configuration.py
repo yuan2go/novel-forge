@@ -87,7 +87,10 @@ def codex_output_schema(schema: dict) -> dict:
                 result[key] = [
                     {**branch, "type": "object", "properties": {
                         **properties, **{name: {**properties.get(name, {}), **value}
-                        for name, value in branch.get("properties", {}).items()}},
+                        for name, value in branch.get("properties", {}).items()},
+                        **{name: {**properties[name], "maxItems": 0}
+                        for name in ("evidence_span_ids", "input_observation_asset_version_ids")
+                        if name not in branch.get("required", [])}},
                      "additionalProperties": False}
                     if "properties" in branch and "type" not in branch else branch
                     for branch in result[key]

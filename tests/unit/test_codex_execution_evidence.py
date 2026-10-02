@@ -696,6 +696,10 @@ def test_codex_source_schema_projects_partial_alternatives_as_closed_objects():
     value={'findings':[{'finding_code':'mechanism','statement':'test','evidence_span_ids':['chapter:1'],'input_observation_asset_version_ids':[]}],'confidence':0.5,'knowledge_status':'NOT_ABSTRACTED'}
     validate_chapter_provider_output_against_schema("source.deconstruction.observe", projected, value)
     validate_chapter_provider_output_against_schema("source.deconstruction.observe", original, value)
+    value['findings'][0]['input_observation_asset_version_ids']=['observation:1']
+    with pytest.raises(KernelError, match="SCHEMA"):
+        validate_chapter_provider_output_against_schema("source.deconstruction.observe", projected, value)
+    value['findings'][0]['input_observation_asset_version_ids']=[]
     value['findings'][0]['evidence_span_ids']=[]
     with pytest.raises(KernelError, match="SCHEMA"):
         validate_chapter_provider_output_against_schema("source.deconstruction.observe", projected, value)
