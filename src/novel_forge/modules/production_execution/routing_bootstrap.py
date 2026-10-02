@@ -77,10 +77,20 @@ def benchmark_decision(
             continue
         if not bootstrap_candidate_accounting_matches(grant, candidate):
             row["rejected_reasons"].append("BENCHMARK_ACCOUNTING_AUTHORIZATION_MISMATCH")
+        source_entitlement_sample = (
+            grant["task_type"] == "source.deconstruction.observe"
+            and grant["book_id"].startswith("source-corpus:")
+            and grant.get("accounting_basis") == "ACCOUNT_ENTITLEMENT"
+            and bootstrap_candidate_accounting_matches(grant, candidate)
+        )
+        # WHY: An exact Source sampling grant selects its research model without manufacturing production failures.
+        permitted = {"QUALITY_FLOOR_NOT_MET", "BENCHMARK_INSUFFICIENT"}
+        if source_entitlement_sample:
+            permitted.add("ESCALATION_THRESHOLD_NOT_MET")
         row["rejected_reasons"] = [
             reason
             for reason in row["rejected_reasons"]
-            if reason not in {"QUALITY_FLOOR_NOT_MET", "BENCHMARK_INSUFFICIENT"}
+            if reason not in permitted
         ]
         if (row["estimated_total_tokens"] > grant["maximum_tokens"]
             or grant["maximum_amount"] is not None and Decimal(
