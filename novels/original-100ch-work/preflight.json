@@ -2,8 +2,8 @@
   "work_package": "WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01",
   "created_at": "2026-10-02T17:19:13.871654+00:00",
   "base_sha": "4dc8b36ed124a835e37ddbb65501df590859c567",
-  "state": "PROPOSAL_NOT_AUTHORIZATION",
-  "model_calls_in_this_work_package": 0,
+  "state": "TWO_REAL_CREATIVE_CANDIDATES_PENDING_AUTHOR",
+  "model_calls_in_this_work_package": 2,
   "target_book_decision": "NEW_ORIGINAL_WORK_CONFIRMED",
   "total_book_chapters": null,
   "detailed_planning_and_production_range": [
@@ -16,15 +16,17 @@
   ],
   "design_model": "gpt-6.1-sol",
   "design_reasoning": "high",
-  "review_model": "deepseek-v4-pro",
+  "review_model": "DEFERRED_BY_AUTHOR",
   "review_model_revision_from_official_catalog": "DeepSeek-V4-Pro-0813",
-  "review_wire_parameters": {
-    "thinking": {
-      "type": "enabled"
-    },
-    "reasoning_effort": "high"
+  "review_wire_parameters": null,
+  "model_served_identity": {
+    "provider": "codex-cli",
+    "requested_model_id": "gpt-6.1-sol",
+    "actual_cli_model_argument": "gpt-6.1-sol",
+    "actual_cli_reasoning_argument": "high",
+    "server_independently_reported_model": "UNAVAILABLE",
+    "note": "Native final Router/Provider admission and exact CLI command bind the literal requested model. The normalized usage model field is the requested model, not an independent server model attestation."
   },
-  "model_served_identity": "NO_MODEL_REQUEST_YET",
   "budget_estimate": {
     "method": "scenario estimate from wired stages; not a frozen task count or hard completion guarantee",
     "rows": [
@@ -326,11 +328,11 @@
     "resent": false
   },
   "author_decisions_required": [
-    "final manuscript acceptance mode",
-    "new task budget/expiry/local scoped runtime and Pack binding permission"
+    "design candidate selection and approval",
+    "final manuscript acceptance mode before production"
   ],
-  "current_design_approval": "NOT_GRANTED",
-  "current_prose_acceptance": "NOT_GRANTED",
+  "current_design_approval": "NOT_GRANTED_FOR_NEW_CANDIDATES",
+  "current_prose_acceptance": "NOT_REQUESTED",
   "no_recharge": true,
   "no_deploy": true,
   "no_push": true,
@@ -343,8 +345,31 @@
     "chapter_quality_group_timeout_seconds": 3000,
     "chapter_root_timeout_seconds": 3600,
     "old_reference_unknown_is_project_scoped": true,
-    "new_project_runtime_admission_verified": false,
-    "final_wire_payload_verified": false,
-    "scope_limitation": "Local read-only checks and request compiler inspection only; no new-book model execution"
-  }
+    "new_project_runtime_admission_verified": true,
+    "final_wire_payload_verified": true,
+    "scope_limitation": "Two real standalone Creative Foundation candidates via native Story Planning; no Formation/Book Design activation and no chapter production."
+  },
+  "initial_design_allowance": {
+    "authorization_ref": "user:WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01:codex-only:20261003",
+    "user_instruction": "1、确认；2、DeepSeek先不用，先用codex创建小说内容，允许使用额度",
+    "scope": "new original novel only; all earlier fiction excluded; design candidates await author selection",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "high",
+    "calls": 120,
+    "tokens": 6000000,
+    "priced_usd": "0",
+    "deepseek_calls": 0,
+    "expires_at": "2026-10-17T15:59:59+00:00",
+    "scope_note": "conservative initial design sublimit of the offered allowance; one cumulative new-book ledger; no recharge/renewal/push/deploy",
+    "final_manuscript_acceptance": "AUTHOR_CONFIRMATION_PENDING_AUTO_NOT_SELECTED"
+  },
+  "actual_usage": {
+    "input_tokens": 37146,
+    "output_tokens": 11776,
+    "reasoning_output_tokens": 4140,
+    "cached_input_tokens": 36864,
+    "total_tokens": 48922
+  },
+  "actual_monetary_cost": "UNAVAILABLE_ACCOUNT_ENTITLEMENT_NOT_FREE",
+  "deepseek_calls": 0
 }
