@@ -1,0 +1,70 @@
+{
+  "schema": "reference-test-source-manifest.v2",
+  "task_id": "WP-REFERENCE-MECHANISM-LOGIC-AND-ORIGINAL-PROSE-01",
+  "source": {
+    "filename": "《苟在女魔头身边偷偷修炼》（校对版）.txt",
+    "provided_title": "苟在女魔头身边偷偷修炼",
+    "provided_author": "怕辣的红椒",
+    "authority_for_content": "USER_UPLOADED_TEXT_ONLY",
+    "raw_file_sha256": "89618f50f17324bdcbd4eda74a0325bca97d94342f0dc3d6473626b751cf279a",
+    "bytes": 15001731,
+    "encoding": "utf-8-sig",
+    "repository_target_path": "novels/reference-tests/gou-zai-nv-mo-tou/source.txt",
+    "raw_git_blob_sha1": "924b1fc7b0b1d73f4600467080a7839f7037d09d"
+  },
+  "scan": {
+    "method": "full_file_deterministic_heading_scan; not full semantic review",
+    "line_count": 490850,
+    "unicode_character_count": 6310210,
+    "nonwhitespace_characters_including_punctuation_and_headings": 4354555,
+    "heading_pattern": "^\\s*第(\\d+)章\\s*(.*)$",
+    "chapter_heading_count": 1622,
+    "first_heading_number": 1,
+    "last_heading_number": 1624,
+    "missing_heading_numbers": [
+      703,
+      997
+    ],
+    "duplicate_heading_numbers": [],
+    "anomaly_interpretation": "No independent heading found; do not infer missing story, fill chapters, or blame author without source verification."
+  },
+  "line_and_hash_semantics": {
+    "source_line_numbers": "1-based Python splitlines; raw source unmodified",
+    "chapter_hash": "UTF-8 encoding of chapter lines joined by LF, no added terminal LF; normalized chapter hash is not raw-byte slice hash",
+    "filecite_lines": "Files citations may use response-local line numbers; do not interchange with source_line_numbers"
+  },
+  "permissions": {
+    "private_reference_analysis": "requested",
+    "whole_text_redistribution": "not_granted",
+    "upload_source_to_github": "USER_REQUESTED_PRIVATE_REPOSITORY_ONLY",
+    "training_or_finetuning": "not_granted",
+    "paid_provider_calls": "not_granted_by_reference_selection",
+    "production_deployment": "not_granted_by_reference_selection",
+    "author_approval_of_new_design": "pending",
+    "repository": "yuan2go/novel-forge",
+    "authorization_source": "用户明确要求：请将小说和任务md都上传到GitHub",
+    "public_redistribution": "NOT_GRANTED"
+  },
+  "execution": {
+    "source_index": "COMPLETED",
+    "initial_case_design": "COMPLETED",
+    "full_source_semantic_review": "NOT_RUN",
+    "model_benchmark": "NOT_RUN",
+    "original_design_approved": false,
+    "original_prose": "NOT_RUN",
+    "book_acceptance": "NOT_RUN",
+    "quality_improvement": "NOT_PROVEN"
+  },
+  "repository_delivery": {
+    "prepared_on": "2026-10-02",
+    "base_sha": "7c509bc1fc5d36b3a86456b7561fa2d223ac22bd",
+    "required_visibility": "private",
+    "reference_directory": "novels/reference-tests/gou-zai-nv-mo-tou",
+    "source_upload_status": "PENDING_CONTAINER_FILE_TRANSFER",
+    "index_upload_status": "PENDING_IMPORT_OR_DETERMINISTIC_REBUILD",
+    "chapter_index_sha256": "393fe23515a2fc8f3f0f54da313dc595b5d5b6c52949487c97059dd6d31ca354",
+    "test_cases_sha256": "4a9c7ca43c6c83d26bfb703a00b436e42b5a1aa422d64a660862453b23856f3f",
+    "documents_status": "VERIFY_REMOTE_COMMIT",
+    "manifest_is_native_runtime_schema": false
+  }
+}
