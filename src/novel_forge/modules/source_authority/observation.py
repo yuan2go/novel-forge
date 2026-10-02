@@ -94,7 +94,6 @@ def validate_local_integrity(
             for unit in units:
                 local = unit["source_locator"]
                 if locator["path"] == local.get("path") and locator["original_byte_offset"] < local.get("original_byte_end", 0) and locator["original_byte_end"] > local.get("original_byte_offset", 0):
-                    # INVARIANT: A numbering gap limits continuity claims, not the bytes of an exact available unit; all other local damage still blocks.
                     if (
                         issue.get("issue_id") in acknowledged
                         and issue.get("code") == "MISSING_OR_UNORDERED_CHAPTER"
