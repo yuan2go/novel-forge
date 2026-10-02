@@ -60,11 +60,23 @@
     "base_sha": "7c509bc1fc5d36b3a86456b7561fa2d223ac22bd",
     "required_visibility": "private",
     "reference_directory": "novels/reference-tests/gou-zai-nv-mo-tou",
-    "source_upload_status": "PENDING_CONTAINER_FILE_TRANSFER",
-    "index_upload_status": "PENDING_IMPORT_OR_DETERMINISTIC_REBUILD",
+    "source_upload_status": "REMOTE_BLOB_VERIFIED",
+    "index_upload_status": "REMOTE_BLOB_VERIFIED",
     "chapter_index_sha256": "393fe23515a2fc8f3f0f54da313dc595b5d5b6c52949487c97059dd6d31ca354",
     "test_cases_sha256": "4a9c7ca43c6c83d26bfb703a00b436e42b5a1aa422d64a660862453b23856f3f",
-    "documents_status": "VERIFY_REMOTE_COMMIT",
-    "manifest_is_native_runtime_schema": false
+    "documents_status": "REMOTE_BLOB_VERIFIED",
+    "manifest_is_native_runtime_schema": false,
+    "source_upload_commit": "c2c7a78f4b903535e6f17a95845458febe3fae6f",
+    "source_remote_blob_sha1": "924b1fc7b0b1d73f4600467080a7839f7037d09d",
+    "index_remote_blob_sha1": "bc7f5171c24b27f69fe93c602c6e087a3b7a1d24",
+    "remote_verification_date": "2026-10-02",
+    "source_import_checks": {
+      "raw_bytes_preserved": true,
+      "complete_index_rebuilt_and_hash_matched": true,
+      "evidence_spans_hash_and_chapter_location_verified": 26,
+      "repeat_import_identical": true,
+      "different_destinations_preserved_without_partial_write": true
+    },
+    "code_baseline_verified_sha": "32cef050fc6a1830c559b5145cc9dd3abf55828f"
   }
 }
