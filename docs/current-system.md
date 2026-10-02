@@ -1529,6 +1529,21 @@ Benchmark cannot enter the Source generation/analysis bridge. Production members
 does not authorize model calls or abstract generation. Source analysis additionally needs
 its existing governed runtime, approved policy and bounded Provider budget.
 
+Restricted research freezes a Source Observation Boundary instead of a production
+accepted cursor. An acknowledged numbering discontinuity can permit reading its exact
+available chapter unit only when the issue locator and normalized hash match that unit.
+The issue remains blocking for whole-work completeness, and `REVIEW_REQUIRED` is not
+upgraded. Unacknowledged, unlocalized, mismatched or other intersecting integrity issues
+still reject consumption. The registered boundary reaches the same Provider recheck;
+this exception does not grant Writer or public use.
+
+Reference compression retains recognized chapter headings as required source units.
+Multiple groups share one candidate target instead of receiving that target each time;
+nonpositive group allocations and an aggregate mandatory-unit floor above the target
+stop before a semantic call. Fidelity restoration and the
+final aggregate budget still apply. These deterministic protections do not establish
+semantic fidelity or a net cost benefit for lossy compression.
+
 Known Corpus bytes and exact Git acquisition paths cannot be relabeled through legacy
 Source registration or a SourceWork wrapper to omit lineage. Unbound legacy sources keep
 their existing governance. New approvals, Packs, planning references and Provider input

@@ -29,7 +29,10 @@ class CorpusProcessingRecords:
         units = [r[0] for r in self.cursor.fetchall()]
         if len(units) != len(ids) or any(u["status"] != "AVAILABLE" or u["raw_file_hash"] != boundary.source_hash for u in units):
             raise KernelError("SOURCE_OBSERVATION_UNIT", "observed source identity is unavailable or changed")
-        validate_local_integrity(processing["assessment"], units)
+        validate_local_integrity(
+            processing["assessment"], units,
+            acknowledged_numbering_issue_ids=boundary.acknowledged_numbering_issue_ids,
+        )
         indexed = {u["source_unit_version_id"]: u for u in units}
         segments = inputs.get("source_segments") or []
         chunks = list({span.chunk_asset_version_id for span in boundary.spans})

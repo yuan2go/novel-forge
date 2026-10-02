@@ -234,3 +234,18 @@ def test_reference_observation_compiles_real_source_without_production_canon():
     selected,receipt=compile_task_context(repeated,task={**task,'observation_boundary':ordered_boundary},token_budget=900,required_asset_types=(),model_call=semantic,compression_input_tokens=10000,maximum_chunks=1)
     assert len(observed)==2 and len(receipt['compression_trace'])==1
     assert text in [item.safe_summary for item in selected]
+
+    observed.clear()
+    expected_boundary=boundary
+    headed=replace(candidate,safe_summary='第2章 约定\n\n'+text)
+    def omit_header(stage,chunk):
+        observed.append((stage,chunk))
+        if stage=='context_compress':
+            return {'selected_unit_ids':['text:1']}
+        return {'supported':True,'coverage_complete':True,'missing_unit_ids':[],'distorted_unit_ids':[]}
+    selected,receipt=compile_task_context([headed],task=task,token_budget=300,required_asset_types=(),model_call=omit_header,compression_input_tokens=10000)
+    assert selected[0].safe_summary.startswith('第2章 约定\n\nHe suspects')
+    assert 'text:0' in observed[0][1]['required_unit_ids']
+    assert receipt['compression_trace'][0]['method']=='host-bound-extractive-semantic.v2'
+    with pytest.raises(KernelError,match='mandatory source units'):
+        compile_task_context([headed],task=task,token_budget=30,required_asset_types=(),model_call=lambda *args:pytest.fail('infeasible target dispatched a model'),compression_input_tokens=10000)
