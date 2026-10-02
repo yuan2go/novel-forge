@@ -195,6 +195,19 @@ def test_exact_source_entitlement_sample_selects_model_without_production_escala
     assert production_scope["status"] == "BLOCKED"
 
 
+def test_source_campaign_retains_project_identity_without_creative_book_allocation():
+    from novel_forge.modules.command_kernel.creative_budget_runtime import require_provider_campaign_entitlement
+
+    cursor = SimpleNamespace(execute=lambda *args: None, fetchall=lambda: [])
+    grant = {**entitlement_grant(), "task_type": "source.deconstruction.observe",
+             "book_id": "source-corpus:project"}
+    require_provider_campaign_entitlement(cursor, project_id="project", grant=grant)
+    for change in ({"task_type": "book_plan.generate"}, {"book_id": "book"},
+                   {"book_id": "source-corpus:other-project"}):
+        with pytest.raises(KernelError, match="CREATIVE_BUDGET_AUTHORIZATION_REQUIRED"):
+            require_provider_campaign_entitlement(cursor, project_id="project", grant={**grant, **change})
+
+
 def test_zero_router_money_cap_retains_entitlement_identity_quota_and_unknown_cost():
     from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
 
