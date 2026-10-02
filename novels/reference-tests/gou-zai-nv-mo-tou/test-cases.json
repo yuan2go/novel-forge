@@ -1,0 +1,373 @@
+{
+  "schema": "reference-test-cases.v1",
+  "task_id": "WP-REFERENCE-MECHANISM-LOGIC-AND-ORIGINAL-PROSE-01",
+  "source_sha256": "89618f50f17324bdcbd4eda74a0325bca97d94342f0dc3d6473626b751cf279a",
+  "status": "SEED_CASES_NOT_MODEL_EXECUTED",
+  "warning": "Original cases include hypotheses and counterexamples, not an assertion of 12 author errors. Mutations are constructed test faults, never original novel evidence. This JSON is an exchange manifest, not claimed as a native Novel Forge API schema.",
+  "source_cases": [
+    {
+      "id": "SRC-001",
+      "dimension": "long_range_factual_recall",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 1,
+          "source_start_line": 102,
+          "source_end_line": 112,
+          "purpose": "初始面板修为",
+          "normalized_span_sha256": "d3652458a9e554386f2418944e6c078af4d55cc28aa0450b2e91cff6c69b3e0f"
+        },
+        {
+          "chapter": 501,
+          "source_start_line": 115568,
+          "source_end_line": 115584,
+          "purpose": "回忆初遇时的修为",
+          "normalized_span_sha256": "5c756a1446b281cdff7ec3803305b55ac43c114c8be84d180560b3fc001371a3"
+        }
+      ],
+      "observation": "开篇炼气九层与第501章回忆炼气八层不一致。",
+      "expected": "报告版本内文本差异并回查前后文，区分叙事记忆不可靠、版本错误与真正设定冲突；不把它直接上升为全书质量结论。",
+      "adjudication": "TEXT_MISMATCH_CONFIRMED; CAUSE_AND_SEVERITY_PENDING",
+      "prefix_end_chapter": 501
+    },
+    {
+      "id": "SRC-002",
+      "dimension": "delayed_explanation_false_positive",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 7,
+          "source_start_line": 1056,
+          "source_end_line": 1082,
+          "purpose": "惩罚与赔偿",
+          "normalized_span_sha256": "1e02f840d98086d57ba5f34362ac960f54f67f9e6609ed9498c45dd8599ec49b"
+        },
+        {
+          "chapter": 14,
+          "source_start_line": 2357,
+          "source_end_line": 2371,
+          "purpose": "派系利益与原抓捕计划",
+          "normalized_span_sha256": "4c397b70002e30a113cf113fe17e510a883e030398a7076c8f1313d425bd7f9f"
+        },
+        {
+          "chapter": 15,
+          "source_start_line": 2386,
+          "source_end_line": 2418,
+          "purpose": "解释约束与叙述者动机",
+          "normalized_span_sha256": "5552fc18ad9247bf9f3d6e2517ab9df639acc814be2c573d52c386eeb5af007e"
+        }
+      ],
+      "observation": "除叛徒反受罚，后续给出利益与约束解释。",
+      "expected": "截至第7章标待解释而非确定矛盾；第14至15章承认解释已出现，另评说明是否充分；柳星辰说法须标为人物陈述。",
+      "adjudication": "EXPLANATION_EXISTS; SUFFICIENCY_REVIEWABLE",
+      "prefix_variants": [
+        7,
+        15
+      ]
+    },
+    {
+      "id": "SRC-003",
+      "dimension": "epistemic_visibility",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 2,
+          "source_start_line": 201,
+          "source_end_line": 225,
+          "purpose": "读者可见掌教身份",
+          "normalized_span_sha256": "df89e1a3ab49aced3858f06e5659b4581f9bb53135fe7c07aff1353590f0a3ad"
+        },
+        {
+          "chapter": 16,
+          "source_start_line": 2683,
+          "source_end_line": 2697,
+          "purpose": "江浩对女方身份和宗门目的的误判",
+          "normalized_span_sha256": "9ad1202fa8ddbaffa676080e50a96d34b5664490918543bd5072d50dbf4f6a3c"
+        }
+      ],
+      "observation": "读者与主角拥有不同身份信息。",
+      "expected": "读者已知不得写成主角已知；误判不是自动的设定矛盾。离线全书审读与角色前缀输入分开。",
+      "adjudication": "NO_CONTRADICTION_FROM_KNOWLEDGE_ASYMMETRY_ALONE",
+      "prefix_end_chapter": 16
+    },
+    {
+      "id": "SRC-004",
+      "dimension": "power_rule_and_observation_channel",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 14,
+          "source_start_line": 2251,
+          "source_end_line": 2267,
+          "purpose": "隐藏气息的能力",
+          "normalized_span_sha256": "51cf6218eeda3f4d69155fed5972346040d3bdb689786c6d0ac3c7524cfaa734"
+        },
+        {
+          "chapter": 16,
+          "source_start_line": 2585,
+          "source_end_line": 2605,
+          "purpose": "身体迹象与当场观察",
+          "normalized_span_sha256": "4c1a7262162a26b522fc38c18260b3b7d740ea8597e4408a8d16c296f09264d3"
+        }
+      ],
+      "observation": "能遮蔽内息，不必然遮蔽所有可观察证据。",
+      "expected": "保留识别途径与能力作用范围，不能压缩为完全隐身或绝不可能被识破。",
+      "adjudication": "EXPLICIT_ALTERNATIVE_OBSERVATION_EXPLANATION",
+      "prefix_end_chapter": 16
+    },
+    {
+      "id": "SRC-005",
+      "dimension": "claim_vs_fact",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 5,
+          "source_start_line": 790,
+          "source_end_line": 814,
+          "purpose": "云若自述身份与目的",
+          "normalized_span_sha256": "024575f507146dfa5a52deaaa900b211f7c6cb4fd82cb9ff3b8060357c4f6b97"
+        },
+        {
+          "chapter": 6,
+          "source_start_line": 849,
+          "source_end_line": 875,
+          "purpose": "鉴定反馈与实际行为",
+          "normalized_span_sha256": "b424cef906bde18887c0d740f5aa3953faf08fbe3fd3c8f3ee63d64f135171d6"
+        }
+      ],
+      "observation": "角色自述与鉴定结果不同。",
+      "expected": "识别潜在撒谎及信息来源；不能把所有对话直接登记为客观Canon。",
+      "adjudication": "NOT_A_WORLD_CONTRADICTION_MERELY_BECAUSE_A_CHARACTER_LIES",
+      "prefix_end_chapter": 6
+    },
+    {
+      "id": "SRC-006",
+      "dimension": "resource_economy",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 10,
+          "source_start_line": 1618,
+          "source_end_line": 1644,
+          "purpose": "估计产能利润与售卖结果",
+          "normalized_span_sha256": "02cfb8865a912b380d45f4179e6b27f450a542a137b21d39e43513a683794644"
+        },
+        {
+          "chapter": 13,
+          "source_start_line": 2121,
+          "source_end_line": 2149,
+          "purpose": "生产上限、订单与收益",
+          "normalized_span_sha256": "e57beb24e3c85fc20e846637a462e8f3824ddb84cc44991c9b9647998266a78e"
+        }
+      ],
+      "observation": "预期利润不等于已实现利润；产出不等于售出。",
+      "expected": "分离库存、成本、订单、到账与时间假设，不把有价无市误报成算术冲突；保留实际金额证据。",
+      "adjudication": "ECONOMY_SEMANTICS_CONTROL",
+      "prefix_end_chapter": 13
+    },
+    {
+      "id": "SRC-007",
+      "dimension": "unknown_vs_negative",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 16,
+          "source_start_line": 2707,
+          "source_end_line": 2721,
+          "purpose": "鉴定未返回有效身份",
+          "normalized_span_sha256": "f7c83129b37b8f0c9a4c648ae01cb45f06d43d0135684d9435a095ad47dc8fe1"
+        },
+        {
+          "chapter": 17,
+          "source_start_line": 2728,
+          "source_end_line": 2736,
+          "purpose": "主角仍不确定原因",
+          "normalized_span_sha256": "832e4b426acd166b681f5ac26ce0053f80670d4632afa0d56daf6f3e4a6de662"
+        }
+      ],
+      "observation": "鉴定返回未知，并不能证明对象没有秘密或以后不会被发现。",
+      "expected": "压缩保持UNKNOWN和未证实原因，不把猜测写成确定能力规则。",
+      "adjudication": "UNKNOWN_MUST_REMAIN_UNKNOWN",
+      "prefix_end_chapter": 17
+    },
+    {
+      "id": "SRC-008",
+      "dimension": "counterparty_agency",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 29,
+          "source_start_line": 5016,
+          "source_end_line": 5028,
+          "purpose": "主角对抢杀行为不明",
+          "normalized_span_sha256": "154e7ef82b271f6fabcd4300a6d882ee19d82992b23a259a0554508feb9d1e35"
+        },
+        {
+          "chapter": 31,
+          "source_start_line": 5248,
+          "source_end_line": 5272,
+          "purpose": "对手观察与推断",
+          "normalized_span_sha256": "7271c9d82db116ce4e998d7306a46e8eb425ded55f4ff74283af2cd169fe8f7a"
+        }
+      ],
+      "observation": "对手抢先击杀魔人的动机在后续解释为阻断异常目标。",
+      "expected": "前缀审读不读未来；获得后续段落后修正判断，不要求反派只是为主角升级服务。",
+      "adjudication": "DELAYED_OPPONENT_MOTIVE_EXPLANATION",
+      "prefix_variants": [
+        29,
+        31
+      ]
+    },
+    {
+      "id": "SRC-009",
+      "dimension": "dynamic_rule_version",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 14,
+          "source_start_line": 2293,
+          "source_end_line": 2311,
+          "purpose": "较低境界阶段产出",
+          "normalized_span_sha256": "f889693b61b9d27702fb85c7bd5ea7c50f3ac4bf23380edff6821935c16b01ae"
+        },
+        {
+          "chapter": 40,
+          "source_start_line": 7084,
+          "source_end_line": 7137,
+          "purpose": "晋升后产出频率与数值意义变化",
+          "normalized_span_sha256": "cede8261df3d0dabd5ff5851206133d391d58cb0cae435c56c1a69b94895a3c2"
+        }
+      ],
+      "observation": "能力资源规则可能随境界改变，后文有观察解释。",
+      "expected": "按有效时间/境界保留规则，不以单一静态频率判断全书。",
+      "adjudication": "STATE_DEPENDENT_RULE_EXPLANATION",
+      "prefix_end_chapter": 40
+    },
+    {
+      "id": "SRC-010",
+      "dimension": "character_continuity",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 36,
+          "source_start_line": 6328,
+          "source_end_line": 6376,
+          "purpose": "韩明败后并未简单黑化",
+          "normalized_span_sha256": "724680c5e8dd279ead548881d19dfa88cacbbf56dfec0108a347eaff5fe1273a"
+        },
+        {
+          "chapter": 558,
+          "source_start_line": 128949,
+          "source_end_line": 128975,
+          "purpose": "努力成长与旧性格记忆",
+          "normalized_span_sha256": "6758abddfa2569a8399032f65855ebac49e3f7a31811269bb43204f2cc7c3416"
+        }
+      ],
+      "observation": "长期成长允许变化，也可以保留执念和口头心结。",
+      "expected": "不把所有变化当人设崩坏，也不把配角锁成永远被打脸的功能人。",
+      "adjudication": "CHARACTER_GROWTH_AND_CONTINUITY_SAMPLE",
+      "prefix_end_chapter": 558
+    },
+    {
+      "id": "SRC-011",
+      "dimension": "tone_and_reading_experience",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 48,
+          "source_start_line": 8430,
+          "source_end_line": 8465,
+          "purpose": "威胁表象与语义反转的幽默",
+          "normalized_span_sha256": "cbcec9b55f5af99448edbe10dff1a43a26265e3c5085f804cab381436035d8ab"
+        }
+      ],
+      "observation": "压迫环境中，通过误解和行为切换形成轻松片刻。",
+      "expected": "提炼反差和节奏作用，不复制原笑话；人工评估幽默是否生硬、是否破坏危险感。",
+      "adjudication": "CRAFT_REFERENCE_NOT_BINARY_LOGIC_GOLD",
+      "prefix_end_chapter": 48
+    },
+    {
+      "id": "SRC-012",
+      "dimension": "institutional_rule_scope",
+      "source_kind": "original_text",
+      "evidence": [
+        {
+          "chapter": 20,
+          "source_start_line": 3315,
+          "source_end_line": 3381,
+          "purpose": "宗门执法规则与取证",
+          "normalized_span_sha256": "ba161ccb4ebc2d2b20f3890c23c6e456a098e5bfeb6bad2287a97985f79c0e03"
+        },
+        {
+          "chapter": 29,
+          "source_start_line": 4848,
+          "source_end_line": 4856,
+          "purpose": "角色声称魔窟不查",
+          "normalized_span_sha256": "98550ecf73408fde84ab00b0421a38cff35ee179a31da3584fba81d4fe6b52d2"
+        },
+        {
+          "chapter": 33,
+          "source_start_line": 5740,
+          "source_end_line": 5768,
+          "purpose": "回归宗门与事后取证判断",
+          "normalized_span_sha256": "95c38db7342053129a6158d97d8b5151d39fbd61fbb579d70ca096a5fb92fa6d"
+        },
+        {
+          "chapter": 49,
+          "source_start_line": 8724,
+          "source_end_line": 8732,
+          "purpose": "矿洞对追踪的影响",
+          "normalized_span_sha256": "e63ad8c906066f60e90f03054f72d24901f18ae64a363b5091a390f369af2560"
+        }
+      ],
+      "observation": "执法规则、取证可行性、空间例外与人物说辞交叠。",
+      "expected": "作为组织规则与因果充分性待审案；回查例外建立时间、执法者利益和行动，不把单句角色威胁定为客观规则，也不靠新造设定洗白。",
+      "adjudication": "OPEN_REVIEW; NOT_PRELABELLED_AS_HARD_ERROR",
+      "prefix_end_chapter": 49
+    }
+  ],
+  "controlled_mutations": [
+    {
+      "id": "MUT-001",
+      "source_case": "SRC-003",
+      "synthetic": true,
+      "mutation": "将读者已知的掌教身份写入该前缀下江浩的已知集合，且不给新证据事件。",
+      "expected": "KNOWLEDGE_LEAK_DETECTED"
+    },
+    {
+      "id": "MUT-002",
+      "source_case": "SRC-007",
+      "synthetic": true,
+      "mutation": "把未鉴定成功／原因未知压缩为确认无危险或确认永远不会被察觉。",
+      "expected": "UNKNOWN_TO_CERTAINTY_DISTORTION_DETECTED"
+    },
+    {
+      "id": "MUT-003",
+      "source_case": "SRC-006",
+      "synthetic": true,
+      "mutation": "把尚未售出的预期利润写成已到账灵石，用来支付本章支出。",
+      "expected": "RESOURCE_STATE_ERROR_DETECTED"
+    },
+    {
+      "id": "MUT-004",
+      "source_case": "SRC-005",
+      "synthetic": true,
+      "mutation": "把云若向主角作出的自述，不经来源校验直接提升为全知事实。",
+      "expected": "CLAIM_TO_CANON_PROMOTION_DETECTED"
+    },
+    {
+      "id": "MUT-005",
+      "source_case": "SRC-004",
+      "synthetic": true,
+      "mutation": "删除识别境界所依赖的身体迹象与当场目击，却仍声称识别结果得到原证据支持。",
+      "expected": "EVIDENCE_COVERAGE_LOSS_DETECTED"
+    },
+    {
+      "id": "MUT-006",
+      "source_case": "SRC-009",
+      "synthetic": true,
+      "mutation": "把低境界的掉落频率复制到晋升后的快照，删除生效阶段和新观察。",
+      "expected": "RULE_VERSION_FLATTENING_DETECTED"
+    }
+  ]
+}
