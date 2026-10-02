@@ -1268,6 +1268,7 @@ def test_formal_quality_reference_calibration_binds_native_receipt_decision_and_
     # WHY: Synthetic rows exercise receipt projection only, never real Provider qualification.
     from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions
     from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
+    from novel_forge.modules.chapter_authority.definitions import CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, chapter_operation_definitions
     from novel_forge.modules.chapter_authority.model_effects import ModelProviderResult
     from novel_forge.modules.chapter_quality_authority.reference_sampling import admitted_reference_calibration
     from novel_forge.modules.production_execution.cost_routing import snapshot_hash
@@ -1283,8 +1284,10 @@ def test_formal_quality_reference_calibration_binds_native_receipt_decision_and_
             definition_snapshot,completion_contract_snapshot,policy_snapshot)
             SELECT %s,name,definition_version,%s,'legacy-unknown','EXECUTING',%s,%s,%s,%s,'{}'::jsonb,to_jsonb(definition),
             '{}'::jsonb,'{}'::jsonb FROM authority_operation_definition definition
-            WHERE name='chapter.quality.structural.evaluate' AND definition_version='3.4.1'""",
-            [operation, project, operation, "project:" + project, operation, "digest:" + operation])
+            WHERE name='chapter.quality.structural.evaluate' AND definition_version=%s""",
+            [operation, project, operation, "project:" + project, operation, "digest:" + operation,
+             CHAPTER_MODEL_EFFECT_DEFINITION_VERSION])
+        assert cursor.rowcount == 1
         cursor.execute("INSERT INTO authority_attempt(attempt_id,operation_id,attempt_number,status) VALUES(%s,%s,1,'SUCCEEDED')",
             [attempt, operation])
     model = candidate(model_revision="reference-fixture-revision")
@@ -1331,6 +1334,20 @@ def test_formal_quality_reference_calibration_binds_native_receipt_decision_and_
     assert admitted_reference_calibration(replace(request, command={"chapter_sampling": True}), result,
         stage=stage, target_asset_version_id=target) is None
     assert admitted_reference_calibration(request, replace(result, real_model_call=False), stage=stage, target_asset_version_id=target) is None
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    unsupported = next(item for item in chapter_operation_definitions(
+        application_build_id="reference-receipt-fixture", commit_sha="a" * 40,
+        model_effects_required=True,
+    ) if item["name"] == "chapter.quality.structural.evaluate")
+    unsupported["definition_version"] = "3.4.2"
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.repositories.definitions.register(unsupported)
+        uow.cursor.execute("UPDATE authority_operation SET definition_version=%s WHERE operation_id=%s",
+            [unsupported["definition_version"], operation])
+        uow.commit()
+    with pytest.raises(KernelError, match="QUALITY_REFERENCE_ADMISSION_INVALID"):
+        admitted_reference_calibration(request, result, stage=stage, target_asset_version_id=target)
 
 
 def fixture_planning_feedback(
