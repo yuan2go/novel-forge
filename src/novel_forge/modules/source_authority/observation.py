@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, model_serializer, model_validator
 
 from .corpus import CorpusContract, Digest, Identity
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -43,6 +43,14 @@ class SourceObservationBoundary(CorpusContract):
     provider: Literal["codex-cli"]
     model: Literal["gpt-6.1-sol"]
     reasoning_effort: Literal["high"]
+    acknowledged_numbering_issue_ids: tuple[Digest, ...] = Field(default=(), max_length=32)
+
+    @model_serializer(mode="wrap")
+    def frozen_boundary(self, handler: Any) -> dict[str, Any]:
+        value = handler(self)
+        if not self.acknowledged_numbering_issue_ids:
+            value.pop("acknowledged_numbering_issue_ids", None)
+        return value
 
     @model_validator(mode="after")
     def observed(self) -> SourceObservationBoundary:
@@ -66,10 +74,13 @@ def observation_boundary(value: Any) -> SourceObservationBoundary:
     return result
 
 
-def validate_local_integrity(assessment: dict, units: list[dict]) -> None:
+def validate_local_integrity(
+    assessment: dict, units: list[dict], *, acknowledged_numbering_issue_ids: tuple[str, ...] = ()
+) -> None:
     if assessment.get("acquisition_integrity") != "VERIFIED_BYTES":
         raise KernelError("SOURCE_OBSERVATION_INTEGRITY", "unverified acquired source")
-    locators = [u["source_locator"] for u in units]
+    acknowledged = set(acknowledged_numbering_issue_ids)
+    matched = set()
     for issue in assessment.get("issues", []):
         if not issue.get("blocking"):
             continue
@@ -80,6 +91,22 @@ def validate_local_integrity(assessment: dict, units: list[dict]) -> None:
             locator = item.get("locator") or {}
             if not {"path", "original_byte_offset", "original_byte_end"} <= locator.keys():
                 raise KernelError("SOURCE_OBSERVATION_INTEGRITY", "unstable integrity mapping")
-            for local in locators:
+            for unit in units:
+                local = unit["source_locator"]
                 if locator["path"] == local.get("path") and locator["original_byte_offset"] < local.get("original_byte_end", 0) and locator["original_byte_end"] > local.get("original_byte_offset", 0):
+                    # INVARIANT: A numbering gap limits continuity claims, not the bytes of an exact available unit; all other local damage still blocks.
+                    if (
+                        issue.get("issue_id") in acknowledged
+                        and issue.get("code") == "MISSING_OR_UNORDERED_CHAPTER"
+                        and unit.get("status") == "AVAILABLE"
+                        and unit.get("kind") in {"chapter", "extra"}
+                        and locator == local
+                        and locator.get("precision") == "UNIT_BYTES"
+                        and item.get("content_hash")
+                        and item["content_hash"] == unit.get("normalized_content_hash")
+                    ):
+                        matched.add(issue["issue_id"])
+                        continue
                     raise KernelError("SOURCE_OBSERVATION_INTEGRITY", "integrity issue intersects observed unit")
+    if acknowledged != matched:
+        raise KernelError("SOURCE_OBSERVATION_INTEGRITY", "numbering acknowledgement must bind an exact observed issue")

@@ -111,3 +111,28 @@ def test_local_observation_keeps_whole_review_and_rejects_intersecting_damage():
         validate_local_integrity(assessment,[{'source_locator':{'path':'source.txt','original_byte_offset':150,'original_byte_end':300}}])
     with pytest.raises(KernelError,match='unverified'):
         validate_local_integrity({**assessment,'acquisition_integrity':'UNKNOWN'}, units)
+
+
+def test_numbering_discontinuity_requires_exact_scoped_acknowledgement():
+    from copy import deepcopy
+    from novel_forge.modules.source_authority.observation import validate_local_integrity
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    locator = {"path": "source.txt", "original_byte_offset": 100, "original_byte_end": 200, "precision": "UNIT_BYTES"}
+    digest = "sha256:" + "a" * 64
+    identity = "sha256:" + "b" * 64
+    unit = {"source_locator": locator, "status": "AVAILABLE", "kind": "chapter", "normalized_content_hash": digest}
+    issue = {"issue_id": identity, "code": "MISSING_OR_UNORDERED_CHAPTER", "blocking": True, "evidence": [{"locator": locator, "content_hash": digest}]}
+    assessment = {"acquisition_integrity": "VERIFIED_BYTES", "coverage": "REVIEW_REQUIRED", "structure_usable": False, "issues": [issue]}
+    original = deepcopy(assessment)
+    with pytest.raises(KernelError, match="intersects"):
+        validate_local_integrity(assessment, [unit])
+    validate_local_integrity(assessment, [unit], acknowledged_numbering_issue_ids=(identity,))
+    assert assessment == original
+    for changed in ({**unit, "normalized_content_hash": "sha256:" + "c" * 64}, {**unit, "status": "UNAVAILABLE"}, {**unit, "source_locator": {**locator, "original_byte_offset": 99}}):
+        with pytest.raises(KernelError, match="intersects"):
+            validate_local_integrity(assessment, [changed], acknowledged_numbering_issue_ids=(identity,))
+    with pytest.raises(KernelError, match="intersects"):
+        validate_local_integrity({**assessment, "issues": [{**issue, "code": "SHORT_OR_TOC_UNIT"}]}, [unit], acknowledged_numbering_issue_ids=(identity,))
+    with pytest.raises(KernelError, match="exact observed issue"):
+        validate_local_integrity({**assessment, "issues": []}, [unit], acknowledged_numbering_issue_ids=(identity,))

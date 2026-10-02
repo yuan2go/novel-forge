@@ -493,3 +493,18 @@ def test_initial_dependency_cannot_erase_original_private_scope():
     source["initial_state_sources"][0]["provider_visibility"] = "INTERNAL_QUALITY_ONLY"
     with pytest.raises(KernelError, match="outside the role"):
         task_reality_workset(source, task={"required_event_refs": ["latest"]}, role_kinds=("world_state", "character_knowledge"), auxiliary_limit=0)
+
+
+def test_compression_groups_share_one_candidate_allocation():
+    source = candidate(text="\n\n".join(f"Optional occurrence {index}." for index in range(300)))
+    budgets = []
+    def select(stage, chunk):
+        if stage == "context_compress":
+            budgets.append((chunk["target_tokens"], chunk["candidate_target_tokens"]))
+            return {"selected_unit_ids": [chunk["units"][0]["unit_id"]]}
+        return {"supported": True, "coverage_complete": True, "missing_unit_ids": [], "distorted_unit_ids": []}
+    result, receipt = compile_task_context([source], task=TASK, token_budget=1000, required_asset_types=(), model_call=select, compression_input_tokens=4000, maximum_chunks=32)
+    assert len(budgets) > 1
+    assert len({total for _, total in budgets}) == 1
+    assert sum(part for part, _ in budgets) <= budgets[0][1] <= 1000
+    assert receipt["after_estimated_tokens"] <= 1000

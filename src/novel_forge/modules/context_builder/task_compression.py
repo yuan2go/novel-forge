@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 import json
+import re
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -59,7 +60,13 @@ def _units(candidate: ContextCandidate, task: Mapping[str, Any]) -> list[dict[st
         units.append({"unit_id": f"fact:{index}", "text": json.dumps(fact, ensure_ascii=False, sort_keys=True, separators=(",", ":")), "kind": "STATE_OR_CAUSAL_UNIT", "field": "structured_facts", "index": index})
     quotes = tuple(task.get("preserve_quotes") or ())
     for unit in units:
-        unit["required"] = bool(unit.get("required")) or candidate.required or unit["field"] == "structured_facts" or any(quote in unit["text"] for quote in quotes)
+        heading = task.get("stage") == "reference_analysis" and any(
+            re.match(r"^第[0-9一二三四五六七八九十百千万零〇两]+[章回节卷](?:\s|$)", line.strip())
+            for line in unit["text"].splitlines()
+        )
+        if heading:
+            unit["kind"] = "SOURCE_LOCATION_HEADER"
+        unit["required"] = bool(unit.get("required")) or heading or candidate.required or unit["field"] == "structured_facts" or any(quote in unit["text"] for quote in quotes)
     return units
 
 
@@ -195,12 +202,20 @@ def compile_task_context(
             keep = set()
             restored = set()
             evidence = []
+            candidate_target = max(1, remaining * candidate.estimated_tokens // max(1, sum(item.estimated_tokens for item in eligible)))
+            group_weights = [serialized_token_upper_bound(group) for group in groups]
+            weight_total = max(1, sum(group_weights))
+            group_targets = [candidate_target * weight // weight_total for weight in group_weights]
+            if any(target <= 0 for target in group_targets):
+                raise KernelError("TASK_CONTEXT_COMPRESSION_BUDGET_INFEASIBLE", "candidate target cannot allocate every complete source group")
             for group_index, group in enumerate(groups):
                 chunk = {
                     "contract_version": "task-context-compression.v1", "policy_version": TASK_CONTEXT_POLICY_VERSION,
                     boundary_key: boundary, "memo_fingerprint": str(task.get("memo_fingerprint") or ""), "task": dict(task), "units": group,
                     "required_unit_ids": [unit["unit_id"] for unit in group if unit["required"]],
-                    "target_tokens": max(1, remaining * candidate.estimated_tokens // max(1, sum(item.estimated_tokens for item in eligible))),
+                    "target_tokens": group_targets[group_index],
+                    "candidate_target_tokens": candidate_target,
+                    "selection_policy": "source-attribution-and-shared-group-budget.v2",
                     "source_binding": {"asset_version_id": candidate.asset_version_id, "content_hash": candidate.content_digest, "source_revision": candidate.source_revision},
                     "chunk_index": group_index,
                 }
@@ -234,7 +249,7 @@ def compile_task_context(
             texts = [unit["text"] for unit in units if unit["unit_id"] in keep and unit["field"] == "safe_summary"]
             facts = tuple(candidate.structured_facts[unit["index"]] for unit in units if unit["unit_id"] in keep and unit["field"] == "structured_facts") + tuple(fact for fact in candidate.structured_facts if fact.get("provider_visibility") == "INTERNAL_QUALITY_ONLY")
             payload = {"safe_summary": "\n\n".join(texts), "structured_facts": list(facts)}
-            trace = {"source_asset_version_id": candidate.asset_version_id, "source_content_hash": candidate.content_digest, "source_revision": candidate.source_revision, "task_hash": narrative_hash(task), boundary_key: boundary, "policy_version": TASK_CONTEXT_POLICY_VERSION, "method": "host-bound-extractive-semantic.v1", "selected_unit_ids": sorted(keep), "source_units": [{"unit_id": unit["unit_id"], "source_path": unit.get("source_path", [unit["field"]]), "index": unit.get("index"), "unit_hash": narrative_hash(unit["text"]), "kind": unit["kind"]} for unit in units if unit["unit_id"] in keep], "restored_unit_ids": sorted(restored), "result_content_hash": narrative_hash(payload), "forward_check": "EXACT_HOST_SOURCE_UNITS", "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE", "model_execution_evidence": evidence}
+            trace = {"source_asset_version_id": candidate.asset_version_id, "source_content_hash": candidate.content_digest, "source_revision": candidate.source_revision, "task_hash": narrative_hash(task), boundary_key: boundary, "policy_version": TASK_CONTEXT_POLICY_VERSION, "method": "host-bound-extractive-semantic.v2", "selected_unit_ids": sorted(keep), "source_units": [{"unit_id": unit["unit_id"], "source_path": unit.get("source_path", [unit["field"]]), "index": unit.get("index"), "unit_hash": narrative_hash(unit["text"]), "kind": unit["kind"]} for unit in units if unit["unit_id"] in keep], "restored_unit_ids": sorted(restored), "result_content_hash": narrative_hash(payload), "forward_check": "EXACT_HOST_SOURCE_UNITS", "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE", "model_execution_evidence": evidence}
             replacements[candidate.asset_version_id] = replace(candidate, safe_summary=payload["safe_summary"], structured_facts=facts, estimated_tokens=max(1, serialized_token_upper_bound(payload)), context_class=ContextClass.COMPRESSIBLE, compression_method=trace["method"], compression_trace=(trace,))
             traces.append(trace)
         normalized = [replacements.get(item.asset_version_id, item) for item in normalized]
