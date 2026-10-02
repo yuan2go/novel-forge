@@ -101,11 +101,21 @@ def compile_task_context(
     elif not boundary or "accepted_through_chapter" not in boundary:
         raise KernelError("TASK_CONTEXT_BOUNDARY_REQUIRED", "task Context must freeze an accepted source boundary")
     selectors = task_references(task)
+    source_positions = {}
+    if reference:
+        for position, span in enumerate(boundary["spans"]):
+            source_positions[(span["chunk_asset_version_id"], span["content_hash"])] = position
+            source_positions.setdefault((span["chunk_asset_version_id"], ""), position)
+
+    def source_position(candidate):
+        identity = (candidate.provenance or {}).get("source_chunk_asset_version_id", candidate.asset_version_id)
+        return source_positions.get((identity, candidate.content_digest), source_positions.get((identity, ""), len(source_positions)))
+
     working = []
     excluded = []
     auxiliary = []
     denied = []
-    for candidate in sorted(candidates, key=lambda item: item.asset_version_id):
+    for candidate in sorted(candidates, key=source_position if reference else lambda item: item.asset_version_id):
         if admitted_source_ids is not None and candidate.asset_version_id not in admitted_source_ids:
             denied.append(candidate)
             continue
@@ -229,6 +239,8 @@ def compile_task_context(
         if sum(item.estimated_tokens for item in normalized) > token_budget:
             raise KernelError("TASK_CONTEXT_FIDELITY_RESTORE_EXCEEDS_BUDGET", "faithful restored Context exceeds its authorized task target; no required source was silently discarded")
         assert not protected_ids.intersection(replacements)
+    if reference:
+        normalized.sort(key=source_position)
     result = [*normalized, *denied] + [replace(item, provenance={**dict(item.provenance or {}), "task_excluded": True}) for item in excluded]
     receipt = {"policy_version": TASK_CONTEXT_POLICY_VERSION, "task_hash": narrative_hash(task), boundary_key: boundary, "source_bindings": [{"asset_version_id": item.asset_version_id, "source_revision": item.source_revision, "content_hash": item.content_digest} for item in candidates], "system_context_window_tokens": SYSTEM_CONTEXT_WINDOW_TOKENS, "task_target_tokens": token_budget, "token_accounting": "utf8-byte-upper-bound.v1", "before_estimated_tokens": before, "after_estimated_tokens": sum(item.estimated_tokens for item in normalized), "protected_estimated_tokens": protected_tokens, "dependency_coverage": dependencies, "deduplications": deduplications, "excluded_asset_version_ids": [item.asset_version_id for item in excluded], "compression_trace": traces, "fast_path": not traces, "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY", "fact_mutation_allowed": False}
     return result, {**receipt, "receipt_hash": narrative_hash(receipt)}

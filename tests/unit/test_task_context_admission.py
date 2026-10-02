@@ -204,6 +204,12 @@ def test_reference_observation_compiles_real_source_without_production_canon():
     selected,receipt=compile_task_context([candidate],task=task,token_budget=5000,required_asset_types=())
     assert selected[0].safe_summary==text and receipt['fast_path']
     assert receipt['observation_boundary']==boundary and 'accepted_boundary' not in receipt
+    first=replace(candidate,asset_version_id='chunk:9',source_identity='chunk:9',safe_summary='Earlier: he does not know.',content_digest='sha256:'+hashlib.sha256(b'Earlier: he does not know.').hexdigest(),provenance={'source_chunk_asset_version_id':'chunk:9'})
+    second=replace(candidate,asset_version_id='chunk:1',source_identity='chunk:1',safe_summary='Later: she explains.',content_digest='sha256:'+hashlib.sha256(b'Later: she explains.').hexdigest(),provenance={'source_chunk_asset_version_id':'chunk:1'})
+    ordered_boundary={**boundary,'spans':[{**boundary['spans'][0],'chunk_asset_version_id':item.asset_version_id,'unit_version_id':'unit:'+str(n),'chapter':n} for n,item in enumerate([first,second],1)]}
+    ordered=[replace(item,observation_boundary=ordered_boundary) for item in [second,first]]
+    result,_=compile_task_context(ordered,task={**task,'observation_boundary':ordered_boundary},token_budget=5000,required_asset_types=())
+    assert [item.safe_summary for item in result]==[first.safe_summary,second.safe_summary]
     with pytest.raises(KernelError,match='BOUNDARY_REQUIRED'):
         compile_task_context([candidate],task={'stage':'draft'},token_budget=5000,required_asset_types=())
     with pytest.raises(KernelError,match='REFERENCE_SOURCE'):
