@@ -83,7 +83,6 @@ def benchmark_decision(
             and grant.get("accounting_basis") == "ACCOUNT_ENTITLEMENT"
             and bootstrap_candidate_accounting_matches(grant, candidate)
         )
-        # WHY: An exact Source sampling grant selects its research model without manufacturing production failures.
         permitted = {"QUALITY_FLOOR_NOT_MET", "BENCHMARK_INSUFFICIENT"}
         if source_entitlement_sample:
             permitted.add("ESCALATION_THRESHOLD_NOT_MET")

@@ -63,7 +63,6 @@ def _arm(plan: dict[str, Any], project_id: str) -> dict[str, Any]:
 def require_provider_campaign_entitlement(cursor: Any, *, project_id: str, grant: Mapping[str, Any]) -> None:
     source_research = (grant["task_type"] == "source.deconstruction.observe"
                        and grant["book_id"] == f"source-corpus:{project_id}")
-    # WHY: Corpus research uses its exact Source campaign and project budgets; an existing creative allocation still applies.
     selected = _policy_for(cursor, project_id, required=not source_research)
     if selected is None:
         return
