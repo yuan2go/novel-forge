@@ -218,12 +218,19 @@ def test_reference_observation_compiles_real_source_without_production_canon():
     with pytest.raises(KernelError,match='future'):
         observation_boundary(future)
     observed=[]
+    expected_boundary=boundary
     def semantic(stage,chunk):
         observed.append((stage,chunk))
-        assert 'accepted_boundary' not in chunk and chunk['observation_boundary']==boundary
+        assert 'accepted_boundary' not in chunk and chunk['observation_boundary']==expected_boundary
         if stage=='context_compress':
             return {'selected_unit_ids':['text:0']}
         return {'supported':True,'coverage_complete':True,'missing_unit_ids':[],'distorted_unit_ids':[]}
     selected,receipt=compile_task_context([candidate],task=task,token_budget=250,required_asset_types=(),model_call=semantic,compression_input_tokens=10000)
     assert [stage for stage,_ in observed]==['context_compress','context_fidelity']
     assert receipt['compression_trace'] and selected[0].safe_summary==text.split('\n\n')[0]
+    observed.clear()
+    expected_boundary=ordered_boundary
+    repeated=[replace(item,safe_summary=text) for item in ordered]
+    selected,receipt=compile_task_context(repeated,task={**task,'observation_boundary':ordered_boundary},token_budget=900,required_asset_types=(),model_call=semantic,compression_input_tokens=10000,maximum_chunks=1)
+    assert len(observed)==2 and len(receipt['compression_trace'])==1
+    assert text in [item.safe_summary for item in selected]
