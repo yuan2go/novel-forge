@@ -173,13 +173,23 @@ def compile_task_context(
         untouched_tokens = sum(item.estimated_tokens for item in normalized if item not in eligible)
         if untouched_tokens >= token_budget:
             raise KernelError("TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED", "exact sources and non-recompressible evidence exceed the task target")
+        eligible_units = {item.asset_version_id: _units(item, task) for item in eligible}
+        minimum_tokens = untouched_tokens
+        for item in eligible:
+            mandatory = [unit for unit in eligible_units[item.asset_version_id] if unit["required"]]
+            minimum_tokens += serialized_token_upper_bound({
+                "safe_summary": "\n\n".join(unit["text"] for unit in mandatory if unit["field"] == "safe_summary"),
+                "structured_facts": [item.structured_facts[unit["index"]] for unit in mandatory if unit["field"] == "structured_facts"],
+            })
+        if minimum_tokens > token_budget:
+            raise KernelError("TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED", "mandatory source units exceed the task target before compression")
         remaining = token_budget - untouched_tokens
         replacements = {}
         call_count = 0
         for candidate in eligible:
             if sum(replacements.get(item.asset_version_id, item).estimated_tokens for item in normalized) <= token_budget:
                 break
-            units = _units(candidate, task)
+            units = eligible_units[candidate.asset_version_id]
             groups = []
             group = []
             for unit in units:

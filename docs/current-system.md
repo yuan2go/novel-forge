@@ -1539,7 +1539,8 @@ this exception does not grant Writer or public use.
 
 Reference compression retains recognized chapter headings as required source units.
 Multiple groups share one candidate target instead of receiving that target each time;
-nonpositive group allocations stop before a semantic call. Fidelity restoration and the
+nonpositive group allocations and an aggregate mandatory-unit floor above the target
+stop before a semantic call. Fidelity restoration and the
 final aggregate budget still apply. These deterministic protections do not establish
 semantic fidelity or a net cost benefit for lossy compression.
 

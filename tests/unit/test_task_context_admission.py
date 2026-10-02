@@ -247,3 +247,5 @@ def test_reference_observation_compiles_real_source_without_production_canon():
     assert selected[0].safe_summary.startswith('第2章 约定\n\nHe suspects')
     assert 'text:0' in observed[0][1]['required_unit_ids']
     assert receipt['compression_trace'][0]['method']=='host-bound-extractive-semantic.v2'
+    with pytest.raises(KernelError,match='mandatory source units'):
+        compile_task_context([headed],task=task,token_budget=30,required_asset_types=(),model_call=lambda *args:pytest.fail('infeasible target dispatched a model'),compression_input_tokens=10000)
