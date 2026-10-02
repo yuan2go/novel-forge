@@ -8,6 +8,47 @@ from novel_forge.modules.command_kernel.errors import KernelError
 class CorpusProcessingRecords:
     cursor: Any
 
+    def require_source_observation(self, project: str, operation: str, inputs: dict) -> dict:
+        from novel_forge.modules.source_authority.observation import observation_boundary, validate_local_integrity
+
+        boundary = observation_boundary(inputs["observation_boundary"])
+        self.cursor.execute("SELECT actor_id,command_payload,definition_name FROM authority_operation WHERE project_id=%s AND operation_id=%s", [project, operation])
+        admitted = self.cursor.fetchone()
+        projection = ((admitted[1].get("payload") or {}).get("task_projection") or {}) if admitted else {}
+        if not admitted or admitted[0] != boundary.authorized_actor_id or admitted[2] != "source.import.deconstruction.execute" or projection.get("observation_boundary") != inputs["observation_boundary"]:
+            raise KernelError("SOURCE_OBSERVATION_NOT_REGISTERED", "scope must match the admitted author Operation")
+        import json
+        if json.dumps(projection, sort_keys=True, default=str) != json.dumps(dict(inputs), sort_keys=True, default=str):
+            raise KernelError("SOURCE_OBSERVATION_INPUT_DRIFT", "research projection changed after admission")
+        processing = self.corpus_processing(project, boundary.processing_id)
+        self.cursor.execute("SELECT 1 FROM authority_corpus_processing WHERE parent_id=%s", [boundary.processing_id])
+        if self.cursor.fetchone() or processing["edition_id"] != boundary.edition_id or processing["source_work_asset_version_id"] != boundary.source_work_asset_version_id:
+            raise KernelError("SOURCE_OBSERVATION_VERSION", "current exact processing required")
+        ids = list({span.unit_version_id for span in boundary.spans})
+        self.cursor.execute("SELECT to_jsonb(u) FROM authority_source_unit_version u WHERE project_id=%s AND source_work_asset_version_id=%s AND source_unit_version_id=ANY(%s)", [project, boundary.source_work_asset_version_id, ids])
+        units = [r[0] for r in self.cursor.fetchall()]
+        if len(units) != len(ids) or any(u["status"] != "AVAILABLE" or u["raw_file_hash"] != boundary.source_hash for u in units):
+            raise KernelError("SOURCE_OBSERVATION_UNIT", "observed source identity is unavailable or changed")
+        validate_local_integrity(processing["assessment"], units)
+        indexed = {u["source_unit_version_id"]: u for u in units}
+        segments = inputs.get("source_segments") or []
+        chunks = list({span.chunk_asset_version_id for span in boundary.spans})
+        if set(chunks) != {s.get("source_chunk_asset_version_id") for s in segments}:
+            raise KernelError("SOURCE_OBSERVATION_SCOPE", "source chunks exceed observation spans")
+        self.cursor.execute("SELECT to_jsonb(c) FROM authority_source_chunk c WHERE project_id=%s AND source_document_id=%s AND asset_version_id=ANY(%s)", [project, processing["source_document_id"], chunks])
+        found = {r[0]["asset_version_id"]: r[0] for r in self.cursor.fetchall()}
+        if len(found) != len(chunks):
+            raise KernelError("SOURCE_OBSERVATION_SCOPE", "chunk is outside processing document")
+        for span in boundary.spans:
+            unit, chunk = indexed[span.unit_version_id], found[span.chunk_asset_version_id]
+            if not unit["source_locator"] or unit["source_locator"].get("precision") != "UNIT_BYTES":
+                raise KernelError("SOURCE_OBSERVATION_MAPPING", "stable original unit mapping required")
+            if not str(unit["title"]).startswith(f"第{span.chapter}章 "):
+                raise KernelError("SOURCE_OBSERVATION_CHAPTER", "chapter binding differs from source unit")
+            if span.byte_end > chunk["byte_size"] or chunk["source_byte_start"] + span.byte_start < unit["normalized_byte_start"] or chunk["source_byte_start"] + span.byte_end > unit["normalized_byte_end"]:
+                raise KernelError("SOURCE_OBSERVATION_SCOPE", "slice exceeds authorized source unit")
+        return {**boundary.model_dump(mode="json"), "source_document_id": processing["source_document_id"]}
+
     def corpus_processing(
         self, project: str, identity: str, *, edition: bool = False
     ) -> dict[str, Any]:

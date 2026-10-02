@@ -401,6 +401,8 @@ def test_missing_latency_is_uncertain_under_sla():
         "strict_schema",
         "strict_materialization",
         "strict_binding",
+        "source_codex",
+        "source_codex_reasoning",
     ],
 )
 def test_frozen_route_requires_original_scope_input_and_admission(drift):
@@ -460,6 +462,21 @@ def test_frozen_route_requires_original_scope_input_and_admission(drift):
             },
         },
     }
+    if drift.startswith("source_codex"):
+        from novel_forge.modules.production_execution.provider_admission import provider_request_protocol
+        payload["stage"] = "source.deconstruction.observe"
+        payload["input"]["observation_boundary"] = {"boundary_type": "SOURCE_OBSERVATION"}
+        original["task"].update(task_type=payload["stage"], request_hash=snapshot_hash(payload["input"]))
+        original["selected"]["candidate"].update(provider="codex-cli", model="gpt-6.1-sol", reasoning="high")
+        original["decision_id"] = "routing-decision:" + snapshot_hash(
+            {key: value for key, value in original.items() if key != "decision_id"}
+        ).removeprefix("sha256:")
+        payload["_production_execution"]["capability_runtime"]["routing_decision"] = {
+            **deepcopy(original), "asset_version_id": "decision-version"}
+        identity.update(provider="codex-cli", model="gpt-6.1-sol",
+                        protocol=provider_request_protocol("codex-cli"))
+        if drift == "source_codex_reasoning":
+            identity["reasoning_effort"] = "low"
     if drift.startswith("strict"):
         schema = {"type": "object", "properties": {}, "required": [], "additionalProperties": False}
         identity.update(protocol="deepseek-chat-completions-strict-tool-v1", output_schema_json=json.dumps(schema))
@@ -505,7 +522,7 @@ def test_frozen_route_requires_original_scope_input_and_admission(drift):
         side_effect=lambda **kw: documents[kw["asset_version_id"]]
     )
     router._selected_route = Mock(return_value="selected")
-    if drift in {"none", "strict"}:
+    if drift in {"none", "strict", "source_codex"}:
         assert router.select_for_payload(None, payload)[0] == "selected"
     else:
         with pytest.raises(KernelError):

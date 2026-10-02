@@ -3164,6 +3164,7 @@ class PostgresProductionExecutionPayloadResolver:
             request.project_id,
             stored_inputs,
             source_analysis=source_execution,
+            operation_id=request.operation_id,
         )
         inputs = (
             self.resolve_source_intelligence_inputs(
@@ -3551,14 +3552,35 @@ class PostgresProductionExecutionPayloadResolver:
                     expected_hash=str(row[4]),
                     expected_size=int(row[5]),
                 )
-                resolved_segments.append(
-                    {
-                        "source_chunk_asset_version_id": identity,
-                        "content_hash": str(row[1]),
-                        "byte_size": int(row[2]),
-                        "content": content.decode("utf-8", errors="strict"),
-                    }
-                )
+                if stored_inputs.get("observation_boundary"):
+                    from novel_forge.modules.source_authority.observation import observation_boundary
+                    boundary = observation_boundary(stored_inputs["observation_boundary"])
+                    spans = [span for span in boundary.spans if span.chunk_asset_version_id == identity]
+                    if not spans:
+                        raise KernelError("SOURCE_OBSERVATION_SCOPE", "chunk has no allowed source slice")
+                    for span in spans:
+                        sliced = content[span.byte_start:span.byte_end]
+                        if "sha256:" + hashlib.sha256(sliced).hexdigest() != span.content_hash:
+                            raise KernelError("SOURCE_OBSERVATION_HASH", "observation slice drifted")
+                        resolved_segments.append({"source_chunk_asset_version_id": identity, "content_hash": span.content_hash, "byte_size": len(sliced), "content": sliced.decode("utf-8", errors="strict")})
+                else:
+                    resolved_segments.append({"source_chunk_asset_version_id": identity, "content_hash": str(row[1]), "byte_size": int(row[2]), "content": content.decode("utf-8", errors="strict")})
+            if stored_inputs.get("reference_semantic_task"):
+                from .context_compression_provider import context_compression_task_view
+                frozen = stored_inputs["reference_semantic_task"]
+                view = context_compression_task_view(frozen["stage"], {"context_compression_task": frozen["task"]})
+                allowed_text = "\n\n".join(segment["content"] for segment in resolved_segments)
+                if any(unit["text"] not in allowed_text for unit in view["units"]):
+                    raise KernelError("SOURCE_OBSERVATION_COMPRESSOR_SCOPE", "semantic source unit exceeds observed text")
+                return {**dict(stored_inputs), "source_segments": [{key: value for key, value in segment.items() if key != "content"} for segment in resolved_segments], "reference_semantic_task": view}
+            extract = stored_inputs.get("reference_context_extract")
+            if extract is not None:
+                if not isinstance(extract, list) or not extract:
+                    raise KernelError("SOURCE_OBSERVATION_EXTRACT", "reference Context extract must be nonempty")
+                allowed = "\n\n".join(segment["content"] for segment in resolved_segments)
+                if any(not isinstance(value, str) or value not in allowed for value in extract):
+                    raise KernelError("SOURCE_OBSERVATION_EXTRACT", "extract differs from authorized source units")
+                return {**dict(stored_inputs), "source_segments": [{key: value for key, value in segment.items() if key != "content"} for segment in resolved_segments]}
             return {**dict(stored_inputs), "source_segments": resolved_segments}
         if kind == "deconstruction_aggregate":
             manifest = stored_inputs.get("input_observations")
@@ -4609,6 +4631,16 @@ def _materialize_source_intelligence_prompt(
             "SOURCE_CAPABILITY_MATERIALIZATION_INVALID",
             "Source prompt, schema, or Tool policy is incomplete",
         )
+    provider_inputs = dict(inputs)
+    if inputs.get("observation_boundary"):
+        boundary = inputs["observation_boundary"]
+        provider_inputs = {key: value for key, value in inputs.items() if key in {
+            "task_id", "mode", "evaluation_case_id", "synthetic_candidate",
+            "source_segments", "evidence_span_ids", "reference_context_extract",
+            "reference_semantic_task",
+        }}
+        provider_inputs["chapter_bindings"] = [{key: binding[key] for key in ("evidence_span_id", "chapter")} for binding in inputs.get("chapter_bindings", [])]
+        provider_inputs["observation_limit"] = {"mode": boundary["mode"], "visible_chapters": sorted({span["chapter"] for span in boundary["spans"]})}
     prompt = "\n\n".join(
         (
             "<system_instruction>\n" + texts[0] + "\n</system_instruction>",
@@ -4618,7 +4650,7 @@ def _materialize_source_intelligence_prompt(
             + _canonical(resolved_target_scope)
             + "\n</target_scope>",
             "<source_analysis_input>\n"
-            + _canonical(inputs)
+            + _canonical(provider_inputs)
             + "\n</source_analysis_input>",
             "<output_schema>\n" + _canonical(schema_content) + "\n</output_schema>",
             "Return only one JSON object matching the frozen schema. Do not quote, "
@@ -4631,7 +4663,7 @@ def _materialize_source_intelligence_prompt(
         "governed_skill": texts[1],
         "prompt_template": texts[2],
         "target_scope": _canonical(resolved_target_scope),
-        "source_analysis_input": _canonical(inputs),
+        "source_analysis_input": _canonical(provider_inputs),
         "tool_policy": _canonical(tool_permissions),
         "output_schema": _canonical(schema_content),
         "fully_rendered_prompt": prompt,

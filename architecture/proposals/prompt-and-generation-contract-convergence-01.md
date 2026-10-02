@@ -14,7 +14,7 @@
 | 目标仓库 | `yuan2go/novel-forge` |
 | 核验日期 | 2026-10-01，UTC+8 |
 | 核验分支 | `codex/wp-task-context-512k-01` |
-| 当前生命周期代码基线 | `2bcfe01e4d6219479748f379b25b6eceac6cf89c` |
+| 当前生命周期代码基线 | `63888679ffa24589932ed93faecf575a702ea2da` |
 | Git tree | `d21d5d8ba1b152bfb43ea93bb3053b67e434a1a9` |
 | 当前事实核验 | 源代码、冻结合同、正式装配及定向单测/PostgreSQL 回归；现有持久库仅只读核验，未调用真实 Provider |
 | 实现及效果状态 | 规格形成时仅交付需求；后续工程实现已进入正式主链，真实 Provider 与文学收益仍未验证。当前状态以代码、冻结合同和当次验收为准 |
@@ -24,12 +24,12 @@
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-01",
+  "reviewed_on": "2026-10-02",
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
   "reality_baseline": {
-    "sha": "2bcfe01e4d6219479748f379b25b6eceac6cf89c",
-    "implementation_tree_sha": "sha256:077ce01912efbeae4fbc7c4aead8d5d4cdfe72b0c7a12c7ccd78a412c42a67ba"
+    "sha": "63888679ffa24589932ed93faecf575a702ea2da",
+    "implementation_tree_sha": "sha256:81912fdd2a54f4e5614cca309087dab801e1a4e596802b65d71bdf532fdb651f"
   },
   "scope": [
     "src/novel_forge/modules/chapter_authority",
@@ -507,3 +507,5 @@ InkOS Harvest、Narrative Intelligence、Creative Intelligence、Quality Proof �
 - [既有语料验证提案](classical-corpus-codex-validation.md)
 
 上述提案仅作范围关系导航，不因被引用获得本包授权；其中历史实验的固定样本、章数或运行参数不得自动继承。本文件是本次 R-001～R-016 的主规格，不新增平行现状权威。必要需求均在第 6 节标明来源，并在第 9 节对应可执行验收。
+
+Current scope review (2026-10-02): Restricted private Source observation now retains UNKNOWN rights, whole-work integrity issues and exact source slices through analysis admission. Reference Context uses an observation boundary; production still requires accepted Canon. Strict Codex Schema projection and empty optional lineage normalization retain raw responses. These changes do not resolve remaining production, creative-validation or literary-quality qualifications.

@@ -15,11 +15,11 @@ Baseline implementation identity: `sha256:06f6c417ef4374bb9505aa1c94f4d9fa2cc744
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-01",
+  "reviewed_on": "2026-10-02",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "2bcfe01e4d6219479748f379b25b6eceac6cf89c",
-    "implementation_tree_sha": "sha256:077ce01912efbeae4fbc7c4aead8d5d4cdfe72b0c7a12c7ccd78a412c42a67ba"
+    "sha": "63888679ffa24589932ed93faecf575a702ea2da",
+    "implementation_tree_sha": "sha256:81912fdd2a54f4e5614cca309087dab801e1a4e596802b65d71bdf532fdb651f"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -530,3 +530,5 @@ assets; file extensions do not constitute output forms. Neither form is newly de
 complete by this scope decision. The pre-execution gaps above remain mandatory work within WP02, not optional
 future recommendations. No engineering result here grants publishing authority or proves
 literary, reader, long-form or cost benefit.
+
+Current scope review (2026-10-02): Restricted private Source observation now retains UNKNOWN rights, whole-work integrity issues and exact source slices through analysis admission. Reference Context uses an observation boundary; production still requires accepted Canon. Strict Codex Schema projection and empty optional lineage normalization retain raw responses. These changes do not resolve remaining production, creative-validation or literary-quality qualifications.

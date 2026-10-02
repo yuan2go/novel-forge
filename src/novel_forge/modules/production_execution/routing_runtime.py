@@ -1339,6 +1339,10 @@ class ProductionProviderRouter:
                 "provider_request_identity", {}
             )
             selected = content["selected"]["candidate"]
+            source_observation = (
+                task["task_type"] == "source.deconstruction.observe"
+                and (payload.get("input") or {}).get("observation_boundary", {}).get("boundary_type") == "SOURCE_OBSERVATION"
+            )
             expected_protocol = self._frozen_output_protocol(
                 identity, admission, metadata, task, selected["provider"]
             )
@@ -1363,7 +1367,7 @@ class ProductionProviderRouter:
                 or identity.get("protocol")
                 != expected_protocol
                 or str(identity.get("reasoning_effort") or "")
-                != (selected["reasoning"] if selected["provider"] == "deepseek" else "")
+                != (selected["reasoning"] if selected["provider"] == "deepseek" or source_observation else "")
                 or admitted_pricing != selected["pricing"]
             ):
                 raise KernelError("ROUTING_ADMISSION_IDENTITY_MISMATCH", version_id)

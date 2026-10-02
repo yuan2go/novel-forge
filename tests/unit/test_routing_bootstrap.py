@@ -175,6 +175,55 @@ def test_codex_sampling_retains_unknown_money_and_production_escalation_restrict
     assert "ESCALATION_THRESHOLD_NOT_MET" in blocked["candidates"][0]["rejected_reasons"]
 
 
+def test_exact_source_entitlement_sample_selects_model_without_production_escalation():
+    scope = {"task_type": "source.deconstruction.observe", "work_id": "source-corpus:project",
+             "risk": "MEDIUM", "escalation_reason": ""}
+    grant = {"task_type": scope["task_type"], "book_id": scope["work_id"]}
+    ordinary, sampled = codex_benchmark_decision(task_overrides=scope, grant_overrides=grant)
+    assert ordinary.to_dict()["status"] == "BLOCKED"
+    assert "ESCALATION_THRESHOLD_NOT_MET" in ordinary.to_dict()["candidates"][0]["rejected_reasons"]
+    assert sampled["status"] == "BENCHMARK_SELECTED"
+    assert sampled["production_eligible"] is False
+    assert sampled["task"]["risk"] == "MEDIUM"
+    for invalid in ({"quota_remaining": 0}, {"authorization_ref": "other"},
+                    {"context_limit": 500}, {"available": False}):
+        _, rejected = codex_benchmark_decision(task_overrides=scope, grant_overrides=grant,
+                                              candidate_overrides=invalid)
+        assert rejected["status"] == "BLOCKED"
+    _, production_scope = codex_benchmark_decision(task_overrides={**scope, "work_id": "book"},
+                                                   grant_overrides={**grant, "book_id": "book"})
+    assert production_scope["status"] == "BLOCKED"
+
+
+def test_source_campaign_retains_project_identity_without_creative_book_allocation():
+    from novel_forge.modules.command_kernel.creative_budget_runtime import require_provider_campaign_entitlement
+
+    cursor = SimpleNamespace(execute=lambda *args: None, fetchall=lambda: [])
+    grant = {**entitlement_grant(), "task_type": "source.deconstruction.observe",
+             "book_id": "source-corpus:project"}
+    require_provider_campaign_entitlement(cursor, project_id="project", grant=grant)
+    for change in ({"task_type": "book_plan.generate"}, {"book_id": "book"},
+                   {"book_id": "source-corpus:other-project"}):
+        with pytest.raises(KernelError, match="CREATIVE_BUDGET_AUTHORIZATION_REQUIRED"):
+            require_provider_campaign_entitlement(cursor, project_id="project", grant={**grant, **change})
+
+
+@pytest.mark.parametrize("effect_status,dispatches,replaceable", [
+    ("CANCELLED", [], True), ("CANCELLED", [("dispatch", "CANCELLED")], False),
+    ("SUCCEEDED", [], False), ("UNKNOWN", [], False),
+    ("FAILED_FINAL", [("dispatch", "FAILED_FINAL")], True),
+])
+def test_source_sample_replacement_requires_known_terminal_or_never_dispatched_cancel(
+    effect_status, dispatches, replaceable,
+):
+    from novel_forge.modules.source_import.sampling import _replaceable_effects
+    from unittest.mock import Mock
+
+    cursor = Mock()
+    cursor.fetchall.side_effect = [[("effect", effect_status)], dispatches]
+    assert _replaceable_effects(SimpleNamespace(cursor=cursor), "project", "operation") is replaceable
+
+
 def test_zero_router_money_cap_retains_entitlement_identity_quota_and_unknown_cost():
     from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
 

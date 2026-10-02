@@ -17,7 +17,7 @@ from .task_context import (
     fact_aliases,
 )
 
-_HISTORY = frozenset({"narrative_retrieval_document", "chapter_episodic_summary", "scene_episodic_summary", "character_timeline", "relationship_timeline"})
+_HISTORY = frozenset({"narrative_retrieval_document", "chapter_episodic_summary", "scene_episodic_summary", "character_timeline", "relationship_timeline", "source_chunk", "source_observation_excerpt"})
 _EXACT = frozenset({"draft_chapter", "draft_version", "best_draft_candidate", "review_report", "review_issue"})
 ModelCall = Callable[[str, dict[str, Any]], Mapping[str, Any]]
 
@@ -90,19 +90,38 @@ def compile_task_context(
 
     if not 0 < token_budget <= SYSTEM_CONTEXT_WINDOW_TOKENS:
         raise KernelError("TASK_CONTEXT_BUDGET_INVALID", "task target must fit the system context support ceiling")
-    boundary = dict(task.get("accepted_boundary") or {})
-    if not boundary or "accepted_through_chapter" not in boundary:
+    reference = task.get("stage") == "reference_analysis"
+    boundary_key = "observation_boundary" if reference else "accepted_boundary"
+    boundary = dict(task.get(boundary_key) or {})
+    if reference:
+        from novel_forge.modules.source_authority.observation import observation_boundary
+        observation_boundary(boundary)
+        if task.get("accepted_boundary"):
+            raise KernelError("TASK_CONTEXT_BOUNDARY_TYPE", "reference observation cannot claim accepted Canon")
+    elif not boundary or "accepted_through_chapter" not in boundary:
         raise KernelError("TASK_CONTEXT_BOUNDARY_REQUIRED", "task Context must freeze an accepted source boundary")
     selectors = task_references(task)
+    source_positions = {}
+    if reference:
+        for position, span in enumerate(boundary["spans"]):
+            source_positions[(span["chunk_asset_version_id"], span["content_hash"])] = position
+            source_positions.setdefault((span["chunk_asset_version_id"], ""), position)
+
+    def source_position(candidate):
+        identity = (candidate.provenance or {}).get("source_chunk_asset_version_id", candidate.asset_version_id)
+        return source_positions.get((identity, candidate.content_digest), source_positions.get((identity, ""), len(source_positions)))
+
     working = []
     excluded = []
     auxiliary = []
     denied = []
-    for candidate in sorted(candidates, key=lambda item: item.asset_version_id):
+    for candidate in sorted(candidates, key=source_position if reference else lambda item: item.asset_version_id):
         if admitted_source_ids is not None and candidate.asset_version_id not in admitted_source_ids:
             denied.append(candidate)
             continue
-        if dict(candidate.accepted_boundary or {}) != boundary:
+        if reference and (candidate.accepted_boundary or candidate.source_use_mode != "source_analysis" or candidate.allowed_use != "source_analysis" or candidate.asset_type not in resolve_context_profile("reference_analysis").allowed_asset_types):
+            raise KernelError("TASK_CONTEXT_REFERENCE_SOURCE", "reference analysis requires exact analysis-only sources")
+        if dict((candidate.observation_boundary if reference else candidate.accepted_boundary) or {}) != boundary:
             raise KernelError("TASK_CONTEXT_SOURCE_BOUNDARY_CHANGED", "Context source does not match its frozen task boundary")
         protected = context_candidate_class(candidate) is ContextClass.PROTECTED or candidate.asset_type in _EXACT
         required = protected or candidate.required or candidate.asset_type in required_asset_types
@@ -118,7 +137,7 @@ def compile_task_context(
     for candidate in working:
         amount = 1 if candidate.allowed_use == "evidence_only" else max(1, serialized_token_upper_bound(_payload(candidate)))
         normalized.append(replace(candidate, estimated_tokens=amount, truncation_strategy=""))
-    normalized, deduplications = deduplicate_context_candidates(normalized, required_logical_kinds=set(required_asset_types) | resolve_context_profile("draft").required_asset_types)
+    normalized, deduplications = deduplicate_context_candidates(normalized, required_logical_kinds=set(required_asset_types) | resolve_context_profile("reference_analysis" if reference else "draft").required_asset_types)
     duplicated_ids = {receipt["asset_version_id"] for receipt in deduplications}
     excluded.extend(item for item in working if item.asset_version_id in duplicated_ids)
     protected = [item for item in normalized if context_candidate_class(item) is ContextClass.PROTECTED or item.required or item.asset_type in required_asset_types or item.asset_type in _EXACT]
@@ -151,6 +170,8 @@ def compile_task_context(
         replacements = {}
         call_count = 0
         for candidate in eligible:
+            if sum(replacements.get(item.asset_version_id, item).estimated_tokens for item in normalized) <= token_budget:
+                break
             units = _units(candidate, task)
             groups = []
             group = []
@@ -177,7 +198,7 @@ def compile_task_context(
             for group_index, group in enumerate(groups):
                 chunk = {
                     "contract_version": "task-context-compression.v1", "policy_version": TASK_CONTEXT_POLICY_VERSION,
-                    "accepted_boundary": boundary, "memo_fingerprint": str(task.get("memo_fingerprint") or ""), "task": dict(task), "units": group,
+                    boundary_key: boundary, "memo_fingerprint": str(task.get("memo_fingerprint") or ""), "task": dict(task), "units": group,
                     "required_unit_ids": [unit["unit_id"] for unit in group if unit["required"]],
                     "target_tokens": max(1, remaining * candidate.estimated_tokens // max(1, sum(item.estimated_tokens for item in eligible))),
                     "source_binding": {"asset_version_id": candidate.asset_version_id, "content_hash": candidate.content_digest, "source_revision": candidate.source_revision},
@@ -213,13 +234,15 @@ def compile_task_context(
             texts = [unit["text"] for unit in units if unit["unit_id"] in keep and unit["field"] == "safe_summary"]
             facts = tuple(candidate.structured_facts[unit["index"]] for unit in units if unit["unit_id"] in keep and unit["field"] == "structured_facts") + tuple(fact for fact in candidate.structured_facts if fact.get("provider_visibility") == "INTERNAL_QUALITY_ONLY")
             payload = {"safe_summary": "\n\n".join(texts), "structured_facts": list(facts)}
-            trace = {"source_asset_version_id": candidate.asset_version_id, "source_content_hash": candidate.content_digest, "source_revision": candidate.source_revision, "task_hash": narrative_hash(task), "accepted_boundary": boundary, "policy_version": TASK_CONTEXT_POLICY_VERSION, "method": "host-bound-extractive-semantic.v1", "selected_unit_ids": sorted(keep), "source_units": [{"unit_id": unit["unit_id"], "source_path": unit.get("source_path", [unit["field"]]), "index": unit.get("index"), "unit_hash": narrative_hash(unit["text"]), "kind": unit["kind"]} for unit in units if unit["unit_id"] in keep], "restored_unit_ids": sorted(restored), "result_content_hash": narrative_hash(payload), "forward_check": "EXACT_HOST_SOURCE_UNITS", "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE", "model_execution_evidence": evidence}
+            trace = {"source_asset_version_id": candidate.asset_version_id, "source_content_hash": candidate.content_digest, "source_revision": candidate.source_revision, "task_hash": narrative_hash(task), boundary_key: boundary, "policy_version": TASK_CONTEXT_POLICY_VERSION, "method": "host-bound-extractive-semantic.v1", "selected_unit_ids": sorted(keep), "source_units": [{"unit_id": unit["unit_id"], "source_path": unit.get("source_path", [unit["field"]]), "index": unit.get("index"), "unit_hash": narrative_hash(unit["text"]), "kind": unit["kind"]} for unit in units if unit["unit_id"] in keep], "restored_unit_ids": sorted(restored), "result_content_hash": narrative_hash(payload), "forward_check": "EXACT_HOST_SOURCE_UNITS", "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE", "model_execution_evidence": evidence}
             replacements[candidate.asset_version_id] = replace(candidate, safe_summary=payload["safe_summary"], structured_facts=facts, estimated_tokens=max(1, serialized_token_upper_bound(payload)), context_class=ContextClass.COMPRESSIBLE, compression_method=trace["method"], compression_trace=(trace,))
             traces.append(trace)
         normalized = [replacements.get(item.asset_version_id, item) for item in normalized]
         if sum(item.estimated_tokens for item in normalized) > token_budget:
             raise KernelError("TASK_CONTEXT_FIDELITY_RESTORE_EXCEEDS_BUDGET", "faithful restored Context exceeds its authorized task target; no required source was silently discarded")
         assert not protected_ids.intersection(replacements)
+    if reference:
+        normalized.sort(key=source_position)
     result = [*normalized, *denied] + [replace(item, provenance={**dict(item.provenance or {}), "task_excluded": True}) for item in excluded]
-    receipt = {"policy_version": TASK_CONTEXT_POLICY_VERSION, "task_hash": narrative_hash(task), "accepted_boundary": boundary, "source_bindings": [{"asset_version_id": item.asset_version_id, "source_revision": item.source_revision, "content_hash": item.content_digest} for item in candidates], "system_context_window_tokens": SYSTEM_CONTEXT_WINDOW_TOKENS, "task_target_tokens": token_budget, "token_accounting": "utf8-byte-upper-bound.v1", "before_estimated_tokens": before, "after_estimated_tokens": sum(item.estimated_tokens for item in normalized), "protected_estimated_tokens": protected_tokens, "dependency_coverage": dependencies, "deduplications": deduplications, "excluded_asset_version_ids": [item.asset_version_id for item in excluded], "compression_trace": traces, "fast_path": not traces, "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY", "fact_mutation_allowed": False}
+    receipt = {"policy_version": TASK_CONTEXT_POLICY_VERSION, "task_hash": narrative_hash(task), boundary_key: boundary, "source_bindings": [{"asset_version_id": item.asset_version_id, "source_revision": item.source_revision, "content_hash": item.content_digest} for item in candidates], "system_context_window_tokens": SYSTEM_CONTEXT_WINDOW_TOKENS, "task_target_tokens": token_budget, "token_accounting": "utf8-byte-upper-bound.v1", "before_estimated_tokens": before, "after_estimated_tokens": sum(item.estimated_tokens for item in normalized), "protected_estimated_tokens": protected_tokens, "dependency_coverage": dependencies, "deduplications": deduplications, "excluded_asset_version_ids": [item.asset_version_id for item in excluded], "compression_trace": traces, "fast_path": not traces, "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY", "fact_mutation_allowed": False}
     return result, {**receipt, "receipt_hash": narrative_hash(receipt)}

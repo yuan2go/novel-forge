@@ -678,11 +678,17 @@ def validate_content_intelligence_output(
             or payload.get("knowledge_status") != "NOT_ABSTRACTED"
         ):
             raise ValueError("invalid deconstruction Provider output")
+        findings = [dict(finding) if isinstance(finding, Mapping) else finding for finding in findings]
+        payload["findings"] = findings
         for finding in findings:
             allowed_lineage = {
                 "evidence_span_ids",
                 "input_observation_asset_version_ids",
             }
+            if isinstance(finding, dict):
+                for key in allowed_lineage:
+                    if finding.get(key) == []:
+                        finding.pop(key)
             if (
                 not isinstance(finding, Mapping)
                 or not {"finding_code", "statement"}.issubset(finding)

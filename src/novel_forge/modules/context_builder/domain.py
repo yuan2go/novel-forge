@@ -28,6 +28,7 @@ SOURCE_MODES = {
     "structure_only",
     "review_only",
     "eval_only",
+    "source_analysis",
 }
 
 
@@ -265,6 +266,7 @@ def _profile(
 
 
 CONTEXT_PROFILES: dict[str, ContextProfile] = {
+    "reference_analysis": replace(_profile("reference_analysis", required=(), maximum=512_000, allowed={"source_chunk", "source_observation_excerpt"}), forbidden_asset_types=frozenset(), maximum_raw_source_ratio=1.0, generation_allowed_requirement=False, copyright_mode="private_source_analysis_only"),
     "creative": _profile(
         "creative",
         required=(),
@@ -526,7 +528,7 @@ def _eligibility_reason(
     if candidate.read_generation_id != candidate.active_read_generation_id:
         return "WRONG_READ_GENERATION"
     if (
-        candidate.raw_source
+        (candidate.raw_source and profile.name != "reference_analysis")
         or logical_kind in profile.forbidden_asset_types
         or physical_type in profile.forbidden_asset_types
     ):
@@ -552,7 +554,17 @@ def _eligibility_reason(
         return "SOURCE_RISK"
     if not candidate.provenance:
         return "MISSING_PROVENANCE"
-    if authority_state_boundary:
+    if profile.name == "reference_analysis":
+        from novel_forge.modules.source_authority.observation import observation_boundary
+        try:
+            observation_boundary(candidate.observation_boundary)
+        except Exception:
+            return "OBSERVATION_BOUNDARY_INVALID"
+        if candidate.accepted_boundary or candidate.source_use_mode != "source_analysis" or candidate.allowed_use != "source_analysis":
+            return "REFERENCE_USE_REQUIRED"
+        if not authority_state_boundary or dict(candidate.observation_boundary or {}) != authority_state_boundary:
+            return "WRONG_OBSERVATION_BOUNDARY"
+    elif authority_state_boundary:
         if not candidate.accepted_boundary:
             return "ACCEPTED_BOUNDARY_MISSING"
         if dict(candidate.accepted_boundary) != authority_state_boundary:
@@ -1776,7 +1788,7 @@ def _rejection_reason(
         return f"qualification:{candidate.qualification}"
     if candidate.governance_status != "CLEAR":
         return f"governance:{candidate.governance_status}"
-    if candidate.asset_type in profile.forbidden_asset_types or candidate.raw_source:
+    if candidate.asset_type in profile.forbidden_asset_types or (candidate.raw_source and profile.name != "reference_analysis"):
         return "raw_source_forbidden"
     if candidate.asset_type not in profile.allowed_asset_types:
         return "asset_type_not_allowed"

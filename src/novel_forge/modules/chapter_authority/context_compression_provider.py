@@ -24,7 +24,14 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
         raise KernelError("CONTEXT_COMPRESSION_TASK_INVALID", "frozen compression task is required")
     units = task.get("units")
     required = task.get("required_unit_ids")
-    boundary = task.get("accepted_boundary")
+    reference = (task.get("task") or {}).get("stage") == "reference_analysis"
+    boundary_key = "observation_boundary" if reference else "accepted_boundary"
+    boundary = task.get(boundary_key)
+    if reference:
+        from novel_forge.modules.source_authority.observation import observation_boundary
+        observation_boundary(boundary)
+        if task.get("accepted_boundary"):
+            raise KernelError("CONTEXT_COMPRESSION_BOUNDARY_TYPE", "reference cannot claim accepted Canon")
     if (
         task.get("contract_version") != "task-context-compression.v1"
         or not isinstance(boundary, Mapping)
@@ -65,7 +72,7 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
     result = {
         "contract_version": task["contract_version"],
         "stage": stage,
-        "accepted_boundary": deepcopy(dict(boundary)),
+        boundary_key: deepcopy(dict(boundary)),
         "memo_fingerprint": task["memo_fingerprint"],
         "policy_version": task["policy_version"],
         "task": semantic_task,

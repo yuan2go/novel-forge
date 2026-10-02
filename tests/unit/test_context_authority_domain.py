@@ -160,6 +160,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
                 "quality",
                 "longform_recap",
                 "ending",
+                "reference_analysis",
             },
         )
         self.assertEqual(resolve_context_profile("prose").name, "draft")

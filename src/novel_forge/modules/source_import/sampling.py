@@ -141,13 +141,15 @@ def _replaceable_effects(uow: AuthorityUnitOfWork, project_id: str, operation_id
     effects = uow.cursor.fetchall()
     if not effects:
         return True
-    if len(effects) != 1 or effects[0][1] not in {"FAILED_FINAL", "DEAD_LETTER"}:
+    if len(effects) != 1 or effects[0][1] not in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}:
         return False
     uow.cursor.execute(
         "SELECT dispatch_id,status FROM authority_external_effect_dispatch WHERE external_effect_id=%s ORDER BY generation FOR UPDATE",
         [effects[0][0]],
     )
     dispatches = uow.cursor.fetchall()
+    if effects[0][1] == "CANCELLED":
+        return not dispatches
     return bool(dispatches) and all(row[1] in {"FAILED_FINAL", "DEAD_LETTER"} for row in dispatches)
 
 
