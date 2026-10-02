@@ -208,6 +208,22 @@ def test_source_campaign_retains_project_identity_without_creative_book_allocati
             require_provider_campaign_entitlement(cursor, project_id="project", grant={**grant, **change})
 
 
+@pytest.mark.parametrize("effect_status,dispatches,replaceable", [
+    ("CANCELLED", [], True), ("CANCELLED", [("dispatch", "CANCELLED")], False),
+    ("SUCCEEDED", [], False), ("UNKNOWN", [], False),
+    ("FAILED_FINAL", [("dispatch", "FAILED_FINAL")], True),
+])
+def test_source_sample_replacement_requires_known_terminal_or_never_dispatched_cancel(
+    effect_status, dispatches, replaceable,
+):
+    from novel_forge.modules.source_import.sampling import _replaceable_effects
+    from unittest.mock import Mock
+
+    cursor = Mock()
+    cursor.fetchall.side_effect = [[("effect", effect_status)], dispatches]
+    assert _replaceable_effects(SimpleNamespace(cursor=cursor), "project", "operation") is replaceable
+
+
 def test_zero_router_money_cap_retains_entitlement_identity_quota_and_unknown_cost():
     from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
 
