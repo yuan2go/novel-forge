@@ -1421,11 +1421,8 @@ def build_provider_context_view(
         omitted_facts += len(facts) - len(selected_facts)
         summary = str(raw.get("safe_summary") or "").strip()
         if clean_writer_context:
-            from novel_forge.modules.context_builder.writer_projection import project_visible_summary, project_writer_history
-            if asset_type in {"best_draft_candidate", "draft_chapter", "draft_version"} or raw.get("narrative_function") == "recent_accepted_prose":
-                summary = project_writer_history(summary, source_artifact_type="best_draft_candidate")
-            else:
-                summary = project_visible_summary(summary)
+            from novel_forge.modules.context_builder.writer_projection import project_writer_context_summary
+            summary = project_writer_context_summary(raw, context_bundle.get("context_manifest") or {})
         if (
             asset_type in _STATE_ASSET_TYPES
             and "disclosure_field_projections" in projection

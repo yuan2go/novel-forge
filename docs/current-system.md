@@ -1418,6 +1418,13 @@ existing Context selection and final complete-request admission enforce the budg
 Template v6 recursively excludes INTERNAL_QUALITY_ONLY structured data regardless of
 logical asset type, including JSON summaries. Historical query plans and artifact versions
 retain their original contracts. None of these projections mutates accepted source assets.
+Task retrieval merges normalize the same frozen prose source before deduplication and
+preserve the clean projection version in host provenance. Extractive compression retains
+that version and a hash of its exact selected result; Template v6 verifies the source and
+result receipt before accepting compressed prose units. Older unbound compressed prose
+requires rebuilding its Context for the new Writer contract. Prose-review and screenplay
+sample Pack identities inherit their source Producer version; their sample Workflow and
+Operation versions remain independent.
 Scene Craft v2 uses the frozen chapter function, Scene, actor, author intent, Arc and
 accepted due obligations to guide technique applicability. Explicit requirements and
 accepted facts remain binding; omitting an inapplicable technique is not a review

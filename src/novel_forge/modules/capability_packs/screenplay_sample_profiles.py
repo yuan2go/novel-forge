@@ -25,7 +25,7 @@ def build_screenplay_sampling_profile(source: LongformCapabilityPackProfile, *, 
         output_asset_types=[SCREENPLAY_SAMPLE_TYPE])
     manifest["context_sources"]["allowed_asset_types"] = sorted(set(manifest["context_sources"]["allowed_asset_types"]) | {SCREENPLAY_SAMPLE_TYPE})
     pack_id = source.pack_id + ".samples"
-    manifest["identity"].update(pack_id=pack_id, version=SCREENPLAY_SAMPLE_VERSION,
+    manifest["identity"].update(pack_id=pack_id, version=source.manifest["identity"]["version"],
         name="Independent Screenplay Sample " + stage, description="Exact source adaptation benchmark; samples cannot become accepted screenplay or novel facts.")
     manifest["workflow_template"].update(workflow_id=sample_workflow(stage).split("@")[0], workflow_version=SCREENPLAY_SAMPLE_VERSION)
     manifest["workflow_template"]["completion"]["required_output_asset_types"] = [SCREENPLAY_SAMPLE_TYPE]

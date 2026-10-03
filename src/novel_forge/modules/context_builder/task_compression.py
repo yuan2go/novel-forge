@@ -258,8 +258,12 @@ def compile_task_context(
                 call_count += 1
             texts = [unit["text"] for unit in units if unit["unit_id"] in keep and unit["field"] == "safe_summary"]
             facts = tuple(candidate.structured_facts[unit["index"]] for unit in units if unit["unit_id"] in keep and unit["field"] == "structured_facts") + tuple(fact for fact in candidate.structured_facts if fact.get("provider_visibility") == "INTERNAL_QUALITY_ONLY")
-            payload = {"safe_summary": "\n\n".join(texts), "structured_facts": list(facts)}
+            from .writer_projection import WRITER_PROJECTION_VERSION
+            writer_projection = (candidate.provenance or {}).get("writer_projection_version") == WRITER_PROJECTION_VERSION
+            payload = {"safe_summary": "\n\n".join(texts).strip() if writer_projection else "\n\n".join(texts), "structured_facts": list(facts)}
             trace = {"source_asset_version_id": candidate.asset_version_id, "source_content_hash": candidate.content_digest, "source_revision": candidate.source_revision, "task_hash": narrative_hash(task), boundary_key: boundary, "policy_version": TASK_CONTEXT_POLICY_VERSION, "method": "host-bound-extractive-semantic.v2", "selected_unit_ids": sorted(keep), "source_units": [{"unit_id": unit["unit_id"], "source_path": unit.get("source_path", [unit["field"]]), "index": unit.get("index"), "unit_hash": narrative_hash(unit["text"]), "kind": unit["kind"]} for unit in units if unit["unit_id"] in keep], "restored_unit_ids": sorted(restored), "result_content_hash": narrative_hash(payload), "forward_check": "EXACT_HOST_SOURCE_UNITS", "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE", "model_execution_evidence": evidence}
+            if writer_projection:
+                trace["writer_projection_version"] = WRITER_PROJECTION_VERSION
             replacements[candidate.asset_version_id] = replace(candidate, safe_summary=payload["safe_summary"], structured_facts=facts, estimated_tokens=max(1, serialized_token_upper_bound(payload)), context_class=ContextClass.COMPRESSIBLE, compression_method=trace["method"], compression_trace=(trace,))
             traces.append(trace)
         normalized = [replacements.get(item.asset_version_id, item) for item in normalized]

@@ -217,3 +217,56 @@ def test_evaluator_and_reader_outcome_select_only_their_judgment_methods():
         assert "## " + heading in method
         assert "## Chapter review" not in method
         assert "## Feedback interpretation" not in method
+
+
+def test_clean_retrieval_merge_compression_and_final_writer_projection_compose():
+    from dataclasses import replace
+    from novel_forge.modules.chapter_authority.handlers import merge_task_retrieval_projections
+    from novel_forge.modules.context_builder.domain import build_authority_context_bundle
+    from novel_forge.modules.context_builder.production_retrieval import _selected_document
+    from novel_forge.modules.context_builder.task_compression import compile_task_context
+    from tests.unit.test_task_scoped_context import candidate, TASK, BOUNDARY
+
+    original = {"chapter": 3, "scene_artifacts": [
+        {"slot_id": "s1", "text": "You owe me one joke."},
+        {"slot_id": "s2", "text": "Unrelated banquet. " * 200}],
+        "selected_review": {"rule": "OLD-REVIEW"}, "candidate_comparison": {"quote": "REJECTED-PROSE"}}
+    selected = _selected_document({"source_asset_version_id": "source:1", "source_content_hash": HASH,
+        "source_artifact_type": "best_draft_candidate", "projection_hash": HASH, "content_text": json.dumps(original), "metadata": {}}, clean_history=True)
+    metadata = merge_task_retrieval_projections({"content_hash": HASH, "safe_summary": json.dumps(original),
+        "physical_asset_type": "narrative_retrieval_document", "structured_facts": [{"fact_id": "private", "provider_visibility": "INTERNAL_QUALITY_ONLY", "value": "PRIVATE-QUALITY"}],
+        "provenance": {"authority_asset_version_id": "source:1"}}, [selected])
+    assert json.loads(metadata["safe_summary"])["scene_artifacts"] == original["scene_artifacts"]
+    assert metadata["structured_facts"] == []
+    assert metadata["physical_asset_type"] == "best_draft_candidate"
+    source = replace(candidate(kind="narrative_retrieval_document", text=metadata["safe_summary"]),
+        physical_asset_type="best_draft_candidate", narrative_function="recent_accepted_prose", provenance=metadata["provenance"])
+
+    def choose(stage, task):
+        for marker in ("OLD-REVIEW", "REJECTED-PROSE", "PRIVATE-QUALITY"):
+            assert marker not in json.dumps(task["units"])
+        return {"selected_unit_ids": ["json:scene_artifacts:0"]} if stage == "context_compress" else {"supported": True, "coverage_complete": True, "missing_unit_ids": [], "distorted_unit_ids": []}
+
+    compiled, receipt = compile_task_context([source], task=TASK, token_budget=350, required_asset_types=(), model_call=choose, compression_input_tokens=8192)
+    assert compiled[0].compression_method == "host-bound-extractive-semantic.v2"
+    assert receipt["compression_trace"][0]["writer_projection_version"] == WRITER_PROJECTION_VERSION
+    plan = replace(candidate(kind="chapter_plan", text="Exact frozen chapter plan.", required=True), asset_version_id="plan:21", estimated_tokens=40,
+        provenance={"authority_asset_version_id": "plan:21"}, source_identity="plan:21", content_digest="sha256:" + "c" * 64, source_revision="sha256:" + "c" * 64)
+    bundle = build_authority_context_bundle(project_id="project", book_id="book", stage="draft", created_by_operation_id="operation",
+        context_profile_version="draft-context-profile-v4", token_budget=1000, candidates=[plan, *compiled], authority_state_boundary=BOUNDARY,
+        narrative_position={"chapter": 21, "book_id": "book"}, task_context_receipt=receipt)
+    view = build_provider_context_view("draft", bundle, {}, clean_writer_context=True)
+    assert "You owe me one joke." in json.dumps(view)
+    for marker in ("Unrelated banquet", "OLD-REVIEW", "REJECTED-PROSE", "PRIVATE-QUALITY"):
+        assert marker not in json.dumps(view)
+    assert json.loads(selected["safe_summary"])["scene_artifacts"] == original["scene_artifacts"]
+    legacy_view = build_provider_context_view("draft", bundle, {})
+    assert "You owe me one joke." in json.dumps(legacy_view)
+    without_projection = deepcopy(bundle)
+    del without_projection["context_manifest"]["compression_trace"][0]["trace"][0]["writer_projection_version"]
+    with pytest.raises(KernelError, match="WRITER_HISTORY_COMPRESSED_PROJECTION_REQUIRED"):
+        build_provider_context_view("draft", without_projection, {}, clean_writer_context=True)
+    tampered = deepcopy(bundle)
+    next(segment for segment in tampered["context_segments"] if segment["asset_version_id"] == "source:1")["safe_summary"] += "\n\nREJECTED-PROSE"
+    with pytest.raises(KernelError, match="WRITER_HISTORY_COMPRESSED_PROJECTION_REQUIRED"):
+        build_provider_context_view("draft", tampered, {}, clean_writer_context=True)

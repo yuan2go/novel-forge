@@ -466,7 +466,7 @@ def build_longform_prose_review_sample_pack_profile(
         handler_key="novel_forge.book_followup_authority." + PROSE_SAMPLE_DEFINITION,
         output_asset_types=[PROSE_SAMPLE_TYPE])
     pack_id = source.pack_id + ".samples"
-    manifest["identity"].update(pack_id=pack_id, version=PROSE_SAMPLE_VERSION,
+    manifest["identity"].update(pack_id=pack_id, version=source.manifest["identity"]["version"],
         name="Longform Prose Reviewer Sample Pack", description="Independent reviewer benchmark samples remain ineligible for production findings.")
     manifest["workflow_template"].update(workflow_id=PROSE_SAMPLE_WORKFLOW.split("@")[0], workflow_version=PROSE_SAMPLE_VERSION)
     manifest["workflow_template"]["completion"]["required_output_asset_types"] = [PROSE_SAMPLE_TYPE]

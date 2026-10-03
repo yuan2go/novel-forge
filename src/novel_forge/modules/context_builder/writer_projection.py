@@ -67,3 +67,30 @@ def project_visible_summary(text: str) -> str:
         return text
     projected = provider_visible_data(source)
     return "" if projected is None else json.dumps(projected, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def project_writer_context_summary(segment: Mapping[str, Any], manifest: Mapping[str, Any]) -> str:
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+
+    summary = str(segment.get("safe_summary") or "").strip()
+    prose = (segment.get("asset_type") in _PROSE_TYPES
+             or segment.get("physical_asset_type") in _PROSE_TYPES
+             or segment.get("narrative_function") == "recent_accepted_prose")
+    if not prose:
+        return project_visible_summary(summary)
+    if segment.get("compression_method") == "host-bound-extractive-semantic.v2":
+        records = [row for row in manifest.get("compression_trace") or ()
+                   if isinstance(row, Mapping) and row.get("asset_version_id") == segment.get("asset_version_id")]
+        traces = records[0].get("trace") if len(records) == 1 else None
+        trace = traces[0] if isinstance(traces, list) and len(traces) == 1 and isinstance(traces[0], Mapping) else {}
+        payload = {"safe_summary": summary, "structured_facts": list(segment.get("structured_facts") or ())}
+        if (trace.get("writer_projection_version") != WRITER_PROJECTION_VERSION
+            or trace.get("method") != segment.get("compression_method")
+            or trace.get("source_asset_version_id") != segment.get("asset_version_id")
+            or not segment.get("content_digest")
+            or trace.get("source_content_hash") != segment.get("content_digest")
+            or trace.get("forward_check") != "EXACT_HOST_SOURCE_UNITS"
+            or trace.get("result_content_hash") != narrative_hash(payload)):
+            raise KernelError("WRITER_HISTORY_COMPRESSED_PROJECTION_REQUIRED", "compressed accepted prose requires its frozen clean source projection and exact extraction receipt")
+        return project_visible_summary(summary)
+    return project_writer_history(summary, source_artifact_type="best_draft_candidate")

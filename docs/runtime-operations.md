@@ -1516,6 +1516,11 @@ the exact selected semantic view and source/projection hashes: narrative history
 contain accepted prose, not selected_review, candidate_comparison or provider_evidence.
 Malformed or inconsistent accepted prose rejects before dispatch; rebuild from complete
 immutable sources instead of treating a character prefix as a complete story view.
+For task compression, verify accepted-writer-history.v1 on the exact extractive trace,
+its source content hash and selected-result hash. Do not relabel an old compressed
+summary as a clean source; rebuild its Context from the frozen original. Sample Pack
+versions follow the current formal prose-review or screenplay Producer version without
+changing the sample Workflow/Operation definitions or granting sample output eligibility.
 Complete-request admission remains authoritative; a smaller semantic projection or a
 passing Context receipt does not qualify the new instructions or literary quality.
 
