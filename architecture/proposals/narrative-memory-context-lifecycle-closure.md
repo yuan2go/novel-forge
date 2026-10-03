@@ -9,7 +9,7 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `42bd0752e50146baf8a5cb2b94fd470d4121ed96`
+Reality baseline: `35995f665ff8a7e4f404810794643a644fe2970b`
 Baseline implementation identity:
 `sha256:74f7d512ff2a73083f97c10c9c558b201ad10fcf743da45a928808763f7e8839`
 
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-10-03",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "42bd0752e50146baf8a5cb2b94fd470d4121ed96",
-    "implementation_tree_sha": "sha256:74f7d512ff2a73083f97c10c9c558b201ad10fcf743da45a928808763f7e8839"
+    "sha": "35995f665ff8a7e4f404810794643a644fe2970b",
+    "implementation_tree_sha": "sha256:9879b9494a4b40df1b37aa789978e9d8be8542ff4cea0baa5540cf6c4248ce1f"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -75,6 +75,14 @@ Baseline implementation identity:
     {
       "path": "src/novel_forge/modules/chapter_authority/prompt_methods.py",
       "symbol": "project_skill_method"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/writer_projection.py",
+      "symbol": "project_writer_context_summary"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+      "symbol": "merge_task_retrieval_projections"
     }
   ],
   "superseding_refs": [],

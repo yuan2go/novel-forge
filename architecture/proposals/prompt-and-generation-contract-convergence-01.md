@@ -14,7 +14,7 @@
 | 目标仓库 | `yuan2go/novel-forge` |
 | 核验日期 | 2026-10-01，UTC+8 |
 | 核验分支 | `codex/wp-task-context-512k-01` |
-| 当前生命周期代码基线 | `42bd0752e50146baf8a5cb2b94fd470d4121ed96` |
+| 当前生命周期代码基线 | `35995f665ff8a7e4f404810794643a644fe2970b` |
 | Git tree | `d21d5d8ba1b152bfb43ea93bb3053b67e434a1a9` |
 | 当前事实核验 | 源代码、冻结合同、正式装配及定向单测/PostgreSQL 回归；现有持久库仅只读核验，未调用真实 Provider |
 | 实现及效果状态 | 规格形成时仅交付需求；后续工程实现已进入正式主链，真实 Provider 与文学收益仍未验证。当前状态以代码、冻结合同和当次验收为准 |
@@ -28,8 +28,8 @@
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
   "reality_baseline": {
-    "sha": "42bd0752e50146baf8a5cb2b94fd470d4121ed96",
-    "implementation_tree_sha": "sha256:74f7d512ff2a73083f97c10c9c558b201ad10fcf743da45a928808763f7e8839"
+    "sha": "35995f665ff8a7e4f404810794643a644fe2970b",
+    "implementation_tree_sha": "sha256:9879b9494a4b40df1b37aa789978e9d8be8542ff4cea0baa5540cf6c4248ce1f"
   },
   "scope": [
     "src/novel_forge/modules/chapter_authority",
@@ -101,6 +101,14 @@
     {
       "path": "src/novel_forge/modules/chapter_authority/prompt_methods.py",
       "symbol": "project_skill_method"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/writer_projection.py",
+      "symbol": "project_writer_context_summary"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+      "symbol": "merge_task_retrieval_projections"
     }
   ],
   "superseding_refs": [],
