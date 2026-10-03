@@ -146,5 +146,5 @@ def test_real_accepted_repository_writes_clean_projection_and_detects_conflictin
     assert all(entry["action"] == "UNCHANGED" for entry in manifest["entries"])
     with transaction() as connection, connection.cursor() as cursor:
         cursor.execute("UPDATE authority_narrative_retrieval_document SET projection_hash=%s WHERE project_id=%s AND memory_layer='L0'", ["sha256:" + "f" * 64, project])
-        with pytest.raises(KernelError, match="WRITER_RETRIEVAL_REBUILD_REQUIRED"):
+        with pytest.raises(ValueError, match="WRITER_RETRIEVAL_REBUILD_REQUIRED"):
             BookAuthorityRepository(cursor)._commit_narrative_retrieval_documents(projection)
