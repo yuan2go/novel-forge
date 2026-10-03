@@ -106,3 +106,23 @@ def required_editorial_knowledge(inputs: list[Mapping[str, Any]], *, command: An
     projection = compile_planning_author_projection(author, command=command, selected_inputs=inputs)
     selected = {item["fragment_id"] for item in projection["fragments"]}
     return tuple(sorted({card["asset_version_id"] for decision in binding["learning"]["decisions"] if f"editorial:{decision['decision_id']}" in selected for card in decision["knowledge_cards"]}))
+
+
+def editorial_selection_inputs(inputs: list[Mapping[str, Any]], *, command: Any) -> list[Mapping[str, Any]]:
+    if not any(item["content"].get("editorial_learning") or (item["content"].get("constraint_envelope") or {}).get("editorial_learning") or ((item["content"].get("candidate_payload") or {}).get("constraint_envelope") or {}).get("editorial_learning") for item in inputs):
+        return inputs
+    from novel_forge.modules.story_design_authority.author_input import without_author_private
+    binding = bind_editorial_inputs(inputs, project_id=command.project_id, book_id=command.book_id)
+    author = author_binding_from_inputs(inputs, project_id=command.project_id, book_id=command.book_id)
+    _require(bool(author), "Editorial selection requires its frozen author intent")
+    projection = compile_planning_author_projection(author, command=command, selected_inputs=inputs)
+    selected = {item["fragment_id"] for item in projection["fragments"]}
+    decisions = [item for item in binding["learning"]["decisions"] if f"editorial:{item['decision_id']}" in selected]
+    result = [{**item, "content": without_author_private(item["content"])} for item in inputs]
+    result[0]["content"]["editorial_selection_guidance"] = {
+        "authority": "AUTHOR_INTENT_NOT_CANON",
+        "reader_promise": binding["learning"]["reader_promise"],
+        "reader_effect": [item["reader_effect"] for item in decisions],
+        "desired_transformation": [item["application"] for item in decisions],
+    }
+    return result

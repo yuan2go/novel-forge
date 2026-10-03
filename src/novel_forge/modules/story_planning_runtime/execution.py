@@ -312,10 +312,11 @@ def _planning_narrative_intelligence_need(
     recent_repetition_keys: tuple[str, ...] = (),
     recent_craft_usage: tuple[Mapping[str, Any], ...] = (),
 ) -> NarrativeIntelligenceNeed:
-    from novel_forge.modules.creative.editorial_learning import required_editorial_knowledge
+    from novel_forge.modules.creative.editorial_learning import editorial_selection_inputs, required_editorial_knowledge
+    selection_inputs = editorial_selection_inputs(selected_inputs, command=command)
     sources: list[Any] = [
         item.get("content")
-        for item in selected_inputs
+        for item in selection_inputs
         if isinstance(item.get("content"), Mapping)
     ]
     sources.extend((production_profile, dict(command.arc_working_set or {})))
@@ -481,7 +482,7 @@ def _planning_narrative_intelligence_need(
         recent_craft_usage=recent_craft_usage,
         condition_sources={
             str(item["role"]): item
-            for item in selected_inputs
+            for item in selection_inputs
             if item.get("role") and isinstance(item.get("content"), Mapping)
         },
     )

@@ -76,6 +76,24 @@ def test_required_editorial_knowledge_cannot_silently_turn_into_empty_selection(
     assert need.required_card_asset_version_ids == ("card:v3",)
 
 
+def test_editorial_selection_cannot_leak_deferred_or_other_chapter_effects():
+    from novel_forge.modules.story_planning_runtime.execution import _planning_narrative_intelligence_need
+    raw = editorial_brief()
+    current = raw["editorial_learning"]["decisions"][0]
+    current["targets"] = ["CHAPTER"]
+    current["reader_effect"] = "CURRENT_READING_EFFECT"
+    raw["editorial_learning"]["decisions"].extend([
+        {**current, "decision_id": "future", "chapter_range": [7, 9], "reader_effect": "FUTURE_READING_EFFECT"},
+        {**current, "decision_id": "deferred", "choice": "DEFER", "reader_effect": "DEFERRED_READING_EFFECT"},
+    ])
+    source = native_brief(raw)
+    need = _planning_narrative_intelligence_need(command=command("chapter_plan.generate", 1), selected_inputs=[source], production_profile={})
+    assert "CURRENT_READING_EFFECT" in need.reader_effect_tags
+    assert "FUTURE_READING_EFFECT" not in str(need.to_dict())
+    assert "DEFERRED_READING_EFFECT" not in str(need.to_dict())
+    assert "editorial_learning" not in need.condition_sources["creative_brief"]["content"]
+
+
 def test_editorial_semantics_reach_provider_and_require_actual_candidate_application():
     from novel_forge.modules.chapter_authority.provider_views import compile_planning_provider_context
     from novel_forge.modules.story_design_authority.author_input import add_author_decision_contract
