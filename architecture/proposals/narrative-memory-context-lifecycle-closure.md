@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `e045de15095fb2cea313f379b6c50f3c6b085c02`
+Reality baseline: `42bd0752e50146baf8a5cb2b94fd470d4121ed96`
 Baseline implementation identity:
-`sha256:33af6f01e7834614dac014d97f4d0dedb7ad0e0430e2cd15354840b1771def87`
+`sha256:74f7d512ff2a73083f97c10c9c558b201ad10fcf743da45a928808763f7e8839`
 
 <!-- proposal-lifecycle
 {
@@ -20,8 +20,8 @@ Baseline implementation identity:
   "reviewed_on": "2026-10-03",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "e045de15095fb2cea313f379b6c50f3c6b085c02",
-    "implementation_tree_sha": "sha256:33af6f01e7834614dac014d97f4d0dedb7ad0e0430e2cd15354840b1771def87"
+    "sha": "42bd0752e50146baf8a5cb2b94fd470d4121ed96",
+    "implementation_tree_sha": "sha256:74f7d512ff2a73083f97c10c9c558b201ad10fcf743da45a928808763f7e8839"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -67,6 +67,14 @@ Baseline implementation identity:
     {
       "path": "src/novel_forge/modules/context_builder/production_retrieval.py",
       "symbol": "build_task_dependency_refs"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/writer_projection.py",
+      "symbol": "project_writer_history"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/prompt_methods.py",
+      "symbol": "project_skill_method"
     }
   ],
   "superseding_refs": [],
