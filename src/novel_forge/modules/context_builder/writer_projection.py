@@ -120,5 +120,5 @@ def project_writer_context_summary(segment: Mapping[str, Any], manifest: Mapping
             or trace.get("forward_check") != "EXACT_HOST_SOURCE_UNITS"
             or trace.get("result_content_hash") != narrative_hash(payload)):
             raise KernelError("WRITER_HISTORY_COMPRESSED_PROJECTION_REQUIRED", "compressed accepted prose requires its frozen clean source projection and exact extraction receipt")
-        return project_visible_summary(summary)
+        return summary if projection_version == "accepted-writer-history.v2" else project_visible_summary(summary)
     return project_writer_history(summary, source_artifact_type="best_draft_candidate")

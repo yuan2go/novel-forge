@@ -69,7 +69,7 @@ def clean_context_candidate(candidate: ContextCandidate, *, stage: str) -> Conte
     if candidate.compression_trace:
         if prose and not all(row.get("writer_projection_version") == STORY_PROJECTION_VERSION for row in candidate.compression_trace):
             raise KernelError("WRITER_HISTORY_REBUILD_REQUIRED", "historical compressed prose requires a clean original-source projection; rebuild instead of summarizing its summary")
-        summary = visible_business_data(candidate.safe_summary, stage=stage, history=True)
+        summary = candidate.safe_summary if prose else visible_business_data(candidate.safe_summary, stage=stage, history=True)
     else:
         summary = story_history(candidate.safe_summary, physical_type="best_draft_candidate" if prose else candidate.physical_asset_type, stage=stage)
     facts = visible_business_data(list(candidate.structured_facts), stage=stage, history=True)

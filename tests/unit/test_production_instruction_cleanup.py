@@ -174,3 +174,24 @@ def test_quality_visibility_does_not_globally_mutate_context_or_sources():
     context = {"context_segments": [{"asset_version_id": "s", "asset_type": "world_bible", "safe_summary": json.dumps(source["structured_facts"])}]}
     review = build_provider_context_view("review", context, {}, writer_projection_version=STORY_PROJECTION_VERSION)
     assert "PRIVATE-FACT" in json.dumps(review)
+
+
+@pytest.mark.parametrize("body", ['{"selected_review":"the character reads this literal document"}', '{"provider_visibility":"INTERNAL_QUALITY_ONLY","value":"literal story document"}'])
+def test_verified_compressed_prose_is_not_reparsed_as_business_metadata(body):
+    source = replace(candidate("narrative_retrieval_document", text=json.dumps({"text": body + "\n\n" + "Banquet. " * 500})),
+        physical_asset_type="best_draft_candidate", provenance={"writer_projection_version": STORY_PROJECTION_VERSION})
+    def scripted(stage, payload):
+        if stage == "context_compress":
+            return {"selected_unit_ids": ["json:text:0"]}
+        return {"supported": True, "coverage_complete": True, "missing_unit_ids": [], "distorted_unit_ids": []}
+    result, receipt = compile_task_context([source], task={**TASK, "writer_projection_version": STORY_PROJECTION_VERSION}, token_budget=160,
+        required_asset_types=(), model_call=scripted, compression_input_tokens=8192)
+    compressed = result[0]
+    assert compressed.safe_summary == body
+    assert clean_context_candidate(compressed, stage="draft").safe_summary == body
+    segment = {"asset_type": compressed.asset_type, "asset_version_id": compressed.asset_version_id, "content_digest": compressed.content_digest,
+        "physical_asset_type": compressed.physical_asset_type, "safe_summary": compressed.safe_summary, "structured_facts": list(compressed.structured_facts),
+        "compression_method": compressed.compression_method}
+    context = {"context_segments": [segment], "context_manifest": {"compression_trace": [{"asset_version_id": compressed.asset_version_id, "trace": receipt["compression_trace"]}]}}
+    writer = build_provider_context_view("draft", context, {}, writer_projection_version=STORY_PROJECTION_VERSION)
+    assert writer["segments"][0]["safe_summary"] == body
