@@ -1411,9 +1411,11 @@ full Revision or targeted Revision method. Memo, Review and quality dimensions s
 their own methods. Screenplay packs select adaptation methods rather than novel Slot
 serialization; Planning System v8 selects shared and current-stage instructions.
 ReaderPromise generation selects the new-story promise method in topic-development.
-New Retrieval query plans freeze accepted-writer-history.v1: accepted prose and Scene
-identities remain exact, while review, candidate comparison and Provider records remain
-host evidence. This projection never cuts a JSON/string prefix to 4,000 characters;
+New Retrieval query plans freeze accepted-writer-history.v1 from the exact eligible
+source asset ID and content hash. Index text remains available for ranking; the frozen
+candidate separately carries the semantic view of the complete source JSON. Accepted
+prose and Scene identities remain exact, while review, candidate comparison and Provider
+records remain host evidence. This projection never cuts a JSON/string prefix to 4,000 characters;
 existing Context selection and final complete-request admission enforce the budget.
 Template v6 recursively excludes INTERNAL_QUALITY_ONLY structured data regardless of
 logical asset type, including JSON summaries. Historical query plans and artifact versions

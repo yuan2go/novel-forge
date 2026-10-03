@@ -512,6 +512,8 @@ def test_task_dependencies_use_exact_planting_advance_and_causal_closure_outside
         planting_id, _, _ = _seed_document(
             cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
             label=identifier("task-planting"), chapter=1, text=planting_text, vector=(1.0, 0.0, 0.0),
+            source_content={"text": planting_text, "selected_review": {"instruction": "HISTORICAL-REVIEW-NOISE"},
+                            "provider_evidence": {"error": "PROVIDER-ERROR-NOISE"}},
             metadata={"fact_ids": ["fact:hook"], "structured_facts": [{"source_event_id": "event:planting", "state": {"fact_id": "fact:hook"}}]},
         )
         advance_id, _, _ = _seed_document(
@@ -552,13 +554,15 @@ def test_task_dependencies_use_exact_planting_advance_and_causal_closure_outside
     assert discovery.query_plan["task_dependency_discovery"]["required_refs"] == ["event:causal", "fact:hook"]
     assert "required_dependency_planting" in by_id[planting_id]["retrieval_reasons"]
     assert "required_dependency_advance" in by_id[advance_id]["retrieval_reasons"]
+    assert by_id[planting_id]["content_text"] == planting_text
+    assert json.loads(by_id[planting_id]["writer_history_projection"]["text"]) == {"text": planting_text}
     result = build_retrieval_result(project_id=project_id, book_id=book_id, intent_asset_version_id="intent:task",
         memo_asset_version_id="memo:task", query_plan=discovery.query_plan, documents=discovery.documents,
         discovery_rejections=discovery.rejected_documents, semantic_status=discovery.semantic_status)
     assert len(result["selected_documents"]) == 27
     selected = {item["retrieval_document_id"]: item for item in result["selected_documents"]}
     assert {planting_id, advance_id, causal_id} <= set(selected)
-    assert selected[planting_id]["safe_summary"] == planting_text
+    assert json.loads(selected[planting_id]["safe_summary"]) == {"text": planting_text}
     with transaction() as connection, connection.cursor() as cursor:
         late_id, _, _ = _seed_document(cursor, project_id=project_id, book_id=book_id, source_operation_id=operation_id,
             label=identifier("task-created-after-cutoff"), chapter=100, text="Late projection cannot alter frozen discovery.",

@@ -15,7 +15,9 @@ from novel_forge.modules.chapter_authority.prompt_methods import project_plannin
 from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.context_builder.production_retrieval import build_retrieval_query_plan, build_retrieval_result
-from novel_forge.modules.context_builder.writer_projection import WRITER_PROJECTION_VERSION, project_writer_history
+from novel_forge.modules.context_builder.writer_projection import (
+    WRITER_PROJECTION_VERSION, bind_writer_history_source, project_writer_history,
+)
 from tests.unit.test_capability_pack_artifact_materialization import _prompt_materialization
 from tests.unit.test_context_retrieval_v2 import _document, _intent, _memo
 
@@ -65,6 +67,45 @@ def test_explicit_scene_separators_and_source_characters_are_preserved():
     projected = json.loads(project_writer_history(json.dumps(source), source_artifact_type="best_draft_candidate"))
     assert projected["scene_artifacts"] == source["scene_artifacts"]
     assert projected["scene_separators"] == ["\n"]
+
+
+def test_index_text_stays_rankable_while_writer_uses_exact_bound_source_prose():
+    source = {"text": "完整接受正文。" * 1000, "selected_review": {"instruction": "SOURCE-REVIEW"},
+              "provider_evidence": {"error": "SOURCE-ERROR"}}
+    document = {**_document(), "content_text": "INDEX-REVIEW-NOISE"}
+    document["writer_history_projection"] = bind_writer_history_source(
+        source, source_asset_version_id=document["source_asset_version_id"],
+        source_content_hash=document["source_content_hash"], source_artifact_type=document["source_artifact_type"],
+    )
+    original = deepcopy(document)
+    query = build_retrieval_query_plan(intent=_intent(), memo=_memo())
+    kwargs = dict(project_id="project", book_id="book", intent_asset_version_id="i", memo_asset_version_id="m",
+                  documents=[document], discovery_rejections=[], semantic_status={})
+    clean = build_retrieval_result(query_plan=query, **kwargs)["selected_documents"][0]
+    legacy = build_retrieval_result(query_plan={key: value for key, value in query.items() if key != "writer_projection_version"},
+                                   **kwargs)["selected_documents"][0]
+    assert json.loads(clean["safe_summary"]) == {"text": source["text"]}
+    assert len(clean["safe_summary"]) > 4000
+    assert legacy["safe_summary"] == document["content_text"]
+    assert clean["retrieval_scores"] == legacy["retrieval_scores"]
+    assert document == original
+    assert clean["compression_provenance"]["writer_source_text_fingerprint"] == document["writer_history_projection"]["source_text_fingerprint"]
+    for noise in ("SOURCE-REVIEW", "SOURCE-ERROR", "INDEX-REVIEW-NOISE"):
+        assert noise not in clean["safe_summary"]
+
+
+@pytest.mark.parametrize("field", ["version", "source_asset_version_id", "source_content_hash", "source_artifact_type", "text", "text_fingerprint"])
+def test_bound_retrieval_history_rejects_source_or_semantic_projection_tampering(field):
+    from novel_forge.modules.context_builder.production_retrieval import _selected_document
+
+    document = {**_document(), "content_text": "a plain indexed extract"}
+    document["writer_history_projection"] = bind_writer_history_source(
+        {"text": "accepted body"}, source_asset_version_id=document["source_asset_version_id"],
+        source_content_hash=document["source_content_hash"], source_artifact_type=document["source_artifact_type"],
+    )
+    document["writer_history_projection"][field] = "tampered"
+    with pytest.raises(KernelError, match="WRITER_HISTORY_SOURCE_BINDING_INVALID"):
+        _selected_document(document, clean_history=True)
 
 
 @pytest.mark.parametrize("asset_type", ["narrative_retrieval_document", "character_timeline", "world_bible"])

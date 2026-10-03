@@ -24,7 +24,10 @@ from novel_forge.modules.context_builder.task_context import (
 from psycopg.types.json import Jsonb
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
-from .writer_projection import WRITER_PROJECTION_VERSION, project_writer_history, provider_visible_data
+from .writer_projection import (
+    WRITER_PROJECTION_VERSION, WRITER_PROSE_TYPES, bind_writer_history_source,
+    project_writer_retrieval_history, provider_visible_data,
+)
 
 
 RETRIEVAL_POLICY_VERSION = "minimum-sufficient-retrieval-v7"
@@ -556,6 +559,14 @@ def discover_accepted_retrieval_candidates(
             )
         else:
             dependency_documents = ()
+        writer_projections = (
+            _load_writer_history_projections(
+                uow, project_id=project_id,
+                documents=(*(_document_from_row(row) for row in rows), *dependency_documents),
+            )
+            if query_plan.get("writer_projection_version") == WRITER_PROJECTION_VERSION
+            else {}
+        )
         uow.cursor.execute(
             """
             SELECT document.retrieval_document_id,
@@ -615,6 +626,11 @@ def discover_accepted_retrieval_candidates(
                            if item["metadata"].get("task_dependency_projection") else {})}
             merged[identity] = item
         documents = tuple(merged[identity] for identity in sorted(merged))
+    documents = tuple(
+        {**item, "writer_history_projection": writer_projections[item["source_asset_version_id"]]}
+        if item["source_asset_version_id"] in writer_projections else item
+        for item in documents
+    )
     inputs = tuple(
         {
             "asset_version_id": str(item["source_asset_version_id"]),
@@ -1717,6 +1733,41 @@ def build_retrieval_result(
     return result
 
 
+def _load_writer_history_projections(
+    uow: AuthorityUnitOfWork, *, project_id: str, documents: Iterable[Mapping[str, Any]],
+) -> dict[str, dict[str, str]]:
+    bindings: dict[str, tuple[str, str]] = {}
+    for item in documents:
+        if item.get("source_artifact_type") not in WRITER_PROSE_TYPES:
+            continue
+        identity = str(item["source_asset_version_id"])
+        binding = (str(item["source_content_hash"]), str(item["source_artifact_type"]))
+        if identity in bindings and bindings[identity] != binding:
+            raise KernelError("WRITER_HISTORY_SOURCE_BINDING_INVALID", "retrieval documents disagree on their exact prose source")
+        bindings[identity] = binding
+    if not bindings:
+        return {}
+    uow.cursor.execute(
+        """SELECT version.asset_version_id, version.content_hash, version.content, asset.asset_type
+        FROM authority_asset_version version JOIN authority_asset asset ON asset.asset_id=version.asset_id
+        WHERE asset.project_id=%s AND version.asset_version_id=ANY(%s::text[])
+          AND version.lifecycle IN ('ACTIVE','SUPERSEDED')
+          AND version.eligibility='ELIGIBLE' AND version.governance='CLEAR'""",
+        [project_id, sorted(bindings)],
+    )
+    projections = {}
+    for identity, content_hash, content, artifact_type in uow.cursor.fetchall():
+        if bindings.get(identity) != (content_hash, artifact_type) or not isinstance(content, Mapping):
+            raise KernelError("WRITER_HISTORY_SOURCE_BINDING_INVALID", "accepted prose source differs from its frozen retrieval binding")
+        projections[identity] = bind_writer_history_source(
+            content, source_asset_version_id=identity, source_content_hash=content_hash,
+            source_artifact_type=artifact_type,
+        )
+    if set(projections) != set(bindings):
+        raise KernelError("WRITER_HISTORY_SOURCE_BINDING_INVALID", "an exact eligible Writer history source is unavailable")
+    return projections
+
+
 def _document_from_row(row: tuple[Any, ...]) -> dict[str, Any]:
     return {
         "retrieval_document_id": str(row[0]),
@@ -1750,7 +1801,7 @@ def _document_from_row(row: tuple[Any, ...]) -> dict[str, Any]:
 def _selected_document(item: Mapping[str, Any], *, preserve_text: bool = False, clean_history: bool = False) -> dict[str, Any]:
     content = str(item.get("content_text") or "")
     if clean_history:
-        content = project_writer_history(content, source_artifact_type=str(item.get("source_artifact_type") or ""))
+        content = project_writer_retrieval_history(item)
         item = {**item, "metadata": provider_visible_data(dict(item.get("metadata") or {}))}
     maximum = len(content) if preserve_text or clean_history else 4_000
     compressed = len(content) > maximum
@@ -1796,7 +1847,9 @@ def _selected_document(item: Mapping[str, Any], *, preserve_text: bool = False, 
             "source_content_hash": str(item["source_content_hash"]),
             "source_projection_hash": str(item["projection_hash"]),
             **({"writer_projection_version": WRITER_PROJECTION_VERSION,
-                "source_text_fingerprint": "sha256:" + hashlib.sha256(str(item.get("content_text") or "").encode()).hexdigest()}
+                "source_text_fingerprint": "sha256:" + hashlib.sha256(str(item.get("content_text") or "").encode()).hexdigest(),
+                **({"writer_source_text_fingerprint": item["writer_history_projection"]["source_text_fingerprint"]}
+                   if item.get("writer_history_projection") else {})}
                if clean_history else {}),
             "method": "deterministic_bounded_extract" if compressed else "none",
             "input_characters": len(content),

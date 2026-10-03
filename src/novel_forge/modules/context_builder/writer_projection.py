@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from copy import deepcopy
+import hashlib
 import json
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
 WRITER_PROJECTION_VERSION = "accepted-writer-history.v1"
-_PROSE_TYPES = frozenset({"best_draft_candidate", "draft_chapter", "draft_version"})
+WRITER_PROSE_TYPES = frozenset({"best_draft_candidate", "draft_chapter", "draft_version"})
 
 
 def provider_visible_data(value: Any) -> Any:
@@ -28,10 +29,10 @@ def project_writer_history(content_text: str, *, source_artifact_type: str) -> s
     try:
         source = json.loads(content_text)
     except (ValueError, TypeError) as error:
-        if source_artifact_type in _PROSE_TYPES:
+        if source_artifact_type in WRITER_PROSE_TYPES:
             raise KernelError("WRITER_HISTORY_SOURCE_INVALID", "accepted prose projection requires the complete source JSON") from error
         return content_text
-    if source_artifact_type in _PROSE_TYPES:
+    if source_artifact_type in WRITER_PROSE_TYPES:
         if not isinstance(source, Mapping):
             raise KernelError("WRITER_HISTORY_SOURCE_INVALID", "accepted prose must be a semantic object")
         scenes = source.get("scene_artifacts")
@@ -60,6 +61,33 @@ def project_writer_history(content_text: str, *, source_artifact_type: str) -> s
     return json.dumps(provider_visible_data(projected), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def bind_writer_history_source(content: Mapping[str, Any], *, source_asset_version_id: str,
+                               source_content_hash: str, source_artifact_type: str) -> dict[str, str]:
+    source_text = json.dumps(content, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    if source_artifact_type not in WRITER_PROSE_TYPES or not source_asset_version_id or not source_content_hash:
+        raise KernelError("WRITER_HISTORY_SOURCE_BINDING_INVALID", "Writer history requires the exact frozen prose asset and content hash")
+    text = project_writer_history(source_text, source_artifact_type=source_artifact_type)
+    return {"version": WRITER_PROJECTION_VERSION, "source_asset_version_id": source_asset_version_id,
+            "source_content_hash": source_content_hash, "source_artifact_type": source_artifact_type,
+            "source_text_fingerprint": "sha256:" + hashlib.sha256(source_text.encode()).hexdigest(),
+            "text": text, "text_fingerprint": "sha256:" + hashlib.sha256(text.encode()).hexdigest()}
+
+
+def project_writer_retrieval_history(document: Mapping[str, Any]) -> str:
+    binding = document.get("writer_history_projection")
+    if binding is None:
+        return project_writer_history(str(document.get("content_text") or ""),
+                                      source_artifact_type=str(document.get("source_artifact_type") or ""))
+    if (not isinstance(binding, Mapping) or binding.get("version") != WRITER_PROJECTION_VERSION
+        or any(not document.get(key) or binding.get(key) != document.get(key)
+               for key in ("source_asset_version_id", "source_content_hash", "source_artifact_type"))
+        or not isinstance(binding.get("source_text_fingerprint"), str) or not binding["source_text_fingerprint"]
+        or not isinstance(binding.get("text"), str)
+        or binding.get("text_fingerprint") != "sha256:" + hashlib.sha256(binding["text"].encode()).hexdigest()):
+        raise KernelError("WRITER_HISTORY_SOURCE_BINDING_INVALID", "retrieved Writer history changed its frozen source or semantic projection")
+    return project_writer_history(binding["text"], source_artifact_type=str(binding["source_artifact_type"]))
+
+
 def project_visible_summary(text: str) -> str:
     try:
         source = json.loads(text)
@@ -73,8 +101,8 @@ def project_writer_context_summary(segment: Mapping[str, Any], manifest: Mapping
     from novel_forge.modules.narrative_state.reality import narrative_hash
 
     summary = str(segment.get("safe_summary") or "").strip()
-    prose = (segment.get("asset_type") in _PROSE_TYPES
-             or segment.get("physical_asset_type") in _PROSE_TYPES
+    prose = (segment.get("asset_type") in WRITER_PROSE_TYPES
+             or segment.get("physical_asset_type") in WRITER_PROSE_TYPES
              or segment.get("narrative_function") == "recent_accepted_prose")
     if not prose:
         return project_visible_summary(summary)
