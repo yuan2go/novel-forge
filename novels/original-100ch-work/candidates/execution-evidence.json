@@ -1,0 +1,658 @@
+{
+  "work_package": "WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01",
+  "project_id": "original-longform-20261003",
+  "book_id": "original-longform-100ch-20261003",
+  "base_sha": "4dc8b36ed124a835e37ddbb65501df590859c567",
+  "execution_code_sha": "5c0f71dde6c1050392ae45c37bd88e4b01557448",
+  "business_code_modified": false,
+  "model_and_reasoning": {
+    "provider": "codex-cli",
+    "requested_model_id": "gpt-6.1-sol",
+    "actual_cli_model_argument": "gpt-6.1-sol",
+    "actual_cli_reasoning_argument": "high",
+    "server_independently_reported_model": "UNAVAILABLE",
+    "note": "Native final Router/Provider admission and exact CLI command bind the literal requested model. The normalized usage model field is the requested model, not an independent server model attestation."
+  },
+  "total_model_calls": 2,
+  "usage": {
+    "input_tokens": 37146,
+    "output_tokens": 11776,
+    "reasoning_output_tokens": 4140,
+    "cached_input_tokens": 36864,
+    "total_tokens": 48922
+  },
+  "reasoning_tokens_already_in_output_tokens": true,
+  "money": {
+    "basis": "ACCOUNT_ENTITLEMENT",
+    "usd": null,
+    "billed_credits": null,
+    "not_free": true,
+    "deepseek_calls": 0
+  },
+  "native_budget": {
+    "comparison_budget": {
+      "arms": [
+        {
+          "arm": "SINGLE",
+          "book_id": "original-longform-100ch-20261003",
+          "project_id": "original-longform-20261003",
+          "project_total": {
+            "calls": 120,
+            "tokens": 6000000,
+            "priced_usd": "0"
+          },
+          "chapter_ranges": {
+            "PRODUCTION": [
+              1,
+              100
+            ]
+          },
+          "design_allocation": {
+            "calls": 100,
+            "tokens": 5000000,
+            "priced_usd": "0"
+          },
+          "repair_allocation": {
+            "calls": 20,
+            "tokens": 1000000,
+            "priced_usd": "0"
+          },
+          "source_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "holdout_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "reference_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "screening_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "production_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "calibration_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          }
+        }
+      ],
+      "expires_at": "2026-10-17T15:59:59+00:00",
+      "entitlements": [
+        {
+          "calls": 120,
+          "tokens": 6000000,
+          "provider": "codex-cli",
+          "authorization_ref": "user:WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01:codex-only:20261003"
+        }
+      ],
+      "shared_total": {
+        "calls": 120,
+        "tokens": 6000000,
+        "priced_usd": "0"
+      },
+      "experiment_id": "campaign:original100:20261003",
+      "manifest_hash": "sha256:59c4c25b69a0dfc71a3df7defac847e193d3258d0f36ad8f90e8fa738d2fe8a1",
+      "accounting_basis": "MIXED",
+      "contract_version": "creative-provider-campaign-budget.v4"
+    },
+    "budget_binding": {
+      "owner": "CREATIVE_EXPERIMENT_BUDGET",
+      "policy_version": "original100:codex-design:v1",
+      "policy_hash": "da2260070f5462233ac4695295d9cef791a8f40717785a38401875b588fbf831",
+      "contract_hash": "sha256:5154cc6333407dd8a018a92c9e0487af9ab25a191f50567073c13cc275418e5d",
+      "subject_id": "project:original-longform-20261003",
+      "authorization": {
+        "book_id": "original-longform-100ch-20261003",
+        "project_id": "original-longform-20261003",
+        "evidence_hash": "sha256:59c4c25b69a0dfc71a3df7defac847e193d3258d0f36ad8f90e8fa738d2fe8a1",
+        "business_scope": {
+          "design_allowed": true,
+          "source_allowed": false,
+          "max_chapter_number": 100
+        },
+        "authorization_ref": "user:WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01:codex-only:20261003",
+        "authorized_cumulative_caps": {
+          "DESIGN": {
+            "calls": 100,
+            "tokens": 5000000,
+            "priced_usd": "0"
+          },
+          "REPAIR": {
+            "calls": 20,
+            "tokens": 1000000,
+            "priced_usd": "0"
+          },
+          "SOURCE": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "HOLDOUT": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "REFERENCE": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "SCREENING": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "PRODUCTION": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "CALIBRATION": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          }
+        }
+      }
+    },
+    "budget_usage": {
+      "contract_hash": "sha256:5154cc6333407dd8a018a92c9e0487af9ab25a191f50567073c13cc275418e5d",
+      "project_id": "original-longform-20261003",
+      "book_id": "original-longform-100ch-20261003",
+      "phases": {
+        "REFERENCE": {
+          "calls_used_or_reserved": 0,
+          "conservative_tokens": 0,
+          "recorded_actual_tokens": 0,
+          "unmeasured_reserved_tokens": 0,
+          "priced_usd": "0",
+          "unpriced_calls": 0
+        },
+        "SCREENING": {
+          "calls_used_or_reserved": 0,
+          "conservative_tokens": 0,
+          "recorded_actual_tokens": 0,
+          "unmeasured_reserved_tokens": 0,
+          "priced_usd": "0",
+          "unpriced_calls": 0
+        },
+        "CALIBRATION": {
+          "calls_used_or_reserved": 0,
+          "conservative_tokens": 0,
+          "recorded_actual_tokens": 0,
+          "unmeasured_reserved_tokens": 0,
+          "priced_usd": "0",
+          "unpriced_calls": 0
+        },
+        "HOLDOUT": {
+          "calls_used_or_reserved": 0,
+          "conservative_tokens": 0,
+          "recorded_actual_tokens": 0,
+          "unmeasured_reserved_tokens": 0,
+          "priced_usd": "0",
+          "unpriced_calls": 0
+        },
+        "SOURCE": {
+          "calls_used_or_reserved": 0,
+          "conservative_tokens": 0,
+          "recorded_actual_tokens": 0,
+          "unmeasured_reserved_tokens": 0,
+          "priced_usd": "0",
+          "unpriced_calls": 0
+        },
+        "DESIGN": {
+          "calls_used_or_reserved": 1,
+          "conservative_tokens": 24161,
+          "recorded_actual_tokens": 24161,
+          "unmeasured_reserved_tokens": 0,
+          "priced_usd": "0",
+          "unpriced_calls": 1
+        },
+        "PRODUCTION": {
+          "calls_used_or_reserved": 0,
+          "conservative_tokens": 0,
+          "recorded_actual_tokens": 0,
+          "unmeasured_reserved_tokens": 0,
+          "priced_usd": "0",
+          "unpriced_calls": 0
+        },
+        "REPAIR": {
+          "calls_used_or_reserved": 1,
+          "conservative_tokens": 24761,
+          "recorded_actual_tokens": 24761,
+          "unmeasured_reserved_tokens": 0,
+          "priced_usd": "0",
+          "unpriced_calls": 1
+        }
+      },
+      "project_total": {
+        "calls_used_or_reserved": 2,
+        "conservative_tokens": 48922,
+        "recorded_actual_tokens": 48922,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 2
+      },
+      "shared_total": {
+        "calls_used_or_reserved": 2,
+        "conservative_tokens": 48922,
+        "recorded_actual_tokens": 48922,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 2
+      },
+      "reservation_ids": [
+        "b275a90e-e82f-41c8-84d4-d6ed496d40fe",
+        "bd68552f-5255-43f8-b2df-d9355593bf03"
+      ],
+      "evidence_class": "POSTGRESQL_BUDGET_LEDGER",
+      "creation_opportunity": null,
+      "entitlements": [
+        {
+          "provider": "codex-cli",
+          "authorization_ref": "user:WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01:codex-only:20261003",
+          "calls": 2,
+          "tokens": 48922
+        }
+      ],
+      "entitlement_usd": null,
+      "invoice_status": "NOT_VERIFIED"
+    }
+  },
+  "raw_responses": [
+    {
+      "effect_id": "b03fa663-5381-4a4f-90c5-b3518ae1933a",
+      "execution_id": "planning-execution:b03fa663-5381-4a4f-90c5-b3518ae1933a:521c67f8-cf87-4062-98f9-6aa76d8bd04d",
+      "request_digest": "fab4b631b50891662e5096648d16d23093ddccf632d05564635edea061e8cb23",
+      "receipt_id": "process-receipt:fab4b631b50891662e509664",
+      "raw_file": "raw-responses/b03fa663-5381-4a4f-90c5-b3518ae1933a.json",
+      "raw_sha256": "be247a233146b597ba815bd2f99ef7c5888a7c9dcab62902ae5566624cf0f2c7",
+      "input_sha256": "8ed269d92acc38648c42e369a3acd3c552e302773612737e7d60ed1054f02885",
+      "command_sha256": "ee5d0ea3b30a932b70719d8c24f95ca99dda35f7ccd889c050874721924629a7",
+      "status": "SUCCEEDED",
+      "elapsed_ms": 262876,
+      "result_integrity": "VALID"
+    },
+    {
+      "effect_id": "0eda8af8-fdf0-4d24-9036-265a199825a7",
+      "execution_id": "planning-execution:0eda8af8-fdf0-4d24-9036-265a199825a7:42f09565-85b0-4d82-94d6-86a2eb964e40",
+      "request_digest": "7c21cee97663bf2a09102e12acecca294894b5b45b8d4bc7e61deaaec64e6041",
+      "receipt_id": "process-receipt:7c21cee97663bf2a09102e12",
+      "raw_file": "raw-responses/0eda8af8-fdf0-4d24-9036-265a199825a7.json",
+      "raw_sha256": "318a3202e4ec29d9241aeae9866b78ed379be0bb6aec1e48277737607e82d9cb",
+      "input_sha256": "cddc3c6c275cf66120afe4029c69f0298983a2ed41af439edca3f169f2534d73",
+      "command_sha256": "ce86561ceb188252659f1602984e67f7dca416e50380bf6575e982a54c28cbf3",
+      "status": "SUCCEEDED",
+      "elapsed_ms": 304304,
+      "result_integrity": "VALID"
+    }
+  ],
+  "candidates": [
+    {
+      "candidate_asset_version_id": "authority-output:1d856e7d-443d-46e4-b981-b524734a3925:story_planning.candidate:v1",
+      "candidate_hash": "sha256:a807992d141eaea36b36c52227e25833c25ded822962db03fc69fc1218df55d0",
+      "evidence": {
+        "attempt_id": "42f09565-85b0-4d82-94d6-86a2eb964e40",
+        "operation_id": "1d856e7d-443d-46e4-b981-b524734a3925",
+        "fencing_token": 1,
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "cost_receipt_ref": "authority-asset-version:b83d309a-ae29-455a-8c05-77bfd5c71ec5",
+        "route_snapshot_id": "production_execution/routes/be91d8809bf4edbd8c81",
+        "usage_receipt_ref": "authority-asset-version:7878adea-afa6-4291-a090-2bafcfce222f",
+        "input_manifest_ref": "production_execution/inputs/be91d8809bf4edbd8c81",
+        "context_bundle_hash": "sha256:7cb1070f72b193e63acdd6282e9e9f5695d28bfeee213a6c1ce9fee3f569752a",
+        "output_manifest_ref": "authority-asset-version:ed5bdc1b-15f4-4491-9e7c-eddc23a121c3",
+        "production_verified": false,
+        "external_receipt_ref": "0eda8af8-fdf0-4d24-9036-265a199825a7",
+        "real_provider_proven": true,
+        "fixture_protocol_only": false,
+        "external_effect_backed": true,
+        "validation_manifest_ref": "authority-asset-version:272ca817-a287-4e5b-8352-31442ca2548d",
+        "capability_execution_ref": "ae6ba7b7-2321-5a4c-964c-431436fdc47f",
+        "capability_execution_hash": "sha256:e1ff4b3e79f134001a51b204a67fe6d35eda2c5f8b012c94da9cec473807e95f",
+        "capability_runtime_binding_ref": "sha256:969c74e49a1ccc89d9ae79c14c8c9acb02cdf53bf00a91d01ee9c6c151ee3363",
+        "capability_runtime_binding_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+        "context_bundle_asset_version_id": "27f19752-78fb-4c9e-be86-d852643e7b87",
+        "capability_pack_attempt_snapshot_id": "sha256:969c74e49a1ccc89d9ae79c14c8c9acb02cdf53bf00a91d01ee9c6c151ee3363",
+        "production_execution_gateway_backed": true,
+        "capability_pack_attempt_snapshot_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+        "narrative_intelligence_selection_digest": "sha256:caae284ca6d0bee621e37222c2878c4920b2bb945aba8bda00aaf568c9c1dbdc"
+      },
+      "receipts": {
+        "usage_receipt_ref": {
+          "asset_version_id": "7878adea-afa6-4291-a090-2bafcfce222f",
+          "hash": "sha256:5787f31595fa02ff2cbbe6f58744d2a0bee9893b69d09c26926d97cda8ce004a",
+          "content": {
+            "kind": "usage-receipt",
+            "payload": {
+              "model": "gpt-6.1-sol",
+              "measurement": "MEASURED",
+              "availability": "AVAILABLE",
+              "input_tokens": 18562,
+              "total_tokens": 24761,
+              "output_tokens": 6199,
+              "cached_input_tokens": 18432,
+              "uncached_input_tokens": 130,
+              "reasoning_output_tokens": 2588
+            },
+            "execution_id": "planning-execution:0eda8af8-fdf0-4d24-9036-265a199825a7:42f09565-85b0-4d82-94d6-86a2eb964e40",
+            "payload_hash": "4552b70015474d3c2da9ba1182cf759d907443b7be1b1864f9677ad02de2cfdb",
+            "contract_version": "authority-execution-evidence.v1"
+          }
+        },
+        "cost_receipt_ref": {
+          "asset_version_id": "b83d309a-ae29-455a-8c05-77bfd5c71ec5",
+          "hash": "sha256:6b8e6a8e007bac81280f4687d1fb56be367fe4ce30c94c99bbf29dad3cd0387e",
+          "content": {
+            "kind": "cost-receipt",
+            "payload": {
+              "model": "gpt-6.1-sol",
+              "reason": "monetary_cost_not_observable",
+              "currency": "UNKNOWN",
+              "measurement": "UNKNOWN",
+              "availability": "UNAVAILABLE",
+              "provider_billed": "UNKNOWN",
+              "accounting_basis": "ACCOUNT_ENTITLEMENT",
+              "authorization_ref": "user:WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01:codex-only:20261003",
+              "entitlement_snapshot": {
+                "cli_version": "codex-cli 0.159.2",
+                "authorization_ref": "user:WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01:codex-only:20261003",
+                "configuration_ref": "sha256:33b42c788061088c558cf2836fb2288c4fb6b0f37a89d3d7da7296c97bebfb49",
+                "executable_sha256": "sha256:50ac633af64851511f9bbc71032cdae7f1ba20b3234c189687d61ba846c354c5",
+                "account_identity_ref": "sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+              },
+              "entitlement_snapshot_hash": "sha256:1b5ed7420430e952b8cdf3c9e5542fc369057fa7ba11dd4bb8a99e5a5ddc9642"
+            },
+            "execution_id": "planning-execution:0eda8af8-fdf0-4d24-9036-265a199825a7:42f09565-85b0-4d82-94d6-86a2eb964e40",
+            "payload_hash": "692c75038c5e80209338abaae25a68b117af61163c329f7db010f8c0c8f6fdfc",
+            "contract_version": "authority-execution-evidence.v1"
+          }
+        }
+      }
+    },
+    {
+      "candidate_asset_version_id": "authority-output:1dc8758e-4b85-40a3-93f6-cbe5881792ce:story_planning.candidate:v1",
+      "candidate_hash": "sha256:4e9b8b0de315bf55c1bec45b3f77aeea3556ce69574b836611a29a3b2811de86",
+      "evidence": {
+        "attempt_id": "521c67f8-cf87-4062-98f9-6aa76d8bd04d",
+        "operation_id": "1dc8758e-4b85-40a3-93f6-cbe5881792ce",
+        "fencing_token": 1,
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "cost_receipt_ref": "authority-asset-version:90ca7a24-bb22-41f4-aa50-318db129c621",
+        "route_snapshot_id": "production_execution/routes/1d631c2589f9e44d5f7d",
+        "usage_receipt_ref": "authority-asset-version:3a042874-04f6-43ce-bf1e-02f35a88c3d8",
+        "input_manifest_ref": "production_execution/inputs/1d631c2589f9e44d5f7d",
+        "context_bundle_hash": "sha256:75861bda977ecd5774df2ca013aec755cac5daa254dda24a6056c705960c6fc1",
+        "output_manifest_ref": "authority-asset-version:04621265-1a16-4e59-941f-46cbd604dd7f",
+        "production_verified": false,
+        "external_receipt_ref": "b03fa663-5381-4a4f-90c5-b3518ae1933a",
+        "real_provider_proven": true,
+        "fixture_protocol_only": false,
+        "external_effect_backed": true,
+        "validation_manifest_ref": "authority-asset-version:5f4929e7-93e9-45e1-964e-e43b3ab056d0",
+        "capability_execution_ref": "4940702d-cb03-503c-856c-4a15727726f7",
+        "capability_execution_hash": "sha256:a1fc94b747ae0d3de424ad412a1aa03e5cda266087e41c199170840ceb1d7dfd",
+        "capability_runtime_binding_ref": "sha256:4eace7c65011c7ff5d8904d258a8db172790559929b99be20ee7242180d77dea",
+        "capability_runtime_binding_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+        "context_bundle_asset_version_id": "86e6586d-8474-41e8-bbd6-221b802d7a18",
+        "capability_pack_attempt_snapshot_id": "sha256:4eace7c65011c7ff5d8904d258a8db172790559929b99be20ee7242180d77dea",
+        "production_execution_gateway_backed": true,
+        "capability_pack_attempt_snapshot_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+        "narrative_intelligence_selection_digest": "sha256:7aa1139ff084a71767cca692bb02ff8844785e5ab4ca58df2695a7bff6827feb"
+      },
+      "receipts": {
+        "usage_receipt_ref": {
+          "asset_version_id": "3a042874-04f6-43ce-bf1e-02f35a88c3d8",
+          "hash": "sha256:950e5125319094d9906c6e876cca8eddbb35c7cbfb3dbe729595cfd9db963150",
+          "content": {
+            "kind": "usage-receipt",
+            "payload": {
+              "model": "gpt-6.1-sol",
+              "measurement": "MEASURED",
+              "availability": "AVAILABLE",
+              "input_tokens": 18584,
+              "total_tokens": 24161,
+              "output_tokens": 5577,
+              "cached_input_tokens": 18432,
+              "uncached_input_tokens": 152,
+              "reasoning_output_tokens": 1552
+            },
+            "execution_id": "planning-execution:b03fa663-5381-4a4f-90c5-b3518ae1933a:521c67f8-cf87-4062-98f9-6aa76d8bd04d",
+            "payload_hash": "49c4a2853cdceca0f9e7b5ff7541576b943cba02dafacef7968b06ebe646be4c",
+            "contract_version": "authority-execution-evidence.v1"
+          }
+        },
+        "cost_receipt_ref": {
+          "asset_version_id": "90ca7a24-bb22-41f4-aa50-318db129c621",
+          "hash": "sha256:2b2f04d15371d1dd96364c57635da41fa83bdc339035887464d79aee322d99ed",
+          "content": {
+            "kind": "cost-receipt",
+            "payload": {
+              "model": "gpt-6.1-sol",
+              "reason": "monetary_cost_not_observable",
+              "currency": "UNKNOWN",
+              "measurement": "UNKNOWN",
+              "availability": "UNAVAILABLE",
+              "provider_billed": "UNKNOWN",
+              "accounting_basis": "ACCOUNT_ENTITLEMENT",
+              "authorization_ref": "user:WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01:codex-only:20261003",
+              "entitlement_snapshot": {
+                "cli_version": "codex-cli 0.159.2",
+                "authorization_ref": "user:WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01:codex-only:20261003",
+                "configuration_ref": "sha256:33b42c788061088c558cf2836fb2288c4fb6b0f37a89d3d7da7296c97bebfb49",
+                "executable_sha256": "sha256:50ac633af64851511f9bbc71032cdae7f1ba20b3234c189687d61ba846c354c5",
+                "account_identity_ref": "sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+              },
+              "entitlement_snapshot_hash": "sha256:1b5ed7420430e952b8cdf3c9e5542fc369057fa7ba11dd4bb8a99e5a5ddc9642"
+            },
+            "execution_id": "planning-execution:b03fa663-5381-4a4f-90c5-b3518ae1933a:521c67f8-cf87-4062-98f9-6aa76d8bd04d",
+            "payload_hash": "692c75038c5e80209338abaae25a68b117af61163c329f7db010f8c0c8f6fdfc",
+            "contract_version": "authority-execution-evidence.v1"
+          }
+        }
+      }
+    }
+  ],
+  "checks": {
+    "same_command_replay": "PASS",
+    "dispatch_count_before": 2,
+    "dispatch_count_after": 2,
+    "candidate_receipts": [
+      {
+        "generation_operation_id": "1d856e7d-443d-46e4-b981-b524734a3925",
+        "candidate_asset_version_id": "authority-output:1d856e7d-443d-46e4-b981-b524734a3925:story_planning.candidate:v1",
+        "status": "APPROVAL_PENDING",
+        "story_design_state": {
+          "project_id": "original-longform-20261003",
+          "asset_version_id": "authority-output:1d856e7d-443d-46e4-b981-b524734a3925:story_planning.candidate:v1",
+          "logical_key": "foundation:creative:option-02",
+          "generator_operation_name": "creative.candidates.generate",
+          "generator_definition_version": "1.0.0",
+          "candidate_type": "creative_candidate_pool",
+          "lifecycle": "MATERIALIZED",
+          "qualification": "STRUCTURALLY_VALID",
+          "approval": "NOT_REQUESTED",
+          "freshness": "CURRENT",
+          "planning_scope": "NOT_APPLICABLE",
+          "design_scope": "CREATIVE_FOUNDATION",
+          "source_kind": "GENERATED",
+          "execution_evidence": {
+            "attempt_id": "42f09565-85b0-4d82-94d6-86a2eb964e40",
+            "operation_id": "1d856e7d-443d-46e4-b981-b524734a3925",
+            "fencing_token": 1,
+            "commit_authority": "STORY_DESIGN_AUTHORITY",
+            "cost_receipt_ref": "authority-asset-version:b83d309a-ae29-455a-8c05-77bfd5c71ec5",
+            "route_snapshot_id": "production_execution/routes/be91d8809bf4edbd8c81",
+            "usage_receipt_ref": "authority-asset-version:7878adea-afa6-4291-a090-2bafcfce222f",
+            "author_supervision": {
+              "mode": "AUTHOR_SUPERVISED",
+              "book_id": "original-longform-100ch-20261003",
+              "project_id": "original-longform-20261003",
+              "content_hash": "sha256:a807992d141eaea36b36c52227e25833c25ded822962db03fc69fc1218df55d0",
+              "authorization": {
+                "reason": "按本次作者明确授权，将已指定模型和high绑定到该书创意候选任务；候选未获得作者设计批准，预算沿同一120次/600万账本。",
+                "book_id": "original-longform-100ch-20261003",
+                "author_id": "yuan-local-author",
+                "task_type": "creative.candidates.generate",
+                "expires_at": "2026-10-17T15:59:59+00:00",
+                "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                "maximum_amount": "0",
+                "maximum_tokens": 272000,
+                "model_revision": "sha256:33b42c788061088c558cf2836fb2288c4fb6b0f37a89d3d7da7296c97bebfb49",
+                "authorization_id": "author-supervised:original100:creative-route:v1:0",
+                "producer_contract_hash": "sha256:d463f3f39b8484b41d723f883090a4998b7afaf407a0df9d2a7c5a88fea2812e"
+              },
+              "asset_version_id": "authority-output:1d856e7d-443d-46e4-b981-b524734a3925:story_planning.candidate:v1",
+              "route_decision_id": "routing-decision:ee15d2595ae3012e3e17b64eba1783cb04318c9ff7bbdb191d714dff10dcce42",
+              "authorization_hash": "sha256:01c5ab1c5805c48911c1f355d274cf44ff1718a2599e5a4d2c16f1941c58a614",
+              "policy_operation_id": "fa82915e-e1be-4c6b-9016-0f44651b49e4",
+              "author_review_required": true,
+              "literary_qualification": "NOT_PROVEN",
+              "admission_contract_version": "author-supervision-admission.v2"
+            },
+            "input_manifest_ref": "production_execution/inputs/be91d8809bf4edbd8c81",
+            "context_bundle_hash": "sha256:7cb1070f72b193e63acdd6282e9e9f5695d28bfeee213a6c1ce9fee3f569752a",
+            "output_manifest_ref": "authority-asset-version:ed5bdc1b-15f4-4491-9e7c-eddc23a121c3",
+            "production_verified": false,
+            "external_receipt_ref": "0eda8af8-fdf0-4d24-9036-265a199825a7",
+            "real_provider_proven": true,
+            "fixture_protocol_only": false,
+            "external_effect_backed": true,
+            "validation_manifest_ref": "authority-asset-version:272ca817-a287-4e5b-8352-31442ca2548d",
+            "capability_execution_ref": "ae6ba7b7-2321-5a4c-964c-431436fdc47f",
+            "capability_execution_hash": "sha256:e1ff4b3e79f134001a51b204a67fe6d35eda2c5f8b012c94da9cec473807e95f",
+            "capability_runtime_binding_ref": "sha256:969c74e49a1ccc89d9ae79c14c8c9acb02cdf53bf00a91d01ee9c6c151ee3363",
+            "capability_runtime_binding_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+            "context_bundle_asset_version_id": "27f19752-78fb-4c9e-be86-d852643e7b87",
+            "capability_pack_attempt_snapshot_id": "sha256:969c74e49a1ccc89d9ae79c14c8c9acb02cdf53bf00a91d01ee9c6c151ee3363",
+            "production_execution_gateway_backed": true,
+            "capability_pack_attempt_snapshot_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+            "narrative_intelligence_selection_digest": "sha256:caae284ca6d0bee621e37222c2878c4920b2bb945aba8bda00aaf568c9c1dbdc"
+          },
+          "semantic_repair_count": 0,
+          "structural_regeneration_count": 0,
+          "created_by_operation_id": "487565f9-9e33-4b79-bb7b-a8929cbdc201",
+          "updated_by_operation_id": "15d5a229-d1bd-43dc-b7bc-2aa5e4da4e38",
+          "version": 2
+        },
+        "planning_binding": null,
+        "replayed": true
+      },
+      {
+        "generation_operation_id": "1dc8758e-4b85-40a3-93f6-cbe5881792ce",
+        "candidate_asset_version_id": "authority-output:1dc8758e-4b85-40a3-93f6-cbe5881792ce:story_planning.candidate:v1",
+        "status": "APPROVAL_PENDING",
+        "story_design_state": {
+          "project_id": "original-longform-20261003",
+          "asset_version_id": "authority-output:1dc8758e-4b85-40a3-93f6-cbe5881792ce:story_planning.candidate:v1",
+          "logical_key": "foundation:creative:option-03",
+          "generator_operation_name": "creative.candidates.generate",
+          "generator_definition_version": "1.0.0",
+          "candidate_type": "creative_candidate_pool",
+          "lifecycle": "MATERIALIZED",
+          "qualification": "STRUCTURALLY_VALID",
+          "approval": "NOT_REQUESTED",
+          "freshness": "CURRENT",
+          "planning_scope": "NOT_APPLICABLE",
+          "design_scope": "CREATIVE_FOUNDATION",
+          "source_kind": "GENERATED",
+          "execution_evidence": {
+            "attempt_id": "521c67f8-cf87-4062-98f9-6aa76d8bd04d",
+            "operation_id": "1dc8758e-4b85-40a3-93f6-cbe5881792ce",
+            "fencing_token": 1,
+            "commit_authority": "STORY_DESIGN_AUTHORITY",
+            "cost_receipt_ref": "authority-asset-version:90ca7a24-bb22-41f4-aa50-318db129c621",
+            "route_snapshot_id": "production_execution/routes/1d631c2589f9e44d5f7d",
+            "usage_receipt_ref": "authority-asset-version:3a042874-04f6-43ce-bf1e-02f35a88c3d8",
+            "author_supervision": {
+              "mode": "AUTHOR_SUPERVISED",
+              "book_id": "original-longform-100ch-20261003",
+              "project_id": "original-longform-20261003",
+              "content_hash": "sha256:4e9b8b0de315bf55c1bec45b3f77aeea3556ce69574b836611a29a3b2811de86",
+              "authorization": {
+                "reason": "按本次作者明确授权，将已指定模型和high绑定到该书创意候选任务；候选未获得作者设计批准，预算沿同一120次/600万账本。",
+                "book_id": "original-longform-100ch-20261003",
+                "author_id": "yuan-local-author",
+                "task_type": "creative.candidates.generate",
+                "expires_at": "2026-10-17T15:59:59+00:00",
+                "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                "maximum_amount": "0",
+                "maximum_tokens": 272000,
+                "model_revision": "sha256:33b42c788061088c558cf2836fb2288c4fb6b0f37a89d3d7da7296c97bebfb49",
+                "authorization_id": "author-supervised:original100:creative-route:v1:0",
+                "producer_contract_hash": "sha256:d463f3f39b8484b41d723f883090a4998b7afaf407a0df9d2a7c5a88fea2812e"
+              },
+              "asset_version_id": "authority-output:1dc8758e-4b85-40a3-93f6-cbe5881792ce:story_planning.candidate:v1",
+              "route_decision_id": "routing-decision:2d1880cc703f26cb5788aa2d36104f507812339dbf87d888edfedd344449c8de",
+              "authorization_hash": "sha256:01c5ab1c5805c48911c1f355d274cf44ff1718a2599e5a4d2c16f1941c58a614",
+              "policy_operation_id": "fa82915e-e1be-4c6b-9016-0f44651b49e4",
+              "author_review_required": true,
+              "literary_qualification": "NOT_PROVEN",
+              "admission_contract_version": "author-supervision-admission.v2"
+            },
+            "input_manifest_ref": "production_execution/inputs/1d631c2589f9e44d5f7d",
+            "context_bundle_hash": "sha256:75861bda977ecd5774df2ca013aec755cac5daa254dda24a6056c705960c6fc1",
+            "output_manifest_ref": "authority-asset-version:04621265-1a16-4e59-941f-46cbd604dd7f",
+            "production_verified": false,
+            "external_receipt_ref": "b03fa663-5381-4a4f-90c5-b3518ae1933a",
+            "real_provider_proven": true,
+            "fixture_protocol_only": false,
+            "external_effect_backed": true,
+            "validation_manifest_ref": "authority-asset-version:5f4929e7-93e9-45e1-964e-e43b3ab056d0",
+            "capability_execution_ref": "4940702d-cb03-503c-856c-4a15727726f7",
+            "capability_execution_hash": "sha256:a1fc94b747ae0d3de424ad412a1aa03e5cda266087e41c199170840ceb1d7dfd",
+            "capability_runtime_binding_ref": "sha256:4eace7c65011c7ff5d8904d258a8db172790559929b99be20ee7242180d77dea",
+            "capability_runtime_binding_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+            "context_bundle_asset_version_id": "86e6586d-8474-41e8-bbd6-221b802d7a18",
+            "capability_pack_attempt_snapshot_id": "sha256:4eace7c65011c7ff5d8904d258a8db172790559929b99be20ee7242180d77dea",
+            "production_execution_gateway_backed": true,
+            "capability_pack_attempt_snapshot_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+            "narrative_intelligence_selection_digest": "sha256:7aa1139ff084a71767cca692bb02ff8844785e5ab4ca58df2695a7bff6827feb"
+          },
+          "semantic_repair_count": 0,
+          "structural_regeneration_count": 0,
+          "created_by_operation_id": "2810ea85-ab03-484c-928b-9490ce1d81a5",
+          "updated_by_operation_id": "773862ea-5502-4621-b5db-334eb46e9f56",
+          "version": 2
+        },
+        "planning_binding": null,
+        "replayed": true
+      }
+    ],
+    "only_requested_model": "PASS",
+    "old_research_unknown_preserved": "UNKNOWN",
+    "unapproved_downstream_asset_count": 0,
+    "book_status": "DESIGN_PENDING",
+    "checks_scope": "native identity, receipt, recovery and no-activation checks; not literary qualification or long-chapter acceptance"
+  },
+  "pre_send_failures": {
+    "initial_direction_operation": "7af269c5-2c8b-4495-9c80-c743a9d02198",
+    "operation_status": "FAILED_FINAL",
+    "effect_id": "2c841ad7-104b-4067-b6ad-91cd9a3b36d3",
+    "effect_status": "READY",
+    "dispatch_count": 0,
+    "reservation_count": 0,
+    "causes": [
+      "local Pack ID omitted",
+      "canonical Router not enabled in initial local assembly; exact entitlement lane mismatch"
+    ],
+    "cleanup_attempt": "Native effect cancellation refused OPERATION_STATUS_CONFLICT on terminal owner. No direct database edits or state rewrite; owner is terminal and no dispatch is authorized. Retained as unsent evidence, not UNKNOWN.",
+    "routing_authorization_wait": "The second creative request initially required its exact Book/Producer/model grant; author approval was bound through approve_route, then same request recovered."
+  },
+  "literary_review": "Not independently reviewed; AUTHOR_SUPERVISED candidates only",
+  "downstream": "No world/characters/Book Design activated, no chapter outline, prose, Canon or acceptance writes",
+  "source_lineage": "Only explicit author-selected abstract principles in the brief; research raw text and Observation bodies not supplied; all previous fiction excluded."
+}

@@ -1,0 +1,383 @@
+{
+  "work_package": "WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01",
+  "created_at": "2026-10-02T17:19:13.871654+00:00",
+  "base_sha": "4dc8b36ed124a835e37ddbb65501df590859c567",
+  "state": "AUTHOR_FEEDBACK_REWORK_CANDIDATE_PENDING_READING",
+  "model_calls_in_this_work_package": 3,
+  "target_book_decision": "NEW_ORIGINAL_WORK_CONFIRMED",
+  "total_book_chapters": null,
+  "detailed_planning_and_production_range": [
+    1,
+    100
+  ],
+  "chapter_han_characters": [
+    5000,
+    6000
+  ],
+  "design_model": "gpt-6.1-sol",
+  "design_reasoning": "high",
+  "review_model": "DEFERRED_BY_AUTHOR",
+  "review_model_revision_from_official_catalog": "DeepSeek-V4-Pro-0813",
+  "review_wire_parameters": null,
+  "model_served_identity": {
+    "provider": "codex-cli",
+    "requested_model_id": "gpt-6.1-sol",
+    "actual_cli_model_argument": "gpt-6.1-sol",
+    "actual_cli_reasoning_argument": "high",
+    "server_independently_reported_model": "UNAVAILABLE",
+    "note": "Native final Router/Provider admission and exact CLI command bind the literal requested model. The normalized usage model field is the requested model, not an independent server model attestation."
+  },
+  "budget_estimate": {
+    "method": "scenario estimate from wired stages; not a frozen task count or hard completion guarantee",
+    "rows": [
+      {
+        "phase": "抽象与分层设计",
+        "codex_calls": 24,
+        "deepseek_calls": 18,
+        "codex_input_tokens": 576000,
+        "codex_output_tokens_including_reasoning": 192000,
+        "deepseek_input_tokens": 504000,
+        "deepseek_output_tokens_including_reasoning": 108000
+      },
+      {
+        "phase": "高层与叙事弧/章节组",
+        "codex_calls": 16,
+        "deepseek_calls": 16,
+        "codex_input_tokens": 384000,
+        "codex_output_tokens_including_reasoning": 128000,
+        "deepseek_input_tokens": 448000,
+        "deepseek_output_tokens_including_reasoning": 96000
+      },
+      {
+        "phase": "100章细纲及独立检查",
+        "codex_calls": 100,
+        "deepseek_calls": 100,
+        "codex_input_tokens": 2400000,
+        "codex_output_tokens_including_reasoning": 800000,
+        "deepseek_input_tokens": 2800000,
+        "deepseek_output_tokens_including_reasoning": 600000
+      },
+      {
+        "phase": "世界准备与事件裁决",
+        "codex_calls": 200,
+        "deepseek_calls": 0,
+        "codex_input_tokens": 4800000,
+        "codex_output_tokens_including_reasoning": 1600000,
+        "deepseek_input_tokens": 0,
+        "deepseek_output_tokens_including_reasoning": 0
+      },
+      {
+        "phase": "逐章Memo/正文/Canon提取",
+        "codex_calls": 300,
+        "deepseek_calls": 0,
+        "codex_input_tokens": 7200000,
+        "codex_output_tokens_including_reasoning": 2400000,
+        "deepseek_input_tokens": 0,
+        "deepseek_output_tokens_including_reasoning": 0
+      },
+      {
+        "phase": "逐章审读/Canon支持/五项质量",
+        "codex_calls": 0,
+        "deepseek_calls": 700,
+        "codex_input_tokens": 0,
+        "codex_output_tokens_including_reasoning": 0,
+        "deepseek_input_tokens": 19600000,
+        "deepseek_output_tokens_including_reasoning": 4200000
+      },
+      {
+        "phase": "约30章一轮修订/重审",
+        "codex_calls": 30,
+        "deepseek_calls": 30,
+        "codex_input_tokens": 720000,
+        "codex_output_tokens_including_reasoning": 240000,
+        "deepseek_input_tokens": 840000,
+        "deepseek_output_tokens_including_reasoning": 180000
+      },
+      {
+        "phase": "设计/阶段/全文读者审读与回查",
+        "codex_calls": 0,
+        "deepseek_calls": 30,
+        "codex_input_tokens": 0,
+        "codex_output_tokens_including_reasoning": 0,
+        "deepseek_input_tokens": 840000,
+        "deepseek_output_tokens_including_reasoning": 180000
+      }
+    ],
+    "scenario_calls": 1564,
+    "scenario_tokens": 51836000,
+    "deepseek_peak_no_cache_usd_estimate": 54.28368,
+    "risk_range_calls": [
+      1800,
+      2700
+    ],
+    "risk_range_tokens": [
+      65000000,
+      120000000
+    ],
+    "proposed_total_caps": {
+      "calls": 3000,
+      "tokens": 140000000,
+      "priced_deepseek_usd": 150
+    },
+    "proposed_expiry": "2026-10-17T15:59:59Z",
+    "scope": "all design, planning, production, independent review, revision, failure and recovery for this one book; no reference-study reuse of unused quota",
+    "account_entitlement_usd": "UNKNOWN_NOT_FREE",
+    "nonmodel_reconciliation_calls": "not charged as semantic generation; external invocation count remains preserved"
+  },
+  "reference_reuse": {
+    "semantic_unit_records": 234,
+    "stage_synthesis_through": 150,
+    "old_sample_chapters": [
+      501,
+      558
+    ],
+    "old_cases": 18,
+    "old_case_records": 21,
+    "underlying_rights": "UNKNOWN",
+    "source_status": "REVIEW_REQUIRED",
+    "raw_source_writer_allowed": false,
+    "pending_knowledge_candidates": [
+      {
+        "name": "验证改变行动而非只补背景",
+        "observation_asset_version_id": "fb28961e-63c0-4543-b15d-79f96753326b",
+        "result_sha256": "bb085b0942380d9a7391b189b64e4bbe3f5cbf2294b0db6ab8e5d36037b11866",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0001-0050-v1.json",
+        "mechanism": "仅作待治理候选：验证权限与选择后果之间的关系。",
+        "conditions": "行动仍有可改变空间，验证须有边界。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "多重瓶颈校正收益预期",
+        "observation_asset_version_id": "fb28961e-63c0-4543-b15d-79f96753326b",
+        "result_sha256": "bb085b0942380d9a7391b189b64e4bbe3f5cbf2294b0db6ab8e5d36037b11866",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0001-0050-v1.json",
+        "mechanism": "待治理候选：收益通过多个独立约束才能成为可支配资源。",
+        "conditions": "现金、成本与承诺有可区分记录。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "追踪与积累争夺同一时间",
+        "observation_asset_version_id": "fb28961e-63c0-4543-b15d-79f96753326b",
+        "result_sha256": "bb085b0942380d9a7391b189b64e4bbe3f5cbf2294b0db6ab8e5d36037b11866",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0001-0050-v1.json",
+        "mechanism": "待治理候选：成长路径与避险路径发生资源冲突。",
+        "conditions": "追兵独立行动，升级有耗时及条件。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "帮助同时增加义务",
+        "observation_asset_version_id": "fb28961e-63c0-4543-b15d-79f96753326b",
+        "result_sha256": "bb085b0942380d9a7391b189b64e4bbe3f5cbf2294b0db6ab8e5d36037b11866",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0001-0050-v1.json",
+        "mechanism": "待治理候选：合作利益与自主权损失同时发生。",
+        "conditions": "双方权力不对等，帮助确有用途。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "有限知识产生不同评价",
+        "observation_asset_version_id": "fb28961e-63c0-4543-b15d-79f96753326b",
+        "result_sha256": "bb085b0942380d9a7391b189b64e4bbe3f5cbf2294b0db6ab8e5d36037b11866",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0001-0050-v1.json",
+        "mechanism": "待治理候选：知识差异改变风险估值和关系行为。",
+        "conditions": "明确谁见过什么，预测与事实分开。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "日常生产承载外部冲突",
+        "observation_asset_version_id": "fb28961e-63c0-4543-b15d-79f96753326b",
+        "result_sha256": "bb085b0942380d9a7391b189b64e4bbe3f5cbf2294b0db6ab8e5d36037b11866",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0001-0050-v1.json",
+        "mechanism": "待治理候选：外部事件经生产条件传导为角色义务。",
+        "conditions": "日常空间有稳定用途，异常会改变职责。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "增长速度与危机期限互相约束",
+        "observation_asset_version_id": "9d480d3e-98e1-4ae8-b3fa-0a02bb46a983",
+        "result_sha256": "e78c8e25613c683264f5a7ecfc4cbb99a17fdccd4456c369b5598e25ae1fa752",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0051-0100-v1.json",
+        "mechanism": "候选关系式为收益速度、行动期限与转换成本的制约；待MKAOS。",
+        "conditions": "收益口径、截止点、消耗须可区分。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "有限检测与知识修正",
+        "observation_asset_version_id": "9d480d3e-98e1-4ae8-b3fa-0a02bb46a983",
+        "result_sha256": "e78c8e25613c683264f5a7ecfc4cbb99a17fdccd4456c369b5598e25ae1fa752",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0051-0100-v1.json",
+        "mechanism": "候选为检测预算与状态依赖共同控制信息释放；待MKAOS。",
+        "conditions": "明确谁知道什么，区分报告事实与报告中的信念。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "共同目标下的风险分歧",
+        "observation_asset_version_id": "9d480d3e-98e1-4ae8-b3fa-0a02bb46a983",
+        "result_sha256": "e78c8e25613c683264f5a7ecfc4cbb99a17fdccd4456c369b5598e25ae1fa752",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0051-0100-v1.json",
+        "mechanism": "候选为共同目标不消除风险偏好差异；待MKAOS。",
+        "conditions": "先展示分歧，再展示行动归属。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "制度评价与私人安全错位",
+        "observation_asset_version_id": "9d480d3e-98e1-4ae8-b3fa-0a02bb46a983",
+        "result_sha256": "e78c8e25613c683264f5a7ecfc4cbb99a17fdccd4456c369b5598e25ae1fa752",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0051-0100-v1.json",
+        "mechanism": "候选为公共评价与私人目标的多轴冲突；待MKAOS。",
+        "conditions": "机构权限、名单类型、立案与定罪分开。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "工作异常驱动有反馈的排查",
+        "observation_asset_version_id": "9d480d3e-98e1-4ae8-b3fa-0a02bb46a983",
+        "result_sha256": "e78c8e25613c683264f5a7ecfc4cbb99a17fdccd4456c369b5598e25ae1fa752",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0051-0100-v1.json",
+        "mechanism": "候选为职责异常、干预反馈与责任重分配；待MKAOS。",
+        "conditions": "记录尝试、失败和检测条件，不只宣告原因。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "公开指标与特殊条件并行",
+        "observation_asset_version_id": "9d480d3e-98e1-4ae8-b3fa-0a02bb46a983",
+        "result_sha256": "e78c8e25613c683264f5a7ecfc4cbb99a17fdccd4456c369b5598e25ae1fa752",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0051-0100-v1.json",
+        "mechanism": "候选为标准评价与条件适配的双轨决策；待MKAOS。",
+        "conditions": "特殊判断须有独立依据，主持者权限可追溯。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "能力获得与可用性分开",
+        "observation_asset_version_id": "39f705bd-8727-432c-b69f-2796b919110d",
+        "result_sha256": "552c37f2a52bd2bdd51ae031ec4e9f33f6ca482ab373522b4577a30cbc40ab2b",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0101-0150-v1.json",
+        "mechanism": "仅候选：治理后可评估能力与可用性分离这一因果关系。",
+        "conditions": "各限制须可区分，消耗与恢复能追踪。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "强信息工具仍有覆盖边界",
+        "observation_asset_version_id": "39f705bd-8727-432c-b69f-2796b919110d",
+        "result_sha256": "552c37f2a52bd2bdd51ae031ec4e9f33f6ca482ab373522b4577a30cbc40ab2b",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0101-0150-v1.json",
+        "mechanism": "仅候选：治理后评估工具覆盖范围与可欺骗信号的关系。",
+        "conditions": "工具输出和人物推断须明确分层。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "力量反转改变各方认知",
+        "observation_asset_version_id": "39f705bd-8727-432c-b69f-2796b919110d",
+        "result_sha256": "552c37f2a52bd2bdd51ae031ec4e9f33f6ca482ab373522b4577a30cbc40ab2b",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0101-0150-v1.json",
+        "mechanism": "仅候选：治理后评估权力变化如何更新人物预期。",
+        "conditions": "力量来源、先前威胁和后续反应须有证据。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "收益被义务重新分配",
+        "observation_asset_version_id": "39f705bd-8727-432c-b69f-2796b919110d",
+        "result_sha256": "552c37f2a52bd2bdd51ae031ec4e9f33f6ca482ab373522b4577a30cbc40ab2b",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0101-0150-v1.json",
+        "mechanism": "仅候选：治理后评估收益、强制支出与主观参照的关系。",
+        "conditions": "现金、抵价物、估值和已付款必须分账。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "部分同目标合作与敌方布局相撞",
+        "observation_asset_version_id": "39f705bd-8727-432c-b69f-2796b919110d",
+        "result_sha256": "552c37f2a52bd2bdd51ae031ec4e9f33f6ca482ab373522b4577a30cbc40ab2b",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0101-0150-v1.json",
+        "mechanism": "仅候选：治理后评估共同目标下的优先级冲突。",
+        "conditions": "双方知识、优先级和敌方准备可分别追踪。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      },
+      {
+        "name": "局部兑现保留关系余量",
+        "observation_asset_version_id": "39f705bd-8727-432c-b69f-2796b919110d",
+        "result_sha256": "552c37f2a52bd2bdd51ae031ec4e9f33f6ca482ab373522b4577a30cbc40ab2b",
+        "result_path": "/Users/yuan/.codex/worktrees/reference-mechanism-logic-01/novel-forge/.local/reference-mechanism-logic-01/results/full-stage-0101-0150-v1.json",
+        "mechanism": "仅候选：治理后评估事件完成与关系完成的差异。",
+        "conditions": "未解决部分来自既有牵挂，不能任意增加障碍。",
+        "downstream_eligible": false,
+        "state": "RESEARCH_CANDIDATE_ONLY"
+      }
+    ]
+  },
+  "old_unknown": {
+    "operation_id": "00c4668d-ac65-45d6-b3c8-97b8037a486f",
+    "external_effect_id": "52437f92-ab1b-4762-bb09-95663fa5676e",
+    "outcome": "UNKNOWN",
+    "held_tokens": 257598,
+    "dependency_of_new_design": false,
+    "resent": false
+  },
+  "author_decisions_required": [
+    "design candidate selection and approval",
+    "final manuscript acceptance mode before production"
+  ],
+  "current_design_approval": "NOT_GRANTED_FOR_NEW_CANDIDATES",
+  "current_prose_acceptance": "NOT_REQUESTED",
+  "no_recharge": true,
+  "no_deploy": true,
+  "no_push": true,
+  "intended_project_id": "original-longform-20261003",
+  "intended_book_id": "original-longform-100ch-20261003",
+  "prior_fiction_status": "ABANDONED_FOR_THIS_CREATIVE_SCOPE; retained historical records excluded from new-book inputs",
+  "author_direction": "Start an entirely new novel from abstract mechanisms in the completed reference study. Do not use any previous novel design, characters, plot, title or setting.",
+  "runtime_constraints": {
+    "chapter_long_model_operation_timeout_seconds": 600,
+    "chapter_quality_group_timeout_seconds": 3000,
+    "chapter_root_timeout_seconds": 3600,
+    "old_reference_unknown_is_project_scoped": true,
+    "new_project_runtime_admission_verified": true,
+    "final_wire_payload_verified": true,
+    "scope_limitation": "Three real standalone Creative Foundation candidates via native Story Planning; previous recommendations withdrawn following author feedback; latest candidate has a continuous voice test. No Formation/Book Design activation or formal chapter production."
+  },
+  "initial_design_allowance": {
+    "authorization_ref": "user:WP-ORIGINAL-NOVEL-100CH-PRODUCTION-AND-CROSS-MODEL-REVIEW-01:codex-only:20261003",
+    "user_instruction": "1、确认；2、DeepSeek先不用，先用codex创建小说内容，允许使用额度",
+    "scope": "new original novel only; all earlier fiction excluded; design candidates await author selection",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "high",
+    "calls": 120,
+    "tokens": 6000000,
+    "priced_usd": "0",
+    "deepseek_calls": 0,
+    "expires_at": "2026-10-17T15:59:59+00:00",
+    "scope_note": "conservative initial design sublimit of the offered allowance; one cumulative new-book ledger; no recharge/renewal/push/deploy",
+    "final_manuscript_acceptance": "AUTHOR_CONFIRMATION_PENDING_AUTO_NOT_SELECTED"
+  },
+  "actual_usage": {
+    "input_tokens": 55905,
+    "output_tokens": 15605,
+    "reasoning_output_tokens": 5692,
+    "cached_input_tokens": 36864,
+    "total_tokens": 71510
+  },
+  "actual_monetary_cost": "UNAVAILABLE_ACCOUNT_ENTITLEMENT_NOT_FREE",
+  "deepseek_calls": 0,
+  "feedback_revision": {
+    "author_feedback_file": "candidates/author-feedback-01.json",
+    "latest_evidence_file": "candidates/feedback-rework-01-evidence.json",
+    "prior_evidence_file": "candidates/execution-evidence.json",
+    "previous_recommendation": "WITHDRAWN",
+    "latest_candidate_asset_version_id": "authority-output:64ed7e2c-2769-4a6e-b022-6c8d44665ce4:story_planning.candidate:v1",
+    "quality": "NOT_ADJUDICATED"
+  }
+}

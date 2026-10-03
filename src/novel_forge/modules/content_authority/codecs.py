@@ -150,6 +150,27 @@ def _many(request: AuthorityHandlerRequest, *types: str) -> list[AuthorityInputA
 
 def _creative_brief(request: AuthorityHandlerRequest) -> dict[str, Any]:
     brief = validate_creative_brief(_payload(request)["brief"])
+    if brief.get("editorial_learning"):
+        from .definitions import CONTENT_EDITORIAL_BRIEF_VERSION
+        if request.definition_version != CONTENT_EDITORIAL_BRIEF_VERSION:
+            raise ValueError("Editorial learning requires its versioned native Brief definition")
+        from novel_forge.modules.creative.editorial_learning import editorial_author_design
+        from novel_forge.modules.mkaos_authority.domain import assert_abstract_content_safe
+        expected = {card["asset_version_id"]: card["content_hash"] for decision in brief["editorial_learning"]["decisions"] for card in decision["knowledge_cards"]}
+        if len(expected) != len(request.inputs) or set(expected) != {item.asset_version_id for item in request.inputs}:
+            raise ValueError("Editorial learning must freeze exactly its declared KnowledgeCard inputs")
+        for item in request.inputs:
+            if (item.asset_type != "knowledge_card" or item.content_hash != expected[item.asset_version_id]
+                    or item.lifecycle != "ACTIVE" or item.eligibility != "ELIGIBLE" or item.governance != "CLEAR"
+                    or item.qualification_decision != "ELIGIBLE" or item.content.get("project_id") != request.project_id):
+                raise ValueError("Editorial learning requires approved same-project KnowledgeCards")
+            if not isinstance(item.content.get("abstract_content"), dict) or not item.content["abstract_content"]:
+                raise ValueError("Editorial learning requires a governed abstraction")
+            assert_abstract_content_safe(item.content.get("abstract_content") or {})
+        author = editorial_author_design(brief["editorial_learning"], project_id=request.project_id)
+        if brief.get("author_design") and brief["author_design"] != author:
+            raise ValueError("Editorial learning cannot replace its compiled author intent")
+        brief["author_design"] = author
     if brief.get("author_design"):
         from novel_forge.modules.story_design_authority.author_input import validate_author_design
         validate_author_design(brief["author_design"], project_id=request.project_id)

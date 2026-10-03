@@ -14,7 +14,7 @@
 | 目标仓库 | `yuan2go/novel-forge` |
 | 核验日期 | 2026-10-01，UTC+8 |
 | 核验分支 | `codex/wp-task-context-512k-01` |
-| 当前生命周期代码基线 | `63888679ffa24589932ed93faecf575a702ea2da` |
+| 当前生命周期代码基线 | `e045de15095fb2cea313f379b6c50f3c6b085c02` |
 | Git tree | `d21d5d8ba1b152bfb43ea93bb3053b67e434a1a9` |
 | 当前事实核验 | 源代码、冻结合同、正式装配及定向单测/PostgreSQL 回归；现有持久库仅只读核验，未调用真实 Provider |
 | 实现及效果状态 | 规格形成时仅交付需求；后续工程实现已进入正式主链，真实 Provider 与文学收益仍未验证。当前状态以代码、冻结合同和当次验收为准 |
@@ -24,12 +24,12 @@
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-02",
+  "reviewed_on": "2026-10-03",
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
   "reality_baseline": {
-    "sha": "63888679ffa24589932ed93faecf575a702ea2da",
-    "implementation_tree_sha": "sha256:81912fdd2a54f4e5614cca309087dab801e1a4e596802b65d71bdf532fdb651f"
+    "sha": "e045de15095fb2cea313f379b6c50f3c6b085c02",
+    "implementation_tree_sha": "sha256:33af6f01e7834614dac014d97f4d0dedb7ad0e0430e2cd15354840b1771def87"
   },
   "scope": [
     "src/novel_forge/modules/chapter_authority",
@@ -121,6 +121,8 @@
   ]
 }
 -->
+
+Current scope review (2026-10-03): Editorial findings, original applications, reader effects and tradeoffs enter existing located author/knowledge contracts. Deferred and out-of-scope discussion is removed before retrieval and Provider construction. Native fixture and isolated browser checks establish the connection, while real production comparison and literary improvement remain unproven.
 
 生命周期中的 implementation identity 由仓库现有 implementation_tree_identity 工具对精确提交重算，并由生命周期检查器核对。该值与提案生命周期均不授予生产资格。review_due 是现有提案检查器所需的维护日期，不是开发期限、生产排期或定时任务。
 

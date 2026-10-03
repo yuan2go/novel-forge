@@ -15,11 +15,11 @@ Baseline implementation identity: `sha256:06f6c417ef4374bb9505aa1c94f4d9fa2cc744
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-02",
+  "reviewed_on": "2026-10-03",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "63888679ffa24589932ed93faecf575a702ea2da",
-    "implementation_tree_sha": "sha256:81912fdd2a54f4e5614cca309087dab801e1a4e596802b65d71bdf532fdb651f"
+    "sha": "e045de15095fb2cea313f379b6c50f3c6b085c02",
+    "implementation_tree_sha": "sha256:33af6f01e7834614dac014d97f4d0dedb7ad0e0430e2cd15354840b1771def87"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -320,6 +320,8 @@ Baseline implementation identity: `sha256:06f6c417ef4374bb9505aa1c94f4d9fa2cc744
   ]
 }
 -->
+
+Current scope review (2026-10-03): Editorial learning uses existing Content, author-intent, MKAOS and Planning owners, with frozen inputs and native replay. It creates no Agent or approval Authority, accepted history, autonomous editor discussion or real longform evidence. Existing design decisions and qualification work remain unresolved.
 
 Current scope review (2026-10-01): Task selection, dependency closure, bounded compression/fidelity and complete request admission use the existing Chapter/Provider/Kernel chain. Frozen recovery preserves exact source and route contracts. These changes add no Authority and do not settle the remaining design decisions, independent evaluation or production proof.  Native author candidates, exact cross-chapter/Craft
 repair, bounded prose-review windows, Plan Change semantic candidates, optional isolated

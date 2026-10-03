@@ -1,0 +1,255 @@
+{
+  "asset_version_id": "authority-output:64ed7e2c-2769-4a6e-b022-6c8d44665ce4:story_planning.candidate:v1",
+  "content_hash": "sha256:0ef1e94e7b1dfe1e03ba5e147f42295ef613ca0a3753856650e58b231e3b224b",
+  "content": {
+    "type": "PlanningGenerationCandidate",
+    "genre": "原创修行长篇，暂定探索方向",
+    "book_id": "original-longform-100ch-20261003",
+    "subgenre": "从运货伙计的日常处境进入修行与冒险",
+    "core_fear": "再失败一次，家里便觉得他的心气只配当笑话；他尤其怕哥哥毫无恶意地说一句“早跟你讲过”。",
+    "objective": "暂名《再试一回》。十九岁的运货伙计陈满瞒着家里准备第二次入门试，却先得修好偷偷借坏的哥哥的鞋；修鞋的钱不够，哥哥还等他一起出车。",
+    "project_id": "original-longform-20261003",
+    "constraints": [
+      "本方案是独立的Creative Foundation候选；原创修行长篇仅为探索方向，尚未获作者批准。",
+      "作者对前两份候选的阅读反馈不等于已确认的成因诊断；本次调整是供作者通过具体场景判断的编辑假设。",
+      "人物行动须符合当时的知识、钱物、体力和时间条件；世界规则与后续发展均为候选。",
+      "仅使用本次冻结简报及获授权的通用方法，不继承旧小说或前两份候选的人物、世界、标题与具体情节。",
+      "本次只提供短候选与声音测试，不生成章纲、正式正文、Book Design或已接受的故事事实；总篇幅未定。",
+      "危险与日常同在、谨慎需要行动、信息差影响选择及关系逐渐变化，作为阅读后检查原则，不作为人物装配清单。"
+    ],
+    "core_desire": "学会真正的修行本领，挣到不必每次向哥哥开口的钱，也让家里有人认真听他说一次打算。",
+    "logical_key": "foundation:creative:option-04",
+    "core_conflict": "陈满想抓住入门机会，却已经答应跟哥哥出车。哥哥替他争来的工钱确实能改善生活，也会占去练习和应试的时间。他既舍不得这份收入，又不肯承认自己还想再试。",
+    "frozen_inputs": [
+      {
+        "role": "creative_brief",
+        "asset_type": "creative_brief",
+        "content_hash": "sha256:bca336d63676831d95acab2b1943958be33b2e833c2118185b66febc48be449d",
+        "asset_version_id": "authority-output:5a175077-f8bb-4925-91e0-55b5d2a967d6:creative.brief:v1"
+      }
+    ],
+    "style_profile": {
+      "pov": "第三人称限知，当前贴近陈满。",
+      "narrator": "克制的第三人称叙述，贴近陈满当下注意到的东西，不替其他人解释心思。",
+      "constraints": [
+        "先写人物正在办的事；解释只补足当前动作所需的信息。",
+        "对白允许答非所问、停顿和半句话，不让人物轮流宣讲完整立场。",
+        "配角有自己的时间和麻烦，不围绕陈满随叫随到。",
+        "不在场景末替人物宣布成长，不逐句解释幽默或美德。",
+        "声音测试仅一段连续原创场景，控制在650—900汉字。"
+      ],
+      "genre_conventions": [
+        "保留想变强、争取入门机会与逐渐掌握本领的期待。",
+        "修行需要练习与资源；具体规则随后续设计逐步明确。",
+        "获得本领后的回报通过能做成的事情呈现。"
+      ],
+      "original_examples": [
+        {
+          "example": "陈满把鞋放到摊上，破口朝着自己。\n\n鞋匠翻过来，拇指从鞋底伸了进去。\n\n“你哥知道么？”\n\n“开胶了。”\n\n“我问你哥知道么。”\n\n陈满掏出九文钱，挨着鞋摆好。鞋匠看了一眼，把鞋搁回去，继续给手里的靴子穿线。\n\n“十二。”\n\n“上回才八文。”\n\n“上回是上回。你站那边，挡光了。”\n\n陈满往旁边挪。鞋匠脚边有张小凳，他坐下，又起来，把凳子拖到摊沿。街口卖饼的刚揭开布，热气飘过来。他早上剩的半张饼还揣在怀里，已经凉透，拿出来时粘住了那张报名条。\n\n他先把纸揭下来。\n\n“我自己缝，你借根针。”\n\n鞋匠抬头看他，忽然朝他身后说：“来了。”\n\n陈满把饼和纸一齐塞回去，纸角没塞进去。\n\n陈宽穿着布鞋，裤脚上沾了半圈泥。他没问弟弟怎么在这儿，先拿起鞋，看了看鞋底。\n\n“你穿它去哪了？”\n\n“北场。”\n\n“不是试过了？”\n\n陈满伸手去拿鞋，哥哥没松。\n\n“今天还能试。”\n\n陈宽看见了他胸前的纸角。陈满按住，按得太急，半张饼从衣襟里掉出来，落在两人中间。他弯腰捡，掸了两下，没有地方放，只好拿着。\n\n鞋匠把针插进线团：“缝不了。底子得换。”\n\n陈宽数出三文钱，推到那九文旁边。\n\n“从你工钱里扣。”\n\n“我还没领工钱。”\n\n“所以你今天得来。”\n\n陈满捏着饼边，那里被他掸破了，掉了一小块。他想说下午不行，哥哥已经蹲下，把另一只鞋也脱了。\n\n“这只一并看看。上回下雨，里头进水。”\n\n鞋匠接过去：“都湿成这样才送。”\n\n陈宽低头搓袜子上的泥，没有接话。陈满看见他脚后跟磨破的地方，血已经干了。他把饼递过去。\n\n“你吃。”\n\n“掉地上了。”\n\n陈满收回来，咬了一口。\n\n街上有人喊陈宽，问绳子拿了没有。他站起来，应了一声，往回走。走出几步又转头：“车在西桥。未时走，别让我到处找你。”\n\n陈满嘴里有饼，点了头。等哥哥转过去，他才把那口咽下。\n\n报名条上也是未时。他摸出纸，饼油已经洇过北场两个字。鞋匠伸手拿钱，他忽然按住其中一文。\n\n“这文别收。我跑着送鞋过去，你给少收一文。”\n\n鞋匠看了他一会儿，拿走十一文：“鞋好了你就来拿。我午后要关摊。”",
+          "purpose": "通过修鞋、碰面和未说出口的时间冲突，检验读者是否愿意跟着陈满看下一步。",
+          "explanation": "独立候选声音测试；不作为正式章节或已接受事件，阅读效果留待作者判断。"
+        }
+      ]
+    },
+    "target_reader": "希望跟随一个有私心、有情绪、会成长的人读长篇冒险的中文读者。",
+    "planning_scope": "NOT_APPLICABLE",
+    "schema_version": "story_design.authority.v1",
+    "differentiation": "从借坏了一双鞋、瞒着再去应试的小事进入修行。哥哥给他的出路有实际好处，陈满的另一个选择也有实际吸引力；矛盾来自两条路争用同一个人的时间和钱。修行机会先出现在他已经接触的运货生活里，无须先建立奇观或配齐同伴。",
+    "narrative_engine": "陈满眼前要修好哥哥的鞋，并赶去第二次入门试；哥哥的货车也在同一天下午出发。运货工作让他接触山上的修行者，却不能任由他随时离队。若他继续尝试，挣钱、练习和替人办事会不断挤在一起；若终于获得学习机会，原先答应过的事情仍有人等他兑现。更大的冲突从这些具体往来中生长，暂不预设完整阵营和成长结论。",
+    "candidate_payload": {
+      "genre": "原创修行长篇，暂定探索方向",
+      "subgenre": "从运货伙计的日常处境进入修行与冒险",
+      "core_fear": "再失败一次，家里便觉得他的心气只配当笑话；他尤其怕哥哥毫无恶意地说一句“早跟你讲过”。",
+      "objective": "暂名《再试一回》。十九岁的运货伙计陈满瞒着家里准备第二次入门试，却先得修好偷偷借坏的哥哥的鞋；修鞋的钱不够，哥哥还等他一起出车。",
+      "constraints": [
+        "本方案是独立的Creative Foundation候选；原创修行长篇仅为探索方向，尚未获作者批准。",
+        "作者对前两份候选的阅读反馈不等于已确认的成因诊断；本次调整是供作者通过具体场景判断的编辑假设。",
+        "人物行动须符合当时的知识、钱物、体力和时间条件；世界规则与后续发展均为候选。",
+        "仅使用本次冻结简报及获授权的通用方法，不继承旧小说或前两份候选的人物、世界、标题与具体情节。",
+        "本次只提供短候选与声音测试，不生成章纲、正式正文、Book Design或已接受的故事事实；总篇幅未定。",
+        "危险与日常同在、谨慎需要行动、信息差影响选择及关系逐渐变化，作为阅读后检查原则，不作为人物装配清单。"
+      ],
+      "core_desire": "学会真正的修行本领，挣到不必每次向哥哥开口的钱，也让家里有人认真听他说一次打算。",
+      "core_conflict": "陈满想抓住入门机会，却已经答应跟哥哥出车。哥哥替他争来的工钱确实能改善生活，也会占去练习和应试的时间。他既舍不得这份收入，又不肯承认自己还想再试。",
+      "style_profile": {
+        "pov": "第三人称限知，当前贴近陈满。",
+        "narrator": "克制的第三人称叙述，贴近陈满当下注意到的东西，不替其他人解释心思。",
+        "constraints": [
+          "先写人物正在办的事；解释只补足当前动作所需的信息。",
+          "对白允许答非所问、停顿和半句话，不让人物轮流宣讲完整立场。",
+          "配角有自己的时间和麻烦，不围绕陈满随叫随到。",
+          "不在场景末替人物宣布成长，不逐句解释幽默或美德。",
+          "声音测试仅一段连续原创场景，控制在650—900汉字。"
+        ],
+        "genre_conventions": [
+          "保留想变强、争取入门机会与逐渐掌握本领的期待。",
+          "修行需要练习与资源；具体规则随后续设计逐步明确。",
+          "获得本领后的回报通过能做成的事情呈现。"
+        ],
+        "original_examples": [
+          {
+            "example": "陈满把鞋放到摊上，破口朝着自己。\n\n鞋匠翻过来，拇指从鞋底伸了进去。\n\n“你哥知道么？”\n\n“开胶了。”\n\n“我问你哥知道么。”\n\n陈满掏出九文钱，挨着鞋摆好。鞋匠看了一眼，把鞋搁回去，继续给手里的靴子穿线。\n\n“十二。”\n\n“上回才八文。”\n\n“上回是上回。你站那边，挡光了。”\n\n陈满往旁边挪。鞋匠脚边有张小凳，他坐下，又起来，把凳子拖到摊沿。街口卖饼的刚揭开布，热气飘过来。他早上剩的半张饼还揣在怀里，已经凉透，拿出来时粘住了那张报名条。\n\n他先把纸揭下来。\n\n“我自己缝，你借根针。”\n\n鞋匠抬头看他，忽然朝他身后说：“来了。”\n\n陈满把饼和纸一齐塞回去，纸角没塞进去。\n\n陈宽穿着布鞋，裤脚上沾了半圈泥。他没问弟弟怎么在这儿，先拿起鞋，看了看鞋底。\n\n“你穿它去哪了？”\n\n“北场。”\n\n“不是试过了？”\n\n陈满伸手去拿鞋，哥哥没松。\n\n“今天还能试。”\n\n陈宽看见了他胸前的纸角。陈满按住，按得太急，半张饼从衣襟里掉出来，落在两人中间。他弯腰捡，掸了两下，没有地方放，只好拿着。\n\n鞋匠把针插进线团：“缝不了。底子得换。”\n\n陈宽数出三文钱，推到那九文旁边。\n\n“从你工钱里扣。”\n\n“我还没领工钱。”\n\n“所以你今天得来。”\n\n陈满捏着饼边，那里被他掸破了，掉了一小块。他想说下午不行，哥哥已经蹲下，把另一只鞋也脱了。\n\n“这只一并看看。上回下雨，里头进水。”\n\n鞋匠接过去：“都湿成这样才送。”\n\n陈宽低头搓袜子上的泥，没有接话。陈满看见他脚后跟磨破的地方，血已经干了。他把饼递过去。\n\n“你吃。”\n\n“掉地上了。”\n\n陈满收回来，咬了一口。\n\n街上有人喊陈宽，问绳子拿了没有。他站起来，应了一声，往回走。走出几步又转头：“车在西桥。未时走，别让我到处找你。”\n\n陈满嘴里有饼，点了头。等哥哥转过去，他才把那口咽下。\n\n报名条上也是未时。他摸出纸，饼油已经洇过北场两个字。鞋匠伸手拿钱，他忽然按住其中一文。\n\n“这文别收。我跑着送鞋过去，你给少收一文。”\n\n鞋匠看了他一会儿，拿走十一文：“鞋好了你就来拿。我午后要关摊。”",
+            "purpose": "通过修鞋、碰面和未说出口的时间冲突，检验读者是否愿意跟着陈满看下一步。",
+            "explanation": "独立候选声音测试；不作为正式章节或已接受事件，阅读效果留待作者判断。"
+          }
+        ]
+      },
+      "target_reader": "希望跟随一个有私心、有情绪、会成长的人读长篇冒险的中文读者。",
+      "differentiation": "从借坏了一双鞋、瞒着再去应试的小事进入修行。哥哥给他的出路有实际好处，陈满的另一个选择也有实际吸引力；矛盾来自两条路争用同一个人的时间和钱。修行机会先出现在他已经接触的运货生活里，无须先建立奇观或配齐同伴。",
+      "narrative_engine": "陈满眼前要修好哥哥的鞋，并赶去第二次入门试；哥哥的货车也在同一天下午出发。运货工作让他接触山上的修行者，却不能任由他随时离队。若他继续尝试，挣钱、练习和替人办事会不断挤在一起；若终于获得学习机会，原先答应过的事情仍有人等他兑现。更大的冲突从这些具体往来中生长，暂不预设完整阵营和成长结论。",
+      "why_worth_writing": "陈满想过得好些，也想被看得起，却未必愿意老实说出自己还没放弃。读者可以先关心他今天怎么办，再逐渐关心他有了本领以后怎样对待这些熟人。",
+      "emotional_contract": "让读者先为陈满的遮掩发窘，再关心他能否把事情办成。他可以争到机会，也会把话说坏；关系的变化留在下一次借钱、搭车和见面时。",
+      "constraint_envelope": {
+        "role": "CREATIVE_FOUNDATION",
+        "creative_brief": {
+          "content_hash": "sha256:bca336d63676831d95acab2b1943958be33b2e833c2118185b66febc48be449d",
+          "asset_version_id": "authority-output:5a175077-f8bb-4925-91e0-55b5d2a967d6:creative.brief:v1"
+        },
+        "contract_version": "foundation-generation.v1",
+        "foundation_parent_bindings": {}
+      },
+      "prohibited_outcomes": [
+        "不将本候选或声音测试表述为已批准题材、正式第一章或已发生的故事事实。",
+        "不继承旧候选，不使用灯、证据法庭或见证登记主线。",
+        "不复制参考作品的人物、原句、特色能力、标志性桥段或独特事件组合。",
+        "不以隐藏血统、突然获赠至宝或贵人无条件相助解决眼前的钱与时间冲突。",
+        "不把哥哥写成专为阻止主角成长而存在的人，也不安排所有配角立即理解或支持陈满。",
+        "不以刻意粗俗、密集口头禅或随机缺点代替人物生活。",
+        "不要求每次行动都付出不可逆代价；只呈现与行动和具体处境有关的后果。"
+      ],
+      "serialization_potential": "运货路线可逐步扩大陈满接触的人与地方；修行进展改变他能接什么活，也改变别人对他的要求。收入、练习和旧关系能持续产生不同选择，后续长度与结构留待作者判断本候选后再定。",
+      "foundation_parent_bindings": {}
+    },
+    "why_worth_writing": "陈满想过得好些，也想被看得起，却未必愿意老实说出自己还没放弃。读者可以先关心他今天怎么办，再逐渐关心他有了本领以后怎样对待这些熟人。",
+    "emotional_contract": "让读者先为陈满的遮掩发窘，再关心他能否把事情办成。他可以争到机会，也会把话说坏；关系的变化留在下一次借钱、搭车和见面时。",
+    "execution_evidence": {
+      "attempt_id": "e9963946-fcf9-43aa-b1cd-6694631276ca",
+      "operation_id": "64ed7e2c-2769-4a6e-b022-6c8d44665ce4",
+      "fencing_token": 1,
+      "commit_authority": "STORY_DESIGN_AUTHORITY",
+      "cost_receipt_ref": "authority-asset-version:139e06e9-fa27-4aea-9eda-ef851360c4ec",
+      "route_snapshot_id": "production_execution/routes/9fa82e8cba78541b18a4",
+      "usage_receipt_ref": "authority-asset-version:ca7dca65-e75d-4f1d-bbbf-c1fdab89996f",
+      "input_manifest_ref": "production_execution/inputs/9fa82e8cba78541b18a4",
+      "context_bundle_hash": "sha256:aafb181a6024daf9ba8ccfcc4a11606f24792a9b4438feb11ac31eb505aee46d",
+      "output_manifest_ref": "authority-asset-version:d1aa2b71-c36e-4fe4-ab65-a9135a0e6f08",
+      "production_verified": false,
+      "external_receipt_ref": "048e6330-fcd4-4c7a-aba9-bd337cf24e90",
+      "real_provider_proven": true,
+      "fixture_protocol_only": false,
+      "external_effect_backed": true,
+      "validation_manifest_ref": "authority-asset-version:6e4382c8-1f67-42d4-ab19-718da7c99c08",
+      "capability_execution_ref": "63d96be6-f2ff-52dd-b366-986e9de4d755",
+      "capability_execution_hash": "sha256:406ddcc585933b11e205151b581891fd432748a83bf0cf25677cf4b127064660",
+      "capability_runtime_binding_ref": "sha256:17f35fa28b410c281ea51ad19ba742449bc07fb86cae014054e3e2da357bad80",
+      "capability_runtime_binding_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+      "context_bundle_asset_version_id": "bd59c0c1-65fa-487e-80a1-a54f779fba94",
+      "capability_pack_attempt_snapshot_id": "sha256:17f35fa28b410c281ea51ad19ba742449bc07fb86cae014054e3e2da357bad80",
+      "production_execution_gateway_backed": true,
+      "capability_pack_attempt_snapshot_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+      "narrative_intelligence_selection_digest": "sha256:4d86f9805b0d0d9680d31deec53045d78e33cbc041da7b0276e8866a1d66ef20"
+    },
+    "constraint_envelope": {
+      "role": "CREATIVE_FOUNDATION",
+      "creative_brief": {
+        "content_hash": "sha256:bca336d63676831d95acab2b1943958be33b2e833c2118185b66febc48be449d",
+        "asset_version_id": "authority-output:5a175077-f8bb-4925-91e0-55b5d2a967d6:creative.brief:v1"
+      },
+      "contract_version": "foundation-generation.v1",
+      "foundation_parent_bindings": {}
+    },
+    "prohibited_outcomes": [
+      "不将本候选或声音测试表述为已批准题材、正式第一章或已发生的故事事实。",
+      "不继承旧候选，不使用灯、证据法庭或见证登记主线。",
+      "不复制参考作品的人物、原句、特色能力、标志性桥段或独特事件组合。",
+      "不以隐藏血统、突然获赠至宝或贵人无条件相助解决眼前的钱与时间冲突。",
+      "不把哥哥写成专为阻止主角成长而存在的人，也不安排所有配角立即理解或支持陈满。",
+      "不以刻意粗俗、密集口头禅或随机缺点代替人物生活。",
+      "不要求每次行动都付出不可逆代价；只呈现与行动和具体处境有关的后果。"
+    ],
+    "serialization_potential": "运货路线可逐步扩大陈满接触的人与地方；修行进展改变他能接什么活，也改变别人对他的要求。收入、练习和旧关系能持续产生不同选择，后续长度与结构留待作者判断本候选后再定。",
+    "generator_operation_name": "creative.candidates.generate",
+    "foundation_parent_bindings": {},
+    "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+  },
+  "generation_receipt": {
+    "generation_operation_id": "64ed7e2c-2769-4a6e-b022-6c8d44665ce4",
+    "candidate_asset_version_id": "authority-output:64ed7e2c-2769-4a6e-b022-6c8d44665ce4:story_planning.candidate:v1",
+    "status": "APPROVAL_PENDING",
+    "story_design_state": {
+      "project_id": "original-longform-20261003",
+      "asset_version_id": "authority-output:64ed7e2c-2769-4a6e-b022-6c8d44665ce4:story_planning.candidate:v1",
+      "logical_key": "foundation:creative:option-04",
+      "generator_operation_name": "creative.candidates.generate",
+      "generator_definition_version": "1.0.0",
+      "candidate_type": "creative_candidate_pool",
+      "lifecycle": "MATERIALIZED",
+      "qualification": "STRUCTURALLY_VALID",
+      "approval": "NOT_REQUESTED",
+      "freshness": "CURRENT",
+      "planning_scope": "NOT_APPLICABLE",
+      "design_scope": "CREATIVE_FOUNDATION",
+      "source_kind": "GENERATED",
+      "execution_evidence": {
+        "attempt_id": "e9963946-fcf9-43aa-b1cd-6694631276ca",
+        "operation_id": "64ed7e2c-2769-4a6e-b022-6c8d44665ce4",
+        "fencing_token": 1,
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "cost_receipt_ref": "authority-asset-version:139e06e9-fa27-4aea-9eda-ef851360c4ec",
+        "route_snapshot_id": "production_execution/routes/9fa82e8cba78541b18a4",
+        "usage_receipt_ref": "authority-asset-version:ca7dca65-e75d-4f1d-bbbf-c1fdab89996f",
+        "author_supervision": {
+          "mode": "AUTHOR_SUPERVISED",
+          "book_id": "original-longform-100ch-20261003",
+          "project_id": "original-longform-20261003",
+          "content_hash": "sha256:0ef1e94e7b1dfe1e03ba5e147f42295ef613ca0a3753856650e58b231e3b224b",
+          "authorization": {
+            "reason": "按本次作者明确授权，将已指定模型和high绑定到该书创意候选任务；候选未获得作者设计批准，预算沿同一120次/600万账本。",
+            "book_id": "original-longform-100ch-20261003",
+            "author_id": "yuan-local-author",
+            "task_type": "creative.candidates.generate",
+            "expires_at": "2026-10-17T15:59:59+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 272000,
+            "model_revision": "sha256:33b42c788061088c558cf2836fb2288c4fb6b0f37a89d3d7da7296c97bebfb49",
+            "authorization_id": "author-supervised:original100:creative-route:v1:0",
+            "producer_contract_hash": "sha256:d463f3f39b8484b41d723f883090a4998b7afaf407a0df9d2a7c5a88fea2812e"
+          },
+          "asset_version_id": "authority-output:64ed7e2c-2769-4a6e-b022-6c8d44665ce4:story_planning.candidate:v1",
+          "route_decision_id": "routing-decision:b22a22ba910342577ee6587758a675f20f6a8429d1f6127c755209b194b9dfc8",
+          "authorization_hash": "sha256:01c5ab1c5805c48911c1f355d274cf44ff1718a2599e5a4d2c16f1941c58a614",
+          "policy_operation_id": "fa82915e-e1be-4c6b-9016-0f44651b49e4",
+          "author_review_required": true,
+          "literary_qualification": "NOT_PROVEN",
+          "admission_contract_version": "author-supervision-admission.v2"
+        },
+        "input_manifest_ref": "production_execution/inputs/9fa82e8cba78541b18a4",
+        "context_bundle_hash": "sha256:aafb181a6024daf9ba8ccfcc4a11606f24792a9b4438feb11ac31eb505aee46d",
+        "output_manifest_ref": "authority-asset-version:d1aa2b71-c36e-4fe4-ab65-a9135a0e6f08",
+        "production_verified": false,
+        "external_receipt_ref": "048e6330-fcd4-4c7a-aba9-bd337cf24e90",
+        "real_provider_proven": true,
+        "fixture_protocol_only": false,
+        "external_effect_backed": true,
+        "validation_manifest_ref": "authority-asset-version:6e4382c8-1f67-42d4-ab19-718da7c99c08",
+        "capability_execution_ref": "63d96be6-f2ff-52dd-b366-986e9de4d755",
+        "capability_execution_hash": "sha256:406ddcc585933b11e205151b581891fd432748a83bf0cf25677cf4b127064660",
+        "capability_runtime_binding_ref": "sha256:17f35fa28b410c281ea51ad19ba742449bc07fb86cae014054e3e2da357bad80",
+        "capability_runtime_binding_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+        "context_bundle_asset_version_id": "bd59c0c1-65fa-487e-80a1-a54f779fba94",
+        "capability_pack_attempt_snapshot_id": "sha256:17f35fa28b410c281ea51ad19ba742449bc07fb86cae014054e3e2da357bad80",
+        "production_execution_gateway_backed": true,
+        "capability_pack_attempt_snapshot_hash": "sha256:dee790711b56378b0a367aa0c19064b49d043f02401c317340088aa5a557e11d",
+        "narrative_intelligence_selection_digest": "sha256:4d86f9805b0d0d9680d31deec53045d78e33cbc041da7b0276e8866a1d66ef20"
+      },
+      "semantic_repair_count": 0,
+      "structural_regeneration_count": 0,
+      "created_by_operation_id": "50b066a6-9321-4f93-8615-71cce498f4b5",
+      "updated_by_operation_id": "897789fa-a760-4483-84e0-70714c2e5bda",
+      "version": 2
+    },
+    "planning_binding": null,
+    "replayed": false
+  }
+}

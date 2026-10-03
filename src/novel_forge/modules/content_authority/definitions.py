@@ -7,6 +7,7 @@ from novel_forge.modules.content_authority.codecs import CONTENT_CODECS
 
 CONTENT_DEFINITION_VERSION = "2.1.1"
 CONTENT_AUTHOR_REVIEW_VERSION = "2.1.2"
+CONTENT_EDITORIAL_BRIEF_VERSION = "2.1.3"
 CONTENT_INTEGRATION_PROVEN = frozenset(CONTENT_CODECS)
 
 
@@ -76,7 +77,8 @@ def content_operation_definitions(
                 "definition_version": SCREENPLAY_ANNOTATION_VERSION if screenplay_reference_annotations else PROSE_ANNOTATION_VERSION if prose_reference_annotations else PLANNING_REFERENCE_ANNOTATION_VERSION if planning_reference_annotations else
                     WORLD_REFERENCE_ANNOTATION_VERSION if world_reference_annotations else
                     REFERENCE_ANNOTATION_VERSION if reference_annotations else
-                    CONTENT_AUTHOR_REVIEW_VERSION if name == "story_design.review.author" else CONTENT_DEFINITION_VERSION,
+                    CONTENT_AUTHOR_REVIEW_VERSION if name == "story_design.review.author" else
+                    CONTENT_EDITORIAL_BRIEF_VERSION if name == "creative.brief.create" else CONTENT_DEFINITION_VERSION,
                 "family": name.split(".")[0],
                 "command_schema_version": f"{name}.command.v2",
                 "result_schema_version": f"{name}.result.v2",

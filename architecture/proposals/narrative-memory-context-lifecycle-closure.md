@@ -9,19 +9,19 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `63888679ffa24589932ed93faecf575a702ea2da`
+Reality baseline: `e045de15095fb2cea313f379b6c50f3c6b085c02`
 Baseline implementation identity:
-`sha256:81912fdd2a54f4e5614cca309087dab801e1a4e596802b65d71bdf532fdb651f`
+`sha256:33af6f01e7834614dac014d97f4d0dedb7ad0e0430e2cd15354840b1771def87`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-02",
+  "reviewed_on": "2026-10-03",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "63888679ffa24589932ed93faecf575a702ea2da",
-    "implementation_tree_sha": "sha256:81912fdd2a54f4e5614cca309087dab801e1a4e596802b65d71bdf532fdb651f"
+    "sha": "e045de15095fb2cea313f379b6c50f3c6b085c02",
+    "implementation_tree_sha": "sha256:33af6f01e7834614dac014d97f4d0dedb7ad0e0430e2cd15354840b1771def87"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -145,6 +145,8 @@ Baseline implementation identity:
   ]
 }
 -->
+
+Current scope review (2026-10-03): Editorial discussions remain frozen author evidence; only scoped intent and eligible knowledge enter selection and Provider views. No Digest, retention, representation generation, cutover or purge mechanism is added; all remaining memory decisions and work remain unresolved.
 
 Current scope review (2026-10-01): Task worksets, directed required dependencies, source-bound extractive compression/fidelity and frozen receipt recovery refine Gate A consumers. Frozen World accounting and exact published Chapter/sample recovery preserve those consumers without introducing memory lifecycle owners. They do not implement the remaining Digest, retention, representation-generation or purge gates.  Gate A and current role Context/Provider behavior
 are projected in [current-system](../../docs/current-system.md). Implemented Gate A

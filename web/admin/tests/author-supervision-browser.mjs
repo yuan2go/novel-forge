@@ -8,6 +8,7 @@ const context = await browser.newContext();
 const page = await context.newPage();
 const hash = 'sha256:'+'a'.repeat(64), reviewHash = 'sha256:'+'b'.repeat(64);
 const requests = [], errors = [];
+let lostEditorial = false;
 page.on('pageerror', e=>{errors.push(e.message);process.stderr.write(e.stack+'\n');});
 const view = {book_modes:[{book_id:'trial-book',reason:'Isolated browser fixture'}],policy_hash:hash,policy_version:'fixture',authorizations:[{task_type:'review',model_revision:'fixture-reviewer',expires_at:'2020-01-01T00:00:00Z',maximum_tokens:1000,maximum_amount:'1',expired:true}],producers:[{routing_asset_version_id:'route:review:1',task_type:'review',producer_contract_hash:hash,operation_id:'review-op',status:'BLOCKED',budget:{scope:'execution_chain',tokens_used_or_reserved:20},review_requirement:{schema_version:'cross-model-review.v2',target_asset_version_id:'author-draft:2',target_content_hash:reviewHash,source:{kind:'MODEL_EDITED_BY_AUTHOR'},reviewer_policy:'EXPLICIT_AUTHORIZED_REVIEWER',authorized_reviewer:{}},candidates:[{candidate:{candidate_id:'reviewer:fixture',provider:'deepseek',model:'fixture',model_revision:'fixture-reviewer',pricing:{currency:'USD',accounting_basis:'PRICED'}},rejected_reasons:['CROSS_MODEL_REVIEW_SOURCE_POLICY_REQUIRED'],estimated_total_tokens:20,reservation_upper_bound:'0.01'}]}],
   controls:{book_control:{scope:'PROJECT_FUTURE_SUBJECTS',selected_policy:null,selected_boundaries:[],supervised_boundaries:['BOOK','CHAPTER','SCENE','FINAL_CANDIDATE','REALITY_COMMIT']},dispatch:{state:'PAUSED',api_process_suspended:true},budget_ledger:{scope:'PROJECT',rows:[{provider:'fixture',currency:'USD',status:'HELD_UNKNOWN',accounting_basis:'ACCOUNT_ENTITLEMENT',cost_status:'UNKNOWN',reservations:1,actual_tokens:12,estimated_tokens:20,reserved_amount:'1',settled_amount:null}]}},
@@ -20,6 +21,7 @@ try {
     if(request.method()==='OPTIONS') return route.fulfill({status:204,headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Headers':'content-type'}});
     if(url.pathname==='/product/projects') return reply([{project_id:'trial-project',workspace_id:'trial-workspace',title:'隔离测试项目'}]);
     if(url.pathname==='/product/system/health') return reply({summary:{},embedding:{ok:false}});
+    if(url.pathname==='/product/mkaos/knowledge-cards') return reply([{project_id:'trial-project',asset_version_id:'knowledge:cooling:v1',content_hash:hash,lifecycle:'ACTIVE',eligibility:'ELIGIBLE',governance:'CLEAR',card_status:'ACTIVE',content:{abstract_content:{concept_name:'冷却的资源代价',mechanism:'仅可消耗实际可用清水',applicability:['热量可以被转移'],failure_conditions:['无可用清水']}}}]);
     if(url.pathname.endsWith('/reference-samples')) return reply({samples:[],actor_id:'fixture-author',can_annotate:false});
     if(url.pathname.endsWith('/author-workspace')) return reply({books:[{book_id:'trial-book',workspace_id:'trial-workspace',title:'监督流程隔离检查',version:1,status:'ACTIVE',production_profile:{},runtime_policy:{}}],profiles:[],snapshots:[],runs:[],budget_scopes:[]});
     if(url.pathname.endsWith('/author-supervision')) return reply(view);
@@ -43,7 +45,10 @@ try {
     }
     if(url.pathname.endsWith('/author-decisions')) {requests.push({kind:'decision',body:request.postDataJSON()});view.pending_designs=[];return reply({approval:'APPROVED'});}
     if(url.pathname==='/product/content-authority/commands' || url.pathname==='/product/content-authority/operations/brief-op') {
-      if(request.method()==='POST') requests.push({kind:'brief',body:request.postDataJSON()});
+      if(request.method()==='POST') {
+        const body=request.postDataJSON(); requests.push({kind:'brief',body});
+        if(body.payload.brief.creative_brief_contract_version==='creative-brief-v4' && !lostEditorial) {lostEditorial=true;return route.abort('failed');}
+      }
       return reply({operation_id:'brief-op',status:'SUCCEEDED',outputs:[{asset_version_id:'brief:1',content_hash:hash}]});
     }
     if(url.pathname.endsWith('/author-creative-input')) {
@@ -102,9 +107,29 @@ try {
   await creative.getByLabel('创作想法',{exact:true}).fill('隔离工程输入：保留证词与接回证人的两难。');
   await creative.getByLabel('类型',{exact:true}).fill('悬疑');
   await creative.getByLabel('目标读者',{exact:true}).fill('成年读者');
+  await creative.getByLabel('创作约束',{exact:true}).fill('让准备改变实际冒险选择，不用解释账本代替事件。');
   await creative.getByLabel('素材使用边界',{exact:true}).fill('本例原创工程输入，不使用诊断候选。');
   await creative.getByRole('button',{name:'保存创作输入',exact:true}).click();
   await creative.getByText(/输入任务：SUCCEEDED/).waitFor();
+  await creative.getByLabel('将参考讨论与专业依据带入原创设计',{exact:true}).check();
+  const editorial=creative.getByRole('group',{name:'参考作品讨论后的编辑取舍',exact:true});
+  await editorial.getByLabel('希望保留的类型与阅读体验',{exact:true}).fill('探索和修炼推动故事，谨慎不能代替行动。');
+  await editorial.getByRole('button',{name:'增加编辑取舍',exact:true}).click();
+  for(const [label,text] of [['优势／问题及证据判断','准备与威胁同步推进'],['原创应用、修正方式与适用条件','只在关键逃生选择中交代可用清水和消耗'],['预期改善的阅读体验','准备带来行动回报'],['副作用与取舍','专业校核留在幕后，不逐项解释费用']]) await editorial.getByLabel(label,{exact:true}).fill(text);
+  await editorial.getByLabel(/冷却的资源代价/).check();
+  await creative.getByRole('button',{name:'保存创作输入',exact:true}).click();
+  await creative.getByRole('button',{name:'恢复上次提交（保留原输入和幂等键）',exact:true}).waitFor();
+  await page.reload();
+  await creative.getByRole('button',{name:'恢复上次提交（保留原输入和幂等键）',exact:true}).click();
+  await page.waitForFunction(()=>!document.body.textContent.includes('恢复上次提交（保留原输入和幂等键）'));
+  const editorialRequests=requests.filter(r=>r.kind==='brief' && r.body.payload.brief.creative_brief_contract_version==='creative-brief-v4');
+  assert.equal(editorialRequests.length,2); assert.deepEqual(editorialRequests[0].body,editorialRequests[1].body);
+  assert.deepEqual(editorialRequests[0].body.input_asset_version_ids,['knowledge:cooling:v1']);
+  assert.equal(editorialRequests[0].body.payload.brief.editorial_learning.decisions[0].reader_effect,'准备带来行动回报');
+  await editorial.getByLabel('希望保留的类型与阅读体验',{exact:true}).fill('修改后的阅读承诺');
+  assert.equal(await creative.getByRole('button',{name:'启动设计准备（确认计划后推进）',exact:true}).isDisabled(),true);
+  await creative.getByRole('button',{name:'保存创作输入',exact:true}).click();
+  await page.waitForFunction(()=>!document.body.textContent.includes('讨论或创作输入已修改'));
   await creative.getByLabel('使用我已确定的原创方向，直接进入下层设计',{exact:true}).check();
   const direction=creative.getByRole('group',{name:'确认原创方向',exact:true});
   for(const label of ['故事目标','目标读者','为什么值得写','类型','细分类型','核心欲望','核心恐惧','核心冲突与代价','持续推动故事的机制','与同类作品的差异','阅读与情感承诺','后继叙事空间']) {

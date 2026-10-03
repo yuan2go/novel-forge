@@ -9,20 +9,20 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `63888679ffa24589932ed93faecf575a702ea2da`
+Reality baseline: `e045de15095fb2cea313f379b6c50f3c6b085c02`
 Baseline implementation identity:
-`sha256:81912fdd2a54f4e5614cca309087dab801e1a4e596802b65d71bdf532fdb651f`
+`sha256:33af6f01e7834614dac014d97f4d0dedb7ad0e0430e2cd15354840b1771def87`
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-02",
+  "reviewed_on": "2026-10-03",
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "63888679ffa24589932ed93faecf575a702ea2da",
-    "implementation_tree_sha": "sha256:81912fdd2a54f4e5614cca309087dab801e1a4e596802b65d71bdf532fdb651f"
+    "sha": "e045de15095fb2cea313f379b6c50f3c6b085c02",
+    "implementation_tree_sha": "sha256:33af6f01e7834614dac014d97f4d0dedb7ad0e0430e2cd15354840b1771def87"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -109,6 +109,8 @@ Baseline implementation identity:
   ]
 }
 -->
+
+Current scope review (2026-10-03): Native editorial decisions now require exact approved knowledge inputs and located application in Planning. Scoped retrieval removes deferred and other-chapter editorial semantics. This supplies an input/application connection only; G3 corpus coverage, G4 real creative comparison, independent approval and literary benefit remain incomplete.
 
 Current scope review (2026-10-01): Task-scoped Context, 512,000-token system support, governed extractive compression/fidelity and frozen Provider recovery refine the existing consumers. Published sampling contracts and Pack identities remain readable alongside separately versioned new samples; this compatibility does not execute a campaign. They do not execute G3/G4, supply real corpus observations, authorize spend or prove literary gain.  Implemented identity, entitlement, corpus-ingestion
 and Source/MKAOS mechanics are documented only in [current-system](../../docs/current-system.md).
