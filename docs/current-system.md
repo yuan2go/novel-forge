@@ -39,6 +39,19 @@ qualification and author decision evidence. World depth follows
 the current story need and includes deferred dimensions; generated voice anchors are
 part of character/creative inputs. Scripted Formation execution proves wiring only.
 
+The existing CreativeBrief command accepts `creative-brief-v4` editorial learning:
+author discussion decisions bind exact approved same-project KnowledgeCards, reading
+effects, original applications, tradeoffs, design stages and chapter ranges. Content
+compiles active KEEP/ADAPT/AVOID decisions into required author-intent fragments;
+DEFER remains local evidence. Planning inherits the frozen binding, selects the scoped
+required knowledge through current Book access and applicability policy, and requires
+located author decisions and knowledge translations in generated candidates. Missing
+or conflicting knowledge cannot silently become an empty selection. The author input
+page exposes these decisions and preserves the submitted input on recovery. This is
+an editorial input and application path, not proof of autonomous editor discussion,
+professional database completeness or improved prose. Raw reference text remains outside
+the generation inputs.
+
 The creation-input coordinator invokes existing Content commands for explicit runtime
 policies and empty genesis, then the existing Book Opening command. It does not
 create chapter-zero acceptance. Book Design activation projects the bound cast into

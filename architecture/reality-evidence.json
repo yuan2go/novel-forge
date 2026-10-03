@@ -6099,6 +6099,10 @@
         {
           "path": "src/novel_forge/modules/creative/style_projection.py",
           "symbol": "compile_foundation_style"
+        },
+        {
+          "path": "src/novel_forge/modules/creative/editorial_learning.py",
+          "symbol": "validate_editorial_learning"
         }
       ],
       "commands_operations": [
@@ -6201,6 +6205,10 @@
         {
           "path": "tests/integration/test_synthesis_formation_postgres.py",
           "symbol": "test_native_formation_generates_foundation_from_author_brief"
+        },
+        {
+          "path": "tests/integration/test_content_authority_runtime_postgres.py",
+          "symbol": "ContentAuthorityRuntimePostgresTests.test_editorial_discussion_persists_exact_approved_knowledge_and_replays"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -6452,6 +6460,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/edition_planning.py",
           "symbol": "validate_edition_plan_scope"
+        },
+        {
+          "path": "src/novel_forge/modules/creative/editorial_learning.py",
+          "symbol": "required_editorial_knowledge"
         }
       ],
       "commands_operations": [
@@ -6555,6 +6567,10 @@
         {
           "path": "tests/integration/test_world_actor_isolation_postgres.py",
           "symbol": "test_actor_receipt_recovery_continues_through_native_acceptances"
+        },
+        {
+          "path": "tests/unit/test_editorial_learning.py",
+          "symbol": "test_frozen_editorial_decisions_follow_native_parent_and_exact_chapter_scope"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9191,7 +9207,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:849800637c91e6a41077a1ad53c57ed32788017e30c09ea61f29fd11da0dc2de"
+    "implementation_tree_sha": "sha256:5058c25649d90f0077f1564f802abb861bdca619e5fb859c78ec65b06600b749"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

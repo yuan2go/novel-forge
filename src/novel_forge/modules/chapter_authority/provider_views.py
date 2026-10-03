@@ -1896,6 +1896,8 @@ def _build_planning_context_view(
             "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
             "Planning Provider Context requires frozen input versions",
         )
+    if any(isinstance(raw, Mapping) and raw.get("role") == "creative_brief" and (raw.get("content") or {}).get("editorial_learning") for raw in raw_inputs) and not context_bundle.get("author_design_projection"):
+        raise KernelError("EDITORIAL_LEARNING_PROJECTION_MISSING", "Editorial learning requires its scoped author intent before Provider compilation")
     if len(raw_inputs) > _MAX_SEGMENTS:
         raise KernelError(
             "PLANNING_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",

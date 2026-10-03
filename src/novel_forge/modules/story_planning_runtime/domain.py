@@ -982,14 +982,17 @@ def build_planning_constraint_envelope(
 ) -> dict[str, Any]:
     if generator_operation_name not in GENERATOR_SCOPE:
         raise ValueError("Planning Generator is not supported")
+    from novel_forge.modules.creative.editorial_learning import bind_editorial_inputs
     from novel_forge.modules.story_design_authority.author_input import author_binding_from_inputs
-    author_design = author_binding_from_inputs([
+    editorial_inputs = [
         {"role": item.role, "asset_version_id": item.asset_version_id,
          "content_hash": item.content_hash, "content": input_contents[item.role]}
         for item in frozen_inputs
-    ], project_id=project_id, book_id=book_id)
+    ]
+    author_design = author_binding_from_inputs(editorial_inputs, project_id=project_id, book_id=book_id)
+    editorial = bind_editorial_inputs(editorial_inputs, project_id=project_id, book_id=book_id)
     if generator_operation_name in FOUNDATION_GENERATORS:
-        return {**foundation_envelope(generator=generator_operation_name, inputs=frozen_inputs), **({"author_design": author_design} if author_design else {})}
+        return {**foundation_envelope(generator=generator_operation_name, inputs=frozen_inputs), **({"author_design": author_design} if author_design else {}), **({"editorial_learning": editorial} if editorial else {})}
     expected_roles = set(GENERATOR_INPUT_ROLES[generator_operation_name])
     actual_roles = set(input_contents)
     extra_roles = actual_roles - expected_roles
@@ -1086,6 +1089,7 @@ def build_planning_constraint_envelope(
         "prohibited_outcomes": [*prohibited, *local_prohibited],
         "required_obligations": obligations,
         **({"author_design": author_design} if author_design else {}),
+        **({"editorial_learning": editorial} if editorial else {}),
         "narrative_load_projection": narrative_load_projection
         or {
             "type": "NarrativeLoadProjection",

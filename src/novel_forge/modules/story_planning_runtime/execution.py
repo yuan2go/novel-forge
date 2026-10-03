@@ -312,7 +312,7 @@ def _planning_narrative_intelligence_need(
     recent_repetition_keys: tuple[str, ...] = (),
     recent_craft_usage: tuple[Mapping[str, Any], ...] = (),
 ) -> NarrativeIntelligenceNeed:
-
+    from novel_forge.modules.creative.editorial_learning import required_editorial_knowledge
     sources: list[Any] = [
         item.get("content")
         for item in selected_inputs
@@ -448,9 +448,9 @@ def _planning_narrative_intelligence_need(
             recent_repetition_keys,
         ),
         semantic_families=families,
-        required_card_asset_version_ids=_inherited_knowledge_versions(
+        required_card_asset_version_ids=tuple(sorted(set(_inherited_knowledge_versions(
             selected_inputs, chapter=int((command.narrative_realization or {}).get("chapter_number") or 0)
-        ),
+        )) | set(required_editorial_knowledge(selected_inputs, command=command)))),
         craft_context={
             "task": [stage],
             "chapter_function": list(_selection_terms(craft_sources, {"chapter_function", "primary_function", "objective", "purpose"})),

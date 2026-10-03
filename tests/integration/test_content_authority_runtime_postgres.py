@@ -164,6 +164,32 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                                [historical["name"], historical["definition_version"]])
             self.assertEqual(uow.cursor.fetchone()[0], definition_hash(historical))
 
+    def test_editorial_discussion_persists_exact_approved_knowledge_and_replays(self):
+        from tests.integration.knowledge_closure_support import create_approved_cooling_card
+        from tests.integration.test_mkaos_authority_postgres import MkaosAuthorityPostgresTests
+        from tests.unit.test_editorial_learning import editorial_brief
+        from novel_forge.modules.story_design_authority.author_input import author_binding_from_inputs
+        from novel_forge.modules.creative.editorial_learning import required_editorial_knowledge
+        from types import SimpleNamespace
+
+        MkaosAuthorityPostgresTests._create_project(self.project_id, f"workspace:{self.project_id}")
+        card = create_approved_cooling_card(database_url=DATABASE_URL, project_id=self.project_id, workspace_id=f"workspace:{self.project_id}")
+        raw = editorial_brief(card["card_asset_version_id"], card["content_hash"], f"book:{self.project_id}")
+        request = ContentOperationRequest(definition_name="creative.brief.create", project_id=self.project_id, workspace_id=f"workspace:{self.project_id}", actor_id="content-operator", trace_id="trace:editorial", correlation_id="editorial", idempotency_key="editorial:v1", input_assets=({"asset_version_id": card["card_asset_version_id"], "content_hash": card["content_hash"]},), payload={"brief": raw})
+        first = self.app.execute(request)
+        replay = self.app.execute(request)
+        self.assertEqual(first.asset_version_id, replay.asset_version_id)
+        content = self.read_content(first.asset_version_id)
+        self.assertEqual(content["editorial_learning"], raw["editorial_learning"])
+        inputs = [{"role": "creative_brief", "asset_version_id": first.asset_version_id, "content_hash": first.content_hash, "content": content}]
+        self.assertEqual(author_binding_from_inputs(inputs, project_id=self.project_id, book_id=raw["editorial_learning"]["book_id"])["evidence_class"], "AI_ASSISTED_AUTHOR_INPUT")
+        command = SimpleNamespace(project_id=self.project_id, book_id=raw["editorial_learning"]["book_id"], generator_operation_name="creative.candidates.generate", logical_key="candidate:1", narrative_search_chapter_range=None)
+        self.assertEqual(required_editorial_knowledge(inputs, command=command), (card["card_asset_version_id"],))
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT command_payload->'input_asset_version_ids' FROM authority_operation WHERE operation_id=%s", [first.operation_id])
+            self.assertEqual(uow.cursor.fetchone()[0], [card["card_asset_version_id"]])
+        self.assertEqual(self.read_content(first.asset_version_id), content)
+
     def test_all_registered_codecs_execute_through_postgresql_authority(self) -> None:
         brief_payload = {
             "target_genre": "fantasy",

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
-    "test": "node --test tests/feature-architecture.test.mjs tests/author-editor-text.test.mjs",
+    "test": "node --test tests/feature-architecture.test.mjs tests/author-editor-text.test.mjs tests/editorial-learning.test.mjs",
     "smoke:browser": "NOVEL_FORGE_REQUIRE_PLAYWRIGHT=1 node --test tests/playwright-smoke.test.mjs",
     "test:author-editor": "node tests/author-editor-browser.mjs"
   },

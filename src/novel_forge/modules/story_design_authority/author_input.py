@@ -302,7 +302,7 @@ def without_author_private(value: Any) -> Any:
         binding = (value.get("constraint_envelope") or {}).get("author_design")
         if binding:
             _require_private_candidate_boundary(value, binding["fragments"])
-        return {key: without_author_private(item) for key, item in value.items() if key not in {"author_design", "author_design_decisions", "author_design_projection"}}
+        return {key: without_author_private(item) for key, item in value.items() if key not in {"author_design", "author_design_decisions", "author_design_projection", "editorial_learning"}}
     if isinstance(value, (list, tuple)):
         return [without_author_private(item) for item in value]
     return deepcopy(value)

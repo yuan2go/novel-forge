@@ -23,6 +23,13 @@ EVALUATION_FIELDS = (
 
 
 def validate_creative_brief(brief: dict[str, Any]) -> dict[str, Any]:
+    if brief.get("creative_brief_contract_version") == "creative-brief-v4":
+        from .editorial_learning import validate_editorial_learning
+        base = {key: value for key, value in brief.items() if key not in {"editorial_learning", "author_design"}}
+        base["creative_brief_contract_version"] = "creative-brief-v2"
+        validate_creative_brief(base)
+        learning = validate_editorial_learning(brief.get("editorial_learning") or {})
+        return {**brief, "editorial_learning": learning}
     if brief.get("creative_brief_contract_version") == "creative-brief-v3":
         from novel_forge.modules.story_design_authority.author_input import validate_author_design
         author = validate_author_design(brief.get("author_design") or {})
