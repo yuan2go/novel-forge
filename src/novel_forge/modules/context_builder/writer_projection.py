@@ -97,7 +97,7 @@ def project_visible_summary(text: str) -> str:
     return "" if projected is None else json.dumps(projected, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
-def project_writer_context_summary(segment: Mapping[str, Any], manifest: Mapping[str, Any]) -> str:
+def project_writer_context_summary(segment: Mapping[str, Any], manifest: Mapping[str, Any], *, projection_version: str = WRITER_PROJECTION_VERSION) -> str:
     from novel_forge.modules.narrative_state.reality import narrative_hash
 
     summary = str(segment.get("safe_summary") or "").strip()
@@ -112,7 +112,7 @@ def project_writer_context_summary(segment: Mapping[str, Any], manifest: Mapping
         traces = records[0].get("trace") if len(records) == 1 else None
         trace = traces[0] if isinstance(traces, list) and len(traces) == 1 and isinstance(traces[0], Mapping) else {}
         payload = {"safe_summary": summary, "structured_facts": list(segment.get("structured_facts") or ())}
-        if (trace.get("writer_projection_version") != WRITER_PROJECTION_VERSION
+        if (trace.get("writer_projection_version") != projection_version
             or trace.get("method") != segment.get("compression_method")
             or trace.get("source_asset_version_id") != segment.get("asset_version_id")
             or not segment.get("content_digest")

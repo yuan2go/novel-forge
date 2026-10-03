@@ -42,7 +42,7 @@ def test_accepted_history_preserves_full_body_and_host_evidence_but_not_review_o
     assert selected["compression_method"] == "none"
     assert selected["source_content_hash"] == document["source_content_hash"]
     assert selected["projection_hash"] == document["projection_hash"]
-    assert selected["compression_provenance"]["writer_projection_version"] == WRITER_PROJECTION_VERSION
+    assert selected["compression_provenance"]["writer_projection_version"] == query["writer_projection_version"]
     for marker in ("OLD-REVIEW", "REJECTED-QUOTE", "PROVIDER-NOISE", "DUPLICATE"):
         assert marker not in selected["safe_summary"]
     assert document == original
@@ -201,7 +201,7 @@ def test_legacy_artifact_hashes_remain_exact():
         assert resolver.resolve(kind, ref, version).content_hash == "sha256:" + digest
 
 
-@pytest.mark.parametrize("version,legacy", [("v5", True), ("v6", False)])
+@pytest.mark.parametrize("version,legacy", [("v5", True), ("v6", False), ("v7", False)])
 def test_effective_writer_prompt_preserves_story_and_versioned_history_boundary(version, legacy):
     from novel_forge.modules.production_execution import ExecutionRuntimeClass
     from tests.unit.test_production_execution_gateway import contracts
@@ -229,8 +229,8 @@ def test_effective_writer_prompt_preserves_story_and_versioned_history_boundary(
         assert "ReReview" not in method
         assert "Screenplay generation" not in method
         assert evidence["method_selection"]["skill_sections"] == ["Shared rules", "Draft"]
-        assert evidence["provider_view"]["context_contract_version"] == "provider-context-view-v5"
-        assert evidence["provider_prompt_projection_version"] == "authority-projection-task-provider-v4"
+        assert evidence["provider_view"]["context_contract_version"] == ("provider-context-view-v6" if version == "v7" else "provider-context-view-v5")
+        assert evidence["provider_prompt_projection_version"] == ("authority-projection-task-provider-v5" if version == "v7" else "authority-projection-task-provider-v4")
     assert evidence["provider_view"]["provider_admission_uses_component_estimates"] is False
 
 

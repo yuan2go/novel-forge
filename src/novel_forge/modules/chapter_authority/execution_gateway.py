@@ -839,7 +839,7 @@ class PostgresChapterExecutionContractBinder:
             attempt_snapshot
         )
         supported_templates = {
-            "prompt-template:chapter-generation-pack": {"v2", "v3", "v4", "v5", "v6"},
+            "prompt-template:chapter-generation-pack": {"v2", "v3", "v4", "v5", "v6", "v7"},
             "prompt-template:agent-session-pack": {"v1"},
             "prompt-template:story-planning-pack": {"v1"},
             "prompt-template:reader-outcome-pack": {"v2"},
@@ -1203,7 +1203,7 @@ class PostgresChapterExecutionContractBinder:
             (inputs.get("execution_expectations") or {}).get("world_preparation")
         )
         targeted_revision = bool(
-            stage == "revision" and prompt_contract_version in {"v4", "v5", "v6"} and (
+            stage == "revision" and prompt_contract_version in {"v4", "v5", "v6", "v7"} and (
                 inputs.get("quality_edit_contract")
                 or (
                     ((inputs.get("review") or {}).get("issues") or
@@ -4321,7 +4321,7 @@ def _materialize_production_codex_prompt(
     system_text, system = required_text("system_instruction")
     template_text, template = required_text("prompt_template")
     skill_text, skill = required_text("skill")
-    compact_contract = str(template.get("version") or "") in {"v3", "v4", "v5", "v6"}
+    compact_contract = str(template.get("version") or "") in {"v3", "v4", "v5", "v6", "v7"}
     context = materialization.get("context_selection")
     knowledge = materialization.get("knowledge_selection")
     tools = materialization.get("tool_permissions")
@@ -4353,7 +4353,7 @@ def _materialize_production_codex_prompt(
     targeted_edits_only = stage == "revision" and is_targeted_revision_schema_ref(
         str(schema.get("ref") or "")
     )
-    project_methods = str(template.get("version") or "") in {"v5", "v6"}
+    project_methods = str(template.get("version") or "") in {"v5", "v6", "v7"}
     if skill.get("ref") == "prose-generation" and skill.get("version") == "prose-generation-v3":
         skill_text = _project_prose_skill(skill_text, stage=stage, targeted=targeted_edits_only)
     from .prompt_methods import project_planning_system, project_skill_method
@@ -4367,8 +4367,9 @@ def _materialize_production_codex_prompt(
         stage, inputs, compact_contract=compact_contract,
         targeted_edits_only=targeted_edits_only,
         project_methods=project_methods,
+        instruction_cleanup=template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v7",
     )
-    context_view = build_provider_context_view(stage, context_content, task_view, clean_writer_context=template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v6")
+    context_view = build_provider_context_view(stage, context_content, task_view, clean_writer_context=template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v6", writer_projection_version="accepted-writer-history.v2" if template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v7" else "")
     context_manifest = context_content.get("context_manifest")
     if isinstance(context_manifest, Mapping):
         frozen_provider_view = context_manifest.get("provider_context_view")
@@ -4530,7 +4531,7 @@ def _materialize_production_codex_prompt(
         + len("</governed_skill>".encode()),
         "fully_rendered_prompt_hash": prompt_hash,
         "required_reader_facing_language": required_language,
-        "provider_prompt_projection_version": "authority-projection-task-provider-v4" if template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v6" else "authority-projection-stage-method-provider-v1" if calibrated_methods else "authority-projection-task-provider-v3" if project_methods else "authority-projection-task-provider-v2" if compact_contract else "authority-projection-task-provider-v1",
+        "provider_prompt_projection_version": "authority-projection-task-provider-v5" if template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v7" else "authority-projection-task-provider-v4" if template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v6" else "authority-projection-stage-method-provider-v1" if calibrated_methods else "authority-projection-task-provider-v3" if project_methods else "authority-projection-task-provider-v2" if compact_contract else "authority-projection-task-provider-v1",
         **({"method_selection": {"contract_version": "production-stage-methods.v1",
             "skill_sections": [part.partition("\n")[0] for part in ("\n" + skill_text).split("\n## ")[1:]],
             "system_sections": [part.partition("\n")[0] for part in ("\n" + system_text).split("\n## ")[1:]]}}

@@ -162,7 +162,7 @@ class _EmbeddingHandler:
                 "retrieval_document_projection_hash": str(
                     payload["retrieval_document_projection_hash"]
                 ),
-                "projection_version": EMBEDDING_PROJECTION_VERSION,
+                "projection_version": str(payload.get("projection_version") or "accepted-retrieval-embedding-v1"),
                 "embedding": [float(item) for item in vectors[0]],
                 "embedding_model": str(
                     provider_result.output.get("embedding_model") or ""
@@ -214,12 +214,13 @@ class RetrievalEmbeddingProjectionRuntime:
                 JOIN authority_operation AS source_operation
                   ON source_operation.operation_id=document.created_by_operation_id
                 WHERE (%s='' OR document.project_id=%s)
+                  AND document.metadata->>'writer_projection_version'='accepted-writer-history.v2'
                   AND NOT EXISTS (
                     SELECT 1
                     FROM authority_retrieval_embedding_projection AS projection
                     WHERE projection.retrieval_document_id=
                           document.retrieval_document_id
-                      AND projection.projection_version=%s
+                      AND projection.projection_version=%s || ':' || replace(document.projection_hash,'sha256:','')
                       AND projection.source_content_hash=version.content_hash
                 )
                 ORDER BY document.created_at, document.retrieval_document_id
@@ -237,6 +238,7 @@ class RetrievalEmbeddingProjectionRuntime:
         for row in rows:
             project_id = str(row[0])
             document_id = str(row[2])
+            projection_version = EMBEDDING_PROJECTION_VERSION + ":" + str(row[7]).removeprefix("sha256:")
             admission = admit_command(
                 self.database_url,
                 {
@@ -248,7 +250,7 @@ class RetrievalEmbeddingProjectionRuntime:
                     "actor_id": self.worker_id,
                     "idempotency_scope": "retrieval:embedding-projection",
                     "idempotency_key": (
-                        f"{document_id}:{EMBEDDING_PROJECTION_VERSION}:{row[4]}"
+                        f"{document_id}:{projection_version}:{row[4]}"
                     ),
                     "trace_id": f"retrieval-embedding:{document_id}",
                     "span_id": str(uuid4()),
@@ -265,7 +267,7 @@ class RetrievalEmbeddingProjectionRuntime:
                             "content_text": str(row[5]),
                             "accepted_from_chapter": int(row[6]),
                             "retrieval_document_projection_hash": str(row[7]),
-                            "projection_version": EMBEDDING_PROJECTION_VERSION,
+                            "projection_version": projection_version,
                             "token_budget": max(1, len(str(row[5])) // 4),
                         },
                     },
@@ -1043,6 +1045,12 @@ class RetrievalEmbeddingProjectionRuntime:
                     "RETRIEVAL_EMBEDDING_RECEIPT_MISSING",
                     "ready embedding projection requires a durable ExternalEffect receipt",
                 )
+            if str(candidate["projection_version"]).startswith(EMBEDDING_PROJECTION_VERSION + ":"):
+                uow.cursor.execute("SELECT projection_hash FROM authority_narrative_retrieval_document WHERE retrieval_document_id=%s FOR UPDATE",
+                                   [candidate["retrieval_document_id"]])
+                current_document = uow.cursor.fetchone()
+                if not current_document or current_document[0] != candidate["retrieval_document_projection_hash"]:
+                    raise KernelError("RETRIEVAL_EMBEDDING_OBSOLETE", "completed embedding targets a superseded derived document; retain receipt and rebuild the current projection")
             evidence = {
                 "candidate_asset_version_id": candidate_version_id,
                 "provider_evidence": dict(candidate.get("provider_evidence") or {}),

@@ -14,6 +14,7 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     queue_attempt,
     start_attempt,
 )
+from novel_forge.modules.context_builder.retrieval_rebuild import writer_index_document
 from novel_forge.modules.context_builder.production_retrieval import (
     SEMANTIC_PROJECTION_VERSION,
     build_retrieval_query_plan,
@@ -115,6 +116,12 @@ def _seed_document(
     content = source_content if source_content is not None else {"text": text}
     content_hash = _sha(json.dumps(content, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
     document_id = f"retrieval-document:{label}"
+    projected = writer_index_document({"retrieval_document_id": document_id, "project_id": project_id, "book_id": book_id,
+        "source_asset_version_id": asset_version_id, "source_artifact_type": source_artifact_type,
+        "content_text": text, "metadata": metadata or {}}, content)
+    index_hash = projected["projection_hash"]
+    if projection_version == SEMANTIC_PROJECTION_VERSION:
+        projection_version += ":" + index_hash.removeprefix("sha256:")
     effect_id = f"embedding-effect:{label}"
     cursor.execute(
         "INSERT INTO authority_asset(asset_id, project_id, asset_type) VALUES (%s,%s,%s)",
@@ -153,12 +160,12 @@ def _seed_document(
             chapter,
             accepted_to,
             memory_layer,
-            text,
+            projected["content_text"],
             Jsonb(list(entity_ids)),
             Jsonb(list(obligation_ids)),
             Jsonb({"accepted_chapter": chapter}),
-            Jsonb(metadata or {}),
-            _sha(f"document:{label}"),
+            Jsonb(projected["metadata"]),
+            index_hash,
             source_operation_id,
         ],
     )
@@ -186,7 +193,7 @@ def _seed_document(
         ) VALUES (
             %s,%s,%s,%s,%s,%s,%s,'READY',%s,%s::vector,%s,
             'production_execution_gateway',%s,'route:semantic-v3',%s,
-            %s,%s,%s,'{}'::jsonb
+            %s,%s,%s,%s
         )
         """,
         [
@@ -205,6 +212,7 @@ def _seed_document(
             f"receipt:{label}",
             source_operation_id,
             _sha(f"projection:{label}"),
+            Jsonb({"retrieval_document_projection_hash": index_hash}),
         ],
     )
     return document_id, asset_version_id, content_hash
@@ -554,7 +562,7 @@ def test_task_dependencies_use_exact_planting_advance_and_causal_closure_outside
     assert discovery.query_plan["task_dependency_discovery"]["required_refs"] == ["event:causal", "fact:hook"]
     assert "required_dependency_planting" in by_id[planting_id]["retrieval_reasons"]
     assert "required_dependency_advance" in by_id[advance_id]["retrieval_reasons"]
-    assert by_id[planting_id]["content_text"] == planting_text
+    assert json.loads(by_id[planting_id]["content_text"])["text"] == planting_text
     assert json.loads(by_id[planting_id]["writer_history_projection"]["text"]) == {"text": planting_text}
     result = build_retrieval_result(project_id=project_id, book_id=book_id, intent_asset_version_id="intent:task",
         memo_asset_version_id="memo:task", query_plan=discovery.query_plan, documents=discovery.documents,
@@ -640,7 +648,7 @@ def test_obligation_only_dependencies_read_actual_events_not_inherited_active_id
         assert outcome["task_dependency_matched_refs"] == [event_id]
         assert "Do not project" not in outcome["content_text"] and "Do not require whole" not in outcome["content_text"]
         assert (by_id[prose_id]["source_asset_version_id"], by_id[prose_id]["source_content_hash"]) == (prose_version, prose_hash)
-        assert by_id[prose_id]["content_text"] == prose
+        assert json.loads(by_id[prose_id]["content_text"])["text"] == prose
     trace = discovery.query_plan["task_dependency_discovery"]
     assert trace["required_obligation_ids"] == [obligation]
     assert set(trace["matched_documents_by_obligation"][obligation]) == endpoint_ids

@@ -8,6 +8,30 @@
   ],
   "classification_rules": [
     {
+      "id": "production-instruction-cleanup-contract",
+      "patterns": [
+        "tests/unit/test_production_instruction_cleanup.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-authority",
+      "capability": "writer-story-projection",
+      "production_target": "src/novel_forge/modules/context_builder/story_projection.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "writer-index-rebuild-postgres",
+      "patterns": [
+        "tests/integration/test_writer_index_rebuild_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "context-builder",
+      "capability": "writer-index-rebuild",
+      "production_target": "src/novel_forge/modules/context_builder/retrieval_rebuild.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
       "id": "prompt-skill-calibration-contract",
       "patterns": [
         "tests/unit/test_prompt_skill_calibration.py"

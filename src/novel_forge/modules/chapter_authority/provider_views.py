@@ -357,7 +357,7 @@ def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[
 def build_provider_task_view(
     stage: str, inputs: Mapping[str, Any], *, compact_contract: bool = False,
     targeted_edits_only: bool = False,
-    project_methods: bool = False,
+    project_methods: bool = False, instruction_cleanup: bool = False,
 ) -> dict[str, Any]:
 
     if stage in {"context_compress", "context_fidelity"}:
@@ -742,6 +742,20 @@ def build_provider_task_view(
             payload["craft_checks"] = deepcopy(review["craft_checks"])
             if not compact_contract:
                 payload["chapter"]["text"] = str(source.get("text") or "")
+        if instruction_cleanup:
+            if payload.get("targeted_editing"):
+                fields = ("code", "severity", "category", "judgment_kind", "evidence_locator", "revision_goal", "preserve", "acceptance_criteria")
+                payload["review_issues"] = [{key: issue[key] for key in fields if key in issue} for issue in diagnoses]
+                payload["targeted_editing"].pop("tasks", None)
+                payload["targeted_editing"]["diagnosis_codes"] = [issue["code"] for issue in diagnoses]
+            decision = payload.get("quality_decision")
+            if isinstance(decision, dict) and decision.get("required_actions") == payload.get("required_actions"):
+                decision.pop("required_actions", None)
+                decision["required_action_source"] = "required_actions"
+            preservation = payload.get("review_preservation_context")
+            if isinstance(preservation, dict) and preservation.get("knowledge_checks") == payload.get("knowledge_checks"):
+                preservation.pop("knowledge_checks", None)
+                preservation["knowledge_check_source"] = "knowledge_checks"
         return _task(stage, **payload)
     if stage == "rereview":
         from novel_forge.modules.review.craft import craft_provider_task
@@ -1069,7 +1083,7 @@ def build_provider_context_view(
     stage: str,
     context_bundle: Mapping[str, Any],
     task_view: Mapping[str, Any],
-    *, clean_writer_context: bool = False,
+    *, clean_writer_context: bool = False, writer_projection_version: str = "",
 ) -> dict[str, Any]:
 
     if stage in {"context_compress", "context_fidelity"}:
@@ -1376,6 +1390,10 @@ def build_provider_context_view(
             for item in raw.get("structured_facts") or []
             if isinstance(item, Mapping)
         ]
+        consumption_stage = "review" if stage == "revision" and asset_type in {"review_report", "review_issue"} else stage
+        if writer_projection_version == "accepted-writer-history.v2":
+            from novel_forge.modules.context_builder.story_projection import visible_business_data
+            facts = visible_business_data(facts, stage=consumption_stage, history=True)
         if clean_writer_context:
             from novel_forge.modules.context_builder.writer_projection import provider_visible_data
             visible = provider_visible_data(facts)
@@ -1400,7 +1418,7 @@ def build_provider_context_view(
             selected_facts = [
                 item
                 for item in bounded_facts
-                if item.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"
+                if (writer_projection_version and stage in {"review", "rereview"}) or item.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"
                 if task_scoped_context or _state_fact_relevant(
                     item,
                     selectors,
@@ -1420,6 +1438,16 @@ def build_provider_context_view(
             )
         omitted_facts += len(facts) - len(selected_facts)
         summary = str(raw.get("safe_summary") or "").strip()
+        if writer_projection_version == "accepted-writer-history.v2":
+            from novel_forge.modules.context_builder.story_projection import story_history
+            physical_type = str(raw.get("physical_asset_type") or asset_type)
+            if raw.get("narrative_function") == "recent_accepted_prose":
+                physical_type = "best_draft_candidate"
+            if raw.get("compression_method") == "host-bound-extractive-semantic.v2":
+                from novel_forge.modules.context_builder.writer_projection import project_writer_context_summary
+                summary = project_writer_context_summary(raw, context_bundle.get("context_manifest") or {}, projection_version=writer_projection_version)
+            else:
+                summary = story_history(summary, physical_type=physical_type, stage=consumption_stage)
         if clean_writer_context:
             from novel_forge.modules.context_builder.writer_projection import project_writer_context_summary
             summary = project_writer_context_summary(raw, context_bundle.get("context_manifest") or {})
@@ -1467,7 +1495,7 @@ def build_provider_context_view(
         else {}
     )
     view = {
-        "contract_version": "provider-context-view-v5" if clean_writer_context else "provider-context-view-v4" if task_scoped_context else "provider-context-view-v3" if extended_context else "provider-context-view-v2",
+        "contract_version": "provider-context-view-v6" if writer_projection_version else "provider-context-view-v5" if clean_writer_context else "provider-context-view-v4" if task_scoped_context else "provider-context-view-v3" if extended_context else "provider-context-view-v2",
         "stage": stage,
         "narrative_position": {
             key: position[key]
