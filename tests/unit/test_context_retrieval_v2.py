@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -49,7 +51,7 @@ def _document() -> dict[str, object]:
         "accepted_from_chapter": 7,
         "accepted_to_chapter": None,
         "memory_layer": "L0",
-        "content_text": "Mei returns the red key but Ren no longer trusts the promise.",
+        "content_text": json.dumps({"text": "Mei returns the red key but Ren no longer trusts the promise."}),
         "postgresql_fts_rank": 0.8,
         "entity_ids": ["key:red"],
         "character_ids": ["character:mei"],
@@ -156,7 +158,7 @@ def test_required_task_documents_survive_optional_rank_limit_without_text_trunca
     plan = build_retrieval_query_plan(intent={**_intent(), "active_obligations": []}, memo={**_memo(), "obligation_actions": []}, task_dependency_refs=dependencies)
     required = {**_document(), "retrieval_document_id": "required:planting",
                 "source_asset_version_id": "required:planting:v1", "accepted_from_chapter": 1,
-                "content_text": "A precise planting survives. " * 250,
+                "content_text": json.dumps({"text": "A precise planting survives. " * 250}),
                 "candidate_channels": ["TASK_DEPENDENCY"],
                 "task_dependency_matched_refs": ["fact:hook"],
                 "retrieval_reasons": ["required_dependency_planting"],
@@ -171,7 +173,7 @@ def test_required_task_documents_survive_optional_rank_limit_without_text_trunca
     assert result["contract_version"] == "chapter-retrieval-result-v6"
     assert len(result["selected_documents"]) == 25
     selected = next(item for item in result["selected_documents"] if item["retrieval_document_id"] == "required:planting")
-    assert selected["safe_summary"] == required["content_text"]
+    assert json.loads(selected["safe_summary"]) == json.loads(required["content_text"])
     assert selected["compression_method"] == "none"
     assert "required_task_dependency" in selected["retrieval_reasons"]
     assert "required_dependency_planting" in selected["retrieval_reasons"]

@@ -1507,8 +1507,17 @@ configured capability profile disables callbacks.
 
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
-materialization before an authorized run. Chapter Pack 2.6.0 requires the v5 Prompt and
-prose-generation-v3 identities; historical artifacts remain available for recovery.
+materialization before an authorized run. Chapter Pack 2.8.0 requires System v3,
+Template v6 and prose-generation-v4 identities; Planning uses System v8 and stage-matched
+qualification-v2 methods. Screenplay requires prose-generation-v4 or quality-review-v3
+and its separate adaptation schema. Historical artifacts remain available for recovery.
+New retrieval plans bind writer_projection_version=accepted-writer-history.v1. Inspect
+the exact selected semantic view and source/projection hashes: narrative history should
+contain accepted prose, not selected_review, candidate_comparison or provider_evidence.
+Malformed or inconsistent accepted prose rejects before dispatch; rebuild from complete
+immutable sources instead of treating a character prefix as a complete story view.
+Complete-request admission remains authoritative; a smaller semantic projection or a
+passing Context receipt does not qualify the new instructions or literary quality.
 
 For transaction errors, `DatabaseRetryClass.SAFE_RETRY` covers only explicitly safe
 SQLSTATEs. `RECONCILIATION_REQUIRED` means the commit result may be unknown and must be

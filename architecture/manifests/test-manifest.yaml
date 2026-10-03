@@ -8,6 +8,18 @@
   ],
   "classification_rules": [
     {
+      "id": "prompt-skill-calibration-contract",
+      "patterns": [
+        "tests/unit/test_prompt_skill_calibration.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-authority",
+      "capability": "production-instruction-projection",
+      "production_target": "src/novel_forge/modules/chapter_authority/prompt_methods.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
       "id": "provider-budget-renewal-integration",
       "patterns": [
         "tests/integration/test_creative_budget_renewal_postgres.py"

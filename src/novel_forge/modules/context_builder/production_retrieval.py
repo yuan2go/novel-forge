@@ -24,8 +24,10 @@ from novel_forge.modules.context_builder.task_context import (
 from psycopg.types.json import Jsonb
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
+from .writer_projection import WRITER_PROJECTION_VERSION, project_writer_history, provider_visible_data
 
-RETRIEVAL_POLICY_VERSION = "minimum-sufficient-retrieval-v5"
+
+RETRIEVAL_POLICY_VERSION = "minimum-sufficient-retrieval-v7"
 SEMANTIC_PROJECTION_VERSION = "accepted-retrieval-embedding-v1"
 _SEMANTIC_POLICIES = frozenset({"REQUIRED", "FALLBACK_ALLOWED", "DISABLED"})
 _TASK_DEPENDENCY_CONTRACT = "task-dependency-refs-v1"
@@ -205,6 +207,7 @@ def build_retrieval_query_plan(
         "intent_fingerprint": str(intent.get("intent_fingerprint") or ""),
         "memo_fingerprint": str(memo.get("memo_fingerprint") or ""),
         "retrieval_policy_version": RETRIEVAL_POLICY_VERSION,
+        "writer_projection_version": WRITER_PROJECTION_VERSION,
         "ranking_policy_version": RANKING_POLICY_VERSION,
         "ranking_weights": dict(RANKING_WEIGHTS),
         "semantic_policy": policy,
@@ -1629,7 +1632,10 @@ def build_retrieval_result(
         for item in frozen
         if str(item["retrieval_document_id"]) not in selected_ids
     )
-    selected = [_selected_document(item, preserve_text=task_scoped) for item in ranked]
+    projection_version = str(query_plan.get("writer_projection_version") or "")
+    if projection_version not in {"", WRITER_PROJECTION_VERSION}:
+        raise KernelError("WRITER_HISTORY_PROJECTION_UNSUPPORTED", "frozen retrieval uses an unsupported Writer projection")
+    selected = [_selected_document(item, preserve_text=task_scoped, clean_history=bool(projection_version)) for item in ranked]
     result = {
         "type": "RetrievalResult",
         "contract_version": "chapter-retrieval-result-v6" if task_scoped else "chapter-retrieval-result-v5",
@@ -1741,9 +1747,12 @@ def _document_from_row(row: tuple[Any, ...]) -> dict[str, Any]:
     }
 
 
-def _selected_document(item: Mapping[str, Any], *, preserve_text: bool = False) -> dict[str, Any]:
+def _selected_document(item: Mapping[str, Any], *, preserve_text: bool = False, clean_history: bool = False) -> dict[str, Any]:
     content = str(item.get("content_text") or "")
-    maximum = len(content) if preserve_text else 4_000
+    if clean_history:
+        content = project_writer_history(content, source_artifact_type=str(item.get("source_artifact_type") or ""))
+        item = {**item, "metadata": provider_visible_data(dict(item.get("metadata") or {}))}
+    maximum = len(content) if preserve_text or clean_history else 4_000
     compressed = len(content) > maximum
     return {
         key: item.get(key)
@@ -1786,6 +1795,9 @@ def _selected_document(item: Mapping[str, Any], *, preserve_text: bool = False) 
             "source_asset_version_id": str(item["source_asset_version_id"]),
             "source_content_hash": str(item["source_content_hash"]),
             "source_projection_hash": str(item["projection_hash"]),
+            **({"writer_projection_version": WRITER_PROJECTION_VERSION,
+                "source_text_fingerprint": "sha256:" + hashlib.sha256(str(item.get("content_text") or "").encode()).hexdigest()}
+               if clean_history else {}),
             "method": "deterministic_bounded_extract" if compressed else "none",
             "input_characters": len(content),
             "output_characters": min(maximum, len(content)),

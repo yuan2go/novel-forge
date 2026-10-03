@@ -34,7 +34,7 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
 
 
 _BASE_PACK = "config/capability_packs/chapter_generation_pack.json"
-STORY_PLANNING_PROMPT_VERSION = "v7"
+STORY_PLANNING_PROMPT_VERSION = "v8"
 NARRATIVE_EVALUATION_PROMPT_VERSION = "v3"
 
 
@@ -135,6 +135,7 @@ def build_story_planning_pack_profile(
         )
         nodes.append(node)
     manifest["identity"].update(
+        version="2.8.0",
         name="Story Planning Generator Pack",
         domain="story_planning",
         description="Governed Foundation formation and hierarchical Planning candidate generation.",
@@ -180,7 +181,7 @@ def build_story_planning_pack_profile(
         manifest,
         artifacts,
         skill_ref="long-outline",
-        skill_version="long-outline-v1",
+        skill_version="long-outline-v2",
         skill_path="skills/long-outline/SKILL.md",
         system_ref="prompt-system:story-planning-pack",
         system_path=(
@@ -228,7 +229,7 @@ def build_reader_outcome_pack_profile(
 ) -> LongformCapabilityPackProfile:
     root, manifest, artifacts = _base(repository_root, pack_id)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.1.0"
+    manifest["identity"]["version"] = "1.2.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -296,7 +297,7 @@ def build_reader_outcome_pack_profile(
         manifest,
         artifacts,
         skill_ref="reader-feedback",
-        skill_version="reader-feedback-v1",
+        skill_version="reader-feedback-v2",
         skill_path="skills/reader-feedback/SKILL.md",
         system_ref="prompt-system:reader-outcome-pack",
         system_path=(
@@ -342,7 +343,7 @@ def build_longform_prose_review_pack_profile(
 ) -> LongformCapabilityPackProfile:
     root, manifest, artifacts = _base(repository_root, pack_id)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.1.0"
+    manifest["identity"]["version"] = "1.2.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -409,7 +410,7 @@ def build_longform_prose_review_pack_profile(
         manifest,
         artifacts,
         skill_ref="quality-review",
-        skill_version="quality-review-v1",
+        skill_version="quality-review-v3",
         skill_path="skills/quality-review/SKILL.md",
         system_ref="prompt-system:longform-prose-review-pack",
         system_path=(
@@ -561,7 +562,7 @@ def build_narrative_evaluation_pack_profile(
         manifest,
         artifacts,
         skill_ref="quality-review",
-        skill_version="quality-review-narrative-evaluator-v1",
+        skill_version="quality-review-v3",
         skill_path="skills/quality-review/SKILL.md",
         system_ref="prompt-system:narrative-semantic-evaluation-pack",
         system_path=(
@@ -725,7 +726,7 @@ def _bind_planning_qualification_skills(
         if skill_ref in bindings:
             continue
         path = skill_paths[skill_ref]
-        version = f"{skill_ref}-qualification-v1"
+        version = f"{skill_ref}-qualification-v2"
         content = {"text": _text(root, path)}
         _append_artifact(
             artifacts,

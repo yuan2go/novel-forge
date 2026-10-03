@@ -1069,6 +1069,7 @@ def build_provider_context_view(
     stage: str,
     context_bundle: Mapping[str, Any],
     task_view: Mapping[str, Any],
+    *, clean_writer_context: bool = False,
 ) -> dict[str, Any]:
 
     if stage in {"context_compress", "context_fidelity"}:
@@ -1375,6 +1376,11 @@ def build_provider_context_view(
             for item in raw.get("structured_facts") or []
             if isinstance(item, Mapping)
         ]
+        if clean_writer_context:
+            from novel_forge.modules.context_builder.writer_projection import provider_visible_data
+            visible = provider_visible_data(facts)
+            omitted_facts += len(facts) - len(visible)
+            facts = visible
         selected_facts = facts
         if asset_type in _STATE_ASSET_TYPES:
             bounded_facts = (
@@ -1414,6 +1420,12 @@ def build_provider_context_view(
             )
         omitted_facts += len(facts) - len(selected_facts)
         summary = str(raw.get("safe_summary") or "").strip()
+        if clean_writer_context:
+            from novel_forge.modules.context_builder.writer_projection import project_visible_summary, project_writer_history
+            if asset_type in {"best_draft_candidate", "draft_chapter", "draft_version"} or raw.get("narrative_function") == "recent_accepted_prose":
+                summary = project_writer_history(summary, source_artifact_type="best_draft_candidate")
+            else:
+                summary = project_visible_summary(summary)
         if (
             asset_type in _STATE_ASSET_TYPES
             and "disclosure_field_projections" in projection
@@ -1458,7 +1470,7 @@ def build_provider_context_view(
         else {}
     )
     view = {
-        "contract_version": "provider-context-view-v4" if task_scoped_context else "provider-context-view-v3" if extended_context else "provider-context-view-v2",
+        "contract_version": "provider-context-view-v5" if clean_writer_context else "provider-context-view-v4" if task_scoped_context else "provider-context-view-v3" if extended_context else "provider-context-view-v2",
         "stage": stage,
         "narrative_position": {
             key: position[key]

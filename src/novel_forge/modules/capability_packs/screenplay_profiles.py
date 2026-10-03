@@ -29,7 +29,7 @@ def build_screenplay_pack_profile(repository_root: str | Path, *, stage: str,
         operation_definition_hash=operation_definition_hash, handler_key="novel_forge.book_followup_authority." + stage,
         capability_id=capability.capability_id.value, input_asset_types=inputs, output_asset_types=[output],
         depends_on=[], commit_authority="BOOK_FOLLOWUP_AUTHORITY", timeout_policy_ref=capability.timeout_policy_ref)
-    manifest["identity"].update(version="1.0.0", name="Scene Screenplay " + stage, domain="book_followup",
+    manifest["identity"].update(version="1.1.0", name="Scene Screenplay " + stage, domain="book_followup",
         description="Exact-edition scene, action and dialogue adaptation with separate review and acceptance.")
     manifest["compatibility"]["required_capabilities"] = [capability.capability_id.value, "quality.originality.judge"]
     manifest["workflow_template"].update(workflow_id="book_followup_" + stage, workflow_version=BOOK_FOLLOWUP_DEFINITION_VERSION,
@@ -40,11 +40,11 @@ def build_screenplay_pack_profile(repository_root: str | Path, *, stage: str,
         "blocking": True, "threshold": 1, "required_evidence": [output]}]
     manifest["evaluation"]["metrics"] = []
     skill = "quality-review" if stage == "screenplay_review" else "prose-generation"
-    artifacts = _bind_domain_artifacts(root, manifest, artifacts, skill_ref=skill, skill_version=skill + "-v1",
+    artifacts = _bind_domain_artifacts(root, manifest, artifacts, skill_ref=skill, skill_version="quality-review-v3" if stage == "screenplay_review" else "prose-generation-v4",
         skill_path="skills/" + skill + "/SKILL.md", system_ref="prompt-system:scene-screenplay-pack",
         system_path="config/capability_packs/artifacts/scene_screenplay_system_instruction.md",
         template_ref="prompt-template:scene-screenplay-pack", template_path="config/capability_packs/artifacts/scene_screenplay_template.md",
-        input_schema_ref="schema:" + stage + "-pack-input:v1", output_schema_ref="schema:" + stage + "-pack-output:v1")
+        input_schema_ref="schema:" + stage + "-pack-input:v1", output_schema_ref="schema:" + stage + "-pack-output:v1", system_version="v2")
     _append_artifact(artifacts, ArtifactKind.SCHEMA, "schema:" + stage + "-pack-output:v1", "v1", screenplay_output_schema(stage), "generated:scene-screenplay-contract")
     _update_policy_artifacts(manifest, artifacts)
     _append_capability_schemas(artifacts, capability.capability_id.value)

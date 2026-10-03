@@ -1405,9 +1405,19 @@ carry actor-local knowledge. Draft requires complete slot coverage; targeted Rev
 edits one frozen candidate and deterministically derives updated Slot representation.
 Mechanical Slot joining does not establish narrative coherence. A revision retains the frozen
 contract, identifies changed slots and reruns the existing Review, Quality and Actual
-reconciliation chain. Chapter Pack 2.6.0 binds Prompt v5 and prose-generation-v3. Its
-renderer projects shared prose rules plus either Draft/full Revision or edits-only
-targeted Revision; the latter never asks for another Slot or whole-chapter copy.
+reconciliation chain. Chapter Pack 2.8.0 binds System v3, Prompt Template v6 and
+prose-generation-v4. Its renderer selects shared prose rules plus exactly one Draft,
+full Revision or targeted Revision method. Memo, Review and quality dimensions select
+their own methods. Screenplay packs select adaptation methods rather than novel Slot
+serialization; Planning System v8 selects shared and current-stage instructions.
+ReaderPromise generation selects the new-story promise method in topic-development.
+New Retrieval query plans freeze accepted-writer-history.v1: accepted prose and Scene
+identities remain exact, while review, candidate comparison and Provider records remain
+host evidence. This projection never cuts a JSON/string prefix to 4,000 characters;
+existing Context selection and final complete-request admission enforce the budget.
+Template v6 recursively excludes INTERNAL_QUALITY_ONLY structured data regardless of
+logical asset type, including JSON summaries. Historical query plans and artifact versions
+retain their original contracts. None of these projections mutates accepted source assets.
 Scene Craft v2 uses the frozen chapter function, Scene, actor, author intent, Arc and
 accepted due obligations to guide technique applicability. Explicit requirements and
 accepted facts remain binding; omitting an inapplicable technique is not a review
