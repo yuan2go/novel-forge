@@ -55887,3 +55887,5655 @@ Return only the stage result defined by the frozen output schema.
 ### I14 · 作者UI绑定与明确默认
 
 [CreativeInputPanel.tsx完整源文件](evidence/source/web/admin/app/features/production/CreativeInputPanel.tsx)；[editorial-learning.ts](evidence/source/web/admin/app/features/production/editorial-learning.ts)。UI说明不等同模型独立消息；提交的brief和policy按下游路径使用，实际浏览器数据UNAVAILABLE。
+
+## E · 全工程链路补充
+
+仍固定同一SHA；以下是追加的合同/适用性/后续边界完整原始源码。它们不是新增模型Prompt，源文件复制数量单独统计。I15事件合同为生产合法性路径；I16作者监督是严格资格之外的适用例外。公开Prompt原文、原24份装配不改。
+
+### src/novel_forge/modules/production_preparation/policies.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=74dc152dc644650656121cd240e8d386f269f5ff92bb71cf7601a2282424a4a4；[原字节文件](evidence/source/src/novel_forge/modules/production_preparation/policies.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from .contracts import ProductionInputRequirement, ProductionInputRole
+
+
+CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES = (
+    "story_state_snapshot",
+    "canon_snapshot",
+)
+
+COLLECTION_ASSET_TYPES = frozenset(
+    {
+        "reader_promise",
+        "reward_item",
+        "world_rule",
+        "knowledge_pack",
+        "material_asset",
+        "context_segment",
+        "character_card",
+        "arc_plan",
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ProductionStageProfile:
+    stage: str
+    required_asset_types: tuple[str, ...]
+    allowed_asset_types: tuple[str, ...]
+    forbidden_asset_types: tuple[str, ...]
+    maximum_raw_source_ratio: float
+    source_expression_policy: str
+    evidence_only_types: tuple[str, ...]
+    review_only_types: tuple[str, ...]
+    copyright_mode: str
+    compression_policy: str
+    knowledge_pack_policy: str
+    runtime_context_types: tuple[str, ...] = ()
+    required_context_types: tuple[str, ...] = ()
+
+
+_BASE_ALLOWED = (
+    "chapter_plan",
+    "arc_plan",
+    "outline",
+    "outline_version",
+    "volume_arc",
+    "world_bible",
+    "creative_brief",
+    "theme_question",
+    "theme_arc",
+    "closure_plan",
+    "style_policy",
+    "quality_profile",
+    "quality_rubric",
+    "platform_profile",
+    "context_profile",
+    "story_state_snapshot",
+    "canon_snapshot",
+    "character_cast",
+    "character_card",
+    "genre_profile",
+    "knowledge_pack",
+    "knowledge_card",
+    "material_asset",
+    "material_card",
+    "reader_promise",
+    "empty_state_declaration",
+    "context_segment",
+    "context_bundle",
+    "longform_recap_report",
+    "arc_actual_state",
+    "narrative_obligation_state",
+    "character_timeline",
+    "relationship_timeline",
+    "chapter_episodic_summary",
+    "scene_episodic_summary",
+    "narrative_retrieval_document",
+    "external_knowledge",
+    "draft_version",
+    "review_rule",
+    "review_report",
+    "re_review_report",
+    "canon_patch",
+    "operator_checklist",
+    "operator_approval",
+    "approval_decision",
+    "structural_quality_report",
+    "commercial_quality_report",
+    "source_originality_quality_report",
+    "longform_quality_report",
+    "platform_quality_report",
+)
+
+_STATE_TYPES = frozenset(CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES)
+_QUALITY_REPORT_TYPES = frozenset(
+    {
+        "structural_quality_report",
+        "commercial_quality_report",
+        "source_originality_quality_report",
+        "longform_quality_report",
+        "platform_quality_report",
+    }
+)
+_STAGE_EXCLUDED = {
+    "creative": _STATE_TYPES
+    | _QUALITY_REPORT_TYPES
+    | {
+        "chapter_plan",
+        "outline",
+        "outline_version",
+        "volume_arc",
+        "world_bible",
+        "draft_version",
+        "review_rule",
+        "review_report",
+        "re_review_report",
+        "canon_patch",
+        "closure_plan",
+    },
+    "worldbuilding": _STATE_TYPES
+    | _QUALITY_REPORT_TYPES
+    | {
+        "chapter_plan",
+        "draft_version",
+        "review_rule",
+        "review_report",
+        "re_review_report",
+        "canon_patch",
+        "closure_plan",
+    },
+    "character": _STATE_TYPES
+    | _QUALITY_REPORT_TYPES
+    | {
+        "chapter_plan",
+        "draft_version",
+        "review_rule",
+        "review_report",
+        "re_review_report",
+        "canon_patch",
+        "closure_plan",
+    },
+    "outline": _QUALITY_REPORT_TYPES
+    | {
+        "chapter_plan",
+        "draft_version",
+        "review_rule",
+        "review_report",
+        "re_review_report",
+        "canon_patch",
+    },
+    "chapter_plan": _QUALITY_REPORT_TYPES
+    | {
+        "draft_version",
+        "review_rule",
+        "review_report",
+        "re_review_report",
+        "canon_patch",
+    },
+    # INVARIANT: quality reports are evidence-only inputs for downstream
+    # quality fan-in.  DraftContextView still excludes their expression.
+    "draft": {
+        "draft_version",
+        "review_rule",
+        "review_report",
+        "re_review_report",
+        "canon_patch",
+    },
+    "review": _QUALITY_REPORT_TYPES
+    | {"review_report", "re_review_report", "canon_patch"},
+    "revision": _QUALITY_REPORT_TYPES | {"re_review_report", "canon_patch"},
+    "canon_extraction": _QUALITY_REPORT_TYPES,
+    "quality": frozenset(),
+    "recap": frozenset(),
+    "ending": frozenset(),
+}
+_STAGE_REQUIRED = {
+    "creative": ("style_policy", "quality_rubric", "platform_profile"),
+    "worldbuilding": ("creative_brief", "style_policy"),
+    "character": ("creative_brief", "world_bible", "style_policy"),
+    "outline": ("creative_brief", "world_bible", "style_policy"),
+    "chapter_plan": ("outline", "world_bible", "style_policy"),
+    "draft": ("chapter_plan", "style_policy", "quality_rubric", "platform_profile"),
+    "review": ("chapter_plan", "draft_version", "quality_rubric", "platform_profile"),
+    "revision": ("chapter_plan", "draft_version", "review_report", "style_policy"),
+    "canon_extraction": ("draft_version",),
+    "quality": (
+        "draft_version",
+        "re_review_report",
+        "quality_rubric",
+        "platform_profile",
+    ),
+    "recap": ("canon_snapshot",),
+    "ending": ("closure_plan", "theme_arc", "canon_snapshot"),
+}
+
+_STAGE_CONTEXT_REQUIRED = {
+    "creative": (),
+    "worldbuilding": ("creative_brief",),
+    "character": ("creative_brief", "world_bible"),
+    "outline": ("world_bible", "character_card"),
+    "chapter_plan": ("outline_version",),
+    "draft": ("chapter_plan",),
+    "review": ("draft_version",),
+    "revision": ("draft_version", "review_report"),
+    "canon_extraction": ("draft_version",),
+    "quality": ("draft_version",),
+    "recap": ("longform_recap_report",),
+    "ending": ("closure_plan", "theme_arc"),
+}
+
+STAGE_PROFILES = {
+    stage: ProductionStageProfile(
+        stage=stage,
+        required_asset_types=_STAGE_REQUIRED[stage],
+        allowed_asset_types=tuple(
+            asset_type
+            for asset_type in _BASE_ALLOWED
+            if asset_type not in _STAGE_EXCLUDED[stage]
+        ),
+        forbidden_asset_types=(
+            "raw_source",
+            "source_chunk",
+            "eval_only",
+            "quarantined_source",
+        ),
+        maximum_raw_source_ratio=0.0,
+        source_expression_policy="abstract_safe_content_only",
+        evidence_only_types=(
+            "quality_rubric",
+            "operator_checklist",
+            "operator_approval",
+            "approval_decision",
+            "structural_quality_report",
+            "commercial_quality_report",
+            "source_originality_quality_report",
+            "longform_quality_report",
+            "platform_quality_report",
+        ),
+        review_only_types=("review_rule",),
+        copyright_mode="fail_closed",
+        compression_policy="safe_summary_then_structured_facts",
+        knowledge_pack_policy="CAPABILITY_OPTIONAL",
+        runtime_context_types=(
+            (
+                "chapter_execution_intent",
+                "chapter_memo",
+                "retrieval_result",
+            )
+            if stage == "draft"
+            else ()
+        ),
+        required_context_types=_STAGE_CONTEXT_REQUIRED[stage],
+    )
+    for stage in _STAGE_REQUIRED
+}
+
+
+def requirements_for(
+    stage: str,
+    chapter: int,
+    *,
+    capability_required_asset_types: tuple[str, ...] = (),
+) -> tuple[ProductionInputRequirement, ...]:
+    profile = STAGE_PROFILES[stage]
+    required = list(profile.required_asset_types)
+    unsupported = set(capability_required_asset_types) - set(
+        profile.allowed_asset_types
+    )
+    if unsupported:
+        raise ValueError(
+            "capability requires assets forbidden for this stage: "
+            + ", ".join(sorted(unsupported))
+        )
+    required.extend(capability_required_asset_types)
+    if chapter > 1 and stage in {
+        "chapter_plan",
+        "draft",
+        "review",
+        "revision",
+        "canon_extraction",
+        "quality",
+        "recap",
+        "ending",
+    }:
+        required.extend(CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES)
+    required_set = set(required)
+    requirements = []
+    for asset_type in profile.allowed_asset_types:
+        role = (
+            ProductionInputRole.PLAN
+            if asset_type == "chapter_plan"
+            else ProductionInputRole.PROFILE
+            if asset_type.endswith("profile")
+            or asset_type in {"quality_rubric", "style_policy", "context_profile"}
+            else ProductionInputRole.STATE
+            if asset_type in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES
+            else ProductionInputRole.APPROVAL
+            if asset_type in {"operator_approval", "approval_decision"}
+            else ProductionInputRole.GOVERNANCE
+            if asset_type == "operator_checklist"
+            else ProductionInputRole.CONTEXT
+        )
+        requirements.append(
+            ProductionInputRequirement(
+                asset_type=asset_type,
+                role=role,
+                required=asset_type in required_set,
+                cardinality="many" if asset_type in COLLECTION_ASSET_TYPES else "one",
+            )
+        )
+    return tuple(requirements)
+
+
+CONTEXT_VERSION_REF_KEYS = {
+    "chapter_plan": "chapter_plan_version",
+    "arc_plan": "selected_arc_plan_versions",
+    "outline": "outline_version",
+    "outline_version": "outline_version",
+    "volume_arc": "volume_arc_version",
+    "world_bible": "world_bible_version",
+    "character_cast": "character_cast_version",
+    "character_card": "character_card_versions",
+    "reader_promise": "reader_promise_versions",
+    "canon_snapshot": "canon_snapshot_version",
+    "story_state_snapshot": "story_state_snapshot_version",
+    "style_policy": "style_policy_version",
+    "quality_profile": "quality_profile_version",
+    "quality_rubric": "quality_profile_version",
+    "platform_profile": "platform_profile_version",
+    "context_profile": "context_profile_version",
+}
+
+ALWAYS_REQUIRED_ASSET_TYPES = STAGE_PROFILES["draft"].required_asset_types
+OPTIONAL_CONTEXT_ASSET_TYPES = tuple(
+    item for item in _BASE_ALLOWED if item not in ALWAYS_REQUIRED_ASSET_TYPES
+)
+
+~~~~
+
+### src/novel_forge/modules/context_builder/task_context.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=9f24418a0ff75c3a5a87a09c7c5ce09eb71e2bce1a404680aff0f03422588ad5；[原字节文件](evidence/source/src/novel_forge/modules/context_builder/task_context.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from copy import deepcopy
+import json
+from typing import Any, Mapping
+
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.narrative_state.reality import narrative_hash
+
+SYSTEM_CONTEXT_WINDOW_TOKENS = 512_000
+TASK_CONTEXT_POLICY_VERSION = "task-scoped-context.v1"
+DRAFT_TASK_PROFILE = "draft-context-profile-v4"
+
+_REFERENCE_FIELDS = frozenset({
+    "cause_refs", "required_event_ids", "required_fact_ids", "required_long_distance_fact_ids",
+    "source_event_id", "event_id", "fact_id", "proposition_id", "obligation_id",
+    "obligation_refs", "required_obligation_ids", "rule_id", "world_rule_refs",
+    "character_id", "character_ids", "linked_character_ids", "linked_arc_ids", "actor_id", "entity_id", "entity_ids",
+    "entity_key", "relationship_id", "thread_id", "arc_id", "arc_refs",
+    "arc_plan_version_id", "accessible_knowledge", "known_fact_ids", "belief_refs",
+    "fact_refs", "state_entity_refs", "required_event_refs", "required_source_event_ids",
+})
+_BOOKKEEPING_PREDICATES = frozenset({"accepted_revision_digest"})
+_CORE_KINDS = frozenset({"world_rule", "reader_promise"})
+
+
+def serialized_token_upper_bound(value: Any) -> int:
+    return len(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+
+
+def task_references(value: Any) -> set[str]:
+    references: set[str] = set()
+
+    def visit(item: Any, field: str = "") -> None:
+        if isinstance(item, Mapping):
+            for key, child in item.items():
+                visit(child, str(key))
+        elif isinstance(item, (list, tuple)):
+            for child in item:
+                visit(child, field)
+        elif field in _REFERENCE_FIELDS and isinstance(item, str) and item:
+            references.add(item)
+            if field == "entity_key":
+                references.update(part.partition("=")[2] for part in item.split("|") if "=" in part)
+
+    visit(value)
+    return references
+
+
+def required_task_event_ids(value: Any) -> set[str]:
+    required: set[str] = set()
+
+    def visit(item: Any, field: str = "") -> None:
+        if field in {"required_event_ids", "required_event_refs", "required_source_event_ids"}:
+            if not isinstance(item, (list, tuple)) or any(not isinstance(ref, str) or not ref for ref in item):
+                raise KernelError("TASK_CONTEXT_DEPENDENCY_INVALID", "required event references must be a collection of exact accepted event identities")
+            required.update(item)
+        elif isinstance(item, Mapping):
+            for key, child in item.items():
+                visit(child, str(key))
+        elif isinstance(item, (list, tuple)):
+            for child in item:
+                visit(child, field)
+
+    visit(value)
+    return required
+
+
+def source_identity(entry: Mapping[str, Any]) -> str:
+    return str(entry.get("source_event_id") or entry.get("source_identity") or "")
+
+
+def fact_aliases(fact: Mapping[str, Any]) -> set[str]:
+    state = fact.get("state") or {}
+    return {str(value) for value in (
+        source_identity(fact), fact.get("fact_id"), fact.get("proposition_id"),
+        state.get("fact_id"), state.get("proposition_id"),
+        *(part.partition("=")[2] for part in str(fact.get("entity_key") or "").split("|") if part.partition("=")[0] in {"fact_id", "proposition_id"}),
+    ) if value}
+
+
+def world_task_scope(*, chapter: int, intent: Mapping[str, Any], planning_window: Any, world_foundation: Mapping[str, Any]) -> dict[str, Any]:
+    return {"chapter": chapter, "intent": intent, "planning_window": planning_window,
+            "world_rules": [rule for rule in world_foundation.get("rules", ()) if rule.get("enforcement") != "SOFT_CAUSAL"]}
+
+
+def initial_dependency_sources(reality: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    sources: dict[str, Mapping[str, Any]] = {}
+    for source in reality.get("initial_state_sources", ()):
+        identity = source.get("source_event_id")
+        if not identity:
+            continue
+        binding = source.get("source_binding") or {}
+        if not isinstance(identity, str) or not binding.get("asset_version_id") or not binding.get("content_hash") or not source.get("state_kind") or not source.get("entity_key") or source.get("state_hash") != narrative_hash(source.get("state") or {}):
+            raise KernelError("TASK_CONTEXT_INITIAL_SOURCE_INVALID", "initial dependency requires its exact frozen artifact and original state hash")
+        if identity in sources and sources[identity] != source:
+            raise KernelError("TASK_CONTEXT_INITIAL_SOURCE_INVALID", "initial dependency alias must bind one exact original state")
+        sources[identity] = source
+    return sources
+
+
+def provider_visible_state(value: Mapping[str, Any]) -> bool:
+    state = value.get("state") or (value.get("mutation") or {}).get("payload") or {}
+    return value.get("provider_visibility") != "INTERNAL_QUALITY_ONLY" and state.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"
+
+
+def required_current_entry(kind: str, entry: Mapping[str, Any], *, selectors: set[str], required: set[str], chapter: int) -> bool:
+    state = entry.get("state") or {}
+    if not provider_visible_state(entry):
+        return False
+    if kind == "canon_fact" and state.get("predicate") in _BOOKKEEPING_PREDICATES:
+        return False
+    window = state.get("target_window") or {}
+    due = kind == "narrative_obligation" and state.get("status") not in {"FULFILLED", "CANCELLED"} and (
+        state.get("priority") in {"HIGH", "CRITICAL"}
+        or (window.get("status") == "SCHEDULED" and int(window.get("to_chapter") or 0) <= chapter)
+    )
+    return source_identity(entry) in required | selectors or kind in _CORE_KINDS or due or bool(
+        selectors.intersection(task_references({"entity_key": entry["entity_key"], "state": state}))
+    )
+
+
+def required_background_entities(reality: Mapping[str, Any], task: Mapping[str, Any], role_kinds: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
+    selectors = task_references(task)
+    required = required_task_event_ids(task)
+    chapter = int(task.get("chapter") or int(reality["chapter_number"]) + 1)
+    return tuple(sorted({(kind, entry["entity_key"]) for kind, entries in reality["current_state"].items() if kind in role_kinds
+                         for entry in entries if required_current_entry(kind, entry, selectors=selectors, required=required, chapter=chapter)}))
+
+
+def confirmed_reader_facts(reality: Mapping[str, Any]) -> set[str]:
+    disclosures = [entry["state"] for entry in reality["current_state"].get("disclosure_event", ()) if entry["state"].get("audience") == "READER"]
+    return {entry["state"]["fact_id"] for entry in reality["current_state"].get("reader_knowledge", ())
+            if entry["state"].get("status") == "KNOWN" and entry["state"].get("fact_id")
+            and not any(row.get("fact_id") == entry["state"]["fact_id"] and row.get("disclosure_mode") != "CONFIRM" for row in disclosures)}
+
+
+def world_event_causes(event: Mapping[str, Any]) -> tuple[str, ...]:
+    transition = (event.get("mutation") or {}).get("payload", {}).get("world_transition") or {}
+    if "payload_json" in transition:
+        try:
+            transition = json.loads(transition["payload_json"])
+        except (TypeError, ValueError) as exc:
+            raise KernelError("TASK_CONTEXT_DEPENDENCY_INVALID", "accepted World transition requires its exact structured causal contract") from exc
+    if not isinstance(transition, Mapping):
+        raise KernelError("TASK_CONTEXT_DEPENDENCY_INVALID", "accepted World transition requires an object contract")
+    return tuple(sorted(set(transition.get("cause_refs") or ())))
+
+
+def historical_endpoints(history: list[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    if not history:
+        return []
+    chapters = [int(event["coordinate"]["source_chapter"]) for event in history]
+    selected: dict[str, Mapping[str, Any]] = {}
+    for chapter, first in ((min(chapters), True), (max(chapters), False)):
+        group = [event for event in history if int(event["coordinate"]["source_chapter"]) == chapter]
+        versions = [(event.get("version") or {}).get("entity") for event in group]
+        if all(type(version) is int and version > 0 for version in versions) and len(set(versions)) == len(versions):
+            endpoint = (min if first else max)(versions)
+            group = [event for event in group if event["version"]["entity"] == endpoint]
+        selected.update({event["event_id"]: event for event in group})
+    return [selected[key] for key in sorted(selected)]
+
+
+def task_reality_workset(
+    reality: Mapping[str, Any], *, task: Mapping[str, Any], role_kinds: tuple[str, ...],
+    required_event_ids: tuple[str, ...] = (), auxiliary_limit: int = 12,
+) -> tuple[list[tuple[str, str, dict[str, Any], str]], dict[str, Any]]:
+    boundary = int(reality["chapter_number"])
+    chapter = int(task.get("chapter") or boundary + 1)
+    selectors = task_references(task)
+    events = {str(event["event_id"]): event for event in reality.get("events", [])}
+    initial_sources = initial_dependency_sources(reality)
+    selected: dict[str, tuple[str, str, dict[str, Any], str]] = {}
+    required = set(required_event_ids) | required_task_event_ids(task)
+    auxiliary = []
+    for kind, entries in sorted(reality["current_state"].items()):
+        if kind not in role_kinds:
+            continue
+        for entry in entries:
+            if not provider_visible_state(entry):
+                continue
+            entry = deepcopy(dict(entry))
+            event_id = source_identity(entry)
+            if not event_id:
+                initial_source = next((source for source in reality.get("initial_state_sources", ()) if source["state_kind"] == kind and source["entity_key"] == entry["entity_key"] and source["state_hash"] == narrative_hash(entry.get("state") or {})), None)
+                if initial_source is None and reality.get("baseline_kind") != "APPROVED_FOUNDATION":
+                    raise KernelError("TASK_CONTEXT_SOURCE_IDENTITY_REQUIRED", "state requires an accepted event or exact frozen initial source binding")
+                entry["source_binding"] = deepcopy(initial_source["source_binding"] if initial_source else reality.get("initial_state_binding") or {"reality_revision_id": reality["revision_id"]})
+                entry["source_identity"] = "initial:" + narrative_hash({"binding": entry["source_binding"], "kind": kind, "entity_key": entry["entity_key"]})
+                event_id = entry["source_identity"]
+            original = initial_sources.get(event_id) if event_id not in events else None
+            if original:
+                if original["state_kind"] != kind or original["entity_key"] != entry["entity_key"] or original["state_hash"] != narrative_hash(entry.get("state") or {}):
+                    raise KernelError("TASK_CONTEXT_INITIAL_SOURCE_INVALID", "current initial alias changed its frozen original state")
+                entry["source_binding"] = deepcopy(original["source_binding"])
+            state = entry.get("state") or {}
+            if kind == "canon_fact" and state.get("predicate") in _BOOKKEEPING_PREDICATES:
+                continue
+            row = (kind, entry["entity_key"], deepcopy(dict(entry)), "FROZEN_INITIAL_STATE" if original or not entry.get("source_event_id") else "CURRENT_STATE")
+            if required_current_entry(kind, entry, selectors=selectors, required=required, chapter=chapter):
+                selected[event_id] = row
+                required.add(event_id)
+            else:
+                auxiliary.append(row)
+    obligation_ids = {row[2]["state"].get("obligation_id") for row in selected.values() if row[0] == "narrative_obligation"}
+    for obligation_id in sorted(value for value in obligation_ids if value):
+        history = [event for event in events.values() if event["state_kind"] == "narrative_obligation" and event["mutation"]["payload"].get("obligation_id") == obligation_id and int(event["coordinate"]["source_chapter"]) <= boundary]
+        for event in historical_endpoints(history):
+            event_id = event["event_id"]
+            selected.setdefault(event_id, (event["state_kind"], event["identity"]["entity_key"], {"source_event_id": event_id, "state": deepcopy(event["mutation"]["payload"])}, "OBLIGATION_PLANTING_OR_ADVANCE"))
+            required.add(event_id)
+    confirmed = confirmed_reader_facts(reality)
+    for kind, entity_key in required_background_entities(reality, task, role_kinds):
+        history = [event for event in events.values() if event["state_kind"] == kind and event["identity"]["entity_key"] == entity_key
+                   and event["mutation"]["payload"].get("fact_origin", {}).get("kind") == "GOVERNED_BACKGROUND"
+                   and event["event_id"] not in confirmed and int(event["coordinate"]["source_chapter"]) <= boundary]
+        for event in historical_endpoints(history):
+            event_id = event["event_id"]
+            selected.setdefault(event_id, (kind, entity_key, {"source_event_id": event_id, "state": deepcopy(event["mutation"]["payload"])}, "UNDISCLOSED_BACKGROUND_PLANTING_OR_ADVANCE"))
+            required.add(event_id)
+    pending = [(event_id, 0) for event_id in sorted(required | (selectors & set(events)))]
+    for event_id, _ in pending:
+        required.add(event_id)
+    visited: set[str] = set()
+    while pending:
+        event_id, depth = pending.pop(0)
+        if event_id in visited:
+            continue
+        if len(visited) >= 2048 or depth >= 32:
+            raise KernelError("TASK_CONTEXT_DEPENDENCY_UNBOUNDED", "necessary causal closure exceeds its explicit host bound")
+        visited.add(event_id)
+        event = events.get(event_id)
+        if event is None:
+            original = initial_sources.get(event_id)
+            if original:
+                if original["state_kind"] not in role_kinds or not provider_visible_state(original):
+                    raise KernelError("TASK_CONTEXT_DEPENDENCY_DENIED", "initial dependency is outside the role read scope")
+                selected[event_id] = (original["state_kind"], original["entity_key"], {"source_event_id": event_id, "state": deepcopy(original["state"]), "source_binding": deepcopy(original["source_binding"])}, "FROZEN_INITIAL_STATE")
+                continue
+            if event_id in selected:
+                continue
+            raise KernelError("TASK_CONTEXT_DEPENDENCY_UNAVAILABLE", "a required accepted event is unavailable at the frozen boundary")
+        if int(event["coordinate"]["source_chapter"]) > boundary:
+            raise KernelError("TASK_CONTEXT_FUTURE_DEPENDENCY", "required event exceeds the accepted boundary")
+        if event["state_kind"] not in role_kinds or not provider_visible_state(event):
+            raise KernelError("TASK_CONTEXT_DEPENDENCY_DENIED", "required dependency is outside the role read scope")
+        selected.setdefault(event_id, (event["state_kind"], event["identity"]["entity_key"], {
+            "source_event_id": event_id, "state": deepcopy(event["mutation"]["payload"]),
+        }, "ACCEPTED_HISTORICAL_EVENT"))
+        for dependency in world_event_causes(event):
+            if dependency.startswith("local:"):
+                matches = [item["event_id"] for item in events.values() if item["coordinate"]["source_chapter"] == event["coordinate"]["source_chapter"]
+                           and item["mutation"]["payload"].get("causal_batch", {}).get("local_id") == dependency[6:]]
+                if len(matches) != 1:
+                    raise KernelError("TASK_CONTEXT_DEPENDENCY_UNAVAILABLE", "causal local predecessor requires one exact accepted batch event")
+                dependency = matches[0]
+            if dependency in events or dependency in initial_sources:
+                required.add(dependency)
+                pending.append((dependency, depth + 1))
+            elif dependency not in reality.get("foundation_cause_refs", []):
+                raise KernelError("TASK_CONTEXT_DEPENDENCY_UNAVAILABLE", "causal predecessor is absent from the frozen accepted source")
+    auxiliary.sort(key=lambda row: (-int((events.get(source_identity(row[2])) or {}).get("coordinate", {}).get("source_chapter") or 0), row[0], row[1]))
+    for row in auxiliary[:auxiliary_limit]:
+        selected.setdefault(source_identity(row[2]), row)
+    rows = sorted(selected.values(), key=lambda row: (source_identity(row[2]) not in required, row[0], row[1], source_identity(row[2])))
+    receipt = {
+        "policy_version": TASK_CONTEXT_POLICY_VERSION, "role_scope": list(role_kinds),
+        "task_hash": narrative_hash(task), "source_revision": reality["revision_id"],
+        "source_hash": narrative_hash(reality), "accepted_through_chapter": boundary,
+        "required_event_ids": sorted(required), "selectors": sorted(selectors),
+        "selected_event_ids": [row[2]["source_event_id"] for row in rows if row[2].get("source_event_id") and row[3] != "FROZEN_INITIAL_STATE"],
+        "selected_source_ids": [source_identity(row[2]) for row in rows],
+        "initial_source_ids": [source_identity(row[2]) for row in rows if row[3] == "FROZEN_INITIAL_STATE"],
+        "auxiliary_limit": auxiliary_limit, "candidate_count": len(rows),
+        "full_current_state_count": sum(len(entries) for entries in reality["current_state"].values()),
+        "compression": "LOSSLESS_TASK_PROJECTION", "fact_mutation_allowed": False,
+    }
+    return rows, {**receipt, "receipt_hash": narrative_hash(receipt)}
+
+
+def project_task_state_facts(
+    facts: list[dict[str, Any]], *, projection: Mapping[str, Any], chapter: int,
+) -> list[dict[str, Any]]:
+    from novel_forge.modules.chapter_authority.provider_views import _selectors, _state_fact_relevant
+
+    selectors = _selectors(projection, {})
+    explicit = set(projection.get("required_event_refs") or ())
+    if any(not provider_visible_state(fact) and explicit.intersection(fact_aliases(fact)) for fact in facts):
+        raise KernelError("TASK_CONTEXT_DEPENDENCY_DENIED", "required task fact is outside the Provider read scope")
+    materialized = [fact for fact in facts if provider_visible_state(fact) and (fact.get("state") or {}).get("predicate") not in _BOOKKEEPING_PREDICATES]
+    by_id = {alias: fact for fact in materialized for alias in (fact_aliases(fact) or {"projection:" + narrative_hash(fact)})}
+    selected = {
+        event_id: fact for event_id, fact in by_id.items()
+        if event_id in explicit
+        or fact.get("state_kind") in _CORE_KINDS
+        or _state_fact_relevant(fact, selectors, chapter)
+    }
+    pending = list(selected)
+    while pending:
+        fact = selected[pending.pop(0)]
+        for ref in (fact.get("state") or {}).get("world_transition", {}).get("cause_refs", ()):
+            if ref in by_id and ref not in selected:
+                selected[ref] = by_id[ref]
+                pending.append(ref)
+    unique = {narrative_hash(fact): fact for fact in selected.values()}
+    return [deepcopy(unique[digest]) for digest in sorted(unique)]
+
+~~~~
+
+### src/novel_forge/modules/book_followup_authority/reader_policy.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=dd6d526bf8f480204d0c57c5e2379d38d4bf61689e87fbe4f2b333765ac47306；[原字节文件](evidence/source/src/novel_forge/modules/book_followup_authority/reader_policy.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+import hashlib
+import json
+import math
+from typing import Any, Mapping
+
+from novel_forge.modules.command_kernel.errors import KernelError
+
+
+READER_POLICY_OWNER = "READER_PROXY"
+
+
+@dataclass(frozen=True, slots=True)
+class ReaderProxyPolicy:
+    policy_version: str = "reader-proxy-thresholds-v1"
+    confusion: float = 0.75
+    drop_risk: float = 0.75
+    repetition_fatigue: float = 0.65
+    continue_intent: float = 0.35
+    trust: float = 0.45
+    character_attachment: float = 0.45
+    antagonist_pressure: float = 0.40
+    payoff_satisfaction: float = 0.45
+    ordinal_high: float = 0.70
+    ordinal_medium: float = 0.40
+    recap_confusion: float = 0.65
+    recap_repetition_fatigue: float = 0.65
+    revision_required_issue_count: int = 2
+    human_review_major_count: int = 3
+
+    def __post_init__(self) -> None:
+        if not self.policy_version.strip():
+            raise ValueError("Reader proxy policy requires a version")
+        for name, value in asdict(self).items():
+            if name == "policy_version":
+                continue
+            if name.endswith("_count"):
+                if type(value) is not int or value <= 0:
+                    raise ValueError("Reader proxy issue counts must be positive")
+            elif (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not (math.isfinite(value) and 0 <= value <= 1)
+            ):
+                raise ValueError("Reader proxy thresholds must be finite probabilities")
+        if self.ordinal_medium >= self.ordinal_high:
+            raise ValueError("Reader proxy ordinal thresholds must be ordered")
+
+
+def policy_from_snapshot(snapshot: Mapping[str, Any]) -> ReaderProxyPolicy:
+    content = snapshot.get("policy")
+    if (
+        snapshot.get("owner") != READER_POLICY_OWNER
+        or not isinstance(content, dict)
+        or hashlib.sha256(
+            json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        != snapshot.get("policy_hash")
+    ):
+        raise KernelError(
+            "READER_PROXY_POLICY_SNAPSHOT_INVALID", "frozen policy required"
+        )
+    return ReaderProxyPolicy(**content)
+
+~~~~
+
+### src/novel_forge/modules/reader_judge_authority/domain.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=0293f4da54852d8a9bc1a0f586029a293cbd5a5d62c80fbcb458c5590d62c493；[原字节文件](evidence/source/src/novel_forge/modules/reader_judge_authority/domain.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+import hashlib
+import json
+from typing import Any
+
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.reader_calibration import (
+    JudgeMode,
+    ReaderJudgeQualificationStatus,
+    transition_reader_judge_qualification,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ReaderJudgeDefinition:
+    judge_id: str
+    definition_version: int
+    model_profile_ref: str
+    model_version: str
+    capability_pack_ref: str
+    prompt_ref: str
+    skill_ref: str
+    reader_segment_scope: str
+    platform_scope: str
+    genre_scope: str
+    subgenre_scope: str
+    chapter_type_scope: str
+    evaluation_contract_ref: str
+    calibration_policy_ref: str
+    decision_policy_ref: str
+    mode: JudgeMode
+    status: ReaderJudgeQualificationStatus
+    maximum_adjustment_chapters: int = 0
+
+    def __post_init__(self) -> None:
+        required = (
+            self.judge_id,
+            self.model_profile_ref,
+            self.model_version,
+            self.capability_pack_ref,
+            self.prompt_ref,
+            self.skill_ref,
+            self.reader_segment_scope,
+            self.platform_scope,
+            self.genre_scope,
+            self.subgenre_scope,
+            self.chapter_type_scope,
+            self.evaluation_contract_ref,
+            self.calibration_policy_ref,
+            self.decision_policy_ref,
+        )
+        if self.definition_version <= 0 or any(
+            not str(item).strip() for item in required
+        ):
+            raise ValueError("Reader Judge definition is incomplete")
+        if self.maximum_adjustment_chapters < 0:
+            raise ValueError("Reader Judge adjustment bound cannot be negative")
+        if (
+            self.mode is JudgeMode.BOUNDED_PRODUCTION
+            and self.maximum_adjustment_chapters <= 0
+        ):
+            raise ValueError("Bounded Production requires a positive Chapter bound")
+        # INVARIANT: ``mode`` is requested deployment; qualification is a
+        # separate append-only decision stream.  A definition may therefore
+        # be registered while UNQUALIFIED, but activation still calls
+        # ``require_mode_status`` and fails closed until evidence permits it.
+
+    @property
+    def definition_hash(self) -> str:
+        value = asdict(self)
+        value["mode"] = self.mode.value
+        value["status"] = self.status.value
+        return canonical_hash(value)
+
+    def to_dict(self) -> dict[str, Any]:
+        value = asdict(self)
+        value["mode"] = self.mode.value
+        value["status"] = self.status.value
+        value["definition_hash"] = self.definition_hash
+        return value
+
+
+@dataclass(frozen=True, slots=True)
+class ReaderJudgeResolutionScope:
+    project_id: str
+    book_id: str
+    platform: str
+    genre: str
+    subgenre: str
+    chapter_type: str
+    reader_segment: str
+    model_version: str
+
+    def __post_init__(self) -> None:
+        if any(not str(item).strip() for item in asdict(self).values()):
+            raise ValueError("Reader Judge resolution scope is incomplete")
+
+
+@dataclass(frozen=True, slots=True)
+class ReaderJudgeExecutionSnapshot:
+    snapshot_id: str
+    project_id: str
+    book_id: str
+    judge_id: str
+    judge_version_id: str
+    definition_hash: str
+    qualification_decision_id: str
+    calibration_profile_id: str
+    mode: JudgeMode
+    calibration_status: ReaderJudgeQualificationStatus
+    score_semantics: str
+    publish_blocking: bool
+    authority_commit_allowed: bool
+    human_review_recommended: bool
+    plan_adjustment_candidate_allowed: bool
+    maximum_adjustment_chapters: int
+    capability_pack_ref: str
+    prompt_ref: str
+    skill_ref: str
+    model_profile_ref: str
+    model_version: str
+    fallback_reason: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.snapshot_id or not self.project_id or not self.book_id:
+            raise ValueError("Reader Judge execution snapshot identity is incomplete")
+        if self.publish_blocking:
+            raise ValueError(
+                "Reader Judge publication blocking is not qualified in this slice"
+            )
+        if self.mode is JudgeMode.SHADOW and (
+            self.authority_commit_allowed or self.plan_adjustment_candidate_allowed
+        ):
+            raise ValueError(
+                "Shadow Judge cannot commit or create plan adjustment candidates"
+            )
+        if self.plan_adjustment_candidate_allowed and (
+            self.mode is not JudgeMode.BOUNDED_PRODUCTION
+            or self.maximum_adjustment_chapters <= 0
+        ):
+            raise ValueError("plan adjustment requires a bounded production snapshot")
+
+    def to_dict(self) -> dict[str, Any]:
+        value = asdict(self)
+        value["mode"] = self.mode.value
+        value["qualification_status"] = self.calibration_status.value
+        value["calibration_status"] = self.calibration_label
+        return value
+
+    @property
+    def calibration_label(self) -> str:
+        if not self.calibration_profile_id:
+            return "UNCALIBRATED"
+        return "CALIBRATED"
+
+
+def require_mode_status(
+    mode: JudgeMode, status: ReaderJudgeQualificationStatus
+) -> None:
+    if mode is JudgeMode.ADVISORY and status not in {
+        ReaderJudgeQualificationStatus.CALIBRATED,
+        ReaderJudgeQualificationStatus.QUALIFIED,
+    }:
+        raise KernelError(
+            "READER_JUDGE_ADVISORY_QUALIFICATION_REQUIRED",
+            "Advisory mode requires a Calibrated or Qualified decision",
+        )
+    if (
+        mode is JudgeMode.BOUNDED_PRODUCTION
+        and status is not ReaderJudgeQualificationStatus.QUALIFIED
+    ):
+        raise KernelError(
+            "READER_JUDGE_BOUNDED_QUALIFICATION_REQUIRED",
+            "Bounded Production requires a Qualified decision",
+        )
+
+
+def validate_qualification_transition(
+    current: ReaderJudgeQualificationStatus,
+    target: ReaderJudgeQualificationStatus,
+    *,
+    evidence_level: str,
+    sample_size: int,
+    minimum_sample_size: int,
+    drift_detected: bool,
+) -> None:
+    transition_reader_judge_qualification(
+        current,
+        target,
+        evidence_level=evidence_level,
+        sample_size=sample_size,
+        minimum_sample_size=minimum_sample_size,
+        drift_detected=drift_detected,
+    )
+
+
+def safe_shadow_snapshot(
+    scope: ReaderJudgeResolutionScope, *, reason: str
+) -> ReaderJudgeExecutionSnapshot:
+    payload = {**asdict(scope), "fallback_reason": reason, "mode": "SHADOW"}
+    return ReaderJudgeExecutionSnapshot(
+        snapshot_id="reader-judge-snapshot:"
+        + canonical_hash(payload).removeprefix("sha256:"),
+        project_id=scope.project_id,
+        book_id=scope.book_id,
+        judge_id="",
+        judge_version_id="",
+        definition_hash="",
+        qualification_decision_id="",
+        calibration_profile_id="",
+        mode=JudgeMode.SHADOW,
+        calibration_status=ReaderJudgeQualificationStatus.UNQUALIFIED,
+        score_semantics="RAW_SCORE",
+        publish_blocking=False,
+        authority_commit_allowed=False,
+        human_review_recommended=False,
+        plan_adjustment_candidate_allowed=False,
+        maximum_adjustment_chapters=0,
+        capability_pack_ref="",
+        prompt_ref="",
+        skill_ref="",
+        model_profile_ref="",
+        model_version=scope.model_version,
+        fallback_reason=reason,
+    )
+
+
+def scope_matches(expected: str, actual: str) -> bool:
+    return expected in {"*", actual}
+
+
+def canonical_hash(value: Any) -> str:
+    encoded = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode()
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+__all__ = [
+    "ReaderJudgeDefinition",
+    "ReaderJudgeExecutionSnapshot",
+    "ReaderJudgeResolutionScope",
+    "canonical_hash",
+    "require_mode_status",
+    "safe_shadow_snapshot",
+    "scope_matches",
+    "validate_qualification_transition",
+]
+
+~~~~
+
+### src/novel_forge/modules/publishing/release_gate.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=8b248bb8e1284ea959248524a39a207dae5e53c89e08948d4720e0c7b014eb31；[原字节文件](evidence/source/src/novel_forge/modules/publishing/release_gate.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from typing import Any
+
+
+def release_package_gate_evidence(gate: dict[str, Any], *, production: bool) -> dict[str, Any]:
+    content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
+    checks: list[dict[str, Any]] = []
+    issues: list[dict[str, Any]] = []
+    gate_specs = [
+        ("production_governance", "path", "passed"),
+        ("evaluation_gate", "path", "passed"),
+        ("provider_runtime_gate", "", "passed"),
+        ("platform_strategy_gate", "platform_strategy_pack_path", "passed"),
+        ("context_governance_gate", "gate_result_path", "passed"),
+        ("source_governance_gate", "gate_result_path", "passed"),
+    ]
+    for dimension, path_field, expected_status in gate_specs:
+        payload = content.get(dimension, {}) if isinstance(content.get(dimension, {}), dict) else {}
+        status = str(payload.get("status") or "missing")
+        path_value = str(payload.get(path_field) or "") if path_field else ""
+        blocking = bool(payload.get("blocking")) or status != expected_status
+        missing_path = bool(production and path_field and not path_value)
+        checks.append(
+            {
+                "dimension": dimension,
+                "status": status,
+                "expected_status": expected_status,
+                "path_field": path_field,
+                "path": path_value,
+                "blocking": bool(blocking or missing_path),
+            }
+        )
+        if production and (blocking or missing_path):
+            issues.append(
+                {
+                    "dimension": dimension,
+                    "severity": "critical" if dimension == "provider_runtime_gate" else "high",
+                    "message": f"production release requires {dimension} status {expected_status} with durable evidence",
+                    "current_status": status,
+                    "path": path_value,
+                    "recommendation": f"rerun or repair {dimension} before creating the release package",
+                }
+            )
+    release_quality = content.get("release_quality", {}) if isinstance(content.get("release_quality", {}), dict) else {}
+    for dimension in ["asset_integrity", "content_quality"]:
+        payload = release_quality.get(dimension, {}) if isinstance(release_quality.get(dimension, {}), dict) else {}
+        status = str(payload.get("status") or "missing")
+        path_value = str(payload.get("gate_result_path") or payload.get("path") or "")
+        blocking = bool(payload.get("blocking")) or status != "passed" or not path_value
+        checks.append({"dimension": f"release_{dimension}", "status": status, "expected_status": "passed", "path_field": "path", "path": path_value, "blocking": blocking})
+        if production and blocking:
+            issues.append({"dimension": f"release_{dimension}", "severity": "high", "message": f"production release requires passed {dimension} evidence", "current_status": status, "path": path_value, "recommendation": "repair the candidate and rerun release quality gates"})
+    return {
+        "publish_gate_report_id": _asset_id(gate),
+        "publish_gate_decision": content.get("decision", "blocked"),
+        "checks": checks,
+        "blocking": bool(issues),
+        "blocking_issues": issues,
+    }
+
+
+def _asset_id(data: dict[str, Any]) -> str:
+    return str(data.get("id") or data.get("asset_id") or "")
+
+~~~~
+
+### src/novel_forge/modules/book_design_authority/author_supervision.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=7f77ed600c163366e433e7874efae8c5356aaf071a4c32c315c0dd7a1d13d642；[原字节文件](evidence/source/src/novel_forge/modules/book_design_authority/author_supervision.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from typing import Any
+
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.production_execution.author_supervision import verify_book_supervision
+
+
+def proposed_supervision(cursor: Any, *, project_id: str, book_id: str, asset_version_id: str) -> dict[str, Any] | None:
+    cursor.execute("""SELECT op.command_payload #> '{payload,_author_supervision}'
+        FROM authority_book_design_candidate c JOIN authority_operation op ON op.operation_id=c.created_by_operation_id
+        WHERE c.project_id=%s AND c.book_id=%s AND c.asset_version_id=%s AND op.status='SUCCEEDED'""",
+        [project_id, book_id, asset_version_id])
+    row = cursor.fetchone()
+    if not row or not row[0]:
+        return None
+    supervision = dict(row[0])
+    verify_book_supervision(cursor, supervision)
+    if (supervision["project_id"], supervision["book_id"]) != (project_id, book_id):
+        raise KernelError("AUTHOR_SUPERVISION_BOOK_SCOPE", "Proposed design differs from frozen Book scope")
+    return supervision
+
+
+def approved_book_design_receipt(cursor: Any, *, project_id: str, book_id: str, asset_version_id: str) -> dict[str, Any] | None:
+    supervision = proposed_supervision(cursor, project_id=project_id, book_id=book_id, asset_version_id=asset_version_id)
+    if supervision is None:
+        return None
+    cursor.execute("""SELECT d.decision_id,d.decided_by,d.evidence,v.content_hash,c.status,op.operation_id
+        FROM authority_asset_decision d JOIN authority_operation op ON op.operation_id=d.decided_by_operation_id
+        JOIN authority_asset_version v ON v.asset_version_id=d.asset_version_id
+        JOIN authority_book_design_candidate c ON c.asset_version_id=v.asset_version_id
+        WHERE d.project_id=%s AND d.book_id=%s AND d.asset_version_id=%s AND d.decision='APPROVE'
+          AND op.status='SUCCEEDED' ORDER BY d.created_at DESC""", [project_id, book_id, asset_version_id])
+    row = cursor.fetchone()
+    if (row is None or row[1] != supervision["author_id"] or row[2].get("author_supervision") != supervision
+            or row[2].get("content_hash") != row[3] or row[4] not in {"APPROVED", "ACTIVE"}):
+        raise KernelError("AUTHOR_SUPERVISION_APPROVAL_REQUIRED", "BookDesign requires exact native author approval")
+    return {"mode": "AUTHOR_SUPERVISED", "asset_version_id": asset_version_id, "content_hash": row[3],
+            "decision_id": row[0], "author_id": row[1], "decision_operation_id": row[5],
+            "lifecycle": row[4], "literary_qualification": "NOT_PROVEN"}
+
+~~~~
+
+### src/novel_forge/modules/story_design_authority/author_supervision.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=13bb68e364ef9f5dd93674c9e576f0b53209299c9b1bdc6452d21fbc4d6c59fc；[原字节文件](evidence/source/src/novel_forge/modules/story_design_authority/author_supervision.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from typing import Any, Mapping
+
+from novel_forge.modules.authority_security import PrincipalType
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.production_execution.author_supervision import (
+    MODE, verify_frozen_supervision, verify_policy_provenance,
+)
+
+
+def candidate_supervision(cursor: Any, *, project_id: str, asset_version_id: str, author_input: bool = False) -> dict[str, Any] | None:
+    cursor.execute(
+        """SELECT v.content, v.content_hash, e.request_payload #> '{_production_execution,capability_runtime,routing_decision}'
+           FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+           JOIN authority_operation_output_asset output ON output.asset_version_id=v.asset_version_id
+           JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+           WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+             AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,status}'='AUTHOR_SUPERVISED_SELECTED'""",
+        [project_id, asset_version_id],
+    )
+    rows = cursor.fetchall()
+    if not rows:
+        cursor.execute("""SELECT state.source_kind,state.execution_evidence,v.content,v.content_hash
+            FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+            LEFT JOIN authority_story_design_version_state state ON state.asset_version_id=v.asset_version_id
+            WHERE a.project_id=%s AND v.asset_version_id=%s""", [project_id, asset_version_id])
+        row = cursor.fetchone()
+        if row and row[0] == "OPERATOR_AUTHORED" and row[1].get("author_supervision"):
+            from novel_forge.modules.production_execution.author_supervision import verify_book_supervision
+            receipt = dict(row[1]["author_supervision"])
+            verify_book_supervision(cursor, receipt)
+            return receipt
+        if not row or not author_input or not row[2].get("book_id"):
+            return None
+        if row[2].get("routing_eligibility") == "BENCHMARK_ONLY" or row[2].get("routing_bootstrap_authorization"):
+            raise KernelError("PLANNING_BENCHMARK_ONLY", "Diagnostic samples cannot become author input")
+        from novel_forge.modules.production_execution.author_supervision import selected_book_supervision
+        policy = selected_book_supervision(cursor, project_id=project_id, book_id=row[2]["book_id"])
+        return ({**policy, "asset_version_id": asset_version_id, "content_hash": row[3],
+                 "source_kind": "OPERATOR_AUTHORED"} if policy else None)
+    if len(rows) != 1:
+        raise KernelError("AUTHOR_SUPERVISION_CANDIDATE_AMBIGUOUS", "Candidate requires one exact supervised model receipt")
+    content, digest, decision = rows[0]
+    if content.get("routing_eligibility") == "BENCHMARK_ONLY" or content.get("routing_bootstrap_authorization"):
+        raise KernelError("PLANNING_BENCHMARK_ONLY", "Diagnostic samples cannot become author-supervised design")
+    if content.get("execution_evidence", {}).get("fixture_protocol_only"):
+        raise KernelError("AUTHOR_SUPERVISION_FIXTURE_FORBIDDEN", "Fixture evidence cannot enter supervised production")
+    verify_frozen_supervision(decision)
+    verify_policy_provenance(cursor, decision)
+    if content.get("book_id") != decision["task"]["work_id"]:
+        raise KernelError("AUTHOR_SUPERVISION_CANDIDATE_SCOPE", "Candidate and frozen route name different Books")
+    return {"mode": MODE, "asset_version_id": asset_version_id, "content_hash": digest,
+            "project_id": project_id, "book_id": content["book_id"],
+            "route_decision_id": decision["decision_id"], **decision["author_supervision"]}
+
+
+def validate_author_review(review: Any, *, principal: Any, supervision: Mapping[str, Any],
+                           asset_version_id: str, content_hash: str, cursor: Any = None) -> list[dict[str, Any]]:
+    principal.require("story_design.authority.execute", supervision["project_id"])
+    if (principal.principal_type is not PrincipalType.LOCAL_OPERATOR
+            or principal.principal_id != supervision.get("author_id", supervision.get("authorization", {}).get("author_id"))):
+        raise PermissionError("Only the scoped authenticated author may judge supervised design")
+    if (not isinstance(review, dict) or set(review) != {"asset_version_id", "content_hash", "decision", "reason", "findings"}
+            or review["asset_version_id"] != asset_version_id or review["content_hash"] != content_hash
+            or review["decision"] != "ACCEPT" or not isinstance(review["reason"], str) or not review["reason"].strip()
+            or not isinstance(review["findings"], list)):
+        raise KernelError("AUTHOR_SUPERVISION_EXACT_REVIEW_REQUIRED", "Author must review the exact candidate and record reasons")
+    ids = set()
+    for finding in review["findings"]:
+        if (not isinstance(finding, dict) or set(finding) != {"finding_id", "disposition", "reason"}
+                or not finding["finding_id"] or finding["finding_id"] in ids
+                or finding["disposition"] not in {"PRESERVE", "DISMISSED_WITH_EVIDENCE", "RESOLVED"}
+                or not isinstance(finding["reason"], str) or not finding["reason"].strip()):
+            raise KernelError("AUTHOR_SUPERVISION_UNRESOLVED_FINDING", "Every recorded dispute needs an explicit evidenced disposition")
+        ids.add(finding["finding_id"])
+    if cursor is None:
+        raise KernelError("AUTHOR_SUPERVISION_REVIEW_STORE_REQUIRED", "Author judgment requires native review evidence")
+    cursor.execute("""SELECT v.asset_version_id,v.content_hash,v.content->'evaluation'
+        FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+        JOIN authority_operation_output_asset output ON output.asset_version_id=v.asset_version_id
+        JOIN authority_operation op ON op.operation_id=output.operation_id AND op.project_id=a.project_id AND op.status='SUCCEEDED'
+        WHERE a.project_id=%s AND a.asset_type='narrative_design_evaluation'
+          AND v.content->>'candidate_asset_version_id'=%s AND v.content->>'candidate_content_hash'=%s
+          AND v.content->>'evaluation_purpose'='AUTHOR_ADVISORY'""", [supervision["project_id"], asset_version_id, content_hash])
+    receipts = []
+    dispositions = {f["finding_id"]: f for f in review["findings"]}
+    for version, digest, evaluation in cursor.fetchall():
+        receipts.append({"asset_version_id": version, "content_hash": digest, "purpose": "AUTHOR_ADVISORY"})
+        for profile in evaluation["evaluations"]:
+            for finding in profile["criteria"]:
+                if finding["verdict"] == "PASS":
+                    continue
+                finding_id = version + ":" + profile["layer"] + ":" + finding["criterion"]
+                if dispositions.get(finding_id, {}).get("disposition") not in {"RESOLVED", "DISMISSED_WITH_EVIDENCE"}:
+                    raise KernelError("AUTHOR_SUPERVISION_UNRESOLVED_FINDING", "Author must address model finding " + finding_id)
+    return receipts
+
+
+def supervised_state(state: Mapping[str, Any]) -> bool:
+    return (state.get("execution_evidence", {}).get("author_supervision", {}).get("mode") == MODE
+            and state.get("qualification") in {"STRUCTURALLY_VALID", "SEMANTICALLY_VALID"})
+
+
+def approved_design_receipt(cursor: Any, *, project_id: str, book_id: str,
+                            asset_version_id: str) -> dict[str, Any] | None:
+    cursor.execute(
+        """SELECT state.qualification, state.approval, state.freshness, candidate.content_hash,
+                  receipt.asset_version_id, receipt.content_hash, receipt.content, op.actor_id,
+                  state.execution_evidence, state.lifecycle
+           FROM authority_story_design_version_state state
+           JOIN authority_asset_version candidate ON candidate.asset_version_id=state.asset_version_id
+           JOIN authority_story_design_transition transition ON transition.project_id=state.project_id
+             AND transition.asset_version_id=state.asset_version_id AND transition.transition_type='APPROVE'
+           JOIN authority_operation op ON op.operation_id=transition.transition_operation_id AND op.status='SUCCEEDED'
+           JOIN authority_operation_output_asset output ON output.operation_id=op.operation_id
+           JOIN authority_asset_version receipt ON receipt.asset_version_id=output.asset_version_id
+           WHERE state.project_id=%s AND state.asset_version_id=%s
+             AND candidate.content->>'book_id'=%s ORDER BY transition.to_version DESC""",
+        [project_id, asset_version_id, book_id],
+    )
+    rows = cursor.fetchall()
+    if not rows or rows[0][0] == "QUALIFIED":
+        return None
+    row = rows[0]
+    evidence = row[6].get("evidence", {})
+    supervision = row[8].get("author_supervision", {})
+    review = evidence.get("author_review", {})
+    if (row[0:3] != ("SEMANTICALLY_VALID", "APPROVED", "CURRENT")
+            or supervision.get("mode") != MODE or evidence.get("author_supervision") != supervision
+            or row[7] != supervision.get("author_id", supervision.get("authorization", {}).get("author_id"))
+            or review.get("asset_version_id") != asset_version_id or review.get("content_hash") != row[3]
+            or review.get("decision") != "ACCEPT" or row[6].get("transition") != "APPROVE"):
+        raise KernelError("AUTHOR_SUPERVISION_APPROVAL_REQUIRED", "Design needs its exact native author decision")
+    return {"mode": MODE, "asset_version_id": asset_version_id, "content_hash": row[3],
+            "decision_asset_version_id": row[4], "decision_content_hash": row[5],
+            "author_id": row[7], "author_review": review, "lifecycle": row[9], "literary_qualification": "NOT_PROVEN"}
+
+
+def reusable_qualified_design_receipt(cursor: Any, *, project_id: str, book_id: str,
+                                      asset_version_id: str, generator: str) -> dict[str, Any]:
+    from .qualification import required_qualification_profiles
+    cursor.execute("""SELECT q.design_layer,q.profile_id,q.profile_version,q.profile_hash,
+        q.qualification_hash,q.evaluation_hash,e.evaluation_asset_version_id,v.content_hash
+        FROM authority_current_narrative_design_qualification q
+        JOIN authority_narrative_design_qualification e USING(qualification_id)
+        JOIN authority_asset_version v ON v.asset_version_id=q.asset_version_id
+        JOIN authority_operation op ON op.operation_id=q.source_operation_id AND op.project_id=q.project_id
+        WHERE q.project_id=%s AND q.book_id=%s AND q.asset_version_id=%s
+          AND q.freshness='CURRENT' AND q.qualification_status='PASS'
+          AND e.trust_boundary='INDEPENDENT' AND q.evaluator_execution_class='MODEL_PROVIDER'
+          AND e.provider_model_call_asset_version_id IS NOT NULL AND e.provider_model_call_content_hash IS NOT NULL
+          AND e.provider_evidence_hash IS NOT NULL AND e.provider_result_hash IS NOT NULL AND e.provider_route_snapshot_id IS NOT NULL
+          AND op.status IN ('WAITING_GATE','SUCCEEDED')
+          AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'
+        ORDER BY q.design_layer""", [project_id, book_id, asset_version_id])
+    rows = cursor.fetchall()
+    profiles = required_qualification_profiles(generator)
+    expected = {(p.layer.value,p.profile_id,p.profile_version,p.profile_hash) for p in profiles}
+    if len(rows) != len(expected) or {tuple(row[:4]) for row in rows} != expected:
+        raise KernelError("LONGFORM_DESIGN_QUALIFICATION_INCOMPLETE", "Existing strict design must retain all current real independent qualification receipts")
+    return {"mode":"STRICT_QUALIFIED", "asset_version_id":asset_version_id, "content_hash":rows[0][7],
+        "design_layer":generator, "lifecycle":"ACTIVE", "receipts":[dict(zip(
+            ("design_layer","profile_id","profile_version","profile_hash","qualification_hash","evaluation_hash","evaluation_asset_version_id"), row[:7])) for row in rows]}
+
+~~~~
+
+### src/novel_forge/modules/plan_change_authority/semantic_impact.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=d2673fb4f7c150524cbf0320dcff06d1ce3112f49c6c4826efc0cba169274d4b；[原字节文件](evidence/source/src/novel_forge/modules/plan_change_authority/semantic_impact.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from hashlib import sha256
+import json
+from typing import Any, Sequence
+
+from novel_forge.modules.command_kernel.errors import KernelError
+
+
+DISCOVERY_POLICY = {
+    "version": "bounded-plan-impact.v2",
+    "plan_limit": 128,
+    "prose_limit": 32,
+    "hypothesis_limit": 32,
+    "evidence_limit": 8,
+    "impact_limit": 64,
+    "prose_character_limit": 100_000,
+}
+
+
+def _digest(value: Any) -> str:
+    return sha256(
+        json.dumps(value, sort_keys=True, ensure_ascii=False).encode()
+    ).hexdigest()
+
+
+def _leaves(value: Any, pointer: str = "") -> list[tuple[str, str]]:
+    if isinstance(value, dict):
+        return [
+            leaf
+            for key, child in sorted(value.items())
+            for leaf in _leaves(
+                child, pointer + "/" + key.replace("~", "~0").replace("/", "~1")
+            )
+        ]
+    if isinstance(value, list):
+        return [
+            leaf
+            for index, child in enumerate(value)
+            for leaf in _leaves(child, f"{pointer}/{index}")
+        ]
+    return [(pointer, value)] if isinstance(value, str) else []
+
+
+def discover_semantic_impacts(
+    *,
+    target_asset_version_id: str,
+    proposed_asset_version_id: str,
+    changes: Sequence[dict[str, Any]],
+    plans: Sequence[dict[str, Any]],
+    accepted_prose: Sequence[dict[str, Any]],
+    coverage: dict[str, Any],
+) -> dict[str, Any]:
+    from .structured_retrieval import IDENTITY_FIELDS, changed_records, retrieve_structured_matches
+    structured_changes, omitted_changes = changed_records(list(changes))
+    structured_coverage = {}
+    terms = []
+    for change in changes:
+        for side in ("before", "after"):
+            for pointer, value in _leaves(change[side], "/" + change["field"]):
+                if pointer.rsplit("/", 1)[-1] not in IDENTITY_FIELDS and 4 <= len(value.strip()) <= 256:
+                    terms.append(
+                        {"side": side, "json_pointer": pointer, "value": value}
+                    )
+    hypotheses = []
+    matched_count = 0
+    for plan in plans:
+        if plan["asset_version_id"] in {
+            target_asset_version_id,
+            proposed_asset_version_id,
+        }:
+            continue
+        matches, structured_coverage[plan["asset_version_id"]] = retrieve_structured_matches(
+            plan, structured_changes, evidence_limit=DISCOVERY_POLICY["evidence_limit"], digest=_digest)
+        for pointer, value in _leaves(plan["content"]):
+            if len(matches) >= DISCOVERY_POLICY["evidence_limit"]:
+                break
+            for term in terms:
+                if term["value"] in value:
+                    matches.append(
+                        {
+                            "source_position": term,
+                            "asset_version_id": plan["asset_version_id"],
+                            "content_hash": plan["content_hash"],
+                            "json_pointer": pointer,
+                            "quote": term["value"],
+                            "value_hash": _digest(value),
+                            "start": value.index(term["value"]),
+                            "end": value.index(term["value"]) + len(term["value"]),
+                        }
+                    )
+                    if len(matches) >= DISCOVERY_POLICY["evidence_limit"]:
+                        break
+            if len(matches) >= DISCOVERY_POLICY["evidence_limit"]:
+                break
+        if not matches:
+            continue
+        matched_count += 1
+        if len(hypotheses) >= DISCOVERY_POLICY["hypothesis_limit"]:
+            continue
+        prose_evidence = []
+        for prose in accepted_prose:
+            for term in {item["source_position"]["value"] for item in matches if isinstance(item["source_position"]["value"], str)}:
+                start = prose["text"].find(term)
+                if (
+                    start >= 0
+                    and len(prose_evidence) < DISCOVERY_POLICY["evidence_limit"]
+                ):
+                    prose_evidence.append(
+                        {
+                            **{
+                                key: prose[key]
+                                for key in (
+                                    "acceptance_id",
+                                    "asset_version_id",
+                                    "content_hash",
+                                    "chapter_number",
+                                )
+                            },
+                            "start": start,
+                            "end": start + len(term),
+                            "quote": term,
+                        }
+                    )
+        snapshot = {key: value for key, value in plan.items() if key != "content"}
+        identity = {
+            "target": target_asset_version_id,
+            "proposed": proposed_asset_version_id,
+            "plan": snapshot,
+            "matches": matches,
+        }
+        hypotheses.append(
+            {
+                "hypothesis_id": "semantic-impact:" + _digest(identity),
+                "candidate": snapshot,
+                "relation": "SHARED_TYPED_STATE_CHANGE" if any(item.get("retrieval_kind") == "TYPED_STATE_CHANGE" for item in matches) else "SHARED_CHANGED_COMMITMENT",
+                "relation_status": "UNVERIFIED",
+                "confidence": None,
+                "confidence_basis": "TYPED_AND_LEXICAL_RETRIEVAL_NOT_CALIBRATED_CAUSAL_PROOF",
+                "plan_evidence": matches,
+                "accepted_prose_evidence": prose_evidence,
+                "uncertainty": [
+                    "shared wording may be incidental",
+                    "causal direction and relevance require Authority review",
+                    "identity overlap does not establish a dependency or entail a contradiction",
+                ],
+                "default_disposition": "PRESERVE_HISTORY"
+                if plan["execution_scope"] == "EXECUTED"
+                else "DEFER",
+            }
+        )
+    manifest = [
+        {key: value for key, value in item.items() if key not in {"content", "text"}}
+        for item in (*plans, *accepted_prose)
+    ]
+    return {
+        "schema_version": "inferred-plan-impact.v1",
+        "policy": dict(DISCOVERY_POLICY),
+        "source_asset_version_id": target_asset_version_id,
+        "proposed_asset_version_id": proposed_asset_version_id,
+        "corpus_manifest": manifest,
+        "corpus_digest": _digest(manifest),
+        "coverage": {
+            **coverage,
+            "matched_plan_count": matched_count,
+            "hypotheses_omitted": max(0, matched_count - len(hypotheses)),
+            "semantic_exhaustiveness": "NOT_PROVEN",
+            "structured_changes_omitted": omitted_changes,
+            "structured_plan_coverage": structured_coverage,
+            "uncovered": ["UNIDENTIFIED_PARAPHRASE", "UNEXTRACTED_STATE", "UNPROVIDED_CORPUS", "RETRIEVAL_TRUNCATION"],
+        },
+        "hypotheses": hypotheses,
+        "hard_dependency_created": False,
+    }
+
+
+def load_semantic_impact_discovery(
+    cursor: Any,
+    *,
+    project_id: str,
+    book_id: str,
+    target_asset_version_id: str,
+    proposed_asset_version_id: str,
+    changes: Sequence[dict[str, Any]],
+) -> dict[str, Any]:
+    cursor.execute(
+        """SELECT binding.asset_version_id, version.content_hash,
+                  binding.logical_key,binding.contract_type,binding.execution_scope,
+                  binding.version,binding.freshness,version.content,
+                  (SELECT active.asset_version_id FROM active_story_plan_version active
+                   WHERE active.project_id=binding.project_id AND active.book_id=binding.book_id
+                     AND active.logical_key=binding.logical_key)
+           FROM story_plan_binding binding
+           JOIN authority_asset_version version USING(asset_version_id)
+           WHERE binding.project_id=%s AND binding.book_id=%s
+             AND (binding.execution_scope='EXECUTED' OR EXISTS (
+               SELECT 1 FROM active_story_plan_version active WHERE active.binding_id=binding.binding_id))
+           ORDER BY binding.execution_scope='EXECUTED',binding.asset_version_id LIMIT %s""",
+        [project_id, book_id, DISCOVERY_POLICY["plan_limit"] + 1],
+    )
+    plan_rows = cursor.fetchall()
+    keys = (
+        "asset_version_id",
+        "content_hash",
+        "logical_key",
+        "contract_type",
+        "execution_scope",
+        "binding_version",
+        "freshness",
+        "content",
+        "active_asset_version_id",
+    )
+    plans = [
+        dict(zip(keys, row, strict=True))
+        for row in plan_rows[: DISCOVERY_POLICY["plan_limit"]]
+    ]
+    cursor.execute(
+        """SELECT accepted.acceptance_id, draft.asset_version_id,draft.content_hash,
+                  accepted.chapter_number,LEFT(draft.content->>'text',%s),LENGTH(draft.content->>'text')
+           FROM authority_book_chapter_acceptance accepted
+           JOIN authority_book_production book USING(book_run_id)
+           JOIN authority_asset_version outcome ON outcome.asset_version_id=accepted.chapter_outcome_asset_version_id
+           JOIN authority_asset_version draft ON draft.asset_version_id=outcome.content->>'accepted_draft_asset_version_id'
+           WHERE accepted.project_id=%s AND book.book_id=%s AND accepted.status='COMMITTED'
+           ORDER BY accepted.chapter_number DESC,accepted.acceptance_id LIMIT %s""",
+        [
+            DISCOVERY_POLICY["prose_character_limit"],
+            project_id,
+            book_id,
+            DISCOVERY_POLICY["prose_limit"] + 1,
+        ],
+    )
+    prose_rows = cursor.fetchall()
+    prose = [
+        dict(
+            zip(
+                (
+                    "acceptance_id",
+                    "asset_version_id",
+                    "content_hash",
+                    "chapter_number",
+                    "text",
+                    "text_length",
+                ),
+                row,
+                strict=True,
+            )
+        )
+        for row in prose_rows[: DISCOVERY_POLICY["prose_limit"]]
+        if isinstance(row[4], str)
+    ]
+    discovery = discover_semantic_impacts(
+        target_asset_version_id=target_asset_version_id,
+        proposed_asset_version_id=proposed_asset_version_id,
+        changes=changes,
+        plans=plans,
+        accepted_prose=prose,
+        coverage={
+            "plan_scan_truncated": len(plan_rows) > len(plans),
+            "prose_scan_truncated": len(prose_rows) > len(prose),
+            "prose_order": "LATEST_ACCEPTED_FIRST",
+            "plan_scan_count": len(plans),
+            "prose_scan_count": len(prose),
+            "prose_character_truncated_versions": [
+                item["asset_version_id"]
+                for item in prose
+                if item["text_length"] > len(item["text"])
+            ],
+        },
+    )
+    for hypothesis in discovery["hypotheses"]:
+        candidate = hypothesis["candidate"]
+        closure, truncated = bounded_dependency_snapshot(
+            cursor,
+            project_id=project_id,
+            book_id=book_id,
+            source=candidate["asset_version_id"],
+        )
+        hypothesis["declared_dependents"] = closure
+        hypothesis["dependency_scope_truncated"] = truncated
+    return discovery
+
+
+def bounded_dependency_snapshot(
+    cursor: Any, *, project_id: str, book_id: str, source: str
+) -> tuple[list[dict[str, Any]], bool]:
+    visited, frontier, result = {source}, [source], []
+    while frontier:
+        cursor.execute(
+            """SELECT DISTINCT binding.asset_version_id,version.content_hash,
+                       binding.execution_scope,binding.version,binding.freshness,
+                       binding.logical_key,binding.contract_type,
+                       (SELECT active.asset_version_id FROM active_story_plan_version active
+                        WHERE active.project_id=binding.project_id AND active.book_id=binding.book_id
+                          AND active.logical_key=binding.logical_key)
+               FROM asset_dependency_edge edge
+               JOIN story_plan_binding binding ON binding.asset_version_id=edge.dependent_asset_version_id
+               JOIN authority_asset_version version ON version.asset_version_id=binding.asset_version_id
+               WHERE edge.project_id=%s AND binding.project_id=%s AND binding.book_id=%s
+                 AND edge.source_asset_version_id=ANY(%s) AND edge.invalidation_policy<>'NONE'
+                 AND NOT binding.asset_version_id=ANY(%s)
+               ORDER BY binding.asset_version_id LIMIT %s""",
+            [
+                project_id,
+                project_id,
+                book_id,
+                frontier,
+                sorted(visited),
+                DISCOVERY_POLICY["impact_limit"] + 1,
+            ],
+        )
+        rows = cursor.fetchall()
+        if len(result) + len(rows) > DISCOVERY_POLICY["impact_limit"]:
+            return result, True
+        frontier = []
+        for row in rows:
+            item = dict(
+                zip(
+                    (
+                        "asset_version_id",
+                        "content_hash",
+                        "execution_scope",
+                        "binding_version",
+                        "freshness",
+                        "logical_key",
+                        "contract_type",
+                        "active_asset_version_id",
+                    ),
+                    row,
+                    strict=True,
+                )
+            )
+            result.append(item)
+            visited.add(item["asset_version_id"])
+            if item["execution_scope"] != "EXECUTED":
+                frontier.append(item["asset_version_id"])
+    return result, False
+
+
+def resolve_semantic_dispositions(
+    discovery: dict[str, Any], dispositions: Sequence[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    hypotheses = {
+        item["hypothesis_id"]: item for item in discovery.get("hypotheses", [])
+    }
+    resolved, seen, impacted = [], set(), set()
+    for disposition in dispositions:
+        hypothesis_id = disposition.get("hypothesis_id")
+        if hypothesis_id not in hypotheses or hypothesis_id in seen:
+            raise KernelError(
+                "PLAN_IMPACT_DISPOSITION_INVALID",
+                "disposition must bind one frozen hypothesis exactly once",
+            )
+        seen.add(hypothesis_id)
+        hypothesis = hypotheses[hypothesis_id]
+        outcome = disposition.get("disposition")
+        if (
+            outcome not in {"CONFIRMED", "FALSE_POSITIVE", "DEFER"}
+            or not str(disposition.get("rationale") or "").strip()
+        ):
+            raise KernelError(
+                "PLAN_IMPACT_DISPOSITION_INVALID",
+                "review requires a disposition and reason",
+            )
+        evidence = disposition.get("evidence") or []
+        if outcome in {"CONFIRMED", "FALSE_POSITIVE"} and (
+            not evidence
+            or any(
+                item
+                not in hypothesis["plan_evidence"]
+                + hypothesis["accepted_prose_evidence"]
+                for item in evidence
+            )
+        ):
+            raise KernelError(
+                "PLAN_IMPACT_EVIDENCE_INVALID",
+                "verified relation or false positive must cite exact frozen evidence",
+            )
+        if outcome == "CONFIRMED":
+            if hypothesis["candidate"]["execution_scope"] not in {
+                "PLANNED",
+                "SPECULATIVE",
+            }:
+                raise KernelError(
+                    "PLAN_IMPACT_FUTURE_ONLY",
+                    "inferred impacts cannot mutate executed or in-flight frozen plans",
+                )
+            if hypothesis.get("dependency_scope_truncated"):
+                raise KernelError(
+                    "PLAN_IMPACT_SCOPE_TOO_BROAD",
+                    "truncated dependency closure requires a narrower proposal",
+                )
+            impacted.update(
+                item["asset_version_id"]
+                for item in [
+                    hypothesis["candidate"],
+                    *hypothesis.get("declared_dependents", []),
+                ]
+                if item["execution_scope"] != "EXECUTED"
+            )
+        resolved.append(
+            {
+                **disposition,
+                "relation_status": "AUTHORITY_CONFIRMED"
+                if outcome == "CONFIRMED"
+                else "DISPROVEN"
+                if outcome == "FALSE_POSITIVE"
+                else "UNVERIFIED",
+            }
+        )
+    if len(impacted) > DISCOVERY_POLICY["impact_limit"]:
+        raise KernelError(
+            "PLAN_IMPACT_SCOPE_TOO_BROAD",
+            "confirmed impact union exceeds the bounded policy",
+        )
+    for hypothesis_id, hypothesis in hypotheses.items():
+        if hypothesis_id not in seen:
+            resolved.append(
+                {
+                    "hypothesis_id": hypothesis_id,
+                    "disposition": hypothesis["default_disposition"],
+                    "relation_status": "UNVERIFIED",
+                    "rationale": "no Authority confirmation; no inferred mutation",
+                }
+            )
+    return resolved
+
+
+def semantic_impact_projection(
+    *,
+    target_asset_version_id: str,
+    proposed_asset_version_id: str,
+    changes: Sequence[dict[str, Any]],
+    finding: dict[str, Any],
+    exact_dependencies: Sequence[dict[str, Any]],
+    accepted_sources: Sequence[dict[str, Any]],
+    uncovered_ranges: Sequence[dict[str, Any]],
+    confirmation_rationale: str,
+) -> dict[str, Any]:
+    citation_evidence = [
+        citation for member in finding["members"] for citation in member["evidence"]
+    ]
+    confidence = min((member["confidence"] for member in finding["members"]), default=0)
+    semantic = {
+        "asset_version_id": target_asset_version_id,
+        "proposed_asset_version_id": proposed_asset_version_id,
+        "status": "NEEDS_REVIEW",
+        "basis": "INFERRED_SEMANTIC_IMPACT",
+        "confidence": confidence,
+        "reason": confirmation_rationale,
+        "prose_evidence": citation_evidence,
+        "plan_positions": [
+            {
+                "target_asset_version_id": target_asset_version_id,
+                "proposed_asset_version_id": proposed_asset_version_id,
+                "json_pointer": "/"
+                + item["field"].replace("~", "~0").replace("/", "~1"),
+                "before": item["before"],
+                "after": item["after"],
+            }
+            for item in changes
+        ],
+        "human_confirmation_required": True,
+    }
+    required, review = [], [semantic]
+    preserve = [
+        {
+            "asset_version_id": source["asset_version_id"],
+            "status": "PRESERVE",
+            "basis": "ACCEPTED_HISTORY_READ_ONLY",
+            "text_hash": source["text_hash"],
+        }
+        for source in accepted_sources
+    ]
+    for dependency in exact_dependencies:
+        item = {
+            **dependency,
+            "basis": "EXACT_DECLARED_DEPENDENCY",
+            "conditional_on_approved_activation": True,
+        }
+        if dependency["execution_scope"] == "EXECUTED":
+            preserve.append({**item, "status": "PRESERVE"})
+        elif (
+            dependency["execution_scope"] == "PLANNED"
+            and dependency["requires_invalidation"]
+        ):
+            required.append({**item, "status": "MUST_CHANGE"})
+        else:
+            review.append({**item, "status": "NEEDS_REVIEW"})
+    unknown = [
+        {
+            **item,
+            "status": "UNKNOWN",
+            "basis": "UNPROVIDED_PROSE",
+            "reason": "unread text cannot support a semantic conclusion",
+        }
+        for item in uncovered_ranges
+    ]
+    return {
+        "schema_version": "plan-semantic-impact-projection.v1",
+        "classification": "INFERRED_REQUIRES_AUTHORITY_APPROVAL",
+        "required": required,
+        "needs_review": review,
+        "preserve": preserve,
+        "unknown": unknown,
+        "exact_dependency_closure": list(exact_dependencies),
+        "semantic_candidates": [semantic],
+        "hard_dependency_created": False,
+        "plan_activation_performed": False,
+    }
+
+
+def exact_plan_dependency_closure(
+    cursor: Any, *, project_id: str, book_id: str, target_asset_version_id: str
+) -> list[dict[str, Any]]:
+    cursor.execute(
+        """WITH RECURSIVE closure(asset_version_id,path,policies) AS (
+        SELECT dependent_asset_version_id, ARRAY[source_asset_version_id,dependent_asset_version_id]::TEXT[], ARRAY[invalidation_policy]::TEXT[]
+        FROM asset_dependency_edge WHERE project_id=%s AND source_asset_version_id=%s AND invalidation_policy<>'NONE'
+        UNION ALL
+        SELECT edge.dependent_asset_version_id, closure.path || edge.dependent_asset_version_id, closure.policies || edge.invalidation_policy
+        FROM closure JOIN asset_dependency_edge edge ON edge.source_asset_version_id=closure.asset_version_id AND edge.project_id=%s
+        WHERE NOT edge.dependent_asset_version_id=ANY(closure.path) AND edge.invalidation_policy<>'NONE'
+    ) SELECT closure.asset_version_id, binding.execution_scope, BOOL_OR('MARK_STALE'=ANY(closure.policies)), ARRAY_AGG(DISTINCT closure.path::TEXT)
+      FROM closure JOIN story_plan_binding binding ON binding.asset_version_id=closure.asset_version_id AND binding.project_id=%s AND binding.book_id=%s
+      GROUP BY closure.asset_version_id,binding.execution_scope ORDER BY closure.asset_version_id""",
+        [project_id, target_asset_version_id, project_id, project_id, book_id],
+    )
+    return [
+        {
+            "asset_version_id": row[0],
+            "execution_scope": row[1],
+            "requires_invalidation": row[2],
+            "dependency_paths": row[3],
+        }
+        for row in cursor.fetchall()
+    ]
+
+~~~~
+
+### src/novel_forge/modules/hierarchical_planning/realization_domain.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=61b4cb5059f222a62349482305ec01fb6ab3ee291f246cc0f50ecfa1df01dc79；[原字节文件](evidence/source/src/novel_forge/modules/hierarchical_planning/realization_domain.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from enum import StrEnum
+import hashlib
+import json
+from typing import Any, Mapping
+
+from novel_forge.modules.command_kernel.errors import KernelError
+
+NARRATIVE_REALIZATION_SCHEMA_VERSION = "narrative-realization-contract.v1"
+NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION = "narrative-realization-proof.v1"
+
+
+def realization_hash(value: Any) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def _json_value(value: Any) -> Any:
+    if isinstance(value, StrEnum):
+        return value.value
+    if isinstance(value, tuple):
+        return [_json_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _json_value(item) for key, item in value.items()}
+    return value
+
+
+def _required(value: Any, field: str) -> str:
+    normalized = str(value or "").strip()
+    if not normalized:
+        raise KernelError("NARRATIVE_REALIZATION_INVALID", f"{field} is required")
+    return normalized
+
+
+def _hash(value: Any, field: str) -> str:
+    normalized = _required(value, field)
+    if len(normalized) != 71 or not normalized.startswith("sha256:"):
+        raise KernelError(
+            "NARRATIVE_REALIZATION_INVALID", f"{field} must be SHA-256 bound"
+        )
+    return normalized
+
+
+def _strings(value: Any, field: str, *, allow_empty: bool = False) -> tuple[str, ...]:
+    if not isinstance(value, list) or (not allow_empty and not value):
+        raise KernelError("NARRATIVE_REALIZATION_INVALID", f"{field} must be an array")
+    result = tuple(_required(item, f"{field}[]") for item in value)
+    if len(set(result)) != len(result):
+        raise KernelError(
+            "NARRATIVE_REALIZATION_INVALID", f"{field} must contain unique values"
+        )
+    return result
+
+
+class NarrativeRealizationLifecycle(StrEnum):
+    PROPOSED = "PROPOSED"
+    QUALIFIED = "QUALIFIED"
+    APPROVED = "APPROVED"
+    FROZEN = "FROZEN"
+    EXECUTED = "EXECUTED"
+    REJECTED = "REJECTED"
+    STALE = "STALE"
+    SUPERSEDED = "SUPERSEDED"
+
+
+class NarrativeRealizationCoverage(StrEnum):
+    PLANNED = "PLANNED"
+    OBSERVED = "OBSERVED"
+    ACCEPTED = "ACCEPTED"
+    DEVIATED = "DEVIATED"
+    NOT_OBSERVED = "NOT_OBSERVED"
+
+
+@dataclass(frozen=True, slots=True)
+class AcceptedBoundaryBinding:
+    accepted_through_chapter: int
+    story_state_version_id: str
+    story_state_content_hash: str
+    canon_version_id: str
+    canon_content_hash: str
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "AcceptedBoundaryBinding":
+        if set(value) != {
+            "accepted_through_chapter",
+            "story_state_version_id",
+            "story_state_content_hash",
+            "canon_version_id",
+            "canon_content_hash",
+        }:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "Accepted Boundary fields must match the contract exactly",
+            )
+        chapter = value.get("accepted_through_chapter")
+        if not isinstance(chapter, int) or isinstance(chapter, bool) or chapter < 0:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "accepted_through_chapter must be a non-negative integer",
+            )
+        result = cls(
+            accepted_through_chapter=chapter,
+            story_state_version_id=_required(
+                value.get("story_state_version_id"), "story_state_version_id"
+            ),
+            story_state_content_hash=_hash(
+                value.get("story_state_content_hash"), "story_state_content_hash"
+            ),
+            canon_version_id=_required(
+                value.get("canon_version_id"), "canon_version_id"
+            ),
+            canon_content_hash=_hash(
+                value.get("canon_content_hash"), "canon_content_hash"
+            ),
+        )
+        return result
+
+
+@dataclass(frozen=True, slots=True)
+class ArcPlanBinding:
+    arc_id: str
+    asset_version_id: str
+    content_hash: str
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "ArcPlanBinding":
+        if set(value) != {"arc_id", "asset_version_id", "content_hash"}:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "Arc binding fields must match the contract exactly",
+            )
+        result = cls(
+            arc_id=_required(value.get("arc_id"), "arc_id"),
+            asset_version_id=_required(
+                value.get("asset_version_id"), "arc asset_version_id"
+            ),
+            content_hash=_hash(value.get("content_hash"), "arc content_hash"),
+        )
+        return result
+
+
+@dataclass(frozen=True, slots=True)
+class PlannedStateDelta:
+    state_kind: str
+    entity_id: str
+    from_state: str
+    to_state: str
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "PlannedStateDelta":
+        if set(value) != {"state_kind", "entity_id", "from_state", "to_state"}:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "planned state delta fields must match the contract exactly",
+            )
+        return cls(
+            state_kind=_required(value.get("state_kind"), "state_kind"),
+            entity_id=_required(value.get("entity_id"), "entity_id"),
+            from_state=_required(value.get("from_state"), "from_state"),
+            to_state=_required(value.get("to_state"), "to_state"),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class KnowledgeBoundary:
+    actor_knows: tuple[str, ...]
+    reader_may_learn: tuple[str, ...]
+    forbidden_disclosures: tuple[str, ...]
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "KnowledgeBoundary":
+        if set(value) != {
+            "actor_knows",
+            "reader_may_learn",
+            "forbidden_disclosures",
+        }:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "knowledge boundary fields must match the contract exactly",
+            )
+        result = cls(
+            actor_knows=_strings(value.get("actor_knows"), "actor_knows"),
+            reader_may_learn=_strings(
+                value.get("reader_may_learn"), "reader_may_learn"
+            ),
+            forbidden_disclosures=_strings(
+                value.get("forbidden_disclosures"), "forbidden_disclosures"
+            ),
+        )
+        if set(result.reader_may_learn) & set(result.forbidden_disclosures):
+            raise KernelError(
+                "REALIZATION_KNOWLEDGE_BOUNDARY_INVALID",
+                "a disclosure cannot be both permitted and forbidden",
+            )
+        return result
+
+
+@dataclass(frozen=True, slots=True)
+class NarrativeRealizationEvent:
+    event_id: str
+    slice_id: str
+    chapter_number: int
+    causes: tuple[str, ...]
+    actor_ref: str
+    motivation: str
+    preconditions: tuple[str, ...]
+    knowledge_boundary: KnowledgeBoundary
+    action: str
+    decision: str
+    resistance: str
+    consequence: str
+    state_deltas: tuple[PlannedStateDelta, ...]
+    disclosures: tuple[str, ...]
+    obligation_actions: tuple[str, ...]
+    arc_contributions: tuple[str, ...]
+    irreversible_change: str
+    next_event_ids: tuple[str, ...]
+    required: bool
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "NarrativeRealizationEvent":
+        allowed = {
+            "event_id",
+            "slice_id",
+            "chapter_number",
+            "causes",
+            "actor_ref",
+            "motivation",
+            "preconditions",
+            "knowledge_boundary",
+            "action",
+            "decision",
+            "resistance",
+            "consequence",
+            "state_deltas",
+            "disclosures",
+            "obligation_actions",
+            "arc_contributions",
+            "irreversible_change",
+            "next_event_ids",
+            "required",
+        }
+        if set(value) != allowed:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "realization event fields must match the contract exactly",
+            )
+        chapter = value.get("chapter_number")
+        if not isinstance(chapter, int) or isinstance(chapter, bool) or chapter <= 0:
+            raise KernelError(
+                "REALIZATION_SLICE_INVALID", "event chapter_number must be positive"
+            )
+        boundary = value.get("knowledge_boundary")
+        deltas = value.get("state_deltas")
+        if (
+            not isinstance(boundary, Mapping)
+            or not isinstance(deltas, list)
+            or not deltas
+        ):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "event knowledge boundary and state deltas are required",
+            )
+        if not isinstance(value.get("required"), bool):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID", "event required must be boolean"
+            )
+        result = cls(
+            event_id=_required(value.get("event_id"), "event_id"),
+            slice_id=_required(value.get("slice_id"), "slice_id"),
+            chapter_number=chapter,
+            causes=_strings(value.get("causes"), "causes", allow_empty=True),
+            actor_ref=_required(value.get("actor_ref"), "actor_ref"),
+            motivation=_required(value.get("motivation"), "motivation"),
+            preconditions=_strings(value.get("preconditions"), "preconditions"),
+            knowledge_boundary=KnowledgeBoundary.from_mapping(boundary),
+            action=_required(value.get("action"), "action"),
+            decision=_required(value.get("decision"), "decision"),
+            resistance=_required(value.get("resistance"), "resistance"),
+            consequence=_required(value.get("consequence"), "consequence"),
+            state_deltas=tuple(PlannedStateDelta.from_mapping(item) for item in deltas),
+            disclosures=_strings(value.get("disclosures"), "disclosures"),
+            obligation_actions=_strings(
+                value.get("obligation_actions"), "obligation_actions"
+            ),
+            arc_contributions=_strings(
+                value.get("arc_contributions"), "arc_contributions"
+            ),
+            irreversible_change=_required(
+                value.get("irreversible_change"), "irreversible_change"
+            ),
+            next_event_ids=_strings(
+                value.get("next_event_ids"), "next_event_ids", allow_empty=True
+            ),
+            required=bool(value["required"]),
+        )
+        disclosures = set(result.disclosures)
+        if not disclosures.issubset(set(result.knowledge_boundary.reader_may_learn)):
+            raise KernelError(
+                "REALIZATION_KNOWLEDGE_BOUNDARY_INVALID",
+                "planned disclosures must be explicitly permitted for the reader",
+            )
+        if disclosures & set(result.knowledge_boundary.forbidden_disclosures):
+            raise KernelError(
+                "REALIZATION_KNOWLEDGE_BOUNDARY_INVALID",
+                "planned disclosures intersect the frozen forbidden boundary",
+            )
+        return result
+
+    def to_dict(self) -> dict[str, Any]:
+        return _json_value(asdict(self))
+
+
+@dataclass(frozen=True, slots=True)
+class NarrativeRealizationProof:
+    covered_event_ids: tuple[str, ...]
+    covered_parent_objectives: tuple[str, ...]
+    canon_state_legal: bool
+    character_motivation_legal: bool
+    world_rules_legal: bool
+    knowledge_boundaries_legal: bool
+    causal_escalation_proven: bool
+    state_transitions_covered: bool
+    obligations_covered: bool
+    arc_contributions_covered: bool
+    narrative_load_legal: bool
+    chapter_decomposition_legal: bool
+    semantic_evaluation_asset_version_id: str
+    semantic_evaluation_hash: str
+    schema_version: str = NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "NarrativeRealizationProof":
+        expected = {
+            "schema_version",
+            "covered_event_ids",
+            "covered_parent_objectives",
+            "canon_state_legal",
+            "character_motivation_legal",
+            "world_rules_legal",
+            "knowledge_boundaries_legal",
+            "causal_escalation_proven",
+            "state_transitions_covered",
+            "obligations_covered",
+            "arc_contributions_covered",
+            "narrative_load_legal",
+            "chapter_decomposition_legal",
+            "semantic_evaluation_asset_version_id",
+            "semantic_evaluation_hash",
+        }
+        if (
+            set(value) != expected
+            or value.get("schema_version") != NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION
+        ):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "realization proof fields/schema must match exactly",
+            )
+        boolean_fields = tuple(
+            field
+            for field in expected
+            if field
+            not in {
+                "schema_version",
+                "covered_event_ids",
+                "covered_parent_objectives",
+                "semantic_evaluation_asset_version_id",
+                "semantic_evaluation_hash",
+            }
+        )
+        if any(not isinstance(value.get(field), bool) for field in boolean_fields):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "realization proof decisions must be boolean",
+            )
+        if any(value.get(field) is not True for field in boolean_fields):
+            raise KernelError(
+                "REALIZATION_PROOF_FAILED",
+                "all deterministic and independent proof gates must pass",
+            )
+        return cls(
+            covered_event_ids=_strings(
+                value.get("covered_event_ids"), "covered_event_ids"
+            ),
+            covered_parent_objectives=_strings(
+                value.get("covered_parent_objectives"), "covered_parent_objectives"
+            ),
+            **{field: bool(value[field]) for field in boolean_fields},
+            semantic_evaluation_asset_version_id=_required(
+                value.get("semantic_evaluation_asset_version_id"),
+                "semantic_evaluation_asset_version_id",
+            ),
+            semantic_evaluation_hash=_hash(
+                value.get("semantic_evaluation_hash"), "semantic_evaluation_hash"
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class NarrativeRealizationContract:
+    realization_id: str
+    project_id: str
+    book_id: str
+    chapter_group_plan_version_id: str
+    chapter_group_content_hash: str
+    chapter_range: tuple[int, int]
+    foundation_set_digest: str
+    accepted_boundary: AcceptedBoundaryBinding
+    arc_working_set_digest: str
+    arc_plan_bindings: tuple[ArcPlanBinding, ...]
+    events: tuple[NarrativeRealizationEvent, ...]
+    proof: NarrativeRealizationProof
+    content_asset_version_id: str
+    content_hash: str
+    proof_asset_version_id: str
+    proof_hash: str
+    lifecycle: NarrativeRealizationLifecycle
+    contract_digest: str
+    schema_version: str = NARRATIVE_REALIZATION_SCHEMA_VERSION
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "NarrativeRealizationContract":
+        allowed = {
+            "schema_version",
+            "realization_id",
+            "project_id",
+            "book_id",
+            "chapter_group_plan_version_id",
+            "chapter_group_content_hash",
+            "chapter_range",
+            "foundation_set_digest",
+            "accepted_boundary",
+            "arc_working_set_digest",
+            "arc_plan_bindings",
+            "events",
+            "proof",
+            "content_asset_version_id",
+            "content_hash",
+            "proof_asset_version_id",
+            "proof_hash",
+            "lifecycle",
+        }
+        if (
+            set(value) != allowed
+            or value.get("schema_version") != NARRATIVE_REALIZATION_SCHEMA_VERSION
+        ):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "Narrative Realization fields/schema must match exactly",
+            )
+        chapter_range = value.get("chapter_range")
+        if not isinstance(chapter_range, list) or len(chapter_range) != 2:
+            raise KernelError(
+                "REALIZATION_SLICE_INVALID",
+                "realization chapter_range requires start and end",
+            )
+        start, end = chapter_range
+        if (
+            not isinstance(start, int)
+            or isinstance(start, bool)
+            or not isinstance(end, int)
+            or isinstance(end, bool)
+            or start <= 0
+            or end < start
+        ):
+            raise KernelError(
+                "REALIZATION_SLICE_INVALID", "realization chapter range is invalid"
+            )
+        raw_arcs = value.get("arc_plan_bindings")
+        raw_events = value.get("events")
+        raw_boundary = value.get("accepted_boundary")
+        raw_proof = value.get("proof")
+        if (
+            not isinstance(raw_arcs, list)
+            or not raw_arcs
+            or not isinstance(raw_events, list)
+            or not raw_events
+            or not isinstance(raw_boundary, Mapping)
+            or not isinstance(raw_proof, Mapping)
+        ):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "realization requires Arc, event, boundary and proof contracts",
+            )
+        arcs = tuple(ArcPlanBinding.from_mapping(item) for item in raw_arcs)
+        if len({item.arc_id for item in arcs}) != len(arcs) or len(
+            {item.asset_version_id for item in arcs}
+        ) != len(arcs):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID", "Arc bindings must be unique"
+            )
+        events = tuple(
+            NarrativeRealizationEvent.from_mapping(item) for item in raw_events
+        )
+        proof = NarrativeRealizationProof.from_mapping(raw_proof)
+        _validate_event_chain(events, start=start, end=end)
+        event_ids = tuple(item.event_id for item in events)
+        if set(proof.covered_event_ids) != set(event_ids) or len(
+            proof.covered_event_ids
+        ) != len(event_ids):
+            raise KernelError(
+                "REALIZATION_PROOF_INCOMPLETE",
+                "proof must cover every planned realization event exactly",
+            )
+        body = dict(value)
+        contract_digest = realization_hash(body)
+        accepted_boundary = AcceptedBoundaryBinding.from_mapping(raw_boundary)
+        if accepted_boundary.accepted_through_chapter != start - 1:
+            raise KernelError(
+                "REALIZATION_SLICE_INVALID",
+                "realization must begin immediately after its accepted boundary",
+            )
+        return cls(
+            realization_id=_required(value.get("realization_id"), "realization_id"),
+            project_id=_required(value.get("project_id"), "project_id"),
+            book_id=_required(value.get("book_id"), "book_id"),
+            chapter_group_plan_version_id=_required(
+                value.get("chapter_group_plan_version_id"),
+                "chapter_group_plan_version_id",
+            ),
+            chapter_group_content_hash=_hash(
+                value.get("chapter_group_content_hash"),
+                "chapter_group_content_hash",
+            ),
+            chapter_range=(start, end),
+            foundation_set_digest=_hash(
+                value.get("foundation_set_digest"), "foundation_set_digest"
+            ),
+            accepted_boundary=accepted_boundary,
+            arc_working_set_digest=_hash(
+                value.get("arc_working_set_digest"), "arc_working_set_digest"
+            ),
+            arc_plan_bindings=arcs,
+            events=events,
+            proof=proof,
+            content_asset_version_id=_required(
+                value.get("content_asset_version_id"), "content_asset_version_id"
+            ),
+            content_hash=_hash(value.get("content_hash"), "content_hash"),
+            proof_asset_version_id=_required(
+                value.get("proof_asset_version_id"), "proof_asset_version_id"
+            ),
+            proof_hash=_hash(value.get("proof_hash"), "proof_hash"),
+            lifecycle=NarrativeRealizationLifecycle(str(value.get("lifecycle") or "")),
+            contract_digest=contract_digest,
+        )
+
+    @property
+    def event_ids(self) -> tuple[str, ...]:
+        return tuple(item.event_id for item in self.events)
+
+    def to_dict(self) -> dict[str, Any]:
+        value = asdict(self)
+        value.pop("contract_digest")
+        return _json_value(value)
+
+
+def _validate_event_chain(
+    events: tuple[NarrativeRealizationEvent, ...], *, start: int, end: int
+) -> None:
+    ids = [item.event_id for item in events]
+    if len(set(ids)) != len(ids):
+        raise KernelError(
+            "REALIZATION_EVENT_IDENTITY_INVALID", "event identities must be unique"
+        )
+    positions = {event_id: index for index, event_id in enumerate(ids)}
+    chapters = {item.chapter_number for item in events}
+    if any(item.chapter_number < start or item.chapter_number > end for item in events):
+        raise KernelError(
+            "REALIZATION_SLICE_INVALID",
+            "every event must belong to the declared ChapterGroup range",
+        )
+    if chapters != set(range(start, end + 1)):
+        raise KernelError(
+            "REALIZATION_SLICE_INVALID",
+            "realization events must cover every Chapter slice in the group",
+        )
+    for index, event in enumerate(events):
+        if index and event.required and not event.causes:
+            raise KernelError(
+                "REALIZATION_CAUSALITY_INVALID",
+                "every non-root required event needs an earlier cause",
+            )
+        for cause in event.causes:
+            if cause not in positions or positions[cause] >= index:
+                raise KernelError(
+                    "REALIZATION_CAUSALITY_INVALID",
+                    "event causes must identify earlier planned events",
+                )
+            if event.event_id not in events[positions[cause]].next_event_ids:
+                raise KernelError(
+                    "REALIZATION_CAUSALITY_INVALID",
+                    "cause/next-event references must agree in both directions",
+                )
+        for following in event.next_event_ids:
+            if following not in positions or positions[following] <= index:
+                raise KernelError(
+                    "REALIZATION_CAUSALITY_INVALID",
+                    "next-event references must identify later planned events",
+                )
+
+
+def validate_narrative_realization_event_chain(
+    events: list[Mapping[str, Any]], *, chapter_range: tuple[int, int]
+) -> tuple[NarrativeRealizationEvent, ...]:
+
+    typed = tuple(NarrativeRealizationEvent.from_mapping(item) for item in events)
+    if not typed:
+        raise KernelError(
+            "NARRATIVE_REALIZATION_INVALID",
+            "ChapterGroup requires at least one causal realization event",
+        )
+    _validate_event_chain(typed, start=chapter_range[0], end=chapter_range[1])
+    return typed
+
+
+__all__ = [
+    "AcceptedBoundaryBinding",
+    "ArcPlanBinding",
+    "NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION",
+    "NARRATIVE_REALIZATION_SCHEMA_VERSION",
+    "NarrativeRealizationContract",
+    "NarrativeRealizationCoverage",
+    "NarrativeRealizationEvent",
+    "NarrativeRealizationLifecycle",
+    "NarrativeRealizationProof",
+    "PlannedStateDelta",
+    "realization_hash",
+    "validate_narrative_realization_event_chain",
+]
+
+~~~~
+
+### src/novel_forge/modules/hierarchical_planning/realization_application.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=b690cca0f183790b4e28d16bb7220debf987d3731b20d81bb978598a870049b4；[原字节文件](evidence/source/src/novel_forge/modules/hierarchical_planning/realization_application.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from dataclasses import dataclass
+import hashlib
+from typing import Any
+from uuid import uuid4
+
+from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.service import (
+    AdmissionContext,
+    TransactionCheckpoint,
+    execute_transaction_command,
+)
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.narrative_realization_repositories import (
+    NarrativeRealizationRepository,
+)
+
+from .definitions import (
+    NARRATIVE_REALIZATION_DEFINITION_VERSION,
+    NARRATIVE_REALIZATION_HANDLER_KEY,
+    NARRATIVE_REALIZATION_OPERATIONS,
+    narrative_realization_definitions,
+)
+from .realization_domain import (
+    NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION,
+    NARRATIVE_REALIZATION_SCHEMA_VERSION,
+    NarrativeRealizationContract,
+    NarrativeRealizationLifecycle,
+)
+from novel_forge.modules.story_design_authority import required_qualification_profiles
+from novel_forge.modules.story_design_authority.qualification import (
+    NarrativeDesignLayer,
+)
+from novel_forge.storage.foundation_repositories import require_current_foundation_set
+
+
+_REALIZATION_PROOF_CRITERIA = {
+    "CANON_STATE_LEGAL": "canon_state_legal",
+    "CHARACTER_MOTIVATION_LEGAL": "character_motivation_legal",
+    "WORLD_RULES_LEGAL": "world_rules_legal",
+    "KNOWLEDGE_BOUNDARIES_LEGAL": "knowledge_boundaries_legal",
+    "CAUSAL_ESCALATION": "causal_escalation_proven",
+    "STATE_TRANSITION_COVERAGE": "state_transitions_covered",
+    "OBLIGATION_LIFECYCLE": "obligations_covered",
+    "ARC_CONTRIBUTION_COVERAGE": "arc_contributions_covered",
+    "NARRATIVE_LOAD_LEGAL": "narrative_load_legal",
+    "CHAPTER_DECOMPOSITION_LEGAL": "chapter_decomposition_legal",
+}
+
+
+def _realization_proof_decisions(evaluation: dict[str, Any]) -> dict[str, bool]:
+
+    criteria = evaluation.get("criteria")
+    if not isinstance(criteria, list):
+        raise KernelError(
+            "REALIZATION_PROOF_INCOMPLETE",
+            "Narrative Realization semantic proof has no criterion evidence",
+        )
+    by_id: dict[str, dict[str, Any]] = {}
+    for raw in criteria:
+        if not isinstance(raw, dict):
+            raise KernelError(
+                "REALIZATION_PROOF_INCOMPLETE",
+                "Narrative Realization semantic criterion is not typed",
+            )
+        criterion = str(raw.get("criterion") or "")
+        if not criterion or criterion in by_id:
+            raise KernelError(
+                "REALIZATION_PROOF_INCOMPLETE",
+                "Narrative Realization semantic criteria are ambiguous",
+            )
+        by_id[criterion] = raw
+    if set(by_id) != set(_REALIZATION_PROOF_CRITERIA):
+        raise KernelError(
+            "REALIZATION_PROOF_INCOMPLETE",
+            "Narrative Realization proof criteria differ from current policy",
+        )
+    decisions: dict[str, bool] = {}
+    for criterion, field in _REALIZATION_PROOF_CRITERIA.items():
+        receipt = by_id[criterion]
+        evidence_refs = receipt.get("evidence_refs")
+        if (
+            str(receipt.get("verdict") or "") != "PASS"
+            or not str(receipt.get("rationale") or "").strip()
+            or not isinstance(evidence_refs, list)
+            or not evidence_refs
+            or any(not str(item).strip() for item in evidence_refs)
+        ):
+            raise KernelError(
+                "REALIZATION_PROOF_FAILED",
+                f"Narrative Realization criterion did not pass: {criterion}",
+            )
+        decisions[field] = True
+    return decisions
+
+
+@dataclass(frozen=True, slots=True)
+class NarrativeRealizationCommand:
+    definition_name: str
+    project_id: str
+    workspace_id: str
+    book_id: str
+    actor_id: str
+    realization_id: str
+    expected_version: int
+    idempotency_key: str
+    trace_id: str
+    correlation_id: str
+    reason: str
+    contract: NarrativeRealizationContract | None = None
+    causation_operation_id: str = ""
+
+    def __post_init__(self) -> None:
+        if self.definition_name not in NARRATIVE_REALIZATION_OPERATIONS:
+            raise ValueError("unsupported Narrative Realization command")
+        required = (
+            self.project_id,
+            self.workspace_id,
+            self.book_id,
+            self.actor_id,
+            self.realization_id,
+            self.idempotency_key,
+            self.trace_id,
+            self.correlation_id,
+            self.reason,
+        )
+        if any(not value.strip() for value in required) or self.expected_version < 0:
+            raise ValueError("Narrative Realization command is incomplete")
+        qualifying = self.definition_name == "planning.realization.qualify"
+        if qualifying != (self.contract is not None):
+            raise ValueError("only qualification supplies the immutable contract")
+        if self.contract is not None and (
+            self.contract.realization_id != self.realization_id
+            or self.contract.project_id != self.project_id
+            or self.contract.book_id != self.book_id
+        ):
+            raise ValueError(
+                "Narrative Realization command scope differs from contract"
+            )
+
+
+class PostgresNarrativeRealizationApplication:
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        application_build_id: str,
+        commit_sha: str,
+        fault_injector: TransactionCheckpoint | None = None,
+    ) -> None:
+        if not database_url or not application_build_id or len(commit_sha) != 40:
+            raise ValueError(
+                "Narrative Realization application requires PostgreSQL/build identity"
+            )
+        self.database_url = database_url
+        self.application_build_id = application_build_id
+        self.commit_sha = commit_sha
+        self.fault_injector = fault_injector
+
+    def execute(
+        self, command: NarrativeRealizationCommand, *, principal: Principal
+    ) -> dict[str, Any]:
+        principal.require("book.authority.execute", command.project_id)
+        if principal.principal_id != command.actor_id:
+            raise KernelError(
+                "ACTOR_IDENTITY_INVALID",
+                "realization command actor differs from authenticated Principal",
+            )
+        self._register_definitions()
+        contract = command.contract
+        contract_value = contract.to_dict() if contract is not None else {}
+        input_assets = self._input_assets(command)
+        executed = execute_transaction_command(
+            self.database_url,
+            {
+                "definition_name": command.definition_name,
+                "definition_version": NARRATIVE_REALIZATION_DEFINITION_VERSION,
+                "project_id": command.project_id,
+                "workspace_id": command.workspace_id,
+                "book_id": command.book_id,
+                "actor_id": command.actor_id,
+                "idempotency_scope": "book:narrative-realization",
+                "idempotency_key": command.idempotency_key,
+                "trace_id": command.trace_id,
+                "span_id": str(uuid4()),
+                "correlation_id": command.correlation_id,
+                "causation_id": command.causation_operation_id,
+                "causation_operation_id": command.causation_operation_id or None,
+                "input": {
+                    "project_id": command.project_id,
+                    "workspace_id": command.workspace_id,
+                    "book_id": command.book_id,
+                    "realization_id": command.realization_id,
+                    "expected_version": command.expected_version,
+                    "contract": contract_value,
+                    "reason": command.reason,
+                },
+                "input_assets": list(input_assets),
+            },
+            context=AdmissionContext(
+                actor_id=command.actor_id,
+                permissions=frozenset({"book.authority.execute"}),
+                available_handlers=frozenset({NARRATIVE_REALIZATION_HANDLER_KEY}),
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+            ),
+            handler=self._execute_transaction,
+            fault_injector=self.fault_injector,
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            result = NarrativeRealizationRepository(uow.cursor).require(
+                command.realization_id
+            )
+        return {
+            **result,
+            "operation_id": executed["operation_id"],
+            "replayed": executed["replayed"],
+        }
+
+    def require(self, realization_id: str) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            return NarrativeRealizationRepository(uow.cursor).require(realization_id)
+
+    def require_current_for_chapter(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        chapter_group_plan_version_id: str,
+        chapter_number: int,
+    ) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            return NarrativeRealizationRepository(
+                uow.cursor
+            ).require_current_for_chapter(
+                project_id=project_id,
+                book_id=book_id,
+                chapter_group_plan_version_id=chapter_group_plan_version_id,
+                chapter_number=chapter_number,
+            )
+
+    def qualify_and_freeze_for_group(
+        self,
+        *,
+        book_run_id: str,
+        chapter_group_plan_version_id: str,
+        arc_working_set: dict[str, Any],
+        principal: Principal,
+        idempotency_key: str,
+        trace_id: str,
+        correlation_id: str,
+    ) -> dict[str, Any]:
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            contract = self._contract_for_group(
+                uow.cursor,
+                book_run_id=book_run_id,
+                chapter_group_plan_version_id=chapter_group_plan_version_id,
+                arc_working_set=arc_working_set,
+            )
+            try:
+                current = NarrativeRealizationRepository(uow.cursor).require(
+                    contract.realization_id
+                )
+            except KernelError as error:
+                if error.code != "NARRATIVE_REALIZATION_NOT_FOUND":
+                    raise
+                current = None
+        if current is not None and str(current["contract_digest"]) != (
+            contract.contract_digest
+        ):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_CONFLICT",
+                "deterministic realization identity binds different evidence",
+            )
+        workspace_id = self._workspace_id(book_run_id)
+        if current is None:
+            current = self.execute(
+                NarrativeRealizationCommand(
+                    definition_name="planning.realization.qualify",
+                    project_id=contract.project_id,
+                    workspace_id=workspace_id,
+                    book_id=contract.book_id,
+                    actor_id=principal.principal_id,
+                    realization_id=contract.realization_id,
+                    expected_version=0,
+                    idempotency_key=f"{idempotency_key}:qualify",
+                    trace_id=trace_id,
+                    correlation_id=correlation_id,
+                    reason="exact frozen ChapterGroup causal contract qualified",
+                    contract=contract,
+                ),
+                principal=principal,
+            )
+        lifecycle = NarrativeRealizationLifecycle(str(current["lifecycle"]))
+        if lifecycle is NarrativeRealizationLifecycle.QUALIFIED:
+            current = self.execute(
+                NarrativeRealizationCommand(
+                    definition_name="planning.realization.approve",
+                    project_id=contract.project_id,
+                    workspace_id=workspace_id,
+                    book_id=contract.book_id,
+                    actor_id=principal.principal_id,
+                    realization_id=contract.realization_id,
+                    expected_version=int(current["version"]),
+                    idempotency_key=f"{idempotency_key}:approve",
+                    trace_id=trace_id,
+                    correlation_id=correlation_id,
+                    reason="qualified realization approved for near-future use",
+                    causation_operation_id=str(
+                        current.get("qualification_operation_id")
+                        or current.get("operation_id")
+                        or ""
+                    ),
+                ),
+                principal=principal,
+            )
+            lifecycle = NarrativeRealizationLifecycle(str(current["lifecycle"]))
+        if lifecycle is NarrativeRealizationLifecycle.FROZEN:
+            return {
+                **current,
+                "operation_id": str(current.get("frozen_by_operation_id") or ""),
+                "replayed": True,
+            }
+        if lifecycle is not NarrativeRealizationLifecycle.APPROVED:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_NOT_FREEZABLE",
+                f"cannot resume realization lifecycle {lifecycle.value}",
+            )
+        return self.execute(
+            NarrativeRealizationCommand(
+                definition_name="planning.realization.freeze",
+                project_id=contract.project_id,
+                workspace_id=workspace_id,
+                book_id=contract.book_id,
+                actor_id=principal.principal_id,
+                realization_id=contract.realization_id,
+                expected_version=int(current["version"]),
+                idempotency_key=f"{idempotency_key}:freeze",
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+                reason="approved realization frozen for Chapter elaboration",
+                causation_operation_id=str(
+                    current.get("approval_operation_id")
+                    or current.get("operation_id")
+                    or ""
+                ),
+            ),
+            principal=principal,
+        )
+
+    def _workspace_id(self, book_run_id: str) -> str:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                "SELECT workspace_id FROM authority_book_production WHERE book_run_id=%s",
+                [book_run_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError("BOOK_RUN_NOT_FOUND", "Book run does not exist")
+        return str(row[0])
+
+    @staticmethod
+    def _contract_for_group(
+        cursor: Any,
+        *,
+        book_run_id: str,
+        chapter_group_plan_version_id: str,
+        arc_working_set: dict[str, Any],
+    ) -> NarrativeRealizationContract:
+        cursor.execute(
+            """
+            SELECT production.project_id, production.book_id,
+                   production.accepted_through_chapter,
+                   COALESCE(production.active_story_state_version_id,
+                            snapshot.initial_story_state_version),
+                   COALESCE(production.active_canon_snapshot_version_id,
+                            snapshot.initial_canon_snapshot_version),
+                   state.content_hash, canon.content_hash,
+                   group_version.content, group_version.content_hash,
+                   group_binding.execution_scope, group_binding.freshness,
+                   snapshot.foundation_set_digest
+            FROM authority_book_production AS production
+            JOIN authority_book_production_input_snapshot AS snapshot
+              ON snapshot.snapshot_id=production.input_snapshot_id
+            JOIN authority_asset_version AS state
+              ON state.asset_version_id=COALESCE(
+                   production.active_story_state_version_id,
+                   snapshot.initial_story_state_version)
+            JOIN authority_asset_version AS canon
+              ON canon.asset_version_id=COALESCE(
+                   production.active_canon_snapshot_version_id,
+                   snapshot.initial_canon_snapshot_version)
+            JOIN story_plan_binding AS group_binding
+              ON group_binding.project_id=production.project_id
+             AND group_binding.book_id=production.book_id
+             AND group_binding.asset_version_id=%s
+            JOIN active_story_plan_version AS active_group
+              ON active_group.binding_id=group_binding.binding_id
+            JOIN authority_asset_version AS group_version
+              ON group_version.asset_version_id=group_binding.asset_version_id
+            WHERE production.book_run_id=%s
+            """,
+            [chapter_group_plan_version_id, book_run_id],
+        )
+        row = cursor.fetchone()
+        if row is None or tuple(str(item) for item in row[9:11]) != (
+            "FROZEN",
+            "CURRENT",
+        ):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_GROUP_STALE",
+                "realization requires the exact current frozen ChapterGroup",
+            )
+        project_id, book_id = str(row[0]), str(row[1])
+        foundation = require_current_foundation_set(
+            cursor,
+            project_id=project_id,
+            book_id=book_id,
+            require_ready=True,
+        )
+        if foundation.set_digest != str(row[11]):
+            raise KernelError(
+                "FOUNDATION_SET_DRIFT",
+                "Book input and current qualified Foundation Set differ",
+            )
+        group = dict(row[7])
+        chapter_range = group.get("chapter_range")
+        events = group.get("narrative_event_chain")
+        if not isinstance(chapter_range, list) or not isinstance(events, list):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INVALID",
+                "frozen ChapterGroup lacks its typed causal event chain",
+            )
+        working_digest = str(arc_working_set.get("working_set_digest") or "")
+        selected = [
+            str(item.get("arc_plan_version_id") or "")
+            for item in arc_working_set.get("selected_contributions") or ()
+            if isinstance(item, dict)
+        ]
+        if not working_digest or not selected or len(set(selected)) != len(selected):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_ARC_WORKING_SET_INVALID",
+                "realization requires the governed bounded Arc Working Set",
+            )
+        cursor.execute(
+            """
+            SELECT binding.asset_version_id, version.content_hash
+            FROM story_plan_binding AS binding
+            JOIN active_story_plan_version AS active
+              ON active.binding_id=binding.binding_id
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=binding.asset_version_id
+            WHERE binding.project_id=%s AND binding.book_id=%s
+              AND binding.contract_type='ARC' AND binding.freshness='CURRENT'
+              AND binding.asset_version_id=ANY(%s)
+            """,
+            [project_id, book_id, selected],
+        )
+        arc_hashes = {str(item[0]): str(item[1]) for item in cursor.fetchall()}
+        if set(arc_hashes) != set(selected):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_ARC_STALE",
+                "realization Arc bindings are not exact/current",
+            )
+        profiles = required_qualification_profiles("chapter_group_plan.generate")
+        cursor.execute(
+            """
+            SELECT qualification.design_layer, qualification.profile_id,
+                   qualification.profile_version, qualification.profile_hash,
+                   qualification.evaluation_asset_version_id,
+                   evaluation.content_hash, qualification.evaluation,
+                   qualification.qualification_status,
+                   qualification.trust_boundary,
+                   qualification.evaluator_execution_class
+            FROM authority_current_narrative_design_qualification AS qualification
+            JOIN authority_operation AS operation
+              ON operation.operation_id=qualification.source_operation_id
+            JOIN authority_asset_version AS evaluation
+              ON evaluation.asset_version_id=qualification.evaluation_asset_version_id
+            WHERE qualification.project_id=%s AND qualification.book_id=%s
+              AND qualification.asset_version_id=%s
+              AND qualification.freshness='CURRENT'
+              AND operation.status IN ('WAITING_GATE','SUCCEEDED')
+            ORDER BY qualification.design_layer
+            """,
+            [project_id, book_id, chapter_group_plan_version_id],
+        )
+        qualifications = {str(item[0]): item for item in cursor.fetchall()}
+        if set(qualifications) != {profile.layer.value for profile in profiles}:
+            raise KernelError(
+                "REALIZATION_PROOF_INCOMPLETE",
+                "every ChapterGroup semantic qualification is required",
+            )
+        for profile in profiles:
+            receipt = qualifications[profile.layer.value]
+            if tuple(str(item) for item in receipt[1:4]) != (
+                profile.profile_id,
+                profile.profile_version,
+                profile.profile_hash,
+            ) or tuple(str(item) for item in receipt[7:9]) != (
+                "PASS",
+                "INDEPENDENT",
+            ) or str(receipt[9]) not in {
+                "MODEL_PROVIDER",
+                "SCRIPTED_FIXTURE",
+                "OPERATOR_REVIEW",
+            }:
+                raise KernelError(
+                    "REALIZATION_PROOF_STALE",
+                    "ChapterGroup semantic proof differs from current policy",
+                )
+        proof_receipt = qualifications[
+            NarrativeDesignLayer.NARRATIVE_REALIZATION_PROOF.value
+        ]
+        proof_decisions = _realization_proof_decisions(dict(proof_receipt[6]))
+        realization_seed = (
+            f"{chapter_group_plan_version_id}:{row[8]}:{row[2]}:"
+            f"{row[3]}:{row[4]}:{working_digest}:{foundation.set_digest}"
+        )
+        realization_id = "narrative-realization:" + hashlib.sha256(
+            realization_seed.encode()
+        ).hexdigest()
+        proof_asset_version_id = str(proof_receipt[4])
+        proof_hash = str(proof_receipt[5])
+        contract = {
+            "schema_version": NARRATIVE_REALIZATION_SCHEMA_VERSION,
+            "realization_id": realization_id,
+            "project_id": project_id,
+            "book_id": book_id,
+            "chapter_group_plan_version_id": chapter_group_plan_version_id,
+            "chapter_group_content_hash": str(row[8]),
+            "chapter_range": list(chapter_range),
+            "foundation_set_digest": foundation.set_digest,
+            "accepted_boundary": {
+                "accepted_through_chapter": int(row[2]),
+                "story_state_version_id": str(row[3]),
+                "story_state_content_hash": str(row[5]),
+                "canon_version_id": str(row[4]),
+                "canon_content_hash": str(row[6]),
+            },
+            "arc_working_set_digest": working_digest,
+            "arc_plan_bindings": [
+                {
+                    "arc_id": arc_id,
+                    "asset_version_id": arc_id,
+                    "content_hash": arc_hashes[arc_id],
+                }
+                for arc_id in selected
+            ],
+            "events": list(events),
+            "proof": {
+                "schema_version": NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION,
+                "covered_event_ids": [str(item.get("event_id") or "") for item in events],
+                "covered_parent_objectives": [
+                    f"chapter-group:{chapter_group_plan_version_id}:objective",
+                    *[f"arc:{arc_id}:contribution" for arc_id in selected],
+                ],
+                **proof_decisions,
+                "semantic_evaluation_asset_version_id": proof_asset_version_id,
+                "semantic_evaluation_hash": proof_hash,
+            },
+            "content_asset_version_id": chapter_group_plan_version_id,
+            "content_hash": str(row[8]),
+            "proof_asset_version_id": proof_asset_version_id,
+            "proof_hash": proof_hash,
+            "lifecycle": NarrativeRealizationLifecycle.QUALIFIED.value,
+        }
+        return NarrativeRealizationContract.from_mapping(contract)
+
+    def _execute_transaction(
+        self,
+        uow: AuthorityUnitOfWork,
+        operation_id: str,
+        checkpoint: TransactionCheckpoint,
+    ) -> dict[str, Any]:
+        uow.cursor.execute(
+            """
+            SELECT project_id, definition_name, command_payload,
+                   trace_id, correlation_id, causation_id
+            FROM authority_operation
+            WHERE operation_id=%s
+            """,
+            [operation_id],
+        )
+        operation = uow.cursor.fetchone()
+        if operation is None:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_OPERATION_NOT_FOUND",
+                "admitted realization Operation disappeared",
+            )
+        project_id = str(operation[0])
+        definition_name = str(operation[1])
+        payload = dict(operation[2])
+        repository = NarrativeRealizationRepository(uow.cursor)
+        realization_id = str(payload["realization_id"])
+        checkpoint("after_domain_validation")
+        if definition_name == "planning.realization.qualify":
+            result = repository.qualify(
+                contract=NarrativeRealizationContract.from_mapping(
+                    dict(payload["contract"])
+                ),
+                operation_id=operation_id,
+            )
+        else:
+            target = {
+                "planning.realization.approve": NarrativeRealizationLifecycle.APPROVED,
+                "planning.realization.freeze": NarrativeRealizationLifecycle.FROZEN,
+                "planning.realization.mark_stale": NarrativeRealizationLifecycle.STALE,
+            }[definition_name]
+            result = repository.transition(
+                realization_id=realization_id,
+                expected_version=int(payload["expected_version"]),
+                target=target,
+                operation_id=operation_id,
+                reason=str(payload["reason"]),
+            )
+        checkpoint("after_business_projection_update")
+        uow.repositories.operation_graph.record_event(
+            {
+                "event_id": str(uuid4()),
+                "audit_id": str(uuid4()),
+                "outbox_id": str(uuid4()),
+                "aggregate_type": "narrative_realization",
+                "aggregate_id": realization_id,
+                "operation_id": operation_id,
+                "project_id": project_id,
+                "event_type": "narrative_realization.transitioned",
+                "correlation_id": str(operation[4]),
+                "causation_id": str(operation[5] or ""),
+                "payload": {
+                    "operation_id": operation_id,
+                    "project_id": project_id,
+                    "realization_id": realization_id,
+                    "lifecycle": result["lifecycle"],
+                    "version": result["version"],
+                    "contract_digest": result["contract_digest"],
+                },
+            }
+        )
+        checkpoint("after_outbox_insert")
+        return {
+            "realization_id": realization_id,
+            "lifecycle": str(result["lifecycle"]),
+            "version": int(result["version"]),
+            "contract_digest": str(result["contract_digest"]),
+        }
+
+    def _register_definitions(self) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            for definition in narrative_realization_definitions(
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+            ):
+                uow.repositories.definitions.register(definition)
+            uow.commit()
+
+    def _input_assets(
+        self, command: NarrativeRealizationCommand
+    ) -> tuple[dict[str, str], ...]:
+        if command.contract is not None:
+            contract = command.contract
+            requested = {
+                contract.chapter_group_plan_version_id,
+                contract.accepted_boundary.story_state_version_id,
+                contract.accepted_boundary.canon_version_id,
+                contract.content_asset_version_id,
+                contract.proof_asset_version_id,
+                contract.proof.semantic_evaluation_asset_version_id,
+                *(item.asset_version_id for item in contract.arc_plan_bindings),
+            }
+        else:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute(
+                    """
+                    SELECT chapter_group_plan_version_id,
+                           story_state_asset_version_id,
+                           canon_snapshot_asset_version_id,
+                           content_asset_version_id, proof_asset_version_id,
+                           arc_plan_bindings, proof
+                    FROM authority_narrative_realization
+                    WHERE realization_id=%s AND project_id=%s AND book_id=%s
+                    """,
+                    [command.realization_id, command.project_id, command.book_id],
+                )
+                row = uow.cursor.fetchone()
+            if row is None:
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_NOT_FOUND", "realization does not exist"
+                )
+            requested = {
+                *(str(item) for item in row[:5]),
+                *(
+                    str(item.get("asset_version_id") or "")
+                    for item in row[5] or ()
+                    if isinstance(item, dict)
+                ),
+                str((row[6] or {}).get("semantic_evaluation_asset_version_id") or ""),
+            }
+            requested.discard("")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT version.asset_version_id, version.content_hash
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE asset.project_id=%s AND version.asset_version_id=ANY(%s)
+                """,
+                [command.project_id, list(requested)],
+            )
+            found = {str(row[0]): str(row[1]) for row in uow.cursor.fetchall()}
+        if set(found) != requested:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_INPUT_STALE",
+                "realization command input assets are missing or outside Project scope",
+            )
+        return tuple(
+            {"asset_version_id": item, "content_hash": found[item]}
+            for item in sorted(requested)
+        )
+
+
+__all__ = [
+    "NarrativeRealizationCommand",
+    "PostgresNarrativeRealizationApplication",
+]
+
+~~~~
+
+### src/novel_forge/storage/narrative_realization_repositories.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=5971320ff12bec2b3f9087327e97fc0a6016053d3c3719a85e0bc00ab606b539；[原字节文件](evidence/source/src/novel_forge/storage/narrative_realization_repositories.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from dataclasses import asdict
+from typing import Any
+from uuid import uuid4
+from psycopg.types.json import Jsonb
+
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.hierarchical_planning.realization_domain import (
+    NarrativeRealizationContract,
+    NarrativeRealizationLifecycle,
+    realization_hash,
+)
+from novel_forge.storage.foundation_repositories import (
+    require_current_foundation_set,
+)
+
+
+def _realization_event_deviations(
+    planned: dict[str, Any], observed: dict[str, Any]
+) -> tuple[str, ...]:
+
+    deviations: set[str] = set()
+    if any(
+        str(observed.get(observed_field) or "")
+        != str(planned.get(planned_field) or "")
+        for observed_field, planned_field in (
+            ("observed_action", "action"),
+            ("observed_decision", "decision"),
+            ("observed_consequence", "consequence"),
+        )
+    ) or set(str(item) for item in observed.get("observed_cause_event_ids") or ()) != set(
+        str(item) for item in planned.get("causes") or ()
+    ):
+        deviations.add("CAUSALITY_DRIFT")
+
+    planned_deltas = {
+        realization_hash(dict(item))
+        for item in planned.get("state_deltas") or ()
+        if isinstance(item, dict)
+    }
+    observed_deltas = {
+        realization_hash(dict(item))
+        for item in observed.get("observed_state_deltas") or ()
+        if isinstance(item, dict)
+    }
+    planned_entities = {
+        str(item.get("entity_id") or "")
+        for item in planned.get("state_deltas") or ()
+        if isinstance(item, dict)
+    }
+    if planned_deltas != observed_deltas or planned_entities != set(
+        str(item) for item in observed.get("observed_state_event_ids") or ()
+    ):
+        deviations.add("STATE_DELTA_DRIFT")
+
+    boundary = dict(planned.get("knowledge_boundary") or {})
+    disclosures = {
+        str(item) for item in observed.get("observed_disclosures") or ()
+    }
+    planned_disclosures = {str(item) for item in planned.get("disclosures") or ()}
+    allowed = {str(item) for item in boundary.get("reader_may_learn") or ()}
+    forbidden = {
+        str(item) for item in boundary.get("forbidden_disclosures") or ()
+    }
+    if (
+        disclosures != planned_disclosures
+        or not disclosures.issubset(allowed)
+        or bool(disclosures & forbidden)
+    ):
+        deviations.add("KNOWLEDGE_BOUNDARY_DRIFT")
+    return tuple(sorted(deviations))
+
+
+class NarrativeRealizationRepository:
+    def __init__(self, cursor: Any) -> None:
+        self.cursor = cursor
+
+    def qualify(
+        self,
+        *,
+        contract: NarrativeRealizationContract,
+        operation_id: str,
+    ) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT lifecycle, version, contract_digest
+            FROM authority_narrative_realization
+            WHERE realization_id=%s
+            FOR UPDATE
+            """,
+            [contract.realization_id],
+        )
+        existing = self.cursor.fetchone()
+        if existing is not None:
+            if (
+                str(existing[0]) == NarrativeRealizationLifecycle.QUALIFIED.value
+                and str(existing[2]) == contract.contract_digest
+            ):
+                return self.require(contract.realization_id)
+            raise KernelError(
+                "NARRATIVE_REALIZATION_CONFLICT",
+                "realization identity already binds different evidence",
+            )
+        if contract.lifecycle is not NarrativeRealizationLifecycle.QUALIFIED:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_LIFECYCLE_INVALID",
+                "qualification command requires a QUALIFIED contract",
+            )
+        self._require_frozen_inputs(contract)
+        boundary = contract.accepted_boundary
+        self.cursor.execute(
+            """
+            INSERT INTO authority_narrative_realization(
+                realization_id, project_id, book_id,
+                chapter_group_plan_version_id, chapter_group_content_hash,
+                chapter_start, chapter_end, foundation_set_digest,
+                accepted_through_chapter, story_state_asset_version_id,
+                story_state_content_hash, canon_snapshot_asset_version_id,
+                canon_snapshot_content_hash, arc_working_set_digest,
+                arc_plan_bindings, proof,
+                content_asset_version_id, content_hash,
+                proof_asset_version_id, proof_hash, contract_digest, lifecycle,
+                qualification_operation_id
+            ) VALUES (
+                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                'QUALIFIED',%s
+            )
+            """,
+            [
+                contract.realization_id,
+                contract.project_id,
+                contract.book_id,
+                contract.chapter_group_plan_version_id,
+                contract.chapter_group_content_hash,
+                contract.chapter_range[0],
+                contract.chapter_range[1],
+                contract.foundation_set_digest,
+                boundary.accepted_through_chapter,
+                boundary.story_state_version_id,
+                boundary.story_state_content_hash,
+                boundary.canon_version_id,
+                boundary.canon_content_hash,
+                contract.arc_working_set_digest,
+                Jsonb(
+                    [
+                        {
+                            "arc_id": item.arc_id,
+                            "asset_version_id": item.asset_version_id,
+                            "content_hash": item.content_hash,
+                        }
+                        for item in contract.arc_plan_bindings
+                    ]
+                ),
+                Jsonb(asdict(contract.proof)),
+                contract.content_asset_version_id,
+                contract.content_hash,
+                contract.proof_asset_version_id,
+                contract.proof_hash,
+                contract.contract_digest,
+                operation_id,
+            ],
+        )
+        for order, event in enumerate(contract.events, start=1):
+            event_content = event.to_dict()
+            self.cursor.execute(
+                """
+                INSERT INTO authority_narrative_realization_event(
+                    realization_id, event_id, slice_id, chapter_number,
+                    required, event_order, planned_event, planned_event_hash
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                """,
+                [
+                    contract.realization_id,
+                    event.event_id,
+                    event.slice_id,
+                    event.chapter_number,
+                    event.required,
+                    order,
+                    Jsonb(event_content),
+                    realization_hash(event_content),
+                ],
+            )
+        return self.require(contract.realization_id)
+
+    def transition(
+        self,
+        *,
+        realization_id: str,
+        expected_version: int,
+        target: NarrativeRealizationLifecycle,
+        operation_id: str,
+        reason: str,
+    ) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT project_id, book_id, chapter_group_plan_version_id,
+                   lifecycle, version
+            FROM authority_narrative_realization
+            WHERE realization_id=%s
+            FOR UPDATE
+            """,
+            [realization_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_NOT_FOUND", "realization does not exist"
+            )
+        current = NarrativeRealizationLifecycle(str(row[3]))
+        version = int(row[4])
+        if version != expected_version:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_VERSION_CONFLICT",
+                "realization lifecycle version changed",
+            )
+        allowed = {
+            NarrativeRealizationLifecycle.QUALIFIED: {
+                NarrativeRealizationLifecycle.APPROVED,
+                NarrativeRealizationLifecycle.REJECTED,
+                NarrativeRealizationLifecycle.STALE,
+            },
+            NarrativeRealizationLifecycle.APPROVED: {
+                NarrativeRealizationLifecycle.FROZEN,
+                NarrativeRealizationLifecycle.STALE,
+                NarrativeRealizationLifecycle.REJECTED,
+            },
+            NarrativeRealizationLifecycle.FROZEN: {
+                NarrativeRealizationLifecycle.STALE,
+                NarrativeRealizationLifecycle.SUPERSEDED,
+            },
+        }
+        if target not in allowed.get(current, set()):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_TRANSITION_INVALID",
+                f"cannot transition {current.value} to {target.value}",
+            )
+        if target is NarrativeRealizationLifecycle.FROZEN:
+            self._freeze_current(
+                project_id=str(row[0]),
+                book_id=str(row[1]),
+                group_version=str(row[2]),
+                realization_id=realization_id,
+                operation_id=operation_id,
+            )
+        elif target in {
+            NarrativeRealizationLifecycle.STALE,
+            NarrativeRealizationLifecycle.SUPERSEDED,
+        }:
+            self.cursor.execute(
+                """
+                DELETE FROM authority_narrative_realization_current
+                WHERE realization_id=%s
+                """,
+                [realization_id],
+            )
+        operation_column = {
+            NarrativeRealizationLifecycle.APPROVED: "approval_operation_id",
+            NarrativeRealizationLifecycle.FROZEN: "frozen_by_operation_id",
+            NarrativeRealizationLifecycle.STALE: "invalidated_by_operation_id",
+            NarrativeRealizationLifecycle.SUPERSEDED: "invalidated_by_operation_id",
+        }.get(target)
+        assignment = f", {operation_column}=%s" if operation_column else ""
+        parameters: list[Any] = [target.value]
+        if operation_column:
+            parameters.append(operation_id)
+        parameters.extend([realization_id, expected_version, current.value])
+        self.cursor.execute(
+            f"""
+            UPDATE authority_narrative_realization
+            SET lifecycle=%s, version=version+1, updated_at=NOW(){assignment}
+            WHERE realization_id=%s AND version=%s AND lifecycle=%s
+            """,
+            parameters,
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_VERSION_CONFLICT",
+                "concurrent realization lifecycle transition won",
+            )
+        return self.require(realization_id)
+
+    def require(self, realization_id: str) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT realization_id, project_id, book_id,
+                   chapter_group_plan_version_id, chapter_start, chapter_end,
+                   foundation_set_digest, accepted_through_chapter,
+                   story_state_asset_version_id, canon_snapshot_asset_version_id,
+                   arc_working_set_digest, content_asset_version_id, content_hash,
+                   proof_asset_version_id, proof_hash, contract_digest, lifecycle,
+                   version, qualification_operation_id, approval_operation_id,
+                   frozen_by_operation_id, invalidated_by_operation_id,
+                   executed_by_operation_id
+            FROM authority_narrative_realization
+            WHERE realization_id=%s
+            """,
+            [realization_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_NOT_FOUND", "realization does not exist"
+            )
+        fields = (
+            "realization_id",
+            "project_id",
+            "book_id",
+            "chapter_group_plan_version_id",
+            "chapter_start",
+            "chapter_end",
+            "foundation_set_digest",
+            "accepted_through_chapter",
+            "story_state_asset_version_id",
+            "canon_snapshot_asset_version_id",
+            "arc_working_set_digest",
+            "content_asset_version_id",
+            "content_hash",
+            "proof_asset_version_id",
+            "proof_hash",
+            "contract_digest",
+            "lifecycle",
+            "version",
+            "qualification_operation_id",
+            "approval_operation_id",
+            "frozen_by_operation_id",
+            "invalidated_by_operation_id",
+            "executed_by_operation_id",
+        )
+        return dict(zip(fields, row, strict=True))
+
+    def stale_for_noncurrent_plan_inputs(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        operation_id: str,
+    ) -> tuple[str, ...]:
+
+        self.cursor.execute(
+            """
+            SELECT realization.realization_id
+            FROM authority_narrative_realization AS realization
+            WHERE realization.project_id=%s AND realization.book_id=%s
+              AND realization.lifecycle IN ('QUALIFIED','APPROVED','FROZEN')
+              AND (
+                EXISTS (
+                  SELECT 1
+                  FROM story_plan_binding AS binding
+                  LEFT JOIN active_story_plan_version AS active
+                    ON active.binding_id=binding.binding_id
+                  WHERE binding.project_id=realization.project_id
+                    AND binding.book_id=realization.book_id
+                    AND binding.asset_version_id=
+                        realization.chapter_group_plan_version_id
+                    AND (
+                      binding.freshness<>'CURRENT'
+                      OR active.binding_id IS NULL
+                    )
+                )
+                OR EXISTS (
+                  SELECT 1
+                  FROM jsonb_array_elements(realization.arc_plan_bindings) AS arc
+                  JOIN story_plan_binding AS binding
+                    ON binding.project_id=realization.project_id
+                   AND binding.book_id=realization.book_id
+                   AND binding.asset_version_id=arc->>'asset_version_id'
+                  LEFT JOIN active_story_plan_version AS active
+                    ON active.binding_id=binding.binding_id
+                  WHERE binding.freshness<>'CURRENT'
+                     OR active.binding_id IS NULL
+                )
+              )
+            ORDER BY realization.realization_id
+            FOR UPDATE OF realization
+            """,
+            [project_id, book_id],
+        )
+        realization_ids = tuple(str(row[0]) for row in self.cursor.fetchall())
+        if not realization_ids:
+            return ()
+        self.cursor.execute(
+            """
+            DELETE FROM authority_narrative_realization_current
+            WHERE realization_id=ANY(%s)
+            """,
+            [list(realization_ids)],
+        )
+        self.cursor.execute(
+            """
+            UPDATE authority_narrative_realization
+            SET lifecycle='STALE', version=version+1,
+                invalidated_by_operation_id=%s, updated_at=NOW()
+            WHERE realization_id=ANY(%s)
+              AND lifecycle IN ('QUALIFIED','APPROVED','FROZEN')
+            """,
+            [operation_id, list(realization_ids)],
+        )
+        if self.cursor.rowcount != len(realization_ids):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_VERSION_CONFLICT",
+                "PlanChange raced with Narrative Realization invalidation",
+            )
+        return realization_ids
+
+    def require_current_for_chapter(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        chapter_group_plan_version_id: str,
+        chapter_number: int,
+    ) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT realization.realization_id, realization.contract_digest,
+                   realization.chapter_group_content_hash,
+                   realization.foundation_set_digest,
+                   realization.accepted_through_chapter,
+                   realization.arc_working_set_digest,
+                   realization.proof_asset_version_id, realization.proof_hash,
+                   realization.lifecycle,
+                   event.slice_id, event.event_id, event.planned_event,
+                   event.planned_event_hash
+            FROM authority_narrative_realization_current AS current
+            JOIN authority_narrative_realization AS realization
+              ON realization.realization_id=current.realization_id
+            JOIN authority_narrative_realization_event AS event
+              ON event.realization_id=realization.realization_id
+            WHERE current.project_id=%s AND current.book_id=%s
+              AND current.chapter_group_plan_version_id=%s
+              AND event.chapter_number=%s
+            ORDER BY event.event_order
+            """,
+            [
+                project_id,
+                book_id,
+                chapter_group_plan_version_id,
+                chapter_number,
+            ],
+        )
+        rows = self.cursor.fetchall()
+        if not rows or str(rows[0][8]) != NarrativeRealizationLifecycle.FROZEN.value:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_REQUIRED",
+                "Chapter elaboration requires a current Frozen Narrative Realization slice",
+            )
+        identity = tuple(str(item) for item in rows[0][:9])
+        if any(tuple(str(item) for item in row[:9]) != identity for row in rows):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_MIXED_LINEAGE",
+                "Narrative Realization slice contains mixed contract lineage",
+            )
+        self._require_current_evidence(
+            project_id=project_id,
+            book_id=book_id,
+            realization_id=str(rows[0][0]),
+            chapter_number=chapter_number,
+        )
+        slice_ids = {str(row[9]) for row in rows}
+        if len(slice_ids) != 1:
+            raise KernelError(
+                "REALIZATION_SLICE_INVALID",
+                "one Chapter may consume only one realization slice",
+            )
+        events = [dict(row[11]) for row in rows]
+        return {
+            "realization_id": str(rows[0][0]),
+            "contract_digest": str(rows[0][1]),
+            "chapter_group_plan_version_id": chapter_group_plan_version_id,
+            "chapter_group_content_hash": str(rows[0][2]),
+            "slice_id": slice_ids.pop(),
+            "chapter_number": chapter_number,
+            "event_ids": [str(row[10]) for row in rows],
+            "events": events,
+            "foundation_set_digest": str(rows[0][3]),
+            "accepted_through_chapter": int(rows[0][4]),
+            "arc_working_set_digest": str(rows[0][5]),
+            "proof_asset_version_id": str(rows[0][6]),
+            "proof_hash": str(rows[0][7]),
+        }
+
+    def consume_accepted_chapter(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        realization_id: str,
+        chapter_number: int,
+        chapter_plan_asset_version_id: str,
+        acceptance_id: str,
+        chapter_outcome_asset_version_id: str,
+        realization_evidence: list[dict[str, Any]],
+        operation_id: str,
+    ) -> dict[str, Any]:
+
+        self.cursor.execute(
+            """
+            SELECT realization.lifecycle, realization.version,
+                   event.event_id, event.required, event.planned_event_hash,
+                   event.planned_event
+            FROM authority_narrative_realization AS realization
+            JOIN authority_narrative_realization_event AS event
+              ON event.realization_id=realization.realization_id
+            WHERE realization.realization_id=%s
+              AND realization.project_id=%s AND realization.book_id=%s
+              AND event.chapter_number=%s
+            ORDER BY event.event_order
+            FOR UPDATE OF realization
+            """,
+            [realization_id, project_id, book_id, chapter_number],
+        )
+        rows = self.cursor.fetchall()
+        if not rows or str(rows[0][0]) not in {
+            NarrativeRealizationLifecycle.FROZEN.value,
+            NarrativeRealizationLifecycle.EXECUTED.value,
+        }:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_CONSUMPTION_INVALID",
+                "accepted Chapter does not bind a Frozen realization slice",
+            )
+        planned = {
+            str(row[2]): (bool(row[3]), str(row[4]), dict(row[5])) for row in rows
+        }
+        observed: dict[str, dict[str, Any]] = {}
+        unplanned: list[dict[str, Any]] = []
+        for item in realization_evidence:
+            event_id = str(item.get("planned_event_id") or "")
+            if not event_id or event_id not in planned:
+                unplanned.append(dict(item))
+                continue
+            if event_id in observed:
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_EVIDENCE_AMBIGUOUS",
+                    "accepted actual contains duplicate evidence for one planned event",
+                )
+            observed[event_id] = dict(item)
+        deviations: list[str] = []
+        for event_id, (required, planned_hash, planned_event) in planned.items():
+            evidence = observed.get(event_id)
+            is_observed = bool(
+                evidence
+                and evidence.get("observation_status") == "OBSERVED"
+                and evidence.get("accepted_prose_evidence")
+            )
+            event_deviations = (
+                _realization_event_deviations(planned_event, evidence)
+                if is_observed and evidence is not None
+                else ()
+            )
+            status = (
+                "DEVIATED"
+                if event_deviations
+                else "ACCEPTED"
+                if is_observed
+                else "NOT_OBSERVED"
+            )
+            observed_id = (
+                str(evidence.get("observed_event_id") or "") if is_observed else None
+            )
+            if is_observed and not observed_id:
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_EVIDENCE_INVALID",
+                    "observed realization evidence requires an observed event identity",
+                )
+            observed_hash = realization_hash(evidence) if is_observed else None
+            self.cursor.execute(
+                """
+                INSERT INTO authority_narrative_realization_consumption(
+                    consumption_id, realization_id, planned_event_id,
+                    chapter_plan_asset_version_id, acceptance_id,
+                    chapter_outcome_asset_version_id, observed_event_id,
+                    observed_event_hash, coverage_status, evidence,
+                    consumed_by_operation_id
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (realization_id, planned_event_id)
+                DO NOTHING
+                """,
+                [
+                    str(uuid4()),
+                    realization_id,
+                    event_id,
+                    chapter_plan_asset_version_id,
+                    acceptance_id,
+                    chapter_outcome_asset_version_id,
+                    observed_id,
+                    observed_hash,
+                    status,
+                    Jsonb(
+                        {
+                            "planned_event_hash": planned_hash,
+                            "accepted_actual": dict(evidence or {}),
+                        }
+                    ),
+                    operation_id,
+                ],
+            )
+            if required and not is_observed:
+                deviations.append("MISSING_REQUIRED_EVENT")
+            deviations.extend(event_deviations)
+        if unplanned:
+            deviations.append("UNPLANNED_EVENT")
+        for kind in sorted(set(deviations)):
+            evidence = {
+                "chapter_number": chapter_number,
+                "planned_event_ids": sorted(planned),
+                "observed_event_ids": sorted(observed),
+                "unplanned": unplanned,
+            }
+            evidence_hash = realization_hash(evidence)
+            self.cursor.execute(
+                """
+                INSERT INTO authority_narrative_realization_deviation(
+                    deviation_id, realization_id, acceptance_id,
+                    chapter_plan_asset_version_id, deviation_kind,
+                    affected_future_from_chapter, evidence, evidence_hash,
+                    created_by_operation_id
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (
+                    realization_id, acceptance_id, deviation_kind, evidence_hash
+                ) DO NOTHING
+                """,
+                [
+                    str(uuid4()),
+                    realization_id,
+                    acceptance_id,
+                    chapter_plan_asset_version_id,
+                    kind,
+                    chapter_number + 1,
+                    Jsonb(evidence),
+                    evidence_hash,
+                    operation_id,
+                ],
+            )
+        self.cursor.execute(
+            """
+            SELECT COUNT(*), COUNT(*) FILTER (
+                       WHERE consumption.coverage_status='ACCEPTED'
+                   ), COUNT(*) FILTER (
+                       WHERE consumption.coverage_status='ACCEPTED'
+                          OR (NOT event.required AND
+                              consumption.coverage_status='NOT_OBSERVED')
+                   )
+            FROM authority_narrative_realization_event AS event
+            LEFT JOIN authority_narrative_realization_consumption AS consumption
+              ON consumption.realization_id=event.realization_id
+             AND consumption.planned_event_id=event.event_id
+            WHERE event.realization_id=%s
+            """,
+            [realization_id],
+        )
+        total, accepted, covered = (int(item) for item in self.cursor.fetchone())
+        if deviations:
+            target = NarrativeRealizationLifecycle.STALE.value
+        elif total == covered:
+            target = NarrativeRealizationLifecycle.EXECUTED.value
+        else:
+            target = NarrativeRealizationLifecycle.FROZEN.value
+        if target != str(rows[0][0]):
+            self.cursor.execute(
+                """
+                UPDATE authority_narrative_realization
+                SET lifecycle=%s, version=version+1,
+                    executed_by_operation_id=CASE WHEN %s='EXECUTED'
+                                                  THEN %s ELSE NULL END,
+                    updated_at=NOW()
+                WHERE realization_id=%s AND version=%s
+                """,
+                [target, target, operation_id, realization_id, int(rows[0][1])],
+            )
+            if self.cursor.rowcount != 1:
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_VERSION_CONFLICT",
+                    "realization coverage changed concurrently",
+                )
+        if target == NarrativeRealizationLifecycle.STALE.value:
+            self.cursor.execute(
+                """
+                DELETE FROM authority_narrative_realization_current
+                WHERE realization_id=%s
+                """,
+                [realization_id],
+            )
+        if target in {
+            NarrativeRealizationLifecycle.STALE.value,
+            NarrativeRealizationLifecycle.EXECUTED.value,
+        }:
+            self.cursor.execute(
+                "DELETE FROM authority_narrative_realization_current WHERE realization_id=%s",
+                [realization_id],
+            )
+        return {
+            "realization_id": realization_id,
+            "lifecycle": target,
+            "planned_event_count": total,
+            "accepted_event_count": accepted,
+            "covered_event_count": covered,
+            "deviations": sorted(set(deviations)),
+        }
+
+    def _require_frozen_inputs(self, contract: NarrativeRealizationContract) -> None:
+        self._require_foundation_set(contract)
+        self._require_group(contract)
+        self._require_arcs(contract)
+        self._require_accepted_boundary(contract)
+        self._require_asset(
+            contract.project_id,
+            contract.content_asset_version_id,
+            contract.content_hash,
+            allowed_types={"narrative_realization", "planning_generation_candidate"},
+        )
+        self._require_asset(
+            contract.project_id,
+            contract.proof_asset_version_id,
+            contract.proof_hash,
+            allowed_types={
+                "narrative_realization_proof",
+                "narrative_design_evaluation",
+            },
+        )
+        self._require_asset(
+            contract.project_id,
+            contract.proof.semantic_evaluation_asset_version_id,
+            contract.proof.semantic_evaluation_hash,
+            allowed_types={"narrative_design_evaluation"},
+        )
+
+    def _require_foundation_set(self, contract: NarrativeRealizationContract) -> None:
+        foundation = require_current_foundation_set(
+            self.cursor,
+            project_id=contract.project_id,
+            book_id=contract.book_id,
+            require_ready=True,
+        )
+        if foundation.set_digest != contract.foundation_set_digest:
+            raise KernelError(
+                "FOUNDATION_SET_DRIFT",
+                "Narrative Realization Foundation Set is no longer current",
+            )
+
+    def _require_group(self, contract: NarrativeRealizationContract) -> None:
+        self.cursor.execute(
+            """
+            SELECT version.content_hash, binding.contract_type,
+                   binding.execution_scope, binding.freshness, active.binding_id
+            FROM authority_asset_version AS version
+            JOIN story_plan_binding AS binding
+              ON binding.asset_version_id=version.asset_version_id
+             AND binding.project_id=%s AND binding.book_id=%s
+            LEFT JOIN active_story_plan_version AS active
+              ON active.binding_id=binding.binding_id
+            WHERE version.asset_version_id=%s
+            """,
+            [
+                contract.project_id,
+                contract.book_id,
+                contract.chapter_group_plan_version_id,
+            ],
+        )
+        row = self.cursor.fetchone()
+        if (
+            row is None
+            or tuple(str(item) for item in row[:4])
+            != (
+                contract.chapter_group_content_hash,
+                "CHAPTER_GROUP",
+                "FROZEN",
+                "CURRENT",
+            )
+            or row[4] is None
+        ):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_GROUP_STALE",
+                "realization requires the exact current frozen ChapterGroup",
+            )
+
+    def _require_arcs(self, contract: NarrativeRealizationContract) -> None:
+        for arc in contract.arc_plan_bindings:
+            self.cursor.execute(
+                """
+                SELECT version.content_hash, binding.contract_type,
+                       binding.freshness, active.binding_id
+                FROM authority_asset_version AS version
+                JOIN story_plan_binding AS binding
+                  ON binding.asset_version_id=version.asset_version_id
+                 AND binding.project_id=%s AND binding.book_id=%s
+                LEFT JOIN active_story_plan_version AS active
+                  ON active.binding_id=binding.binding_id
+                WHERE version.asset_version_id=%s
+                """,
+                [contract.project_id, contract.book_id, arc.asset_version_id],
+            )
+            row = self.cursor.fetchone()
+            if (
+                row is None
+                or tuple(str(item) for item in row[:3])
+                != (
+                    arc.content_hash,
+                    "ARC",
+                    "CURRENT",
+                )
+                or row[3] is None
+            ):
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_ARC_STALE",
+                    "realization Arc binding is not exact/current",
+                )
+
+    def _require_accepted_boundary(
+        self, contract: NarrativeRealizationContract
+    ) -> None:
+        boundary = contract.accepted_boundary
+        self._require_accepted_boundary_values(
+            project_id=contract.project_id,
+            book_id=contract.book_id,
+            book_run_id=self._group_run_scope(contract.chapter_group_plan_version_id, contract.chapter_group_content_hash),
+            expected=(
+                boundary.accepted_through_chapter,
+                boundary.story_state_version_id,
+                boundary.story_state_content_hash,
+                boundary.canon_version_id,
+                boundary.canon_content_hash,
+            ),
+        )
+
+    def _group_run_scope(self, plan_version_id: str, content_hash: str) -> str:
+        self.cursor.execute("""SELECT COALESCE(content#>>'{constraint_envelope,edition_execution,book_run_id}','')
+            FROM authority_asset_version WHERE asset_version_id=%s AND content_hash=%s""",
+            [plan_version_id, content_hash])
+        source = self.cursor.fetchone()
+        if source is None:
+            raise KernelError("NARRATIVE_REALIZATION_GROUP_STALE", "Realization requires its exact frozen ChapterGroup")
+        return str(source[0])
+
+    def _require_accepted_boundary_values(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        expected: tuple[int, str, str, str, str],
+        book_run_id: str = "",
+    ) -> None:
+        self.cursor.execute(
+            """
+            SELECT production.accepted_through_chapter,
+                   COALESCE(production.active_story_state_version_id,
+                            snapshot.initial_story_state_version),
+                   state.content_hash,
+                   COALESCE(production.active_canon_snapshot_version_id,
+                            snapshot.initial_canon_snapshot_version),
+                   canon.content_hash
+            FROM authority_book_production AS production
+            JOIN authority_book_production_input_snapshot AS snapshot
+              ON snapshot.snapshot_id=production.input_snapshot_id
+            JOIN authority_asset_version AS state
+              ON state.asset_version_id=COALESCE(
+                   production.active_story_state_version_id,
+                   snapshot.initial_story_state_version)
+            JOIN authority_asset_version AS canon
+              ON canon.asset_version_id=COALESCE(
+                   production.active_canon_snapshot_version_id,
+                   snapshot.initial_canon_snapshot_version)
+            WHERE production.project_id=%s AND production.book_id=%s
+              AND production.state NOT IN ('COMPLETED','ABORTED')
+              AND ((%s<>'' AND production.book_run_id=%s) OR (%s='' AND NOT EXISTS (
+                  SELECT 1 FROM authority_book_edition_run edition
+                  WHERE edition.book_run_id=production.book_run_id AND edition.role='VALIDATION')))
+            ORDER BY production.created_at DESC
+            LIMIT 2
+            """,
+            [project_id, book_id, book_run_id, book_run_id, book_run_id],
+        )
+        rows = self.cursor.fetchall()
+        row = rows[0] if len(rows) == 1 else None
+        if row is None or tuple(row) != expected:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_ACCEPTED_BOUNDARY_STALE",
+                "realization must use the latest complete accepted boundary",
+            )
+
+    def _require_current_evidence(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        realization_id: str,
+        chapter_number: int,
+    ) -> None:
+        self.cursor.execute(
+            """
+            SELECT chapter_group_plan_version_id, chapter_group_content_hash,
+                   foundation_set_digest, arc_plan_bindings,
+                   accepted_through_chapter,
+                   story_state_asset_version_id, story_state_content_hash,
+                   canon_snapshot_asset_version_id, canon_snapshot_content_hash,
+                   proof_asset_version_id, proof_hash
+            FROM authority_narrative_realization
+            WHERE realization_id=%s AND project_id=%s AND book_id=%s
+            """,
+            [realization_id, project_id, book_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_NOT_FOUND", "realization does not exist"
+            )
+        foundation = require_current_foundation_set(
+            self.cursor,
+            project_id=project_id,
+            book_id=book_id,
+            require_ready=True,
+        )
+        if foundation.set_digest != str(row[2]):
+            raise KernelError(
+                "FOUNDATION_SET_DRIFT", "Narrative Realization Foundation drifted"
+            )
+        self._require_asset(
+            project_id,
+            str(row[0]),
+            str(row[1]),
+            allowed_types={"planning_generation_candidate"},
+        )
+        self._require_asset(
+            project_id,
+            str(row[9]),
+            str(row[10]),
+            allowed_types={"narrative_design_evaluation"},
+        )
+        for arc in row[3] or ():
+            if not isinstance(arc, dict):
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_ARC_STALE",
+                    "persisted realization Arc binding is invalid",
+                )
+            self.cursor.execute(
+                """
+                SELECT version.content_hash, binding.freshness, active.binding_id
+                FROM authority_asset_version AS version
+                JOIN story_plan_binding AS binding
+                  ON binding.asset_version_id=version.asset_version_id
+                 AND binding.project_id=%s AND binding.book_id=%s
+                LEFT JOIN active_story_plan_version AS active
+                  ON active.binding_id=binding.binding_id
+                WHERE version.asset_version_id=%s AND binding.contract_type='ARC'
+                """,
+                [project_id, book_id, str(arc.get("asset_version_id") or "")],
+            )
+            current_arc = self.cursor.fetchone()
+            if (
+                current_arc is None
+                or str(current_arc[0]) != str(arc.get("content_hash") or "")
+                or str(current_arc[1]) != "CURRENT"
+                or current_arc[2] is None
+            ):
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_ARC_STALE",
+                    "persisted realization Arc binding is no longer current",
+                )
+        book_run_id = self._group_run_scope(str(row[0]), str(row[1]))
+        self.cursor.execute(
+            """
+            SELECT production.accepted_through_chapter,
+                   COALESCE(production.active_story_state_version_id,
+                            snapshot.initial_story_state_version),
+                   COALESCE(production.active_canon_snapshot_version_id,
+                            snapshot.initial_canon_snapshot_version)
+            FROM authority_book_production AS production
+            JOIN authority_book_production_input_snapshot AS snapshot
+              ON snapshot.snapshot_id=production.input_snapshot_id
+            WHERE production.project_id=%s AND production.book_id=%s
+              AND production.state NOT IN ('COMPLETED','ABORTED')
+              AND ((%s<>'' AND production.book_run_id=%s) OR (%s='' AND NOT EXISTS (
+                  SELECT 1 FROM authority_book_edition_run edition
+                  WHERE edition.book_run_id=production.book_run_id AND edition.role='VALIDATION')))
+            ORDER BY production.created_at DESC
+            LIMIT 2
+            """,
+            [project_id, book_id, book_run_id, book_run_id, book_run_id],
+        )
+        boundaries = self.cursor.fetchall()
+        if len(boundaries) != 1 or int(boundaries[0][0]) != chapter_number - 1:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_ACCEPTED_BOUNDARY_STALE",
+                "realization slice is not adjacent to the complete accepted boundary",
+            )
+        accepted_through = int(boundaries[0][0])
+        original_boundary = int(row[4])
+        if accepted_through == original_boundary:
+            if tuple(str(item) for item in boundaries[0][1:]) != (
+                str(row[5]),
+                str(row[7]),
+            ):
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_ACCEPTED_BOUNDARY_STALE",
+                    "original realization boundary identity drifted",
+                )
+        elif accepted_through > original_boundary:
+            self.cursor.execute(
+                """
+                SELECT COUNT(*), COUNT(*) FILTER (
+                           WHERE consumption.coverage_status='ACCEPTED'
+                       )
+                FROM authority_narrative_realization_event AS event
+                LEFT JOIN authority_narrative_realization_consumption AS consumption
+                  ON consumption.realization_id=event.realization_id
+                 AND consumption.planned_event_id=event.event_id
+                WHERE event.realization_id=%s
+                  AND event.chapter_number>%s
+                  AND event.chapter_number<=%s
+                """,
+                [realization_id, original_boundary, accepted_through],
+            )
+            planned, consumed = (int(item) for item in self.cursor.fetchone())
+            if planned == 0 or planned != consumed:
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_COVERAGE_INCOMPLETE",
+                    "later realization slice requires complete accepted prior coverage",
+                )
+        else:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_ACCEPTED_BOUNDARY_STALE",
+                "accepted history cannot move behind a frozen realization boundary",
+            )
+
+    def _require_asset(
+        self,
+        project_id: str,
+        asset_version_id: str,
+        content_hash: str,
+        *,
+        allowed_types: set[str],
+    ) -> None:
+        self.cursor.execute(
+            """
+            SELECT asset.asset_type, version.content_hash,
+                   version.lifecycle, version.eligibility, version.governance
+            FROM authority_asset_version AS version
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            WHERE asset.project_id=%s AND version.asset_version_id=%s
+            """,
+            [project_id, asset_version_id],
+        )
+        row = self.cursor.fetchone()
+        if (
+            row is None
+            or str(row[0]) not in allowed_types
+            or tuple(str(item) for item in row[1:])
+            != (content_hash, "ACTIVE", "ELIGIBLE", "CLEAR")
+        ):
+            raise KernelError(
+                "NARRATIVE_REALIZATION_EVIDENCE_STALE",
+                "realization content/proof evidence is missing or drifted",
+            )
+
+    def _freeze_current(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        group_version: str,
+        realization_id: str,
+        operation_id: str,
+    ) -> None:
+        self.cursor.execute(
+            """
+            SELECT realization_id
+            FROM authority_narrative_realization_current
+            WHERE project_id=%s AND book_id=%s
+              AND chapter_group_plan_version_id=%s
+            FOR UPDATE
+            """,
+            [project_id, book_id, group_version],
+        )
+        row = self.cursor.fetchone()
+        if row is not None and str(row[0]) != realization_id:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_CURRENT_CONFLICT",
+                "another realization is already frozen for this ChapterGroup",
+            )
+        self.cursor.execute(
+            """
+            INSERT INTO authority_narrative_realization_current(
+                project_id, book_id, chapter_group_plan_version_id,
+                realization_id, bound_by_operation_id
+            ) VALUES (%s,%s,%s,%s,%s)
+            ON CONFLICT (project_id, book_id, chapter_group_plan_version_id)
+            DO UPDATE SET realization_id=EXCLUDED.realization_id,
+                          bound_by_operation_id=EXCLUDED.bound_by_operation_id,
+                          bound_at=NOW()
+            WHERE authority_narrative_realization_current.realization_id=
+                  EXCLUDED.realization_id
+            """,
+            [project_id, book_id, group_version, realization_id, operation_id],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "NARRATIVE_REALIZATION_CURRENT_CONFLICT",
+                "realization current binding changed concurrently",
+            )
+
+
+__all__ = ["NarrativeRealizationRepository"]
+
+~~~~
+
+### src/novel_forge/modules/hierarchical_planning/definitions.py
+
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；源文件sha256=b805f9873da78024114332d337a5909188b09c9441ffdbe387aca2cfb1dcab2f；[原字节文件](evidence/source/src/novel_forge/modules/hierarchical_planning/definitions.py)。作用与评价见全工程方案相应段落；未声称下列所有非创作字段逐项通过语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from typing import Any
+
+
+PLAN_BINDING_DEFINITION_VERSION = "1.2.0"
+PLAN_BINDING_HANDLER_KEY = "novel_forge.hierarchical_planning.binding.transaction"
+NARRATIVE_REALIZATION_DEFINITION_VERSION = "1.0.0"
+NARRATIVE_REALIZATION_HANDLER_KEY = (
+    "novel_forge.hierarchical_planning.realization.transaction"
+)
+NARRATIVE_REALIZATION_OPERATIONS = (
+    "planning.realization.qualify",
+    "planning.realization.approve",
+    "planning.realization.freeze",
+    "planning.realization.mark_stale",
+)
+
+
+def plan_binding_definitions(
+    *, application_build_id: str, commit_sha: str
+) -> tuple[dict[str, Any], ...]:
+    return (
+        {
+            "name": "planning.binding.activate",
+            "definition_version": PLAN_BINDING_DEFINITION_VERSION,
+            "family": "hierarchical_planning",
+            "enabled": True,
+            "command_schema": {
+                "type": "object",
+                "required": [
+                    "project_id",
+                    "workspace_id",
+                    "book_id",
+                    "asset_version_id",
+                    "contract_type",
+                    "parent_version_id",
+                    "execution_scope",
+                    "expected_active_asset_version_id",
+                    "replacement_approved",
+                    "decision_evidence",
+                    "story_design_transition_operation_id",
+                ],
+                "properties": {
+                    "project_id": {"type": "string"},
+                    "workspace_id": {"type": "string"},
+                    "book_id": {"type": "string"},
+                    "asset_version_id": {"type": "string"},
+                    "contract_type": {"type": "string"},
+                    "parent_version_id": {"type": "string"},
+                    "execution_scope": {"type": "string"},
+                    "expected_active_asset_version_id": {"type": "string"},
+                    "replacement_approved": {"type": "boolean"},
+                    "decision_evidence": {"type": "object"},
+                    "story_design_transition_operation_id": {"type": "string"},
+                },
+                "additionalProperties": False,
+            },
+            "result_schema": {
+                "type": "object",
+                "required": [
+                    "binding_id",
+                    "book_id",
+                    "asset_version_id",
+                    "logical_key",
+                ],
+                "properties": {
+                    "binding_id": {"type": "string"},
+                    "book_id": {"type": "string"},
+                    "asset_version_id": {"type": "string"},
+                    "logical_key": {"type": "string"},
+                    "previous_asset_version_id": {"type": "string"},
+                },
+                "additionalProperties": False,
+            },
+            "handler_key": PLAN_BINDING_HANDLER_KEY,
+            "handler_contract_version": "planning-binding-handler-v3",
+            "application_build_id": application_build_id,
+            "commit_sha": commit_sha,
+            "execution_mode": "transactional",
+            "permissions": ["book.authority.execute"],
+            "approval_policy": {
+                "required": False,
+                "policy_key": "replacement-decision-evidence",
+            },
+            "idempotency_scope": "book:planning-binding",
+            "concurrency_key_template": "book:{book_id}:planning-binding",
+            "retry_policy": {"max_attempts": 1, "mode": "client_replay_only"},
+            "timeout_policy": {"operation_timeout_seconds": 60},
+            "cancellation_policy": {"mode": "not_applicable_atomic_transaction"},
+            "compensation_policy": {
+                "supported": False,
+                "reason": "binding activation is atomically version-checked",
+            },
+            "irreversible_effect_policy": {"allowed": False},
+            "external_capabilities": [],
+            "policy": {
+                "execution_classification": "transaction_command",
+                "book_scope_required": True,
+                "expected_active_version_required": True,
+                "legacy_writer": "disabled",
+                "atomic_story_design_activation": True,
+                "chapter_contract_schema_version": "chapter-mission-scene.v2",
+            },
+            "completion_contract": {
+                "version": "planning.binding.activate.completion.v1",
+                "required_asset_selectors": [],
+                "required_qualifications": [],
+                "required_evidence": ["trace", "audit"],
+                "required_outbox_events": ["story_plan.bound"],
+            },
+        },
+    )
+
+
+def narrative_realization_definitions(
+    *, application_build_id: str, commit_sha: str
+) -> tuple[dict[str, Any], ...]:
+    definitions: list[dict[str, Any]] = []
+    for name in NARRATIVE_REALIZATION_OPERATIONS:
+        definitions.append(
+            {
+                "name": name,
+                "definition_version": NARRATIVE_REALIZATION_DEFINITION_VERSION,
+                "family": "hierarchical_planning",
+                "enabled": True,
+                "command_schema": {
+                    "type": "object",
+                    "required": [
+                        "project_id",
+                        "workspace_id",
+                        "book_id",
+                        "realization_id",
+                        "expected_version",
+                        "contract",
+                        "reason",
+                    ],
+                    "properties": {
+                        "project_id": {"type": "string"},
+                        "workspace_id": {"type": "string"},
+                        "book_id": {"type": "string"},
+                        "realization_id": {"type": "string"},
+                        "expected_version": {"type": "integer"},
+                        "contract": {"type": "object"},
+                        "reason": {"type": "string"},
+                    },
+                    "additionalProperties": False,
+                },
+                "result_schema": {
+                    "type": "object",
+                    "required": [
+                        "realization_id",
+                        "lifecycle",
+                        "version",
+                        "contract_digest",
+                    ],
+                    "properties": {
+                        "realization_id": {"type": "string"},
+                        "lifecycle": {"type": "string"},
+                        "version": {"type": "integer"},
+                        "contract_digest": {"type": "string"},
+                    },
+                    "additionalProperties": False,
+                },
+                "handler_key": NARRATIVE_REALIZATION_HANDLER_KEY,
+                "handler_contract_version": "narrative-realization-handler-v1",
+                "application_build_id": application_build_id,
+                "commit_sha": commit_sha,
+                "execution_mode": "transactional",
+                "permissions": ["book.authority.execute"],
+                "approval_policy": {
+                    # INVARIANT: The explicit approve Operation is the Planning Authority
+                    # decision and can only follow a qualified immutable proof.
+                    # Command-Kernel admission approval is reserved for an
+                    # external governance gate, not duplicated here.
+                    "required": False,
+                    "policy_key": "qualified-realization-transition-v1",
+                },
+                "idempotency_scope": "book:narrative-realization",
+                "concurrency_key_template": "book:{book_id}:narrative-realization",
+                "retry_policy": {"max_attempts": 1, "mode": "client_replay_only"},
+                "timeout_policy": {"operation_timeout_seconds": 60},
+                "cancellation_policy": {"mode": "not_applicable_atomic_transaction"},
+                "compensation_policy": {
+                    "supported": False,
+                    "reason": "immutable evidence and versioned lifecycle transitions",
+                },
+                "irreversible_effect_policy": {"allowed": False},
+                "external_capabilities": [],
+                "policy": {
+                    "execution_classification": "transaction_command",
+                    "book_scope_required": True,
+                    "separate_plan_scale": False,
+                    "accepted_actual_mutation": False,
+                    "frozen_input_drift_fails_closed": True,
+                },
+                "completion_contract": {
+                    "version": f"{name}.completion.v1",
+                    "required_asset_selectors": [],
+                    "required_qualifications": [],
+                    "required_evidence": ["trace", "audit"],
+                    "required_outbox_events": ["narrative_realization.transitioned"],
+                },
+            }
+        )
+    return tuple(definitions)
+
+
+__all__ = [
+    "NARRATIVE_REALIZATION_DEFINITION_VERSION",
+    "NARRATIVE_REALIZATION_HANDLER_KEY",
+    "NARRATIVE_REALIZATION_OPERATIONS",
+    "PLAN_BINDING_DEFINITION_VERSION",
+    "PLAN_BINDING_HANDLER_KEY",
+    "plan_binding_definitions",
+    "narrative_realization_definitions",
+]
+
+~~~~
+
+
+### src/novel_forge/modules/plan_change_authority/application.py
+
+全链路补充源码；SHA b1d42e6107d871442baa71823f7c21bfeec841b1；sha256=94b35372da0b6108a539b11ca0231216101626f45fd571d60c14388c03b6e51e；[原字节文件](evidence/source/src/novel_forge/modules/plan_change_authority/application.py)。不声称所有字段已逐项语义审查。
+
+~~~~python
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from typing import Any, Callable
+from uuid import uuid4
+
+from novel_forge.modules.authority_handler_runtime import (
+    AuthorityHandlerOutput,
+    AuthorityHandlerRegistration,
+    AuthorityHandlerRequest,
+)
+from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.operation_graph import (
+    GraphCommandContext,
+    start_saga,
+)
+from novel_forge.modules.command_kernel.runtime import (
+    OperationTransitionCommand,
+    transition_operation,
+)
+from novel_forge.modules.command_kernel.service import (
+    AdmissionContext,
+    admit_command,
+)
+from novel_forge.modules.content_authority.scheduler import (
+    ContentAuthorityScheduler,
+)
+from novel_forge.modules.hierarchical_planning import (
+    PlanContractType,
+    PlanExecutionScope,
+    PostgresHierarchicalPlanningAuthority,
+)
+from novel_forge.modules.story_design_authority import (
+    DesignTransition,
+    PlanningScope,
+    PostgresStoryDesignAssetAuthority,
+    StoryDesignTransitionCommand,
+)
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.narrative_realization_repositories import (
+    NarrativeRealizationRepository,
+)
+
+from .domain import (
+    PlanChangeSource,
+    classify_plan_change_risk,
+    require_approvable_scope,
+    semantic_plan_diff,
+)
+from .semantic_impact import (
+    load_semantic_impact_discovery,
+    resolve_semantic_dispositions,
+)
+
+
+VERSION = "1.0.4"
+DEFINITIONS = {
+    "plan_change.propose": (
+        "plan_change_proposal",
+        "plan_change.proposal",
+    ),
+    "plan_change.approve": (
+        "plan_change_decision",
+        "plan_change.decision",
+    ),
+    "plan_change.activate": (
+        "plan_change_activation_receipt",
+        "plan_change.activation",
+    ),
+    "plan_change.revalidate": (
+        "plan_revalidation_receipt",
+        "plan_change.revalidation",
+    ),
+}
+HANDLER_PREFIX = "novel_forge.plan_change_authority"
+
+
+@dataclass(frozen=True, slots=True)
+class PlanChangeProposalCommand:
+    project_id: str
+    workspace_id: str
+    book_id: str
+    actor_id: str
+    trace_id: str
+    correlation_id: str
+    stable_idempotency_key: str
+    source_type: PlanChangeSource
+    source_evidence_version_id: str
+    target_asset_version_id: str
+    proposed_asset_version_id: str
+
+
+class _Handler:
+    def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
+        payload = request.command.get("payload")
+        if not isinstance(payload, dict):
+            raise KernelError(
+                "PLAN_CHANGE_INPUT_INVALID",
+                "PlanChange payload must be an object",
+            )
+        asset_type, output_key = DEFINITIONS[request.definition_name]
+        content = {
+            "type": {
+                "plan_change.propose": "PlanChangeProposal",
+                "plan_change.approve": "PlanChangeDecision",
+                "plan_change.activate": "PlanChangeActivationReceipt",
+                "plan_change.revalidate": "PlanRevalidationReceipt",
+            }[request.definition_name],
+            "contract_version": request.definition_name.replace(".", "-") + "-v1",
+            **payload,
+            "source_asset_versions": [item.asset_version_id for item in request.inputs],
+            "direct_plan_mutation_allowed": False,
+        }
+        return AuthorityHandlerOutput(
+            asset_type=asset_type,
+            output_key=output_key,
+            role="primary",
+            content=content,
+            qualification_policy="plan-change-authority-v1",
+            reference_asset_version_ids=tuple(
+                item.asset_version_id for item in request.inputs
+            ),
+            evidence={"deterministic": True, "model_calls": 0},
+        )
+
+
+class _Registry:
+    def __init__(self) -> None:
+        handler = _Handler()
+        self.items = {
+            (name, VERSION): AuthorityHandlerRegistration(
+                definition_name=name,
+                definition_version=VERSION,
+                handler_key=f"{HANDLER_PREFIX}.{name}",
+                handler_contract_version="plan-change-handler-v1",
+                output_asset_type=asset_type,
+                output_key=output_key,
+                role="primary",
+                completion_topic=f"{name}.completed",
+                handler=handler,
+            )
+            for name, (asset_type, output_key) in DEFINITIONS.items()
+        }
+
+    @property
+    def available_handler_keys(self) -> frozenset[str]:
+        return frozenset(item.handler_key for item in self.items.values())
+
+    def registration(
+        self, definition_name: str, definition_version: str
+    ) -> AuthorityHandlerRegistration:
+        return self.items[(definition_name, definition_version)]
+
+
+class PostgresPlanChangeAuthority:
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        story_design: PostgresStoryDesignAssetAuthority,
+        planning: PostgresHierarchicalPlanningAuthority,
+        application_build_id: str,
+        commit_sha: str,
+        worker_id: str = "plan-change-authority-worker",
+        failure_injector: Callable[[str], None] | None = None,
+    ) -> None:
+        if not database_url or not application_build_id or len(commit_sha) != 40:
+            raise ValueError(
+                "PlanChange Authority requires PostgreSQL and build identity"
+            )
+        self.database_url = database_url
+        self.story_design = story_design
+        self.planning = planning
+        self.application_build_id = application_build_id
+        self.commit_sha = commit_sha
+        self.worker_id = worker_id
+        self.failure_injector = failure_injector
+        self.registry = _Registry()
+
+    def propose(
+        self, command: PlanChangeProposalCommand, *, principal: Principal
+    ) -> dict[str, Any]:
+        principal.require("book.authority.execute", command.project_id)
+        frozen = self._frozen_proposal(command)
+        if frozen is not None:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute(
+                    "SELECT proposal_id FROM authority_plan_change_proposal WHERE proposal_operation_id=%s",
+                    [frozen["operation_id"]],
+                )
+                existing = uow.cursor.fetchone()
+            if existing is not None:
+                return self.require(str(existing[0]))
+        if command.source_type is PlanChangeSource.HUMAN_FEEDBACK:
+            from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+            source = AuthorityAssetQuery(self.database_url).require(
+                project_id=command.project_id,
+                asset_version_id=command.source_evidence_version_id,
+            )
+            if (
+                source.asset_type != "replan_request"
+                or source.content.get("contract_version")
+                != "operator-planning-change-request.v1"
+                or source.content.get("authority_boundary")
+                != "FUTURE_PLAN_PROPOSAL_ONLY"
+                or source.content.get("book_id") != command.book_id
+                or source.content.get("target_plan_version_id")
+                != command.target_asset_version_id
+            ):
+                raise KernelError(
+                    "PLAN_CHANGE_FEEDBACK_SCOPE_INVALID",
+                    "operator change evidence must bind this Book and target plan",
+                )
+        target = self._target_binding(
+            command.project_id,
+            command.book_id,
+            command.target_asset_version_id,
+            require_active=frozen is None,
+        )
+        proposed = self._proposed_design(
+            command.project_id, command.proposed_asset_version_id
+        )
+        if (
+            proposed["logical_key"] != target["logical_key"]
+            or proposed["planning_scope"] != target["contract_type"]
+        ):
+            raise KernelError(
+                "PLAN_CHANGE_CANDIDATE_SCOPE_MISMATCH",
+                "proposed plan must target the same logical key and scope",
+            )
+        require_approvable_scope(str(target["execution_scope"]))
+        changes = semantic_plan_diff(dict(target["content"]), dict(proposed["content"]))
+        if not changes:
+            raise KernelError(
+                "PLAN_CHANGE_EMPTY",
+                "PlanChangeProposal must contain semantic changes",
+            )
+        risk = classify_plan_change_risk(
+            changes,
+            target_execution_scope=str(target["execution_scope"]),
+        )
+        diff = [asdict(change) for change in changes]
+        if frozen is None:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                discovery = load_semantic_impact_discovery(
+                    uow.cursor,
+                    project_id=command.project_id,
+                    book_id=command.book_id,
+                    target_asset_version_id=command.target_asset_version_id,
+                    proposed_asset_version_id=command.proposed_asset_version_id,
+                    changes=diff,
+                )
+            payload = {
+                "book_id": command.book_id,
+                "source_type": command.source_type.value,
+                "target_asset_version_id": command.target_asset_version_id,
+                "proposed_asset_version_id": command.proposed_asset_version_id,
+                "semantic_diff": diff,
+                "risk": risk.value,
+                "authority_decision_required": True,
+                "semantic_impact_discovery": discovery,
+            }
+        else:
+            payload = frozen["payload"]
+        operation_id = self._execute(
+            definition="plan_change.propose",
+            project_id=command.project_id,
+            workspace_id=command.workspace_id,
+            actor_id=principal.principal_id,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+            idempotency_key=command.stable_idempotency_key,
+            payload=payload,
+            input_assets=self._resolve(
+                command.project_id,
+                (
+                    command.source_evidence_version_id,
+                    command.target_asset_version_id,
+                    command.proposed_asset_version_id,
+                ),
+            ),
+            principal=principal,
+        )
+        proposal_id = f"plan-change:{operation_id}"
+        self._probe("after_proposal_execution_before_projection")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.plan_change.create_proposal(
+                {
+                    "proposal_id": proposal_id,
+                    "project_id": command.project_id,
+                    "book_id": command.book_id,
+                    "source_type": command.source_type.value,
+                    "source_evidence_version_id": (command.source_evidence_version_id),
+                    "target_asset_version_id": (command.target_asset_version_id),
+                    "proposed_asset_version_id": (command.proposed_asset_version_id),
+                    "target_contract_type": target["contract_type"],
+                    "target_logical_key": target["logical_key"],
+                    "target_execution_scope": target["execution_scope"],
+                    "semantic_diff": diff,
+                    "risk": risk.value,
+                    "proposal_operation_id": operation_id,
+                    "stable_idempotency_key": (command.stable_idempotency_key),
+                }
+            )
+            uow.commit()
+        return self.require(proposal_id)
+
+    def decide(
+        self,
+        proposal_id: str,
+        *,
+        approved: bool,
+        authority_type: str,
+        authority_version: str,
+        evidence: dict[str, Any],
+        principal: Principal,
+    ) -> dict[str, Any]:
+        proposal = self.require(proposal_id)
+        principal.require("book.authority.execute", proposal["project_id"])
+        workspace_id = self._workspace_id(proposal["project_id"], proposal["book_id"])
+        decision = "APPROVED" if approved else "REJECTED"
+        dispositions = resolve_semantic_dispositions(
+            proposal["semantic_impact_discovery"],
+            evidence.get("semantic_impact_dispositions", []),
+        )
+        evidence = {**evidence, "semantic_impact_dispositions": dispositions}
+        if proposal["approval_operation_id"]:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute(
+                    "SELECT decision,authority_type,authority_version,evidence FROM authority_plan_change_decision WHERE proposal_id=%s",
+                    [proposal_id],
+                )
+                recorded = uow.cursor.fetchone()
+            if recorded is None or tuple(recorded) != (
+                decision,
+                authority_type,
+                authority_version,
+                evidence,
+            ):
+                raise KernelError(
+                    "PLAN_CHANGE_DECISION_CONFLICT",
+                    "a recorded decision cannot be rewritten by a retry",
+                )
+            return proposal
+        if approved:
+            from novel_forge.modules.mkaos_authority.craft_scope import validate_scope_transition_decision
+            validate_scope_transition_decision(self.database_url, proposal=proposal, evidence=evidence)
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.repositories.plan_change.require_current_inferred_impacts(
+                    project_id=proposal["project_id"],
+                    book_id=proposal["book_id"],
+                    discovery=proposal["semantic_impact_discovery"],
+                    dispositions=dispositions,
+                )
+        proposal_output = self._operation_output(
+            proposal["proposal_operation_id"], "plan_change.proposal"
+        )
+        operation_id = self._execute(
+            definition="plan_change.approve",
+            project_id=proposal["project_id"],
+            workspace_id=workspace_id,
+            actor_id=principal.principal_id,
+            trace_id=f"{proposal_id}:decision",
+            correlation_id=proposal["proposal_operation_id"],
+            idempotency_key=f"{proposal['stable_idempotency_key']}:decision",
+            payload={
+                "proposal_id": proposal_id,
+                "decision": decision,
+                "authority_type": authority_type,
+                "authority_version": authority_version,
+                "evidence": evidence,
+            },
+            input_assets=(proposal_output,),
+            principal=principal,
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.plan_change.decide(
+                proposal_id=proposal_id,
+                project_id=proposal["project_id"],
+                decision=decision,
+                operation_id=operation_id,
+                authority_type=authority_type,
+                authority_version=authority_version,
+                evidence=evidence,
+                decided_by=principal.principal_id,
+            )
+            uow.commit()
+        return self.require(proposal_id)
+
+    def activate(self, proposal_id: str, *, principal: Principal) -> dict[str, Any]:
+        proposal = self.require(proposal_id)
+        principal.require("book.authority.execute", proposal["project_id"])
+        workspace_id = self._workspace_id(proposal["project_id"], proposal["book_id"])
+        if proposal["status"] not in {
+            "APPROVED",
+            "ACTIVATION_PENDING",
+            "ACTIVE",
+        }:
+            raise KernelError(
+                "PLAN_CHANGE_NOT_APPROVED",
+                "only approved PlanChangeProposal can activate",
+            )
+        if proposal["status"] == "ACTIVE":
+            return proposal
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.plan_change.require_current_inferred_impacts(
+                project_id=proposal["project_id"],
+                book_id=proposal["book_id"],
+                discovery=proposal["semantic_impact_discovery"],
+                dispositions=proposal["semantic_impact_dispositions"],
+            )
+        proposed_state = self.story_design.require(
+            project_id=proposal["project_id"],
+            asset_version_id=proposal["proposed_asset_version_id"],
+        )
+        decision_output = self._operation_output(
+            proposal["approval_operation_id"], "plan_change.decision"
+        )
+        operation_id = self._execute(
+            definition="plan_change.activate",
+            project_id=proposal["project_id"],
+            workspace_id=workspace_id,
+            actor_id=principal.principal_id,
+            trace_id=f"{proposal_id}:activate",
+            correlation_id=proposal["proposal_operation_id"],
+            idempotency_key=(f"{proposal['stable_idempotency_key']}:activate"),
+            payload={
+                "proposal_id": proposal_id,
+                "target_asset_version_id": proposal["target_asset_version_id"],
+                "proposed_asset_version_id": proposal["proposed_asset_version_id"],
+                "recoverable_activation": True,
+            },
+            input_assets=(
+                decision_output,
+                *self._resolve(
+                    proposal["project_id"],
+                    (proposal["proposed_asset_version_id"],),
+                ),
+            ),
+            principal=principal,
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.plan_change.mark_activation_pending(
+                proposal_id, operation_id
+            )
+            uow.commit()
+        if proposed_state["approval"] == "PENDING":
+            proposed_state = self.story_design.transition(
+                StoryDesignTransitionCommand(
+                    project_id=proposal["project_id"],
+                    workspace_id=workspace_id,
+                    actor_id=principal.principal_id,
+                    trace_id=f"{proposal_id}:story-design-approve",
+                    correlation_id=operation_id,
+                    idempotency_key=(
+                        f"{proposal['stable_idempotency_key']}:story-design-approve"
+                    ),
+                    asset_version_id=proposal["proposed_asset_version_id"],
+                    content_hash=self._asset_hash(
+                        proposal["proposed_asset_version_id"]
+                    ),
+                    logical_key=proposal["target_logical_key"],
+                    generator_operation_name=proposed_state["generator_operation_name"],
+                    transition=DesignTransition.APPROVE,
+                    planning_scope=PlanningScope(proposal["target_contract_type"]),
+                    expected_version=int(proposed_state["version"]),
+                    evidence={
+                        "plan_change_proposal_id": proposal_id,
+                        "decision_operation_id": proposal["approval_operation_id"],
+                        "authority_type": "PLAN_CHANGE_AUTHORITY",
+                    },
+                ),
+                principal=principal,
+            )
+        if proposed_state["lifecycle"] != "ACTIVE":
+            self.story_design.transition(
+                StoryDesignTransitionCommand(
+                    project_id=proposal["project_id"],
+                    workspace_id=workspace_id,
+                    actor_id=principal.principal_id,
+                    trace_id=f"{proposal_id}:story-design-activate",
+                    correlation_id=operation_id,
+                    idempotency_key=(
+                        f"{proposal['stable_idempotency_key']}:story-design-activate"
+                    ),
+                    asset_version_id=proposal["proposed_asset_version_id"],
+                    content_hash=self._asset_hash(
+                        proposal["proposed_asset_version_id"]
+                    ),
+                    logical_key=proposal["target_logical_key"],
+                    generator_operation_name=proposed_state["generator_operation_name"],
+                    transition=DesignTransition.ACTIVATE,
+                    planning_scope=PlanningScope(proposal["target_contract_type"]),
+                    expected_version=int(proposed_state["version"]),
+                    evidence={
+                        "plan_change_proposal_id": proposal_id,
+                        "decision_operation_id": proposal["approval_operation_id"],
+                        "replacement_approved": True,
+                    },
+                ),
+                principal=principal,
+            )
+        else:
+            self._require_story_design_active(proposal)
+        self._probe("after_plan_activation_before_binding")
+        target = self._target_binding(
+            proposal["project_id"],
+            proposal["book_id"],
+            proposal["target_asset_version_id"],
+            require_active=False,
+        )
+        self.planning.bind_active_contract(
+            project_id=proposal["project_id"],
+            book_id=proposal["book_id"],
+            asset_version_id=proposal["proposed_asset_version_id"],
+            contract_type=PlanContractType(proposal["target_contract_type"]),
+            parent_version_id=str(target["parent_version_id"] or ""),
+            execution_scope=PlanExecutionScope(proposal["target_execution_scope"]),
+            replacement_approved=True,
+            expected_active_asset_version_id=proposal["target_asset_version_id"],
+            decision_evidence={
+                "plan_change_proposal_id": proposal_id,
+                "approval_operation_id": proposal["approval_operation_id"],
+            },
+            workspace_id=workspace_id,
+            actor_id=principal.principal_id,
+            idempotency_key=(f"{proposal['stable_idempotency_key']}:planning-binding"),
+            trace_id=f"{proposal_id}:planning-binding",
+            correlation_id=proposal["proposal_operation_id"],
+            causation_operation_id=operation_id,
+            principal=principal,
+        )
+        self._probe("after_plan_activation_before_outbox")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.plan_change.require_current_inferred_impacts(
+                project_id=proposal["project_id"],
+                book_id=proposal["book_id"],
+                discovery=proposal["semantic_impact_discovery"],
+                dispositions=proposal["semantic_impact_dispositions"],
+            )
+            uow.repositories.plan_change.record_impacts(
+                proposal_id=proposal_id,
+                project_id=proposal["project_id"],
+                source_asset_version_id=proposal["target_asset_version_id"],
+                operation_id=operation_id,
+            )
+            inferred_impacts = uow.repositories.plan_change.record_inferred_impacts(
+                proposal_id=proposal_id,
+                project_id=proposal["project_id"],
+                book_id=proposal["book_id"],
+                source_asset_version_id=proposal["target_asset_version_id"],
+                operation_id=operation_id,
+                discovery=proposal["semantic_impact_discovery"],
+                dispositions=proposal["semantic_impact_dispositions"],
+            )
+            invalidated_realization_ids = NarrativeRealizationRepository(
+                uow.cursor
+            ).stale_for_noncurrent_plan_inputs(
+                project_id=proposal["project_id"],
+                book_id=proposal["book_id"],
+                operation_id=operation_id,
+            )
+            uow.repositories.plan_change.mark_active(proposal_id)
+            event_id = str(uuid4())
+            uow.repositories.operation_graph.record_event(
+                {
+                    "event_id": event_id,
+                    "audit_id": str(uuid4()),
+                    "outbox_id": str(uuid4()),
+                    "aggregate_type": "plan_change_proposal",
+                    "aggregate_id": proposal_id,
+                    "operation_id": operation_id,
+                    "project_id": proposal["project_id"],
+                    "event_type": "plan_change.activated",
+                    "correlation_id": proposal["proposal_operation_id"],
+                    "causation_id": proposal["approval_operation_id"],
+                    "payload": {
+                        "proposal_id": proposal_id,
+                        "new_plan_version_id": proposal["proposed_asset_version_id"],
+                        "inferred_impact_asset_version_ids": inferred_impacts,
+                        "invalidated_narrative_realization_ids": list(
+                            invalidated_realization_ids
+                        ),
+                    },
+                }
+            )
+            uow.commit()
+        return self.require(proposal_id)
+
+    def revalidate(
+        self,
+        *,
+        project_id: str,
+        asset_version_id: str,
+        evidence_version_id: str,
+        principal: Principal,
+    ) -> dict[str, Any]:
+        principal.require("book.authority.execute", project_id)
+        workspace_id = self._workspace_for_asset(project_id, asset_version_id)
+        operation_id = self._execute(
+            definition="plan_change.revalidate",
+            project_id=project_id,
+            workspace_id=workspace_id,
+            actor_id=principal.principal_id,
+            trace_id=f"{asset_version_id}:revalidate",
+            correlation_id=asset_version_id,
+            idempotency_key=(
+                f"plan-revalidate:{project_id}:{asset_version_id}:{evidence_version_id}"
+            ),
+            payload={
+                "asset_version_id": asset_version_id,
+                "evidence_version_id": evidence_version_id,
+            },
+            input_assets=self._resolve(
+                project_id, (asset_version_id, evidence_version_id)
+            ),
+            principal=principal,
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            applied = uow.repositories.plan_change.revalidate(
+                project_id=project_id,
+                asset_version_id=asset_version_id,
+                evidence_version_id=evidence_version_id,
+                operation_id=operation_id,
+            )
+            uow.cursor.execute(
+                "SELECT freshness FROM story_plan_binding WHERE project_id=%s AND asset_version_id=%s",
+                [project_id, asset_version_id],
+            )
+            freshness = str(uow.cursor.fetchone()[0])
+            if not applied:
+                return {
+                    "asset_version_id": asset_version_id,
+                    "freshness": freshness,
+                    "operation_id": operation_id,
+                }
+            event_id = str(uuid4())
+            uow.repositories.operation_graph.record_event(
+                {
+                    "event_id": event_id,
+                    "audit_id": str(uuid4()),
+                    "outbox_id": str(uuid4()),
+                    "aggregate_type": "story_plan_binding",
+                    "aggregate_id": asset_version_id,
+                    "operation_id": operation_id,
+                    "project_id": project_id,
+                    "event_type": "plan_change.revalidated",
+                    "correlation_id": asset_version_id,
+                    "causation_id": evidence_version_id,
+                    "payload": {
+                        "asset_version_id": asset_version_id,
+                        "evidence_version_id": evidence_version_id,
+                    },
+                }
+            )
+            uow.commit()
+        return {
+            "asset_version_id": asset_version_id,
+            "freshness": freshness,
+            "operation_id": operation_id,
+        }
+
+    def require(self, proposal_id: str) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            proposal = uow.repositories.plan_change.require(proposal_id)
+            uow.cursor.execute(
+                """SELECT version.content FROM authority_operation_output_asset output
+                   JOIN authority_asset_version version USING(asset_version_id)
+                   WHERE output.operation_id=%s AND output.output_key='plan_change.proposal'""",
+                [proposal["proposal_operation_id"]],
+            )
+            content = uow.cursor.fetchone()
+            proposal["semantic_impact_discovery"] = (content[0] if content else {}).get(
+                "semantic_impact_discovery", {}
+            )
+            uow.cursor.execute(
+                "SELECT evidence FROM authority_plan_change_decision WHERE proposal_id=%s",
+                [proposal_id],
+            )
+            decision = uow.cursor.fetchone()
+            proposal["semantic_impact_dispositions"] = (
+                decision[0] if decision else {}
+            ).get("semantic_impact_dispositions", [])
+            return proposal
+
+    def _frozen_proposal(
+        self, command: PlanChangeProposalCommand
+    ) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT operation_id,project_id,workspace_id,command_payload
+                   FROM authority_operation WHERE idempotency_scope='project:plan-change'
+                     AND idempotency_key=%s""",
+                [command.stable_idempotency_key],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        payload = row[3].get("payload", {})
+        if (
+            row[1] != command.project_id
+            or row[2] != command.workspace_id
+            or row[3].get("input_asset_version_ids")
+            != [
+                command.source_evidence_version_id,
+                command.target_asset_version_id,
+                command.proposed_asset_version_id,
+            ]
+            or payload.get("book_id") != command.book_id
+            or payload.get("source_type") != command.source_type.value
+        ):
+            raise KernelError(
+                "IDEMPOTENCY_CONFLICT",
+                "Plan Change retry must retain its original scope and source versions",
+            )
+        return {"operation_id": row[0], "payload": payload}
+
+    def _execute(
+        self,
+        *,
+        definition: str,
+        project_id: str,
+        workspace_id: str,
+        actor_id: str,
+        trace_id: str,
+        correlation_id: str,
+        idempotency_key: str,
+        payload: dict[str, Any],
+        input_assets: tuple[dict[str, str], ...],
+        principal: Principal,
+    ) -> str:
+        self._register_definitions()
+        admitted = admit_command(
+            self.database_url,
+            {
+                "definition_name": definition,
+                "definition_version": VERSION,
+                "project_id": project_id,
+                "workspace_id": workspace_id,
+                "actor_id": actor_id,
+                "idempotency_scope": "project:plan-change",
+                "idempotency_key": idempotency_key,
+                "trace_id": trace_id,
+                "span_id": str(uuid4()),
+                "correlation_id": correlation_id,
+                "causation_id": "",
+                "input": {
+                    "project_id": project_id,
+                    "input_asset_version_ids": [
+                        item["asset_version_id"] for item in input_assets
+                    ],
+                    "payload": payload,
+                },
+                "input_assets": list(input_assets),
+            },
+            context=AdmissionContext(
+                actor_id=actor_id,
+                permissions=frozenset({"book.authority.execute"}),
+                available_handlers=self.registry.available_handler_keys,
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+            ),
+        )
+        operation_id = str(admitted["operation_id"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            state = uow.repositories.attempt_runtime.operation_state(
+                operation_id, project_id
+            )
+        if state["status"] == "ADMITTED":
+            transition_operation(
+                self.database_url,
+                OperationTransitionCommand(
+                    operation_id=operation_id,
+                    project_id=project_id,
+                    expected_version=int(state["version"]),
+                    expected_status="ADMITTED",
+                    target_status="READY",
+                    actor_id=actor_id,
+                    reason="PlanChange inputs frozen",
+                    trace_id=trace_id,
+                    correlation_id=correlation_id,
+                    causation_id="",
+                ),
+            )
+            start_saga(
+                self.database_url,
+                GraphCommandContext(project_id, actor_id, trace_id, correlation_id),
+                root_operation_id=operation_id,
+            )
+        ContentAuthorityScheduler(
+            self.database_url,
+            registry=self.registry,
+            worker_id=self.worker_id,
+        ).run_or_recover(
+            operation_id=operation_id,
+            project_id=project_id,
+        )
+        return operation_id
+
+    def _target_binding(
+        self,
+        project_id: str,
+        book_id: str,
+        asset_version_id: str,
+        *,
+        require_active: bool = True,
+    ) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            active_join = (
+                "JOIN active_story_plan_version AS active "
+                "ON active.binding_id=binding.binding_id"
+                if require_active
+                else ""
+            )
+            uow.cursor.execute(
+                f"""
+                SELECT binding.contract_type, binding.logical_key,
+                       binding.execution_scope, binding.parent_version_id,
+                       binding.freshness, version.content
+                FROM story_plan_binding AS binding
+                {active_join}
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE binding.project_id=%s AND binding.book_id=%s
+                  AND binding.asset_version_id=%s
+                """,
+                [project_id, book_id, asset_version_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "PLAN_CHANGE_TARGET_NOT_ACTIVE",
+                "PlanChange target is not an active typed plan",
+            )
+        fields = (
+            "contract_type",
+            "logical_key",
+            "execution_scope",
+            "parent_version_id",
+            "freshness",
+            "content",
+        )
+        return dict(zip(fields, row, strict=True))
+
+    def _proposed_design(
+        self, project_id: str, asset_version_id: str
+    ) -> dict[str, Any]:
+        state = self.story_design.require(
+            project_id=project_id, asset_version_id=asset_version_id
+        )
+        if (
+            state["approval"] not in {"PENDING", "APPROVED"}
+            or state["qualification"] != "QUALIFIED"
+            or state["lifecycle"] != "MATERIALIZED"
+        ):
+            raise KernelError(
+                "PLAN_CHANGE_CANDIDATE_NOT_QUALIFIED",
+                "proposed plan must be qualified, approval-pending or approved, and inactive",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT content FROM authority_asset_version
+                WHERE asset_version_id=%s
+                """,
+                [asset_version_id],
+            )
+            row = uow.cursor.fetchone()
+        return {**state, "content": dict(row[0])}
+
+    def _workspace_id(self, project_id: str, book_id: str) -> str:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT workspace_id FROM authority_book
+                WHERE project_id=%s AND book_id=%s
+                """,
+                [project_id, book_id],
+            )
+            rows = uow.cursor.fetchall()
+        if len(rows) != 1:
+            raise KernelError(
+                "PLAN_CHANGE_BOOK_SCOPE_INVALID",
+                "PlanChange could not resolve one authoritative Book workspace",
+            )
+        return str(rows[0][0])
+
+    def _workspace_for_asset(self, project_id: str, asset_version_id: str) -> str:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT DISTINCT book_id FROM story_plan_binding
+                WHERE project_id=%s AND asset_version_id=%s
+                """,
+                [project_id, asset_version_id],
+            )
+            rows = uow.cursor.fetchall()
+        if len(rows) != 1:
+            raise KernelError(
+                "PLAN_CHANGE_ASSET_SCOPE_INVALID",
+                "Plan revalidation requires one authoritative Book binding",
+            )
+        return self._workspace_id(project_id, str(rows[0][0]))
+
+    def _resolve(
+        self, project_id: str, version_ids: tuple[str, ...]
+    ) -> tuple[dict[str, str], ...]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            results = []
+            for version_id in version_ids:
+                uow.cursor.execute(
+                    """
+                    SELECT version.content_hash
+                    FROM authority_asset_version AS version
+                    JOIN authority_asset AS asset
+                      ON asset.asset_id=version.asset_id
+                    WHERE version.asset_version_id=%s
+                      AND asset.project_id=%s
+                    """,
+                    [version_id, project_id],
+                )
+                row = uow.cursor.fetchone()
+                if row is None:
+                    raise KernelError(
+                        "PLAN_CHANGE_INPUT_NOT_FOUND",
+                        f"missing Project-scoped AssetVersion {version_id}",
+                    )
+                results.append(
+                    {
+                        "asset_version_id": version_id,
+                        "content_hash": str(row[0]),
+                    }
+                )
+        return tuple(results)
+
+    def _asset_hash(self, asset_version_id: str) -> str:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT content_hash FROM authority_asset_version
+                WHERE asset_version_id=%s
+                """,
+                [asset_version_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "PLAN_CHANGE_INPUT_NOT_FOUND",
+                "proposed AssetVersion does not exist",
+            )
+        return str(row[0])
+
+    def _require_story_design_active(self, proposal: dict[str, Any]) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT asset_version_id
+                FROM authority_story_design_active_version
+                WHERE project_id=%s AND logical_key=%s
+                """,
+                [
+                    proposal["project_id"],
+                    proposal["target_logical_key"],
+                ],
+            )
+            row = uow.cursor.fetchone()
+        if row is None or str(row[0]) != proposal["proposed_asset_version_id"]:
+            raise KernelError(
+                "PLAN_CHANGE_ACTIVATION_RECOVERY_CONFLICT",
+                "active Story Design version differs from the proposal",
+            )
+
+    def _operation_output(self, operation_id: str, output_key: str) -> dict[str, str]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT binding.asset_version_id, version.content_hash
+                FROM authority_operation_output_asset AS binding
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE binding.operation_id=%s AND binding.output_key=%s
+                """,
+                [operation_id, output_key],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "PLAN_CHANGE_OUTPUT_MISSING",
+                f"missing output {output_key}",
+            )
+        return {
+            "asset_version_id": str(row[0]),
+            "content_hash": str(row[1]),
+        }
+
+    def _register_definitions(self) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            for name, (asset_type, output_key) in DEFINITIONS.items():
+                uow.repositories.definitions.register(
+                    _definition(
+                        name,
+                        asset_type,
+                        output_key,
+                        application_build_id=self.application_build_id,
+                        commit_sha=self.commit_sha,
+                    )
+                )
+            uow.commit()
+
+    def _probe(self, point: str) -> None:
+        if self.failure_injector is not None:
+            self.failure_injector(point)
+
+
+def _definition(
+    name: str,
+    asset_type: str,
+    output_key: str,
+    *,
+    application_build_id: str,
+    commit_sha: str,
+) -> dict[str, Any]:
+    schema = {"type": "object"}
+    return {
+        "name": name,
+        "definition_version": VERSION,
+        "family": "plan_change_authority",
+        "enabled": True,
+        "definition_status": "integration_proven",
+        "command_schema_version": f"{name}.command.v1",
+        "result_schema_version": f"{name}.result.v1",
+        "command_schema": schema,
+        "result_schema": schema,
+        "input_contract": schema,
+        "output_contract": {
+            "asset_type": asset_type,
+            "output_key": output_key,
+        },
+        "handler_key": f"{HANDLER_PREFIX}.{name}",
+        "handler_contract_version": "plan-change-handler-v1",
+        "application_build_id": application_build_id,
+        "commit_sha": commit_sha,
+        "execution_mode": "worker",
+        "permissions": ["book.authority.execute"],
+        # INVARIANT: The formal decision is an Authority asset consumed by activate; the
+        # generic admission approval field would duplicate that authority.
+        "approval_policy": {"required": False},
+        "idempotency_scope": "project:plan-change",
+        "concurrency_key_template": "project:{project_id}:plan-change",
+        "retry_policy": {"max_attempts": 2},
+        "timeout_policy": {"operation_timeout_seconds": 120},
+        "cancellation_policy": {"mode": "cancel_active_attempt"},
+        "compensation_policy": {
+            "supported": False,
+            "reason": "append-only proposal and recoverable activation",
+        },
+        "irreversible_effect_policy": {"allowed": False},
+        "external_capabilities": [],
+        "policy": {
+            "direct_active_plan_mutation": False,
+            "impact_analysis_required": True,
+            "plan_change_candidate_asset_input_allowed": (
+                name in {"plan_change.propose", "plan_change.activate"}
+            ),
+            "semantic_revalidation_target_input_allowed": (
+                name == "plan_change.revalidate"
+            ),
+        },
+        "completion_contract": {
+            "version": "plan-change-completion-v1",
+            "required_asset_selectors": [
+                {
+                    "selector": asset_type,
+                    "output_key": output_key,
+                    "role": "primary",
+                    "lifecycle": "ACTIVE",
+                    "eligibility": "ELIGIBLE",
+                    "governance": "CLEAR",
+                }
+            ],
+            "required_evidence": ["trace", "audit"],
+            "required_outbox_events": [f"{name}.completed"],
+        },
+    }
+
+
+__all__ = ["PlanChangeProposalCommand", "PostgresPlanChangeAuthority"]
+
+~~~~

@@ -1,10 +1,10 @@
-# Prompt / Skill 只读审计
+# Prompt / Skill 与全工程生产链只读审计
 
 固定基线：[b1d42e6107d871442baa71823f7c21bfeec841b1](https://github.com/yuan2go/novel-forge/tree/b1d42e6107d871442baa71823f7c21bfeec841b1)。仓库：https://github.com/yuan2go/novel-forge。审计起始：2026-10-04T13:20:14.040055+00:00（北京时间 2026-10-04 21:20:14）。remote refs/heads/main 在开始时以 git ls-remote 核验。全程从 git archive 的仓库外快照取证；本地用户分支 `codex/wp02-author-approved-run`，HEAD `ceb69fa2ff1c56f07005154bb5797616e933e8c2`，未切换/覆盖/清理，未读取其未提交生产记录作为 main 的运行证据。结束核验见 baseline-end.json；main 若变化仅报告。
 
 ## 结论
 
-发现公共生产规则存在范围过宽和作者输入绑定缺口：7项机制问题，另有2项历史兼容/旧合同风险登记。最强证据是不可逆代价 task/Schema、固定资格 criteria、章节预备必填，以及 Writer/Quality投影缺字段。**可以确认规则存在并进入指定可达装配链（A+B）；不能确认本次 main 对应的线上 release/真实请求使用，更不能确认它造成某本小说质量差（C未验证）。**
+发现公共生产规则存在范围过宽和作者输入绑定缺口：8项机制问题（含本次全链路补充P08），另有2项历史兼容/旧合同风险登记。最强证据是不可逆代价 task/Schema、固定资格 criteria、章节预备必填，以及 Writer/Quality投影缺字段。**可以确认规则存在并进入指定可达装配链（A+B）；不能确认本次 main 对应的线上 release/真实请求使用，更不能确认它造成某本小说质量差（C未验证）。**
 
 未证明这些约束出自“某次AI开发任务”。少量 blame 可定位首次提交，但没有对应局部任务授权证据。不能将已有冲突规则自动包装为作者选择：已生成/批准 Foundation 也必须回溯 Brief 与适用性；本轮尚无同版本批准产物，未替它背书。
 
@@ -104,7 +104,7 @@ Design an earned ending direction with irreversible costs, required closures and
 
 证据强度：A 确认；B WIRED 且 SYNTHETIC 装配确认；真实请求/实际生产激活未观察；C 文学效果 UNAVAILABLE。
 
-最小修改：先改 foundation_task；同步 ending/theme Schema 及 Foundation validators，使用现有 author constraints 与已接纳方案判断适用性，允许不适用，不用空字符串伪装代价。
+对应修改层（完整方案见 ENGINEERING_OPTIMAL_CHANGE_PLAN.md）：先改 foundation_task；同步 ending/theme Schema 及 Foundation validators，使用现有 author constraints 与已接纳方案判断适用性，允许不适用，不用空字符串伪装代价。
 
 验证：同模型调用零出站地渲染两种合法作者目标；不使用不可逆代价时 task 与 Schema 都允许；有作者明确选择时完整保留。
 
@@ -120,15 +120,15 @@ Design an earned ending direction with irreversible costs, required closures and
 
 固定SHA定位：[src/novel_forge/modules/story_design_authority/qualification.py:330](evidence/source/src/novel_forge/modules/story_design_authority/qualification.py#L330)；[src/novel_forge/modules/story_design_authority/qualification.py:432](evidence/source/src/novel_forge/modules/story_design_authority/qualification.py#L432)；[src/novel_forge/modules/story_planning_runtime/execution.py:2291](evidence/source/src/novel_forge/modules/story_planning_runtime/execution.py#L2291)。
 
-生效条件：required_qualification_profiles 按 generator operation 选固定 criteria；narrative_semantic_evaluation 逐条判断；qualifier 不按当前作者技法选择过滤。Volume schema 必填非空 irreversible_change/midpoint/climax/settlement/next_volume_bridge。
+生效条件：required_qualification_profiles 按 generator operation 选固定 criteria；narrative_semantic_evaluation 逐条判断；qualifier 不按当前作者技法选择过滤；strict门禁与AUTHOR_ADVISORY不同，见本次补充。Volume schema 必填非空 irreversible_change/midpoint/climax/settlement/next_volume_bridge。
 
-为何不合理：全部 frozen criteria 必须返回 PASS，合法 verdict 仅 PASS/FAIL/INSUFFICIENT；不适用不能表达。SERIALIZATION_CAPACITY、REWARD_REACHABILITY 名称本身不是爽文定罪，但与硬结构/不可逆字段和无适用性通道合起来，使非升级、非连载或终卷目标无法自然表示。 应有作用范围：当前书/Volume 所选择的商业、情绪或戏剧目标；确有到期义务仍必须验收。 影响作品：独立短篇/中篇、非连载、静态群像、终卷无后续桥、非线性/开放结构、拒绝不可逆变化的卷。
+为何不合理：严格独立资格要求全部 frozen criteria PASS，合法 verdict 仅 PASS/FAIL/INSUFFICIENT；不适用不能表达。SERIALIZATION_CAPACITY、REWARD_REACHABILITY 名称本身不是爽文定罪，但与硬结构/不可逆字段和无适用性通道合起来，使非升级、非连载或终卷目标无法自然表示。 应有作用范围：当前书/Volume 所选择的商业、情绪或戏剧目标；确有到期义务仍必须验收。 影响作品：独立短篇/中篇、非连载、静态群像、终卷无后续桥、非线性/开放结构、拒绝不可逆变化的卷。
 
 作者决定权：作者 Brief 可自由输入；后面的 profile 集合与 Schema 不因此改变。Reviewer 不需套用旧 Skill 全文也会收到这些 criteria。
 
 证据强度：A+B 静态 WIRED；volume required 字段 SYNTHETIC 断言；未伪造独立 evaluator verdict/生产 receipt；C 未验证。
 
-最小修改：在已有 qualification profile 与 output-schema/validators 层做版本化适用性，不另建平台。以当前目标解释 reader promise，给非连载/终卷/无代价一个正式合法表示；不要把缺证据改成 PASS。
+对应修改层（完整方案见 ENGINEERING_OPTIMAL_CHANGE_PLAN.md）：在已有 qualification profile 与 output-schema/validators 层做版本化适用性，不另建平台。以当前目标解释 reader promise，给非连载/终卷/无代价一个正式合法表示；不要把缺证据改成 PASS。
 
 验证：同输入只改变串行升级/不可逆策略与终卷标记，选定 criteria 应反映选择；不适用不会触发 repair；已适用硬约束失败仍阻断。
 
@@ -154,7 +154,7 @@ if chapter == 1 or function in {"opening", "golden_opening"}:
 
 证据强度：A+B 静态生产准备调用；SYNTHETIC quiet-opening-profile 与 empty_hook_rejected；无实际 READY / BLOCKED 运行 receipt；C 未验证。
 
-最小修改：先调整已有 profile.required_fields 的内容适用条件和章节结束目的表达，再同步 schema；保留身份、可执行任务和连续性验证，不把缺失的必要计划放行。
+对应修改层（完整方案见 ENGINEERING_OPTIMAL_CHANGE_PLAN.md）：先调整已有 profile.required_fields 的内容适用条件和章节结束目的表达，再同步 schema；保留身份、可执行任务和连续性验证，不把缺失的必要计划放行。
 
 验证：首章为观察章/普通章无反派/独立终章分别可正式标不适用；对作者选定悬念仍检查；不允许仅填“无”通过伪约束。
 
@@ -178,7 +178,7 @@ build_draft_plan_view 的白名单没有 style_constraints；build_draft_style_v
 
 证据强度：A+B WIRED + SYNTHETIC 丢失对照；同 safe_summary/facts 风格在 draft/review/revision/rereview 都保留；C 未验证。
 
-最小修改：修复现有 build_draft_plan_view/build_draft_style_view、production_preparation.service._context_candidate 与 Context 去重假设，保留 style_constraints/constraints 及其版本/范围；不用新增题材枚举或 Prompt 套餐。
+对应修改层（完整方案见 ENGINEERING_OPTIMAL_CHANGE_PLAN.md）：修复现有 build_draft_plan_view/build_draft_style_view、production_preparation.service._context_candidate 与 Context 去重假设，保留 style_constraints/constraints 及其版本/范围；不用新增题材枚举或 Prompt 套餐。
 
 验证：单变量 marker 对照；从真实已批准 style source 到四阶段查约束与身份；冲突时显式保留并诊断，不静默覆盖。
 
@@ -202,7 +202,7 @@ SourceOriginalityQualityContextView 含 revision_text、source_governance、cont
 
 证据强度：A+B WIRED+24快照中的质量对照；未执行模型判断、修订任务或接纳；C 未验证。
 
-最小修改：将现有已批准风格与适用作者目标的精简有源投影放进相应 QualityContext；缺基准时不足证据，不用通用禁词表代替。跟随修订输入保留同一基准。
+对应修改层（完整方案见 ENGINEERING_OPTIMAL_CHANGE_PLAN.md）：将现有已批准风格与适用作者目标的精简有源投影放进相应 QualityContext；缺基准时不足证据，不用通用禁词表代替。跟随修订输入保留同一基准。
 
 验证：同段落改风格目标：对应style_drift/anti_ai 输入跟随变化；合意风格不能只因技法而触发修订。缺基准时给出明确不足证据；匿名文学验证另行授权。
 
@@ -228,7 +228,7 @@ score = round(max(0.0, min(100.0, 100.0 - max(0.0, average - 36.0) * 2.0)), 2)
 
 证据强度：A+B 条件 WIRED+SYNTHETIC _evaluate；真实 calibrated precedence 静态确认；C 未验证。
 
-最小修改：让 fallback 消费编译后的配置；固定指标作为可解释诊断/适用作品策略，避免覆盖明确文体目标；保留客观完整性检查。
+对应修改层（完整方案见 ENGINEERING_OPTIMAL_CHANGE_PLAN.md）：让 fallback 消费编译后的配置；固定指标作为可解释诊断/适用作品策略，避免覆盖明确文体目标；保留客观完整性检查。
 
 验证：同指标不同合法阈值改变 verdict；有 exact calibrated evidence 时仍优先；设备模式/文体不得由隐蔽36基点替作者决定。
 
@@ -253,13 +253,13 @@ score = round(max(0.0, min(100.0, 100.0 - max(0.0, average - 36.0) * 2.0)), 2)
 
 证据强度：A+B 条件静态 WIRED；无 Source真实请求、批准知识/Writer引用；C 未验证。
 
-最小修改：只改这两个商业绝对句与操作流程第8项，绑定本次作品/分析目标；保留安全、来源和不把知识变成无关讲义的原则。
+对应修改层（完整方案见 ENGINEERING_OPTIMAL_CHANGE_PLAN.md）：修改商业绝对句与操作流程第8项，并核验本次任务目标实际进入Source输入、Card适用性及后续选择；保留安全、来源和不把知识变成无关讲义的原则。
 
 验证：专业资料分析目的只改变商业/可信度取舍，方法输入随之改变；源表达仍不得进入Writer；不将专业准确性降级为普遍次要。
 
 ### C01 / C02 · 历史兼容和声明合同风险
 
-C01：旧 prose v1/quality v1/chapter-outline v1 无条件商业reward/hook、成本和Markdown自检等完整原文在汇编；旧causal-cost v1为CONSTRAINT且“Every decisive chapter action ... irreversible cost”。当前默认已选v4/v3/v3与knowledge v2，不能称这些是当前默认。resolver仍能精确解析历史版本，若数据库ACTIVE旧冻结Pack仍有条件性生效；实际选择未知。最小处置先核验release/attempt frozen hash，避免改历史字节或误删兼容证据；新的选择应使用已修正版本，旧请求不应偷偷换Prompt。
+C01：旧 prose v1/quality v1/chapter-outline v1 无条件商业reward/hook、成本和Markdown自检等完整原文在汇编；旧causal-cost v1为CONSTRAINT且“Every decisive chapter action ... irreversible cost”。当前默认已选v4/v3/v3与knowledge v2，不能称这些是当前默认。resolver仍能精确解析历史版本，若数据库ACTIVE旧冻结Pack仍有条件性生效；实际选择未知。版本处置先核验release/attempt frozen hash，避免改历史字节或误删兼容证据；新的选择应使用已修正版本，旧请求不应偷偷换Prompt。
 
 C02：目录 schema:chapter-plan:v1 required=[chapter_goal,conflicts,scenes,ending_hook] 且conflicts minItems1/hook minLength1。声明在目录可达，但实际rich Provider schema有另层构造；不能据此断言这一旧schema就是每次最终response format。把它作为条件旧接口偏好风险登记，当前生产预备更强证据见P03。
 
@@ -298,7 +298,7 @@ REAL_CAPTURE=0；RECONSTRUCTED=0；SYNTHETIC=24；真实模型/付费Provider调
 | 额外纯构造记录 | 103；包含103记录中的1条默认Chapter dynamic-slice缺失原始失败 |
 | 独立阶段离线输入 | 12stage methods × 2输入 =24；不是24真实请求 |
 | 小型必要断言 | 41/41机制预期匹配 |
-| 源证据文件 | 165（最终counts.json核对） |
+| 源证据文件 | 178（最终counts.json核对） |
 | 全字段/动态语义审查 | 重点核验改变创作边界字段；巨大动态Canon/Planning变体未逐实例渲染，源构造逻辑完整保留 |
 
 完整全文、身份/调用覆盖和逐资产合理/有问题/条件适用/待核验评价见PROMPTS_AND_SKILLS_FULL.md、inventory.jsonl、ASSET_EVALUATIONS.md。对已证明不自动注入的旧/示例路径单列evidence/unbound-and-demo-assets.json。所有资产全文检查文件哈希与固定snapshot一致；JSON组装schema是纯构造序列化内容，不能称原始生产请求字节。
@@ -307,16 +307,15 @@ REAL_CAPTURE=0；RECONSTRUCTED=0；SYNTHETIC=24；真实模型/付费Provider调
 
 retry/repair/resume：static frozen_context_retry核验exactproject/book/inputs及range/policy；repair用原候选与验证report hash，bounded revision不应自动回模板；resume仍从frozen attempt与durable evidence取内容。没有找到正式新路径静默落回样例小说的证明；没有离线完整执行状态恢复，也不能宣布所有恢复路径已排除污染。旧frozen Pack与错误已接纳上游内容仍会被保留，这既是证据不改写原则，也需要新授权纠正，不能靠replay洗掉。
 
-## 最小修改顺序与后续验证设计
+## 全工程修改建议与验证设计
 
-1. 先修P04已有字段投影和P05审读目标基准，使当前作者要求能被阶段消费；这是代码绑定修复，不靠增加Prompt语气。
-2. 同步修P01 task和Schema/validator；再修P02/P03资格profile、适用性和章/卷合同。旧字节不可篡改，按现有版本/hash发布新合同。不能只软化Skill后让硬字段继续迫模型补成本/魅力/悬念。
-3. 修P06fallback消费配置与诊断性质；P07改专业Skill中两句商业绝对要求，使用已有输入/目标，不建新枚举/平台。
-4. 核验实际release/冻结attempt选择，清理新的默认选择中的旧内容；保留历史证据。现有合理公共Skill无需整体重写或增加Agent。
+按用户追加要求，本报告不再把建议限定为局部或最小改写。完整架构、职责、合同、输入传播、审读回改、持久化、版本迁移、恢复与验证见 [ENGINEERING_OPTIMAL_CHANGE_PLAN.md](ENGINEERING_OPTIMAL_CHANGE_PLAN.md)。相关完整指令建议见 [REWRITE_PROPOSALS.md](REWRITE_PROPOSALS.md)。
 
-后续最小文学实验（仅设计，未调用）：固定合法作者输入、冻结模型/Provider/采样/上下文/篇幅和seed支持情况；一次只改变P01或P04/P05之一；至少重复少量配对样本考虑随机性；匿名评审按这本书的明确目标比较（如克制、观察视角、无强制反转），同时检查连续性/原文隔离。分开报告目标符合度、可读性与代价，不把模型自评分或一次成功样例当通用质量证明。
+推荐顺序：先明确本书有效创作要求与规则适用性（W1），同步修改Foundation/资格、层级/实现合同、投影/Context、质量/修订（W2/W3/W4/W6），再统一Prompt/Skill/Pack版本（W5），核对接纳与后续（W7），最后处理真实release、旧书兼容、恢复与受控文学验证（W8）。这不是只修七个局部字符串，也不是重写一套新Authority。
 
-审计产物是建议与证据，不是新运行Authority；未写回生产Prompt/代码，没有DB/缓存/日志/作品状态变化，没有commit/push/PR/merge。
+现有公共能力继续有效：权限、版权、精确身份、事实连续性、候选与接受分离、必要接口、限定修订、UNKNOWN调和及原子接纳。作品差异由当前输入与批准方案决定。完整方案的实现和验收全部NOT_RUN；本轮机制检查不代表修改已完成。
+
+审计文件不是新运行Authority；没有写回生产Prompt/代码、连接DB、调用Provider、修改作品状态或commit/push/PR/merge。
 
 ## 补充：字段丢失首点与开发约束
 
@@ -324,8 +323,24 @@ P04的独立style_policy.constraints路径，生产预备 service._context_candi
 
 相关tests/unit/test_chapter_plan_fidelity.py:292要求opening缺reader_promise_actions必须抛错，维护层确实锁定P03某些商业语义；这不是测试文本进入模型。fixture含cost/public promise/irreversible示例：chapter handlers.DeterministicFixtureChapterProvider:94明确external_effect_backed=False；planning_fixture_response在scripted路径由authority_dependencies:1098选择。这些是模拟输出，不是正式paid模型fallback或默认某本小说。测试/fixture登记见evidence/development-and-fixture-boundaries.json；本轮未执行它们。测试对新Skill可选技法有正面校准线索，但本轮结论用当前源码与自己的小型装配，不借用历史PASS。
 
-最终核对：196目录资产、45注册文本身份（42不同源）+7条件源方法（合计48不同文本源）、103纯构造记录（102成功+1显式失败）、14内联说明/门禁/作者入口、27装配/发送/对照身份调用位置、5访问缺口，inventory共352记录。全文原字节复制 165个源文件；24 SYNTHETIC请求、41机制断言。调用清单包括无模型input的CLI版本probe与只重建producer identity的sampling点，已经单列，不能按27计真实模型调用。
+最终核对：196目录资产、45注册文本身份（42不同源）+7条件源方法（合计48不同文本源）、103纯构造记录（102成功+1显式失败）、16内联说明/门禁/作者入口、27装配/发送/对照身份调用位置、5访问缺口，inventory共354记录。全文原字节复制 178个源文件；24 SYNTHETIC请求、原41机制断言及本次7个纯构造检查（合计48）。调用清单包括无模型input的CLI版本probe与只重建producer identity的sampling点，已经单列，不能按27计真实模型调用。
 
 ## 作者界面入口补充
 
 已完整阅读并导出 web/admin/app/features/production/CreativeInputPanel.tsx。genre/audience/idea为空待作者填写，constraints/source_boundaries逐行trim后原义提交；目标章数有可见1..10000输入，UI初值1、候选数2，是透明可改默认，不是所有书只能1章或12章。formation提交直接用saved.target。作者本地草稿key含project+book；恢复上次提交保留本次body/幂等键，不认定为旧小说默认注入。作者已确定方向designFields虽然以“核心冲突与代价”标签引导且包含持续叙事空间，但目前未确认这些UI标签本身成为额外模型指令；底层硬成本见P01/P02。editorial-learning最大12是讨论取舍数量，不是章节数；正文知识须按批准的本书scope选择。未运行浏览器或读取用户实际localStorage，不宣称UI交互已验证。
+
+## 本次扩展：P08与跨层修正范围
+
+P08定位与完整分析见 [全工程方案第10节](ENGINEERING_OPTIMAL_CHANGE_PLAN.md#10-p08narrative-realization-不能成为隐蔽的每章戏剧模板)。新ChapterGroup校验正式调用NarrativeRealizationEvent：每章需要事件覆盖，每事件irreversible_change非空、state_deltas/disclosures/obligation_actions/arc_contributions非空。planning rich Schema与host合同一致。这是新的A+B机制证据，不是fixture故事内容进入生产的证明。
+
+严重性高；机制置信度高；来源未确认。7个追加SYNTHETIC检查复现空不可逆字段/披露/状态变化被拒、整组章覆盖及rich Schema非空要求。没有运行任何真实资格/接纳/Provider，不证明文学效果。推荐修改Chapter执行覆盖、事件适用副作用、proof、frozen slice和Book消费的整个合同链，而不是仅更改一个字段。
+
+P02范围补正：validate_narrative_qualification只有require_pass=True才对非PASS抛失败；评估输出保存可用require_pass=False。strict独立资格仍需适用标准满足；AUTHOR_ADVISORY配合原生作者监督可有证据处置分歧，不授独立资格。固定标准的适用性问题仍在，但不能说所有模式每项模型FAIL都必然阻断。
+
+P06补充：_report对有分数证据固定threshold=70.0，需与实际policy、测量、verdict和required_actions一起修复；不推断所有已校准分数在当前部署都使用了错误阈值。
+
+新增代码证据完整复制到evidence/source，全文汇编E层登记；原静态Prompt原文、原24份模型装配及原41检查未改。追加检查见 evidence/checks/engineering-chain-results.json。整个方案未实施；全适用矩阵和文学验证仍NOT_RUN。
+
+## 追加分析结束时main变化
+
+remote main已更新为 `68c1c6c3b611810310fd61dbca79f3626f93fdfe`。所有原文、追加合同证据与全工程建议仍绑定 `b1d42e6107d871442baa71823f7c21bfeec841b1`；没有混入新版本内容，也未核验新SHA是否已修复。第一阶段结束时main未变的记录仍保留；追加阶段核验见baseline-followup-end.json。用户分支和HEAD未变。

@@ -1,6 +1,6 @@
 # 逐资产评价
 
-SHA b1d42e6107d871442baa71823f7c21bfeec841b1；Pack绑定声明不等同每个stage选择。旧版本与动态访问缺口不冒充真实请求。
+SHA b1d42e6107d871442baa71823f7c21bfeec841b1；绑定声明不等同实际选择。新增I15/P08合同和I16作者监督边界；每个资产评价不表示其真实生产已发生。
 
 | ID | 身份/版本 | 生效状态 | 评价 | 理由/条件 |
 |---|---|---|---|---|
@@ -317,11 +317,12 @@ SHA b1d42e6107d871442baa71823f7c21bfeec841b1；Pack绑定声明不等同每个st
 | I05 | src/novel_forge/modules/agent_collaboration/application.py#inline/constants / frozen code SHA | 无法确定 | 待核验 | Execute the frozen Agent collaboration work order. Return only an AgentOutputEnvelope candidate; do not claim Authority commit. 固定说明通用；实际work_order未知 |
 | I06 | src/novel_forge/modules/production_execution/codex_configuration.py#inline/constants / frozen code SHA | 代码可达但缺少真实请求 | 合理 | CODEX_INPUT_ONLY_OVERRIDES与output schema projection；实际CLI/version未观察，不推断宿主AGENTS进入写作 |
 | I07 | src/novel_forge/modules/chapter_authority/execution_gateway.py#_language_semantic_contract / frozen code SHA | 代码可达但缺少真实请求 | 条件适用 | 只接受governed zh-CN，显式拒绝其他值；明确语言支持边界，不等同古风。若产品承诺多语言则能力缺口 |
-| I08 | src/novel_forge/modules/story_design_authority/qualification.py#inline/constants / frozen code SHA | 代码可达但缺少真实请求 | 有问题 | 固定qualification criteria definitions/strict verdict与独立Evaluator指令，见P02和G记录 |
+| I08 | src/novel_forge/modules/story_design_authority/qualification.py#inline/constants / frozen code SHA | 代码可达但缺少真实请求 | 有问题 | 固定qualification criteria definitions/strict verdict与独立Evaluator指令，见P02和G记录 严格路径适用门禁；AUTHOR_ADVISORY不自动授独立资格，作者可有证据处理分歧，见I16。 |
 | I09 | src/novel_forge/modules/chapter_authority/chapter_plan_views.py#qualification_profile_for_plan / frozen code SHA | 代码可达但缺少真实请求 | 有问题 | 主角魅力/hook等由profile强制；不是仅Prompt问题，见P03 |
 | I10 | src/novel_forge/modules/chapter_quality_authority/domain.py#_evaluate / frozen code SHA | 代码可达但缺少真实请求 | 有问题 | 固定70/270/36基点的条件fallback；exact calibrated evidence优先；见P06 |
 | I11 | src/novel_forge/modules/story_planning_runtime/execution.py#_repair_context / frozen code SHA | 代码可达但缺少真实请求 | 合理 | 故障指令绑定本次source candidate/result与frozen task、report hash；完整代码包括raw-result repair与新Knowledge翻译分支。没有把本次修复内容硬加到所有书的证明 |
 | I12 | src/novel_forge/modules/story_planning_runtime/knowledge_translation.py#inline/constants / frozen code SHA | 代码可达但缺少真实请求 | 条件适用 | Schema动态descriptions要求逐card ADOPT/ADAPT/REJECT与scene定位，prerequisite/exception判断；选择card内容未知，未证明必选全部技巧 |
 | I13 | src/novel_forge/modules/worldbuilding/actor_isolation.py#actor_task / frozen code SHA | 代码可达但缺少真实请求 | 条件适用 | v1/v2/v3 task instructions按pending commitment/persistent意图选择；只用本actor知识动机，不宣称judge/计划即事实；完整constructor source，动态私有scope未造值 |
-
-| I14 | 作者UI/提交绑定 | 代码可达但缺少真实请求 | 合理 | 题材/受众由作者填写，章数明确可改1..10000；UI本地实际值未读取。 |
+| I14 | web/admin/app/features/production/CreativeInputPanel.tsx / frozen code SHA | 代码可达但缺少真实请求 | 合理 | 题材/受众空值要求填写；target初值1且显式可改1..10000；非隐含十二章/固定风格，labels成本引导需伴随P01解释 |
+| I15 | src/novel_forge/modules/hierarchical_planning/realization_domain.py#NarrativeRealizationEvent / frozen code SHA | 代码可达但缺少真实请求 | 有问题 | P08: new ChapterGroup event per chapter plus nonempty irreversible_change/state_deltas/disclosures; required causal/knowledge boundaries remain useful; WIRED plus 7 pure synthetic constructor/schema assertions, no real receipt |
+| I16 | src/novel_forge/modules/story_design_authority/author_supervision.py#validate_author_review / frozen code SHA | 代码可达但缺少真实请求 | 合理 | 作者监督可凭证据处理非PASS finding，不授予独立资格；strict require_pass gate cannot be generalized to this mode; actual author decisions UNAVAILABLE |
