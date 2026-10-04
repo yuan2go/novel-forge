@@ -185,7 +185,7 @@ and served model identity. Its group report retains these references and marks t
 dimensions `REFERENCE_CALIBRATED`; Context and Provider JSON cannot assert this status.
 Missing or changed receipts fail closed. Sampling cannot acquire that status or activate
 a global Quality profile. Native reference calibration recognizes the current Chapter
-definition `3.5.0` and recoverable frozen `3.4.1`; other versions remain ineligible.
+definition `3.6.0` and recoverable frozen `3.4.1`/`3.5.0`; other versions remain ineligible.
 Generator feedback now projects independent adjudications of native samples into task-scoped `GENERATOR_SCORE`; Narrative
 operator proxy labels alone cannot qualify a semantic evaluator.
 For a Planning benchmark candidate, native Content annotation version `2.4.0` binds
@@ -1098,6 +1098,77 @@ receipt replay, not new production admission. Mission, scene, obligation, Arc sc
 state-transition and realization changes participate in semantic diff and future-only
 invalidation. Accepted and executed history remains outside replan mutation scope.
 
+## Creative requirements and compatibility boundary
+
+Author input and selected presets establish the work's creative direction. Accepted
+Foundation and future plans refine that direction within their authorized scope;
+methods and aesthetic advice cannot promote permissions into requirements or expand
+scene-local guidance to the whole Book. Canon, knowledge visibility, copyright and
+objective interface limits remain separate hard boundaries. Private author spans stay
+host-side except for explicitly permitted role/scope projections.
+
+The 2026-10-04 Prompt/Skill audit remains historical diagnostic evidence. Current
+new Planning Pack 2.9.0 uses `story-planning` 1.17.0, `foundation-generation.v2`, BookDesign v6
+and work qualification profiles v2. Optional costs, escalation, rewards and closure
+use explicit applicability with rationale; null is not missing or unknown. A selected
+requirement or an existing due obligation remains mandatory. Old generation v1,
+BookDesign v5 and historical profile hashes retain their original contracts.
+
+Chapter 3.6.0 and Pack 2.10.0/template v8 freeze `work-requirements.v1` semantics.
+Production Preparation preserves independent `style_policy.constraints` and rejects
+conflicting duplicate representations. Draft Plan/Style v2 and ExecutionIntent v4
+carry Chapter style, POV, target length, author guidance and selected methods. The
+public `creative-baseline.v1` binds the exact source plan and these stage projections;
+it is derived evidence, not another semantic Authority. Draft, Review, Revision,
+ReReview, QualityContext v5, candidate comparison and Book acceptance consume the
+same baseline digest. Provider projection includes authorized guidance and necessary
+voice contracts; private source/author spans and internal quality history stay outside
+Writer input. `accepted-quality-host-projection.v1` retains exact accepted observations
+for the host Quality consumer separately from Writer Context.
+
+Chapter Mission v3 and Narrative Realization contract/proof v2 support explicitly
+confirmed zero business state increments, empty disclosures and absent optional
+business methods. They still require complete Chapter/Scene/Beat execution coverage,
+exact current parent/Foundation/frontier identities and evidence of each planned event.
+Missing plans or observations are not no-ops. Realization preserves either exact strict
+qualification or the native author's exact approved design receipt; supervised approval
+is never relabelled independent qualification or literary proof.
+
+Work quality policy v2 compiles frozen thresholds, weights, units and formula IDs once
+for normal and fallback calculations, reports and actions. Unconfigured aesthetic
+measurements carry insufficient evidence; non-applicable methods have no score,
+weight or repair action. Selected promises remain gated. Style/AI-taste diagnoses use
+the current work baseline and require located evidence before prose repair. Evidence
+reassessment permits evidence changes only. Ordinary Revision likewise excludes
+uncertain/aesthetic diagnoses from prose tasks and resolution claims; Revision v4
+and Quality correction v3 distinguish these work semantics from historical contracts.
+Ordinary Revision edits stay
+inside diagnosed Scenes or paragraphs, preserving other passages. Longitudinal Quality v2 excludes confirmed
+no-increment chapters from business-progress denominators and reports stylistic counts
+as measurements rather than universal literary failures.
+
+New `book.chapter.accept` 1.1.0 produces ChapterOutcome v4, retaining exact empty state
+sets with Outcome scope and lineage. Canon extraction v6/grounded v2 retains the revision
+hash as evidence rather than a fabricated Canon fact. Empty Narrative State applications
+advance the accepted cursor without changing current entities; replay validates Outcome,
+Project, Book and chapter. Migration 0149 extends accepted event/rebuild views to v4,
+including chapters with zero events in rebuild sources. Legacy acceptance 1.0.0/v3 and
+its deterministic revision-digest fact remain interpretable unchanged.
+
+Existing 3.4.1/3.5.0 Chapter and 1.11.0–1.16.0 Planning requests retain frozen definitions,
+validators, schemas, profiles and assets; technical retry/resume and raw-result repair
+preserve the source semantic version and require a compatible operation-bound Pack.
+An admitted runtime-continuation successor retains its frozen Pack while domain
+approval remains pending; only its first admission resolves the approved active target.
+New future tasks separately require the current Pack. Frontier alias normalization
+compares exact Canon/State identities and rejects missing or conflicting versions. Cached quality evidence requires matching policy and creative-baseline
+hashes before reuse. Semantic repair/replan appends explicit future-only lineage;
+accepted prose is never rewritten automatically. UNKNOWN external outcomes require
+reconciliation. Source methodology 1.1.0 prioritizes the current analysis purpose;
+version 1.0.0 retains its exact historical text and hash. These are code/runtime
+contracts; deployment, real Provider qualification and literary improvement require
+separate evidence.
+
 ## Narrative validation hierarchy
 
 The narrative qualification report follows abstraction and dependencies, not chapter-count
@@ -1405,7 +1476,7 @@ carry actor-local knowledge. Draft requires complete slot coverage; targeted Rev
 edits one frozen candidate and deterministically derives updated Slot representation.
 Mechanical Slot joining does not establish narrative coherence. A revision retains the frozen
 contract, identifies changed slots and reruns the existing Review, Quality and Actual
-reconciliation chain. Chapter Pack 2.9.0 binds System v3, Prompt Template v7 and
+reconciliation chain. Chapter Pack 2.10.0 binds System v3, Prompt Template v8 and
 prose-generation-v4. Its renderer selects shared prose rules plus exactly one Draft,
 full Revision or targeted Revision method. Memo, Review and quality dimensions select
 their own methods. Screenplay packs select adaptation methods rather than novel Slot

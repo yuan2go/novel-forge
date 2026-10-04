@@ -87,6 +87,25 @@ activation.
 
 ## Validation matrix
 
+For creative-requirement changes, focused regression coverage includes
+`test_work_intent_consistency.py`, `test_work_foundation_contract.py` and
+`test_work_realization_contract.py`, plus existing Pack materialization, Provider
+transport/admission, quality calibration and legacy-recovery tests. Use actual stage
+assemblers with external I/O substitutes. Disposable PostgreSQL checks cover native
+Book acceptance, zero-increment realization/rebuild, accepted history, exact replay and
+UNKNOWN reconciliation. Independent author-supervision approval tests must retain their
+`NOT_PROVEN` literary ceiling. Record synthetic inputs as `SYNTHETIC`, reconstructed
+inputs as `RECONSTRUCTED`, and keep failed attempts with the final focused results.
+
+A focused pass does not substitute for release qualification below. Before rollout of
+work contracts, run migration clean-install/upgrade and the applicable same-release
+matrix, register/compile/approve/deploy the coherent Pack and routing profiles, and
+verify existing frozen requests remain recoverable. Do not upgrade historical plans or
+quality receipts silently. Context budgets must admit all required inputs and the final
+complete Provider envelope; increasing a declared test budget cannot waive overflow
+checks or establish production capacity. Real Provider and anonymized literary
+comparison remain separate authorized activities.
+
 The only high-level backend engineering qualification entry is:
 
 ```bash
@@ -240,7 +259,7 @@ On the current schema, recovery of the published formal model-required Chapter
 Context policy and successful Provider Effect. The current handler codec accepts
 that exact predecessor alongside the current contract; other stale versions,
 handler/name mismatches and stale Fences remain rejected. It does not recreate
-historical definitions or update the frozen request to `3.5.0`.
+historical definitions or update the frozen request to a current definition.
 
 For credentialed prose verification, read the selected author Foundation, typed
 Book chapter target, production profile, Pack snapshot, author-supervised permission,
@@ -664,7 +683,7 @@ with `project_id`, `actor_id`, `source_operation_id`, `authorization_id`, `idemp
 and optional `predecessor_operation_id`. The trusted Principal supplies the effective actor.
 The source must be an existing frozen native `chapter.memo.generate`, `chapter.draft.generate`,
 `chapter.revision.apply` or `chapter.canon.extract` Operation at the current formal
-definition version `3.5.0` or its supported published predecessor `3.4.1`.
+definition version `3.6.0` or its frozen published predecessors `3.4.1`/`3.5.0`.
 The returned task types are respectively `memo`, `draft`, `revision` and `canon_extraction`;
 use the returned book, command and input identities in the same campaign grant. Dry-run
 performs no admission or Provider call. Admit the identical request without `dry_run`.
@@ -1150,7 +1169,7 @@ must include the six Foundation generation capabilities and their qualification 
 the Chapter pack must include Memo, Review/Revision and Canon support. It does not seed
 qualified story assets or call a Provider SDK directly.
 
-BookDesign v5 semantic evaluation resolves the exact six active Foundation bindings,
+Foundation-bound BookDesign v5/v6 semantic evaluation resolves the exact six active Foundation bindings,
 including native `planning_generation_candidate` assets. Both dependency resolution and
 Provider projection check their generator role, project, Book and candidate contract;
 qualification verdicts remain provenance rather than evaluator input. The aggregate
@@ -1507,8 +1526,8 @@ configured capability profile disables callbacks.
 
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
-materialization before an authorized run. Chapter Pack 2.9.0 requires System v3,
-Template v7 and prose-generation-v4 identities; Planning uses System v8 and stage-matched
+materialization before an authorized run. Chapter Pack 2.10.0 requires System v3,
+Template v8 and prose-generation-v4 identities; new Planning Pack 2.9.0 binds Operation 1.17.0, System v8 and stage-matched
 qualification-v2 methods. Screenplay requires prose-generation-v4 or quality-review-v3
 and its separate adaptation schema. Historical artifacts remain available for recovery.
 New retrieval plans bind writer_projection_version=accepted-writer-history.v2. Inspect
