@@ -446,6 +446,11 @@ def _select_capability_skill(
         if capability_id.startswith(("review.", "quality.", "publishing.", "storage."))
         else ""
     )
+    calibrated = {str(item.get("skill_ref")): str(item.get("version")) for item in skills}
+    if capability_id == "reader.promise.generate" and calibrated.get("topic-development") == "topic-development-qualification-v2":
+        preferred_skill = "topic-development"
+    if capability_id in {"planning.book.generate", "planning.volume.generate", "planning.arc.generate", "planning.chapter_group.generate"} and calibrated.get("long-outline") == "long-outline-v2":
+        preferred_skill = "long-outline"
     preferred = [
         dict(item)
         for item in skills

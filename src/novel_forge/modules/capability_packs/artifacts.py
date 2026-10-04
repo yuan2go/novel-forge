@@ -272,17 +272,17 @@ def default_chapter_artifact_resolver(
     artifacts: list[ResolvedArtifact] = []
     skill_sources = (
         ("chapter-outline", "chapter-plan-skill-v1", "skills/chapter-outline/legacy-v1.md"),
-        ("chapter-outline", "chapter-plan-skill-v2", "skills/chapter-outline/SKILL.md"),
+        ("chapter-outline", "chapter-plan-skill-v2", "skills/chapter-outline/legacy-calibration-20261003.md"),
         (
             "context-builder-source-isolation",
             "context-builder-source-isolation-v1",
-            "skills/context-builder-source-isolation/SKILL.md",
+            "skills/context-builder-source-isolation/legacy-calibration-20261003.md",
         ),
         ("prose-generation", "prose-generation-v1", "skills/prose-generation/legacy-v1.md"),
         ("prose-generation", "prose-generation-v2", "skills/prose-generation/legacy-v2.md"),
-        ("prose-generation", "prose-generation-v3", "skills/prose-generation/SKILL.md"),
+        ("prose-generation", "prose-generation-v3", "skills/prose-generation/legacy-calibration-20261003.md"),
         ("quality-review", "quality-review-v1", "skills/quality-review/legacy-v1.md"),
-        ("quality-review", "quality-review-v2", "skills/quality-review/SKILL.md"),
+        ("quality-review", "quality-review-v2", "skills/quality-review/legacy-calibration-20261003.md"),
         (
             "canon-continuity-graph",
             "canon-continuity-graph-v1",
@@ -298,6 +298,10 @@ def default_chapter_artifact_resolver(
             "agent-loop-governance-v1",
             "skills/agent-loop-governance/SKILL.md",
         ),
+        ("chapter-outline", "chapter-plan-skill-v3", "skills/chapter-outline/SKILL.md"),
+        ("prose-generation", "prose-generation-v4", "skills/prose-generation/SKILL.md"),
+        ("quality-review", "quality-review-v3", "skills/quality-review/SKILL.md"),
+        ("context-builder-source-isolation", "context-builder-source-isolation-v2", "skills/context-builder-source-isolation/SKILL.md"),
     )
     for ref, version, source in skill_sources:
         text = (root / source).read_bytes().decode("utf-8", errors="strict")
@@ -321,7 +325,7 @@ def default_chapter_artifact_resolver(
             ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
             "prompt-system:chapter-generation-pack",
             "v2",
-            "config/capability_packs/artifacts/chapter_generation_system_instruction.md",
+            "config/capability_packs/artifacts/chapter_generation_system_instruction_v2.md",
         ),
         (
             ArtifactKind.PROMPT_TEMPLATE,
@@ -359,6 +363,9 @@ def default_chapter_artifact_resolver(
             "v1",
             "config/capability_packs/artifacts/agent_session_template.md",
         ),
+        (ArtifactKind.PROMPT_SYSTEM_INSTRUCTION, "prompt-system:chapter-generation-pack", "v3", "config/capability_packs/artifacts/chapter_generation_system_instruction.md"),
+        (ArtifactKind.PROMPT_TEMPLATE, "prompt-template:chapter-generation-pack", "v6", "config/capability_packs/artifacts/chapter_generation_template_v6.md"),
+        (ArtifactKind.PROMPT_TEMPLATE, "prompt-template:chapter-generation-pack", "v7", "config/capability_packs/artifacts/chapter_generation_template_v7.md"),
     ):
         text = (root / source).read_bytes().decode("utf-8", errors="strict")
         artifacts.append(

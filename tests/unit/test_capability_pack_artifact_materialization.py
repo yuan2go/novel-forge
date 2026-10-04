@@ -67,7 +67,7 @@ def _registered_version_and_snapshot():
     skill = resolver.resolve(
         ArtifactKind.SKILL,
         "prose-generation",
-        "prose-generation-v3",
+        "prose-generation-v4",
     )
     context = resolver.resolve(
         ArtifactKind.CONTEXT_POLICY,
@@ -104,7 +104,7 @@ def _registered_version_and_snapshot():
         execution_capability_hash=HASH,
         prompt_bundle_ref=system.ref,
         prompt_bundle_hash=system.content_hash,
-        skill_bundle_ref="prose-generation@prose-generation-v3",
+        skill_bundle_ref="prose-generation@prose-generation-v4",
         skill_bundle_hash=skill.content_hash,
         tool_policy_ref=tool.ref,
         tool_policy_hash=canonical_hash(manifest_dict["tool_permissions"]),
@@ -127,7 +127,7 @@ def _registered_version_and_snapshot():
         prompt_system_instruction_hash=system.content_hash,
         prompt_template_ref=f"{template.ref}@{template.version}",
         prompt_template_hash=template.content_hash,
-        prompt_compiler_version="chapter-prompt-compiler:v5",
+        prompt_compiler_version="chapter-prompt-compiler:v6",
         skill_ref=skill.ref,
         skill_version=skill.version,
         skill_content_hash=skill.content_hash,
@@ -195,10 +195,10 @@ def test_current_draft_request_renders_single_body_contract_without_operator_pol
         },
     )
     assert "<tool_policy>" not in prompt
-    assert "second chapter text" in prompt
+    assert "second whole-chapter body" in prompt
     assert "operator handoff" not in prompt.lower()
     assert '"required":["scene_artifacts"]' in prompt
-    assert evidence["prompt_template"]["version"] == "v5"
+    assert evidence["prompt_template"]["version"] == "v7"
 
 
 @pytest.mark.parametrize("policy_key", CHAPTER_MODEL_POLICY_KEYS)
@@ -609,15 +609,15 @@ def test_revision_renderer_projects_one_output_method(targeted: bool) -> None:
     )
     method = prompt.split("<governed_skill>\n", 1)[1].split("\n</governed_skill>", 1)[0]
     if targeted:
-        assert "return scene_artifacts" not in method
-        assert "Return only the necessary ordered edits" in method
+        assert "complete Scene Slots" not in method
+        assert "Return only necessary ordered edits" in method
         assert '"required":["resolved_issue_codes","edits"]' in prompt
         assert "The host joins Slot text" not in prompt
     else:
-        assert "return scene_artifacts" in method
-        assert "Return only the necessary ordered edits" not in method
+        assert "complete Scene Slots" in method
+        assert "Return only necessary ordered edits" not in method
         assert '"required":["resolved_issue_codes","scene_artifacts"]' in prompt
-    assert evidence["skill"]["version"] == "prose-generation-v3"
-    assert evidence["provider_prompt_projection_version"] == "authority-projection-task-provider-v3"
+    assert evidence["skill"]["version"] == "prose-generation-v4"
+    assert evidence["provider_prompt_projection_version"] == "authority-projection-task-provider-v5"
     legacy = default_chapter_artifact_resolver(ROOT).resolve(ArtifactKind.SKILL, "prose-generation", "prose-generation-v2")
     assert json.loads(legacy.content_json)["text"] == (ROOT / "skills/prose-generation/legacy-v2.md").read_text()

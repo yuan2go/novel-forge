@@ -956,17 +956,13 @@ class BookAuthorityRepository:
                     "structured_facts": structured_facts,
                 },
             }
-            projection_hash = (
-                "sha256:"
-                + hashlib.sha256(
-                    json.dumps(
-                        document,
-                        ensure_ascii=False,
-                        sort_keys=True,
-                        separators=(",", ":"),
-                    ).encode()
-                ).hexdigest()
-            )
+            from novel_forge.modules.context_builder.retrieval_rebuild import writer_index_document
+            document["accepted_to_chapter"] = None
+            document["temporal_coordinate"] = {"accepted_chapter": chapter}
+            document = writer_index_document(document, content)
+            content_text = document["content_text"]
+            graph = {key: document[key] for key in ("entity_ids", "relationship_ids", "character_ids")}
+            projection_hash = document.pop("projection_hash")
             self.cursor.execute(
                 """
                 INSERT INTO authority_narrative_retrieval_document(
@@ -1000,6 +996,14 @@ class BookAuthorityRepository:
                     operation_id,
                 ],
             )
+
+            self.cursor.execute(
+                "SELECT projection_hash FROM authority_narrative_retrieval_document WHERE retrieval_document_id=%s",
+                [retrieval_document_id],
+            )
+            existing = self.cursor.fetchone()
+            if existing is None or existing[0] != projection_hash:
+                raise ValueError("WRITER_RETRIEVAL_REBUILD_REQUIRED: conflicting accepted derived index requires explicit scoped rebuild")
 
     def abort(self, *, book_run_id: str, reason: str) -> None:
         self.cursor.execute(

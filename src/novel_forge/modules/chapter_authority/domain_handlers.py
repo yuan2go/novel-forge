@@ -387,11 +387,16 @@ def build_context_bundle(
     if execution_intent and execution_intent_asset_version_id:
         from novel_forge.modules.mkaos_authority.craft_context_projection import reference_duplicate_craft_uses
         candidates = reference_duplicate_craft_uses(candidates, intent=execution_intent, intent_asset_version_id=execution_intent_asset_version_id)
+    clean_history = (retrieval_result or {}).get("query_plan", {}).get("writer_projection_version") == "accepted-writer-history.v2"
+    if clean_history:
+        from novel_forge.modules.context_builder.story_projection import clean_context_candidates
+        candidates = clean_context_candidates(candidates, stage="draft")
     task_receipt = None
     if context_profile_version == "draft-context-profile-v4":
         from novel_forge.modules.context_builder.task_compression import compile_task_context, validate_task_dependencies
         task = {
             "stage": "draft", "chapter": int(plan["chapter"]),
+            **({"writer_projection_version": "accepted-writer-history.v2"} if clean_history else {}),
             "plan": plan, "accepted_boundary": dict(assembly_boundary),
             "memo_fingerprint": str((chapter_memo or {}).get("memo_fingerprint") or ""),
             "preserve_quotes": list(plan.get("preserve_quotes") or ()),

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
@@ -30,10 +29,7 @@ from novel_forge.modules.book_followup_authority.query import (
     BookFollowupProjectionQuery,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-from novel_forge.modules.capability_pack_authority.domain import canonical_hash
-from novel_forge.modules.production_execution.capability_registry import (
-    default_capability_registry,
-)
+from novel_forge.modules.capability_packs.longform_profiles import build_reader_outcome_pack_profile
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -67,114 +63,17 @@ def _activate_reader_outcome_pack(harness: CapabilityPackPostgresHarness) -> Non
         )
         definition_hash = str(uow.cursor.fetchone()[0])
         uow.commit()
-    manifest = harness._base_manifest
-    template = next(
-        node
-        for node in manifest["workflow_template"]["nodes"]
-        if node.get("node_id") == "draft"
-    )
-    capability_id = "quality.reader_outcome.judge"
-    node = deepcopy(template)
-    node.update(
-        node_id="reader_outcome",
-        operation_name=READER_OUTCOME_DEFINITION,
-        operation_definition_ref=(
-            f"{READER_OUTCOME_DEFINITION}@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
-        ),
+    profile = build_reader_outcome_pack_profile(
+        Path(__file__).resolve().parents[2],
         operation_definition_hash=definition_hash,
-        handler_key=(
-            f"novel_forge.book_followup_authority.{READER_OUTCOME_DEFINITION}"
-        ),
-        stage="reader_outcome",
-        capability_id=capability_id,
-        agent_definition_ref="reader-outcome-agent@1",
-        input_asset_types=["draft_version", "canon_snapshot"],
-        output_asset_types=["reader_outcome_report"],
-        depends_on=[],
-        commit_authority="BOOK_FOLLOWUP_AUTHORITY",
-        timeout_policy_ref="timeout:quality-reader_outcome-judge:v1",
+        pack_id=harness.pack_id,
     )
-    manifest["identity"].update(
-        name="Reader Outcome Pack",
-        domain="book_followup",
-        description="Governed Reader Outcome SHADOW execution.",
-    )
-    manifest["compatibility"]["required_capabilities"] = [
-        capability_id,
-        "quality.originality.judge",
-    ]
-    manifest["workflow_template"].update(
-        workflow_id="book_followup_reader_outcome",
-        workflow_version="1.1.0",
-        nodes=[node],
-        completion={
-            "required_terminal_nodes": ["reader_outcome"],
-            "required_evidence": ["trace", "audit"],
-            "required_output_asset_types": ["reader_outcome_report"],
-        },
-    )
-    manifest["context_sources"]["allowed_asset_types"] = [
-        "draft_version",
-        "canon_snapshot",
-        "context_bundle",
-    ]
-    manifest["tool_permissions"]["tools"] = [
-        {
-            **manifest["tool_permissions"]["tools"][0],
-            "allowed_operations": ["reader_outcome"],
-        }
-    ]
-    manifest["evaluation"]["required_gates"] = [
-        {
-            "gate_id": "reader_outcome_source_isolation",
-            "judge_capability_id": "quality.originality.judge",
-            "blocking": True,
-            "threshold": 1,
-            "required_evidence": ["reader_outcome_report"],
-        }
-    ]
-    manifest["evaluation"]["metrics"] = []
-    for artifact in harness._base_catalog["artifacts"]:
-        if artifact["ref"] == manifest["context_sources"]["policy_id"]:
-            artifact["content"]["allowed_asset_types"] = list(
-                manifest["context_sources"]["allowed_asset_types"]
-            )
-            artifact["content_hash"] = canonical_hash(artifact["content"])
-        elif artifact["ref"] == manifest["tool_permissions"]["policy_id"]:
-            artifact["content"]["explicit_tool_refs"] = ["model.provider.invoke"]
-            artifact["content_hash"] = canonical_hash(artifact["content"])
-    contract = default_capability_registry().resolve(capability_id)
-    for schema_ref in (contract.input_schema_ref, contract.output_schema_ref):
-        harness._base_catalog["artifacts"].append(
-            {
-                "kind": "SCHEMA",
-                "ref": schema_ref,
-                "version": "v1",
-                "content": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "type": "object",
-                    "additionalProperties": True,
-                },
-            }
-        )
-    harness._base_catalog["artifacts"].append(
-        {
-            "kind": "TIMEOUT_POLICY",
-            "ref": "timeout:quality-reader_outcome-judge:v1",
-            "version": "v1",
-            "content": {
-                "policy_id": "timeout:quality-reader_outcome-judge:v1",
-                "operation_timeout_seconds": 180,
-                "timeout_action": "FAIL_ATTEMPT",
-                "authority_binding": (
-                    f"{READER_OUTCOME_DEFINITION}@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
-                ),
-            },
-        }
-    )
+    harness._base_manifest = profile.manifest
+    harness._base_catalog = profile.artifact_catalog
     scope = harness.approval_scope()
     scope["allowed_workflow_definition_refs"] = ["book_followup_reader_outcome@1.1.0"]
-    pack = harness.register_compile_approve("1.0.0", generation=1, approval_scope=scope)
+    pack = harness.register_compile_approve("1.0.0", generation=1, approval_scope=scope,
+        proof_skill_ref=profile.agent_skill_ref)
     harness.activate(harness.deploy(pack))
 
 

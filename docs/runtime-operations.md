@@ -1507,8 +1507,61 @@ configured capability profile disables callbacks.
 
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
-materialization before an authorized run. Chapter Pack 2.6.0 requires the v5 Prompt and
-prose-generation-v3 identities; historical artifacts remain available for recovery.
+materialization before an authorized run. Chapter Pack 2.9.0 requires System v3,
+Template v7 and prose-generation-v4 identities; Planning uses System v8 and stage-matched
+qualification-v2 methods. Screenplay requires prose-generation-v4 or quality-review-v3
+and its separate adaptation schema. Historical artifacts remain available for recovery.
+New retrieval plans bind writer_projection_version=accepted-writer-history.v2. Inspect
+the exact semantic view and source/projection hashes: narrative history should contain
+accepted prose and visible facts, with historical review/comparison/Provider evidence
+outside Writer input. Current Revision diagnostics and authorized Quality evidence are
+stage-bound exceptions. Malformed accepted prose rejects before dispatch.
+For task compression, verify accepted-writer-history.v2 on the exact extractive trace,
+its source content hash and selected-result hash. Do not relabel an old compressed
+summary as a clean source; rebuild its Context from the original. Frozen requests still
+recover under their original contracts; switching contracts requires an explicit new
+owner command and new request identity after the original work is reconciled or stopped.
+No resume command silently substitutes the current Pack.
+
+Writer derived-index repair uses the existing PostgreSQL retrieval table. With an
+authorized database URL in NOVEL_FORGE_DATABASE_URL, inspect a bounded batch first:
+
+```sh
+PYTHONPATH=src .venv/bin/python scripts/rebuild_writer_retrieval.py \
+  --project-id PROJECT --book-id BOOK --from-chapter 1 --to-chapter 20 \
+  --limit 100 --manifest .local/writer-rebuild/batch-001.json
+```
+
+Dry-run is the default and opens a read-only transaction. The private manifest contains
+source/story data; retain it outside published evidence. Apply only the reviewed manifest:
+
+```sh
+PYTHONPATH=src .venv/bin/python scripts/rebuild_writer_retrieval.py \
+  --manifest .local/writer-rebuild/batch-001.json --apply
+```
+
+For the next batch, repeat dry-run with the same explicit scope, --after-id equal to the
+previous next_after_id and a new manifest path. Repeated apply is idempotent. A changed
+source, scope or derived row rejects the entire batch; create and review a new dry-run.
+Rollback only that manifest's derived changes, with the same conflict protection:
+
+```sh
+PYTHONPATH=src .venv/bin/python scripts/rebuild_writer_retrieval.py \
+  --manifest .local/writer-rebuild/batch-001.json --apply --rollback
+```
+
+Rollback restores derived text/metadata/hash and leaves inline embedding invalidated;
+new Writer discovery blocks again on legacy projection versions. Original accepted
+assets, audit evidence and frozen requests are never rewritten. Old vector slots remain
+as recovery evidence; new retrieval accepts only the current source/projection hash.
+The repair tool makes no Provider call. Real vector regeneration remains
+REBUILD_PENDING_REQUIRES_AUTHORIZED_PROVIDER through the existing embedding worker;
+FALLBACK_ALLOWED permits the existing FTS fallback, while REQUIRED blocks until ready.
+Do not mark vectors ready from a dry-run or scripted test.
+Sample Pack versions follow the formal prose-review or screenplay Producer without
+changing sample Workflow/Operation definitions or granting sample output eligibility.
+Complete-request admission remains authoritative; a smaller projection or passing
+Context receipt does not qualify the instructions or prove literary quality.
 
 For transaction errors, `DatabaseRetryClass.SAFE_RETRY` covers only explicitly safe
 SQLSTATEs. `RECONCILIATION_REQUIRED` means the commit result may be unknown and must be

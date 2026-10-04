@@ -929,17 +929,28 @@ class _RetrievalHandler:
 
 
 def merge_task_retrieval_projections(metadata: dict[str, Any], documents: list[dict[str, Any]]) -> dict[str, Any]:
+    from novel_forge.modules.context_builder.writer_projection import WRITER_PROJECTION_VERSION, project_writer_history, provider_visible_data
+
+    clean_history = any((item.get("compression_provenance") or {}).get("writer_projection_version") in {WRITER_PROJECTION_VERSION, "accepted-writer-history.v2"} for item in documents)
+    source_type = str((documents[0].get("source_artifact_type") if documents else "") or metadata.get("physical_asset_type") or "")
+    summary = str(metadata.get("safe_summary") or "")
+    if clean_history and summary:
+        summary = project_writer_history(summary, source_artifact_type=source_type)
     facts = list(metadata.get("structured_facts") or ())
-    summaries = [str(metadata.get("safe_summary") or "")]
+    summaries = [summary]
     refs = set(metadata.get("task_dependency_matched_refs") or ())
     reasons = set(metadata.get("retrieval_reasons") or ())
     for document in sorted(documents, key=lambda item: str(item.get("retrieval_document_id") or "")):
         if str(document.get("source_content_hash") or "") != str(metadata.get("content_hash") or ""):
             raise KernelError("CONTEXT_RETRIEVAL_SOURCE_DRIFT", "same-source task projections must bind the exact frozen content hash")
         facts.extend(fact for fact in (document.get("metadata") or {}).get("structured_facts", ()) if isinstance(fact, dict))
-        summaries.append(str(document.get("safe_summary") or ""))
+        summary = str(document.get("safe_summary") or "")
+        summaries.append(project_writer_history(summary, source_artifact_type=source_type) if clean_history and summary else summary)
         refs.update(document.get("task_dependency_matched_refs") or ())
         reasons.update(document.get("retrieval_reasons") or ())
+    if clean_history:
+        facts = provider_visible_data(facts)
+        metadata = {**metadata, "physical_asset_type": source_type, "provenance": {**dict(metadata.get("provenance") or {}), "writer_projection_version": "accepted-writer-history.v2" if any((item.get("compression_provenance") or {}).get("writer_projection_version") == "accepted-writer-history.v2" for item in documents) else WRITER_PROJECTION_VERSION}}
     return {**metadata, "structured_facts": list({json.dumps(fact, ensure_ascii=False, sort_keys=True): fact for fact in facts}.values()), "safe_summary": "\n\n".join(dict.fromkeys(text for text in summaries if text)), "task_dependency_matched_refs": sorted(refs), "retrieval_reasons": sorted(reasons)}
 
 

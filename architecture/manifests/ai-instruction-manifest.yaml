@@ -23,7 +23,8 @@
       "patterns": [
         "skills/*/SKILL.md",
         "skills/*/legacy-v1.md",
-        "skills/prose-generation/legacy-v2.md"
+        "skills/prose-generation/legacy-v2.md",
+        "skills/*/legacy-calibration-20261003.md"
       ],
       "kind": "RUNTIME_SKILL_SOURCE",
       "owner": "skill-governance",

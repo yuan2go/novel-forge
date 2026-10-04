@@ -6,7 +6,7 @@ from typing import Any
 EMBEDDING_DEFINITION_NAME = "narrative.retrieval.embedding.project"
 EMBEDDING_DEFINITION_VERSION = "1.0.0"
 EMBEDDING_HANDLER_KEY = "novel_forge.context_builder.embedding_projection"
-EMBEDDING_PROJECTION_VERSION = "accepted-retrieval-embedding-v1"
+EMBEDDING_PROJECTION_VERSION = "accepted-retrieval-embedding-v2"
 
 
 def embedding_projection_operation_definition(

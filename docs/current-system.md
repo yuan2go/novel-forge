@@ -1405,9 +1405,39 @@ carry actor-local knowledge. Draft requires complete slot coverage; targeted Rev
 edits one frozen candidate and deterministically derives updated Slot representation.
 Mechanical Slot joining does not establish narrative coherence. A revision retains the frozen
 contract, identifies changed slots and reruns the existing Review, Quality and Actual
-reconciliation chain. Chapter Pack 2.6.0 binds Prompt v5 and prose-generation-v3. Its
-renderer projects shared prose rules plus either Draft/full Revision or edits-only
-targeted Revision; the latter never asks for another Slot or whole-chapter copy.
+reconciliation chain. Chapter Pack 2.9.0 binds System v3, Prompt Template v7 and
+prose-generation-v4. Its renderer selects shared prose rules plus exactly one Draft,
+full Revision or targeted Revision method. Memo, Review and quality dimensions select
+their own methods. Screenplay packs select adaptation methods rather than novel Slot
+serialization; Planning System v8 selects shared and current-stage instructions.
+ReaderPromise generation selects the new-story promise method in topic-development.
+New Retrieval query plans freeze accepted-writer-history.v2 from the exact eligible
+source asset ID and content hash. Accepted history has a typed story projection before
+indexing, ranking, embedding, Context selection or compression. Accepted prose and Scene
+identities remain exact; historical review, candidate comparison, rejected revision
+checks and Provider receipts remain host evidence. Field-path projection also handles
+nested and JSON-stringified business data. INTERNAL_QUALITY_ONLY visibility follows the
+consuming stage, including non-State assets; current bound Revision diagnostics and
+authorized Quality evidence remain available to their consumers.
+The projection never cuts a mixed JSON/string prefix to 4,000 characters. Existing
+Context selection, whole paragraph/Scene compression and final complete-request
+admission enforce the budget; necessary exact content that cannot fit rejects.
+Extractive compression binds the original clean source, projection version and exact
+selected-result hash. Unknown JSON fields are not implicitly required causal facts.
+Older unbound compressed prose requires rebuilding its Context for the new contract.
+The same source projection applies before v2/v3/v4 Context selection and on the fast path.
+New retrieval rejects eligible legacy derived indexes until an explicit scoped rebuild.
+The dry-run manifest binds each original asset hash and before/after derived row; apply,
+resume and rollback use conflict checks without changing accepted sources or frozen
+requests. Conflicting existing index identities reject rather than silently reusing an
+old ON CONFLICT result. Rebuild invalidates the inline vector; current vector slots bind
+the clean projection hash and exclude obsolete slots. Real embedding remains pending
+until the existing authorized runtime supplies it, under the existing fallback policy.
+Historical query plans, Prompt/Skill artifacts and requests retain their original
+contracts. Repository changes do not silently upgrade in-flight work. Template v7 defines
+Revision diagnoses once, retaining their exact locators, preservation requirements and
+acceptance criteria. Prose-review and screenplay sample Pack identities inherit their
+source Producer version; sample Workflow and Operation versions remain independent.
 Scene Craft v2 uses the frozen chapter function, Scene, actor, author intent, Arc and
 accepted due obligations to guide technique applicability. Explicit requirements and
 accepted facts remain binding; omitting an inapplicable technique is not a review

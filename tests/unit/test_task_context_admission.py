@@ -129,6 +129,8 @@ def test_initial_obligation_discovery_validates_original_state_without_accepted_
             elif "SELECT version.content_hash, version.content" in query:
                 assert parameters == ["state:current", "project"]
         def fetchone(self):
+            if "COALESCE(document.metadata" in self.query:
+                return None
             if "clock_timestamp()" in self.query:
                 from datetime import datetime, timezone
                 return [datetime(2026, 10, 1, tzinfo=timezone.utc)]

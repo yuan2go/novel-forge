@@ -26,6 +26,7 @@ from novel_forge.modules.command_kernel.runtime import (
 from novel_forge.modules.context_builder.embedding_projection import (
     RetrievalEmbeddingProjectionRuntime,
 )
+from novel_forge.modules.context_builder.retrieval_rebuild import writer_index_document
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -221,12 +222,8 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
             "content_text": source_content["text"],
             "metadata": {"projection_kind": "recent_accepted_prose"},
         }
-        projection_hash = (
-            "sha256:"
-            + hashlib.sha256(
-                json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
-            ).hexdigest()
-        )
+        document = writer_index_document(document, source_content)
+        projection_hash = document["projection_hash"]
         with transaction() as connection, connection.cursor() as cursor:
             insert_definition(cursor, definition_name)
             insert_operation(
@@ -277,7 +274,7 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
                     project_id,
                     book_id,
                     source_version_id,
-                    source_content["text"],
+                    document["content_text"],
                     Jsonb(document["metadata"]),
                     projection_hash,
                     operation_id,
@@ -768,12 +765,8 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
             "content_text": content_text,
             "metadata": {"projection_kind": "recent_accepted_prose"},
         }
-        projection_hash = (
-            "sha256:"
-            + hashlib.sha256(
-                json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
-            ).hexdigest()
-        )
+        document = writer_index_document(document, source_content)
+        projection_hash = document["projection_hash"]
         with transaction() as connection, connection.cursor() as cursor:
             insert_definition(cursor, definition_name)
             insert_operation(
@@ -824,7 +817,7 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
                     project_id,
                     book_id,
                     source_version_id,
-                    content_text,
+                    document["content_text"],
                     Jsonb(document["metadata"]),
                     projection_hash,
                     operation_id,
