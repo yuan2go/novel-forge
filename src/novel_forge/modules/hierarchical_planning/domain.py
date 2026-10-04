@@ -279,6 +279,18 @@ def validate_planning_contract(
     allow_pre_hierarchy_compatibility: bool = False,
     require_current_chapter_contract: bool = False,
 ) -> PlanningContract:
+    from novel_forge.modules.story_design_authority.qualification import (
+        uses_work_requirements,
+    )
+
+    work_requirements = uses_work_requirements(content)
+    optional = (
+        set(
+            "central_conflict_engine protagonist_transformation antagonist_escalation stage_conflict stage_antagonist irreversible_change midpoint climax next_volume_bridge resistance escalation turn choice cost trigger resistance_escalation local_climax information_release antagonist_actions promise_action foreshadow_action reward_action ending_hook".split()
+        )
+        if work_requirements
+        else set()
+    )
     compatibility_fields = (
         {"narrative_event_chain"}
         if contract_type is PlanContractType.CHAPTER_GROUP
@@ -289,10 +301,9 @@ def validate_planning_contract(
     missing = [
         field
         for field in (*COMMON_FIELDS, *TYPE_FIELDS[contract_type])
-        if not (
-            allow_pre_hierarchy_compatibility and field in compatibility_fields
-        )
-        if field not in content or content.get(field) in (None, "")
+        if not (allow_pre_hierarchy_compatibility and field in compatibility_fields)
+        if field not in content
+        or (content.get(field) in (None, "") and field not in optional)
     ]
     if missing:
         raise KernelError(
@@ -356,12 +367,15 @@ def validate_planning_contract(
         validate_chapter_function_matrix(
             list(content["chapter_function_matrix"]),
             group_objective=str(content["local_objective"]),
+            work_requirements=work_requirements,
         )
         if content.get("narrative_event_chain"):
             from .realization_domain import validate_narrative_realization_event_chain
 
             validate_narrative_realization_event_chain(
-                list(content["narrative_event_chain"]), chapter_range=(start, end)
+                list(content["narrative_event_chain"]),
+                chapter_range=(start, end),
+                work_requirements=work_requirements,
             )
         elif not allow_pre_hierarchy_compatibility:
             raise KernelError(
@@ -527,7 +541,25 @@ def _validate_canonical_narrative_contract(
             else ("narrative_realization_slice",)
         ),
     )
-    missing = [field for field in required if not content.get(field)]
+    missing = [
+        field
+        for field in required
+        if field not in content
+        or (
+            not content.get(field)
+            and not (
+                content.get("chapter_contract_schema_version")
+                == "chapter-mission-scene.v3"
+                and field
+                in {
+                    "arc_schedule",
+                    "knowledge_boundaries",
+                    "disclosures",
+                    "required_state_transitions",
+                }
+            )
+        )
+    ]
     if missing:
         raise KernelError(
             "CHAPTER_EXECUTION_PLAN_INCOMPLETE",
@@ -592,7 +624,12 @@ def _validate_canonical_narrative_contract(
             "CHAPTER_ARC_SCHEDULE_INVALID",
             "Chapter Arc schedule uses an unsupported role",
         )
-    if sum(str(item.get("role") or "") == "PRIMARY" for item in schedule) != 1:
+    if sum(str(item.get("role") or "") == "PRIMARY" for item in schedule) != (
+        0
+        if not schedule
+        and content.get("chapter_contract_schema_version") == "chapter-mission-scene.v3"
+        else 1
+    ):
         raise KernelError(
             "CHAPTER_PRIMARY_ARC_INVALID",
             "canonical ChapterPlan requires exactly one Primary Arc",
@@ -1221,6 +1258,11 @@ def _require_frozen_governance_action(
 
 
 def _validate_book_design_layers(content: dict[str, Any]) -> None:
+    from novel_forge.modules.story_design_authority.qualification import (
+        uses_work_requirements,
+    )
+
+    work_requirements = uses_work_requirements(content)
     trajectories = content.get("character_development")
     obligations = content.get("knowledge_disclosure_obligations")
     if not isinstance(trajectories, list) or not trajectories:
@@ -1237,7 +1279,11 @@ def _validate_book_design_layers(content: dict[str, Any]) -> None:
         len(character_ids) != len(trajectories)
         or "" in character_ids
         or len(character_ids) != len(set(character_ids))
-        or any(not item.get("causal_triggers") for item in trajectories)
+        or any(
+            (not isinstance(item.get("causal_triggers"), list))
+            or (not item["causal_triggers"] and not work_requirements)
+            for item in trajectories
+        )
     ):
         raise KernelError(
             "CHARACTER_DEVELOPMENT_IDENTITY_INVALID",
@@ -1604,7 +1650,7 @@ def _validate_chapter_arc_contributions(value: Any) -> None:
 
 
 def validate_chapter_function_matrix(
-    rows: list[dict[str, Any]], *, group_objective: str
+    rows: list[dict[str, Any]], *, group_objective: str, work_requirements: bool = False
 ) -> dict[str, Any]:
     if not rows or not group_objective:
         raise KernelError(
@@ -1634,21 +1680,40 @@ def validate_chapter_function_matrix(
                     "fields": missing,
                 }
             )
-        if not row.get("required_arc_contributions"):
+        if not row.get("required_arc_contributions") and not work_requirements:
             issues.append(
                 {
                     "code": "ARC_CONTRIBUTION_MISSING",
                     "chapter": row.get("chapter_number"),
                 }
             )
-        if not row.get("required_state_delta"):
+        if not row.get("required_state_delta") and not work_requirements:
             issues.append(
                 {
                     "code": "GROUP_OBJECTIVE_NO_PROGRESS",
                     "chapter": row.get("chapter_number"),
                 }
             )
-    for index in range(max(0, len(rows) - 2)):
+    if work_requirements:
+        for row in rows:
+            state = row.get("required_state_delta")
+            if (
+                not isinstance(state, dict)
+                or set(state) != {"status", "summary"}
+                or state["status"] not in {"CHANGED", "NO_INCREMENT"}
+                or ((state["status"] == "NO_INCREMENT") != (state["summary"] is None))
+                or (
+                    state["status"] == "CHANGED"
+                    and not str(state["summary"] or "").strip()
+                )
+            ):
+                issues.append(
+                    {
+                        "code": "CHAPTER_STATE_INCREMENT_UNRESOLVED",
+                        "chapter": row.get("chapter_number"),
+                    }
+                )
+    for index in range(0 if work_requirements else max(0, len(rows) - 2)):
         window = rows[index : index + 3]
         if len({item.get("primary_function") for item in window}) == 1:
             issues.append(
@@ -1689,7 +1754,11 @@ def validate_chapter_function_matrix(
                     }
                 )
             cadence = row.get("arc_cadence")
-            if not isinstance(cadence, list) or not cadence or len(cadence) > 3:
+            if (
+                not isinstance(cadence, list)
+                or (not cadence and not work_requirements)
+                or len(cadence) > 3
+            ):
                 issues.append(
                     {
                         "code": "ARC_DENSITY_INVALID",
@@ -1704,8 +1773,10 @@ def validate_chapter_function_matrix(
             str((row.get("reader_experience") or {}).get("reward_mode") or "")
             for row in rows
         ]
-        if len(rows) > 1 and (
-            len(set(emotions)) == 1 or len(set(reward_modes)) == 1
+        if (
+            not work_requirements
+            and len(rows) > 1
+            and (len(set(emotions)) == 1 or len(set(reward_modes)) == 1)
         ):
             issues.append({"code": "READER_EXPERIENCE_HOMOGENEITY"})
     blocking = bool(issues)

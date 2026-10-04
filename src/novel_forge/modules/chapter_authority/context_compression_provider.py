@@ -10,7 +10,14 @@ from novel_forge.modules.production_execution.contracts import ExecutionRuntimeC
 CONTEXT_MODEL_STAGES = frozenset({"context_compress", "context_fidelity"})
 
 
-def compression_boundary_identity(boundary: Mapping[str, Any]) -> dict[str, Any]:
+def compression_boundary_identity(boundary: Mapping[str, Any], *, strict: bool = False) -> dict[str, Any]:
+    if strict:
+        if type(boundary.get("accepted_through_chapter")) is not int or boundary["accepted_through_chapter"] < 0:
+            raise KernelError("ACCEPTED_BOUNDARY_INVALID", "Accepted frontier must be explicitly known")
+        for current, legacy in (("canon_snapshot_asset_version_id", "canon_snapshot_version"), ("story_state_asset_version_id", "story_state_snapshot_version")):
+            if (not (boundary.get(current) or boundary.get(legacy))
+                or (current in boundary and legacy in boundary and boundary[current] != boundary[legacy])):
+                raise KernelError("ACCEPTED_BOUNDARY_INVALID", "Frozen state identities are missing or conflicting")
     return {
         "accepted_through_chapter": int(boundary.get("accepted_through_chapter") or 0),
         "canon_snapshot_asset_version_id": str(boundary.get("canon_snapshot_asset_version_id") or boundary.get("canon_snapshot_version") or ""),

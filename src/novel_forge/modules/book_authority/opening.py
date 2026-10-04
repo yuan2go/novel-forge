@@ -5977,11 +5977,11 @@ class PostgresBookOpeningApplication:
             ],
         )
         row = cursor.fetchone()
-        if row is None or tuple(str(item) for item in row[1:5]) != (
-            FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
-            "ACTIVE",
-            "ELIGIBLE",
-            "CLEAR",
+        if (
+            row is None
+            or str(row[1])
+            not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6"}
+            or tuple(str(item) for item in row[2:5]) != ("ACTIVE", "ELIGIBLE", "CLEAR")
         ):
             raise KernelError(
                 "BOOK_OPENING_FOUNDATION_REQUIRED",

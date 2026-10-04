@@ -50,7 +50,16 @@ _REALIZATION_PROOF_CRITERIA = {
 }
 
 
-def _realization_proof_decisions(evaluation: dict[str, Any]) -> dict[str, bool]:
+def _realization_proof_decisions(
+    evaluation: dict[str, Any], *, work_requirements: bool = False
+) -> dict[str, bool]:
+    criteria_map = dict(_REALIZATION_PROOF_CRITERIA)
+    if work_requirements:
+        criteria_map["CAUSAL_ALIGNMENT"] = "causal_alignment_proven"
+        criteria_map.pop("CAUSAL_ESCALATION")
+        criteria_map["APPLICABLE_STATE_TRANSITION_COVERAGE"] = criteria_map.pop(
+            "STATE_TRANSITION_COVERAGE"
+        )
 
     criteria = evaluation.get("criteria")
     if not isinstance(criteria, list):
@@ -72,13 +81,13 @@ def _realization_proof_decisions(evaluation: dict[str, Any]) -> dict[str, bool]:
                 "Narrative Realization semantic criteria are ambiguous",
             )
         by_id[criterion] = raw
-    if set(by_id) != set(_REALIZATION_PROOF_CRITERIA):
+    if set(by_id) != set(criteria_map):
         raise KernelError(
             "REALIZATION_PROOF_INCOMPLETE",
             "Narrative Realization proof criteria differ from current policy",
         )
     decisions: dict[str, bool] = {}
-    for criterion, field in _REALIZATION_PROOF_CRITERIA.items():
+    for criterion, field in criteria_map.items():
         receipt = by_id[criterion]
         evidence_refs = receipt.get("evidence_refs")
         if (
@@ -434,13 +443,15 @@ class PostgresNarrativeRealizationApplication:
                 "NARRATIVE_REALIZATION_INVALID",
                 "frozen ChapterGroup lacks its typed causal event chain",
             )
+        from novel_forge.modules.story_design_authority.qualification import uses_work_requirements
+        work_requirements = uses_work_requirements(group)
         working_digest = str(arc_working_set.get("working_set_digest") or "")
         selected = [
             str(item.get("arc_plan_version_id") or "")
             for item in arc_working_set.get("selected_contributions") or ()
             if isinstance(item, dict)
         ]
-        if not working_digest or not selected or len(set(selected)) != len(selected):
+        if not working_digest or (not selected and not work_requirements) or len(set(selected)) != len(selected):
             raise KernelError(
                 "NARRATIVE_REALIZATION_ARC_WORKING_SET_INVALID",
                 "realization requires the governed bounded Arc Working Set",
@@ -465,68 +476,127 @@ class PostgresNarrativeRealizationApplication:
                 "NARRATIVE_REALIZATION_ARC_STALE",
                 "realization Arc bindings are not exact/current",
             )
-        profiles = required_qualification_profiles("chapter_group_plan.generate")
-        cursor.execute(
-            """
-            SELECT qualification.design_layer, qualification.profile_id,
-                   qualification.profile_version, qualification.profile_hash,
-                   qualification.evaluation_asset_version_id,
-                   evaluation.content_hash, qualification.evaluation,
-                   qualification.qualification_status,
-                   qualification.trust_boundary,
-                   qualification.evaluator_execution_class
-            FROM authority_current_narrative_design_qualification AS qualification
-            JOIN authority_operation AS operation
-              ON operation.operation_id=qualification.source_operation_id
-            JOIN authority_asset_version AS evaluation
-              ON evaluation.asset_version_id=qualification.evaluation_asset_version_id
-            WHERE qualification.project_id=%s AND qualification.book_id=%s
-              AND qualification.asset_version_id=%s
-              AND qualification.freshness='CURRENT'
-              AND operation.status IN ('WAITING_GATE','SUCCEEDED')
-            ORDER BY qualification.design_layer
-            """,
-            [project_id, book_id, chapter_group_plan_version_id],
+        from novel_forge.modules.story_design_authority.qualification import (
+            uses_work_requirements,
         )
-        qualifications = {str(item[0]): item for item in cursor.fetchall()}
-        if set(qualifications) != {profile.layer.value for profile in profiles}:
-            raise KernelError(
-                "REALIZATION_PROOF_INCOMPLETE",
-                "every ChapterGroup semantic qualification is required",
+
+        work_requirements = uses_work_requirements(group)
+        profiles = required_qualification_profiles(
+            "chapter_group_plan.generate", work_requirements=work_requirements
+        )
+        from novel_forge.modules.story_design_authority.author_supervision import (
+            approved_design_receipt,
+        )
+
+        author_admission = (
+            approved_design_receipt(
+                cursor,
+                project_id=project_id,
+                book_id=book_id,
+                asset_version_id=chapter_group_plan_version_id,
             )
-        for profile in profiles:
-            receipt = qualifications[profile.layer.value]
-            if tuple(str(item) for item in receipt[1:4]) != (
-                profile.profile_id,
-                profile.profile_version,
-                profile.profile_hash,
-            ) or tuple(str(item) for item in receipt[7:9]) != (
-                "PASS",
-                "INDEPENDENT",
-            ) or str(receipt[9]) not in {
-                "MODEL_PROVIDER",
-                "SCRIPTED_FIXTURE",
-                "OPERATOR_REVIEW",
-            }:
+            if work_requirements
+            else None
+        )
+        if author_admission is not None:
+            if (
+                author_admission["content_hash"] != str(row[8])
+                or author_admission["lifecycle"] != "ACTIVE"
+            ):
                 raise KernelError(
-                    "REALIZATION_PROOF_STALE",
-                    "ChapterGroup semantic proof differs from current policy",
+                    "REALIZATION_AUTHOR_APPROVAL_STALE",
+                    "Realization needs exact current author approval",
                 )
-        proof_receipt = qualifications[
-            NarrativeDesignLayer.NARRATIVE_REALIZATION_PROOF.value
-        ]
-        proof_decisions = _realization_proof_decisions(dict(proof_receipt[6]))
+            admission = dict(author_admission)
+            proof_asset_version_id = admission["decision_asset_version_id"]
+            proof_hash = admission["decision_content_hash"]
+            proof_decisions = {
+                field: True for field in _REALIZATION_PROOF_CRITERIA.values()
+            }
+            proof_decisions["causal_alignment_proven"] = proof_decisions.pop(
+                "causal_escalation_proven"
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT qualification.design_layer, qualification.profile_id,
+                       qualification.profile_version, qualification.profile_hash,
+                       qualification.evaluation_asset_version_id,
+                       evaluation.content_hash, qualification.evaluation,
+                       qualification.qualification_status,
+                       qualification.trust_boundary,
+                       qualification.evaluator_execution_class
+                FROM authority_current_narrative_design_qualification AS qualification
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=qualification.source_operation_id
+                JOIN authority_asset_version AS evaluation
+                  ON evaluation.asset_version_id=qualification.evaluation_asset_version_id
+                WHERE qualification.project_id=%s AND qualification.book_id=%s
+                  AND qualification.asset_version_id=%s
+                  AND qualification.freshness='CURRENT'
+                  AND operation.status IN ('WAITING_GATE','SUCCEEDED')
+                ORDER BY qualification.design_layer
+                """,
+                [project_id, book_id, chapter_group_plan_version_id],
+            )
+            qualifications = {str(item[0]): item for item in cursor.fetchall()}
+            if set(qualifications) != {profile.layer.value for profile in profiles}:
+                raise KernelError(
+                    "REALIZATION_PROOF_INCOMPLETE",
+                    "every ChapterGroup semantic qualification is required",
+                )
+            for profile in profiles:
+                receipt = qualifications[profile.layer.value]
+                if (
+                    tuple(str(item) for item in receipt[1:4])
+                    != (
+                        profile.profile_id,
+                        profile.profile_version,
+                        profile.profile_hash,
+                    )
+                    or tuple(str(item) for item in receipt[7:9])
+                    != (
+                        "PASS",
+                        "INDEPENDENT",
+                    )
+                    or str(receipt[9])
+                    not in {
+                        "MODEL_PROVIDER",
+                        "SCRIPTED_FIXTURE",
+                        "OPERATOR_REVIEW",
+                    }
+                ):
+                    raise KernelError(
+                        "REALIZATION_PROOF_STALE",
+                        "ChapterGroup semantic proof differs from current policy",
+                    )
+            proof_receipt = qualifications[
+                NarrativeDesignLayer.NARRATIVE_REALIZATION_PROOF.value
+            ]
+            proof_decisions = _realization_proof_decisions(
+                dict(proof_receipt[6]), work_requirements=work_requirements
+            )
+            proof_asset_version_id = str(proof_receipt[4])
+            proof_hash = str(proof_receipt[5])
+            admission = {
+                "mode": "STRICT_QUALIFIED",
+                "literary_qualification": "NOT_PROVEN",
+                "evaluation_asset_version_id": proof_asset_version_id,
+                "evaluation_content_hash": proof_hash,
+            }
         realization_seed = (
             f"{chapter_group_plan_version_id}:{row[8]}:{row[2]}:"
             f"{row[3]}:{row[4]}:{working_digest}:{foundation.set_digest}"
         )
+        if work_requirements:
+            realization_seed += f":work-v2:{proof_hash}:{admission['mode']}"
         realization_id = "narrative-realization:" + hashlib.sha256(
             realization_seed.encode()
         ).hexdigest()
-        proof_asset_version_id = str(proof_receipt[4])
-        proof_hash = str(proof_receipt[5])
         contract = {
-            "schema_version": NARRATIVE_REALIZATION_SCHEMA_VERSION,
+            "schema_version": "narrative-realization-contract.v2"
+            if work_requirements
+            else NARRATIVE_REALIZATION_SCHEMA_VERSION,
             "realization_id": realization_id,
             "project_id": project_id,
             "book_id": book_id,
@@ -552,8 +622,13 @@ class PostgresNarrativeRealizationApplication:
             ],
             "events": list(events),
             "proof": {
-                "schema_version": NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION,
-                "covered_event_ids": [str(item.get("event_id") or "") for item in events],
+                "schema_version": "narrative-realization-proof.v2"
+                if work_requirements
+                else NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION,
+                **({"design_admission": admission} if work_requirements else {}),
+                "covered_event_ids": [
+                    str(item.get("event_id") or "") for item in events
+                ],
                 "covered_parent_objectives": [
                     f"chapter-group:{chapter_group_plan_version_id}:objective",
                     *[f"arc:{arc_id}:contribution" for arc_id in selected],

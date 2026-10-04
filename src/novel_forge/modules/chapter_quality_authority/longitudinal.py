@@ -257,6 +257,7 @@ def _momentum(rows: Sequence[Mapping[str, Any]]) -> MomentumEvidence:
     propulsion: list[int] = []
     decision_count = 0
     response_count = 0
+    applicable_chapters: list[int] = []
     for row in rows:
         chapter = int(row["chapter_number"])
         fields = (
@@ -273,6 +274,14 @@ def _momentum(rows: Sequence[Mapping[str, Any]]) -> MomentumEvidence:
         if all(value is None for value in fields):
             continue
         observed.append(chapter)
+        state_requirement = row.get("required_state_delta")
+        confirmed_zero = (
+            row.get("work_quality_semantic_version") == "work-quality.v1"
+            and isinstance(state_requirement, Mapping)
+            and state_requirement.get("status") == "NO_INCREMENT"
+        )
+        if not confirmed_zero:
+            applicable_chapters.append(chapter)
         event_count = _number(row.get("activity_event_count"))
         causal = _items(row.get("causal_progress_event_ids")) or ()
         irreversible_ids = _items(row.get("irreversible_state_change_ids")) or ()
@@ -290,7 +299,7 @@ def _momentum(rows: Sequence[Mapping[str, Any]]) -> MomentumEvidence:
             activity.append(chapter)
         if has_progress:
             progress.append(chapter)
-        if has_activity and not has_progress:
+        if has_activity and not has_progress and not confirmed_zero:
             stagnation.append(chapter)
         if irreversible_ids:
             irreversible.append(chapter)
@@ -306,16 +315,18 @@ def _momentum(rows: Sequence[Mapping[str, Any]]) -> MomentumEvidence:
             "NOT_OBSERVED", (), (), (), (), None, (), None, None, (), (), None
         )
     longest = _longest_consecutive(stagnation)
-    midpoint = max(1, len(observed) // 2)
-    first = set(observed[:midpoint])
-    second = set(observed[midpoint:])
+    midpoint = max(1, len(applicable_chapters) // 2)
+    first = set(applicable_chapters[:midpoint])
+    second = set(applicable_chapters[midpoint:])
     first_ratio = len(first & set(progress)) / max(len(first), 1)
     second_ratio = len(second & set(progress)) / max(len(second), 1)
-    if not progress and stagnation:
+    if not applicable_chapters:
+        status = "NOT_APPLICABLE"
+    elif not progress and stagnation:
         status = "STAGNATING"
     elif longest >= 3 or second_ratio + 0.25 < first_ratio:
         status = "DECLINING"
-    elif len(progress) / len(observed) >= 0.5:
+    elif len(set(progress) & set(applicable_chapters)) / len(applicable_chapters) >= 0.5:
         status = "SUSTAINED"
     else:
         status = "MIXED"
@@ -325,7 +336,8 @@ def _momentum(rows: Sequence[Mapping[str, Any]]) -> MomentumEvidence:
         activity_chapters=tuple(activity),
         progress_chapters=tuple(progress),
         stagnation_chapters=tuple(stagnation),
-        causal_event_coverage=round(len(progress) / len(observed), 4),
+        causal_event_coverage=(round(len(set(progress) & set(applicable_chapters)) / len(applicable_chapters), 4)
+                               if applicable_chapters else None),
         irreversible_change_chapters=tuple(irreversible),
         protagonist_decision_count=decision_count,
         antagonist_response_count=response_count,
@@ -563,6 +575,8 @@ def _repetition(
             status = "REPETITION_OBSERVED"
         else:
             status = "DIVERSE"
+        if all(row.get("work_quality_semantic_version") == "work-quality.v1" for row in rows):
+            status = "REPETITION_OBSERVED" if repeated else "DIVERSE"
         reports[dimension] = RepetitionEvidence(
             dimension=dimension,
             status=status,
@@ -632,8 +646,8 @@ def build_longitudinal_quality_evidence(
     )
     observed = bool(rows)
     return LongitudinalQualityEvidence(
-        observation_status="MEASURED" if observed else "NOT_OBSERVED",
-        chapter_range=(chapters[0], chapters[-1]) if chapters else (),
+        contract_version="accepted-longitudinal-quality-v2" if rows and all(row.get("work_quality_semantic_version") == "work-quality.v1" for row in rows) else "accepted-longitudinal-quality-v1",
+        observation_status="MEASURED" if observed else "NOT_OBSERVED",        chapter_range=(chapters[0], chapters[-1]) if chapters else (),
         momentum=_momentum(rows),
         promise_payoff=_promise_payoff(rows),
         repetition=_repetition(rows),

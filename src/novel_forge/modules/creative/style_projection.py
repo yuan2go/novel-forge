@@ -70,10 +70,17 @@ def compile_foundation_style(request: AuthorityHandlerRequest) -> dict:
                 "forbidden_markers": [],
             }
         )
+    from novel_forge.modules.story_design_authority.qualification import (
+        uses_work_requirements,
+    )
+
+    work_requirements = uses_work_requirements(design.content)
     return {
         "type": "style_policy",
         "profile_id": f"foundation-style:{design.asset_version_id}",
-        "contract_version": "foundation-style-projection.v2",
+        "contract_version": "foundation-style-projection.v3"
+        if work_requirements
+        else "foundation-style-projection.v2",
         "project_id": request.project_id,
         "book_id": sources["CREATIVE_FOUNDATION"].content["book_id"],
         "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
@@ -81,6 +88,25 @@ def compile_foundation_style(request: AuthorityHandlerRequest) -> dict:
         "structured_facts": [
             *voices,
             {"key": "creative_style", "value": profile},
+            *(
+                [
+                    {
+                        "key": "creative_direction",
+                        "value": {
+                            key: creative[key]
+                            for key in (
+                                "genre",
+                                "subgenre",
+                                "target_reader",
+                                "emotional_contract",
+                            )
+                            if key in creative
+                        },
+                    }
+                ]
+                if work_requirements
+                else []
+            ),
             {
                 "key": "realization_policy",
                 "value": {

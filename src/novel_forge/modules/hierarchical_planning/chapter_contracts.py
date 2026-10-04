@@ -29,10 +29,10 @@ class SceneArchitecture:
 
 
 def require_chapter_contracts(content: Mapping[str, Any]) -> SceneArchitecture:
-    if (
-        content.get("chapter_contract_schema_version")
-        != CHAPTER_CONTRACT_SCHEMA_VERSION
-    ):
+    if content.get("chapter_contract_schema_version") not in {
+        CHAPTER_CONTRACT_SCHEMA_VERSION,
+        "chapter-mission-scene.v3",
+    }:
         raise KernelError(
             "CHAPTER_CONTRACT_VERSION_REQUIRED",
             "new Chapter planning requires the current Mission and Scene contract",

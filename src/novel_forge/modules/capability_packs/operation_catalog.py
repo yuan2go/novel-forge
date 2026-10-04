@@ -10,6 +10,7 @@ from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_MODEL_WORKFLOW_DEFINITION_ID,
     CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION,
+    CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
     chapter_operation_definitions,
     CHAPTER_SAMPLE_WORKFLOW_ID,
     chapter_provider_sample_definitions,
@@ -456,6 +457,10 @@ def agent_session_workflow_binding_catalog() -> WorkflowBindingCatalog:
 def governed_workflow_binding_catalog(
     workflow_id: str, workflow_version: str
 ) -> WorkflowBindingCatalog:
+    if workflow_id == CHAPTER_MODEL_WORKFLOW_DEFINITION_ID and workflow_version in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS:
+        current = chapter_workflow_binding_catalog()
+        # COMPATIBILITY: Shared node routing does not replace frozen database contracts/assets.
+        return WorkflowBindingCatalog(workflow_id, workflow_version, current.bindings())
     catalogs = (
         chapter_workflow_binding_catalog(),
         chapter_sampling_workflow_binding_catalog(),

@@ -17,7 +17,7 @@ from novel_forge.modules.narrative_state.measurements import project_narrative_l
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.16.0"
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.17.0"
 STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.12.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
@@ -134,8 +134,6 @@ class PlanningGenerationStatus(StrEnum):
     ACTIVE = "ACTIVE"
     REPAIR_REQUIRED = "REPAIR_REQUIRED"
     REJECTED = "REJECTED"
-
-
 
 
 GENERATOR_SCOPE: Mapping[str, PlanningScope] = MappingProxyType(
@@ -285,31 +283,59 @@ class StoryPlanningGenerationCommand:
     opening_execution_binding: Mapping[str, Any] | None = None
     world_preparation_request: Mapping[str, Any] | None = None
     edition_execution: Mapping[str, Any] | None = None
-    execution_contract_version: str = "1.16.0"
+    execution_contract_version: str = "1.17.0"
 
     def __post_init__(self) -> None:
         if self.edition_execution:
-            if self.execution_contract_version != "1.16.0" or self.generator_operation_name not in {"chapter_plan.generate", "chapter_group_plan.generate"} or self.edition_execution.get("contract_version") != "book-edition-planning.v1":
-                raise ValueError("Edition planning requires its explicit current native execution contract")
-            object.__setattr__(self, "edition_execution", _json_object_snapshot(self.edition_execution, "edition_execution"))
+            if (
+                self.execution_contract_version not in {"1.16.0", "1.17.0"}
+                or self.generator_operation_name
+                not in {"chapter_plan.generate", "chapter_group_plan.generate"}
+                or self.edition_execution.get("contract_version")
+                != "book-edition-planning.v1"
+            ):
+                raise ValueError(
+                    "Edition planning requires its explicit current native execution contract"
+                )
+            object.__setattr__(
+                self,
+                "edition_execution",
+                _json_object_snapshot(self.edition_execution, "edition_execution"),
+            )
         if not isinstance(self.routing_bootstrap_authorization_id, str) or (
             self.routing_bootstrap_authorization_id
             and (
                 not self.routing_bootstrap_authorization_id.strip()
                 or self.auto_approve_low_risk
-                or self.execution_contract_version != "1.16.0"
+                or self.execution_contract_version not in {"1.16.0", "1.17.0"}
             )
         ):
-            raise ValueError("Planning bootstrap requires its current candidate-only contract")
-        if self.execution_contract_version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0"} or (
+            raise ValueError(
+                "Planning bootstrap requires its current candidate-only contract"
+            )
+        if self.execution_contract_version not in {
+            "1.11.0",
+            "1.12.0",
+            "1.13.0",
+            "1.14.0",
+            "1.15.0",
+            "1.16.0",
+            "1.17.0",
+        } or (
             self.execution_contract_version == "1.11.0"
             and self.world_preparation_request
         ):
             raise ValueError(
                 "historical Planning commands cannot acquire new world stages"
             )
-        if self.generator_operation_name in FOUNDATION_GENERATORS and self.execution_contract_version not in {"1.14.0", "1.15.0", "1.16.0"}:
-            raise ValueError("Foundation generation requires its current frozen execution contract")
+        if (
+            self.generator_operation_name in FOUNDATION_GENERATORS
+            and self.execution_contract_version
+            not in {"1.14.0", "1.15.0", "1.16.0", "1.17.0"}
+        ):
+            raise ValueError(
+                "Foundation generation requires its current frozen execution contract"
+            )
         if self.world_preparation_request:
             from novel_forge.modules.worldbuilding.dynamics import (
                 require_contract_fields,
@@ -445,13 +471,23 @@ class StoryPlanningGenerationCommand:
                 "Planning Generation inputs must match the Authority role set; "
                 f"missing={missing}, extra={extra}"
             )
-        if self.runtime_continuation_id and self.execution_contract_version != "1.16.0":
-            raise ValueError("runtime continuation requires its current registered contract")
+        if self.runtime_continuation_id and self.execution_contract_version not in {
+            "1.15.0",
+            "1.16.0",
+            "1.17.0",
+        }:
+            raise ValueError(
+                "runtime continuation requires its current registered contract"
+            )
         result_repair = bool(self.repair_of_operation_id)
         if result_repair != bool(self.repair_result_asset_version_id) or result_repair != bool(self.repair_result_diagnostic):
             raise ValueError("Planning result repair requires its failed Operation, raw result and diagnosis")
-        if result_repair and (self.repair_of_candidate_id or self.execution_contract_version not in {"1.15.0", "1.16.0"}):
-            raise ValueError("Planning result repair is a new bounded command without a source Candidate")
+        if result_repair and (
+            self.repair_of_candidate_id
+        ):
+            raise ValueError(
+                "Planning result repair is a new bounded command without a source Candidate"
+            )
         if self.repair_result_diagnostic:
             object.__setattr__(self, "repair_result_diagnostic", _json_object_snapshot(self.repair_result_diagnostic, "repair_result_diagnostic"))
         if bool(self.repair_of_candidate_id or self.repair_of_operation_id) != bool(self.repair_reason):
@@ -979,11 +1015,13 @@ def build_planning_constraint_envelope(
     input_contents: Mapping[str, Mapping[str, Any]],
     candidate_payload: Mapping[str, Any],
     arc_working_set: Mapping[str, Any] | None = None,
+    work_requirements: bool = False,
 ) -> dict[str, Any]:
     if generator_operation_name not in GENERATOR_SCOPE:
         raise ValueError("Planning Generator is not supported")
     from novel_forge.modules.creative.editorial_learning import bind_editorial_inputs
     from novel_forge.modules.story_design_authority.author_input import author_binding_from_inputs
+
     editorial_inputs = [
         {"role": item.role, "asset_version_id": item.asset_version_id,
          "content_hash": item.content_hash, "content": input_contents[item.role]}
@@ -992,7 +1030,15 @@ def build_planning_constraint_envelope(
     author_design = author_binding_from_inputs(editorial_inputs, project_id=project_id, book_id=book_id)
     editorial = bind_editorial_inputs(editorial_inputs, project_id=project_id, book_id=book_id)
     if generator_operation_name in FOUNDATION_GENERATORS:
-        return {**foundation_envelope(generator=generator_operation_name, inputs=frozen_inputs), **({"author_design": author_design} if author_design else {}), **({"editorial_learning": editorial} if editorial else {})}
+        return {
+            **foundation_envelope(
+                generator=generator_operation_name,
+                inputs=frozen_inputs,
+                work_requirements=work_requirements,
+            ),
+            **({"author_design": author_design} if author_design else {}),
+            **({"editorial_learning": editorial} if editorial else {}),
+        }
     expected_roles = set(GENERATOR_INPUT_ROLES[generator_operation_name])
     actual_roles = set(input_contents)
     extra_roles = actual_roles - expected_roles
@@ -1065,6 +1111,11 @@ def build_planning_constraint_envelope(
     )
     body = {
         "type": "PlanningConstraintEnvelope",
+        **(
+            {"creative_requirements_contract": "work-requirements.v1"}
+            if work_requirements
+            else {}
+        ),
         "contract_version": "planning-constraint-envelope-v2",
         "project_id": project_id,
         "book_id": book_id,

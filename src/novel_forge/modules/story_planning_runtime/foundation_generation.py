@@ -54,7 +54,96 @@ def _records(fields: str, *, minimum: int = 1, maximum: int = 16) -> dict[str, A
     }
 
 
-def foundation_output_schema(generator: str) -> dict[str, Any]:
+def _apply_work_schema(properties: dict[str, Any], role: FoundationRole) -> None:
+    optional = {
+        FoundationRole.CREATIVE_FOUNDATION: "subgenre core_desire core_fear core_conflict serialization_potential",
+        FoundationRole.ENDING_INTENT: "protagonist_cost",
+    }
+    for field in optional.get(role, "").split():
+        properties[field] = {"type": ["string", "null"], "minLength": 1}
+    if role is FoundationRole.THEME_CONTRACT:
+        properties["choice_tests"]["minItems"] = 0
+        properties["choice_tests"]["items"]["properties"]["cost"] = {
+            "type": ["string", "null"],
+            "minLength": 1,
+        }
+    if role is FoundationRole.READER_PROMISE:
+        properties["setup_progress_payoff"]["minItems"] = 0
+    if role is FoundationRole.WORLD_BIBLE:
+        for field in ("cost", "exception", "consequence"):
+            properties["rules"]["items"]["properties"][field] = {
+                "type": ["string", "null"],
+                "minLength": 1,
+            }
+    if role is FoundationRole.CHARACTER_CAST:
+        character = properties["characters"]["items"]["properties"]
+        for field in "need fear wound false_belief private_history arc_direction contradiction relationship_function".split():
+            character[field] = {"type": ["string", "null"], "minLength": 1}
+        character["voice_anchors"]["minItems"] = 0
+    properties["applicability"] = {
+        "type": "array",
+        "maxItems": 256,
+        "items": _object(
+            {
+                "field_path": _text(),
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "APPLICABLE",
+                        "NOT_APPLICABLE",
+                        "PROHIBITED",
+                        "UNDETERMINED",
+                    ],
+                },
+                "rationale": _text(),
+            }
+        ),
+    }
+
+
+def validate_foundation_applicability(
+    payload: Mapping[str, Any], schema: Mapping[str, Any]
+) -> None:
+    nullable: dict[str, Any] = {}
+
+    def visit(value: Any, contract: Mapping[str, Any], path: str) -> None:
+        if isinstance(contract.get("type"), list) and "null" in contract["type"]:
+            nullable[path] = value
+        if isinstance(value, Mapping):
+            for field, child in contract.get("properties", {}).items():
+                if field in value:
+                    visit(value[field], child, f"{path}.{field}")
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                visit(child, contract.get("items", {}), f"{path}[{index}]")
+
+    visit(payload, schema, "$")
+    declarations: dict[str, Mapping[str, Any]] = {}
+    for item in payload.get("applicability", []):
+        path = item["field_path"]
+        if path not in nullable or path in declarations:
+            raise KernelError(
+                "FOUNDATION_APPLICABILITY_INVALID",
+                "Applicability must identify a unique optional field in this candidate",
+            )
+        declarations[path] = item
+        if (nullable[path] is None) != (item["status"] != "APPLICABLE"):
+            raise KernelError(
+                "FOUNDATION_APPLICABILITY_INVALID",
+                "Applicability and the exact field value disagree",
+            )
+    if any(
+        value is None and path not in declarations for path, value in nullable.items()
+    ):
+        raise KernelError(
+            "FOUNDATION_APPLICABILITY_REQUIRED",
+            "Null features require an explicit status and rationale; missing and inapplicable are distinct",
+        )
+
+
+def foundation_output_schema(
+    generator: str, *, work_requirements: bool = False
+) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
     properties: dict[str, Any] = {
         "objective": _text(),
@@ -151,13 +240,17 @@ def foundation_output_schema(generator: str) -> dict[str, Any]:
             "source_character_id target_character_id tension dependency change_pressure",
             minimum=0,
         )
+    if work_requirements:
+        _apply_work_schema(properties, role)
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         **_object(properties),
     }
 
 
-def foundation_task(generator: str) -> dict[str, Any]:
+def foundation_task(
+    generator: str, *, work_requirements: bool = False
+) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
     tasks = {
         FoundationRole.CREATIVE_FOUNDATION: "Develop a distinctive, sustainable conflict from the brief. Explain reader value, choices and costs; create original operational style examples, never imitate reference prose.",
@@ -167,8 +260,19 @@ def foundation_task(generator: str) -> dict[str, Any]:
         FoundationRole.WORLD_BIBLE: "Compile only world depth needed by the approved conflict. Consider laws, geography/time, resources, power, history/culture, existence and information; explain deferred dimensions and extension triggers. Rules need costs, exceptions and story consequences.",
         FoundationRole.CHARACTER_CAST: "Build a cast with distinct narrative functions, then deepen each through desire, fear, contradiction, beliefs and choices. Derive voice anchors from biography and motives. Ground relationships and capabilities in the approved world, never invent accepted history.",
     }
+    if work_requirements:
+        tasks = {
+            FoundationRole.CREATIVE_FOUNDATION: "Develop this work's premise, narrative purpose, reader experience and sustainable form from the author brief and selected design. Conflict and serialization are choices, not universal requirements. Create original operational style examples, never imitate reference prose.",
+            FoundationRole.THEME_CONTRACT: "Express this work's thematic question and suitable means of exploring it. Observation, ambiguity, deliberation or explicit exposition may be appropriate. Costly choices and opposing answers are optional methods unless selected by this work.",
+            FoundationRole.ENDING_INTENT: "Design an ending direction consistent with this work, including an open ending when selected. Preserve applicable commitments and prohibitions. Do not invent irreversible costs, closure or a sequel bridge. Intent is not accepted history.",
+            FoundationRole.READER_PROMISE: "Describe the intended reader experience and only commitments this work actually makes. Preparation, escalation, rewards and payoff are conditional strategies; do not turn permission into a promise or impose a commercial rhythm.",
+            FoundationRole.WORLD_BIBLE: "Compile the world depth needed by this work using the frozen typed world contract. Preserve laws, limits and knowledge boundaries. A rule need not impose a cost; distinguish an inapplicable cost from an unknown consequence. Explain deferred dimensions and extension triggers.",
+            FoundationRole.CHARACTER_CAST: "Design characters suitable for this work and distinct voices grounded in their circumstances. Wounds, false beliefs, secrets and transformation are optional, not mandatory identities. Preserve exact references, capabilities, knowledge and approved initial conditions; never invent accepted history.",
+        }
     return {
-        "contract_version": "foundation-generation.v1",
+        "contract_version": "foundation-generation.v2"
+        if work_requirements
+        else "foundation-generation.v1",
         "role": role.value,
         "task": tasks[role],
         "parent_roles": [parent.value for parent in role.required_parents],
@@ -179,10 +283,19 @@ def foundation_task(generator: str) -> dict[str, Any]:
             else {}
         ),
         "repair_contract": "When repair evidence is present, address each unresolved diagnosis, preserve unaffected constraints and explain uncertainty through the candidate rather than silently replacing upstream decisions.",
+        **(
+            {
+                "applicability_contract": "All fields remain required. Use null for an inapplicable or prohibited optional feature and declare its exact field path, status and rationale in applicability. UNDETERMINED records uncertainty, not permission to invent. Empty collections mean confirmed zero members, never missing input. Apply author requirements and accepted design at their original scope and strength; report conflicts rather than silently replacing them."
+            }
+            if work_requirements
+            else {}
+        ),
     }
 
 
-def foundation_envelope(*, generator: str, inputs: tuple[Any, ...]) -> dict[str, Any]:
+def foundation_envelope(
+    *, generator: str, inputs: tuple[Any, ...], work_requirements: bool = False
+) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
     by_role = {item.role: item for item in inputs}
     if set(by_role) != set(FOUNDATION_INPUT_ROLES[generator]):
@@ -191,7 +304,9 @@ def foundation_envelope(*, generator: str, inputs: tuple[Any, ...]) -> dict[str,
             "Foundation input roles differ from the frozen dependency contract",
         )
     return {
-        "contract_version": "foundation-generation.v1",
+        "contract_version": "foundation-generation.v2"
+        if work_requirements
+        else "foundation-generation.v1",
         "role": role.value,
         "foundation_parent_bindings": {
             parent.value: {
@@ -204,7 +319,16 @@ def foundation_envelope(*, generator: str, inputs: tuple[Any, ...]) -> dict[str,
             "asset_version_id": by_role["creative_brief"].asset_version_id,
             "content_hash": by_role["creative_brief"].content_hash,
         },
-        **({"world_compilation": {"contract_version": "world-foundation.v1", "compiled_scope": "BOOK"}} if role is FoundationRole.WORLD_BIBLE else {}),
+        **(
+            {
+                "world_compilation": {
+                    "contract_version": "world-foundation.v1",
+                    "compiled_scope": "BOOK",
+                }
+            }
+            if role is FoundationRole.WORLD_BIBLE
+            else {}
+        ),
     }
 
 
@@ -232,7 +356,8 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
         payload["world_foundation_json"] = json.dumps(
             world, ensure_ascii=False, separators=(",", ":")
         )
-    schema = foundation_output_schema(generator)
+    work_requirements = envelope.get("contract_version") == "foundation-generation.v2"
+    schema = foundation_output_schema(generator, work_requirements=work_requirements)
     if envelope.get("author_design"):
         from novel_forge.modules.story_design_authority.author_input import add_author_decision_contract, frozen_author_projection, validate_author_decisions
         projection = frozen_author_projection({"constraint_envelope": envelope}, generator=generator, logical_key=str(content.get("logical_key") or ""))
@@ -254,6 +379,8 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
     elif translations == []:
         payload.pop("knowledge_translations")
     validate_chapter_provider_output_against_schema(generator, schema, payload)
+    if work_requirements:
+        validate_foundation_applicability(payload, schema)
     if generator == "character.cast.generate":
         ids = [character["character_id"] for character in payload["characters"]]
         if len(ids) != len(set(ids)) or any(

@@ -91,7 +91,12 @@ def build_story_planning_pack_profile(
     *,
     operation_definition_hash: str,
     pack_id: str = "story_planning_pack",
+    execution_contract_version: str | None = None,
 ) -> LongformCapabilityPackProfile:
+    version = execution_contract_version or STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
+    if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0"}:
+        raise ValueError("Unsupported Planning execution contract")
+    operation_ref = f"story_planning.generate@{version}"
     root, manifest, artifacts = _base(repository_root, pack_id)
     from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_CAPABILITIES
 
@@ -115,7 +120,7 @@ def build_story_planning_pack_profile(
         node.update(
             node_id=stage,
             operation_name="story_planning.generate",
-            operation_definition_ref=STORY_PLANNING_OPERATION_DEFINITION_REF,
+            operation_definition_ref=operation_ref,
             operation_definition_hash=operation_definition_hash,
             handler_key="novel_forge.story_planning.generate",
             stage=stage,
@@ -135,7 +140,7 @@ def build_story_planning_pack_profile(
         )
         nodes.append(node)
     manifest["identity"].update(
-        version="2.8.0",
+        version="2.9.0" if version == "1.17.0" else "2.8.0",
         name="Story Planning Generator Pack",
         domain="story_planning",
         description="Governed Foundation formation and hierarchical Planning candidate generation.",
@@ -208,7 +213,7 @@ def build_story_planning_pack_profile(
                 ),
                 "operation_timeout_seconds": STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
                 "timeout_action": "FAIL_ATTEMPT",
-                "authority_binding": STORY_PLANNING_OPERATION_DEFINITION_REF,
+                "authority_binding": operation_ref,
             },
             "generated:story-planning-pack-profile",
         )

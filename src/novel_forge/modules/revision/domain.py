@@ -36,7 +36,27 @@ def apply_revision_result(
     if not all((project_id, draft_asset_version_id, review_asset_version_id, context_bundle_version_id)):
         raise KernelError("REVISION_INPUT_INVALID", "versioned revision lineage is required")
     from novel_forge.modules.review.diagnostics import open_diagnoses
+
     diagnoses = open_diagnoses(review)
+    repair_diagnoses = diagnoses
+    if "creative_baseline" in draft:
+        from novel_forge.modules.chapter_authority.chapter_plan_views import (
+            validate_creative_baseline,
+        )
+
+        if (
+            review.get("creative_baseline_digest")
+            != validate_creative_baseline(draft["creative_baseline"])["baseline_digest"]
+        ):
+            raise KernelError(
+                "REVISION_CREATIVE_BASELINE_DRIFT",
+                "Revision diagnoses must use the exact candidate creative baseline",
+            )
+        from novel_forge.modules.review.diagnostics import prose_repair_diagnoses
+        repair_diagnoses = prose_repair_diagnoses(review, work_requirements=True)
+        allowed_codes = {item["code"] for item in repair_diagnoses}
+        if set(result.get("resolved_issue_codes") or []) - allowed_codes or any(set(edit.get("issue_codes") or []) - allowed_codes for edit in result.get("edits") or []):
+            raise KernelError("REVISION_UNAUTHORIZED_DIAGNOSIS", "Evidence reassessment and aesthetic advice cannot be claimed as prose repairs")
     if review.get("diagnostic_contract_version") == "actionable-diagnostics.v1":
         from novel_forge.modules.review.diagnostics import prose_hash
         if (review.get("target_asset_version_id") != draft_asset_version_id
@@ -47,6 +67,9 @@ def apply_revision_result(
     if review.get("cross_chapter_window") or review.get("craft_targets"):
         result, targeted = _materialize_targeted_result(draft, review, result)
     text = prose_from_output(result, separators=draft.get("scene_separators"))
+    if "creative_baseline" in draft:
+        from novel_forge.modules.review.diagnostics import validate_prose_repair_scope
+        validate_prose_repair_scope(draft, repair_diagnoses, text)
     if review.get("craft_targets"):
         from novel_forge.modules.review.craft import craft_revision_contract
         targeted["craft_revision_contract"] = craft_revision_contract(draft, review)
@@ -88,7 +111,16 @@ def apply_revision_result(
         "text": text,
         "source_draft_version_id": draft_asset_version_id,
         "creative_execution": dict(draft.get("creative_execution") or {}),
-        **({"author_design_guidance": dict(draft["author_design_guidance"])} if draft.get("author_design_guidance") else {}),
+        **(
+            {"creative_baseline": dict(draft["creative_baseline"])}
+            if "creative_baseline" in draft
+            else {}
+        ),
+        **(
+            {"author_design_guidance": dict(draft["author_design_guidance"])}
+            if draft.get("author_design_guidance")
+            else {}
+        ),
         "review_version_id": review_asset_version_id,
         "context_bundle_version_id": context_bundle_version_id,
         "resolved_issue_codes": resolved,
@@ -96,7 +128,7 @@ def apply_revision_result(
         "issue_resolutions": resolutions,
         "canon_assertions": assertions,
         "provider_evidence": dict(provider_evidence),
-        "revision_contract_version": "revision-domain-v3",
+        "revision_contract_version": "revision-domain-v4" if "creative_baseline" in draft else "revision-domain-v3",
     }
 
 
@@ -194,7 +226,7 @@ def apply_quality_revision_result(
         "quality_action_observations": sorted(frozen),
         "context_bundle_version_id": context_bundle_version_id,
         "provider_evidence": dict(provider_evidence),
-        "revision_contract_version": "quality-corrective-revision-v2",
+        "revision_contract_version": "quality-corrective-revision-v3" if "creative_baseline" in revision else "quality-corrective-revision-v2",
     }
 
 

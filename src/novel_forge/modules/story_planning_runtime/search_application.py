@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from novel_forge.modules.story_design_authority.qualification import (
+    qualification_profiles_for_asset,
+)
+
 from dataclasses import dataclass, field, replace
 from collections.abc import Callable
 from typing import Any, Mapping, Protocol, Sequence
@@ -8,9 +12,6 @@ from psycopg.types.json import Jsonb
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.authority_security import Principal
-from novel_forge.modules.story_design_authority.qualification import (
-    required_qualification_profiles,
-)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .application import StoryPlanningGenerationApplication
@@ -1534,7 +1535,12 @@ class PostgresNarrativeSearchApplication:
         book_id: str,
         generator_operation_name: str,
     ) -> dict[str, Any]:
-        profiles = required_qualification_profiles(generator_operation_name)
+        profiles = qualification_profiles_for_asset(
+            uow.cursor,
+            project_id=project_id,
+            asset_version_id=candidate_asset_version_id,
+            generator=generator_operation_name,
+        )
         expected = {profile.layer.value: profile for profile in profiles}
         uow.cursor.execute(
             """

@@ -8,6 +8,7 @@ from novel_forge.modules.authority_handler_runtime import (
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state import materialize_canon_snapshot_v2
 
+from .contracts import CHAPTER_OUTCOME_DEFINITION_VERSION
 from .domain import build_chapter_outcome, reduce_story_state
 
 
@@ -74,6 +75,7 @@ class ChapterOutcomeCommitHandler:
             cost_receipt_refs=tuple(payload.get("cost_receipt_refs") or ()),
             created_by_operation_id=request.operation_id,
             trace_id=request.trace_id,
+            work_requirements=request.definition_version == CHAPTER_OUTCOME_DEFINITION_VERSION,
             expected_arc_contributions=tuple(
                 dict(item)
                 for item in (
@@ -133,7 +135,7 @@ class ChapterOutcomeCommitHandler:
             output_key="chapter.outcome",
             role="primary",
             content=outcome,
-            qualification_policy="chapter-outcome-acceptance-v3",
+            qualification_policy="chapter-outcome-acceptance-v4" if request.definition_version == CHAPTER_OUTCOME_DEFINITION_VERSION else "chapter-outcome-acceptance-v3",
             reference_asset_version_ids=source_refs,
             evidence=evidence,
             auxiliary_outputs=(

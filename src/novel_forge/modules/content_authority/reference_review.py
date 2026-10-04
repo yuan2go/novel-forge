@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from typing import Any
@@ -7,12 +6,21 @@ from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.chapter_quality_authority.generator_reference import generator_reference_contract
 from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.story_design_authority.qualification import required_qualification_profiles
+from novel_forge.modules.story_design_authority.qualification import (
+    required_qualification_profiles,
+    uses_work_requirements,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
-def planning_reference_samples(database_url: str, *, project_id: str, book_id: str,
-                               principal: Principal, limit: int = 100) -> dict[str, Any]:
+def planning_reference_samples(
+    database_url: str,
+    *,
+    project_id: str,
+    book_id: str,
+    principal: Principal,
+    limit: int = 100,
+) -> dict[str, Any]:
     principal.require("content.authority.query", project_id)
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute("SET TRANSACTION READ ONLY")
@@ -35,22 +43,31 @@ def planning_reference_samples(database_url: str, *, project_id: str, book_id: s
         samples = []
         for asset_id, digest, workspace_id, producer_hash in rows:
             subject = require_reference_subject(
-                uow.cursor, project_id=project_id,
+                uow.cursor,
+                project_id=project_id,
                 binding={"asset_version_id": asset_id, "content_hash": digest},
                 allowed_types=frozenset({"planning_generation_candidate"}),
             )
             content = subject["content"]
             task = content["generator_operation_name"]
             contract = generator_reference_contract(task, producer_hash)
-            dimensions = [profile.layer.value + ":" + criterion
-                          for profile in required_qualification_profiles(task)
-                          for criterion in profile.criteria]
-            samples.append({
-                "asset_version_id": asset_id, "content_hash": digest,
-                "workspace_id": workspace_id, "book_id": book_id,
-                "content": content["candidate_payload"],
-                "reference_contract": {**contract, "dimensions": dimensions},
-            })
+            dimensions = [
+                profile.layer.value + ":" + criterion
+                for profile in required_qualification_profiles(
+                    task, work_requirements=uses_work_requirements(content)
+                )
+                for criterion in profile.criteria
+            ]
+            samples.append(
+                {
+                    "asset_version_id": asset_id,
+                    "content_hash": digest,
+                    "workspace_id": workspace_id,
+                    "book_id": book_id,
+                    "content": content["candidate_payload"],
+                    "reference_contract": {**contract, "dimensions": dimensions},
+                }
+            )
     return {
         "samples": samples, "actor_id": principal.principal_id,
         "can_annotate": principal.principal_type is PrincipalType.LOCAL_OPERATOR

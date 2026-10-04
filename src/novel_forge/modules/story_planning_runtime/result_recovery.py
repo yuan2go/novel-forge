@@ -48,7 +48,7 @@ class PlanningResultValidationError(KernelError):
 
 
 def validate_raw_result(
-    generator: str, raw: Any, *, compiled_scope: str | None = None
+    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False
 ) -> dict[str, Any]:
     if not isinstance(raw, Mapping):
         raise KernelError(
@@ -74,7 +74,7 @@ def validate_raw_result(
             for key, value in normalized.items()
             if key not in {"author_design_decisions", "knowledge_translations"}
         }
-        envelope = {"foundation_parent_bindings": {}}
+        envelope = {"foundation_parent_bindings": {}, "contract_version": "foundation-generation.v2" if work_requirements else "foundation-generation.v1"}
         if compiled_scope and generator == "world.design.generate":
             envelope["world_compilation"] = {"compiled_scope": compiled_scope}
         structural.update(constraint_envelope=envelope, foundation_parent_bindings={})
@@ -156,7 +156,6 @@ def require_result_repair_source(
         from .application import _command_payload
 
         permitted_linkage_fields = {
-            "execution_contract_version",
             "runtime_continuation_id",
             "idempotency_key",
             "repair_of_candidate_id",
@@ -256,6 +255,7 @@ def require_result_repair_source(
         validate_raw_result(
             command.generator_operation_name,
             raw,
+            work_requirements=command.execution_contract_version == "1.17.0",
             compiled_scope="BOOK"
             if command.generator_operation_name == "world.design.generate"
             else None,

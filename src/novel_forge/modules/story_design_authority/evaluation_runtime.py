@@ -48,6 +48,7 @@ from .qualification import (
     NarrativeQualificationResult,
     required_qualification_profiles,
     validate_narrative_qualification,
+    uses_work_requirements,
 )
 from .evaluation_reference import (
     reference_command_fields, require_reference_review, reference_agreement,
@@ -546,7 +547,8 @@ class NarrativeSemanticEvaluationHandler:
                     payload.get("generator_operation_name") or ""
                 ),
                 profiles=required_qualification_profiles(
-                    str(payload.get("generator_operation_name") or "")
+                    str(payload.get("generator_operation_name") or ""),
+                    work_requirements=uses_work_requirements(candidate.content),
                 ),
             )
             evaluation = provider_result.evaluation
@@ -579,6 +581,7 @@ class NarrativeSemanticEvaluationHandler:
             generator_operation_name=str(payload.get("generator_operation_name") or ""),
             value=evaluation,
             require_pass=False,
+            work_requirements=uses_work_requirements(candidate.content),
         )
         reference_result = (reference_agreement(payload=payload, reference=reference, evaluation=evaluation)
                             if reference is not None else None)
@@ -804,6 +807,7 @@ class NarrativeSemanticEvaluationHandler:
             generator_operation_name=expected_target["generator_operation_name"],
             value=source_content.get("evaluation"),
             require_pass=False,
+            work_requirements=uses_work_requirements(candidate.content),
         )
         if source_content.get("qualification") != qualification.to_evidence():
             raise KernelError(
@@ -1226,6 +1230,7 @@ class NarrativeSemanticEvaluationApplication:
             generator_operation_name=command.generator_operation_name,
             value=content.get("evaluation"),
             require_pass=False,
+            work_requirements=uses_work_requirements(candidate["content"]),
         )
         evaluation_operation_id = operation_id
         evaluation_attempt_id = scheduled.attempt_id
@@ -3159,6 +3164,11 @@ class NarrativeSemanticEvaluationApplication:
             generator_operation_name=generator_operation_name,
             value=dict(provider_result),
             require_pass=False,
+            work_requirements=uses_work_requirements(
+                uow.repositories.asset_documents.require(
+                    project_id=project_id, asset_version_id=candidate_id
+                ).content
+            ),
         )
         if (
             model_content.get("stage") != "narrative_semantic_evaluation"

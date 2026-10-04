@@ -63,9 +63,35 @@ def validate_foundation_layer(
         FoundationRole.WORLD_BIBLE: _validate_world,
         FoundationRole.CHARACTER_CAST: _validate_characters,
     }
-    validators[role](content, parent_contents)
+    work_requirements = (
+        dict(content.get("constraint_envelope") or {}).get("contract_version")
+        == "foundation-generation.v2"
+    )
+    if work_requirements:
+        from novel_forge.modules.story_planning_runtime.foundation_generation import (
+            FOUNDATION_GENERATORS,
+            validate_foundation_payload,
+        )
+
+        generator = next(
+            name for name, target in FOUNDATION_GENERATORS.items() if target is role
+        )
+        validate_foundation_payload(generator, {"candidate_payload": dict(content)})
+        if any(item["status"] == "UNDETERMINED" for item in content["applicability"]):
+            raise KernelError(
+                "FOUNDATION_APPLICABILITY_UNRESOLVED",
+                "Uncertain design applicability requires clarification before activation",
+            )
+        if parent_contents:
+            _require_declared_parent_bindings(content, parent_contents)
+            if FoundationRole.CREATIVE_FOUNDATION in parent_contents:
+                _require_creative_alignment(content, parent_contents)
+    else:
+        validators[role](content, parent_contents)
     return {
-        "schema_version": "foundation-layer-validation.v1",
+        "schema_version": "foundation-layer-validation.v2"
+        if work_requirements
+        else "foundation-layer-validation.v1",
         "role": role.value,
         "structural": "PASS",
         "cross_layer": "PASS",

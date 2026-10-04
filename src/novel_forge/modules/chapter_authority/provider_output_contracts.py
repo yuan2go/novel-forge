@@ -876,7 +876,14 @@ def _retrieval_query_expansion_schema() -> dict[str, Any]:
     )
 
 
-def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False, legacy_contract: bool = False, targeted_revision: bool = False) -> dict[str, Any]:
+def chapter_provider_output_schema(
+    stage: str,
+    *,
+    causal_batch: bool = False,
+    legacy_contract: bool = False,
+    targeted_revision: bool = False,
+    work_requirements: bool = False,
+) -> dict[str, Any]:
 
     if stage == "memo":
         from .creative_memo import creative_memo_schema
@@ -936,19 +943,44 @@ def chapter_provider_output_schema(stage: str, *, causal_batch: bool = False, le
             "CHAPTER_PROVIDER_OUTPUT_SCHEMA_UNSUPPORTED",
             f"Chapter Provider output schema is not defined for stage {stage}",
         )
+    if work_requirements and stage in _QUALITY_STAGES:
+        dimension = schema["properties"]["dimensions"]["items"]["properties"]
+        dimension["gate_status"]["enum"].append("NOT_APPLICABLE")
+        dimension["score"]["type"] = ["number", "null"]
     return {"$schema": _SCHEMA_DIALECT, **schema}
 
 
-def chapter_provider_output_schema_ref(stage: str, *, causal_batch: bool = False, legacy_contract: bool = False, targeted_revision: bool = False) -> str:
+def chapter_provider_output_schema_ref(
+    stage: str,
+    *,
+    causal_batch: bool = False,
+    legacy_contract: bool = False,
+    targeted_revision: bool = False,
+    work_requirements: bool = False,
+) -> str:
     chapter_provider_output_schema(stage, causal_batch=causal_batch, legacy_contract=legacy_contract, targeted_revision=targeted_revision)
     version = (
-        (("v19" if causal_batch else "v18") if legacy_contract else ("v21" if causal_batch else "v20"))
+        (
+            ("v19" if causal_batch else "v18")
+            if legacy_contract
+            else (
+                ("v23" if causal_batch else "v22")
+                if work_requirements
+                else ("v21" if causal_batch else "v20")
+            )
+        )
         if stage == "canon_extraction"
         else ("v4" if legacy_contract else "v5")
         if stage in {"review", "rereview"}
-        else ("v2" if legacy_contract else "v4" if targeted_revision and stage == "revision" else "v3")
+        else (
+            "v2"
+            if legacy_contract
+            else "v4"
+            if targeted_revision and stage == "revision"
+            else "v3"
+        )
         if stage in {"draft", "revision"}
-        else ("v2" if legacy_contract else "v3")
+        else ("v2" if legacy_contract else "v4" if work_requirements else "v3")
         if stage in _QUALITY_STAGES
         else "v2"
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}
@@ -1003,10 +1035,13 @@ def validate_chapter_provider_output_against_schema(
 def validate_chapter_provider_output_semantics(
     stage: str,
     value: Mapping[str, Any],
-    *, host_bind_known_metadata: bool = False, output_schema_ref: str = "",
+    *,
+    host_bind_known_metadata: bool = False,
+    output_schema_ref: str = "",
 ) -> dict[str, Any]:
 
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
+    work_requirements = output_schema_ref.endswith((":v22", ":v23"))
     if stage == "canon_extraction":
         if output_schema_ref:
             if output_schema_ref not in {
@@ -1014,10 +1049,23 @@ def validate_chapter_provider_output_semantics(
                 "schema:chapter-provider-output:canon_extraction:v19",
                 "schema:chapter-provider-output:canon_extraction:v20",
                 "schema:chapter-provider-output:canon_extraction:v21",
+                "schema:chapter-provider-output:canon_extraction:v22",
+                "schema:chapter-provider-output:canon_extraction:v23",
             }:
-                raise KernelError("CHAPTER_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED", "unknown frozen Canon output contract")
-            host_bind_known_metadata = output_schema_ref.endswith((":v20", ":v21"))
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED",
+                    "unknown frozen Canon output contract",
+                )
+            host_bind_known_metadata = output_schema_ref.endswith(
+                (":v20", ":v21", ":v22", ":v23")
+            )
+        original_realization = {item.get("planned_event_id"): item for item in normalized.get("realization_evidence", [])}
         normalized = _without_null_object_properties(normalized)
+        if work_requirements:
+            for item in normalized.get("realization_evidence", []):
+                original = original_realization[item.get("planned_event_id")]
+                if "observed_decision" in original and original["observed_decision"] is None:
+                    item["observed_decision"] = None
         try:
             normalized["character_knowledge_changes"] = (
                 atomize_character_knowledge_changes(
@@ -1045,12 +1093,21 @@ def validate_chapter_provider_output_semantics(
                 )
         for obligation in normalized.get("obligation_changes", []):
             if obligation.get("obligation_type") == "CAUSAL_DEBT":
-                from novel_forge.modules.narrative_state.causal_obligations import causal_obligation_requirement
+                from novel_forge.modules.narrative_state.causal_obligations import (
+                    causal_obligation_requirement,
+                )
+
                 causal_obligation_requirement(obligation)
-            from novel_forge.modules.canon_graph.grounding import validate_payoff_reference
-            if (host_bind_known_metadata and obligation.get("status") == "FULFILLED"
+            from novel_forge.modules.canon_graph.grounding import (
+                validate_payoff_reference,
+            )
+
+            if (
+                host_bind_known_metadata
+                and obligation.get("status") == "FULFILLED"
                 and obligation.get("obligation_type") != "CAUSAL_DEBT"
-                and obligation.get("payoff_evidence") is None):
+                and obligation.get("payoff_evidence") is None
+            ):
                 continue
             try:
                 validate_payoff_reference(obligation)
@@ -1094,8 +1151,13 @@ def validate_chapter_provider_output_semantics(
                 and evidence.get("accepted_prose_evidence")
                 and evidence.get("observed_consequence")
                 and evidence.get("observed_action")
-                and evidence.get("observed_decision")
-                and evidence.get("observed_state_deltas")
+                and (
+                    work_requirements
+                    or (
+                        evidence.get("observed_decision")
+                        and evidence.get("observed_state_deltas")
+                    )
+                )
             ):
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
@@ -1163,6 +1225,7 @@ def validate_chapter_provider_output_semantics(
         return normalized
 
     from .realization_composition import prose_from_output
+
     targeted = is_targeted_revision_schema_ref(output_schema_ref)
     if output_schema_ref.startswith("schema:chapter-provider-output:revision:") and (
         "v4" in output_schema_ref and not targeted

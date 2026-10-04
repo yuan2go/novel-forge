@@ -20,6 +20,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from .contracts import (
     CHAPTER_OUTCOME_COMMIT_DEFINITION,
     CHAPTER_OUTCOME_DEFINITION_VERSION,
+    CHAPTER_OUTCOME_LEGACY_DEFINITION_VERSION,
     CHAPTER_OUTCOME_HANDLER_KEY,
 )
 from .handlers import ChapterOutcomeCommitHandler
@@ -49,27 +50,27 @@ class ChapterOutcomeAdmission:
 
 class _ChapterOutcomeRegistry:
     def __init__(self) -> None:
-        self._registration = AuthorityHandlerRegistration(
+        self._registrations = {version: AuthorityHandlerRegistration(
             definition_name=CHAPTER_OUTCOME_COMMIT_DEFINITION,
-            definition_version=CHAPTER_OUTCOME_DEFINITION_VERSION,
+            definition_version=version,
             handler_key=CHAPTER_OUTCOME_HANDLER_KEY,
-            handler_contract_version="chapter-outcome-handler-v1",
+            handler_contract_version="chapter-outcome-handler-v2" if version == CHAPTER_OUTCOME_DEFINITION_VERSION else "chapter-outcome-handler-v1",
             output_asset_type="chapter_outcome",
             output_key="chapter.outcome",
             role="primary",
             completion_topic="book.chapter.accepted",
             handler=ChapterOutcomeCommitHandler(),
-        )
+        ) for version in (CHAPTER_OUTCOME_DEFINITION_VERSION, CHAPTER_OUTCOME_LEGACY_DEFINITION_VERSION)}
 
     def registration(
         self, definition_name: str, definition_version: str
     ) -> AuthorityHandlerRegistration:
         if (
             definition_name != CHAPTER_OUTCOME_COMMIT_DEFINITION
-            or definition_version != CHAPTER_OUTCOME_DEFINITION_VERSION
+            or definition_version not in self._registrations
         ):
             raise KeyError(definition_name)
-        return self._registration
+        return self._registrations[definition_version]
 
     @property
     def available_handler_keys(self) -> frozenset[str]:
@@ -97,9 +98,10 @@ class ChapterOutcomeAuthorityApplication:
         self, command: ChapterOutcomeCommand, *, principal: Principal
     ) -> ChapterOutcomeAdmission:
         principal.require("book.authority.execute", command.project_id)
+        work_requirements = command.payload.get("creative_requirements_contract") == "work-requirements.v1"
         definition = chapter_outcome_operation_definition(
             application_build_id=self.application_build_id,
-            commit_sha=self.commit_sha,
+            commit_sha=self.commit_sha, work_requirements=work_requirements,
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.definitions.register(definition)
@@ -108,7 +110,7 @@ class ChapterOutcomeAuthorityApplication:
             self.database_url,
             {
                 "definition_name": CHAPTER_OUTCOME_COMMIT_DEFINITION,
-                "definition_version": CHAPTER_OUTCOME_DEFINITION_VERSION,
+                "definition_version": definition["definition_version"],
                 "project_id": command.project_id,
                 "workspace_id": command.workspace_id,
                 "actor_id": principal.principal_id,
@@ -265,7 +267,7 @@ class ChapterOutcomeAuthorityApplication:
 
 
 def chapter_outcome_operation_definition(
-    *, application_build_id: str, commit_sha: str
+    *, application_build_id: str, commit_sha: str, work_requirements: bool = True
 ) -> dict[str, Any]:
     command_schema = {
         "type": "object",
@@ -279,7 +281,7 @@ def chapter_outcome_operation_definition(
     }
     return {
         "name": CHAPTER_OUTCOME_COMMIT_DEFINITION,
-        "definition_version": CHAPTER_OUTCOME_DEFINITION_VERSION,
+        "definition_version": CHAPTER_OUTCOME_DEFINITION_VERSION if work_requirements else CHAPTER_OUTCOME_LEGACY_DEFINITION_VERSION,
         "family": "book_authority",
         "command_schema_version": "book.chapter.accept.command.v1",
         "result_schema_version": "book.chapter.accept.result.v1",
@@ -294,7 +296,7 @@ def chapter_outcome_operation_definition(
             "auxiliary_asset_types": ["story_state_snapshot", "canon_snapshot"],
         },
         "handler_key": CHAPTER_OUTCOME_HANDLER_KEY,
-        "handler_contract_version": "chapter-outcome-handler-v1",
+        "handler_contract_version": "chapter-outcome-handler-v2" if work_requirements else "chapter-outcome-handler-v1",
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
         "execution_mode": "worker",

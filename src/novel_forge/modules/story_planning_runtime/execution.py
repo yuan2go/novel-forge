@@ -1538,7 +1538,9 @@ def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _frozen_provider_value_schema(values: Sequence[Any]) -> dict[str, Any]:
+def _frozen_provider_value_schema(
+    values: Sequence[Any], *, work_requirements: bool = False
+) -> dict[str, Any]:
     """CONSTRAINT: Project frozen JSON values into the Provider's strict-schema dialect.
 
     OpenAI Structured Outputs does not accept object- or array-valued ``const``
@@ -1550,6 +1552,18 @@ def _frozen_provider_value_schema(values: Sequence[Any]) -> dict[str, Any]:
     if not values:
         raise ValueError("Frozen Provider schema requires at least one value")
 
+    if (
+        work_requirements
+        and any(value is None for value in values)
+        and any(value is not None for value in values)
+    ):
+        present = _frozen_provider_value_schema(
+            [value for value in values if value is not None], work_requirements=True
+        )
+        if present["type"] not in {"string", "boolean", "integer", "number"}:
+            raise ValueError("Nullable frozen values must be scalar")
+        return {"type": [present["type"], "null"], "enum": list(dict.fromkeys(values))}
+
     if all(isinstance(value, Mapping) for value in values):
         mappings = [dict(value) for value in values]
         keys = list(mappings[0])
@@ -1560,7 +1574,10 @@ def _frozen_provider_value_schema(values: Sequence[Any]) -> dict[str, Any]:
             )
         return _strict_object(
             {
-                key: _frozen_provider_value_schema([value[key] for value in mappings])
+                key: _frozen_provider_value_schema(
+                    [value[key] for value in mappings],
+                    work_requirements=work_requirements,
+                )
                 for key in keys
             }
         )
@@ -1576,7 +1593,9 @@ def _frozen_provider_value_schema(values: Sequence[Any]) -> dict[str, Any]:
             # COMPATIBILITY: ``items`` remains mandatory in the Provider dialect even when
             # every frozen array is empty and maxItems therefore forbids data.
             "items": (
-                _frozen_provider_value_schema(members)
+                _frozen_provider_value_schema(
+                    members, work_requirements=work_requirements
+                )
                 if members
                 else {"type": "string"}
             ),
@@ -2249,7 +2268,6 @@ def planning_schema_evidence_identity(
     }
 
 
-
 def world_schema_evidence_identity(
     schema: Mapping[str, Any], schema_ref: str
 ) -> dict[str, Any]:
@@ -2301,6 +2319,7 @@ def planning_provider_output_schema(
     narrative_search_horizon: Mapping[str, Any] | None = None,
     narrative_realization: Mapping[str, Any] | None = None,
     chapter_schedule_row: Mapping[str, Any] | None = None,
+    work_requirements: bool = False,
 ) -> dict[str, Any]:
     """CONSTRAINT: OpenAI-strict provider schema; Planning validation stays authoritative."""
     string = {"type": "string", "minLength": 1}
@@ -2740,6 +2759,8 @@ def planning_provider_output_schema(
             ),
         )
     )
+    if work_requirements:
+        _apply_work_planning_schema(properties)
     if contract_type is PlanContractType.CHAPTER:
         realization = dict(narrative_realization or {})
         if not realization:
@@ -2758,18 +2779,20 @@ def planning_provider_output_schema(
                 "Chapter provider schema requires one complete frozen Scheduling row",
             ) from exc
         for field in CHAPTER_SCHEDULE_FIELDS:
-            properties[field] = _frozen_provider_value_schema([schedule_row[field]])
+            properties[field] = _frozen_provider_value_schema(
+                [schedule_row[field]], work_requirements=work_requirements
+            )
         scheduled_reader = dict(schedule_row["reader_experience"])
         reader_schema = dict(properties["reader_experience"])
         reader_properties = dict(reader_schema["properties"])
         for field in CHAPTER_READER_SCHEDULE_FIELDS:
             reader_properties[field] = _frozen_provider_value_schema(
-                [scheduled_reader[field]]
+                [scheduled_reader[field]], work_requirements=work_requirements
             )
         reader_schema["properties"] = reader_properties
         properties["reader_experience"] = reader_schema
         properties["narrative_realization_slice"] = _frozen_provider_value_schema(
-            [realization]
+            [realization], work_requirements=work_requirements
         )
         scene_properties = properties["scene_plan"]["items"]["properties"]
         event_ids = [str(event["event_id"]) for event in realization["events"]]
@@ -2822,6 +2845,73 @@ def planning_provider_output_schema(
         "required": list(properties),
         "additionalProperties": False,
     }
+
+
+def _apply_work_planning_schema(properties: dict[str, Any]) -> None:
+    optional_text = set(
+        "central_conflict_engine protagonist_transformation antagonist_escalation stage_conflict stage_antagonist irreversible_change midpoint climax next_volume_bridge resistance escalation turn choice cost trigger resistance_escalation local_climax information_release antagonist_actions promise_action foreshadow_action reward_action ending_hook reward_mode expected_change".split()
+    )
+    zero_collections = set(
+        "major_turns climax_distribution long_promise_payoff required_arc_contributions arc_checkpoint_expectations arc_cadence arc_schedule knowledge_boundaries disclosures required_state_transitions information_gain state_transitions arc_progress trajectory_refs obligation_refs causal_triggers antagonist_escalation resistance_escalation antagonist_actions information_release cost_range".split()
+    )
+
+    def visit(node: dict[str, Any]) -> None:
+        for name, child in node.get("properties", {}).items():
+            if name in optional_text and child.get("type") == "string":
+                child["type"] = ["string", "null"]
+            if name in zero_collections and child.get("type") == "array":
+                child["minItems"] = 0
+            if name == "required_state_delta":
+                child.clear()
+                child.update(
+                    _strict_object(
+                        {
+                            "status": {
+                                "type": "string",
+                                "enum": ["CHANGED", "NO_INCREMENT", "UNDETERMINED"],
+                            },
+                            "summary": {"type": ["string", "null"], "minLength": 1},
+                        }
+                    )
+                )
+            visit(child)
+        if isinstance(node.get("items"), dict):
+            visit(node["items"])
+
+    visit({"properties": properties})
+    if "chapter_contract_schema_version" in properties:
+        properties["chapter_contract_schema_version"]["const"] = (
+            "chapter-mission-scene.v3"
+        )
+    if "narrative_event_chain" in properties:
+        event = properties["narrative_event_chain"]["items"]
+        for name in (
+            "state_deltas",
+            "disclosures",
+            "obligation_actions",
+            "arc_contributions",
+            "preconditions",
+        ):
+            event["properties"][name]["minItems"] = 0
+        for child in event["properties"]["knowledge_boundary"]["properties"].values():
+            child["minItems"] = 0
+        for name in ("decision", "resistance", "irreversible_change"):
+            event["properties"][name] = {"type": ["string", "null"], "minLength": 1}
+        event["properties"]["feature_status"] = _strict_object(
+            {
+                name: _strict_object(
+                    {
+                        "status": {
+                            "type": "string",
+                            "enum": ["APPLICABLE", "NOT_APPLICABLE", "PROHIBITED"],
+                        },
+                        "rationale": {"type": "string", "minLength": 1},
+                    }
+                )
+                for name in ("decision", "resistance", "irreversible_change")
+            }
+        )
+        event["required"] = list(event["properties"])
 
 
 def _frozen_arc_ref_schema(
@@ -3859,7 +3949,10 @@ class PostgresPlanningExecutionPreparer:
                 "Planning Codex execution permits only model.provider.invoke",
             )
         output_schema = (
-            foundation_output_schema(command.generator_operation_name)
+            foundation_output_schema(
+                command.generator_operation_name,
+                work_requirements=command.execution_contract_version == "1.17.0",
+            )
             if command.generator_operation_name in FOUNDATION_GENERATORS
             else planning_provider_output_schema(
                 PlanContractType(command.planning_scope.value),
@@ -3877,6 +3970,7 @@ class PostgresPlanningExecutionPreparer:
                 narrative_search_horizon=(command.narrative_search_planning_horizon),
                 narrative_realization=command.narrative_realization,
                 chapter_schedule_row=chapter_schedule_row,
+                work_requirements=command.execution_contract_version == "1.17.0",
             )
         )
         if (
@@ -3916,7 +4010,9 @@ class PostgresPlanningExecutionPreparer:
             )
         )
         if command.generator_operation_name in FOUNDATION_GENERATORS:
-            output_schema_ref = f"schema:foundation-provider-output:{FOUNDATION_GENERATORS[command.generator_operation_name].value.lower()}:v1"
+            output_schema_ref = f"schema:foundation-provider-output:{FOUNDATION_GENERATORS[command.generator_operation_name].value.lower()}:v{2 if command.execution_contract_version == '1.17.0' else 1}"
+        if command.execution_contract_version == "1.17.0" and command.generator_operation_name not in FOUNDATION_GENERATORS:
+            output_schema_ref += ":work-v2"
         if provider_stage is not None:
             output_schema = dict(provider_stage.output_schema)
             output_schema_ref = provider_stage.output_schema_ref
@@ -4046,6 +4142,7 @@ class PostgresPlanningExecutionPreparer:
             },
             candidate_payload={},
             arc_working_set=command.arc_working_set,
+            work_requirements=command.execution_contract_version == "1.17.0",
         )
         try:
             context_policy = json.loads(frozen.context_policy_payload_json)
@@ -4064,13 +4161,16 @@ class PostgresPlanningExecutionPreparer:
                 **(
                     {
                         "foundation_task": foundation_task(
-                            command.generator_operation_name
+                            command.generator_operation_name,
+                            work_requirements=command.execution_contract_version
+                            == "1.17.0",
                         )
                     }
                     if command.generator_operation_name in FOUNDATION_GENERATORS
                     else {}
                 ),
                 "planning_command": {
+                    **({"creative_requirements_contract": "work-requirements.v1"} if command.execution_contract_version == "1.17.0" else {}),
                     "project_id": command.project_id,
                     "book_id": command.book_id,
                     "generation_operation_id": operation_id,
@@ -4119,7 +4219,11 @@ class PostgresPlanningExecutionPreparer:
                         command.narrative_search_hard_constraints
                     ),
                     "narrative_realization": dict(command.narrative_realization or {}),
-                    **({"edition_execution": dict(command.edition_execution)} if command.edition_execution else {}),
+                    **(
+                        {"edition_execution": dict(command.edition_execution)}
+                        if command.edition_execution
+                        else {}
+                    ),
                 },
                 "frozen_inputs": [
                     {
@@ -4152,8 +4256,15 @@ class PostgresPlanningExecutionPreparer:
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
-                **({"craft_history_projection_version": context_document.content["craft_history_projection_version"]}
-                   if context_document.content.get("craft_history_projection_version") else {}),
+                **(
+                    {
+                        "craft_history_projection_version": context_document.content[
+                            "craft_history_projection_version"
+                        ]
+                    }
+                    if context_document.content.get("craft_history_projection_version")
+                    else {}
+                ),
             },
             "trace_id": command.trace_id,
             "correlation_id": command.correlation_id,
@@ -5260,16 +5371,37 @@ class PostgresPlanningExecutionPreparer:
             "input_versions": selected,
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_search": command.narrative_search_snapshot,
-            **({"edition_execution": dict(command.edition_execution)} if command.edition_execution else {}),
+            **(
+                {"edition_execution": dict(command.edition_execution)}
+                if command.edition_execution
+                else {}
+            ),
             "narrative_intelligence": narrative_intelligence,
-            **({"planning_input_projection_version": "planning-input-role-references.v1"}
-               if command.generator_operation_name not in FOUNDATION_GENERATORS else {}),
-            **({"craft_history_projection_version": "planning-craft-history-projection.v1"}
-               if command.generator_operation_name not in FOUNDATION_GENERATORS
-               and narrative_intelligence.get("craft_policy", {}).get("schema_version") == "narrative-craft-budget.v4" else {}),
+            **(
+                {
+                    "planning_input_projection_version": "planning-input-role-references.v1"
+                }
+                if command.generator_operation_name not in FOUNDATION_GENERATORS
+                else {}
+            ),
+            **(
+                {
+                    "craft_history_projection_version": "planning-craft-history-projection.v1"
+                }
+                if command.generator_operation_name not in FOUNDATION_GENERATORS
+                and narrative_intelligence.get("craft_policy", {}).get("schema_version")
+                == "narrative-craft-budget.v4"
+                else {}
+            ),
             "knowledge_access_policy": knowledge_access_policy,
             **(
-                {"foundation_task": foundation_task(command.generator_operation_name)}
+                {
+                    "foundation_task": foundation_task(
+                        command.generator_operation_name,
+                        work_requirements=command.execution_contract_version
+                        == "1.17.0",
+                    )
+                }
                 if command.generator_operation_name in FOUNDATION_GENERATORS
                 else {
                     "realization_reference_contract": _realization_reference_contract(
@@ -5281,9 +5413,14 @@ class PostgresPlanningExecutionPreparer:
                 }
             ),
             **({"repair_context": repair_context} if repair_context else {}),
-            "token_budget": planning_task_token_budget if context_policy_ref == "context-policy:chapter-generation-pack:v2" else 16000,
-            **({"planning_context_policy_version": context_policy_ref}
-               if context_policy_ref == "context-policy:chapter-generation-pack:v2" else {}),
+            "token_budget": planning_task_token_budget
+            if context_policy_ref == "context-policy:chapter-generation-pack:v2"
+            else 16000,
+            **(
+                {"planning_context_policy_version": context_policy_ref}
+                if context_policy_ref == "context-policy:chapter-generation-pack:v2"
+                else {}
+            ),
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
             "narrative_qualification_profiles": [
                 {
@@ -5296,7 +5433,8 @@ class PostgresPlanningExecutionPreparer:
                     "criteria": list(profile.criteria),
                 }
                 for profile in required_qualification_profiles(
-                    command.generator_operation_name
+                    command.generator_operation_name,
+                    work_requirements=command.execution_contract_version == "1.17.0",
                 )
             ],
             "trace_id": command.trace_id,
@@ -5307,6 +5445,7 @@ class PostgresPlanningExecutionPreparer:
             ),
         }
         from novel_forge.modules.story_design_authority.author_input import author_binding_from_inputs, compile_planning_author_projection
+
         author_design = author_binding_from_inputs(selected, project_id=command.project_id, book_id=command.book_id)
         if author_design:
             content["author_design_projection"] = compile_planning_author_projection(

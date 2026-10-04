@@ -22,3 +22,18 @@ def test_supervised_snapshot_forward_migration_preserves_strict_contract(baselin
                 with connection.transaction():
                     connection.execute("INSERT INTO supervised_admission_probe VALUES ('QUALIFIED_BY_AUTHOR')")
             assert connection.execute("SELECT count(*) FROM supervised_admission_probe").fetchone()[0] == 3
+
+
+@pytest.mark.parametrize("baseline", ["20260625_0001_initial_industrial_schema", "20260928_0148_author_supervised_design"])
+def test_zero_increment_outcome_forward_views_preserve_accepted_history(baseline):
+    with disposable_database_at_migration(DATABASE_URL, prefix="zero_outcome", target_migration_id=baseline) as url:
+        result = run_migrations(url)
+        assert result["ok"]
+        assert run_migrations(url) == result
+        with psycopg.connect(url) as connection:
+            rebuild = connection.execute("SELECT pg_get_viewdef('authority_narrative_state_rebuild_source'::regclass, true)").fetchone()[0]
+            events = connection.execute("SELECT pg_get_viewdef('authority_narrative_state_event_projection'::regclass, true)").fetchone()[0]
+            assert all(version in rebuild for version in ("chapter-outcome-v1", "chapter-outcome-v2", "chapter-outcome-v3", "chapter-outcome-v4"))
+            assert all(version in events for version in ("chapter-outcome-v2", "chapter-outcome-v3", "chapter-outcome-v4"))
+            assert "WITH ORDINALITY" in events
+            assert connection.execute("SELECT count(*) FROM authority_narrative_state_rebuild_source").fetchone()[0] == 0

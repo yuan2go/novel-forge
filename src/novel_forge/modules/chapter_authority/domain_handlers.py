@@ -571,8 +571,10 @@ def normalize_draft_result(
     context_content: dict[str, Any] | None = None,
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
+    work_requirements: bool = False,
 ) -> dict[str, Any]:
     from .realization_composition import prose_from_output
+
     text = prose_from_output(result, separators=result.get("scene_separators"))
     if not text.strip():
         raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "draft result has no text")
@@ -615,9 +617,17 @@ def normalize_draft_result(
         }
     from .realization_composition import compile_realization_contract, integrate_realization
     from .chapter_plan_views import build_draft_style_view
+
     composition = integrate_realization(
-        contract=compile_realization_contract(plan, build_draft_style_view(context_content or {})),
-        artifacts=result.get("scene_artifacts", []), text=text, separators=result.get("scene_separators"),
+        contract=compile_realization_contract(
+            plan,
+            build_draft_style_view(
+                context_content or {}, work_requirements=work_requirements
+            ),
+        ),
+        artifacts=result.get("scene_artifacts", []),
+        text=text,
+        separators=result.get("scene_separators"),
     )
     return {
         **composition,
@@ -642,7 +652,8 @@ def normalize_review_result(
     cross_chapter_window: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     from novel_forge.modules.review.craft import craft_review_targets
-    return evaluate_review_result(
+
+    reviewed = evaluate_review_result(
         project_id=project_id,
         target_asset_version_id=draft_asset_version_id,
         context_bundle_version_id=context_bundle_version_id,
@@ -654,6 +665,13 @@ def normalize_review_result(
         cross_chapter_window=cross_chapter_window,
         craft_targets=craft_review_targets(draft),
     )
+    if "creative_baseline" in draft:
+        from .chapter_plan_views import validate_creative_baseline
+
+        reviewed["creative_baseline_digest"] = validate_creative_baseline(
+            draft["creative_baseline"]
+        )["baseline_digest"]
+    return reviewed
 
 
 def normalize_revision_result(
@@ -692,7 +710,7 @@ def normalize_rereview_result(
     project_id: str,
     knowledge_targets: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    return evaluate_rereview_result(
+    reviewed = evaluate_rereview_result(
         project_id=project_id,
         original_draft_version_id=draft_asset_version_id,
         initial_review_version_id=review_asset_version_id,
@@ -704,6 +722,19 @@ def normalize_rereview_result(
         provider_evidence=provider_evidence,
         knowledge_targets=knowledge_targets,
     )
+    if "creative_baseline" in revision:
+        from .chapter_plan_views import validate_creative_baseline
+
+        digest = validate_creative_baseline(revision["creative_baseline"])[
+            "baseline_digest"
+        ]
+        if review.get("creative_baseline_digest") != digest:
+            raise KernelError(
+                "REVIEW_CREATIVE_BASELINE_DRIFT",
+                "ReReview cannot reuse diagnoses under a different creative baseline",
+            )
+        reviewed["creative_baseline_digest"] = digest
+    return reviewed
 
 
 def build_canon_patch(
@@ -809,9 +840,19 @@ def build_canon_patch(
                 {**entry, **entry["state"], **_entity_key_components(entry["entity_key"]), "asset_version_id": world_binding["action"]["source"]["asset_version_id"]}
                 for entry in entries
             ]
+    work_extraction = (extraction or {}).get("canon_extraction_contract_version") in {
+        "canon-semantic-extraction-v6", "canon-grounded-extraction-v2"
+    }
+    accepted_boundary = ((context_bundle or {}).get("chapter_execution") or {}).get("accepted_boundary") or {}
+    confirmed_empty_baseline = (
+        work_extraction
+        and accepted_boundary.get("accepted_through_chapter") == int(revision.get("chapter", 0)) - 1
+        and bool(accepted_boundary.get("canon_snapshot_asset_version_id"))
+        and bool(accepted_boundary.get("story_state_asset_version_id"))
+    )
     if int(revision.get("chapter", 0)) > 1 and not historical_state.get(
         "canon_snapshot"
-    ):
+    ) and not confirmed_empty_baseline:
         raise KernelError(
             "CANON_HISTORY_BASELINE_REQUIRED",
             "chapters after the first require an explicit CanonSnapshot baseline",
@@ -847,6 +888,7 @@ def build_canon_extraction(
     project_id: str,
     context_bundle_version_id: str,
     provider_extraction: dict[str, Any] | None = None,
+    work_requirements: bool = False,
 ) -> dict[str, Any]:
     return extract_canon_candidates(
         project_id=project_id,
@@ -854,6 +896,7 @@ def build_canon_extraction(
         revision_asset_version_id=revision_asset_version_id,
         context_bundle_version_id=context_bundle_version_id,
         provider_extraction=provider_extraction,
+        work_requirements=work_requirements,
     )
 
 

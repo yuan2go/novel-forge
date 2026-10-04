@@ -6,6 +6,7 @@ from typing import Any, Mapping, Sequence
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_design_authority.qualification import (
     required_qualification_profiles,
+    uses_work_requirements,
     validate_narrative_qualification,
 )
 
@@ -39,7 +40,7 @@ def planning_gate_outcomes(
     cursor.execute(
         """SELECT effect.external_effect_id,to_jsonb(q),candidate.content_hash,
                   COALESCE(generation.generator_operation_name,state.generator_operation_name),model.content_hash,model.content,
-                  evaluated.content,evaluator.external_effect_id
+                  evaluated.content,evaluator.external_effect_id,candidate.content
            FROM authority_narrative_design_qualification q
            JOIN authority_asset_version candidate ON candidate.asset_version_id=q.asset_version_id
              AND candidate.content_hash=q.candidate_content_hash
@@ -89,6 +90,7 @@ def planning_gate_outcomes(
             log,
             evaluated,
             evaluator_id,
+            candidate_content,
         ) = row
         evidence = _real_evidence(log)
         if evidence is None:
@@ -138,6 +140,7 @@ def planning_gate_outcomes(
                 generator_operation_name=generator,
                 value=evidence.get("result"),
                 require_pass=False,
+                work_requirements=uses_work_requirements(candidate_content),
             )
         except (KernelError, TypeError, ValueError):
             continue
@@ -156,7 +159,9 @@ def planning_gate_outcomes(
     for (effect_id, evaluation_id), rows in groups.items():
         if effect_id in result:
             continue
-        profiles = required_qualification_profiles(rows[0][3])
+        profiles = required_qualification_profiles(
+            rows[0][3], work_requirements=uses_work_requirements(rows[0][8])
+        )
         expected = {(p.layer.value, p.profile_id, p.profile_hash) for p in profiles}
         actual = {
             (r[1]["design_layer"], r[1]["profile_id"], r[1]["profile_hash"])

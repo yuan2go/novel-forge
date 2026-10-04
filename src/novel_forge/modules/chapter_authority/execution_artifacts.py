@@ -30,8 +30,11 @@ def validate_chapter_execution_intent(
     source_plan = normalized.get("source_chapter_plan")
     if (
         normalized.get("type") != "ChapterExecutionIntent"
-        or normalized.get("contract_version") not in {
-            "chapter-execution-intent-v2", "chapter-execution-intent-v3"
+        or normalized.get("contract_version")
+        not in {
+            "chapter-execution-intent-v2",
+            "chapter-execution-intent-v3",
+            "chapter-execution-intent-v4",
         }
         or not isinstance(mission, Mapping)
         or not isinstance(source_plan, Mapping)
@@ -79,7 +82,10 @@ def validate_chapter_execution_intent(
         for arc_id in scene.get("arc_progress") or ()
         if str(arc_id)
     }
-    if not mission_arc_ids or mission_arc_ids != scene_arc_ids:
+    if (
+        not mission_arc_ids
+        and normalized.get("contract_version") != "chapter-execution-intent-v4"
+    ) or mission_arc_ids != scene_arc_ids:
         raise KernelError(
             "CHAPTER_MISSION_ARC_COMPOSITION_INVALID",
             "ExecutionIntent Scenes must cover the exact compiled Mission Arc set",
@@ -102,7 +108,11 @@ def validate_chapter_execution_intent(
             "CHAPTER_MISSION_REALIZATION_INVALID",
             "ExecutionIntent does not preserve its Frozen realization slice",
         )
-    if normalized.get("contract_version") == "chapter-execution-intent-v3":
+    if normalized.get("contract_version") == "chapter-execution-intent-v3" or (
+        normalized.get("contract_version") == "chapter-execution-intent-v4"
+        and normalized.get("mission_schema_version")
+        in {"chapter-mission-scene.v2", "chapter-mission-scene.v3"}
+    ):
         from novel_forge.modules.hierarchical_planning.chapter_contracts import (
             ChapterMission,
             validate_scene_mission_coverage,
@@ -204,6 +214,8 @@ def build_chapter_execution_intent(
     chapter_plan_content_hash: str,
     chapter_plan: Mapping[str, Any],
     accepted_inputs: Iterable[Mapping[str, Any]],
+    work_requirements: bool = False,
+    style_view: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     current_contract = None
     if chapter_plan.get("chapter_contract_schema_version"):
@@ -331,6 +343,17 @@ def build_chapter_execution_intent(
             )
             if isinstance(item, Mapping)
         ]
+    if work_requirements:
+        planned_arc_ids = {
+            str(item.get("arc_plan_version_id") or "")
+            for item in chapter_plan.get("required_arc_contributions") or ()
+            if isinstance(item, Mapping)
+        }
+        selected_contributions = [
+            item
+            for item in selected_contributions
+            if item["arc_plan_version_id"] in planned_arc_ids
+        ]
     required_arc_ids = {
         str(item.get("arc_plan_version_id") or "")
         for item in selected_contributions
@@ -339,13 +362,17 @@ def build_chapter_execution_intent(
     scene_arc_ids = {
         arc_id for scene in scenes for arc_id in scene["arc_progress"] if arc_id
     }
-    if not required_arc_ids or scene_arc_ids != required_arc_ids:
+    if (
+        not required_arc_ids and not work_requirements
+    ) or scene_arc_ids != required_arc_ids:
         raise KernelError(
             "CHAPTER_MISSION_ARC_COMPOSITION_INVALID",
             "Chapter Mission requires every selected Arc to be composed into its Scene events",
         )
-    if len(required_arc_ids) > 1 and not any(
-        len(set(scene["arc_progress"])) > 1 for scene in scenes
+    if (
+        not work_requirements
+        and len(required_arc_ids) > 1
+        and not any(len(set(scene["arc_progress"])) > 1 for scene in scenes)
     ):
         raise KernelError(
             "CHAPTER_MISSION_ARC_COMPOSITION_FRAGMENTED",
@@ -477,10 +504,23 @@ def build_chapter_execution_intent(
     intent = {
         "type": "ChapterExecutionIntent",
         "contract_version": (
-            "chapter-execution-intent-v3" if current_contract is not None
+            "chapter-execution-intent-v4"
+            if work_requirements
+            else "chapter-execution-intent-v3"
+            if current_contract is not None
             else "chapter-execution-intent-v2"
         ),
         **({"required_beats": required_beats} if current_contract is not None else {}),
+        **(
+            {
+                "mission_schema_version": chapter_plan.get(
+                    "chapter_contract_schema_version"
+                )
+                or "LEGACY"
+            }
+            if work_requirements
+            else {}
+        ),
         "project_id": project_id,
         "chapter": chapter,
         "source_chapter_plan": {
@@ -533,6 +573,23 @@ def build_chapter_execution_intent(
     if "craft_strategy" in chapter_plan:
         from novel_forge.modules.mkaos_authority.craft_selection import validate_craft_strategy
         intent["craft_strategy"] = validate_craft_strategy(chapter_plan["craft_strategy"], scenes=scenes)
+    if work_requirements:
+        from .chapter_plan_views import build_draft_plan_view
+
+        view = build_draft_plan_view(dict(chapter_plan), work_requirements=True)
+        intent["creative_requirements"] = {
+            key: view[key]
+            for key in (
+                "style_constraints",
+                "point_of_view",
+                "target_word_count",
+                "prohibited_outcomes",
+                "author_design_guidance",
+            )
+            if key in view
+        }
+        if style_view is not None:
+            intent["creative_requirements"]["style"] = dict(style_view)
     intent["intent_fingerprint"] = _hash(intent)
     return intent
 

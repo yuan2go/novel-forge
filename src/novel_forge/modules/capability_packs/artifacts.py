@@ -363,9 +363,30 @@ def default_chapter_artifact_resolver(
             "v1",
             "config/capability_packs/artifacts/agent_session_template.md",
         ),
-        (ArtifactKind.PROMPT_SYSTEM_INSTRUCTION, "prompt-system:chapter-generation-pack", "v3", "config/capability_packs/artifacts/chapter_generation_system_instruction.md"),
-        (ArtifactKind.PROMPT_TEMPLATE, "prompt-template:chapter-generation-pack", "v6", "config/capability_packs/artifacts/chapter_generation_template_v6.md"),
-        (ArtifactKind.PROMPT_TEMPLATE, "prompt-template:chapter-generation-pack", "v7", "config/capability_packs/artifacts/chapter_generation_template_v7.md"),
+        (
+            ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+            "prompt-system:chapter-generation-pack",
+            "v3",
+            "config/capability_packs/artifacts/chapter_generation_system_instruction.md",
+        ),
+        (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:chapter-generation-pack",
+            "v6",
+            "config/capability_packs/artifacts/chapter_generation_template_v6.md",
+        ),
+        (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:chapter-generation-pack",
+            "v7",
+            "config/capability_packs/artifacts/chapter_generation_template_v7.md",
+        ),
+        (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:chapter-generation-pack",
+            "v8",
+            "config/capability_packs/artifacts/chapter_generation_template_v8.md",
+        ),
     ):
         text = (root / source).read_bytes().decode("utf-8", errors="strict")
         artifacts.append(

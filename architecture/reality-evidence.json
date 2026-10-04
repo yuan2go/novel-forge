@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20260928_0148_author_supervised_design",
+  "migration_head": "20261005_0149_zero_increment_chapter_outcome",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -8212,6 +8212,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260907_0119_grounded_chapter_acceptance.py",
           "locator": "MIGRATION_ID = \"20260907_0119_grounded_chapter_acceptance\"",
           "id": "20260907_0119_grounded_chapter_acceptance"
+        },
+        {
+          "id": "20261005_0149_zero_increment_chapter_outcome",
+          "path": "src/novel_forge/storage/migrations/versions/v20261005_0149_zero_increment_chapter_outcome.py",
+          "locator": "MIGRATION_ID = '20261005_0149_zero_increment_chapter_outcome'"
         }
       ],
       "external_effects": {
@@ -9207,7 +9212,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:3002b4994991593d1c8711a86f1f4b706283386306a914a0541c71866c2822f8"
+    "implementation_tree_sha": "sha256:52d03d242189d062a1e56cfb8cba424311bc34c71748fdd77a28316d1fb89edb"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -9222,7 +9227,7 @@
     {
       "id": "mission-scene-single-planning-truth",
       "classification": "CURRENT_RUNTIME_FACT",
-      "statement": "Current Chapter activation requires Mission/Scene v2 views from one immutable Planning asset and exact Frozen realization. Semantic replan includes Mission, trajectory, obligation, Scene and execution commitments; replay-only older definitions cannot admit new production.",
+      "statement": "Current Chapter activation requires Mission/Scene v3 views from one immutable Planning asset and exact Frozen realization. Explicit NO_INCREMENT retains execution coverage without inventing business changes; historical v2 remains replayable. Semantic replan includes Mission, trajectory, obligation, Scene and execution commitments; replay-only older definitions cannot admit new production.",
       "design_review_required": false,
       "evidence": [
         {

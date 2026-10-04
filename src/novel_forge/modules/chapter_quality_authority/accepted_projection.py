@@ -12,9 +12,10 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 _MAX_ACCEPTED_QUALITY_OBSERVATIONS = 300
 _TERMINAL_ARC_STATES = {"CLOSED", "RESOLVED", "FULFILLED", "CANCELLED"}
-CURRENT_CHAPTER_OUTCOME_CONTRACT = "chapter-outcome-v3"
+CURRENT_CHAPTER_OUTCOME_CONTRACT = "chapter-outcome-v4"
 SUPPORTED_CHAPTER_OUTCOME_CONTRACTS = (
     "chapter-outcome-v2",
+    "chapter-outcome-v3",
     CURRENT_CHAPTER_OUTCOME_CONTRACT,
 )
 
@@ -25,7 +26,7 @@ def validate_chapter_outcome_contract(value: object) -> str:
         raise KernelError(
             "LONGITUDINAL_QUALITY_OUTCOME_CONTRACT_UNSUPPORTED",
             "accepted Quality projection reads historical ChapterOutcome v2 "
-            "or canonical ChapterOutcome v3 only",
+            "or canonical ChapterOutcome v3/v4 only",
         )
     return contract
 
@@ -158,7 +159,7 @@ def load_accepted_quality_observations(
               AND acceptance.status='COMMITTED'
               AND acceptance.chapter_number<=%s
               AND outcome.content->>'contract_version' IN (
-                  'chapter-outcome-v2','chapter-outcome-v3'
+                  'chapter-outcome-v2','chapter-outcome-v3','chapter-outcome-v4'
               )
             ORDER BY acceptance.chapter_number
             LIMIT %s
@@ -408,7 +409,19 @@ def _observation(
         realization_evidence=realization_evidence,
         draft_text=str(draft.get("text") or ""),
     )
+    baseline = draft.get("creative_baseline")
+    work_semantics = {}
+    if isinstance(baseline, dict):
+        from novel_forge.modules.chapter_authority.chapter_plan_views import validate_creative_baseline
+        validate_creative_baseline(baseline)
+        work_semantics = {
+            "work_quality_semantic_version": "work-quality.v1",
+            "creative_baseline_digest": baseline["baseline_digest"],
+            "method_requirements": baseline["method_requirements"],
+            "required_state_delta": plan.get("required_state_delta", (plan.get("source_extensions") or {}).get("required_state_delta")),
+        }
     return {
+        **work_semantics,
         "project_id": project_id,
         "book_id": book_id,
         "chapter_number": chapter_number,
@@ -482,7 +495,7 @@ def _observation(
         ),
         "reader_reward_count": reader_reward_count,
         "quality_gate": str(quality.get("gate") or ""),
-        "projection_contract_version": "accepted-quality-observation-v2",
+        "projection_contract_version": "accepted-quality-observation-v3" if work_semantics else "accepted-quality-observation-v2",
     }
 
 

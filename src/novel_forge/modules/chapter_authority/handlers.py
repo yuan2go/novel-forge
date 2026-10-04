@@ -56,6 +56,7 @@ from novel_forge.modules.chapter_authority.chapter_plan_views import (
     build_draft_plan_view,
     build_draft_style_view,
     normalize_authoritative_chapter_plan,
+    qualification_profile_for_plan,
 )
 from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelPort,
@@ -236,7 +237,11 @@ class _PlanHandler:
                 if request.command.get("preparation_report", {}).get(
                     "chapter_plan_qualification_profile"
                 )
-                else None
+                else qualification_profile_for_plan({
+                    **source_plan.content,
+                    "constraint_envelope": {**dict(source_plan.content.get("constraint_envelope") or {}),
+                                            "creative_requirements_contract": "work-requirements.v1"},
+                }) if request.work_requirements_enabled else None
             ),
         )
         manifest = dict(
@@ -342,6 +347,35 @@ class _PlanHandler:
 class _ExecutionIntentHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         plan = request.require_input("chapter_plan")
+        style_view = None
+        if request.work_requirements_enabled:
+            policies = [
+                item for item in request.inputs if item.asset_type == "style_policy"
+            ]
+            if len(policies) > 1:
+                raise KernelError(
+                    "STYLE_POLICY_INPUT_AMBIGUOUS",
+                    "Execution intent needs one selected style policy",
+                )
+            style_view = build_draft_style_view(
+                {
+                    "context_segments": [
+                        {
+                            **policy.content,
+                            "asset_type": "style_policy",
+                            "asset_version_id": policy.asset_version_id,
+                            "content_hash": policy.content_hash,
+                        }
+                        for policy in policies
+                    ],
+                    "production_input_manifest": {
+                        "style_policy_version_id": policies[0].asset_version_id
+                        if policies
+                        else ""
+                    },
+                },
+                work_requirements=True,
+            )
         accepted_inputs = [
             {
                 **item.content,
@@ -360,6 +394,8 @@ class _ExecutionIntentHandler:
                 chapter_plan_content_hash=plan.content_hash,
                 chapter_plan=plan.content,
                 accepted_inputs=accepted_inputs,
+                work_requirements=request.work_requirements_enabled,
+                style_view=style_view,
             ),
         )
 
@@ -1061,7 +1097,8 @@ class _ContextHandler:
                 "Context cannot admit evidence until deterministic coverage is "
                 f"sufficient; missing={json.dumps(missing, sort_keys=True)}",
             )
-        task_scoped_context = str(((request.command.get("preparation_report") or {}).get("stage_context_profile_versions") or {}).get("draft")) == "draft-context-profile-v4"
+        stage_context_profile = str(((request.command.get("preparation_report") or {}).get("stage_context_profile_versions") or {}).get("draft") or ("draft-context-profile-v4" if request.work_requirements_enabled else "draft-context-profile-v2"))
+        task_scoped_context = stage_context_profile == "draft-context-profile-v4"
         task_dependency_refs = sorted(set((retrieval.content.get("query_plan") or {}).get("task_dependency_discovery", {}).get("required_refs") or ()))
         selected_documents: dict[str, list[dict[str, Any]]] = {}
         for document in retrieval.content.get("selected_documents") or ():
@@ -1145,6 +1182,7 @@ class _ContextHandler:
         if task_scoped_context:
             for source_id, documents in selected_documents.items():
                 candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents)
+        host_quality_segments: list[dict[str, Any]] = []
         frozen_candidates = [
             item
             for item in request.inputs
@@ -1166,6 +1204,21 @@ class _ContextHandler:
             )
         for item in frozen_candidates:
             metadata = candidate_metadata[item.asset_version_id]
+            # WHY: Accepted quality history is host evidence, excluded from Writer projections.
+            quality_facts = [
+                fact for original in request.command.get("context_candidates") or ()
+                if original.get("asset_version_id") == item.asset_version_id
+                for fact in original.get("structured_facts") or ()
+                if fact.get("key") == "accepted_quality_observations"
+                and fact.get("provider_visibility") == "INTERNAL_QUALITY_ONLY"
+            ]
+            if quality_facts:
+                host_quality_segments.append({
+                    "asset_version_id": item.asset_version_id,
+                    "content_hash": item.content_hash,
+                    "structured_facts": quality_facts,
+                    "provider_visibility": "INTERNAL_QUALITY_ONLY",
+                })
             physical_asset_type = str(
                 metadata.get("physical_asset_type") or metadata.get("asset_type") or ""
             )
@@ -1263,7 +1316,7 @@ class _ContextHandler:
                 *sorted(required_candidate_types & available_candidate_types),
             ),
             token_budget=int(request.command.get("context_token_budget", 6000)),
-            context_profile_version=str(((request.command.get("preparation_report") or {}).get("stage_context_profile_versions") or {}).get("draft") or "draft-context-profile-v2"),
+            context_profile_version=stage_context_profile,
             context_model_call=context_model_call,
             compression_input_tokens=compression_allocation,
             book_id=str(
@@ -1288,6 +1341,13 @@ class _ContextHandler:
                 else None
             ),
         )
+        if request.work_requirements_enabled:
+            bundle["host_quality_evidence"] = {
+                "contract_version": "accepted-quality-host-projection.v1",
+                "provider_visibility": "INTERNAL_QUALITY_ONLY",
+                "segments": [item for item in host_quality_segments
+                             if item["asset_version_id"] in bundle["selected_asset_version_ids"]],
+            }
         bundle["production_input_manifest"] = manifest
         bundle["production_input_manifest_asset_version_id"] = (
             manifest_asset.asset_version_id if manifest_asset is not None else ""
@@ -1398,8 +1458,16 @@ class _DraftHandler:
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         from .author_draft import adopted_author_draft
+
         authored = adopted_author_draft(request)
         if authored is not None:
+            if request.work_requirements_enabled:
+                from .chapter_plan_views import build_creative_baseline
+
+                authored.content["creative_baseline"] = build_creative_baseline(
+                    request.require_input("chapter_plan").content,
+                    request.require_input("context_bundle").content,
+                )
             return authored
         plan = request.require_input("chapter_plan")
         intent = request.require_input("chapter_execution_intent")
@@ -1407,29 +1475,37 @@ class _DraftHandler:
         context = request.require_input("context_bundle")
         from .realization_composition import compile_realization_contract
         from .craft_execution import require_craft_delivery
+
         require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=context.content)
-        realization_contract = compile_realization_contract(plan.content, build_draft_style_view(context.content))
+        style = build_draft_style_view(
+            context.content, work_requirements=request.work_requirements_enabled
+        )
+        plan_view = build_draft_plan_view(
+            plan.content, work_requirements=request.work_requirements_enabled
+        )
+        realization_contract = compile_realization_contract(plan.content, style)
         if not realization_contract["slots"]:
             raise KernelError("REALIZATION_PLAN_UNBOUND", "model Draft requires frozen Scene slots")
         generated = self.provider.invoke(
             request,
             stage="draft",
             payload={
-                "plan": build_draft_plan_view(plan.content),
-                "style": build_draft_style_view(context.content),
+                "plan": plan_view,
+                "style": style,
                 "realization_contract": realization_contract,
                 "execution_intent": intent.content,
                 "chapter_memo": memo.content,
             },
         )
         content = normalize_draft_result(
-                plan=plan.content,
-                context_asset_version_id=context.asset_version_id,
-                context_content_hash=context.content_hash,
-                context_content=context.content,
-                result=generated.output,
-                provider_evidence=_provider_evidence(generated),
-            )
+            plan=plan.content,
+            context_asset_version_id=context.asset_version_id,
+            context_content_hash=context.content_hash,
+            context_content=context.content,
+            result=generated.output,
+            provider_evidence=_provider_evidence(generated),
+            work_requirements=request.work_requirements_enabled,
+        )
         content["creative_execution"] = {
             "memo_asset_version_id": memo.asset_version_id,
             "memo_content_hash": memo.content_hash,
@@ -1439,6 +1515,12 @@ class _DraftHandler:
             "scene_directives": list(memo.content.get("scene_directives") or []),
             "authority": "CREATIVE_SUGGESTION_ONLY",
         }
+        if request.work_requirements_enabled:
+            from .chapter_plan_views import build_creative_baseline
+
+            content["creative_baseline"] = build_creative_baseline(
+                plan.content, context.content
+            )
         author_guidance = build_draft_plan_view(plan.content).get("author_design_guidance")
         if author_guidance:
             content["author_design_guidance"] = author_guidance
@@ -1860,6 +1942,7 @@ class _CanonExtractionHandler:
             project_id=request.project_id,
             context_bundle_version_id=context.asset_version_id,
             provider_extraction=provider_extraction,
+            work_requirements=request.work_requirements_enabled,
         )
         from novel_forge.modules.canon_graph.background import attach_background_proposals
         content = attach_background_proposals(
@@ -1947,6 +2030,7 @@ class _QualityGroupHandler:
             token_budget=resolve_stage_context_token_budget(
                 request.command, f"quality_{self.group}"
             ),
+            work_requirements=request.work_requirements_enabled,
         )
         if bool(
             getattr(self.provider, "external_effect_backed", False)
@@ -1961,17 +2045,32 @@ class _QualityGroupHandler:
                     "dimensions": list(QUALITY_GROUPS[self.group]),
                 },
             )
-            from novel_forge.modules.chapter_quality_authority.reference_sampling import admitted_reference_calibration
-            reference_calibration = admitted_reference_calibration(request, generated,
-                stage=f"quality_{self.group}", target_asset_version_id=revision.asset_version_id)
+            from novel_forge.modules.chapter_quality_authority.reference_sampling import (
+                admitted_reference_calibration,
+            )
+
+            reference_calibration = admitted_reference_calibration(
+                request,
+                generated,
+                stage=f"quality_{self.group}",
+                target_asset_version_id=revision.asset_version_id,
+            )
             provider_entries = []
-            schema_ref = str((generated.capability_evidence or {}).get("output_schema_ref") or "")
-            current_quality_contract = schema_ref.startswith(f"schema:chapter-provider-output:quality_{self.group}:v3")
+            schema_ref = str(
+                (generated.capability_evidence or {}).get("output_schema_ref") or ""
+            )
+            current_quality_contract = schema_ref.startswith(
+                (
+                    f"schema:chapter-provider-output:quality_{self.group}:v3",
+                    f"schema:chapter-provider-output:quality_{self.group}:v4",
+                )
+            )
             for item in generated.output.get("dimensions", []):
                 located = list(item.get("evidence_locations") or [])
                 if current_quality_contract:
                     located = bind_quality_prose_evidence(
-                        located, text=str(revision.content.get("text") or ""),
+                        located,
+                        text=str(revision.content.get("text") or ""),
                         target_asset_version_id=revision.asset_version_id,
                     )
                     if item.get("gate_status") in {"PASSED", "FAILED"} and not located:
@@ -1984,8 +2083,24 @@ class _QualityGroupHandler:
                         **dict(item),
                         "evidence_locations": located,
                         "target_asset_version_id": revision.asset_version_id,
-                        "calibration_status": "REFERENCE_CALIBRATED" if reference_calibration else "PROVIDER_UNCALIBRATED",
-                        "provider_verified": True, "human_verified": False,
+                        **(
+                            {
+                                "creative_baseline_digest": revision.content[
+                                    "creative_baseline"
+                                ]["baseline_digest"],
+                                "quality_policy_digest": quality_context[
+                                    "compiled_quality_policy"
+                                ]["policy_digest"],
+                                "evaluation_semantics_version": "work-quality.v1",
+                            }
+                            if request.work_requirements_enabled
+                            else {}
+                        ),
+                        "calibration_status": "REFERENCE_CALIBRATED"
+                        if reference_calibration
+                        else "PROVIDER_UNCALIBRATED",
+                        "provider_verified": True,
+                        "human_verified": False,
                         # WHY: Scripted Provider output is useful only for exercising
                         # the internal protocol.  Quality Authority will turn a
                         # passing result into an explicit fixture waiver only
@@ -2012,7 +2127,11 @@ class _QualityGroupHandler:
             revision_asset_version_id=revision.asset_version_id,
             context_bundle=context_content,
             canon=canon.content,
-            fixture=fixture, reference_calibration=reference_calibration,
+            fixture=fixture,
+            reference_calibration=reference_calibration,
+            quality_context=quality_context
+            if request.work_requirements_enabled
+            else None,
         )
         content["quality_context_type"] = quality_context["type"]
         content["quality_context_digest"] = quality_context["context_digest"]
@@ -2199,19 +2318,39 @@ class _QualityHandler:
             for report in content["evidence_reports"]
         )
         from novel_forge.modules.revision.domain import freeze_quality_edit_scope
+
         action_outputs = (
             tuple(
                 ChapterAuxiliaryOutput(
                     asset_type="revision_task",
                     output_key=f"chapter.quality.required_action.{ordinal}",
-                    role="required_action",
+                    role="evidence_action"
+                    if action.get("required_action") == "EVIDENCE_REASSESSMENT"
+                    else "required_action",
                     content={
                         **dict(action),
                         "type": "GovernedRevisionTask",
                         "contract_version": "governed-revision-task-v1",
-                        **({"contract_version": "governed-revision-task-v2", "bounded_edit_scope": freeze_quality_edit_scope(revision=revision.content,
-                            revision_asset_version_id=revision.asset_version_id, quality=content, action=action)}
-                           if (review.content.get("cross_chapter_window") or {}).get("contract_version") == "cross-chapter-review-window.v2" or review.content.get("craft_targets") else {}),
+                        **(
+                            {
+                                "contract_version": "governed-revision-task-v2",
+                                "bounded_edit_scope": freeze_quality_edit_scope(
+                                    revision=revision.content,
+                                    revision_asset_version_id=revision.asset_version_id,
+                                    quality=content,
+                                    action=action,
+                                ),
+                            }
+                            if action.get("required_action") != "EVIDENCE_REASSESSMENT"
+                            and (
+                                (review.content.get("cross_chapter_window") or {}).get(
+                                    "contract_version"
+                                )
+                                == "cross-chapter-review-window.v2"
+                                or review.content.get("craft_targets")
+                            )
+                            else {}
+                        ),
                         "project_id": request.project_id,
                         "chapter": int(content["chapter"]),
                         "target_revision_asset_version_id": revision.asset_version_id,
@@ -2363,6 +2502,7 @@ class _QualityHandler:
             )
         )
         multiscale_quality = build_multiscale_quality_report(
+            work_requirements=request.work_requirements_enabled,
             project_id=request.project_id,
             book_id=str(
                 request.command.get("book_id")

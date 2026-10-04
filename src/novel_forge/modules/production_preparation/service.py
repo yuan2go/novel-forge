@@ -649,6 +649,38 @@ class ProductionPreparationService:
         }
         safe_summary = str(item.content.get("safe_summary") or "")
         structured_facts = list(item.content.get("structured_facts") or [])
+        if item.asset_type == "style_policy" and "constraints" in item.content:
+            existing = [
+                fact.get("value")
+                for fact in structured_facts
+                if fact.get("key") == "style_constraints"
+            ]
+            if any(value != item.content["constraints"] for value in existing):
+                raise KernelError(
+                    "STYLE_POLICY_CONSTRAINT_CONFLICT",
+                    "Top-level and structured style constraints disagree",
+                )
+            if not existing:
+                structured_facts.append(
+                    {"key": "style_constraints", "value": item.content["constraints"]}
+                )
+        if item.asset_type == "quality_profile":
+            for key in ("thresholds", "weights"):
+                if key in item.content:
+                    existing = [
+                        fact.get("value")
+                        for fact in structured_facts
+                        if fact.get("key") == key
+                    ]
+                    if any(value != item.content[key] for value in existing):
+                        raise KernelError(
+                            "QUALITY_POLICY_CONFIG_CONFLICT",
+                            "Top-level and structured quality configuration disagree",
+                        )
+                    if not existing:
+                        structured_facts.append(
+                            {"key": key, "value": item.content[key]}
+                        )
         if item.asset_type == "story_state_snapshot":
             structured_facts = project_narrative_state_facts(
                 compact_current_state_facts(item.content),

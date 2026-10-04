@@ -355,11 +355,20 @@ def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[
 
 
 def build_provider_task_view(
-    stage: str, inputs: Mapping[str, Any], *, compact_contract: bool = False,
+    stage: str,
+    inputs: Mapping[str, Any],
+    *,
+    compact_contract: bool = False,
     targeted_edits_only: bool = False,
-    project_methods: bool = False, instruction_cleanup: bool = False,
+    project_methods: bool = False,
+    instruction_cleanup: bool = False,
+    work_requirements: bool = False,
 ) -> dict[str, Any]:
+    if work_requirements and stage in {"review", "revision", "rereview"}:
+        from .chapter_plan_views import validate_creative_baseline
 
+        source = inputs.get("revision") if stage == "rereview" else inputs.get("draft")
+        validate_creative_baseline((source or {}).get("creative_baseline"))
     if stage in {"context_compress", "context_fidelity"}:
         from .context_compression_provider import context_compression_task_view
 
@@ -502,7 +511,7 @@ def build_provider_task_view(
         command = inputs.get("planning_command")
         frozen = inputs.get("frozen_inputs")
         task = inputs.get("foundation_task")
-        if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage):
+        if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage, work_requirements=command.get("creative_requirements_contract") == "work-requirements.v1"):
             raise KernelError("FOUNDATION_PROVIDER_TASK_INVALID", "Foundation Provider task requires exact frozen roles and stage instructions")
         return _task(stage, planning_command=_compact(command), frozen_inputs=_compact(frozen), foundation_task=_compact(task), narrative_intelligence=_compact(inputs.get("narrative_intelligence")))
     if stage in _PLANNING_STAGES:
@@ -629,17 +638,39 @@ def build_provider_task_view(
         )
     if stage == "memo":
         from novel_forge.modules.canon_graph.background import without_private_world
+
         source = dict(inputs.get("execution_intent") or {})
-        intent = {key: source[key] for key in (
-            "project_id", "chapter", "contract_version", "intent_fingerprint", "source_chapter_plan",
-            "accepted_boundary", "chapter_objective", "required_arc_contributions",
-            "previous_ending", "scene_plans", "chapter_mission", "required_beats", "craft_strategy",
-        ) if key in source}
-        return _task(stage, frozen_intent=without_private_world(intent), authority="CREATIVE_SUGGESTION_ONLY",
-                     source_layers={"accepted_facts": "REFERENCED_BY_ACCEPTED_BOUNDARY",
-                                    "character_knowledge": "SCENE_KNOWLEDGE_BOUNDARIES",
-                                    "planned_outcomes": "INTENT_ONLY_NOT_OBSERVED",
-                                    "creative_guidance": "CANDIDATE_SUGGESTIONS"})
+        intent = {
+            key: source[key]
+            for key in (
+                "project_id",
+                "chapter",
+                "contract_version",
+                "intent_fingerprint",
+                "source_chapter_plan",
+                "accepted_boundary",
+                "chapter_objective",
+                "required_arc_contributions",
+                "previous_ending",
+                "scene_plans",
+                "chapter_mission",
+                "required_beats",
+                "craft_strategy",
+                *(["creative_requirements"] if work_requirements else []),
+            )
+            if key in source
+        }
+        return _task(
+            stage,
+            frozen_intent=without_private_world(intent),
+            authority="CREATIVE_SUGGESTION_ONLY",
+            source_layers={
+                "accepted_facts": "REFERENCED_BY_ACCEPTED_BOUNDARY",
+                "character_knowledge": "SCENE_KNOWLEDGE_BOUNDARIES",
+                "planned_outcomes": "INTENT_ONLY_NOT_OBSERVED",
+                "creative_guidance": "CANDIDATE_SUGGESTIONS",
+            },
+        )
     if stage == "draft":
         from novel_forge.modules.canon_graph.background import without_private_world
         from novel_forge.modules.story_design_authority.author_input import without_author_private
@@ -662,12 +693,46 @@ def build_provider_task_view(
         )
     if stage == "review":
         from novel_forge.modules.review.craft import craft_provider_task
-        return _task(stage, **craft_provider_task(inputs.get("draft") or {}), **_cross_chapter_task(inputs), chapter=_prose(inputs.get("draft")), creative_execution=deepcopy((inputs.get("draft") or {}).get("creative_execution") or {}), knowledge_review_targets=deepcopy(inputs.get("knowledge_review_targets") or []), author_design_review_targets=deepcopy(inputs.get("author_design_review_targets") or {}))
+
+        return _task(
+            stage,
+            **craft_provider_task(inputs.get("draft") or {}),
+            **_cross_chapter_task(inputs),
+            chapter=_prose(inputs.get("draft")),
+            creative_execution=deepcopy(
+                (inputs.get("draft") or {}).get("creative_execution") or {}
+            ),
+            knowledge_review_targets=deepcopy(
+                inputs.get("knowledge_review_targets") or []
+            ),
+            author_design_review_targets=deepcopy(
+                inputs.get("author_design_review_targets") or {}
+            ),
+            **(
+                {
+                    "creative_baseline": deepcopy(
+                        (inputs.get("draft") or {}).get("creative_baseline")
+                    )
+                }
+                if work_requirements
+                else {}
+            ),
+        )
     if stage == "revision":
         source = dict(inputs.get("draft") or {})
-        payload: dict[str, Any] = {"chapter": _prose(source), "creative_execution": deepcopy(source.get("creative_execution") or {}), "knowledge_checks": deepcopy((inputs.get("review") or {}).get("knowledge_checks") or [])}
+        payload: dict[str, Any] = {
+            "chapter": _prose(source),
+            "creative_execution": deepcopy(source.get("creative_execution") or {}),
+            "knowledge_checks": deepcopy(
+                (inputs.get("review") or {}).get("knowledge_checks") or []
+            ),
+        }
+        if work_requirements:
+            payload["creative_baseline"] = deepcopy(source.get("creative_baseline"))
         if source.get("author_design_guidance"):
-            payload["author_design_review_targets"] = deepcopy(source["author_design_guidance"])
+            payload["author_design_review_targets"] = deepcopy(
+                source["author_design_guidance"]
+            )
         if source.get("realization_contract"):
             payload["chapter"].pop("text", None)
             payload["realization_contract"] = deepcopy(source["realization_contract"])
@@ -680,29 +745,75 @@ def build_provider_task_view(
             payload["required_actions"] = _compact(inputs.get("required_actions"))
             payload["quality_decision"] = _compact(inputs.get("quality"))
             if inputs.get("quality_edit_contract") is not None:
-                observations = {item.get("observation") for item in inputs["required_actions"]}
+                observations = {
+                    item.get("observation") for item in inputs["required_actions"]
+                }
                 decision = inputs.get("quality") or {}
-                payload["quality_decision"] = {"gate": decision.get("gate"),
+                payload["quality_decision"] = {
+                    "gate": decision.get("gate"),
                     "blocking_dimensions": decision.get("blocking_dimensions", []),
                     "required_actions": deepcopy(decision.get("required_actions", [])),
-                    "evidence_reports": [deepcopy(item) for item in decision.get("evidence_reports", []) if item.get("dimension") in observations]}
-                payload["quality_targeted_repair"] = deepcopy(inputs["quality_edit_contract"])
+                    "evidence_reports": [
+                        deepcopy(item)
+                        for item in decision.get("evidence_reports", [])
+                        if item.get("dimension") in observations
+                    ],
+                }
+                payload["quality_targeted_repair"] = deepcopy(
+                    inputs["quality_edit_contract"]
+                )
                 if not compact_contract:
                     payload["chapter"]["text"] = str(source.get("text") or "")
         else:
-            from novel_forge.modules.review.diagnostics import open_diagnoses
-            diagnoses = open_diagnoses(dict(inputs.get("review") or {}))
+            from novel_forge.modules.review.diagnostics import prose_repair_diagnoses
+
+            diagnoses = prose_repair_diagnoses(dict(inputs.get("review") or {}), work_requirements=work_requirements)
             payload["review_issues"] = (
                 [
-                    {key: issue[key] for key in ("code", "severity", "category", "judgment_kind", "revision_goal", "preserve", "acceptance_criteria") if key in issue}
-                    | {"evidence_quote": str((issue.get("evidence_locator") or {}).get("quote") or "")}
+                    {
+                        key: issue[key]
+                        for key in (
+                            "code",
+                            "severity",
+                            "category",
+                            "judgment_kind",
+                            "revision_goal",
+                            "preserve",
+                            "acceptance_criteria",
+                        )
+                        if key in issue
+                    }
+                    | {
+                        "evidence_quote": str(
+                            (issue.get("evidence_locator") or {}).get("quote") or ""
+                        )
+                    }
                     for issue in diagnoses
-                ] if compact_contract else _compact(diagnoses)
+                ]
+                if compact_contract
+                else _compact(diagnoses)
             )
-            if (source.get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v2":
+            if (source.get("realization_contract") or {}).get(
+                "contract_version"
+            ) == "scene-realization-composition.v2":
                 payload["targeted_editing"] = {
                     "mode": "DIAGNOSIS_DIRECTED_ONLY",
-                    "tasks": [{key: issue[key] for key in ("code", "category", "judgment_kind", "evidence_locator", "revision_goal", "preserve", "acceptance_criteria") if key in issue} for issue in open_diagnoses(dict(inputs.get("review") or {}))],
+                    "tasks": [
+                        {
+                            key: issue[key]
+                            for key in (
+                                "code",
+                                "category",
+                                "judgment_kind",
+                                "evidence_locator",
+                                "revision_goal",
+                                "preserve",
+                                "acceptance_criteria",
+                            )
+                            if key in issue
+                        }
+                        for issue in diagnoses
+                    ],
                     "instructions": "Repair each evidenced problem using its stated criterion. Keep unaffected choices, information boundaries, and voice. An aesthetic suggestion is optional; unknown or unresolved blockers remain open. Read adjacent passages for continuity after a local edit.",
                 }
         review = dict(inputs.get("review") or {})
@@ -710,50 +821,83 @@ def build_provider_task_view(
             payload["review_preservation_context"] = {
                 "contract_version": "quality-correction-review-preservation.v1",
                 "cross_chapter_window": deepcopy(review.get("cross_chapter_window")),
-                "prior_diagnoses": deepcopy(review.get("issues", []) + review.get("unresolved_issues", [])),
+                "prior_diagnoses": deepcopy(
+                    review.get("issues", []) + review.get("unresolved_issues", [])
+                ),
                 "craft_targets": deepcopy(review.get("craft_targets", [])),
                 "craft_checks": deepcopy(review.get("craft_checks", [])),
                 "knowledge_checks": deepcopy(review.get("knowledge_checks", [])),
                 "instructions": (
                     "Correct only the frozen Quality tasks. Return exact old quotes, replacements and issue codes; the host derives Slot prose. Accepted history is read-only. Preserve adopted Craft, resolved diagnoses, voice, facts and information boundaries. The same historical window and before/after comparison are reviewed again before any acceptance."
-                    if targeted_edits_only else
-                    "Correct only the frozen Quality tasks. Accepted history is read-only. Preserve adopted Craft, resolved diagnoses, voice, facts and information boundaries. Return exact scene artifacts consistent with prose; the same historical window and before/after comparison are reviewed again before any acceptance."
+                    if targeted_edits_only
+                    else "Correct only the frozen Quality tasks. Accepted history is read-only. Preserve adopted Craft, resolved diagnoses, voice, facts and information boundaries. Return exact scene artifacts consistent with prose; the same historical window and before/after comparison are reviewed again before any acceptance."
                 ),
             }
-        if review.get("cross_chapter_window") and inputs.get("required_actions") is None:
+        if (
+            review.get("cross_chapter_window")
+            and inputs.get("required_actions") is None
+        ):
             payload["targeted_repair"] = {
                 "contract_version": "cross-chapter-targeted-repair.v1",
-                "source_window_hash": review["cross_chapter_window"]["source_window_hash"],
+                "source_window_hash": review["cross_chapter_window"][
+                    "source_window_hash"
+                ],
                 "accepted_source_window": deepcopy(review["cross_chapter_window"]),
-                "preservation_requirements": deepcopy(review["cross_chapter_window"]["preservation_requirements"]),
+                "preservation_requirements": deepcopy(
+                    review["cross_chapter_window"]["preservation_requirements"]
+                ),
                 "instructions": (
                     "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. The host verifies that the joined Scene Slot prose equals applying those edits. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
-                    if compact_contract and not targeted_edits_only else
-                    "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. The host derives revised Slot prose from these edits. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
-                    if targeted_edits_only else
-                    "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. Return text equal to applying those edits only. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
+                    if compact_contract and not targeted_edits_only
+                    else "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. The host derives revised Slot prose from these edits. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
+                    if targeted_edits_only
+                    else "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. Return text equal to applying those edits only. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
                 ),
             }
             if not compact_contract:
                 payload["chapter"]["text"] = str(source.get("text") or "")
         if review.get("craft_targets") and inputs.get("required_actions") is None:
             from novel_forge.modules.review.craft import craft_revision_contract
-            payload["craft_targeted_repair"] = craft_revision_contract(source, review, compact_contract=compact_contract, targeted_edits_only=targeted_edits_only and project_methods)
+
+            payload["craft_targeted_repair"] = craft_revision_contract(
+                source,
+                review,
+                compact_contract=compact_contract,
+                targeted_edits_only=targeted_edits_only and project_methods,
+            )
             payload["craft_checks"] = deepcopy(review["craft_checks"])
             if not compact_contract:
                 payload["chapter"]["text"] = str(source.get("text") or "")
         if instruction_cleanup:
             if payload.get("targeted_editing"):
-                fields = ("code", "severity", "category", "judgment_kind", "evidence_locator", "revision_goal", "preserve", "acceptance_criteria")
-                payload["review_issues"] = [{key: issue[key] for key in fields if key in issue} for issue in diagnoses]
+                fields = (
+                    "code",
+                    "severity",
+                    "category",
+                    "judgment_kind",
+                    "evidence_locator",
+                    "revision_goal",
+                    "preserve",
+                    "acceptance_criteria",
+                )
+                payload["review_issues"] = [
+                    {key: issue[key] for key in fields if key in issue}
+                    for issue in diagnoses
+                ]
                 payload["targeted_editing"].pop("tasks", None)
-                payload["targeted_editing"]["diagnosis_codes"] = [issue["code"] for issue in diagnoses]
+                payload["targeted_editing"]["diagnosis_codes"] = [
+                    issue["code"] for issue in diagnoses
+                ]
             decision = payload.get("quality_decision")
-            if isinstance(decision, dict) and decision.get("required_actions") == payload.get("required_actions"):
+            if isinstance(decision, dict) and decision.get(
+                "required_actions"
+            ) == payload.get("required_actions"):
                 decision.pop("required_actions", None)
                 decision["required_action_source"] = "required_actions"
             preservation = payload.get("review_preservation_context")
-            if isinstance(preservation, dict) and preservation.get("knowledge_checks") == payload.get("knowledge_checks"):
+            if isinstance(preservation, dict) and preservation.get(
+                "knowledge_checks"
+            ) == payload.get("knowledge_checks"):
                 preservation.pop("knowledge_checks", None)
                 preservation["knowledge_check_source"] = "knowledge_checks"
         return _task(stage, **payload)
@@ -761,28 +905,72 @@ def build_provider_task_view(
         from novel_forge.modules.review.craft import craft_provider_task
         from novel_forge.modules.review.diagnostics import open_diagnoses
         from novel_forge.modules.review.prose_comparison import prose_comparison
+
         revision = inputs.get("revision") or inputs.get("draft")
         issues = [
-            _compact(item)
-            for item in open_diagnoses(dict(inputs.get("review") or {}))
+            _compact(item) for item in open_diagnoses(dict(inputs.get("review") or {}))
         ]
         return _task(
             stage,
             **craft_provider_task(revision or {}, inputs.get("review") or {}),
             **_cross_chapter_task(inputs),
             revised_chapter=_prose(revision),
-            **({"quality_action_reassessment": {"source_edit_contract": deepcopy(revision["quality_edit_contract"]),
-                "observations": deepcopy(revision["quality_action_observations"]),
-                "instructions": "Return a separate quality_resolution_checks entry for every frozen Quality observation. Cite exact revised prose and explicitly assess preservation. Do not fabricate a Review issue or treat an increased score as resolving Quality. This is model evidence; native Quality gates must reevaluate before acceptance."}}
-               if (revision or {}).get("quality_edit_contract") else {}),
-            **({"prose_comparison": prose_comparison(inputs["original_draft"], revision or {},
-                original_id=str(inputs.get("original_draft_asset_version_id") or (inputs.get("review") or {}).get("target_asset_version_id") or ""),
-                revised_id=str(inputs.get("target_candidate_asset_version_id") or (revision or {}).get("asset_version_id") or ""))}
-               if "original_draft_asset_version_id" in inputs else {}),
-            creative_execution=deepcopy((revision or {}).get("creative_execution") or {}),
+            **(
+                {
+                    "creative_baseline": deepcopy(
+                        (revision or {}).get("creative_baseline")
+                    )
+                }
+                if work_requirements
+                else {}
+            ),
+            **(
+                {
+                    "quality_action_reassessment": {
+                        "source_edit_contract": deepcopy(
+                            revision["quality_edit_contract"]
+                        ),
+                        "observations": deepcopy(
+                            revision["quality_action_observations"]
+                        ),
+                        "instructions": "Return a separate quality_resolution_checks entry for every frozen Quality observation. Cite exact revised prose and explicitly assess preservation. Do not fabricate a Review issue or treat an increased score as resolving Quality. This is model evidence; native Quality gates must reevaluate before acceptance.",
+                    }
+                }
+                if (revision or {}).get("quality_edit_contract")
+                else {}
+            ),
+            **(
+                {
+                    "prose_comparison": prose_comparison(
+                        inputs["original_draft"],
+                        revision or {},
+                        original_id=str(
+                            inputs.get("original_draft_asset_version_id")
+                            or (inputs.get("review") or {}).get(
+                                "target_asset_version_id"
+                            )
+                            or ""
+                        ),
+                        revised_id=str(
+                            inputs.get("target_candidate_asset_version_id")
+                            or (revision or {}).get("asset_version_id")
+                            or ""
+                        ),
+                    )
+                }
+                if "original_draft_asset_version_id" in inputs
+                else {}
+            ),
+            creative_execution=deepcopy(
+                (revision or {}).get("creative_execution") or {}
+            ),
             prior_diagnoses=issues,
-            knowledge_review_targets=deepcopy(inputs.get("knowledge_review_targets") or []),
-            author_design_review_targets=deepcopy(inputs.get("author_design_review_targets") or {}),
+            knowledge_review_targets=deepcopy(
+                inputs.get("knowledge_review_targets") or []
+            ),
+            author_design_review_targets=deepcopy(
+                inputs.get("author_design_review_targets") or {}
+            ),
         )
     if stage == "canon_support":
         task = _task(stage, final_candidate=_prose(inputs.get("revision")),
@@ -1578,7 +1766,8 @@ def _build_narrative_evaluation_context_view(
         valid = (
             candidate_valid
             and candidate.get("asset_type") == "book_design"
-            and candidate_content.get("schema_version") == "book-design.v5"
+            and candidate_content.get("schema_version")
+            in {"book-design.v5", "book-design.v6"}
             and dependency_resolution == "EVALUATOR_RESOLVED_FROM_CANDIDATE_LINEAGE"
             and len(selected) == 1 + len(_NARRATIVE_FOUNDATION_DEPENDENCY_TYPES)
             and isinstance(lineage, list)
@@ -1622,12 +1811,17 @@ def _build_narrative_evaluation_context_view(
                     if isinstance(source_content, Mapping)
                     else None
                 )
-                from novel_forge.modules.story_design_authority.domain import matches_generated_foundation_source
+                from novel_forge.modules.story_design_authority.domain import (
+                    matches_generated_foundation_source,
+                )
 
                 source_kind_matches = item.get("asset_type") == expected_asset_type
                 if item.get("asset_type") == "planning_generation_candidate":
-                    source_kind_matches = isinstance(source_content, Mapping) and matches_generated_foundation_source(
-                        source_content, role=role,
+                    source_kind_matches = isinstance(
+                        source_content, Mapping
+                    ) and matches_generated_foundation_source(
+                        source_content,
+                        role=role,
                         project_id=context_bundle.get("project_id"),
                         book_id=context_bundle.get("book_id"),
                     )
@@ -1668,6 +1862,7 @@ def _build_narrative_evaluation_context_view(
     if projected_selected is None:
         projected_selected = _compact(selected)
     from novel_forge.modules.story_design_authority.author_input import evaluation_author_view, compile_provider_author_projection
+
     exact_sources = {item["asset_version_id"]: (index, item["candidate"]) for index, item in enumerate(selected)}
     for item in projected_selected:
         key = "semantic_payload" if "semantic_payload" in item else "candidate"
@@ -2134,7 +2329,11 @@ def _reference_planning_matrix_source(view: dict[str, Any], *, sources: list[Map
 
 
 def _compact_qualified_foundation_planning(
-    view: dict[str, Any], *, sources: list[Mapping[str, Any]], stage: str, project_id: str,
+    view: dict[str, Any],
+    *,
+    sources: list[Mapping[str, Any]],
+    stage: str,
+    project_id: str,
 ) -> None:
     from novel_forge.modules.book_design_authority.foundation import QualifiedFoundationSet
     from novel_forge.modules.story_design_authority.domain import matches_generated_foundation_source
@@ -2144,7 +2343,7 @@ def _compact_qualified_foundation_planning(
     source_by_role = {item["role"]: item for item in sources}
     design_source = source_by_role.get("book_design", {})
     design = design_source.get("content", {})
-    if design.get("schema_version") != "book-design.v5":
+    if design.get("schema_version") not in {"book-design.v5", "book-design.v6"}:
         return
     foundation = QualifiedFoundationSet.from_mapping(design["foundation_set"])
     segments = {item["role"]: item for item in view["segments"]}

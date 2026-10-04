@@ -33,3 +33,7 @@ this directory and declare `PROPOSAL`, `NOT_RUNTIME_AUTHORITY` and their checked
 status. `NOT_IMPLEMENTED` is invalid once implementation evidence exists. The inline
 lifecycle record binds the reviewed source baseline and unresolved decisions or work;
 terminal proposals must be projected where applicable and deleted.
+
+Historical audit exports under `reports/audits/` are evidence snapshots and proposals,
+not additional canonical docs. Their frozen source SHA and evidence ceiling must be
+kept separate from subsequent implementation and validation.
