@@ -19,8 +19,8 @@ from novel_forge.modules.chapter_authority.contracts import (
 )
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION,
-    CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
-    CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION,
+    CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
+    CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION,
     chapter_definition_version,
 )
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
@@ -37,22 +37,33 @@ ChapterExecutionResult = AuthorityExecutionResult
 
 
 def _handler_definition_version(
-    database_url: str, *, command: WorkerLeaseCommand, node: ChapterNode,
-    registry: ChapterHandlerRegistry, author_input: bool,
+    database_url: str,
+    *,
+    command: WorkerLeaseCommand,
+    node: ChapterNode,
+    registry: ChapterHandlerRegistry,
+    author_input: bool,
 ) -> str:
     expected = (
         CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
         if author_input and node is ChapterNode.DRAFT
         else chapter_definition_version(registry.model_effects_required)
     )
-    if registry.model_effects_required and expected == CHAPTER_MODEL_EFFECT_DEFINITION_VERSION:
+    if registry.model_effects_required:
         with AuthorityUnitOfWork(database_url) as uow:
-            uow.cursor.execute("""SELECT operation.definition_version FROM authority_operation operation
+            uow.cursor.execute(
+                """SELECT operation.definition_version FROM authority_operation operation
                 JOIN authority_attempt attempt USING(operation_id) WHERE attempt.attempt_id=%s AND operation.project_id=%s""",
-                [command.attempt_id, command.project_id])
+                [command.attempt_id, command.project_id],
+            )
             row = uow.cursor.fetchone()
-        if row is not None and str(row[0]) == CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION:
-            return CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION
+        recoverable = (
+            {CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION}
+            if author_input and node is ChapterNode.DRAFT
+            else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
+        )
+        if row is not None and str(row[0]) in recoverable:
+            return str(row[0])
     return expected
 
 
@@ -96,6 +107,7 @@ class _ChapterHandlerAdapter:
             fencing_token=self.fencing_token,
             worker_id=self.worker_id,
             database_url=self.database_url,
+            definition_version=request.definition_version,
         )
         reference = None
         if snapshot is not None and snapshot["authorization"]["purpose"] == "REFERENCE_EVALUATION":

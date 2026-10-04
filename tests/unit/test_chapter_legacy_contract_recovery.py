@@ -45,7 +45,7 @@ def frozen_operation(monkeypatch, version, *, node=ChapterNode.CONTEXT, model=Tr
 
 
 @pytest.mark.parametrize("node", tuple(ChapterNode))
-@pytest.mark.parametrize("version", [CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, "3.4.1"])
+@pytest.mark.parametrize("version", [CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, "3.5.0", "3.4.1"])
 def test_published_and_current_formal_contracts_reach_unchanged_authority_checks(monkeypatch, node, version):
     invoke, command, cursor, fence, _ = frozen_operation(monkeypatch, version, node=node)
     with pytest.raises(ContractAccepted):
@@ -54,7 +54,7 @@ def test_published_and_current_formal_contracts_reach_unchanged_authority_checks
     assert cursor.execute.call_args.args[1] == [command.attempt_id, command.project_id]
 
 
-@pytest.mark.parametrize("version", ["3.4.0", "3.4.2", "3.6.0", "4.0.0", "3.4.1-author-input.v1"])
+@pytest.mark.parametrize("version", ["3.4.0", "3.4.2", "3.6.1", "4.0.0", "3.4.1-author-input.v1"])
 def test_other_versions_remain_stale(monkeypatch, version):
     invoke, _, _, fence, _ = frozen_operation(monkeypatch, version)
     with pytest.raises(KernelError, match="AUTHORITY_HANDLER_CONTRACT_STALE"):
@@ -82,10 +82,13 @@ def test_fixture_and_author_input_contracts_are_not_reselected(monkeypatch, mode
     invoke, _, cursor, _, _ = frozen_operation(monkeypatch, version, node=ChapterNode.DRAFT, model=model, author_input=author_input)
     with pytest.raises(ContractAccepted):
         invoke()
-    cursor.execute.assert_not_called()
+    if model:
+        cursor.execute.assert_called_once()
+    else:
+        cursor.execute.assert_not_called()
 
 
-@pytest.mark.parametrize("version,accepted", [("3.4.1", True), (CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, True), (CHAPTER_SLICE_DEFINITION_VERSION, True), ("3.4.0", False), ("3.4.2", False), ("4.0.0", False), ("2.2.0", False), ("2.2.2", False), ("", False)])
+@pytest.mark.parametrize("version,accepted", [("3.4.1", True), ("3.5.0", True), (CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, True), (CHAPTER_SLICE_DEFINITION_VERSION, True), ("3.4.0", False), ("3.4.2", False), ("4.0.0", False), ("2.2.0", False), ("2.2.2", False), ("", False)])
 def test_gateway_legacy_graph_compatibility_is_bounded(monkeypatch, version, accepted):
     from novel_forge.modules.chapter_authority import execution_gateway
     cursor = MagicMock()

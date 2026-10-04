@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260928_0148_author_supervised_design",
+  "head": "20261005_0149_zero_increment_chapter_outcome",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -151,6 +151,7 @@
     "20260927_0145_edition_execution_windows",
     "20260927_0146_edition_prefix_inheritance",
     "20260927_0147_runtime_job_dispatch_pause",
-    "20260928_0148_author_supervised_design"
+    "20260928_0148_author_supervised_design",
+    "20261005_0149_zero_increment_chapter_outcome"
   ]
 }

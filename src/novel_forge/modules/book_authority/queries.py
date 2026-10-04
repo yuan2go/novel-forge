@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from novel_forge.modules.story_design_authority.qualification import (
+    qualification_profiles_for_asset,
+)
+
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Any, Iterable, Mapping
@@ -12,7 +16,6 @@ from novel_forge.modules.book_authority.production import (
 from novel_forge.modules.book_authority.input_resolver import (
     project_current_plan_cursor,
 )
-from novel_forge.modules.story_design_authority import required_qualification_profiles
 from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 from novel_forge.modules.longform_narrative import (
     build_arc_working_set,
@@ -83,7 +86,6 @@ class BookProgressProjection:
 
 
 class PostgresBookProductionQuery:
-
     def __init__(self, database_url: str) -> None:
         if not database_url:
             raise ValueError("Book production query requires PostgreSQL")
@@ -1619,17 +1621,18 @@ class PostgresBookProductionQuery:
                 [snapshot_id],
             )
             snapshot = uow.cursor.fetchone()
-            if snapshot is None or str(snapshot[3]) not in {"LONGFORM_DESIGN_QUALIFIED", "AUTHOR_SUPERVISED_DESIGN"}:
+            if snapshot is None or str(snapshot[3]) not in {
+                "LONGFORM_DESIGN_QUALIFIED",
+                "AUTHOR_SUPERVISED_DESIGN",
+            }:
                 raise KernelError(
                     "LONGFORM_DESIGN_QUALIFICATION_REQUIRED",
                     "Chapter production requires a qualified Book input snapshot",
                 )
             global_qualification = dict(snapshot[4])
-            if global_qualification.get(
-                "admission"
-            ) != str(snapshot[3]) or canonical_hash(
-                global_qualification
-            ) != str(snapshot[5]):
+            if global_qualification.get("admission") != str(
+                snapshot[3]
+            ) or canonical_hash(global_qualification) != str(snapshot[5]):
                 raise KernelError(
                     "LONGFORM_DESIGN_QUALIFICATION_CORRUPT",
                     "Book input design qualification failed its content hash",
@@ -1654,22 +1657,57 @@ class PostgresBookProductionQuery:
                 )
             supervised = str(snapshot[3]) == "AUTHOR_SUPERVISED_DESIGN"
             if supervised:
-                from novel_forge.modules.book_design_authority.author_supervision import approved_book_design_receipt
-                from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt, reusable_qualified_design_receipt
+                from novel_forge.modules.book_design_authority.author_supervision import (
+                    approved_book_design_receipt,
+                )
+                from novel_forge.modules.story_design_authority.author_supervision import (
+                    approved_design_receipt,
+                    reusable_qualified_design_receipt,
+                )
+
                 if global_qualification.get("book_authorization"):
-                    from novel_forge.modules.production_execution.author_supervision import verify_book_supervision
-                    verify_book_supervision(uow.cursor, global_qualification["book_authorization"])
+                    from novel_forge.modules.production_execution.author_supervision import (
+                        verify_book_supervision,
+                    )
+
+                    verify_book_supervision(
+                        uow.cursor, global_qualification["book_authorization"]
+                    )
                 for receipt in global_receipts:
                     if receipt.get("mode") == "STRICT_QUALIFIED":
-                        current = reusable_qualified_design_receipt(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]),
-                            asset_version_id=receipt["asset_version_id"], generator=receipt["design_layer"])
+                        current = reusable_qualified_design_receipt(
+                            uow.cursor,
+                            project_id=str(snapshot[0]),
+                            book_id=str(snapshot[1]),
+                            asset_version_id=receipt["asset_version_id"],
+                            generator=receipt["design_layer"],
+                        )
                         if current != receipt:
-                            raise KernelError("LONGFORM_DESIGN_QUALIFICATION_STALE", "Reused strict design receipt changed")
+                            raise KernelError(
+                                "LONGFORM_DESIGN_QUALIFICATION_STALE",
+                                "Reused strict design receipt changed",
+                            )
                         continue
-                    resolver = approved_book_design_receipt if receipt["design_layer"] == "book_design.propose" else approved_design_receipt
-                    current = resolver(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]), asset_version_id=receipt["asset_version_id"])
-                    if current is None or {**current, "design_layer": receipt["design_layer"]} != receipt:
-                        raise KernelError("AUTHOR_SUPERVISION_APPROVAL_STALE", "Frozen author decision differs from current design")
+                    resolver = (
+                        approved_book_design_receipt
+                        if receipt["design_layer"] == "book_design.propose"
+                        else approved_design_receipt
+                    )
+                    current = resolver(
+                        uow.cursor,
+                        project_id=str(snapshot[0]),
+                        book_id=str(snapshot[1]),
+                        asset_version_id=receipt["asset_version_id"],
+                    )
+                    if (
+                        current is None
+                        or {**current, "design_layer": receipt["design_layer"]}
+                        != receipt
+                    ):
+                        raise KernelError(
+                            "AUTHOR_SUPERVISION_APPROVAL_STALE",
+                            "Frozen author decision differs from current design",
+                        )
             else:
                 uow.cursor.execute(
                     """
@@ -1754,9 +1792,14 @@ class PostgresBookProductionQuery:
             chapter_content = dict(chapter[5])
             group_content = dict(group[5])
             for content in (chapter_content, group_content):
-                edition_scope = (content.get("constraint_envelope") or {}).get("edition_execution")
+                edition_scope = (content.get("constraint_envelope") or {}).get(
+                    "edition_execution"
+                )
                 if edition_scope and edition_scope.get("book_run_id") != book_run_id:
-                    raise KernelError("EDITION_PLAN_SCOPE_INVALID", "Edition execution plans cannot enter another Book run")
+                    raise KernelError(
+                        "EDITION_PLAN_SCOPE_INVALID",
+                        "Edition execution plans cannot enter another Book run",
+                    )
             group_range = group_content.get("chapter_range")
             if (
                 int(chapter_content.get("chapter_number") or 0) != chapter_number
@@ -1868,7 +1911,12 @@ class PostgresBookProductionQuery:
             ):
                 expected_receipts.extend(
                     (asset_version_id, profile)
-                    for profile in required_qualification_profiles(stage)
+                    for profile in qualification_profiles_for_asset(
+                        uow.cursor,
+                        project_id=str(snapshot[0]),
+                        asset_version_id=asset_version_id,
+                        generator=stage,
+                    )
                 )
             uow.cursor.execute(
                 """
@@ -1894,14 +1942,35 @@ class PostgresBookProductionQuery:
             rows = uow.cursor.fetchall()
             author_receipts = []
             if supervised:
-                for stage, version_id in (("chapter_group_plan.generate", chapter_group_plan_version_id), ("chapter_plan.generate", chapter_plan_version_id)):
-                    receipt = approved_design_receipt(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]), asset_version_id=version_id)
+                for stage, version_id in (
+                    ("chapter_group_plan.generate", chapter_group_plan_version_id),
+                    ("chapter_plan.generate", chapter_plan_version_id),
+                ):
+                    receipt = approved_design_receipt(
+                        uow.cursor,
+                        project_id=str(snapshot[0]),
+                        book_id=str(snapshot[1]),
+                        asset_version_id=version_id,
+                    )
                     if receipt is None:
-                        author_receipts.append(reusable_qualified_design_receipt(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]),
-                            asset_version_id=version_id, generator=stage))
+                        author_receipts.append(
+                            reusable_qualified_design_receipt(
+                                uow.cursor,
+                                project_id=str(snapshot[0]),
+                                book_id=str(snapshot[1]),
+                                asset_version_id=version_id,
+                                generator=stage,
+                            )
+                        )
                         continue
-                    if receipt["lifecycle"] != "ACTIVE" or receipt["author_id"] != global_qualification["author_id"]:
-                        raise KernelError("AUTHOR_SUPERVISION_APPROVAL_REQUIRED", "Chapter execution requires its exact author decision")
+                    if (
+                        receipt["lifecycle"] != "ACTIVE"
+                        or receipt["author_id"] != global_qualification["author_id"]
+                    ):
+                        raise KernelError(
+                            "AUTHOR_SUPERVISION_APPROVAL_REQUIRED",
+                            "Chapter execution requires its exact author decision",
+                        )
                     author_receipts.append({**receipt, "design_layer": stage})
                 expected_receipts = []
         authoritative_working_set = self.require_arc_working_set(

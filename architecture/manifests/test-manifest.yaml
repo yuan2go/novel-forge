@@ -8,6 +8,42 @@
   ],
   "classification_rules": [
     {
+      "id": "work-intent-consistency",
+      "patterns": [
+        "tests/unit/test_work_intent_consistency.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-authority",
+      "capability": "creative-requirements-projection",
+      "production_target": "src/novel_forge/modules/chapter_authority/chapter_plan_views.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "work-foundation-contract",
+      "patterns": [
+        "tests/unit/test_work_foundation_contract.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "story-design-authority",
+      "capability": "work-foundation-contract",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "work-realization-contract",
+      "patterns": [
+        "tests/unit/test_work_realization_contract.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "hierarchical-planning",
+      "capability": "work-realization-contract",
+      "production_target": "src/novel_forge/modules/hierarchical_planning/realization_domain.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
       "id": "production-instruction-cleanup-contract",
       "patterns": [
         "tests/unit/test_production_instruction_cleanup.py"

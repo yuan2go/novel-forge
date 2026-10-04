@@ -58,6 +58,7 @@ from novel_forge.modules.story_design_authority.validators import (
 from novel_forge.modules.story_design_authority.qualification import (
     required_qualification_profiles,
     scripted_qualification,
+    uses_work_requirements,
 )
 from novel_forge.modules.story_design_authority.evaluation_runtime import (
     NARRATIVE_EVALUATION_DEFINITION as STORY_PLANNING_EVALUATION_DEFINITION,
@@ -135,8 +136,6 @@ _AUTHORITY_INPUT_ASSET_TYPES = {
         {"story_state", "story_state_snapshot", "narrative_state"}
     ),
 }
-
-
 
 
 class _PlanningGenerationHandler:
@@ -289,6 +288,7 @@ class _PlanningGenerationHandler:
             },
             candidate_payload=candidate.candidate_payload,
             arc_working_set=command.arc_working_set,
+            work_requirements=command.execution_contract_version == "1.17.0",
         )
         if envelope.get("author_design"):
             from novel_forge.modules.story_design_authority.author_input import frozen_author_projection
@@ -442,6 +442,7 @@ class StoryPlanningGenerationHandlerRegistry:
             "1.13.0",
             "1.14.0",
             "1.15.0",
+            "1.16.0",
         }:
             raise KeyError((definition_name, definition_version))
         return replace(item, definition_version=definition_version)
@@ -526,10 +527,12 @@ class StoryPlanningGenerationApplication:
         continuation = None
         if command.runtime_continuation_id:
             from .runtime_continuation import require_successor
-            continuation = require_successor(self, command)
+            continuation = require_successor(self, command, validate_runtime=False)
         replay = self._terminal_generation_replay(command, principal=principal)
         if replay is not None:
             return replay
+        if continuation is not None:
+            continuation = require_successor(self, command)
         definition = GENERATOR_CATALOG[command.generator_operation_name]
         self._register_definitions(command.execution_contract_version)
         frozen_inputs = self._resolve_inputs(command)
@@ -625,6 +628,10 @@ class StoryPlanningGenerationApplication:
                     generator_operation_name=command.generator_operation_name,
                     logical_key=command.logical_key,
                 )
+                uow.cursor.execute("SELECT definition_version FROM authority_operation WHERE operation_id=%s AND project_id=%s", [source_operation_id, command.project_id])
+                source_version = uow.cursor.fetchone()
+                if source_version is None or str(source_version[0]) != command.execution_contract_version:
+                    raise KernelError("PLANNING_REPAIR_CONTRACT_DRIFT", "candidate repair must retain the source generation contract")
                 uow.cursor.execute(
                     "SELECT causation_operation_id FROM authority_operation WHERE project_id=%s AND definition_name=%s AND idempotency_scope='book:story-planning-generation' AND idempotency_key=%s",
                     [command.project_id, STORY_PLANNING_GENERATION_DEFINITION, command.idempotency_key],
@@ -918,7 +925,10 @@ class StoryPlanningGenerationApplication:
                     "SCRIPTED_FIXTURE" if fixture else "MODEL_PROVIDER"
                 ),
                 evaluation=(
-                    scripted_qualification(generation_command.generator_operation_name)
+                    scripted_qualification(
+                        generation_command.generator_operation_name,
+                        work_requirements=uses_work_requirements(candidate["content"]),
+                    )
                     if fixture
                     else None
                 ),
@@ -1713,7 +1723,9 @@ class StoryPlanningGenerationApplication:
             )
             row = uow.cursor.fetchone()
         if row is None:
-            if command.execution_contract_version != STORY_PLANNING_GENERATION_VERSION:
+            if command.execution_contract_version != STORY_PLANNING_GENERATION_VERSION and not (
+                command.runtime_continuation_id or command.repair_of_operation_id or command.repair_of_candidate_id
+            ):
                 raise KernelError(
                     "PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY",
                     "historical Planning definitions may only resume their already admitted commands",
@@ -1764,7 +1776,14 @@ class StoryPlanningGenerationApplication:
                 )
                 failed = uow.cursor.fetchone()
             if failed:
-                if command.execution_contract_version in {"1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0"}:
+                if command.execution_contract_version in {
+                    "1.12.0",
+                    "1.13.0",
+                    "1.14.0",
+                    "1.15.0",
+                    "1.16.0",
+                    "1.17.0",
+                }:
                     definition = GENERATOR_CATALOG[command.generator_operation_name]
                     maximum = (
                         definition.maximum_semantic_repairs
@@ -1828,7 +1847,6 @@ class StoryPlanningGenerationApplication:
         diagnostic = source["diagnostic"]
         repaired = replace(
             command,
-            execution_contract_version=STORY_PLANNING_GENERATION_VERSION,
             runtime_continuation_id="",
             repair_of_candidate_id="",
             repair_of_operation_id=operation_id,
@@ -3043,7 +3061,17 @@ class StoryPlanningGenerationApplication:
         book_id: str,
         generator_operation_name: str,
     ) -> dict[str, Any]:
-        profiles = required_qualification_profiles(generator_operation_name)
+        from novel_forge.modules.story_design_authority.qualification import (
+            uses_work_requirements,
+        )
+
+        candidate = self._require_asset(
+            project_id=project_id, asset_version_id=candidate_asset_version_id
+        )
+        profiles = required_qualification_profiles(
+            generator_operation_name,
+            work_requirements=uses_work_requirements(candidate["content"]),
+        )
         expected = {profile.layer.value: profile for profile in profiles}
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -3430,7 +3458,10 @@ def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
 
 
 def story_planning_generation_definition(
-    *, application_build_id: str, commit_sha: str, definition_version: str = STORY_PLANNING_GENERATION_VERSION
+    *,
+    application_build_id: str,
+    commit_sha: str,
+    definition_version: str = STORY_PLANNING_GENERATION_VERSION,
 ) -> dict[str, Any]:
     schema = {
         "type": "object",
@@ -3469,7 +3500,11 @@ def story_planning_generation_definition(
             "story_design_activation_separate": True,
             "semantic_evaluation_operation_separate": True,
             "repair_candidate_asset_input_allowed": True,
-            **({"repair_result_evidence_input_allowed": True} if definition_version in {"1.15.0", "1.16.0"} else {}),
+            **(
+                {"repair_result_evidence_input_allowed": True}
+                if definition_version in {"1.15.0", "1.16.0", "1.17.0"}
+                else {}
+            ),
             "capability_pack_attempt_snapshot_required": True,
             "typed_capability_binding_required": True,
             "agent_runtime_binding_required": False,

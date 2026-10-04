@@ -302,6 +302,11 @@ class ChapterHandlerRequest:
     fencing_token: int = 0
     worker_id: str = ""
     database_url: str = ""
+    definition_version: str = ""
+
+    @property
+    def work_requirements_enabled(self) -> bool:
+        return self.definition_version in {"3.6.0", "3.6.0-author-input.v2"}
 
     def require_input(self, asset_type: str) -> ChapterInputAsset:
         matching = [item for item in self.inputs if item.asset_type == asset_type]

@@ -1019,7 +1019,7 @@ def events_from_chapter_outcome(
 ) -> tuple[NarrativeStateEvent, ...]:
     """COMPATIBILITY: Read v2 events or deterministically adapt immutable v1 evidence."""
     contract = str(chapter_outcome.get("contract_version") or "")
-    if contract in {"chapter-outcome-v2", "chapter-outcome-v3"}:
+    if contract in {"chapter-outcome-v2", "chapter-outcome-v3", "chapter-outcome-v4"}:
         return tuple(
             NarrativeStateEvent.from_dict(item)
             for item in _object_items(chapter_outcome.get("state_events"))

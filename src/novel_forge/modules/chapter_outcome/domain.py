@@ -28,6 +28,7 @@ def build_chapter_outcome(
     created_by_operation_id: str,
     trace_id: str,
     expected_arc_contributions: tuple[dict[str, Any], ...] = (),
+    work_requirements: bool = False,
 ) -> dict[str, Any]:
 
     if (
@@ -62,7 +63,7 @@ def build_chapter_outcome(
         trace_id=trace_id,
         canon_patch=canon_patch,
     )
-    if not state_events:
+    if not state_events and not work_requirements:
         raise KernelError(
             "CHAPTER_OUTCOME_STATE_EVENT_REQUIRED",
             "accepted ChapterOutcome requires at least one governed Narrative State event",
@@ -109,7 +110,7 @@ def build_chapter_outcome(
         )
     return {
         "type": "ChapterOutcome",
-        "contract_version": "chapter-outcome-v3",
+        "contract_version": "chapter-outcome-v4" if work_requirements else "chapter-outcome-v3",
         "layer": "ACCEPTED_ACTUAL",
         "authority": {
             "status": "PENDING_BOOK_ACCEPTANCE",
@@ -166,6 +167,7 @@ def reduce_story_state(
         chapter_outcome_asset_version_id=chapter_outcome_asset_version_id,
         chapter_outcome_id=str(chapter_outcome.get("chapter_outcome_id") or ""),
         previous_story_state_asset_version_id=previous_story_state_asset_version_id,
+        outcome_scope=chapter_outcome if chapter_outcome.get("contract_version") == "chapter-outcome-v4" else None,
     )
 
 

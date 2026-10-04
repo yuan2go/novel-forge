@@ -128,7 +128,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 "project_id": project_id,
                 "safe_summary": "Versioned quality thresholds.",
                 "structured_facts": [
-                    {"key": "thresholds", "value": {"readability": 70}}
+                    {"key": "thresholds", "value": {"readability": 70, "sentence_length_unit": "WHITESPACE_WORDS"}}
                 ],
                 "estimated_tokens": 20,
                 "narrative_function": "quality_policy",

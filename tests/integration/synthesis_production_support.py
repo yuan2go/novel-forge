@@ -7,6 +7,7 @@ import json
 from novel_forge.modules.provider_control.scripted import ScriptedProviderAdapterV2
 from novel_forge.modules.story_planning_runtime.foundation_generation import (
     FOUNDATION_GENERATORS,
+    foundation_output_schema,
 )
 from novel_forge.modules.book_design_authority.foundation import FoundationRole
 from tests.integration.hierarchy_closure_postgres_support import _payload
@@ -131,6 +132,21 @@ class SynthesisTransport(ScriptedProviderAdapterV2):
                         }
                     ],
                 )
+        if (inputs.get("foundation_task") or {}).get("contract_version") == "foundation-generation.v2":
+            result["applicability"] = []
+            def declare(value, schema, path="$", parent_present=True):
+                if isinstance(schema.get("type"), list) and "null" in schema["type"]:
+                    result["applicability"].append({"field_path": path,
+                        "status": "APPLICABLE" if value is not None else "NOT_APPLICABLE",
+                        "rationale": "Explicit strategy of this synthetic design fixture"})
+                if isinstance(value, dict):
+                    for key, child in schema.get("properties", {}).items():
+                        if key in value:
+                            declare(value[key], child, path+"."+key)
+                elif isinstance(value, list):
+                    for index, child in enumerate(value):
+                        declare(child, schema.get("items", {}), f"{path}[{index}]")
+            declare(result, foundation_output_schema(stage, work_requirements=True))
         return result
 
 
@@ -145,4 +161,13 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
                 }
                 self.calls.append({"stage": stage, "input": inputs, "output": result})
                 return result
-        return super().planning(stage, inputs)
+        result = super().planning(stage, inputs)
+        if (inputs.get("planning_command") or {}).get("creative_requirements_contract") == "work-requirements.v1":
+            for row in result.get("chapter_function_matrix", []):
+                row["required_state_delta"] = {"status": "CHANGED", **row["required_state_delta"]}
+            for event in result.get("narrative_event_chain", []):
+                event["feature_status"] = {name: {"status": "APPLICABLE", "rationale": "Selected causal strategy of this synthetic mystery fixture"} for name in ("decision", "resistance", "irreversible_change")}
+            if stage == "chapter_plan.generate":
+                result["chapter_contract_schema_version"] = "chapter-mission-scene.v3"
+                result["required_state_delta"] = {"status": "CHANGED", **result["required_state_delta"]}
+        return result

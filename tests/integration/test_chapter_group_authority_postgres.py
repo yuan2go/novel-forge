@@ -68,10 +68,14 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
-    def test_nine_chapter_realization_freezes_and_replays_without_count_invariant(
-        self,
-    ) -> None:
-        fixture = self._fixture(group_chapters=9)
+    def test_nine_chapter_realization_freezes_and_replays_without_count_invariant(self) -> None:
+        self._verify_realization_freeze_replay(observational=False)
+
+    def test_observational_realization_preserves_zero_changes_across_lost_response(self) -> None:
+        self._verify_realization_freeze_replay(observational=True)
+
+    def _verify_realization_freeze_replay(self, *, observational: bool) -> None:
+        fixture = self._fixture(group_chapters=9, chapter_fixture_factory=self._observational_response if observational else None)
         project_id, book_id = fixture["project_id"], fixture["book_id"]
         workspace_id = f"workspace:{project_id}"
         principal = replace(
@@ -94,7 +98,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             workspace_id=workspace_id,
             principal=principal,
             policy=ChapterGroupExecutionPolicy("nine-v1", 9, 9),
-            idempotency_key="nine-window-policy",
+            idempotency_key=f"{project_id}:nine-window-policy",
             trace_id=identifier("trace"),
             correlation_id=identifier("correlation"),
         )
@@ -105,7 +109,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 actor_id=principal.principal_id,
                 trace_id=identifier("trace"),
                 correlation_id=identifier("correlation"),
-                stable_idempotency_key="nine-window",
+                stable_idempotency_key=f"{project_id}:nine-window",
                 book_run_id=fixture["book"].book_run_id,
                 group_plan_version_id=fixture["group_plan"]["asset_version_id"],
                 group_plan_content_hash=fixture["group_plan"]["content_hash"],
@@ -114,6 +118,19 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
         )
         self.assertEqual(group["chapter_end"], 9)
         value = _extended_contract(9).to_dict()
+        if observational:
+            value["schema_version"] = "narrative-realization-contract.v2"
+            value["proof"]["schema_version"] = "narrative-realization-proof.v2"
+            value["proof"]["causal_alignment_proven"] = value["proof"].pop("causal_escalation_proven")
+            value["proof"]["design_admission"] = {"mode": "STRICT_QUALIFIED", "literary_qualification": "NOT_PROVEN"}
+            for event in value["events"]:
+                event.update(motivation="Observe the winter street", action="Look at falling snow", consequence="The observation is rendered to the reader", decision=None, resistance=None, irreversible_change=None,
+                             state_deltas=[], disclosures=[], obligation_actions=[],
+                             arc_contributions=[], preconditions=[], causes=[], next_event_ids=[])
+                event["knowledge_boundary"] = {"actor_knows": [], "reader_may_learn": [], "forbidden_disclosures": []}
+                event["feature_status"] = {field: {"status": "NOT_APPLICABLE", "rationale": "Synthetic approved observational scope"}
+                                           for field in ("decision", "resistance", "irreversible_change")}
+
         value.update(
             realization_id=f"realization:{project_id}",
             project_id=project_id,
@@ -289,7 +306,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 **common,
                 definition_name="planning.realization.qualify",
                 expected_version=0,
-                idempotency_key="qualify-nine",
+                idempotency_key=f"{project_id}:qualify-nine",
                 contract=NarrativeRealizationContract.from_mapping(value),
             ),
             principal=principal,
@@ -299,7 +316,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 **common,
                 definition_name="planning.realization.approve",
                 expected_version=qualified["version"],
-                idempotency_key="approve-nine",
+                idempotency_key=f"{project_id}:approve-nine",
             ),
             principal=principal,
         )
@@ -307,7 +324,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             **common,
             definition_name="planning.realization.freeze",
             expected_version=approved["version"],
-            idempotency_key="freeze-nine",
+            idempotency_key=f"{project_id}:freeze-nine",
         )
 
         def lose_response(name: str) -> None:
@@ -335,6 +352,103 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 "SELECT COUNT(*) FROM authority_narrative_realization_consumption WHERE realization_id=%s",
                 [value["realization_id"]],
             )
+            self.assertEqual(uow.cursor.fetchone()[0], 0)
+            if observational:
+                uow.cursor.execute("SELECT planned_event FROM authority_narrative_realization_event WHERE realization_id=%s", [value["realization_id"]])
+                for (event,) in uow.cursor.fetchall():
+                    self.assertIsNone(event["decision"])
+                    self.assertEqual(event["state_deltas"], [])
+                    self.assertEqual(event["disclosures"], [])
+                    self.assertEqual(event["obligation_actions"], [])
+        if observational:
+            self._verify_zero_chapter_acceptance(fixture, value, recovered["contract_digest"])
+
+    @staticmethod
+    def _observational_response(stage, inputs):
+        from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+        from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+        output = default_chapter_fixture_response(stage, inputs)
+        if stage == "draft":
+            text = "Snow falls quietly on the winter street. The observer watches the lamps and the windows without making a decision. Nobody learns a new fact. The street remains as it was before the observation."
+            for scene in output["scene_artifacts"]:
+                scene["text"] = text
+            output["text"] = serialize_realization(output["scene_artifacts"]) if output["scene_artifacts"] else text
+        elif stage == "review":
+            output.update(score=90, issues=[])
+        elif stage == "revision":
+            draft = inputs["draft"]
+            output = {"text": draft["text"], "scene_artifacts": draft["scene_artifacts"], "resolved_issue_codes": []}
+        elif stage == "canon_extraction":
+            for key, value in output.items():
+                if isinstance(value, list) and key != "realization_evidence":
+                    output[key] = []
+            output.update(extraction_status="EXTRACTED" if output["realization_evidence"] else "NO_CHANGE", no_change_reason="" if output["realization_evidence"] else "No business changes or observations.")
+        return output
+
+    def _verify_zero_chapter_acceptance(self, fixture, value, contract_digest):
+        from novel_forge.storage.narrative_realization_repositories import NarrativeRealizationRepository
+        from novel_forge.modules.hierarchical_planning.chapter_contracts import require_chapter_contracts
+        for number in (1, 2):
+            event = next(item for item in value["events"] if item["chapter_number"] == number)
+            plan = dict(fixture["chapter_plans"][number]["content"])
+            plan.update(chapter_contract_schema_version="chapter-mission-scene.v3", primary_function="observation",
+                        chapter_objective="Render an observation of the winter street", chapter_intent="Render an observation",
+                        required_state_delta={"status": "NO_INCREMENT", "summary": None},
+                        arc_schedule=[], required_arc_contributions=[], required_state_transitions=[],
+                        obligation_actions=[], character_participation=[], knowledge_boundaries=[], disclosures=[],
+                        reward_action=None, promise_action=None, ending_hook=None, serialization_function=None,
+                        antagonist_actions=[], canon_expected_changes=[], reader_promise_actions=[], reward_setup=[], reward_payoff=[],
+                        antagonist_pressure=None, chapter_hook=None, next_chapter_bridge=None,
+                        narrative_realization_slice={"accepted_through_chapter": 0, "chapter_number": number, "contract_digest": contract_digest, "realization_id": value["realization_id"], "slice_id": event["slice_id"], "events": [event]},
+                        scene_plan=[{"scene_id": f"observation:{number}", "goal": "Render the winter street",
+                                     "conflict": "", "participants": [], "arc_progress": [], "trajectory_refs": [],
+                                     "obligation_refs": [], "state_transitions": [], "realization_event_ids": [event["event_id"]],
+                                     "information_gain": [], "entry_state": "winter street", "exit_state": "winter street",
+                                     "reader_effect": "contemplation", "beats": [{"beat_id": f"look:{number}", "ordinal": 1, "function": "observation"}]}])
+            require_chapter_contracts(plan)
+            frozen = self._seed_asset(fixture["project_id"], "chapter_plan", f"observation-plan-{number}", plan)
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                binding = f"observation-binding:{fixture['project_id']}:{number}"
+                uow.cursor.execute("INSERT INTO story_plan_binding(binding_id,project_id,book_id,contract_type,logical_key,asset_version_id,parent_version_id,execution_scope,freshness,created_by_operation_id) VALUES (%s,%s,%s,'CHAPTER',%s,%s,%s,'FROZEN','CURRENT',%s)", [binding, fixture["project_id"], fixture["book_id"], f"chapter:{number}", frozen["asset_version_id"], fixture["group_plan"]["asset_version_id"], fixture["book"].root_operation_id])
+                uow.cursor.execute("UPDATE active_story_plan_version SET binding_id=%s,asset_version_id=%s WHERE project_id=%s AND book_id=%s AND logical_key=%s", [binding,frozen["asset_version_id"],fixture["project_id"],fixture["book_id"],f"chapter:{number}"])
+                uow.commit()
+            candidates = tuple(item for item in fixture["candidates"] if item["asset_type"] != "chapter_plan") + (frozen,)
+            command = SubmitBookChapterCommand(book_run_id=fixture["book"].book_run_id, chapter_number=number,
+                title=f"Observation {number}", premise="A winter street is observed without business state changes.",
+                chapter_plan_asset_version_id=frozen["asset_version_id"], chapter_plan_content_hash=frozen["content_hash"],
+                context_candidates=candidates, context_token_budget=64_000,
+                narrative_realization_id=value["realization_id"], narrative_realization_slice_id=event["slice_id"],
+                narrative_realization_contract_digest=contract_digest)
+            delegated = fixture["book_authority"].submit_chapter(command, principal=fixture["principal"])
+            for _ in range(len(ChapterNode) * 2 + 4):
+                tick = fixture["chapter"].scheduler(principal=fixture["worker"]).tick(project_id=fixture["project_id"], root_operation_id=delegated["chapter_root_operation_id"])
+                if tick.saga_status == "SUCCEEDED":
+                    break
+            status = fixture["book_authority"].reconcile_chapter(delegated["chapter_request_id"])
+            self.assertEqual(status["status_reference"], "SUCCEEDED", status)
+            accepted = fixture["book_authority"].accept_chapter(delegated["chapter_request_id"], principal=fixture["principal"])
+            self.assertEqual(accepted["accepted_through_chapter"], number)
+            self.assertEqual(fixture["book_authority"].accept_chapter(delegated["chapter_request_id"], principal=fixture["principal"])["accepted_through_chapter"], number)
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                current = NarrativeRealizationRepository(uow.cursor).require(value["realization_id"])
+                self.assertEqual(current["lifecycle"], "FROZEN")
+                uow.cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [accepted["last_chapter_outcome_version_id"]])
+                outcome = uow.cursor.fetchone()[0]
+                self.assertEqual(outcome["state_events"], [])
+                self.assertEqual(outcome["obligation_events"], [])
+                self.assertEqual(outcome["realization_evidence"][0]["observed_disclosures"], [])
+                self.assertEqual(outcome["realization_evidence"][0]["observed_state_deltas"], [])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT count(*) FROM authority_narrative_realization_consumption WHERE realization_id=%s", [value["realization_id"]])
+            self.assertEqual(uow.cursor.fetchone()[0], 2)
+            uow.cursor.execute("SELECT chapter_outcome_asset_version_id,chapter_outcome FROM authority_narrative_state_rebuild_source WHERE book_run_id=%s ORDER BY accepted_chapter", [fixture["book"].book_run_id])
+            from novel_forge.modules.narrative_state.reducers import rebuild_story_state
+            sources = uow.cursor.fetchall()
+            self.assertEqual(len(sources), 2)
+            rebuilt = rebuild_story_state(sources)
+            self.assertEqual(rebuilt["accepted_through_chapter"], 2)
+            self.assertTrue(all(not entries for entries in rebuilt["current_state"].values()))
+            uow.cursor.execute("SELECT count(*) FROM authority_narrative_state_event_projection WHERE book_run_id=%s", [fixture["book"].book_run_id])
             self.assertEqual(uow.cursor.fetchone()[0], 0)
 
     def test_one_chapter_execution_window_freezes_policy_across_restart_and_replay(
@@ -582,7 +696,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(str(child[0]), "CANCELLATION_REQUESTED")
         self.assertEqual(str(child[1]), "CANCELLATION_REQUESTED")
 
-    def _fixture(self, *, group_chapters: int = 3) -> dict:
+    def _fixture(self, *, group_chapters: int = 3, chapter_fixture_factory=None) -> dict:
         project_id = identifier("chapter-group")
         root = tempfile.TemporaryDirectory()
         self.addCleanup(root.cleanup)
@@ -599,7 +713,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root.name) / "objects"),
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "group-chapter-worker",
         }
-        execution = build_production_execution_composition(settings, env=env)
+        execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=chapter_fixture_factory)
         chapter = build_chapter_authority_application(
             settings, execution=execution, env=env
         )

@@ -139,6 +139,7 @@ def _bind_observation_locations(source: dict[str, Any], text: str) -> None:
 def extract_grounded_candidates(
     *, project_id: str, revision: dict[str, Any], revision_asset_version_id: str,
     context_bundle_version_id: str, provider_extraction: dict[str, Any],
+    work_requirements: bool = False,
 ) -> dict[str, Any]:
     text = revision.get("text")
     if not isinstance(text, str) or not text.strip():
@@ -181,7 +182,7 @@ def extract_grounded_candidates(
         project_id=project_id, revision={"chapter": revision["chapter"], "text": text},
         revision_asset_version_id=revision_asset_version_id,
         context_bundle_version_id=context_bundle_version_id,
-        provider_extraction=source,
+        provider_extraction=source, work_requirements=work_requirements,
     )
     for field in (*PROVIDER_SEMANTIC_CHANGE_FIELDS, "reader_knowledge_changes", *OBSERVATION_FIELDS):
         for item in result.get(field, []):
@@ -213,7 +214,7 @@ def extract_grounded_candidates(
         "no_change_reason": str(source.get("no_change_reason") or ""),
         "semantic_status": "PENDING_SUPPORT_REVIEW",
     }
-    result["canon_extraction_contract_version"] = "canon-grounded-extraction-v1"
+    result["canon_extraction_contract_version"] = "canon-grounded-extraction-v2" if work_requirements else "canon-grounded-extraction-v1"
     return result
 
 

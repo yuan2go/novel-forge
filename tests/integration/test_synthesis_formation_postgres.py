@@ -46,7 +46,8 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 
 @pytest.mark.parametrize("author_guided,result_repair,runtime_recovery,evaluation_recovery,manual_review", [(False, False, False, False, False), (True, False, False, False, False), (False, True, False, False, False), (False, False, True, False, False), (False, False, False, True, False), pytest.param(False, False, False, False, True, id="manual-second-candidate")])
 def test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery, evaluation_recovery, manual_review):
-    fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000}}
+    fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
+        "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
     harness = CapabilityPackPostgresHarness(
         "synthesis-formation-author" if author_guided else "synthesis-formation",
         production_profile=fixture_production_profile,
@@ -84,7 +85,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
         historical.setattr(formation_generation, "StoryPlanningGenerationCommand", lambda **values: replace(original_command(**values), execution_contract_version="1.15.0"))
     definition = story_planning_generation_definition(
         application_build_id="synthesis-formation", commit_sha=RELEASE_SHA,
-        definition_version="1.15.0" if runtime_recovery else "1.16.0",
+        definition_version="1.15.0" if runtime_recovery else "1.17.0",
     )
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.repositories.definitions.register(definition)
@@ -812,14 +813,14 @@ def _recover_runtime_profile_formation(*, harness, chapter_pack, formation, prin
     cancelled = cancel()
     assert cancel()["replayed"] is True
     new_sha = "f" * 40
-    definition = story_planning_generation_definition(application_build_id="synthesis-formation", commit_sha=new_sha)
+    definition = story_planning_generation_definition(application_build_id="synthesis-formation", commit_sha=new_sha, definition_version="1.15.0")
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         registered = uow.repositories.definitions.register(definition)
         uow.cursor.execute("SELECT definition_hash FROM authority_operation_definition WHERE name=%s AND definition_version=%s",[definition["name"],definition["definition_version"]])
         digest=uow.cursor.fetchone()[0]
         uow.commit()
     del registered
-    profile = build_story_planning_pack_profile(Path(__file__).resolve().parents[2], operation_definition_hash=digest,pack_id=harness.pack_id)
+    profile = build_story_planning_pack_profile(Path(__file__).resolve().parents[2], operation_definition_hash=digest,pack_id=harness.pack_id, execution_contract_version="1.15.0")
     harness._base_manifest,harness._base_catalog=profile.manifest,profile.artifact_catalog
     scope=harness.approval_scope(environments=("test",),runtime_profiles=("test",))
     scope["allowed_workflow_definition_refs"]=[profile.workflow_ref]
@@ -858,7 +859,7 @@ def _recover_runtime_profile_formation(*, harness, chapter_pack, formation, prin
     binding=require_binding(DATABASE_URL,continuation_id)
     assert binding["source_command"]==source_payload
     assert binding["target_release_sha"]==new_sha
-    assert binding["successor_command"]["execution_contract_version"]=="1.16.0"
+    assert binding["successor_command"]["execution_contract_version"]=="1.15.0"
     assert binding["successor_operation_id"] is None
     successor=_command_from_payload(binding["successor_command"])
     with pytest.raises(KernelError,match="PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT"):
@@ -878,6 +879,18 @@ def _recover_runtime_profile_formation(*, harness, chapter_pack, formation, prin
         assert uow.cursor.fetchone()[0]==source_snapshot
         uow.cursor.execute("SELECT status FROM authority_external_effect WHERE external_effect_id=%s",[effect_id])
         assert uow.cursor.fetchone()[0]=="CANCELLED"
+    planning.generate(successor, principal=replace(principal, principal_id=successor.actor_id))
+    definition = story_planning_generation_definition(application_build_id="synthesis-formation", commit_sha=new_sha)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.repositories.definitions.register(definition)
+        uow.cursor.execute("SELECT definition_hash FROM authority_operation_definition WHERE name=%s AND definition_version=%s", [definition["name"], definition["definition_version"]])
+        digest = uow.cursor.fetchone()[0]
+        uow.commit()
+    profile = build_story_planning_pack_profile(Path(__file__).resolve().parents[2], operation_definition_hash=digest, pack_id=harness.pack_id)
+    harness._base_manifest, harness._base_catalog = profile.manifest, profile.artifact_catalog
+    approved = harness.register_compile_approve("1.3.0", generation=3, approval_scope=scope, target_runtime_profile="test", proof_skill_ref=profile.agent_skill_ref, release_sha=new_sha)
+    deployment = harness.deploy(approved, environment="test", runtime_profile="test")
+    harness.activate(deployment, expected_activation_version=2, environment="test")
     return formation,execution
 
 
@@ -901,7 +914,7 @@ def _assert_runtime_continuation_once(formation, harness, transport, principal):
     worker=replace(principal,principal_id=command.actor_id)
     before=len(transport.calls)
     with ThreadPoolExecutor(max_workers=2) as pool:
-        outcomes=list(pool.map(lambda version:formation.generation.planning.generate(replace(command,execution_contract_version=version),principal=worker),["1.15.0","1.16.0"]))
+        outcomes=list(pool.map(lambda version:formation.generation.planning.generate(replace(command,execution_contract_version=version),principal=worker),["1.15.0","1.17.0"]))
     assert len({item.candidate_asset_version_id for item in outcomes})==1
     assert all(item.generation_operation_id==successor_id for item in outcomes)
     assert len(transport.calls)==before

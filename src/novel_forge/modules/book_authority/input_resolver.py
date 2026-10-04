@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from novel_forge.modules.story_design_authority.qualification import (
+    qualification_profiles_for_asset,
+)
+
 from dataclasses import asdict, dataclass, fields
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -21,7 +25,6 @@ from novel_forge.modules.command_kernel.service import (
 from novel_forge.modules.story_design_authority import (
     GENERATOR_CATALOG,
     NarrativeDesignLayer,
-    required_qualification_profiles,
 )
 from novel_forge.modules.story_planning_runtime import (
     STORY_PLANNING_OPERATION_DEFINITION_REF,
@@ -587,7 +590,8 @@ class BookProductionInputResolver:
         )
         typed_design = BookDesignPayload.from_mapping(book_design)
         if (
-            typed_design.schema_version != FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION
+            typed_design.schema_version
+            not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6"}
             or typed_design.foundation_set != foundation
         ):
             raise KernelError(
@@ -705,6 +709,7 @@ class BookProductionInputResolver:
         from novel_forge.modules.book_design_authority.author_supervision import approved_book_design_receipt
         from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt, reusable_qualified_design_receipt
         from novel_forge.modules.production_execution.author_supervision import selected_book_supervision
+
         author_design = approved_book_design_receipt(cursor, project_id=command.project_id,
             book_id=command.book_id, asset_version_id=book_design_version)
         book_supervision = selected_book_supervision(cursor, project_id=command.project_id, book_id=command.book_id)
@@ -733,7 +738,12 @@ class BookProductionInputResolver:
             for asset_version_id in asset_version_ids:
                 expected.extend(
                     (asset_version_id, profile.layer.value, profile)
-                    for profile in required_qualification_profiles(stage)
+                    for profile in qualification_profiles_for_asset(
+                        cursor,
+                        project_id=command.project_id,
+                        asset_version_id=asset_version_id,
+                        generator=stage,
+                    )
                 )
         version_ids = sorted({item[0] for item in expected})
         cursor.execute(

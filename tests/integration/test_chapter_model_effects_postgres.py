@@ -312,7 +312,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "project_id": project_id,
                 "safe_summary": "Versioned chapter quality thresholds.",
                 "structured_facts": [
-                    {"key": "thresholds", "value": {"readability": 70}}
+                    {"key": "thresholds", "value": {"readability": 70, "sentence_length_unit": "WHITESPACE_WORDS"}}
                 ],
                 "estimated_tokens": 20,
                 "narrative_function": "quality_policy",
@@ -1034,6 +1034,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     actor_id=worker_id,
                     chapter=1,
                     title="Selection Is Not Consumption",
+                    context_token_budget=64_000,
                     premise="A selected rule has not yet reached a provider.",
                     trace_id=identifier("selection-trace"),
                     correlation_id=identifier("selection-correlation"),
@@ -1522,8 +1523,8 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 application_build_id="chapter-gateway-test",
                 commit_sha="e" * 40,
                 context_candidates=context_candidates,
-                **({"context_token_budget": 64_000,
-                    "preparation_report": {"stage_context_profile_versions": {"draft": "draft-context-profile-v4"}}}
+                context_token_budget=64_000,
+                **({"preparation_report": {"stage_context_profile_versions": {"draft": "draft-context-profile-v4"}}}
                    if task_scoped else {}),
             )
             result = application.run(chapter_request)

@@ -3007,7 +3007,7 @@ def test_result_repair_command_keeps_historical_identity_and_bounded_new_causati
     assert recovered.repair_of_operation_id == "failed:operation"
     assert recovered.repair_of_candidate_id == ""
     assert recovered.repair_number == 1
-    assert recovered.execution_contract_version == STORY_PLANNING_GENERATION_VERSION
+    assert recovered.execution_contract_version == original.execution_contract_version
     assert _command_payload(original) == historical
     assert _command_from_payload(_command_payload(recovered)) == recovered
     with pytest.raises(KernelError, match="PLANNING_RESULT_REPAIR_BOUND_EXCEEDED"):

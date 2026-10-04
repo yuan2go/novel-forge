@@ -342,12 +342,20 @@ def run_single_chapter_slice(
     export_evidence: ExportDeliveryEvidence | None = None
     for ordinal, node in enumerate(ChapterNode, start=1):
         input_assets = [
-            (_operation_output_by_key(database_url, operation_ids[ChapterNode.BEST_CANDIDATE],
-                                      request.project_id, "chapter.best_candidate.selected_review")
-             if source is ChapterNode.REREVIEW and node is not ChapterNode.BEST_CANDIDATE else {
-                "asset_version_id": outputs[source].asset_version_id,
-                "content_hash": outputs[source].content_hash,
-            })
+            (
+                _operation_output_by_key(
+                    database_url,
+                    operation_ids[ChapterNode.BEST_CANDIDATE],
+                    request.project_id,
+                    "chapter.best_candidate.selected_review",
+                )
+                if source is ChapterNode.REREVIEW
+                and node is not ChapterNode.BEST_CANDIDATE
+                else {
+                    "asset_version_id": outputs[source].asset_version_id,
+                    "content_hash": outputs[source].content_hash,
+                }
+            )
             for source in _input_nodes(node)
         ]
         if node is ChapterNode.PLAN:
@@ -382,7 +390,11 @@ def run_single_chapter_slice(
                     item
                     for item in candidates
                     if str(item.get("asset_type") or "")
-                    in {"story_state_snapshot", "canon_snapshot"}
+                    in (
+                        {"story_state_snapshot", "canon_snapshot", "style_policy"}
+                        if definition_version == "3.6.0"
+                        else {"story_state_snapshot", "canon_snapshot"}
+                    )
                 )
             else:
                 candidates = tuple(
@@ -675,8 +687,8 @@ def _command(
     input_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if definition_name == ChapterNode.DRAFT.definition_name and (request.preparation_report or {}).get("author_draft_adoption"):
-        from .definitions import CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
-        definition_version = CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
+        from .definitions import CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
+        definition_version = CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION if definition_version in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS else CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
     return {
         "definition_name": definition_name,
         "definition_version": definition_version,
@@ -893,6 +905,7 @@ def _retrieval_admission_snapshot(
     dependencies = None
     if str(dict(dict(request.preparation_report or {}).get("stage_context_profile_versions") or {}).get("draft") or "") == "draft-context-profile-v4":
         from novel_forge.modules.context_builder.production_retrieval import build_task_dependency_refs
+        from .context_compression_provider import compression_boundary_identity
 
         current_candidates = [
             dict(item) for item in request.context_candidates
@@ -914,8 +927,9 @@ def _retrieval_admission_snapshot(
                     or str(row[2]) != "ELIGIBLE" or str(row[3]) != "CLEAR"
                     or candidate.get("project_id") != request.project_id
                     or candidate.get("book_id") != request.book_id
-                    or dict(candidate.get("accepted_boundary") or {}) != dict(intent.get("accepted_boundary") or {})):
+                    or compression_boundary_identity(candidate.get("accepted_boundary") or {}, strict=True) != compression_boundary_identity(intent.get("accepted_boundary") or {}, strict=True)):
                     raise KernelError("RETRIEVAL_TASK_SOURCE_BINDING_INVALID", "task dependency facts require eligible frozen sources at the task boundary")
+                candidate["accepted_boundary"] = compression_boundary_identity(candidate["accepted_boundary"], strict=True)
         dependencies = build_task_dependency_refs(plan=plan, current_candidates=current_candidates)
     query_plan = build_retrieval_query_plan(
         intent=intent,

@@ -333,3 +333,24 @@ def test_volume_slice_evaluation_does_not_average_arc_or_chapter_scores() -> Non
     assert "average_arc_score" not in payload
     assert volume.chapter_range == (1, 6)
     assert volume.ending_reachability == "IMPROVING"
+
+
+def test_work_zero_increment_is_observed_without_fabricated_progress_or_stagnation():
+    rows = [_observation(chapter, work_quality_semantic_version="work-quality.v1",
+                         required_state_delta={"status": "NO_INCREMENT", "summary": None},
+                         causal_progress_event_ids=[], irreversible_state_change_ids=[],
+                         goal_progress_units=0, protagonist_decision_ids=[], antagonist_response_ids=[],
+                         obstacle_escalation=False, ending_propulsion=False, arc_evidence=[],
+                         semantic_repetition_signatures={"scene_pattern": ["observation"]})
+            for chapter in range(1, 5)]
+    report = build_longitudinal_quality_evidence(rows)
+    assert report.observation_status == "MEASURED"
+    assert report.momentum.status == "NOT_APPLICABLE"
+    assert report.momentum.progress_chapters == ()
+    assert report.momentum.stagnation_chapters == ()
+    assert report.momentum.causal_event_coverage is None
+    assert not any(item.status == "FATIGUE_RISK" for item in report.repetition.values())
+    rows[0]["required_state_delta"] = {"status": "CHANGED", "summary": "chosen change"}
+    selected = build_longitudinal_quality_evidence(rows)
+    assert selected.momentum.stagnation_chapters == (1,)
+    assert selected.momentum.status == "STAGNATING"

@@ -7,6 +7,7 @@ from psycopg.types.json import Jsonb
 
 from novel_forge.modules.book_design_authority.domain import (
     FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+    WORK_BOOK_DESIGN_SCHEMA_VERSION,
     BookDesignPayload,
 )
 from novel_forge.modules.book_design_authority.foundation import (
@@ -286,7 +287,7 @@ class StoryFormationRepository:
         content_hash: str,
         operation_id: str,
     ) -> dict[str, Any]:
-        """INVARIANT: Close Formation with an independently approved BookDesign v5.
+        """INVARIANT: Close Formation with an independently approved Foundation-bound BookDesign.
 
         Foundation layers must already be current. The BookDesign remains
         owned and activated by Book Design Authority; this method only freezes
@@ -1394,10 +1395,10 @@ class StoryFormationRepository:
         row = self.cursor.fetchone()
         if (
             row is None
-            or tuple(str(item) for item in row[1:6])
+            or str(row[1]) != content_hash
+            or str(row[2]) not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION}
+            or tuple(str(item) for item in row[3:6])
             != (
-                content_hash,
-                FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
                 "ACTIVE",
                 "ELIGIBLE",
                 "CLEAR",
@@ -1406,13 +1407,13 @@ class StoryFormationRepository:
         ):
             raise KernelError(
                 "STORY_FORMATION_BOOK_DESIGN_REQUIRED",
-                "Formation requires the exact active qualified BookDesign v5",
+                "Formation requires the exact active qualified Foundation-bound BookDesign",
             )
         design = BookDesignPayload.from_mapping(dict(row[0]))
         if design.foundation_set != foundation:
             raise KernelError(
                 "BOOK_DESIGN_FOUNDATION_SET_STALE",
-                "BookDesign v5 does not bind the current qualified Foundation Set",
+                "BookDesign does not bind the current qualified Foundation Set",
             )
         return foundation
 

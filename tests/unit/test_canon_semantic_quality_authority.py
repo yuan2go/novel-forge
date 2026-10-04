@@ -19,13 +19,13 @@ from novel_forge.modules.chapter_quality_authority import (
 
 
 class CanonSemanticQualityAuthorityTests(unittest.TestCase):
-    def test_accepted_quality_projection_reads_v2_history_and_requires_v3_now(
+    def test_accepted_quality_projection_reads_v2_v3_history_and_v4_now(
         self,
     ) -> None:
-        self.assertEqual(CURRENT_CHAPTER_OUTCOME_CONTRACT, "chapter-outcome-v3")
+        self.assertEqual(CURRENT_CHAPTER_OUTCOME_CONTRACT, "chapter-outcome-v4")
         self.assertEqual(
             SUPPORTED_CHAPTER_OUTCOME_CONTRACTS,
-            ("chapter-outcome-v2", "chapter-outcome-v3"),
+            ("chapter-outcome-v2", "chapter-outcome-v3", "chapter-outcome-v4"),
         )
         self.assertEqual(
             validate_chapter_outcome_contract("chapter-outcome-v2"),

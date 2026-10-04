@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from novel_forge.modules.story_design_authority.qualification import (
+    qualification_profiles_for_asset,
+)
+
 from typing import Any, Mapping
 
 from novel_forge.modules.authority_security import PrincipalType
@@ -137,9 +141,9 @@ def approved_design_receipt(cursor: Any, *, project_id: str, book_id: str,
             "author_id": row[7], "author_review": review, "lifecycle": row[9], "literary_qualification": "NOT_PROVEN"}
 
 
-def reusable_qualified_design_receipt(cursor: Any, *, project_id: str, book_id: str,
-                                      asset_version_id: str, generator: str) -> dict[str, Any]:
-    from .qualification import required_qualification_profiles
+def reusable_qualified_design_receipt(
+    cursor: Any, *, project_id: str, book_id: str, asset_version_id: str, generator: str
+) -> dict[str, Any]:
     cursor.execute("""SELECT q.design_layer,q.profile_id,q.profile_version,q.profile_hash,
         q.qualification_hash,q.evaluation_hash,e.evaluation_asset_version_id,v.content_hash
         FROM authority_current_narrative_design_qualification q
@@ -155,7 +159,12 @@ def reusable_qualified_design_receipt(cursor: Any, *, project_id: str, book_id: 
           AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'
         ORDER BY q.design_layer""", [project_id, book_id, asset_version_id])
     rows = cursor.fetchall()
-    profiles = required_qualification_profiles(generator)
+    profiles = qualification_profiles_for_asset(
+        cursor,
+        project_id=project_id,
+        asset_version_id=asset_version_id,
+        generator=generator,
+    )
     expected = {(p.layer.value,p.profile_id,p.profile_version,p.profile_hash) for p in profiles}
     if len(rows) != len(expected) or {tuple(row[:4]) for row in rows} != expected:
         raise KernelError("LONGFORM_DESIGN_QUALIFICATION_INCOMPLETE", "Existing strict design must retain all current real independent qualification receipts")

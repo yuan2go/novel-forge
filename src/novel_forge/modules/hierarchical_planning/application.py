@@ -1028,13 +1028,9 @@ class PostgresHierarchicalPlanningAuthority:
         if (
             row is None
             or str(row[1]) != str(design_ref.get("content_hash") or "")
-            or tuple(str(item) for item in row[2:6])
-            != (
-                FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
-                "ACTIVE",
-                "ELIGIBLE",
-                "CLEAR",
-            )
+            or str(row[2])
+            not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6"}
+            or tuple(str(item) for item in row[3:6]) != ("ACTIVE", "ELIGIBLE", "CLEAR")
             or str(row[6]) != str(design_ref.get("asset_version_id") or "")
         ):
             raise KernelError(

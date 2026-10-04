@@ -74,6 +74,18 @@ def compare_candidates(
     correction_generation: int = 0,
     maximum_correction_generations: int = 1,
 ) -> dict[str, Any]:
+    previous_baseline = previous.content.get("creative_baseline")
+    challenger_baseline = challenger.content.get("creative_baseline")
+    if previous_baseline is not None or challenger_baseline is not None:
+        from .chapter_plan_views import validate_creative_baseline
+
+        if validate_creative_baseline(previous_baseline) != validate_creative_baseline(
+            challenger_baseline
+        ):
+            raise KernelError(
+                "BEST_CANDIDATE_BASELINE_DRIFT",
+                "Candidate comparison requires the same effective work contract; changed requirements need fresh evaluation",
+            )
     if (not math.isfinite(minimum_net_improvement) or minimum_net_improvement < 0
         or not previous.asset_version_id or not challenger.asset_version_id
         or previous.asset_version_id == challenger.asset_version_id
@@ -91,6 +103,7 @@ def compare_candidates(
     diagnostic_selection = challenger.diagnostic_contract_version == "actionable-diagnostics.v1"
     supported_improvement = any(check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED" for check in challenger.resolution_checks)
     from novel_forge.modules.review.diagnostics import prose_hash
+
     quality_supported = (bool(challenger.quality_resolution_checks)
         and {check.get("observation") for check in challenger.quality_resolution_checks} == set(challenger.content.get("quality_action_observations") or [])
         and all(check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED"
@@ -103,6 +116,7 @@ def compare_candidates(
     preservation_regressed = any(check.get("preservation") != "PRESERVED"
         for check in (*challenger.resolution_checks, *challenger.quality_resolution_checks))
     from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
+
     if challenger.cross_chapter_review and (
         set(previous.blocker_codes) & set(challenger.blocker_codes)
         or any(check.get("status") != "PRESERVED" for check in challenger.preservation_checks)
@@ -180,11 +194,29 @@ def compare_candidates(
     return comparison
 
 
-
-def bind_selected_review(*, candidate: Mapping[str, Any], candidate_id: str,
-                         review: Mapping[str, Any], review_id: str) -> dict[str, Any]:
+def bind_selected_review(
+    *,
+    candidate: Mapping[str, Any],
+    candidate_id: str,
+    review: Mapping[str, Any],
+    review_id: str,
+) -> dict[str, Any]:
     from novel_forge.modules.review.diagnostics import prose_hash
+
     expected = prose_hash(str(candidate.get("text") or ""))
+    if "creative_baseline" in candidate:
+        from .chapter_plan_views import validate_creative_baseline
+
+        if (
+            review.get("creative_baseline_digest")
+            != validate_creative_baseline(candidate["creative_baseline"])[
+                "baseline_digest"
+            ]
+        ):
+            raise KernelError(
+                "SELECTED_REVIEW_BASELINE_DRIFT",
+                "Selected prose must retain its exact reviewed work contract",
+            )
     if review.get("diagnostic_contract_version") == "actionable-diagnostics.v1" and (
         review.get("target_text_hash") != expected
         or (review.get("revision_version_id") or review.get("target_asset_version_id")) != candidate_id
@@ -243,11 +275,25 @@ def build_best_candidate(
 def _evidence(value: CandidateEvidence) -> dict[str, Any]:
     return {
         "asset_version_id": value.asset_version_id,
-        "workspace_asset_version_id": value.workspace_asset_version_id or value.asset_version_id,
+        "workspace_asset_version_id": value.workspace_asset_version_id
+        or value.asset_version_id,
         "score": value.score,
         "blocker_codes": list(value.blocker_codes),
         "review_asset_version_id": value.review_asset_version_id,
-        **({"quality_resolution_checks": list(value.quality_resolution_checks)} if value.quality_resolution_checks else {}),
+        **(
+            {
+                "creative_baseline_digest": value.content["creative_baseline"][
+                    "baseline_digest"
+                ]
+            }
+            if "creative_baseline" in value.content
+            else {}
+        ),
+        **(
+            {"quality_resolution_checks": list(value.quality_resolution_checks)}
+            if value.quality_resolution_checks
+            else {}
+        ),
     }
 
 

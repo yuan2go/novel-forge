@@ -285,10 +285,12 @@ def chapter_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list
     return outcomes
 
 
-def admitted_reference_calibration(request: Any, result: Any, *, stage: str, target_asset_version_id: str) -> dict[str, Any] | None:
+def admitted_reference_calibration(
+    request: Any, result: Any, *, stage: str, target_asset_version_id: str
+) -> dict[str, Any] | None:
     from novel_forge.modules.chapter_authority.definitions import (
         CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
-        CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION,
+        CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
     )
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -301,7 +303,8 @@ def admitted_reference_calibration(request: Any, result: Any, *, stage: str, tar
         or not native.get("external_effect_id")):
         return None
     with AuthorityUnitOfWork(request.database_url) as uow:
-        uow.cursor.execute("""SELECT model.asset_version_id,model.content_hash,model.content,
+        uow.cursor.execute(
+            """SELECT model.asset_version_id,model.content_hash,model.content,
             decision.asset_version_id,decision.content_hash,decision.content,effect.request_payload
             FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id)
             JOIN authority_operation_output_asset output ON output.operation_id=operation.operation_id AND output.role='model_evidence'
@@ -325,13 +328,25 @@ def admitted_reference_calibration(request: Any, result: Any, *, stage: str, tar
               AND model.content #>> '{provider_evidence,production_execution,execution_request,external_effect_id}'=effect.external_effect_id
               AND effect.request_payload #>> '{input,quality_context,target_revision_asset_version_id}'=%s
               AND model.governance='CLEAR' AND decision.governance='CLEAR'""",
-            [request.project_id, request.operation_id, native["external_effect_id"],
-             "chapter.quality." + stage.removeprefix("quality_") + ".evaluate",
-             [CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION],
-             stage, request.attempt_id, target_asset_version_id])
+            [
+                request.project_id,
+                request.operation_id,
+                native["external_effect_id"],
+                "chapter.quality." + stage.removeprefix("quality_") + ".evaluate",
+                [
+                    CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+                    *sorted(CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS),
+                ],
+                stage,
+                request.attempt_id,
+                target_asset_version_id,
+            ],
+        )
         rows = uow.cursor.fetchall()
-        uow.cursor.execute("SELECT request_payload #> '{_production_execution,capability_runtime,routing_decision}' FROM authority_external_effect WHERE project_id=%s AND external_effect_id=%s",
-            [request.project_id, native["external_effect_id"]])
+        uow.cursor.execute(
+            "SELECT request_payload #> '{_production_execution,capability_runtime,routing_decision}' FROM authority_external_effect WHERE project_id=%s AND external_effect_id=%s",
+            [request.project_id, native["external_effect_id"]],
+        )
         effect_row = uow.cursor.fetchone()
         frozen = effect_row[0] if effect_row and isinstance(effect_row[0], dict) else {}
     required = frozen.get("status") == "SELECTED" and frozen.get("policy", {}).get("quality_metric") == "REFERENCE_AGREEMENT"

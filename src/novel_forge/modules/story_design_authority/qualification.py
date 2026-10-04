@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -417,11 +417,106 @@ GENERATOR_QUALIFICATION_PROFILES: Mapping[
 )
 
 
+def uses_work_requirements(content: Mapping[str, Any]) -> bool:
+    if content.get("schema_version") == "book-design.v6":
+        return True
+    payload = content.get("candidate_payload", content)
+    if not isinstance(payload, Mapping):
+        return False
+    envelope = payload.get("constraint_envelope")
+    return isinstance(envelope, Mapping) and (
+        envelope.get("contract_version") == "foundation-generation.v2"
+        or envelope.get("creative_requirements_contract") == "work-requirements.v1"
+    )
+
+
+_WORK_CRITERIA = {
+    "SUSTAINABLE_CADENCE": "SELECTED_PROMISE_CADENCE_ALIGNMENT",
+    "CONFLICT_GENERATION_CAPACITY": "WORLD_NARRATIVE_PURPOSE_SUPPORT",
+    "CHAPTER_FUNCTION_DIVERSITY": "CHAPTER_FUNCTION_WORK_ALIGNMENT",
+    "READER_EXPERIENCE_RHYTHM": "SELECTED_READER_EXPERIENCE_RHYTHM",
+    "NARRATIVE_DENSITY_BALANCE": "SELECTED_NARRATIVE_DENSITY_ALIGNMENT",
+    "POWER_RESOURCE_CONSEQUENCE": "APPLICABLE_POWER_RESOURCE_CONSEQUENCE",
+    "VOICE_DIFFERENTIATION": "SELECTED_VOICE_ALIGNMENT",
+    "ARC_REACHABILITY": "SELECTED_CHARACTER_ARC_REACHABILITY",
+    "RELATIONSHIP_PROGRESSION": "RELATIONSHIP_CONTINUITY_OR_CHANGE",
+    "CROSS_VOLUME_CADENCE": "SELECTED_CROSS_VOLUME_CADENCE",
+    "CONVERGENCE": "SELECTED_ARC_RELATION_ALIGNMENT",
+    "CORE_CONFLICT_CLARITY": "NARRATIVE_PURPOSE_CLARITY",
+    "CONFLICT_PRESSURE": "THEMATIC_EXPRESSION_SUPPORT",
+    "ANTI_PREACHING_CAPACITY": "THEME_PRESENTATION_ALIGNMENT",
+    "PROTAGONIST_COST": "SELECTED_ENDING_REQUIREMENTS_ALIGNMENT",
+    "SERIALIZATION_CAPACITY": "WORK_LENGTH_CAPACITY",
+    "RULE_COST_AND_LIMIT": "RULE_APPLICABILITY_AND_LIMITS",
+    "DESIRE_NEED_CONFLICT": "CHARACTER_DESIGN_ALIGNMENT",
+    "OPPOSITION_CAPACITY": "STORY_PRESSURE_OR_OBSERVATION_FIT",
+    "TRANSFORMATION_REACHABILITY": "CHARACTER_CONTINUITY_OR_CHANGE",
+    "REWARD_REACHABILITY": "SELECTED_EXPERIENCE_REACHABILITY",
+    "PAYOFF_EXPECTATION_CLARITY": "SELECTED_PROMISE_ALIGNMENT",
+    "PRESSURE_ESCALATION": "VOLUME_PURPOSE_ALIGNMENT",
+    "IRREVERSIBLE_CHANGE": "SELECTED_VOLUME_OUTCOME_ALIGNMENT",
+    "CLIMAX_PAYOFF_COST": "SELECTED_VOLUME_COMMITMENT_COVERAGE",
+    "NEXT_VOLUME_BRIDGE": "ENDING_OR_CONTINUATION_ALIGNMENT",
+    "BELIEF_CHANGE_CAUSALITY": "BELIEF_CONTINUITY_OR_CHANGE_COHERENCE",
+    "ENDING_TRANSFORMATION_ALIGNMENT": "CHARACTER_ENDING_ALIGNMENT",
+    "CAUSAL_ESCALATION": "CAUSAL_ALIGNMENT",
+    "ARC_MOVEMENT": "APPLICABLE_ARC_COMMITMENT_COVERAGE",
+    "CONFLICT_ESCALATION": "SCENE_INTENT_ALIGNMENT",
+    "INFORMATION_PROGRESSION": "APPLICABLE_INFORMATION_COVERAGE",
+    "STATE_TRANSITION_COVERAGE": "APPLICABLE_STATE_TRANSITION_COVERAGE",
+    "PAYOFF_DISTRIBUTION": "SELECTED_PAYOFF_DISTRIBUTION",
+    "DORMANCY_REACTIVATION": "SELECTED_ARC_CADENCE_ALIGNMENT",
+    "CONFLICT_SUSTAINABILITY": "NARRATIVE_PURPOSE_SUSTAINABILITY",
+    "CHARACTER_CONFLICT_FIT": "CHARACTER_WORK_FIT",
+    "LONGFORM_FOUNDATION_CAPACITY": "WORK_FOUNDATION_CAPACITY",
+    "THEME_CONFLICT_ALIGNMENT": "THEME_NARRATIVE_ALIGNMENT",
+    "MYSTERY_SUSTAINABILITY": "SELECTED_MYSTERY_ALIGNMENT",
+}
+
+
+def qualification_profiles_for_asset(
+    cursor: Any, *, project_id: str, asset_version_id: str, generator: str
+) -> tuple[NarrativeQualificationProfile, ...]:
+    cursor.execute(
+        """SELECT v.content FROM authority_asset_version v
+        JOIN authority_asset a ON a.asset_id=v.asset_id
+        WHERE a.project_id=%s AND v.asset_version_id=%s""",
+        [project_id, asset_version_id],
+    )
+    row = cursor.fetchone()
+    if row is None or not isinstance(row[0], Mapping):
+        raise KernelError(
+            "NARRATIVE_QUALIFICATION_TARGET_REQUIRED",
+            "Profile selection requires the exact immutable candidate within this project",
+        )
+    return required_qualification_profiles(
+        generator, work_requirements=uses_work_requirements(row[0])
+    )
+
+
 def required_qualification_profiles(
     generator_operation_name: str,
+    *,
+    work_requirements: bool = False,
 ) -> tuple[NarrativeQualificationProfile, ...]:
     try:
-        return GENERATOR_QUALIFICATION_PROFILES[generator_operation_name]
+        profiles = GENERATOR_QUALIFICATION_PROFILES[generator_operation_name]
+        return (
+            tuple(
+                replace(
+                    profile,
+                    profile_id=profile.profile_id + "-work-v2",
+                    profile_version="2.0.0",
+                    criteria=tuple(
+                        _WORK_CRITERIA.get(criterion, criterion)
+                        for criterion in profile.criteria
+                    ),
+                )
+                for profile in profiles
+            )
+            if work_requirements
+            else profiles
+        )
     except KeyError as exc:
         raise KernelError(
             "NARRATIVE_QUALIFICATION_PROFILE_NOT_FOUND",
@@ -434,8 +529,11 @@ def validate_narrative_qualification(
     generator_operation_name: str,
     value: Any,
     require_pass: bool = True,
+    work_requirements: bool = False,
 ) -> NarrativeQualificationResult:
-    profiles = required_qualification_profiles(generator_operation_name)
+    profiles = required_qualification_profiles(
+        generator_operation_name, work_requirements=work_requirements
+    )
     if not isinstance(value, Mapping) or (
         value.get("schema_version") != NARRATIVE_QUALIFICATION_SCHEMA_VERSION
     ):
@@ -603,7 +701,9 @@ def validate_narrative_qualification(
     )
 
 
-def scripted_qualification(generator_operation_name: str) -> dict[str, Any]:
+def scripted_qualification(
+    generator_operation_name: str, *, work_requirements: bool = False
+) -> dict[str, Any]:
 
     return {
         "schema_version": NARRATIVE_QUALIFICATION_SCHEMA_VERSION,
@@ -628,13 +728,19 @@ def scripted_qualification(generator_operation_name: str) -> dict[str, Any]:
                     for criterion in profile.criteria
                 ],
             }
-            for profile in required_qualification_profiles(generator_operation_name)
+            for profile in required_qualification_profiles(
+                generator_operation_name, work_requirements=work_requirements
+            )
         ],
     }
 
 
-def qualification_provider_schema(generator_operation_name: str) -> dict[str, Any]:
-    profiles = required_qualification_profiles(generator_operation_name)
+def qualification_provider_schema(
+    generator_operation_name: str, *, work_requirements: bool = False
+) -> dict[str, Any]:
+    profiles = required_qualification_profiles(
+        generator_operation_name, work_requirements=work_requirements
+    )
     string = {"type": "string", "minLength": 1}
     criterion = _strict_object(
         {
@@ -662,7 +768,10 @@ def qualification_provider_schema(generator_operation_name: str) -> dict[str, An
                 "type": "string",
                 "enum": [profile.profile_id for profile in profiles],
             },
-            "profile_version": {"type": "string", "const": "1.0.0"},
+            "profile_version": {
+                "type": "string",
+                "const": "2.0.0" if work_requirements else "1.0.0",
+            },
             "profile_hash": {
                 "type": "string",
                 "enum": [profile.profile_hash for profile in profiles],

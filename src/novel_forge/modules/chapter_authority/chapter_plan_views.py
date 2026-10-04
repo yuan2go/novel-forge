@@ -62,10 +62,30 @@ BASE_REQUIRED_FIELDS = (
 )
 
 
-def qualification_profile_for_plan(content: dict[str, Any]) -> ChapterPlanQualificationProfile:
+def qualification_profile_for_plan(
+    content: dict[str, Any],
+) -> ChapterPlanQualificationProfile:
     chapter = int(content.get("chapter") or 0)
     function = str(content.get("chapter_function") or "ordinary").strip().lower()
     phase = str(content.get("book_phase") or ("opening" if chapter == 1 else "ordinary")).lower()
+    from novel_forge.modules.story_design_authority.qualification import (
+        uses_work_requirements,
+    )
+
+    if (
+        uses_work_requirements(content)
+        or content.get("chapter_contract_schema_version") == "chapter-mission-scene.v3"
+    ):
+        return ChapterPlanQualificationProfile(
+            profile_id="chapter-plan-work-v1",
+            required_fields=("title", "premise", "chapter_objective", "scene_sequence"),
+            warning_fields=(),
+            genre=str(content.get("genre") or "any"),
+            platform=str(content.get("platform") or "any"),
+            book_phase=phase,
+            chapter_function=function,
+            contract_version="chapter-plan-qualification-profile-v2",
+        )
     if chapter == 1 or function in {"opening", "golden_opening"}:
         required = BASE_REQUIRED_FIELDS + (
             "conflict_chain", "reader_promise_actions", "protagonist_charm_mechanism",
@@ -221,8 +241,11 @@ def normalize_authoritative_chapter_plan(
     return json.loads(json.dumps(normalized, sort_keys=True)), report
 
 
-def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
+def build_draft_plan_view(
+    plan: dict[str, Any], *, work_requirements: bool = False
+) -> dict[str, Any]:
     from novel_forge.modules.story_design_authority.author_input import project_author_design, without_author_private
+
     result = {
         "contract_version": "draft-plan-view-v1",
         **{key: plan.get(key) for key in (
@@ -253,6 +276,9 @@ def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
         **{key: plan[key] for key in KNOWLEDGE_PLAN_FIELDS if key in plan},
     }
     result = without_author_private(result)
+    if work_requirements:
+        result["contract_version"] = "draft-plan-view-v2"
+        result["style_constraints"] = plan.get("style_constraints", [])
     binding = (plan.get("constraint_envelope") or {}).get("author_design")
     if binding:
         result["author_design_guidance"] = project_author_design(binding, target="CHAPTER", chapter=int(plan["chapter"]))
@@ -282,30 +308,187 @@ def build_draft_context_view(context_bundle: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def build_draft_style_view(context_bundle: dict[str, Any]) -> dict[str, Any]:
+def build_draft_style_view(
+    context_bundle: dict[str, Any], *, work_requirements: bool = False
+) -> dict[str, Any]:
     style_segments = [
         segment for segment in context_bundle.get("context_segments", [])
         if segment.get("asset_type") == "style_policy"
     ]
     return {
-        "contract_version": "draft-style-view-v1",
+        "contract_version": "draft-style-view-v2"
+        if work_requirements
+        else "draft-style-view-v1",
         "style_policy_version_id": str(
-            context_bundle.get("production_input_manifest", {}).get("style_policy_version_id") or ""
+            context_bundle.get("production_input_manifest", {}).get(
+                "style_policy_version_id"
+            )
+            or ""
         ),
         "policies": [
             {
                 "asset_version_id": segment.get("asset_version_id"),
                 "safe_summary": segment.get("safe_summary", ""),
                 "structured_facts": list(segment.get("structured_facts") or []),
+                **(
+                    {
+                        "content_hash": segment.get("content_digest")
+                        or segment.get("content_hash")
+                    }
+                    if work_requirements
+                    else {}
+                ),
+                **(
+                    {
+                        "constraints": next(
+                            (
+                                fact.get("value")
+                                for fact in segment.get("structured_facts", [])
+                                if fact.get("key") == "style_constraints"
+                            ),
+                            segment.get("constraints"),
+                        )
+                    }
+                    if work_requirements
+                    else {}
+                ),
             }
             for segment in style_segments
         ],
     }
 
 
+def _method_requirements(plan: dict[str, Any]) -> dict[str, Any]:
+    fields = {
+        "golden_opening": ("golden_opening",),
+        "reader_promise": ("promise_action", "reader_promise_actions"),
+        "reward": ("reward_action", "reward_setup", "reward_payoff"),
+        "protagonist_charm": ("protagonist_charm_mechanism",),
+        "antagonist_pressure": ("antagonist_pressure", "antagonist_actions"),
+        "chapter_hook": ("ending_hook", "chapter_hook"),
+        "suspense_progression": ("suspense_curve",),
+        "emotional_curve": ("emotional_curve",),
+        "serialization_function": ("serialization_function",),
+    }
+    source = {**dict(plan.get("source_extensions") or {}), **plan}
+    result = {}
+    for dimension, aliases in fields.items():
+        present = [name for name in aliases if name in source]
+        selected = [name for name in present if source[name] not in (None, "", [], {})]
+        if (
+            dimension == "golden_opening"
+            and source.get("chapter_contract_schema_version")
+            == "chapter-mission-scene.v3"
+        ):
+            selected = (
+                ["primary_function"]
+                if source.get("primary_function") == "golden_opening"
+                else []
+            )
+            present = ["primary_function"]
+        confirmed = plan.get(
+            "chapter_contract_schema_version"
+        ) == "chapter-mission-scene.v3" and bool(present)
+        result[dimension] = {
+            "status": "APPLICABLE"
+            if selected
+            else "NOT_APPLICABLE"
+            if confirmed
+            else "UNDETERMINED",
+            "source_fields": present,
+        }
+    return result
+
+
+def build_creative_baseline(
+    plan: dict[str, Any], context_bundle: dict[str, Any]
+) -> dict[str, Any]:
+    from novel_forge.modules.story_design_authority.author_input import (
+        compile_provider_author_projection,
+    )
+
+    view = build_draft_plan_view(plan, work_requirements=True)
+    baseline = {
+        "contract_version": "creative-baseline.v1",
+        "chapter": view["chapter"],
+        "source_plan": {
+            "asset_version_id": view["source_chapter_plan_asset_version_id"],
+            "content_hash": view["source_chapter_plan_content_hash"],
+        },
+        "style_constraints": view["style_constraints"],
+        "method_requirements": _method_requirements(plan),
+        "point_of_view": view.get("point_of_view"),
+        "target_word_count": view.get("target_word_count"),
+        "prohibited_outcomes": view.get("prohibited_outcomes"),
+        "style": build_draft_style_view(context_bundle, work_requirements=True),
+        "author_guidance": compile_provider_author_projection(
+            view.get("author_design_guidance") or {}
+        ),
+    }
+    baseline["baseline_digest"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                baseline, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            ).encode()
+        ).hexdigest()
+    )
+    return baseline
+
+
+def validate_creative_baseline(baseline: Any) -> dict[str, Any]:
+    keys = {
+        "contract_version",
+        "chapter",
+        "source_plan",
+        "style_constraints",
+        "point_of_view",
+        "target_word_count",
+        "prohibited_outcomes",
+        "style",
+        "author_guidance",
+        "method_requirements",
+        "baseline_digest",
+    }
+    if (
+        not isinstance(baseline, dict)
+        or set(baseline) != keys
+        or baseline.get("contract_version") != "creative-baseline.v1"
+    ):
+        raise KernelError(
+            "CREATIVE_BASELINE_REQUIRED",
+            "The work contract requires an exact public creative baseline",
+        )
+    body = {key: value for key, value in baseline.items() if key != "baseline_digest"}
+    digest = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                body, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            ).encode()
+        ).hexdigest()
+    )
+    if (
+        digest != baseline["baseline_digest"]
+        or not isinstance(baseline["style"], dict)
+        or baseline["style"].get("contract_version") != "draft-style-view-v2"
+    ):
+        raise KernelError(
+            "CREATIVE_BASELINE_DRIFT",
+            "Creative baseline bytes differ from their frozen digest",
+        )
+    return baseline
+
+
 __all__ = [
-    "ChapterPlanQualificationProfile", "ChapterPlanQualificationReport",
-    "LEGACY_COMPATIBILITY_PROFILE", "PLAN_FIELDS", "build_draft_context_view",
-    "build_draft_plan_view", "build_draft_style_view",
-    "normalize_authoritative_chapter_plan", "qualification_profile_for_plan",
+    "ChapterPlanQualificationProfile",
+    "ChapterPlanQualificationReport",
+    "LEGACY_COMPATIBILITY_PROFILE",
+    "PLAN_FIELDS",
+    "build_draft_context_view",
+    "build_draft_plan_view",
+    "build_draft_style_view",
+    "normalize_authoritative_chapter_plan",
+    "qualification_profile_for_plan",
+    "build_creative_baseline",
 ]

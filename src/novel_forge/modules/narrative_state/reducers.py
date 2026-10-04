@@ -122,6 +122,7 @@ def reduce_story_state_v2(
     chapter_outcome_asset_version_id: str,
     chapter_outcome_id: str,
     previous_story_state_asset_version_id: str = "",
+    outcome_scope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """INVARIANT: Apply one accepted ChapterOutcome event set to the current projection.
 
@@ -133,15 +134,27 @@ def reduce_story_state_v2(
             "NARRATIVE_OUTCOME_LINEAGE_REQUIRED",
             "Story State reduction requires ChapterOutcome identity and AssetVersion",
         )
-    if not events:
+    if events:
+        source_chapter = events[0].coordinate.source_chapter
+        project_id = events[0].scope.project_id
+        book_id = events[0].scope.book_id
+    elif (
+        outcome_scope is not None
+        and outcome_scope.get("contract_version") == "chapter-outcome-v4"
+        and outcome_scope.get("chapter_outcome_id") == chapter_outcome_id
+        and outcome_scope.get("state_events") == []
+        and outcome_scope.get("project_id")
+        and outcome_scope.get("book_id")
+        and int(outcome_scope.get("chapter_number") or 0) > 0
+    ):
+        source_chapter = int(outcome_scope["chapter_number"])
+        project_id = str(outcome_scope["project_id"])
+        book_id = str(outcome_scope["book_id"])
+    else:
         raise KernelError(
             "NARRATIVE_EVENT_SET_REQUIRED",
-            "accepted ChapterOutcome must contain at least one Narrative State event",
+            "empty event sets require an exact versioned accepted Outcome scope",
         )
-
-    source_chapter = events[0].coordinate.source_chapter
-    project_id = events[0].scope.project_id
-    book_id = events[0].scope.book_id
     for event in events:
         if (
             event.coordinate.source_chapter != source_chapter
@@ -289,6 +302,7 @@ def rebuild_story_state(
             events=events,
             chapter_outcome_asset_version_id=asset_version_id,
             chapter_outcome_id=str(outcome.get("chapter_outcome_id") or ""),
+            outcome_scope=outcome if outcome.get("contract_version") == "chapter-outcome-v4" else None,
         )
         previous_chapter = chapter
     return state or _empty_snapshot()

@@ -8,7 +8,7 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
-from .qualification import validate_narrative_qualification
+from .qualification import validate_narrative_qualification, uses_work_requirements
 
 
 def reference_execution_gate(
@@ -102,7 +102,10 @@ def require_reference_review(
 
 
 def _require_reference_review(
-    cursor: Any, *, project_id: str, payload: Mapping[str, Any],
+    cursor: Any,
+    *,
+    project_id: str,
+    payload: Mapping[str, Any],
     evaluator_actor_id: str,
 ) -> Mapping[str, Any]:
     reference = payload["reference_evaluation"]
@@ -147,9 +150,25 @@ def _require_reference_review(
     ):
         raise KernelError("NARRATIVE_REFERENCE_NOT_INDEPENDENT",
                           "reference identity, independent author or non-human evidence boundary differs")
+    cursor.execute(
+        "SELECT v.content FROM authority_asset_version v JOIN authority_asset a ON a.asset_id=v.asset_id WHERE a.project_id=%s AND v.asset_version_id=%s AND v.content_hash=%s",
+        [
+            project_id,
+            payload["candidate_asset_version_id"],
+            payload["candidate_content_hash"],
+        ],
+    )
+    candidate_row = cursor.fetchone()
+    if candidate_row is None:
+        raise KernelError(
+            "NARRATIVE_REFERENCE_TARGET_STALE", "Reference requires the exact candidate"
+        )
+    work_requirements = uses_work_requirements(candidate_row[0])
     validate_narrative_qualification(
         generator_operation_name=payload["generator_operation_name"],
-        value=content.get("evaluation"), require_pass=False,
+        value=content.get("evaluation"),
+        require_pass=False,
+        work_requirements=work_requirements,
     )
     adjudicated = None
     if reference.get("adjudicated_reference"):
@@ -177,18 +196,27 @@ def _require_reference_review(
         if any(label["status"] != statuses[verdicts[label["dimension"]]] for label in adjudicated["labels"]):
             raise KernelError("NARRATIVE_REFERENCE_LABEL_CONFLICT", "operator proxy labels differ from independent native adjudications")
         adjudicated = {**adjudicated, "scope": dict(native["scope"])}
-    return {"content": content, "author_actor_id": author, "operation_id": operation_id,
-        **({"adjudicated_reference": adjudicated} if adjudicated else {})}
+    return {
+        "content": content,
+        "work_requirements": work_requirements,
+        "author_actor_id": author,
+        "operation_id": operation_id,
+        **({"adjudicated_reference": adjudicated} if adjudicated else {}),
+    }
 
 
 def reference_agreement(
-    *, payload: Mapping[str, Any], reference: Mapping[str, Any],
+    *,
+    payload: Mapping[str, Any],
+    reference: Mapping[str, Any],
     evaluation: Mapping[str, Any],
 ) -> dict[str, Any]:
     def verdicts(value: Mapping[str, Any]) -> dict[tuple[str, str], str]:
         validate_narrative_qualification(
             generator_operation_name=payload["generator_operation_name"],
-            value=value, require_pass=False,
+            value=value,
+            require_pass=False,
+            work_requirements=bool(reference.get("work_requirements")),
         )
         return {(layer["layer"], criterion["criterion"]): criterion["verdict"]
                 for layer in value["evaluations"] for criterion in layer["criteria"]}

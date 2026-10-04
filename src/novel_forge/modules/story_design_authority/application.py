@@ -35,7 +35,7 @@ from .domain import (
     GENERATOR_DEFINITIONS,
     PlanningScope,
 )
-from .qualification import required_qualification_profiles
+from .qualification import required_qualification_profiles, uses_work_requirements
 from .validators import validate_story_design_candidate
 
 
@@ -462,8 +462,14 @@ class PostgresStoryDesignAssetAuthority:
             evidence.get("evaluation_asset_version_id") or ""
         )
         qualification_hash = str(evidence.get("qualification_hash") or "")
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+        candidate = AuthorityAssetQuery(self.database_url).require(
+            project_id=command.project_id, asset_version_id=command.asset_version_id
+        )
         expected_profiles = required_qualification_profiles(
-            command.generator_operation_name
+            command.generator_operation_name,
+            work_requirements=uses_work_requirements(candidate.content),
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(

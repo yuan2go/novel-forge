@@ -105,7 +105,6 @@ def _admission_dependencies(node: ChapterNode) -> tuple[ChapterNode, ...]:
 
 
 class ChapterAuthorityScheduler:
-
     def __init__(
         self,
         database_url: str,
@@ -622,7 +621,11 @@ class ChapterAuthorityScheduler:
                     item
                     for item in candidates
                     if str(item.get("asset_type") or "")
-                    in {"story_state_snapshot", "canon_snapshot"}
+                    in (
+                        {"story_state_snapshot", "canon_snapshot", "style_policy"}
+                        if root["definition_version"] == "3.6.0"
+                        else {"story_state_snapshot", "canon_snapshot"}
+                    )
                 )
             else:
                 # WHY: The typed PLAN output is the exact authoritative execution

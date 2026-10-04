@@ -169,7 +169,9 @@ def test_materializes_exact_provider_content_from_registered_pack_version() -> N
     assert result.materialization_hash.startswith("sha256:")
 
 
-def test_current_draft_request_renders_single_body_contract_without_operator_policy() -> None:
+def test_current_draft_request_renders_single_body_contract_without_operator_policy() -> (
+    None
+):
     from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema
 
     registered, snapshot = _registered_version_and_snapshot()
@@ -198,7 +200,7 @@ def test_current_draft_request_renders_single_body_contract_without_operator_pol
     assert "second whole-chapter body" in prompt
     assert "operator handoff" not in prompt.lower()
     assert '"required":["scene_artifacts"]' in prompt
-    assert evidence["prompt_template"]["version"] == "v7"
+    assert evidence["prompt_template"]["version"] == "v8"
 
 
 @pytest.mark.parametrize("policy_key", CHAPTER_MODEL_POLICY_KEYS)
@@ -593,18 +595,55 @@ def test_revision_renderer_projects_one_output_method(targeted: bool) -> None:
     registered, snapshot = _registered_version_and_snapshot()
     pack = materialize_registered_pack_version(snapshot, registered)
     *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+    from novel_forge.modules.chapter_authority.chapter_plan_views import (
+        build_creative_baseline,
+    )
+
+    baseline = build_creative_baseline(
+        {
+            "chapter": 1,
+            "title": "观察",
+            "premise": "观察城市",
+            "source_chapter_plan_asset_version_id": "plan:v1",
+            "source_chapter_plan_content_hash": HASH,
+        },
+        {},
+    )
     prompt, evidence = _materialize_chapter_codex_prompt(
-        request=request, stage="revision",
-        inputs={"draft": {"chapter": 1, "text": "旧句。保留句。"}, "required_actions": [],
-                **({"quality_edit_contract": {"source_text_hash": HASH}} if targeted else {})},
+        request=request,
+        stage="revision",
+        inputs={
+            "draft": {
+                "chapter": 1,
+                "text": "旧句。保留句。",
+                "creative_baseline": baseline,
+            },
+            "required_actions": [],
+            **(
+                {"quality_edit_contract": {"source_text_hash": HASH}}
+                if targeted
+                else {}
+            ),
+        },
         materialization={
-            "pack_artifacts": {"system_instruction": pack.system_instruction.to_dict(),
-                               "prompt_template": pack.prompt_template.to_dict(), "skill": pack.skill.to_dict()},
-            "context_selection": [{"asset_version_id": "context:v1", "content": {"context_segments": []}}],
+            "pack_artifacts": {
+                "system_instruction": pack.system_instruction.to_dict(),
+                "prompt_template": pack.prompt_template.to_dict(),
+                "skill": pack.skill.to_dict(),
+            },
+            "context_selection": [
+                {"asset_version_id": "context:v1", "content": {"context_segments": []}}
+            ],
             "knowledge_selection": [item.to_dict() for item in pack.required_knowledge],
             "tool_permissions": {"allowed": ["model.provider.invoke"], "denied": []},
-            "output_schema": {"ref": "schema:chapter-provider-output:revision:" + ("v4" if targeted else "v3"),
-                              "content_hash": HASH, "content": chapter_provider_output_schema("revision", targeted_revision=targeted)},
+            "output_schema": {
+                "ref": "schema:chapter-provider-output:revision:"
+                + ("v4" if targeted else "v3"),
+                "content_hash": HASH,
+                "content": chapter_provider_output_schema(
+                    "revision", targeted_revision=targeted
+                ),
+            },
         },
     )
     method = prompt.split("<governed_skill>\n", 1)[1].split("\n</governed_skill>", 1)[0]
@@ -618,6 +657,9 @@ def test_revision_renderer_projects_one_output_method(targeted: bool) -> None:
         assert "Return only necessary ordered edits" not in method
         assert '"required":["resolved_issue_codes","scene_artifacts"]' in prompt
     assert evidence["skill"]["version"] == "prose-generation-v4"
-    assert evidence["provider_prompt_projection_version"] == "authority-projection-task-provider-v5"
+    assert (
+        evidence["provider_prompt_projection_version"]
+        == "authority-projection-work-requirements.v1"
+    )
     legacy = default_chapter_artifact_resolver(ROOT).resolve(ArtifactKind.SKILL, "prose-generation", "prose-generation-v2")
     assert json.loads(legacy.content_json)["text"] == (ROOT / "skills/prose-generation/legacy-v2.md").read_text()

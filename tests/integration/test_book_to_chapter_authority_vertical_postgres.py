@@ -409,6 +409,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 item for item in candidates if item["asset_type"] == "chapter_plan"
             )
             chapter_command = SubmitBookChapterCommand(
+                context_token_budget=64_000,
                 book_run_id=book.book_run_id,
                 chapter_number=1,
                 title="The Cost of a Promise",
@@ -580,6 +581,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             ):
                 authority.submit_chapter(
                     SubmitBookChapterCommand(
+                context_token_budget=64_000,
                         book_run_id=blocked_book.book_run_id,
                         chapter_number=2,
                         title="Out of order",
@@ -681,6 +683,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 )
                 plan = plans[chapter_number]
                 command = SubmitBookChapterCommand(
+                context_token_budget=64_000,
                     book_run_id=book.book_run_id,
                     chapter_number=chapter_number,
                     title=f"Chapter {chapter_number}",
@@ -1010,7 +1013,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             quality_observations = [
                 observation
-                for segment in context_bundles[1]["context_segments"]
+                for segment in context_bundles[1]["host_quality_evidence"]["segments"]
                 for fact in segment.get("structured_facts") or ()
                 if fact.get("key") == "accepted_quality_observations"
                 for observation in fact.get("value") or ()
@@ -1023,7 +1026,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             self.assertEqual(
                 quality_observations[0]["projection_contract_version"],
-                "accepted-quality-observation-v2",
+                "accepted-quality-observation-v3",
             )
             self.assertTrue(quality_observations[0]["canon_snapshot_asset_version_id"])
             self.assertNotIn("text", quality_observations[0])
@@ -1033,7 +1036,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             self.assertEqual(
                 multiscale_quality["contract_version"],
-                "multiscale-narrative-quality-v2",
+                "multiscale-narrative-quality-v3",
             )
             self.assertEqual(
                 multiscale_quality["canonical_longitudinal_evidence"][
@@ -1533,6 +1536,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         candidates = fixture["candidates"]
         plan = next(item for item in candidates if item["asset_type"] == "chapter_plan")
         return SubmitBookChapterCommand(
+                context_token_budget=64_000,
             book_run_id=fixture["book"].book_run_id,
             chapter_number=chapter_number,
             title=f"Chapter {chapter_number}",

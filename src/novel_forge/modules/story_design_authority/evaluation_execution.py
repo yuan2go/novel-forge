@@ -37,6 +37,7 @@ from .qualification import (
     NarrativeQualificationProfile,
     qualification_provider_schema,
     validate_narrative_qualification,
+    uses_work_requirements,
 )
 
 
@@ -67,7 +68,6 @@ def _canonical_hash(value: Any) -> str:
 class PostgresNarrativeEvaluationExecutionContractBinder(
     PostgresChapterExecutionContractBinder
 ):
-
     workflow_definition_ref = NARRATIVE_EVALUATION_WORKFLOW_REF
     execution_binding_domain = "narrative_evaluation"
 
@@ -180,7 +180,12 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
             if isinstance(metadata, Mapping)
             else ""
         )
-        schema = qualification_provider_schema(operation_name)
+        schema = qualification_provider_schema(
+            operation_name,
+            work_requirements=uses_work_requirements(
+                request_payload.get("input", {}).get("candidate", {})
+            ),
+        )
         schema_hash = _canonical_hash(schema).removeprefix("sha256:")[:16]
         return (
             schema,
@@ -436,10 +441,9 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         Qualification assets are verified for lineage but are intentionally not
         exposed as selected inputs, so a prior verdict cannot prime the evaluator.
         """
-        if (
-            document.asset_type != "book_design"
-            or document.content.get("schema_version") != "book-design.v5"
-        ):
+        if document.asset_type != "book_design" or document.content.get(
+            "schema_version"
+        ) not in {"book-design.v5", "book-design.v6"}:
             return ()
         foundation = document.content.get("foundation_set")
         if not isinstance(foundation, Mapping):
@@ -532,7 +536,6 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
 
 
 class GatewayNarrativeSemanticEvaluationExecutionPort:
-
     production_execution_gateway_backed = True
     external_effect_backed = True
 
@@ -643,6 +646,7 @@ class GatewayNarrativeSemanticEvaluationExecutionPort:
             generator_operation_name=generator_operation_name,
             value=result.output,
             require_pass=False,
+            work_requirements=uses_work_requirements(candidate.content),
         )
         del qualification
         execution_request = (

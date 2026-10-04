@@ -219,7 +219,10 @@ class FormationGeneration:
             require_current_foundation_set,
         )
         from .application import BookDesignAuthorityCommand
-        from .domain import FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION
+        from .domain import (
+            FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+            WORK_BOOK_DESIGN_SCHEMA_VERSION,
+        )
 
         if self.book_design is None:
             raise KernelError(
@@ -251,13 +254,20 @@ class FormationGeneration:
                 item for value in content.values() for item in value["constraints"]
             )
         )
-        if not invariants:
+        work_requirements = all(
+            value.get("constraint_envelope", {}).get("contract_version")
+            == "foundation-generation.v2"
+            for value in content.values()
+        )
+        if not invariants and not work_requirements:
             raise KernelError(
                 "STORY_FORMATION_CONSTRAINTS_REQUIRED",
                 "Generated foundations lack operational constraints",
             )
         payload = {
-            "schema_version": FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+            "schema_version": WORK_BOOK_DESIGN_SCHEMA_VERSION
+            if work_requirements
+            else FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
             "title": policy["title"],
             "target_chapters": policy["target_chapters"],
             "foundation_set": foundation.to_dict(),
@@ -275,8 +285,11 @@ class FormationGeneration:
                     "source_roles": ["READER_PROMISE", "ENDING_INTENT"],
                     "narrative_function": promise["reader_promise"],
                     "constraint": ending["ending_direction"]
-                    + "; "
-                    + ending["protagonist_cost"],
+                    + (
+                        "; " + ending["protagonist_cost"]
+                        if ending["protagonist_cost"] is not None
+                        else ""
+                    ),
                     "downstream_scope": "BOOK",
                 },
             ],
@@ -312,6 +325,7 @@ class FormationGeneration:
             project_id=run["project_id"], asset_version_id=proposed["asset_version_id"]
         )
         from .author_supervision import proposed_supervision
+
         with AuthorityUnitOfWork(self.database_url) as uow:
             supervision = proposed_supervision(uow.cursor, project_id=run["project_id"], book_id=run["book_id"], asset_version_id=candidate.asset_version_id)
         if policy["approval_mode"] != "AUTO" or supervision:

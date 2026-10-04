@@ -29,10 +29,44 @@ def evaluate_quality_evidence(
     if not all((project_id, revision_asset_version_id, review_asset_version_id, canon_asset_version_id, context_bundle_version_id)):
         raise KernelError("QUALITY_INPUT_INVALID", "versioned quality lineage is required")
     from novel_forge.modules.review.diagnostics import review_covers_candidate
+
     if not review_covers_candidate(review, text=str(revision.get("text") or ""), source_id=str(revision.get("selected_source_asset_version_id") or "")):
         raise KernelError("QUALITY_REREVIEW_REQUIRED", "review evidence must cover the exact selected candidate")
     if not str(revision.get("text") or "").strip():
         raise KernelError("QUALITY_REVISION_CONTENT_MISSING", "Revision has no content")
+
+    evidence_reports = tuple(evidence_reports)
+    if "creative_baseline" in revision:
+        from novel_forge.modules.chapter_authority.chapter_plan_views import (
+            validate_creative_baseline,
+        )
+        from novel_forge.modules.chapter_quality_authority.domain import (
+            QUALITY_DIMENSIONS,
+        )
+
+        digest = validate_creative_baseline(revision["creative_baseline"])[
+            "baseline_digest"
+        ]
+        if review.get("creative_baseline_digest") != digest:
+            raise KernelError(
+                "QUALITY_EVALUATION_SEMANTICS_DRIFT",
+                "ReReview does not bind the selected creative baseline",
+            )
+        identities = [report.get("dimension") for report in evidence_reports]
+        if set(identities) != set(QUALITY_DIMENSIONS) or len(identities) != len(
+            set(identities)
+        ):
+            raise KernelError(
+                "QUALITY_EVIDENCE_COVERAGE_REQUIRED",
+                "The work contract requires every quality dimension exactly once",
+            )
+        if len(
+            {report.get("quality_policy_digest") for report in evidence_reports}
+        ) != 1 or not evidence_reports[0].get("quality_policy_digest"):
+            raise KernelError(
+                "QUALITY_EVALUATION_SEMANTICS_DRIFT",
+                "Quality dimensions use different frozen policies",
+            )
 
     rereview_passed = (
         review.get("decision") == "PASSED"
@@ -81,6 +115,23 @@ def evaluate_quality_evidence(
         ),
     ]
     for report in evidence_reports:
+        if "creative_baseline" in revision:
+            from novel_forge.modules.chapter_authority.chapter_plan_views import (
+                validate_creative_baseline,
+            )
+
+            digest = validate_creative_baseline(revision["creative_baseline"])[
+                "baseline_digest"
+            ]
+            if (
+                review.get("creative_baseline_digest") != digest
+                or report.get("creative_baseline_digest") != digest
+                or report.get("evaluation_semantics_version") != "work-quality.v1"
+            ):
+                raise KernelError(
+                    "QUALITY_EVALUATION_SEMANTICS_DRIFT",
+                    "Aggregate Quality requires matching candidate, review and work-specific evaluation semantics",
+                )
         dimensions.append(
             _normalize_evidence_dimension(
                 project_id,
@@ -105,12 +156,16 @@ def evaluate_quality_evidence(
                 )
             )
     blocking = [
-        item for item in dimensions
-        if item["blocking"] and item["gate_status"] not in {
+        item
+        for item in dimensions
+        if item["blocking"]
+        and item["gate_status"]
+        not in {
             "PASSED",
             "PASSED_WITH_WARNINGS",
             "PASSED_WITH_UNCALIBRATED",
             "WAIVED_BY_APPROVAL",
+            "NOT_APPLICABLE",
         }
     ]
     scored = [item for item in dimensions if isinstance(item["score"], (int, float)) and item["weight"] > 0]
@@ -130,24 +185,28 @@ def evaluate_quality_evidence(
         "aggregate_score": aggregate_score,
         "dimensions": dimensions,
         "uncalibrated_dimensions": [
-            item["dimension"] for item in dimensions
-            if item["calibration_status"] in {
-                "UNCALIBRATED", "FIXTURE_UNCALIBRATED", "PROVIDER_UNCALIBRATED"
-            }
+            item["dimension"]
+            for item in dimensions
+            if item["calibration_status"]
+            in {"UNCALIBRATED", "FIXTURE_UNCALIBRATED", "PROVIDER_UNCALIBRATED"}
         ],
         "fixture": any(
-            item["calibration_status"] == "FIXTURE_UNCALIBRATED"
-            for item in dimensions
+            item["calibration_status"] == "FIXTURE_UNCALIBRATED" for item in dimensions
         ),
         "production_verified": False,
-        "provider_verified": any(bool(item.get("provider_verified")) for item in dimensions),
+        "provider_verified": any(
+            bool(item.get("provider_verified")) for item in dimensions
+        ),
         "human_verified": any(bool(item.get("human_verified")) for item in dimensions),
-        "gate": "FAILED" if blocking else "PASSED_WITH_UNCALIBRATED" if any(
-            item["calibration_status"] in {
-                "UNCALIBRATED", "FIXTURE_UNCALIBRATED", "PROVIDER_UNCALIBRATED"
-            }
+        "gate": "FAILED"
+        if blocking
+        else "PASSED_WITH_UNCALIBRATED"
+        if any(
+            item["calibration_status"]
+            in {"UNCALIBRATED", "FIXTURE_UNCALIBRATED", "PROVIDER_UNCALIBRATED"}
             for item in dimensions
-        ) else "PASSED",
+        )
+        else "PASSED",
         "blocking_dimensions": [item["dimension"] for item in blocking],
         "decision_chain": {
             "contract_version": "quality-decision-chain-v1",
@@ -164,27 +223,36 @@ def evaluate_quality_evidence(
             "reevaluation_gate": "chapter.quality.aggregate",
             "source_gate_failures": {
                 "rereview": (
-                    ""
-                    if rereview_passed
-                    else str(review.get("decision") or "UNKNOWN")
+                    "" if rereview_passed else str(review.get("decision") or "UNKNOWN")
                 ),
-                "canon": (
-                    "" if canon_passed else str(canon.get("gate") or "UNKNOWN")
-                ),
+                "canon": ("" if canon_passed else str(canon.get("gate") or "UNKNOWN")),
             },
         },
         "required_actions": required_actions,
         "quality_contract_version": "chapter-quality-aggregate-v4",
+        **(
+            {
+                "creative_baseline_digest": revision["creative_baseline"][
+                    "baseline_digest"
+                ],
+                "evaluation_semantics_version": "work-quality.v1",
+            }
+            if "creative_baseline" in revision
+            else {}
+        ),
     }
 
 
-def derive_quality_actions(dimensions: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+def derive_quality_actions(
+    dimensions: Iterable[dict[str, Any]],
+) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
     passing = {
         "PASSED",
         "PASSED_WITH_WARNINGS",
         "PASSED_WITH_UNCALIBRATED",
         "WAIVED_BY_APPROVAL",
+        "NOT_APPLICABLE",
     }
     for item in dimensions:
         status = str(item.get("gate_status") or "UNCALIBRATED").upper()
@@ -192,12 +260,27 @@ def derive_quality_actions(dimensions: Iterable[dict[str, Any]]) -> list[dict[st
             continue
         dimension = str(item.get("dimension") or "unknown")
         evidence_id = str(item.get("evidence_asset_version_id") or "")
-        action = "CHAPTER_ADJUSTMENT" if dimension in {
-            "commercial",
-            "commercial_quality",
-            "longform",
-            "longform_quality",
-        } else "LOCAL_REPAIR"
+        action = (
+            "CHAPTER_ADJUSTMENT"
+            if dimension
+            in {
+                "commercial",
+                "commercial_quality",
+                "longform",
+                "longform_quality",
+            }
+            else "LOCAL_REPAIR"
+        )
+        evidence_only = item.get(
+            "evaluation_semantics_version"
+        ) == "work-quality.v1" and (
+            status != "FAILED"
+            or not any(
+                location.get("quote") for location in item.get("evidence_locations", [])
+            )
+        )
+        if evidence_only:
+            action = "EVIDENCE_REASSESSMENT"
         actions.append(
             {
                 "observation": dimension,
@@ -208,8 +291,12 @@ def derive_quality_actions(dimensions: Iterable[dict[str, Any]]) -> list[dict[st
                     "status": "OPEN",
                 },
                 "required_action": action,
-                "permitted_change_scope": "CHAPTER",
-                "required_authority": "CHAPTER_AUTHORITY",
+                "permitted_change_scope": "EVIDENCE_ONLY"
+                if evidence_only
+                else "CHAPTER",
+                "required_authority": "QUALITY_AUTHORITY"
+                if evidence_only
+                else "CHAPTER_AUTHORITY",
                 "preserved_invariants": [
                     "accepted_canon",
                     "executed_chapter_history",
@@ -241,7 +328,7 @@ def _normalize_evidence_dimension(
     if source == "fixture":
         calibration = "FIXTURE_UNCALIBRATED"
     status = str(report.get("gate_status") or "UNCALIBRATED").upper()
-    return _dimension(
+    result = _dimension(
         dimension=str(report["dimension"]),
         gate_type=str(report["gate_type"]),
         score=report.get("score"),
@@ -254,9 +341,25 @@ def _normalize_evidence_dimension(
         provider_verified=bool(report.get("provider_verified")),
         human_verified=bool(report.get("human_verified")),
         quality_profile_version_id=str(report.get("quality_profile_version_id") or ""),
-        platform_profile_version_id=str(report.get("platform_profile_version_id") or ""),
+        platform_profile_version_id=str(
+            report.get("platform_profile_version_id") or ""
+        ),
         waiver=dict(report.get("waiver") or {}),
     )
+    if report.get("evaluation_semantics_version") == "work-quality.v1":
+        result.update(
+            {
+                key: report[key]
+                for key in (
+                    "evaluation_semantics_version",
+                    "quality_policy_digest",
+                    "creative_baseline_digest",
+                    "evidence_locations",
+                )
+                if key in report
+            }
+        )
+    return result
 
 
 def _dimension(**values: Any) -> dict[str, Any]:

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from novel_forge.modules.story_design_authority.qualification import (
+    uses_work_requirements,
+)
+
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -214,7 +218,9 @@ def load_native_narrative_receipts(
             generator = str(row[2])
             if generator == "character.cast.generate":
                 layer = "FOUNDATION"
-            profiles = required_qualification_profiles(generator)
+            profiles = required_qualification_profiles(
+                generator, work_requirements=uses_work_requirements(row[26])
+            )
             expected_profiles = {
                 (profile.profile_id, profile.profile_hash) for profile in profiles
             }
@@ -314,7 +320,7 @@ def load_native_narrative_receipts(
                         native_lineage_valid=str(row[7]) == "SUCCEEDED"
                         and all(row[index] for index in (9, 10, 11, 12)),
                         profile_current=outcome.get("contract_version")
-                        == "chapter-outcome-v3",
+                        in {"chapter-outcome-v3", "chapter-outcome-v4"},
                         chapter_number=int(row[1]),
                     )
                 )

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
 from dataclasses import asdict, dataclass
 from typing import Any
 from uuid import uuid4
@@ -34,6 +36,7 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
 )
 from novel_forge.modules.story_design_authority.qualification import (
     required_qualification_profiles,
+    uses_work_requirements,
     scripted_qualification,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -176,6 +179,7 @@ class BookDesignAuthorityApplication:
         )
         from .author_supervision import proposed_supervision, approved_book_design_receipt
         from novel_forge.modules.production_execution.author_supervision import selected_book_supervision
+
         supervision = None
         with AuthorityUnitOfWork(self.database_url) as uow:
             if command.definition_name == "book_design.propose":
@@ -322,7 +326,7 @@ class BookDesignAuthorityApplication:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute(
                     """
-                    SELECT content_hash
+                    SELECT content_hash, content
                     FROM authority_asset_version AS version
                     JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
                     WHERE version.asset_version_id=%s AND asset.project_id=%s
@@ -359,7 +363,10 @@ class BookDesignAuthorityApplication:
                     evaluation=(
                         None
                         if real_provider
-                        else scripted_qualification("book_design.propose")
+                        else scripted_qualification(
+                            "book_design.propose",
+                            work_requirements=uses_work_requirements(row[1]),
+                        )
                     ),
                     idempotency_key=f"{command.idempotency_key}:semantic-evaluation",
                     trace_id=command.trace_id,
@@ -471,7 +478,14 @@ class BookDesignAuthorityApplication:
     ) -> None:
         expected = {
             profile.layer.value: profile
-            for profile in required_qualification_profiles("book_design.propose")
+            for profile in required_qualification_profiles(
+                "book_design.propose",
+                work_requirements=uses_work_requirements(
+                    AuthorityAssetQuery(self.database_url)
+                    .require(project_id=project_id, asset_version_id=asset_version_id)
+                    .content
+                ),
+            )
         }
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -760,22 +774,55 @@ class BookDesignAuthorityApplication:
         row = uow.cursor.fetchone()
         if row is None:
             return {}
-        if str(row[1]) == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
+        if str(row[1]) in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6"}:
             bindings = dict(row[0])["foundation_set"]["bindings"]
             source = next(item for item in bindings if item["role"] == "CHARACTER_CAST")
-            cast = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=source["asset_version_id"])
+            cast = uow.repositories.asset_documents.require(
+                project_id=project_id, asset_version_id=source["asset_version_id"]
+            )
             if cast.content_hash != source["content_hash"]:
-                raise KernelError("BOOK_DESIGN_CHARACTER_SOURCE_DRIFT", "Character projection requires its exact Foundation binding")
+                raise KernelError(
+                    "BOOK_DESIGN_CHARACTER_SOURCE_DRIFT",
+                    "Character projection requires its exact Foundation binding",
+                )
             value = cast.content.get("candidate_payload", cast.content)
-            outputs = (("character_arc_portfolio", "character-arc-portfolio.v2", "character-arcs", {
-                "book_id": book_id,
-                "trajectories": [{key: item[key] for key in ("character_id", "desire", "need", "false_belief", "arc_direction")} for item in value["characters"]],
-                "foundation_design_asset_version_id": design_asset_version_id,
-                "source_cast_asset_version_id": cast.asset_version_id,
-                "source_cast_content_hash": cast.content_hash,
-                "authority": "FOUNDATION_PLANNING_PROJECTION",
-            }),)
-            return BookDesignAuthorityApplication._write_foundation_outputs(uow, operation_id=operation_id, project_id=project_id, book_id=book_id, design_asset_version_id=design_asset_version_id, trace_id=trace_id, correlation_id=correlation_id, outputs=outputs)
+            outputs = (
+                (
+                    "character_arc_portfolio",
+                    "character-arc-portfolio.v2",
+                    "character-arcs",
+                    {
+                        "book_id": book_id,
+                        "trajectories": [
+                            {
+                                key: item[key]
+                                for key in (
+                                    "character_id",
+                                    "desire",
+                                    "need",
+                                    "false_belief",
+                                    "arc_direction",
+                                )
+                            }
+                            for item in value["characters"]
+                        ],
+                        "foundation_design_asset_version_id": design_asset_version_id,
+                        "source_cast_asset_version_id": cast.asset_version_id,
+                        "source_cast_content_hash": cast.content_hash,
+                        "authority": "FOUNDATION_PLANNING_PROJECTION",
+                    },
+                ),
+            )
+            return BookDesignAuthorityApplication._write_foundation_outputs(
+                uow,
+                operation_id=operation_id,
+                project_id=project_id,
+                book_id=book_id,
+                design_asset_version_id=design_asset_version_id,
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+                outputs=outputs,
+            )
         if str(row[1]) != EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION:
             return {}
         content = dict(row[0])

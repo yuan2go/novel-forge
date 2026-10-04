@@ -108,6 +108,7 @@ def extract_canon_candidates(
     context_bundle_version_id: str,
     provider_extraction: dict[str, Any] | None = None,
     operator_annotations: Iterable[dict[str, Any]] = (),
+    work_requirements: bool = False,
 ) -> dict[str, Any]:
     if not all((project_id, revision_asset_version_id, context_bundle_version_id)):
         raise KernelError(
@@ -138,18 +139,17 @@ def extract_canon_candidates(
         if isinstance(item, dict)
     ]
     assertions = list(revision.get("canon_assertions", []))
-    # WHY: Every accepted chapter has a deterministic event assertion, so a real-provider
-    # path never silently produces an empty Canon update when optional structured
-    # assertions are absent.
-    assertions.append(
-        {
-            "subject": f"chapter:{revision['chapter']}",
-            "predicate": "accepted_revision_digest",
-            "object": "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest(),
-            "effective_from_chapter": int(revision["chapter"]),
-            "evidence_source": "deterministic_revision_digest",
-        }
-    )
+    # COMPATIBILITY: Legacy revision identity was a Canon fact; new identity stays in lineage.
+    if not work_requirements:
+        assertions.append(
+            {
+                "subject": f"chapter:{revision['chapter']}",
+                "predicate": "accepted_revision_digest",
+                "object": "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                "effective_from_chapter": int(revision["chapter"]),
+                "evidence_source": "deterministic_revision_digest",
+            }
+        )
     for item in assertions:
         if not all(
             str(item.get(key) or "").strip()
@@ -262,7 +262,8 @@ def extract_canon_candidates(
         "provider_assertions_optional": True,
         "arc_evidence": raw_arc_evidence,
         "realization_evidence": raw_realization_evidence,
-        "canon_extraction_contract_version": "canon-semantic-extraction-v5",
+        "canon_extraction_contract_version": "canon-semantic-extraction-v6" if work_requirements else "canon-semantic-extraction-v5",
+        **({"revision_text_hash": "sha256:" + hashlib.sha256(text.encode()).hexdigest()} if work_requirements else {}),
     }
 
 

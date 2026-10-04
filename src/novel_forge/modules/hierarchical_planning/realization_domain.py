@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 import hashlib
 import json
@@ -175,7 +175,9 @@ class KnowledgeBoundary:
     forbidden_disclosures: tuple[str, ...]
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> "KnowledgeBoundary":
+    def from_mapping(
+        cls, value: Mapping[str, Any], *, work_requirements: bool = False
+    ) -> "KnowledgeBoundary":
         if set(value) != {
             "actor_knows",
             "reader_may_learn",
@@ -186,12 +188,18 @@ class KnowledgeBoundary:
                 "knowledge boundary fields must match the contract exactly",
             )
         result = cls(
-            actor_knows=_strings(value.get("actor_knows"), "actor_knows"),
+            actor_knows=_strings(
+                value.get("actor_knows"), "actor_knows", allow_empty=work_requirements
+            ),
             reader_may_learn=_strings(
-                value.get("reader_may_learn"), "reader_may_learn"
+                value.get("reader_may_learn"),
+                "reader_may_learn",
+                allow_empty=work_requirements,
             ),
             forbidden_disclosures=_strings(
-                value.get("forbidden_disclosures"), "forbidden_disclosures"
+                value.get("forbidden_disclosures"),
+                "forbidden_disclosures",
+                allow_empty=work_requirements,
             ),
         )
         if set(result.reader_may_learn) & set(result.forbidden_disclosures):
@@ -213,19 +221,22 @@ class NarrativeRealizationEvent:
     preconditions: tuple[str, ...]
     knowledge_boundary: KnowledgeBoundary
     action: str
-    decision: str
-    resistance: str
+    decision: str | None
+    resistance: str | None
     consequence: str
     state_deltas: tuple[PlannedStateDelta, ...]
     disclosures: tuple[str, ...]
     obligation_actions: tuple[str, ...]
     arc_contributions: tuple[str, ...]
-    irreversible_change: str
+    irreversible_change: str | None
     next_event_ids: tuple[str, ...]
     required: bool
+    feature_status: dict[str, dict[str, str]] = field(default_factory=dict)
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> "NarrativeRealizationEvent":
+    def from_mapping(
+        cls, value: Mapping[str, Any], *, work_requirements: bool = False
+    ) -> "NarrativeRealizationEvent":
         allowed = {
             "event_id",
             "slice_id",
@@ -247,6 +258,8 @@ class NarrativeRealizationEvent:
             "next_event_ids",
             "required",
         }
+        if work_requirements:
+            allowed.add("feature_status")
         if set(value) != allowed:
             raise KernelError(
                 "NARRATIVE_REALIZATION_INVALID",
@@ -262,7 +275,7 @@ class NarrativeRealizationEvent:
         if (
             not isinstance(boundary, Mapping)
             or not isinstance(deltas, list)
-            or not deltas
+            or (not deltas and not work_requirements)
         ):
             raise KernelError(
                 "NARRATIVE_REALIZATION_INVALID",
@@ -272,6 +285,36 @@ class NarrativeRealizationEvent:
             raise KernelError(
                 "NARRATIVE_REALIZATION_INVALID", "event required must be boolean"
             )
+        features = value.get("feature_status", {})
+        if work_requirements:
+            if not isinstance(features, Mapping) or set(features) != {
+                "decision",
+                "resistance",
+                "irreversible_change",
+            }:
+                raise KernelError(
+                    "REALIZATION_FEATURE_STATUS_REQUIRED",
+                    "Optional event features need exact applicability decisions",
+                )
+            for name, status in features.items():
+                if (
+                    not isinstance(status, Mapping)
+                    or set(status) != {"status", "rationale"}
+                    or status.get("status")
+                    not in {"APPLICABLE", "NOT_APPLICABLE", "PROHIBITED"}
+                    or not isinstance(status.get("rationale"), str)
+                    or not status["rationale"].strip()
+                    or (value[name] is None) != (status["status"] != "APPLICABLE")
+                ):
+                    raise KernelError(
+                        "REALIZATION_FEATURE_STATUS_INVALID",
+                        "An optional feature must agree with its explicit resolved applicability",
+                    )
+            if any(item.get("from_state") == item.get("to_state") for item in deltas):
+                raise KernelError(
+                    "REALIZATION_STATE_DELTA_NOOP",
+                    "Confirmed zero change is an empty collection, not a fabricated no-op delta",
+                )
         result = cls(
             event_id=_required(value.get("event_id"), "event_id"),
             slice_id=_required(value.get("slice_id"), "slice_id"),
@@ -279,27 +322,50 @@ class NarrativeRealizationEvent:
             causes=_strings(value.get("causes"), "causes", allow_empty=True),
             actor_ref=_required(value.get("actor_ref"), "actor_ref"),
             motivation=_required(value.get("motivation"), "motivation"),
-            preconditions=_strings(value.get("preconditions"), "preconditions"),
-            knowledge_boundary=KnowledgeBoundary.from_mapping(boundary),
+            preconditions=_strings(
+                value.get("preconditions"),
+                "preconditions",
+                allow_empty=work_requirements,
+            ),
+            knowledge_boundary=KnowledgeBoundary.from_mapping(
+                boundary, work_requirements=work_requirements
+            ),
             action=_required(value.get("action"), "action"),
-            decision=_required(value.get("decision"), "decision"),
-            resistance=_required(value.get("resistance"), "resistance"),
+            decision=(
+                None
+                if work_requirements and value["decision"] is None
+                else _required(value.get("decision"), "decision")
+            ),
+            resistance=(
+                None
+                if work_requirements and value["resistance"] is None
+                else _required(value.get("resistance"), "resistance")
+            ),
             consequence=_required(value.get("consequence"), "consequence"),
             state_deltas=tuple(PlannedStateDelta.from_mapping(item) for item in deltas),
-            disclosures=_strings(value.get("disclosures"), "disclosures"),
+            disclosures=_strings(
+                value.get("disclosures"), "disclosures", allow_empty=work_requirements
+            ),
             obligation_actions=_strings(
-                value.get("obligation_actions"), "obligation_actions"
+                value.get("obligation_actions"),
+                "obligation_actions",
+                allow_empty=work_requirements,
             ),
             arc_contributions=_strings(
-                value.get("arc_contributions"), "arc_contributions"
+                value.get("arc_contributions"),
+                "arc_contributions",
+                allow_empty=work_requirements,
             ),
-            irreversible_change=_required(
-                value.get("irreversible_change"), "irreversible_change"
+            irreversible_change=(
+                None
+                if work_requirements and value["irreversible_change"] is None
+                else _required(value.get("irreversible_change"), "irreversible_change")
             ),
             next_event_ids=_strings(
                 value.get("next_event_ids"), "next_event_ids", allow_empty=True
             ),
             required=bool(value["required"]),
+            feature_status={name: dict(status) for name, status in features.items()},
         )
         disclosures = set(result.disclosures)
         if not disclosures.issubset(set(result.knowledge_boundary.reader_may_learn)):
@@ -315,7 +381,10 @@ class NarrativeRealizationEvent:
         return result
 
     def to_dict(self) -> dict[str, Any]:
-        return _json_value(asdict(self))
+        value = _json_value(asdict(self))
+        if not self.feature_status:
+            value.pop("feature_status")
+        return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -335,6 +404,7 @@ class NarrativeRealizationProof:
     semantic_evaluation_asset_version_id: str
     semantic_evaluation_hash: str
     schema_version: str = NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION
+    design_admission: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "NarrativeRealizationProof":
@@ -355,10 +425,17 @@ class NarrativeRealizationProof:
             "semantic_evaluation_asset_version_id",
             "semantic_evaluation_hash",
         }
-        if (
-            set(value) != expected
-            or value.get("schema_version") != NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION
-        ):
+        work_requirements = (
+            value.get("schema_version") == "narrative-realization-proof.v2"
+        )
+        if work_requirements:
+            expected.remove("causal_escalation_proven")
+            expected.add("causal_alignment_proven")
+            expected.add("design_admission")
+        if set(value) != expected or value.get("schema_version") not in {
+            NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION,
+            "narrative-realization-proof.v2",
+        }:
             raise KernelError(
                 "NARRATIVE_REALIZATION_INVALID",
                 "realization proof fields/schema must match exactly",
@@ -369,12 +446,24 @@ class NarrativeRealizationProof:
             if field
             not in {
                 "schema_version",
+                "design_admission",
                 "covered_event_ids",
                 "covered_parent_objectives",
                 "semantic_evaluation_asset_version_id",
                 "semantic_evaluation_hash",
             }
         )
+        admission = value.get("design_admission", {})
+        if work_requirements and (
+            not isinstance(admission, Mapping)
+            or admission.get("mode")
+            not in {"STRICT_QUALIFIED", "AUTHOR_SUPERVISED_DESIGN"}
+            or admission.get("literary_qualification") != "NOT_PROVEN"
+        ):
+            raise KernelError(
+                "REALIZATION_DESIGN_ADMISSION_REQUIRED",
+                "Proof must preserve its actual strict or author-supervised basis",
+            )
         if any(not isinstance(value.get(field), bool) for field in boolean_fields):
             raise KernelError(
                 "NARRATIVE_REALIZATION_INVALID",
@@ -392,7 +481,16 @@ class NarrativeRealizationProof:
             covered_parent_objectives=_strings(
                 value.get("covered_parent_objectives"), "covered_parent_objectives"
             ),
-            **{field: bool(value[field]) for field in boolean_fields},
+            **{
+                (
+                    "causal_escalation_proven"
+                    if field == "causal_alignment_proven"
+                    else field
+                ): bool(value[field])
+                for field in boolean_fields
+            },
+            schema_version=str(value["schema_version"]),
+            design_admission=dict(admission),
             semantic_evaluation_asset_version_id=_required(
                 value.get("semantic_evaluation_asset_version_id"),
                 "semantic_evaluation_asset_version_id",
@@ -401,6 +499,14 @@ class NarrativeRealizationProof:
                 value.get("semantic_evaluation_hash"), "semantic_evaluation_hash"
             ),
         )
+
+    def to_dict(self) -> dict[str, Any]:
+        value = _json_value(asdict(self))
+        if self.schema_version == "narrative-realization-proof.v2":
+            value["causal_alignment_proven"] = value.pop("causal_escalation_proven")
+        else:
+            value.pop("design_admission")
+        return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -447,10 +553,10 @@ class NarrativeRealizationContract:
             "proof_hash",
             "lifecycle",
         }
-        if (
-            set(value) != allowed
-            or value.get("schema_version") != NARRATIVE_REALIZATION_SCHEMA_VERSION
-        ):
+        if set(value) != allowed or value.get("schema_version") not in {
+            NARRATIVE_REALIZATION_SCHEMA_VERSION,
+            "narrative-realization-contract.v2",
+        }:
             raise KernelError(
                 "NARRATIVE_REALIZATION_INVALID",
                 "Narrative Realization fields/schema must match exactly",
@@ -479,7 +585,7 @@ class NarrativeRealizationContract:
         raw_proof = value.get("proof")
         if (
             not isinstance(raw_arcs, list)
-            or not raw_arcs
+            or (not raw_arcs and value["schema_version"] != "narrative-realization-contract.v2")
             or not isinstance(raw_events, list)
             or not raw_events
             or not isinstance(raw_boundary, Mapping)
@@ -496,11 +602,26 @@ class NarrativeRealizationContract:
             raise KernelError(
                 "NARRATIVE_REALIZATION_INVALID", "Arc bindings must be unique"
             )
-        events = tuple(
-            NarrativeRealizationEvent.from_mapping(item) for item in raw_events
+        work_requirements = (
+            value["schema_version"] == "narrative-realization-contract.v2"
         )
+        events = tuple(
+            NarrativeRealizationEvent.from_mapping(
+                item, work_requirements=work_requirements
+            )
+            for item in raw_events
+        )
+        if (
+            raw_proof.get("schema_version") == "narrative-realization-proof.v2"
+        ) != work_requirements:
+            raise KernelError(
+                "REALIZATION_PROOF_VERSION_DRIFT",
+                "Realization and proof semantics must match",
+            )
         proof = NarrativeRealizationProof.from_mapping(raw_proof)
-        _validate_event_chain(events, start=start, end=end)
+        _validate_event_chain(
+            events, start=start, end=end, work_requirements=work_requirements
+        )
         event_ids = tuple(item.event_id for item in events)
         if set(proof.covered_event_ids) != set(event_ids) or len(
             proof.covered_event_ids
@@ -550,6 +671,7 @@ class NarrativeRealizationContract:
             proof_hash=_hash(value.get("proof_hash"), "proof_hash"),
             lifecycle=NarrativeRealizationLifecycle(str(value.get("lifecycle") or "")),
             contract_digest=contract_digest,
+            schema_version=str(value["schema_version"]),
         )
 
     @property
@@ -559,11 +681,17 @@ class NarrativeRealizationContract:
     def to_dict(self) -> dict[str, Any]:
         value = asdict(self)
         value.pop("contract_digest")
+        value["events"] = [event.to_dict() for event in self.events]
+        value["proof"] = self.proof.to_dict()
         return _json_value(value)
 
 
 def _validate_event_chain(
-    events: tuple[NarrativeRealizationEvent, ...], *, start: int, end: int
+    events: tuple[NarrativeRealizationEvent, ...],
+    *,
+    start: int,
+    end: int,
+    work_requirements: bool = False,
 ) -> None:
     ids = [item.event_id for item in events]
     if len(set(ids)) != len(ids):
@@ -583,7 +711,7 @@ def _validate_event_chain(
             "realization events must cover every Chapter slice in the group",
         )
     for index, event in enumerate(events):
-        if index and event.required and not event.causes:
+        if index and event.required and not event.causes and not work_requirements:
             raise KernelError(
                 "REALIZATION_CAUSALITY_INVALID",
                 "every non-root required event needs an earlier cause",
@@ -608,16 +736,29 @@ def _validate_event_chain(
 
 
 def validate_narrative_realization_event_chain(
-    events: list[Mapping[str, Any]], *, chapter_range: tuple[int, int]
+    events: list[Mapping[str, Any]],
+    *,
+    chapter_range: tuple[int, int],
+    work_requirements: bool = False,
 ) -> tuple[NarrativeRealizationEvent, ...]:
 
-    typed = tuple(NarrativeRealizationEvent.from_mapping(item) for item in events)
+    typed = tuple(
+        NarrativeRealizationEvent.from_mapping(
+            item, work_requirements=work_requirements
+        )
+        for item in events
+    )
     if not typed:
         raise KernelError(
             "NARRATIVE_REALIZATION_INVALID",
             "ChapterGroup requires at least one causal realization event",
         )
-    _validate_event_chain(typed, start=chapter_range[0], end=chapter_range[1])
+    _validate_event_chain(
+        typed,
+        start=chapter_range[0],
+        end=chapter_range[1],
+        work_requirements=work_requirements,
+    )
     return typed
 
 

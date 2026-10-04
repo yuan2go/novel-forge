@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import asdict
 from typing import Any
 from uuid import uuid4
 from psycopg.types.json import Jsonb
@@ -21,6 +20,19 @@ def _realization_event_deviations(
 ) -> tuple[str, ...]:
 
     deviations: set[str] = set()
+    if planned.get("feature_status") and any(
+        field not in observed
+        for field in (
+            "observed_action",
+            "observed_decision",
+            "observed_consequence",
+            "observed_cause_event_ids",
+            "observed_state_deltas",
+            "observed_state_event_ids",
+            "observed_disclosures",
+        )
+    ):
+        deviations.add("MISSING_REQUIRED_EVENT")
     if any(
         str(observed.get(observed_field) or "")
         != str(planned.get(planned_field) or "")
@@ -152,7 +164,7 @@ class NarrativeRealizationRepository:
                         for item in contract.arc_plan_bindings
                     ]
                 ),
-                Jsonb(asdict(contract.proof)),
+                Jsonb(contract.proof.to_dict()),
                 contract.content_asset_version_id,
                 contract.content_hash,
                 contract.proof_asset_version_id,
@@ -709,20 +721,49 @@ class NarrativeRealizationRepository:
             contract.content_hash,
             allowed_types={"narrative_realization", "planning_generation_candidate"},
         )
+        author_supervised = (
+            contract.proof.design_admission.get("mode") == "AUTHOR_SUPERVISED_DESIGN"
+        )
+        if author_supervised:
+            from novel_forge.modules.story_design_authority.author_supervision import (
+                approved_design_receipt,
+            )
+
+            receipt = approved_design_receipt(
+                self.cursor,
+                project_id=contract.project_id,
+                book_id=contract.book_id,
+                asset_version_id=contract.chapter_group_plan_version_id,
+            )
+            if (
+                receipt != contract.proof.design_admission
+                or receipt["content_hash"] != contract.chapter_group_content_hash
+                or receipt["decision_asset_version_id"]
+                != contract.proof_asset_version_id
+                or receipt["decision_content_hash"] != contract.proof_hash
+            ):
+                raise KernelError(
+                    "REALIZATION_AUTHOR_APPROVAL_STALE",
+                    "Proof must bind the exact existing native author approval",
+                )
+        proof_types = (
+            {"story_design_transition_receipt"}
+            if author_supervised
+            else {"narrative_realization_proof", "narrative_design_evaluation"}
+        )
         self._require_asset(
             contract.project_id,
             contract.proof_asset_version_id,
             contract.proof_hash,
-            allowed_types={
-                "narrative_realization_proof",
-                "narrative_design_evaluation",
-            },
+            allowed_types=proof_types,
         )
         self._require_asset(
             contract.project_id,
             contract.proof.semantic_evaluation_asset_version_id,
             contract.proof.semantic_evaluation_hash,
-            allowed_types={"narrative_design_evaluation"},
+            allowed_types={"story_design_transition_receipt"}
+            if author_supervised
+            else {"narrative_design_evaluation"},
         )
 
     def _require_foundation_set(self, contract: NarrativeRealizationContract) -> None:

@@ -839,7 +839,15 @@ class PostgresChapterExecutionContractBinder:
             attempt_snapshot
         )
         supported_templates = {
-            "prompt-template:chapter-generation-pack": {"v2", "v3", "v4", "v5", "v6", "v7"},
+            "prompt-template:chapter-generation-pack": {
+                "v2",
+                "v3",
+                "v4",
+                "v5",
+                "v6",
+                "v7",
+                "v8",
+            },
             "prompt-template:agent-session-pack": {"v1"},
             "prompt-template:story-planning-pack": {"v1"},
             "prompt-template:reader-outcome-pack": {"v2"},
@@ -1203,11 +1211,15 @@ class PostgresChapterExecutionContractBinder:
             (inputs.get("execution_expectations") or {}).get("world_preparation")
         )
         targeted_revision = bool(
-            stage == "revision" and prompt_contract_version in {"v4", "v5", "v6", "v7"} and (
+            stage == "revision"
+            and prompt_contract_version in {"v4", "v5", "v6", "v7", "v8"}
+            and (
                 inputs.get("quality_edit_contract")
                 or (
-                    ((inputs.get("review") or {}).get("issues") or
-                     (inputs.get("review") or {}).get("unresolved_issues"))
+                    (
+                        (inputs.get("review") or {}).get("issues")
+                        or (inputs.get("review") or {}).get("unresolved_issues")
+                    )
                     and (
                         inputs.get("cross_chapter_window")
                         or (inputs.get("review") or {}).get("cross_chapter_window")
@@ -1216,8 +1228,20 @@ class PostgresChapterExecutionContractBinder:
                 )
             )
         )
-        schema = chapter_provider_output_schema(stage, causal_batch=causal_batch, legacy_contract=legacy_contract, targeted_revision=targeted_revision)
-        schema_ref = chapter_provider_output_schema_ref(stage, causal_batch=causal_batch, legacy_contract=legacy_contract, targeted_revision=targeted_revision)
+        schema = chapter_provider_output_schema(
+            stage,
+            causal_batch=causal_batch,
+            legacy_contract=legacy_contract,
+            targeted_revision=targeted_revision,
+            work_requirements=prompt_contract_version == "v8",
+        )
+        schema_ref = chapter_provider_output_schema_ref(
+            stage,
+            causal_batch=causal_batch,
+            legacy_contract=legacy_contract,
+            targeted_revision=targeted_revision,
+            work_requirements=prompt_contract_version == "v8",
+        )
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
             contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")
@@ -1999,19 +2023,22 @@ class PostgresChapterExecutionContractBinder:
             raise ExternalEffectAdapterError(
                 "Chapter gateway operation has no Authority Saga", request_sent=False
             )
-        from .definitions import CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION, CHAPTER_SLICE_DEFINITION_VERSION
+        from .definitions import (
+            CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+            CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
+            CHAPTER_SLICE_DEFINITION_VERSION,
+        )
         from novel_forge.modules.command_kernel.routing_bootstrap import (
             chapter_sample_definition_supported,
         )
 
-        compatible = (
-            str(row[0]) in {node.definition_name for node in ChapterNode}
-            and str(row[1]) in {
-                CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
-                CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION,
-                CHAPTER_SLICE_DEFINITION_VERSION,
-            }
-        )
+        compatible = str(row[0]) in {
+            node.definition_name for node in ChapterNode
+        } and str(row[1]) in {
+            CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+            *CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
+            CHAPTER_SLICE_DEFINITION_VERSION,
+        }
         if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
             raise KernelError(
                 "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",
@@ -2052,11 +2079,21 @@ class PostgresChapterExecutionContractBinder:
 
         reference_samples = reference and graph["definition_version"] in CHAPTER_REFERENCE_SAMPLE_VERSIONS
         workflow_ref = ("chapter_reference_sampling" if reference else "chapter_provider_sampling") + "@" + graph["definition_version"] if sampling else self.workflow_definition_ref
-        from .definitions import CHAPTER_MODEL_WORKFLOW_DEFINITION_ID, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION
+        from .definitions import (
+            CHAPTER_MODEL_WORKFLOW_DEFINITION_ID,
+            CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
+        )
 
-        if (not sampling and graph["definition_name"] in {node.definition_name for node in ChapterNode}
-            and graph["definition_version"] == CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION):
-            workflow_ref = f"{CHAPTER_MODEL_WORKFLOW_DEFINITION_ID}@{CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION}"
+        if (
+            not sampling
+            and graph["definition_name"]
+            in {node.definition_name for node in ChapterNode}
+            and graph["definition_version"]
+            in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
+        ):
+            workflow_ref = (
+                f"{CHAPTER_MODEL_WORKFLOW_DEFINITION_ID}@{graph['definition_version']}"
+            )
         pack_id = self.capability_pack_id + (".reference_samples" if reference_samples else ".reference_sampling" if reference else ".provider_sampling") if sampling else self.capability_pack_id
         try:
             return self.pack_resolver.freeze_attempt_snapshot(
@@ -2987,9 +3024,7 @@ def default_chapter_fixture_response(
                         event.get("consequence") or "the planned consequence occurs"
                     ),
                     "observed_action": str(event.get("action") or "planned action"),
-                    "observed_decision": str(
-                        event.get("decision") or "planned decision"
-                    ),
+                    "observed_decision": (None if event.get("feature_status") and event.get("decision") is None else str(event.get("decision") or "planned decision")),
                     "observed_cause_event_ids": list(event.get("causes") or ()),
                     "observed_disclosures": list(event.get("disclosures") or ()),
                     "observed_state_deltas": [
@@ -3314,7 +3349,10 @@ class PostgresProductionExecutionPayloadResolver:
             input_text = _canonical({"stage": stage, "input": inputs})
             output_schema = None
             fixture_schema_ref = (
-                chapter_provider_output_schema_ref(stage, legacy_contract=True)
+                chapter_provider_output_schema_ref(
+                    stage, legacy_contract=not ((payload.get("_production_execution") or {}).get("creative_requirements_contract") == "work-requirements.v1"),
+                    work_requirements=(payload.get("_production_execution") or {}).get("creative_requirements_contract") == "work-requirements.v1",
+                )
                 if stage == "canon_extraction" else admission.route_snapshot.output_schema_ref
             )
             tool_permissions = {}
@@ -4278,7 +4316,6 @@ def _project_prose_skill(text: str, *, stage: str, targeted: bool) -> str:
     return "# Prose Generation\n\n" + sections["Shared rules"] + "\n\n" + sections[selected]
 
 
-
 def _materialize_production_codex_prompt(
     *,
     request: ExecutionRequest | None = None,
@@ -4315,13 +4352,21 @@ def _materialize_production_codex_prompt(
         return text, artifact
 
     from novel_forge.modules.worldbuilding.actor_isolation import ACTOR_STAGES, validate_actor_task
+
     if stage in ACTOR_STAGES:
         validate_actor_task(inputs.get("world_preparation") or {})
 
     system_text, system = required_text("system_instruction")
     template_text, template = required_text("prompt_template")
     skill_text, skill = required_text("skill")
-    compact_contract = str(template.get("version") or "") in {"v3", "v4", "v5", "v6", "v7"}
+    compact_contract = str(template.get("version") or "") in {
+        "v3",
+        "v4",
+        "v5",
+        "v6",
+        "v7",
+        "v8",
+    }
     context = materialization.get("context_selection")
     knowledge = materialization.get("knowledge_selection")
     tools = materialization.get("tool_permissions")
@@ -4350,13 +4395,15 @@ def _materialize_production_codex_prompt(
             "Capability Context selection has no ContextBundle content",
         )
     from .provider_output_contracts import is_targeted_revision_schema_ref
+
     targeted_edits_only = stage == "revision" and is_targeted_revision_schema_ref(
         str(schema.get("ref") or "")
     )
-    project_methods = str(template.get("version") or "") in {"v5", "v6", "v7"}
+    project_methods = str(template.get("version") or "") in {"v5", "v6", "v7", "v8"}
     if skill.get("ref") == "prose-generation" and skill.get("version") == "prose-generation-v3":
         skill_text = _project_prose_skill(skill_text, stage=stage, targeted=targeted_edits_only)
     from .prompt_methods import project_planning_system, project_skill_method
+
     method_source_text = skill_text
     skill_text = project_skill_method(skill_text, ref=str(skill.get("ref") or ""), version=str(skill.get("version") or ""), stage=stage, targeted=targeted_edits_only)
     calibrated_methods = skill_text != method_source_text
@@ -4364,12 +4411,30 @@ def _materialize_production_codex_prompt(
         system_text = project_planning_system(system_text, stage=stage)
         calibrated_methods = True
     task_view = build_provider_task_view(
-        stage, inputs, compact_contract=compact_contract,
+        stage,
+        inputs,
+        compact_contract=compact_contract,
         targeted_edits_only=targeted_edits_only,
         project_methods=project_methods,
-        instruction_cleanup=template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v7",
+        instruction_cleanup=template.get("ref")
+        == "prompt-template:chapter-generation-pack"
+        and template.get("version") in {"v7", "v8"},
+        work_requirements=template.get("ref")
+        == "prompt-template:chapter-generation-pack"
+        and template.get("version") == "v8",
     )
-    context_view = build_provider_context_view(stage, context_content, task_view, clean_writer_context=template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v6", writer_projection_version="accepted-writer-history.v2" if template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v7" else "")
+    context_view = build_provider_context_view(
+        stage,
+        context_content,
+        task_view,
+        clean_writer_context=template.get("ref")
+        == "prompt-template:chapter-generation-pack"
+        and template.get("version") == "v6",
+        writer_projection_version="accepted-writer-history.v2"
+        if template.get("ref") == "prompt-template:chapter-generation-pack"
+        and template.get("version") in {"v7", "v8"}
+        else "",
+    )
     context_manifest = context_content.get("context_manifest")
     if isinstance(context_manifest, Mapping):
         frozen_provider_view = context_manifest.get("provider_context_view")
@@ -4531,11 +4596,39 @@ def _materialize_production_codex_prompt(
         + len("</governed_skill>".encode()),
         "fully_rendered_prompt_hash": prompt_hash,
         "required_reader_facing_language": required_language,
-        "provider_prompt_projection_version": "authority-projection-task-provider-v5" if template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v7" else "authority-projection-task-provider-v4" if template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v6" else "authority-projection-stage-method-provider-v1" if calibrated_methods else "authority-projection-task-provider-v3" if project_methods else "authority-projection-task-provider-v2" if compact_contract else "authority-projection-task-provider-v1",
-        **({"method_selection": {"contract_version": "production-stage-methods.v1",
-            "skill_sections": [part.partition("\n")[0] for part in ("\n" + skill_text).split("\n## ")[1:]],
-            "system_sections": [part.partition("\n")[0] for part in ("\n" + system_text).split("\n## ")[1:]]}}
-           if calibrated_methods else {}),
+        "provider_prompt_projection_version": "authority-projection-work-requirements.v1"
+        if template.get("ref") == "prompt-template:chapter-generation-pack"
+        and template.get("version") == "v8"
+        else "authority-projection-task-provider-v5"
+        if template.get("ref") == "prompt-template:chapter-generation-pack"
+        and template.get("version") == "v7"
+        else "authority-projection-task-provider-v4"
+        if template.get("ref") == "prompt-template:chapter-generation-pack"
+        and template.get("version") == "v6"
+        else "authority-projection-stage-method-provider-v1"
+        if calibrated_methods
+        else "authority-projection-task-provider-v3"
+        if project_methods
+        else "authority-projection-task-provider-v2"
+        if compact_contract
+        else "authority-projection-task-provider-v1",
+        **(
+            {
+                "method_selection": {
+                    "contract_version": "production-stage-methods.v1",
+                    "skill_sections": [
+                        part.partition("\n")[0]
+                        for part in ("\n" + skill_text).split("\n## ")[1:]
+                    ],
+                    "system_sections": [
+                        part.partition("\n")[0]
+                        for part in ("\n" + system_text).split("\n## ")[1:]
+                    ],
+                }
+            }
+            if calibrated_methods
+            else {}
+        ),
         "rendered_prompt_bytes": prompt_bytes,
         "rendered_prompt_estimated_tokens": prompt_estimated_tokens,
         "system_instruction": {
@@ -4588,7 +4681,9 @@ def _materialize_production_codex_prompt(
                 component_tokens["fully_rendered_prompt"] / semantic_input_tokens,
                 6,
             ),
-            "representation_policy": "authority-projection-task-provider-v2" if compact_contract else "authority-projection-task-provider-v1",
+            "representation_policy": "authority-projection-task-provider-v2"
+            if compact_contract
+            else "authority-projection-task-provider-v1",
         },
     }
     return prompt, evidence

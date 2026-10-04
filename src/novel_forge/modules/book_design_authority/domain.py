@@ -15,6 +15,7 @@ COUPLED_BOOK_DESIGN_SCHEMA_VERSION = "book-design.v2"
 BOOK_DESIGN_SCHEMA_VERSION = "book-design.v3"
 EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION = "book-design.v4"
 FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION = "book-design.v5"
+WORK_BOOK_DESIGN_SCHEMA_VERSION = "book-design.v6"
 
 
 def _required_string(value: Any, field: str) -> str:
@@ -151,7 +152,7 @@ class BookDesignPayload:
     target_chapters: int
     core_characters: tuple[dict[str, str], ...]
     opposition_forces: tuple[dict[str, str], ...]
-    narrative_dna: dict[str, str]
+    narrative_dna: dict[str, str | None]
     creative_foundation: dict[str, str] = dataclass_field(default_factory=dict)
     world_system: tuple[dict[str, str], ...] = ()
     character_system: tuple[dict[str, str], ...] = ()
@@ -206,7 +207,8 @@ class BookDesignPayload:
             )
         allowed = (
             foundation_fields
-            if schema_version == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION
+            if schema_version
+            in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION}
             else (
                 base_fields
                 | progressive_fields
@@ -225,6 +227,7 @@ class BookDesignPayload:
             BOOK_DESIGN_SCHEMA_VERSION,
             EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
             FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+            WORK_BOOK_DESIGN_SCHEMA_VERSION,
             LEGACY_BOOK_DESIGN_SCHEMA_VERSION,
         }:
             raise KernelError(
@@ -233,7 +236,10 @@ class BookDesignPayload:
             )
         rules = payload.get("world_rules")
         normalized_rules: tuple[str, ...] = ()
-        if schema_version != FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
+        if schema_version not in {
+            FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+            WORK_BOOK_DESIGN_SCHEMA_VERSION,
+        }:
             if not isinstance(rules, list) or not rules:
                 raise KernelError(
                     "BOOK_DESIGN_INVALID", "world_rules must be a non-empty list"
@@ -254,7 +260,7 @@ class BookDesignPayload:
             )
         core_characters: tuple[dict[str, str], ...] = ()
         opposition_forces: tuple[dict[str, str], ...] = ()
-        narrative_dna: dict[str, str] = {}
+        narrative_dna: dict[str, str | None] = {}
         creative_foundation: dict[str, str] = {}
         world_system: tuple[dict[str, str], ...] = ()
         character_system: tuple[dict[str, str], ...] = ()
@@ -265,8 +271,12 @@ class BookDesignPayload:
             BOOK_DESIGN_SCHEMA_VERSION,
             EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
             FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+            WORK_BOOK_DESIGN_SCHEMA_VERSION,
         }:
-            if schema_version != FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
+            if schema_version not in {
+                FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+                WORK_BOOK_DESIGN_SCHEMA_VERSION,
+            }:
                 core_characters = _typed_records(
                     payload.get("core_characters"),
                     "core_characters",
@@ -303,10 +313,22 @@ class BookDesignPayload:
                 )
             _strict_keys(dna_value, dna_fields, "narrative_dna")
             narrative_dna = {
-                field: _required_string(dna_value.get(field), f"narrative_dna.{field}")
+                field: (
+                    None
+                    if schema_version == WORK_BOOK_DESIGN_SCHEMA_VERSION
+                    and field in {"recurring_choice", "cost_logic"}
+                    and field in dna_value
+                    and dna_value[field] is None
+                    else _required_string(
+                        dna_value.get(field), f"narrative_dna.{field}"
+                    )
+                )
                 for field in sorted(dna_fields)
             }
-        if schema_version == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
+        if schema_version in {
+            FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+            WORK_BOOK_DESIGN_SCHEMA_VERSION,
+        }:
             foundation_value = payload.get("foundation_set")
             if not isinstance(foundation_value, Mapping):
                 raise KernelError(
@@ -315,7 +337,9 @@ class BookDesignPayload:
                 )
             foundation_set = QualifiedFoundationSet.from_mapping(foundation_value)
             invariants = payload.get("book_invariants")
-            if not isinstance(invariants, list) or not invariants:
+            if not isinstance(invariants, list) or (
+                not invariants and schema_version != WORK_BOOK_DESIGN_SCHEMA_VERSION
+            ):
                 raise KernelError(
                     "BOOK_DESIGN_INVALID", "book_invariants must be non-empty"
                 )
@@ -395,37 +419,65 @@ class BookDesignPayload:
             title=_required_string(payload.get("title"), "title"),
             genre=(
                 ""
-                if schema_version == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION
+                if schema_version
+                in {
+                    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+                    WORK_BOOK_DESIGN_SCHEMA_VERSION,
+                }
                 else _required_string(payload.get("genre"), "genre")
             ),
             premise=(
                 ""
-                if schema_version == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION
+                if schema_version
+                in {
+                    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+                    WORK_BOOK_DESIGN_SCHEMA_VERSION,
+                }
                 else _required_string(payload.get("premise"), "premise")
             ),
             theme=(
                 ""
-                if schema_version == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION
+                if schema_version
+                in {
+                    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+                    WORK_BOOK_DESIGN_SCHEMA_VERSION,
+                }
                 else _required_string(payload.get("theme"), "theme")
             ),
             core_conflict=(
                 ""
-                if schema_version == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION
+                if schema_version
+                in {
+                    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+                    WORK_BOOK_DESIGN_SCHEMA_VERSION,
+                }
                 else _required_string(payload.get("core_conflict"), "core_conflict")
             ),
             reader_promise=(
                 ""
-                if schema_version == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION
+                if schema_version
+                in {
+                    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+                    WORK_BOOK_DESIGN_SCHEMA_VERSION,
+                }
                 else _required_string(payload.get("reader_promise"), "reader_promise")
             ),
             ending=(
                 ""
-                if schema_version == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION
+                if schema_version
+                in {
+                    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+                    WORK_BOOK_DESIGN_SCHEMA_VERSION,
+                }
                 else _required_string(payload.get("ending"), "ending")
             ),
             protagonist=(
                 ProtagonistDesign("", "", "", "", "")
-                if schema_version == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION
+                if schema_version
+                in {
+                    FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+                    WORK_BOOK_DESIGN_SCHEMA_VERSION,
+                }
                 else ProtagonistDesign.from_mapping(payload.get("protagonist"))
             ),
             world_rules=normalized_rules,
@@ -479,7 +531,10 @@ class BookDesignPayload:
         elif self.schema_version == EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION:
             for field in ("foundation_set", "book_invariants", "cross_layer_synthesis"):
                 payload.pop(field, None)
-        elif self.schema_version == FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION:
+        elif self.schema_version in {
+            FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+            WORK_BOOK_DESIGN_SCHEMA_VERSION,
+        }:
             for field in (
                 "genre",
                 "premise",

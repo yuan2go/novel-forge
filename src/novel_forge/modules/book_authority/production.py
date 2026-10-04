@@ -1247,6 +1247,7 @@ class PostgresBookAuthority:
                 idempotency_key=stable_key,
                 payload={
                     "book_id": book["book_id"],
+                    **({"creative_requirements_contract": "work-requirements.v1"} if selected_acceptance_outputs["best_draft_candidate"]["content"].get("creative_baseline") else {}),
                     "chapter_number": int(request["chapter_number"]),
                     "parent_group_version_id": str(
                         request.get("parent_group_version_id") or ""
@@ -3490,6 +3491,27 @@ def _validate_chapter_acceptance_evidence(
     rereview = selected["re_review_report"]["content"]
     canon = selected["canon_patch"]["content"]
     plan = selected["chapter_plan"]["content"]
+    candidate = selected["best_draft_candidate"]["content"]
+    if "creative_baseline" in candidate:
+        from novel_forge.modules.chapter_authority.chapter_plan_views import (
+            validate_creative_baseline,
+        )
+
+        baseline = validate_creative_baseline(candidate["creative_baseline"])
+        if (
+            quality.get("creative_baseline_digest") != baseline["baseline_digest"]
+            or rereview.get("creative_baseline_digest") != baseline["baseline_digest"]
+            or quality.get("evaluation_semantics_version") != "work-quality.v1"
+            or baseline["source_plan"]
+            != {
+                "asset_version_id": plan.get("source_chapter_plan_asset_version_id"),
+                "content_hash": plan.get("source_chapter_plan_content_hash"),
+            }
+        ):
+            raise KernelError(
+                "BOOK_CHAPTER_CREATIVE_BASELINE_DRIFT",
+                "Acceptance must use the exact selected, reviewed and evaluated work baseline",
+            )
     submitted = dict(request.get("command_payload") or {})
     execution_plan_version = str(
         submitted.get("execution_chapter_plan_asset_version_id")

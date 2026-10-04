@@ -72,6 +72,43 @@ def open_diagnoses(review: dict[str, Any]) -> list[dict[str, Any]]:
     return list(result.values())
 
 
+def prose_repair_diagnoses(review: dict[str, Any], *, work_requirements: bool = False) -> list[dict[str, Any]]:
+    diagnoses = open_diagnoses(review)
+    if not work_requirements:
+        return diagnoses
+    return [item for item in diagnoses if item.get("judgment_kind") in {
+        "SEMANTIC_CONFLICT", "HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION", "LIKELY_CONTINUITY_PROBLEM"
+    } and item.get("status", "OPEN") == "OPEN"]
+
+
+def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str, Any]], text: str) -> None:
+    from difflib import SequenceMatcher
+    original = str(source.get("text") or "")
+    scopes = []
+    artifacts = source.get("scene_artifacts") or []
+    separators = source.get("scene_separators") or ["\n\n"] * max(0, len(artifacts) - 1)
+    scene_ranges = []
+    position = 0
+    for index, artifact in enumerate(artifacts):
+        position += len(separators[index - 1]) if index else 0
+        end = position + len(artifact["text"])
+        scene_ranges.append((position, end))
+        position = end
+    for issue in diagnoses:
+        location = validate_location(dict(issue.get("evidence_locator") or {}), original)
+        if scene_ranges:
+            matched = [bounds for bounds in scene_ranges if bounds[0] < location["end"] and bounds[1] > location["start"]]
+            if not matched:
+                raise KernelError("REVISION_DIAGNOSIS_SCOPE_INVALID", "Diagnosis does not locate a prose Scene")
+            scopes.append((matched[0][0], matched[-1][1]))
+        else:
+            scopes.append((original.rfind("\n\n", 0, location["start"]) + 2 if "\n\n" in original[:location["start"]] else 0,
+                original.find("\n\n", location["end"]) if "\n\n" in original[location["end"]:] else len(original)))
+    for tag, start, end, _, _ in SequenceMatcher(None, original, text, autojunk=False).get_opcodes():
+        if tag != "equal" and not any(low <= start <= end <= high for low, high in scopes):
+            raise KernelError("REVISION_OUTSIDE_DIAGNOSIS_SCOPE", "Revision changed an unaffected Scene or paragraph; evidence uncertainty and aesthetic advice do not authorize prose changes")
+
+
 def blocking_diagnosis_codes(review: dict[str, Any]) -> tuple[str, ...]:
     codes = tuple(sorted({str(item["code"]) for item in open_diagnoses(review)
                           if item["severity"] in {"blocking", "blocker", "critical", "high"}}))

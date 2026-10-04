@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 import hashlib
 import json
+import math
 from typing import Any, Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -86,6 +87,11 @@ class CompiledQualityPolicy:
 
 
 @dataclass(frozen=True, slots=True)
+class CompiledWorkQualityPolicy(CompiledQualityPolicy):
+    dimension_weights: dict[str, float] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
 class CompiledPlatformPolicy:
     source_asset_version_id: str
     chapter_length_rules: dict[str, Any]
@@ -100,7 +106,10 @@ class CompiledPlatformPolicy:
 
 
 def compile_quality_policy(
-    *, profile_asset_version_id: str, segment: dict[str, Any]
+    *,
+    profile_asset_version_id: str,
+    segment: dict[str, Any],
+    work_requirements: bool = False,
 ) -> CompiledQualityPolicy:
     _require_profile_segment(profile_asset_version_id, segment, "quality")
     facts = _facts(segment)
@@ -111,15 +120,111 @@ def compile_quality_policy(
         "maximum_duplicate_sentence_ratio": 0.25,
         "minimum_prose_characters": 80,
     }
+    if work_requirements:
+        defaults = {
+            "readability": None,
+            "maximum_average_paragraph": None,
+            "maximum_duplicate_sentence_ratio": None,
+            "minimum_prose_characters": 80,
+            "minimum_sentences": 1,
+            "sentence_length_unit": "CODEPOINTS",
+            "readability_sentence_target": 36,
+            "readability_penalty": 2,
+        }
     thresholds = {**defaults, **configured}
-    digest = _digest({"source": profile_asset_version_id, "thresholds": thresholds})
-    return CompiledQualityPolicy(
+    if work_requirements:
+        for key in defaults.keys() - {"sentence_length_unit"}:
+            value = thresholds[key]
+            if value is None and key in {
+                "readability",
+                "maximum_average_paragraph",
+                "maximum_duplicate_sentence_ratio",
+            }:
+                continue
+            if type(value) not in {int, float} or not math.isfinite(value) or value < 0:
+                raise KernelError(
+                    "QUALITY_POLICY_THRESHOLD_INVALID",
+                    f"{key} needs a finite nonnegative measurement",
+                )
+        if thresholds["readability"] is not None and thresholds["readability"] > 100:
+            raise KernelError(
+                "QUALITY_POLICY_THRESHOLD_INVALID", "Readability scores use 0 to 100"
+            )
+        if (
+            thresholds["maximum_duplicate_sentence_ratio"] is not None
+            and thresholds["maximum_duplicate_sentence_ratio"] > 1
+        ):
+            raise KernelError(
+                "QUALITY_POLICY_THRESHOLD_INVALID",
+                "Duplicate sentence ratio uses 0 to 1",
+            )
+        if thresholds["sentence_length_unit"] not in {"CODEPOINTS", "WHITESPACE_WORDS"}:
+            raise KernelError(
+                "QUALITY_POLICY_UNIT_INVALID",
+                "Sentence measurement unit is unsupported",
+            )
+    weights = {}
+    if work_requirements:
+        from .domain import QUALITY_DIMENSIONS
+
+        weights = dict(facts.get("weights") or {})
+        if any(
+            key not in QUALITY_DIMENSIONS
+            or type(value) not in {int, float}
+            or not math.isfinite(value)
+            or value < 0
+            for key, value in weights.items()
+        ):
+            raise KernelError(
+                "QUALITY_POLICY_WEIGHT_INVALID",
+                "Dimension weights must be finite nonnegative numbers for known dimensions",
+            )
+        for key, value in configured.items():
+            if key not in defaults and key not in QUALITY_DIMENSIONS:
+                raise KernelError(
+                    "QUALITY_POLICY_THRESHOLD_INVALID",
+                    "Unsupported quality policy setting",
+                )
+            if (
+                key in QUALITY_DIMENSIONS
+                and value is not None
+                and (
+                    type(value) not in {int, float}
+                    or not math.isfinite(value)
+                    or not 0 <= value <= 100
+                )
+            ):
+                raise KernelError(
+                    "QUALITY_POLICY_THRESHOLD_INVALID",
+                    "Configured dimension scores use 0 to 100",
+                )
+        for key in ("minimum_prose_characters", "minimum_sentences"):
+            if type(thresholds[key]) is not int or thresholds[key] <= 0:
+                raise KernelError(
+                    "QUALITY_POLICY_THRESHOLD_INVALID",
+                    "Prose integrity limits must be positive integers",
+                )
+    digest = _digest(
+        {
+            "source": profile_asset_version_id,
+            "thresholds": thresholds,
+            **({"weights": weights} if work_requirements else {}),
+        }
+    )
+    policy_type = (
+        CompiledWorkQualityPolicy if work_requirements else CompiledQualityPolicy
+    )
+    return policy_type(
         source_asset_version_id=profile_asset_version_id,
         thresholds=thresholds,
         deterministic_policy_thresholds=tuple(
             key for key in defaults if key not in configured
         ),
         policy_digest=digest,
+        contract_version="compiled-quality-policy-v2"
+        if work_requirements
+        else "compiled-quality-policy-v1",
+        **({"dimension_weights": weights} if work_requirements else {}),
     )
 
 
@@ -170,6 +275,7 @@ def build_quality_context_view(
     canon_asset_version_id: str,
     token_budget: int = 6000,
     token_estimator: TokenEstimator | None = None,
+    work_requirements: bool = False,
 ) -> dict[str, Any]:
     if token_budget <= 0:
         raise KernelError(
@@ -191,6 +297,7 @@ def build_quality_context_view(
     quality_policy = compile_quality_policy(
         profile_asset_version_id=quality_profile_id,
         segment=_segment_by_version(segments, quality_profile_id),
+        work_requirements=work_requirements,
     )
     platform_policy = compile_platform_policy(
         profile_asset_version_id=platform_profile_id,
@@ -205,6 +312,18 @@ def build_quality_context_view(
         "platform_profile_version_id": platform_profile_id,
         "compiled_quality_policy": asdict(quality_policy),
     }
+    if work_requirements:
+        from novel_forge.modules.chapter_authority.chapter_plan_views import (
+            build_creative_baseline,
+        )
+
+        baseline = build_creative_baseline(chapter_plan, context_bundle)
+        if revision.get("creative_baseline") != baseline:
+            raise KernelError(
+                "QUALITY_CREATIVE_BASELINE_DRIFT",
+                "Quality must consume the candidate's exact frozen creative baseline",
+            )
+        common["creative_baseline"] = baseline
     if group == "structural":
         body = {
             "type": "StructuralQualityContextView",
@@ -353,7 +472,9 @@ def build_quality_context_view(
         token_budget=token_budget,
     )
     body["coverage_report"] = coverage
-    body["contract_version"] = "stage-quality-context-v4"
+    body["contract_version"] = (
+        "stage-quality-context-v5" if work_requirements else "stage-quality-context-v4"
+    )
     body["context_digest"] = _digest(body)
     final_tokens = _estimate_payload(body, estimator)
     if final_tokens > token_budget:

@@ -789,7 +789,7 @@ def test_routing_complete_request_meter_rejects_oversized_diagnostic_before_sele
     assert "BUDGET_HARD_LIMIT" in task_limited["candidates"][0]["rejected_reasons"]
 
 
-@pytest.mark.parametrize("version", ["3.3.0", "3.4.0", "3.4.2", "3.6.0", "4.0.0", "3.4.1-author-input.v1", None, []])
+@pytest.mark.parametrize("version", ["3.3.0", "3.4.0", "3.4.2", "3.7.0", "4.0.0", "3.4.1-author-input.v1", None, []])
 def test_chapter_sample_source_versions_reject_unsupported_contracts(version):
     from novel_forge.modules.command_kernel.routing_bootstrap import chapter_sample_source_version_supported
 

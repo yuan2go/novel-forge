@@ -60,7 +60,7 @@ def compile_realization_contract(
                 isinstance(beat, str)
                 and beat.strip()
                 and plan.get("chapter_contract_schema_version")
-                != "chapter-mission-scene.v2"
+                not in {"chapter-mission-scene.v2", "chapter-mission-scene.v3"}
             ):
                 legacy_beats = True
                 beat_ids.append(f"{scene['scene_id']}:legacy-beat:{ordinal}")

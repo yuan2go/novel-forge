@@ -95,6 +95,7 @@ def edition_adopted_draft(request, adoption: dict[str, Any]):
     plan, context = request.require_input("chapter_plan"), request.require_input("context_bundle")
     intent, memo = request.require_input("chapter_execution_intent"), request.require_input("chapter_memo")
     from .edition_planning import require_edition_execution_plan
+
     require_edition_execution_plan(request.database_url, project_id=request.project_id, book_id=request.command["book_id"],
         book_run_id=adoption["book_run_id"], execution_plan_version_id=plan.content["source_chapter_plan_asset_version_id"],
         revision_id=adoption["revision_id"], chapter=adoption["chapter"], source_plan_version_id=adoption["source_chapter_plan_asset_version_id"])
@@ -103,9 +104,18 @@ def edition_adopted_draft(request, adoption: dict[str, Any]):
              "scene_artifacts": deepcopy(unit["scene_artifacts"])}
     if unit.get("scene_separators") is not None:
         draft["scene_separators"] = deepcopy(unit["scene_separators"])
-    content = normalize_draft_result(plan=plan.content, context_asset_version_id=context.asset_version_id,
-                                    context_content_hash=context.content_hash, context_content=context.content,
-                                    result=draft, provider_evidence={"source": "AUTHOR_EDITION_INPUT", "model_call": "NOT_APPLICABLE"})
+    content = normalize_draft_result(
+        plan=plan.content,
+        context_asset_version_id=context.asset_version_id,
+        context_content_hash=context.content_hash,
+        context_content=context.content,
+        result=draft,
+        provider_evidence={
+            "source": "AUTHOR_EDITION_INPUT",
+            "model_call": "NOT_APPLICABLE",
+        },
+        work_requirements=request.work_requirements_enabled,
+    )
     if content["text"] != unit["text"]:
         raise KernelError("EDITION_TEXT_DRIFT", "Edition validation cannot silently replace submitted prose")
     content["author_draft_adoption"] = adoption

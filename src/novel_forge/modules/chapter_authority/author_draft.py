@@ -69,15 +69,24 @@ def adopted_author_draft(request) -> ChapterHandlerOutput | None:
         raise KernelError("AUTHOR_ADOPTION_HASH_CONFLICT", "Frozen author adoption differs from immutable evidence")
     from .domain_handlers import normalize_draft_result
     from .craft_execution import require_craft_delivery
+
     plan, context = request.require_input("chapter_plan"), request.require_input("context_bundle")
     if adoption.get("source_chapter_plan_asset_version_id") and adoption["source_chapter_plan_asset_version_id"] != plan.content.get("source_chapter_plan_asset_version_id"):
         raise KernelError("AUTHOR_PLAN_DRIFT", "Author candidate must retain its exact originating Chapter Plan")
     intent, memo = request.require_input("chapter_execution_intent"), request.require_input("chapter_memo")
     require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=context.content)
-    content = normalize_draft_result(plan=plan.content, context_asset_version_id=context.asset_version_id,
-                                    context_content_hash=context.content_hash, context_content=context.content,
-                                    result=candidate.content["draft_content"],
-                                    provider_evidence={"source": "HUMAN_AUTHOR_INPUT", "model_call": "NOT_APPLICABLE"})
+    content = normalize_draft_result(
+        plan=plan.content,
+        context_asset_version_id=context.asset_version_id,
+        context_content_hash=context.content_hash,
+        context_content=context.content,
+        result=candidate.content["draft_content"],
+        provider_evidence={
+            "source": "HUMAN_AUTHOR_INPUT",
+            "model_call": "NOT_APPLICABLE",
+        },
+        work_requirements=request.work_requirements_enabled,
+    )
     if content["text"] != candidate.content["text"]:
         raise KernelError("AUTHOR_TEXT_NORMALIZATION_CONFLICT", "Author text cannot change after exact version selection")
     content["author_draft_adoption"] = dict(adoption)

@@ -490,7 +490,6 @@ def register(
     from .application import (
         _command_from_payload,
         _command_payload,
-        STORY_PLANNING_GENERATION_VERSION,
     )
 
     principal.require("story_planning.authority.execute", project_id)
@@ -522,7 +521,7 @@ def register(
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
     successor = replace(
         original,
-        execution_contract_version=STORY_PLANNING_GENERATION_VERSION,
+        execution_contract_version=original.execution_contract_version,
         runtime_continuation_id=continuation_id,
         idempotency_key=f"{original.idempotency_key}:runtime-continuation:{source['depth']}",
     )
@@ -739,7 +738,7 @@ def require_binding(database_url: str, continuation_id: str) -> dict[str, Any]:
 
 
 def require_successor(
-    application: Any, command: StoryPlanningGenerationCommand
+    application: Any, command: StoryPlanningGenerationCommand, *, validate_runtime: bool = True
 ) -> dict[str, Any]:
     from .application import _command_payload
 
@@ -752,7 +751,7 @@ def require_successor(
             "PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT",
             "successor must use the registered frozen task and actual approved release",
         )
-    if resolve_target(application, command) != binding["target_runtime"]:
+    if validate_runtime and not binding["successor_operation_id"] and resolve_target(application, command) != binding["target_runtime"]:
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_RUNTIME_DRIFT",
             "the exact registered Pack and model route changed",

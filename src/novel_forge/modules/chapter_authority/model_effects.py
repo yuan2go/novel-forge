@@ -513,6 +513,8 @@ class ExternalEffectChapterModelPort:
             "correlation_id": request.correlation_id,
             "workspace_id": request.workspace_id,
             "_production_execution": {
+                **({"creative_requirements_contract": "work-requirements.v1"}
+                   if request.work_requirements_enabled else {}),
                 "operation_id": request.operation_id,
                 "attempt_id": request.attempt_id,
                 "fencing_token": execution_fencing_token,
@@ -1818,7 +1820,9 @@ def _decode_agent_json_envelope(
     return decoded
 
 
-def _normalize_model_output(stage: str, raw: dict[str, Any], *, output_schema_ref: str = "") -> dict[str, Any]:
+def _normalize_model_output(
+    stage: str, raw: dict[str, Any], *, output_schema_ref: str = ""
+) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise KernelError("MODEL_RESPONSE_INVALID", "model response must be an object")
     if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
@@ -2018,6 +2022,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any], *, output_schema_re
                 "FAILED",
                 "INSUFFICIENT_EVIDENCE",
                 "REQUIRES_HUMAN_REVIEW",
+                "NOT_APPLICABLE",
             }:
                 raise KernelError(
                     "MODEL_RESPONSE_INVALID",
@@ -2121,6 +2126,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any], *, output_schema_re
         if str(item).strip()
     ]
     from .provider_output_contracts import is_targeted_revision_schema_ref
+
     targeted_edits_only = is_targeted_revision_schema_ref(output_schema_ref)
     if not text.strip() and not raw.get("scene_artifacts") and not (
         targeted_edits_only and raw.get("edits")
