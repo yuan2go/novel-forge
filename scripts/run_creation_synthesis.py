@@ -310,6 +310,7 @@ def main(argv=None):
                     "NOVEL_FORGE_CODEX_CONFIGURATION_REF",
                     "NOVEL_FORGE_CODEX_RETRY_POLICY",
                     "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT",
+                    "NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE",
                     "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT",
                     "NOVEL_FORGE_OPERATION_PROVIDER_CALL_LIMIT",
                     "NOVEL_FORGE_PROVIDER_PROJECT_CALL_LIMIT",

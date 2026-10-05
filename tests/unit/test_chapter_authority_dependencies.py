@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import subprocess
 import tempfile
 import unittest
@@ -612,6 +613,10 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 environment.update({
                     "NOVEL_FORGE_ROUTER_PROVIDERS": providers,
                     "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT": "medium",
+                    "NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE": json.dumps({
+                        provider: ["draft", "revision"] if provider == "codex-cli" else ["review", "rereview"]
+                        for provider in providers.split(",")
+                    }),
                 })
                 if providers == "codex-cli":
                     environment.pop("DEEPSEEK_API_KEY")
@@ -627,6 +632,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                         env=environment,
                     )
                 router = execution.gateway.provider_router
+                self.assertEqual(router.provider_task_scope["codex-cli"], ["draft", "revision"])
                 candidate = next(item for item in router.candidates if item.provider == "codex-cli")
                 self.assertEqual(candidate.reasoning, "medium")
                 self.assertEqual(candidate.candidate_id, f"codex-cli:{candidate.model}:medium")
@@ -634,7 +640,8 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 self.assertEqual(candidate.pricing.accounting_basis, "ACCOUNT_ENTITLEMENT")
                 base = execution.gateway.routes["draft"]
                 selected = router._selected_route(base, {
-                    "status": "SELECTED", "task": {"declared_requirements": {}},
+                    "status": "SELECTED", "task": {"task_type": "draft", "declared_requirements": {
+                        "provider_task_scope": router.provider_task_scope}},
                     "selected": {"candidate": asdict(candidate)},
                 })
                 self.assertEqual(selected.model_profile.model_provider, "codex-cli")
@@ -645,6 +652,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 else:
                     self.assertEqual(base.model_profile.model_provider, "deepseek")
         self.assertIn("NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT", COMPARISON_RUNTIME_SETTINGS)
+        self.assertIn("NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE", COMPARISON_RUNTIME_SETTINGS)
 
     def test_explicit_invalid_codex_router_effort_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -671,8 +679,19 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                         root=repository_root,
                         database_url="postgresql://authority",
                     ),
-                    env=environment,
-                )
+                        env=environment,
+                    )
+
+    def test_explicit_null_or_non_object_provider_scope_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            environment = _mixed_router_environment(Path(directory))
+            for value in ("null", "[]", '"unrestricted"'):
+                environment["NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE"] = value
+                with self.subTest(value=value), self.assertRaisesRegex(ValueError, "PROVIDER_TASK_SCOPE_INVALID"):
+                    build_production_execution_composition(
+                        IndustrialSettings(root=Path(__file__).resolve().parents[2], database_url="postgresql://authority"),
+                        env=environment,
+                    )
 
     def test_configured_mixed_router_fails_closed_when_deepseek_lane_is_unavailable(
         self,

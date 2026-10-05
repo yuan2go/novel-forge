@@ -63,6 +63,14 @@ def test_author_does_not_remove_technical_or_unknown_stops(failure):
     assert decision.to_dict()["status"] == "BLOCKED"
 
 
+def test_author_grant_cannot_waive_provider_task_authorization():
+    scope, model = prepared()
+    scope = replace(scope, declared_requirements={"provider_task_scope": {model.provider: ["review"]}})
+    decision = supervised_decision(CostAwareRouter().explain(scope, [model], {}, now=NOW), now=NOW).to_dict()
+    assert decision["status"] == "BLOCKED"
+    assert "PROVIDER_TASK_NOT_AUTHORIZED" in decision["candidates"][0]["rejected_reasons"]
+
+
 def test_expiry_identity_budget_and_old_default_are_preserved():
     scope, model = prepared()
     strict = CostAwareRouter().explain(scope, [model], {}, now=NOW)
@@ -116,6 +124,35 @@ def test_frozen_legacy_author_selection_remains_verifiable_without_new_admission
     snapshot = supervised_decision(CostAwareRouter().explain(scope, [model], {}, now=NOW), now=NOW).to_dict()
     snapshot["author_supervision"].pop("admission_contract_version")
     verify_frozen_supervision(snapshot)
+
+
+@pytest.mark.parametrize("scope", [{}, {"deepseek": "draft"}, {"deepseek": ["typo"]}, {"other": ["draft"]}, []])
+def test_provider_task_scope_configuration_fails_closed(scope):
+    from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+    _, model = prepared()
+    with pytest.raises(ValueError, match="ROUTING_PROVIDER_TASK_SCOPE_INVALID"):
+        ProductionProviderRouter("unused", candidates=[model], task_money_limit="1", task_token_limit=100000,
+                                 provider_task_scope=scope)
+
+
+@pytest.mark.parametrize("original_scope", [None, {"deepseek": ["draft"]}])
+def test_changed_provider_task_scope_cannot_replay_a_frozen_route(monkeypatch, original_scope):
+    from types import SimpleNamespace
+    from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+    from tests.unit.test_cost_aware_routing import generator_samples
+    scope, model = prepared()
+    scope = replace(scope, policy_snapshot={}, producer_contract_hash="",
+                    declared_requirements={"risk": "", "quality_floor": 0, "chapter": 0,
+                        **({"provider_task_scope": original_scope} if original_scope is not None else {})})
+    frozen = CostAwareRouter().explain(scope, [model], {model.candidate_id: generator_samples()}, now=NOW).to_dict()
+    assert frozen["status"] == "SELECTED"
+    router = ProductionProviderRouter("unused", candidates=[model], task_money_limit="1", task_token_limit=100000,
+                                      provider_task_scope={"deepseek": ["review"]})
+    monkeypatch.setattr(router.registry.query, "require", lambda **kwargs: SimpleNamespace(content=frozen, asset_version_id="frozen"))
+    with pytest.raises(KernelError, match="ROUTING_REQUEST_DRIFT"):
+        router.select(object(), task_type="draft", project_id=scope.project_id, work_id=scope.work_id,
+            operation_id=scope.operation_id, attempt_id=scope.attempt_id, stable_key="historical-route",
+            input_tokens=scope.input_tokens, output_tokens=scope.output_tokens, trace_id="trace", correlation_id="correlation")
 
 
 def test_native_router_applies_book_authorization_gate_with_no_grants(monkeypatch):

@@ -383,6 +383,11 @@ def build_production_execution_composition(
     router_enabled = bool(router_providers)
     deepseek_enabled = "deepseek" in router_providers
     codex_router_enabled = "codex-cli" in router_providers
+    provider_task_scope = None
+    if "NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE" in values:
+        provider_task_scope = json.loads(values["NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE"])
+        if not router_enabled or not isinstance(provider_task_scope, dict):
+            raise ValueError("ROUTING_PROVIDER_TASK_SCOPE_INVALID")
     codex_router_reasoning = "high"
     if codex_router_enabled:
         codex_router_reasoning = str(values.get(
@@ -1286,6 +1291,7 @@ def build_production_execution_composition(
         from novel_forge.modules.review.cross_model_binding import freeze_review_requirement
         model_gateway.provider_router = ProductionProviderRouter(
             settings.database_url, candidates=candidates, execution_environment=environment,
+            provider_task_scope=provider_task_scope,
             task_money_limit=max_cost_per_call or "0",
             task_token_limit=int(values.get("NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT") or 0),
             soft_money_limit=str(values.get("NOVEL_FORGE_ROUTER_SOFT_COST_PER_TASK") or "") or None,

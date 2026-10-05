@@ -1018,6 +1018,25 @@ closed; disabling the lane does not authorize a quality downgrade. Call limits c
 accounted reservation generations, including paid retries, while released unsent calls
 do not consume capacity. Shared usage locks prevent USD and entitlement reservations
 from racing through global token/call caps.
+Mixed Provider availability and phase USD allowances do not impose generation/review
+role separation. A named model in a route template is still subject to Router selection.
+Deployments requiring a restricted Provider authorization must use
+`NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE`: a JSON object mapping every configured Provider
+to a list of allowed formal task taxonomy names. An explicit empty list denies that
+Provider all tasks; malformed, unknown or incomplete scopes fail closed. The Router
+must reject a candidate outside its scope before cost/quality selection, including
+benchmark and author-supervised decisions. Scope binds each routing request and the
+creation freeze; changed scope cannot replay an old decision. Absence preserves legacy
+unrestricted routing and is insufficient evidence of role separation. This restriction
+does not replace legitimate qualification samples, independent blind evaluations,
+adjudication or Capability Pack approval by a principal distinct from its compiler.
+The current Codex Router candidate is an escalation lane even when Codex is the only
+configured Provider. It requires two semantic failures, or HIGH risk with an explicit
+escalation reason. Strict qualification and a generation-only Provider scope do not
+make it eligible as the first MEDIUM-risk Draft generator. A deployment requiring Codex
+as its primary generator needs an explicitly versioned primary lane across Router,
+entitlement reservation, Book Opening and benchmark authorization; that lane is currently
+unimplemented. Do not fabricate semantic failures or escalation reasons to start it.
 Book Opening's immutable budget policy may explicitly add an `account_entitlement_lane`
 with its Codex model, authorization reference/version and finite call/token quota. The
 deployment supplies it through `NOVEL_FORGE_BOOK_OPENING_ACCOUNT_ENTITLEMENT_POLICY` as

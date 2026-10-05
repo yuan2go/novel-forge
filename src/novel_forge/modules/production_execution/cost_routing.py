@@ -797,6 +797,9 @@ class CostAwareRouter:
                 observations.get(candidate.candidate_id, ()), now=now, policy=policy, input_tokens=task.input_tokens
             )
             reasons: list[str] = []
+            provider_scope = task.declared_requirements.get("provider_task_scope")
+            if provider_scope is not None and task.task_type not in provider_scope.get(candidate.provider, ()):
+                reasons.append("PROVIDER_TASK_NOT_AUTHORIZED")
             cross_review = task.declared_requirements.get("cross_model_review")
             if cross_review:
                 from .cross_model_review import reviewer_rejection
