@@ -449,6 +449,7 @@ class StoryPlanningGenerationHandlerRegistry:
             "1.14.0",
             "1.15.0",
             "1.16.0",
+            "1.17.0",
         }:
             raise KeyError((definition_name, definition_version))
         return replace(item, definition_version=definition_version)

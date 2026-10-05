@@ -823,14 +823,23 @@ The software checks provenance and declared independence; it cannot certify a pe
 judgment or turn subjective labels into universal truth.
 
 Model-only references are a separate requested contract, not HumanEvaluation or human
-calibration. The current native reference path requires human annotations, and the current
-Codex composition accepts one explicit model. A frozen model panel requires two isolated
+calibration. The current native reference path requires human annotations. An explicit
+`codex-router-models.v1` catalog can configure task-scoped Codex models, but it does not
+create model reference evidence. A frozen model panel requires two isolated
 blind executions and a third adjudication, all binding the exact subject, author baseline,
 policy, Producer, actual ModelCallLog and Kernel receipt. Same-model executions remain
 correlated model consensus; selection alone cannot qualify a model. Do not replace an old
 human reference, frozen route or budget when enabling a model panel. Model reference
-creation, native record/adjudication, task-scoped multi-model routing and reference feedback
+creation, native record/adjudication and reference feedback
 must be implemented and verified before dispatch or production admission can use that basis.
+
+Planning bootstrap and reference provenance must read the exact admitted execution
+version, rather than assuming the historical `1.16.0` contract. The current supported
+candidate-only versions are `1.16.0`, `1.17.0` and `1.18.0`; each retains its frozen
+schema, requirements and semantic profile. Future or adjacent version strings are not
+compatible by inference. Registry, World sample origin and reference subject checks
+must agree on that bounded version set. This compatibility repair does not reinterpret
+older assets under the current profile or waive a profile hash mismatch.
 
 Reference coverage must include every dimension of the selected Quality group; review
 and rereview use respectively `review_decision` and `rereview_decision`. Freeze an explicit
@@ -1040,17 +1049,21 @@ creation freeze; changed scope cannot replay an old decision. Absence preserves 
 unrestricted routing and is insufficient evidence of role separation. This restriction
 does not replace legitimate qualification samples, independent blind evaluations,
 adjudication or Capability Pack approval by a principal distinct from its compiler.
-The current Codex Router candidate is an escalation lane even when Codex is the only
-configured Provider. It requires two semantic failures, or HIGH risk with an explicit
-escalation reason. Strict qualification and a generation-only Provider scope do not
-make it eligible as the first MEDIUM-risk Draft generator. A deployment requiring Codex
-as its primary generator needs an explicitly versioned primary lane across Router,
-entitlement reservation, Book Opening and benchmark authorization; that lane is currently
-unimplemented. Do not fabricate semantic failures or escalation reasons to start it.
+Without an explicit model catalog, the Codex Router candidate retains its historical
+escalation semantics: two semantic failures, or HIGH risk with an explicit escalation
+reason. `NOVEL_FORGE_CODEX_ROUTER_MODELS` accepts the exact `codex-router-models.v1`
+contract with model, reasoning, role, tasks and context/output limits. Its `PRIMARY`
+and `REFERENCE` roles require a matching finite account entitlement and ordinary
+qualification. Model task scope is checked during selection, route materialization and
+Kernel reservation. Models sharing an account authorization consume the same call
+allowance; adding a model does not multiply quota. Catalog entries bind model revision
+and the creation freeze. An unqualified primary still fails closed. This support alone
+does not establish a model panel, literary qualification or a real first-chapter run.
 Book Opening's immutable budget policy may explicitly add an `account_entitlement_lane`
 with its Codex model, authorization reference/version and finite call/token quota. The
 deployment supplies it through `NOVEL_FORGE_BOOK_OPENING_ACCOUNT_ENTITLEMENT_POLICY` as
-JSON; composition requires an exact match with the configured Codex escalation identity.
+JSON; composition requires an exact match with the configured Codex escalation or explicit
+primary identity.
 A priced envelope without that lane still rejects entitlement execution. Both lanes consume
 the parent call/token budget; progress reports retain unknown entitlement monetary cost
 separately from priced USD expenditure.

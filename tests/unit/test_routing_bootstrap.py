@@ -435,6 +435,39 @@ def test_multistage_challenger_is_rejected_before_database_or_execution():
         )
 
 
+@pytest.mark.parametrize("version", ["1.16.0", "1.17.0", "1.18.0"])
+def test_planning_bootstrap_preserves_supported_admitted_version(version):
+    from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
+    from novel_forge.storage.versioned_policy_repository import policy_hash
+    payload, grant, snapshot = contract()
+    policy = {"bootstrap_authorizations": [grant]}
+    snapshot.update(policy_version="policy:v1", policy_hash=policy_hash(policy), policy_actor_id="operator", policy_operation_id="policy-op")
+    payload["routing_bootstrap_authorization"] = snapshot
+    class Cursor:
+        query = ""
+        def execute(self, query, *_args):
+            self.query = query
+        def fetchone(self):
+            if "authority_runtime_policy_version" in self.query:
+                return (policy, policy_hash(policy), "operator", "policy-op")
+            return (payload, "story_planning.generate", version, "book:story-planning-generation", "sample-one")
+    assert load_bootstrap_authorization(Cursor(), project_id="project", operation_id="operation") == snapshot
+
+
+@pytest.mark.parametrize("version", ["1.15.0", "1.19.0", "1.180.0", "1.17.0-extra"])
+def test_planning_bootstrap_rejects_unregistered_adjacent_versions(version):
+    from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
+    payload, _, snapshot = contract()
+    payload["routing_bootstrap_authorization"] = snapshot
+    class Cursor:
+        def execute(self, *_args):
+            pass
+        def fetchone(self):
+            return (payload, "story_planning.generate", version, "book:story-planning-generation", "sample-one")
+    with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_SCOPE_MISMATCH"):
+        load_bootstrap_authorization(Cursor(), project_id="project", operation_id="operation")
+
+
 def campaign_grant():
     _, grant, _ = contract()
     return {**grant, "campaign": {

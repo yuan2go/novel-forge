@@ -314,6 +314,7 @@ def main(argv=None):
                     "NOVEL_FORGE_CODEX_CONFIGURATION_REF",
                     "NOVEL_FORGE_CODEX_RETRY_POLICY",
                     "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT",
+                    "NOVEL_FORGE_CODEX_ROUTER_MODELS",
                     "NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE",
                     "NOVEL_FORGE_PROVIDER_DAILY_CAP",
                     "NOVEL_FORGE_GLOBAL_PROVIDER_CAP",

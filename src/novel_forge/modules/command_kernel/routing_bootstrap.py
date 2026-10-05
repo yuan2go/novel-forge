@@ -39,6 +39,7 @@ SCREENPLAY_SAMPLE_TASKS = {"screenplay_generate", "screenplay_review", "screenpl
 WORLD_SAMPLE_TASKS = {"world_candidates.generate", "world_candidates.evaluate", *("world_candidates.actor_" + str(index) for index in range(3))}
 WORLD_SAMPLE_IDEMPOTENCY_SCOPE = "book:world-provider-sample"
 WORLD_SAMPLE_DEFINITION_VERSION = "1.0.0"
+PLANNING_BOOTSTRAP_SOURCE_VERSIONS = frozenset({"1.16.0", "1.17.0", "1.18.0"})
 CHAPTER_LEGACY_REFERENCE_SAMPLE_VERSION = "1.1.0"
 CHAPTER_REFERENCE_SAMPLE_VERSION = "2.3.0"
 CHAPTER_REFERENCE_SAMPLE_SOURCES = {"review": "chapter.draft.generate", "rereview": "chapter.revision.apply"}
@@ -201,8 +202,8 @@ def bootstrap_candidate_accounting_matches(grant: Mapping[str, Any], candidate: 
     if pricing.get("accounting_basis") != basis or pricing.get("currency") != grant["currency"]:
         return False
     if basis == "ACCOUNT_ENTITLEMENT":
-        return (candidate.get("provider") == "codex-cli"
-                and candidate.get("escalation_only") is True
+        from novel_forge.modules.production_execution.cost_routing import authorized_codex_entitlement
+        return (authorized_codex_entitlement(candidate)
                 and candidate.get("authorization_ref") == grant["cost_authorization_ref"])
     return candidate.get("provider") == "deepseek"
 
@@ -461,7 +462,7 @@ def validate_world_sample_origin(cursor: Any, *, project_id: str, operation_id: 
     cursor.execute("""SELECT definition_name,definition_version,command_payload->'payload',input_asset_snapshot
         FROM authority_operation WHERE project_id=%s AND operation_id=%s""", [project_id, metadata.get("source_operation_id")])
     origin = cursor.fetchone()
-    if (not origin or origin[:2] != ("story_planning.generate", "1.16.0")
+    if (not origin or origin[0] != "story_planning.generate" or origin[1] not in PLANNING_BOOTSTRAP_SOURCE_VERSIONS
         or origin[2].get("generator_operation_name") != "chapter_plan.generate"
         or not origin[2].get("world_preparation_request") or origin[2].get("routing_bootstrap_authorization_id")
         or origin[2].get("book_id") != payload.get("book_id")
@@ -541,7 +542,7 @@ def load_bootstrap_authorization(
         "story_design.semantic_evaluate", "1.0.0", "book:narrative-semantic-evaluation",
     ) if payload.get("reference_evaluation") else (
         "story_planning.generate",
-        "1.16.0",
+        row[2] if row and row[2] in PLANNING_BOOTSTRAP_SOURCE_VERSIONS else "1.16.0",
         "book:story-planning-generation",
     )
     if payload.get("source_sampling"):

@@ -389,6 +389,12 @@ def build_production_execution_composition(
         if not router_enabled or not isinstance(provider_task_scope, dict):
             raise ValueError("ROUTING_PROVIDER_TASK_SCOPE_INVALID")
     codex_router_reasoning = "high"
+    codex_catalog = ()
+    if "NOVEL_FORGE_CODEX_ROUTER_MODELS" in values:
+        from novel_forge.modules.production_execution.codex_model_catalog import parse_codex_model_catalog
+        if not codex_router_enabled:
+            raise ValueError("Codex model catalog requires the formal Codex Router")
+        codex_catalog = parse_codex_model_catalog(values["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
     if codex_router_enabled:
         codex_router_reasoning = str(values.get(
             "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT", "high"
@@ -909,14 +915,17 @@ def build_production_execution_composition(
             )
             for stage, route in routes.items()
         }
-    codex_escalation_enabled = codex_router_enabled
+    codex_escalation_enabled = codex_router_enabled and not codex_catalog
     if codex_router_enabled:
         escalation_model = str(values.get("NOVEL_FORGE_CODEX_ESCALATION_MODEL") or "").strip()
         if not escalation_model or int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT") or 0) <= 0:
             raise RuntimeError("Codex Router lane requires an explicit model and finite call allowance")
+        if codex_catalog and not any(entry["model"] == escalation_model and entry["role"] == "PRIMARY" for entry in codex_catalog):
+            raise RuntimeError("Codex model catalog must explicitly bind the configured primary model")
         codex_models.add(escalation_model)
+        codex_models.update(entry["model"] for entry in codex_catalog)
     if codex_models:
-        if len(codex_models) != 1:
+        if len(codex_models) != 1 and not codex_catalog:
             raise RuntimeError("this phase requires one explicit Codex model")
         if not router_enabled and any(
             route.model_profile.runtime_class
@@ -986,7 +995,7 @@ def build_production_execution_composition(
     codex_execution_root: Path | None = None
     codex_pricing: CodexPricingSnapshot | None = None
     codex_entitlement: CodexAccountEntitlementSnapshot | None = None
-    codex_model = next(iter(codex_models), "")
+    codex_model = str(values.get("NOVEL_FORGE_CODEX_ESCALATION_MODEL") or "") if codex_catalog else next(iter(codex_models), "")
     if codex_models:
         from novel_forge.modules.production_execution.codex_configuration import (
             codex_local_binding_hash,
@@ -1016,6 +1025,8 @@ def build_production_execution_composition(
                 "workspace, and absolute persistent execution root"
             )
         if codex_accounting_basis == "PRICED":
+            if codex_catalog:
+                raise RuntimeError("Codex model catalog requires account entitlement")
             required_pricing = {
                 "pricing_ref": str(
                     values.get("NOVEL_FORGE_CODEX_PRICING_REF") or ""
@@ -1271,23 +1282,31 @@ def build_production_execution_composition(
             assert codex_entitlement is not None
             context_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0)
             output_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT") or 0)
-            candidates.append(ModelCandidate(
-                candidate_id=f"codex-cli:{codex_model}:{codex_router_reasoning}", provider="codex-cli", model=codex_model,
-                reasoning=codex_router_reasoning, tier="escalation", capabilities=("structured_output", "text"),
-                context_limit=context_limit, output_limit=output_limit,
-                pricing=PricingSnapshot(
-                    version=codex_entitlement.configuration_ref,
-                    effective_from=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM") or ""),
-                    effective_until=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_UNTIL") or ""),
-                    input_miss_per_million="0", input_hit_per_million="0", output_per_million="0",
-                    currency="UNKNOWN", source=codex_entitlement.authorization_ref,
-                    accounting_basis="ACCOUNT_ENTITLEMENT"),
-                capability_version=codex_entitlement.configuration_ref,
-                model_revision=codex_entitlement.configuration_ref,
-                escalation_only=codex_escalation_enabled,
-                quota_remaining=int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
-                authorization_ref=codex_entitlement.authorization_ref,
-            ))
+            if codex_catalog:
+                from novel_forge.modules.production_execution.codex_model_catalog import codex_catalog_candidates
+                candidates.extend(codex_catalog_candidates(codex_catalog,
+                    entitlement=codex_entitlement.to_dict(),
+                    quota=int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
+                    valid_from=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM") or ""),
+                    valid_until=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_UNTIL") or "")))
+            else:
+                candidates.append(ModelCandidate(
+                    candidate_id=f"codex-cli:{codex_model}:{codex_router_reasoning}", provider="codex-cli", model=codex_model,
+                    reasoning=codex_router_reasoning, tier="escalation", capabilities=("structured_output", "text"),
+                    context_limit=context_limit, output_limit=output_limit,
+                    pricing=PricingSnapshot(
+                        version=codex_entitlement.configuration_ref,
+                        effective_from=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM") or ""),
+                        effective_until=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_UNTIL") or ""),
+                        input_miss_per_million="0", input_hit_per_million="0", output_per_million="0",
+                        currency="UNKNOWN", source=codex_entitlement.authorization_ref,
+                        accounting_basis="ACCOUNT_ENTITLEMENT"),
+                    capability_version=codex_entitlement.configuration_ref,
+                    model_revision=codex_entitlement.configuration_ref,
+                    escalation_only=codex_escalation_enabled,
+                    quota_remaining=int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
+                    authorization_ref=codex_entitlement.authorization_ref,
+                ))
         from novel_forge.modules.review.cross_model_binding import freeze_review_requirement
         model_gateway.provider_router = ProductionProviderRouter(
             settings.database_url, candidates=candidates, execution_environment=environment,
@@ -1919,7 +1938,7 @@ def _book_opening_provider_budget_policy(
             raise ValueError("Book Opening entitlement lane requires a priced parent and explicit policy")
         router = execution.gateway.provider_router
         matching = [candidate for candidate in (router.candidates if router else ())
-                    if candidate.provider == "codex-cli" and candidate.escalation_only
+                    if candidate.provider == "codex-cli" and (candidate.escalation_only or candidate.entitlement_role == "PRIMARY")
                     and candidate.model == lane.get("model_id")
                     and candidate.authorization_ref == lane.get("authorization_ref")
                     and candidate.capability_version == lane.get("authorization_version")

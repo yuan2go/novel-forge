@@ -47,8 +47,11 @@ class _ExplicitFixtureTransport(FakeDeterministicProvider):
 
 
 @pytest.mark.parametrize("scenario", ["success", "timeout_after"])
-@pytest.mark.parametrize("accounting_basis", ["PRICED", "ACCOUNT_ENTITLEMENT"])
+@pytest.mark.parametrize("accounting_basis", ["PRICED", "ACCOUNT_ENTITLEMENT", "PRIMARY_ENTITLEMENT"])
 def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(tmp_path, scenario, accounting_basis):
+    primary = accounting_basis == "PRIMARY_ENTITLEMENT"
+    if primary:
+        accounting_basis = "ACCOUNT_ENTITLEMENT"
     ensure_migrated()
     project = identifier("bootstrap-kernel-fixture")
     workspace, book = f"workspace:{project}", f"book:{project}"
@@ -71,6 +74,10 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
             pricing=replace(candidate.pricing, accounting_basis=accounting_basis, currency="UNKNOWN",
                 version="fixture-account-v1", source="fixture-account-authorization",
                 input_miss_per_million="0", input_hit_per_million="0", output_per_million="0"))
+        if primary:
+            candidate = replace(candidate, escalation_only=False, entitlement_role="PRIMARY",
+                authorized_tasks=("book_plan.generate",), capability_version="fixture-account-v1",
+                pricing=replace(candidate.pricing, source=candidate.authorization_ref))
     expiry = datetime.now(timezone.utc) + timedelta(hours=1)
     grant = {
         "authorization_id": command.routing_bootstrap_authorization_id,
@@ -95,7 +102,7 @@ def test_bootstrap_router_freezes_grant_and_kernel_caps_same_effect_generations(
                      cost_authorization_ref=candidate.authorization_ref)
     overrides = [{"work_id": book, "task_type": command.generator_operation_name,
                   "risk": "HIGH", "quality_floor": 0.9,
-                  "escalation_reason": "explicit fixture-only high-risk control"}] if entitlement else []
+                  "escalation_reason": "explicit fixture-only high-risk control"}] if entitlement and not primary else []
     configure_owned_policy(
         database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
         content={"policy_version": "bootstrap-kernel:v1", "reason": "fixture authorization",
@@ -330,7 +337,9 @@ def test_native_reference_evaluation_stays_out_of_domain_qualification(tmp_path,
     generated = application.generate(command, principal=principal)
     assert generated.candidate_asset_version_id
     candidate_hash = application.require_candidate(generated.candidate_asset_version_id)["content_hash"]
-    labeled = scripted_qualification("book_plan.generate")
+    labeled = scripted_qualification("book_plan.generate",
+        work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
+        profile_version="3.0.0" if command.execution_contract_version == "1.18.0" else "2.0.0")
     adjudicated_reference = None
     if reference_author in {"independent", "trusted_projection"}:
         adjudicated_reference = _exercise_planning_reference_annotations(project=project, workspace=workspace, principal=principal,

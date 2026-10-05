@@ -752,7 +752,10 @@ def budget_request(scope, *, provider="deepseek", decision=None, new_operation=F
                 project_id=project,
                 status="EXECUTING",
             )
-    model = "gpt-5.6-sol" if provider == "codex-cli" else "deepseek-flash"
+    if decision is not None and new_operation:
+        decision = {**decision, "task": {**decision["task"], "operation_id": operation}}
+    model = decision["selected"]["candidate"]["model"] if decision is not None else (
+        "gpt-5.6-sol" if provider == "codex-cli" else "deepseek-flash")
     metadata = {"book_id": "book:test"}
     if decision is not None:
         metadata["capability_runtime"] = {"routing_decision": decision}
@@ -1050,7 +1053,8 @@ def test_chain_entitlement_actual_usage_cannot_exceed_frozen_task_budget(scope):
         assert cursor.fetchone()[0] == "HELD_UNKNOWN"
 
 
-def test_codex_quota_serializes_independent_frozen_chains(scope):
+@pytest.mark.parametrize("roles", [("LEGACY", "LEGACY"), ("PRIMARY", "REFERENCE")])
+def test_codex_quota_serializes_independent_frozen_chains(scope, roles):
     first = frozen_budget_decision(
         scope, provider="codex-cli", chain="chain:first", quota=1
     )
@@ -1060,15 +1064,32 @@ def test_codex_quota_serializes_independent_frozen_chains(scope):
     second["selected"]["candidate"]["authorization_ref"] = first["selected"][
         "candidate"
     ]["authorization_ref"]
+    if roles != ("LEGACY", "LEGACY"):
+        from tests.unit.test_codex_model_catalog import candidates
+        writer, judge = candidates()
+        for decision, candidate in ((first, writer), (second, judge)):
+            decision["task"]["task_type"] = candidate.authorized_tasks[0]
+            decision["selected"]["candidate"] = {**asdict(candidate), "quota_remaining": 1,
+                "authorization_ref": first["selected"]["candidate"]["authorization_ref"],
+                "pricing": {**asdict(candidate.pricing), "source": first["selected"]["candidate"]["authorization_ref"]}}
     requests = [
-        budget_request(scope, provider="codex-cli", decision=decision)
-        for decision in (first, second)
+        budget_request(scope, provider="codex-cli", decision=decision, new_operation=index == 1)
+        for index, decision in enumerate((first, second))
     ]
     with ThreadPoolExecutor(max_workers=2) as pool:
         assert sorted(pool.map(reserve_outcome, requests)) == [
             "BUDGET_CALL_CAP_EXCEEDED",
             "RESERVED",
         ]
+
+
+def test_kernel_rejects_reference_model_reservation_for_writer_task(scope):
+    from tests.unit.test_codex_model_catalog import candidates
+    _, judge = candidates()
+    decision = frozen_budget_decision(scope, provider="codex-cli")
+    decision["selected"]["candidate"] = asdict(judge)
+    decision["task"]["task_type"] = "draft"
+    assert reserve_outcome(budget_request(scope, provider="codex-cli", decision=decision)) == "MODEL_TASK_NOT_AUTHORIZED"
 
 
 def test_routed_reservation_cannot_underfund_frozen_price(scope):
