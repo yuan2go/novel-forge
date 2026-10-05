@@ -27,6 +27,7 @@ from novel_forge.modules.story_planning_runtime.application import (
     _command_from_payload,
     _command_payload,
 )
+from novel_forge.modules.story_planning_runtime.domain import STORY_PLANNING_OPERATION_DEFINITION_REF
 
 
 def _command() -> StoryPlanningGenerationCommand:
@@ -103,6 +104,139 @@ def test_world_sampling_api_preserves_scope_and_trusted_actor(monkeypatch):
         assert rejected.status_code != 200
     assert len(captured) == 1 and captured[0][0].actor_id == principal.principal_id
     assert captured[0][1] is principal
+
+
+def _native_world_sample_source(monkeypatch, version, *, reference=False, stage="world_candidates.generate"):
+    from dataclasses import asdict
+    from unittest.mock import Mock
+    from novel_forge.modules.command_kernel.routing_bootstrap import authorization_hash
+    from novel_forge.modules.story_planning_runtime import world_sampling
+    from novel_forge.modules.story_planning_runtime.world_preparation import PlanningWorldPreparation
+    from novel_forge.modules.worldbuilding.production_planning import WorldProductionPolicy
+    from novel_forge.storage.authority_asset_store import AuthorityAssetDocument
+    from tests.unit.test_story_planning_runtime import _command as planning_command
+
+    request = {"book_run_id": "run", "input_snapshot_id": "snapshot", "accepted_through_chapter": 0,
+               "story_state_version_id": "state", "canon_version_id": "canon"}
+    command = replace(planning_command("chapter_plan.generate"), world_preparation_request=request,
+                      execution_contract_version=version)
+    payload = _command_payload(command)
+
+    def document(ref, asset_type, content):
+        return AuthorityAssetDocument(command.project_id, ref, "fixture", ref, asset_type, ref + ":v1", 1,
+            "ACTIVE", "ELIGIBLE", "CLEAR", authorization_hash(content), content, "2026-10-05T00:00:00Z")
+
+    dependency = document("chapter-group", "planning_generation_candidate", {"chapter": 1})
+    inputs = [{"role": "chapter_group_plan", "asset_version_id": dependency.asset_version_id,
+               "content_hash": dependency.content_hash, "asset_type": dependency.asset_type}]
+    source = document("world_preparation/source-op/source", "world_preparation_source", {"contract": {
+        "contract_version": "world-preparation-source.v1", "request": request,
+        "policy": asdict(WorldProductionPolicy()), "intent": {}, "world_foundation": {},
+        "character_definitions": [], "planning_window": {}, "entity_ids": [],
+        "reality": {"project_id": command.project_id, "book_id": command.book_id, "revision_id": "reality",
+                    "baseline_kind": "CANON", "chapter_number": 0, "current_state": {}, "foundation_cause_refs": []},
+    }})
+    source_ref = {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}
+    generated = {"disposition": "NO_CANDIDATE", "reason": "No legal action", "candidates": []}
+    generation = document("world_preparation/source-op/generation", "world_generation_portfolio",
+                          {"contract": {"source": source_ref, "output": generated}})
+    generation_ref = {"asset_version_id": generation.asset_version_id, "content_hash": generation.content_hash}
+    provider_stage = (PlanningWorldPreparation.generation_stage(source.content["contract"], source_ref, {})
+        if stage == "world_candidates.generate" or reference else
+        PlanningWorldPreparation.evaluation_stage(source.content["contract"], source_ref, generation.content["contract"], generation_ref, {}))
+    context_stage = "world_candidates.generate" if reference else stage
+    context = document("world_preparation/context/source-op/" + context_stage, "context_bundle", {
+        "project_id": command.project_id, "book_id": command.book_id, "logical_key": command.logical_key,
+        "world_preparation": provider_stage.task, "token_budget": provider_stage.task["policy"]["context_token_budget"],
+    })
+    documents = {item.logical_ref: item for item in (dependency, source, generation, context)}
+    query = Mock()
+    query.require.side_effect = lambda **kwargs: next(item for item in documents.values()
+        if item.project_id == kwargs["project_id"] and
+        (item.asset_version_id == kwargs.get("asset_version_id") or item.logical_ref == kwargs.get("logical_ref")))
+    monkeypatch.setattr(world_sampling, "AuthorityAssetDocumentRepository", lambda cursor: query)
+    binding = {"asset_version_id": "sample:v1", "content_hash": authorization_hash(generated)} if reference else None
+    if reference:
+        from novel_forge.modules.chapter_quality_authority import reference_subject
+        monkeypatch.setattr(reference_subject, "require_reference_subject", lambda *args, **kwargs: {
+            **binding, "content": {"source_operation_id": "source-op", "sampled_output": generated,
+                "source": source_ref, "context": {"asset_version_id": context.asset_version_id, "content_hash": context.content_hash}},
+        })
+    cursor = Mock()
+    row = ("story_planning.generate", version, payload, inputs, authorization_hash(inputs), inputs)
+    cursor.fetchone.side_effect = lambda: row if cursor.execute.call_count == 1 else (1,)
+    return cursor, row, binding, query
+
+
+@pytest.mark.parametrize("version", ["1.16.0", "1.17.0", STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]])
+@pytest.mark.parametrize("stage,reference", [
+    ("world_candidates.generate", False), ("world_candidates.evaluate", False), ("world_candidates.evaluate", True),
+])
+def test_world_sampling_accepts_current_and_frozen_adjacent_sources(monkeypatch, version, stage, reference):
+    from copy import deepcopy
+    from novel_forge.modules.story_planning_runtime.world_sampling import _require_world_sample_source
+    cursor, row, binding, _ = _native_world_sample_source(monkeypatch, version, stage=stage, reference=reference)
+    frozen_row = deepcopy(row)
+    frozen = _require_world_sample_source(cursor, project_id="project-1", book_id="book-1",
+                                         source_operation_id="source-op", stage=stage, generation_sample=binding)
+    assert frozen.command_payload["execution_contract_version"] == version
+    assert frozen.stage.name == stage
+    assert bool(frozen.derived_context) == reference
+    assert frozen.definition_version == ("1.1.0" if reference else "1.0.0")
+    assert row == frozen_row
+
+
+@pytest.mark.parametrize("damage", ["old_version", "future_version", "definition", "generator", "book", "repair", "bootstrap", "hash"])
+def test_world_sampling_version_compatibility_preserves_source_admission_checks(monkeypatch, damage):
+    from novel_forge.modules.story_planning_runtime.world_sampling import _require_world_sample_source
+    version = STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
+    cursor, row, _, query = _native_world_sample_source(monkeypatch, version)
+    changed = list(row)
+    if damage in {"old_version", "future_version"}:
+        changed[1] = "1.15.0" if damage == "old_version" else "1.19.0"
+    elif damage == "definition":
+        changed[0] = "other.generate"
+    elif damage == "hash":
+        changed[4] = "sha256:" + "0" * 64
+    else:
+        field, value = {"generator": ("generator_operation_name", "book_plan.generate"),
+            "book": ("book_id", "another-book"), "repair": ("repair_of_operation_id", "parent"),
+            "bootstrap": ("routing_bootstrap_authorization_id", "benchmark-grant")}[damage]
+        changed[2][field] = value
+    cursor.fetchone.side_effect = lambda: tuple(changed)
+    with pytest.raises(KernelError, match="WORLD_SAMPLE_SOURCE_INVALID"):
+        _require_world_sample_source(cursor, project_id="project-1", book_id="book-1",
+                                     source_operation_id="source-op", stage="world_candidates.generate")
+    query.require.assert_not_called()
+
+
+@pytest.mark.parametrize("damage,code", [
+    ("inputs", "WORLD_SAMPLE_INPUT_DRIFT"), ("source", "WORLD_SAMPLE_SOURCE_DRIFT"),
+    ("context", "WORLD_SAMPLE_CONTEXT_DRIFT"), ("provenance", "WORLD_SAMPLE_PROVENANCE_INVALID"),
+])
+def test_current_world_source_still_requires_frozen_inputs_and_native_evidence(monkeypatch, damage, code):
+    from novel_forge.modules.story_planning_runtime.world_sampling import _require_world_sample_source
+    version = STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
+    cursor, row, _, query = _native_world_sample_source(monkeypatch, version)
+    if damage == "inputs":
+        row = (*row[:5], [])
+    elif damage in {"source", "context"}:
+        original_require = query.require.side_effect
+
+        def damaged_document(**kwargs):
+            item = original_require(**kwargs)
+            if damage == "source" and item.asset_type == "world_preparation_source":
+                return replace(item, content={"contract": {**item.content["contract"], "request": {"book_run_id": "other-run"}}})
+            if damage == "context" and item.asset_type == "context_bundle":
+                return replace(item, content_hash="sha256:" + "0" * 64)
+            return item
+
+        query.require.side_effect = damaged_document
+    cursor.fetchone.side_effect = lambda: row if cursor.execute.call_count == 1 else (None if damage == "provenance" else (1,))
+    with pytest.raises(KernelError) as error:
+        _require_world_sample_source(cursor, project_id="project-1", book_id="book-1",
+                                     source_operation_id="source-op", stage="world_candidates.generate")
+    assert error.value.code == code
 
 
 @pytest.mark.parametrize("operation_status,effect_status,dispatch_status,replaceable", [
