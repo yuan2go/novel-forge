@@ -1050,6 +1050,13 @@ separates priced USD allowance from account entitlement. The creation entry's fr
 accounting and resume adapter retains that distinction and validates the exact native
 campaign grant, entitlement identity and business scope. A zero priced allowance permits
 only entitled execution; it does not mean the entitlement has zero monetary cost.
+The real creation entry validates the frozen campaign against the native budget before
+checking mixed configuration caps. Codex retains its exact entitlement reference and
+unknown monetary cost. A native positive priced allowance requires explicit positive
+priced caps, each no larger than that allowance; it does not price the Codex lane.
+Standalone entitlement smoke runs without a validated mixed campaign still reject
+monetary caps. These configuration checks never replace Kernel reservations or native
+phase and cumulative budget enforcement.
 The adapter rejects a campaign presented as a legacy single-account budget before
 initializing a Book. Historical single-account freezes retain their original semantics.
 

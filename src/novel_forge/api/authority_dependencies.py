@@ -1304,19 +1304,11 @@ def build_production_execution_composition(
                    if deepseek_enabled else {}),
             },
         )
+    from novel_forge.modules.production_execution.provider_admission import SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT
+
     shared_budget_caps = {
         key: str(values[value])
-        for key, value in (
-            ("project_daily", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"),
-            ("project_total", "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP"),
-            ("operation_total", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
-            ("provider_project_daily", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
-            ("global_daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),
-            ("global_total", "NOVEL_FORGE_GLOBAL_PROVIDER_CAP"),
-            ("global_monthly", "NOVEL_FORGE_GLOBAL_MONTHLY_PROVIDER_CAP"),
-            ("work_total", "NOVEL_FORGE_WORK_PROVIDER_CAP"),
-            ("model_project_total", "NOVEL_FORGE_MODEL_PROJECT_CAP"),
-        )
+        for key, value in SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT
         if str(values.get(value) or "").strip()
     }
     if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and shared_budget_caps:

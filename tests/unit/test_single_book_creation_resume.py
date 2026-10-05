@@ -70,6 +70,28 @@ def test_campaign_resume_preserves_money_ceiling_and_unknown_account_cost():
         creation_resume_semantics(frozen, binding)
 
 
+@pytest.mark.parametrize("key", ["NOVEL_FORGE_PROVIDER_DAILY_CAP", "NOVEL_FORGE_GLOBAL_PROVIDER_CAP",
+    "NOVEL_FORGE_GLOBAL_MONTHLY_PROVIDER_CAP", "NOVEL_FORGE_WORK_PROVIDER_CAP", "NOVEL_FORGE_MODEL_PROJECT_CAP"])
+def test_changed_effective_money_cap_cannot_silently_resume_a_campaign(monkeypatch, key):
+    frozen, binding = campaign_resume_inputs()
+    frozen["runtime_settings"][key] = "2"
+    original = creation_resume_semantics(frozen, binding)
+    scope = frozen["runtime_identity"]
+    book = {"project_id": scope["project_id"], "book_id": scope["book_id"], "version": 1,
+            "runtime_policy": {"creation_pilot": original}}
+    query = SimpleNamespace(require_book=Mock(return_value=book))
+    monkeypatch.setattr(creation_pilot, "BookDesignAuthorityQuery", lambda _: query)
+    app = SimpleNamespace(database_url="unused", execute=Mock())
+    composition = SimpleNamespace(formation=SimpleNamespace(generation=SimpleNamespace(book_design=app)))
+    frozen["runtime_settings"][key] = "3"
+    assert creation_resume_semantics(frozen, binding) != original
+    with pytest.raises(ValueError, match="frozen"):
+        creation_pilot.prepare_pilot_book(composition=composition, principal=Mock(), project_id=scope["project_id"],
+            workspace_id=scope["workspace_id"], book_id=scope["book_id"], run_key=frozen["run_key"], title="Frozen",
+            frozen=frozen, initialize=False, budget_binding=binding)
+    app.execute.assert_not_called()
+
+
 @pytest.mark.parametrize('initialize', [False, True])
 def test_campaign_existing_book_can_resume_with_design_permission_closed(monkeypatch, initialize):
     frozen, binding = campaign_resume_inputs()

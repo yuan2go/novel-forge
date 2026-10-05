@@ -44,6 +44,73 @@ def test_account_entitlement_uses_exact_reference_and_no_fake_usd_budget():
     assert "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP" not in values
 
 
+def mixed_configuration():
+    from scripts.run_world_production_smoke import ACCOUNT_ENTITLEMENT_IDENTITY, CAPS
+    return {
+        **{key: "verified-runtime-identity" for key in ACCOUNT_ENTITLEMENT_IDENTITY},
+        **{key: "2" for key in CAPS},
+        "NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT",
+        "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT": "1600",
+        "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT": "80000000",
+        "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP": "20",
+        "NOVEL_FORGE_ENVIRONMENT": "validation",
+        "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "operator",
+        "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": "isolated-project",
+    }
+
+
+def mixed_accounting():
+    return {"accounting_basis": "MIXED", "authorization_ref": "native-campaign",
+            "authorized_total_usd": "20", "monetary_cost_status": "PRICED_ESTIMATED_ENTITLEMENT_UNKNOWN"}
+
+
+def test_creation_freeze_covers_every_configured_production_money_cap():
+    from scripts.creation_comparison import COMPARISON_RUNTIME_SETTINGS
+    from scripts.run_world_production_smoke import MONETARY_CAPS
+    assert set(MONETARY_CAPS) <= COMPARISON_RUNTIME_SETTINGS
+
+
+def test_native_mixed_configuration_does_not_flatten_codex_into_priced_or_free_execution():
+    from scripts.run_world_production_smoke import validate_configuration
+    values = mixed_configuration()
+    with pytest.raises(ValueError, match="cannot use monetary Provider caps"):
+        validate_configuration(values)
+    validate_configuration(values, campaign_accounting=mixed_accounting())
+    assert authorize_execution(values, "", values["NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF"])["monetary_cost_status"] == "UNKNOWN"
+    assert values["NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP"] == "20"
+
+
+@pytest.mark.parametrize("cap", ["0", "-1", "NaN", "21", ""])
+def test_mixed_caps_cannot_exceed_or_drop_the_native_allowance(cap):
+    from scripts.run_world_production_smoke import validate_configuration
+    values = mixed_configuration()
+    values["NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL"] = cap
+    with pytest.raises(ValueError, match="within native campaign allowance"):
+        validate_configuration(values, campaign_accounting=mixed_accounting())
+
+
+@pytest.mark.parametrize("key", ["NOVEL_FORGE_PROVIDER_DAILY_CAP", "NOVEL_FORGE_GLOBAL_PROVIDER_CAP",
+    "NOVEL_FORGE_GLOBAL_MONTHLY_PROVIDER_CAP", "NOVEL_FORGE_WORK_PROVIDER_CAP", "NOVEL_FORGE_MODEL_PROJECT_CAP"])
+@pytest.mark.parametrize("cap", ["NaN", "21"])
+def test_all_configured_runtime_money_caps_bind_the_native_allowance(key, cap):
+    from scripts.run_world_production_smoke import validate_configuration
+    values = mixed_configuration()
+    values[key] = cap
+    with pytest.raises(ValueError, match="within native campaign allowance"):
+        validate_configuration(values, campaign_accounting=mixed_accounting())
+    with pytest.raises(ValueError, match="cannot use monetary Provider caps"):
+        validate_configuration(values)
+
+
+@pytest.mark.parametrize("change", [{"accounting_basis": "PRICED"}, {"monetary_cost_status": "KNOWN"},
+    {"authorization_ref": ""}, {"authorized_total_usd": "NaN"}, {"authorized_total_usd": "-1"},
+    {"authorized_total_usd": "0"}])
+def test_mixed_configuration_requires_a_finite_native_priced_grant(change):
+    from scripts.run_world_production_smoke import validate_configuration
+    with pytest.raises(ValueError):
+        validate_configuration(mixed_configuration(), campaign_accounting={**mixed_accounting(), **change})
+
+
 @pytest.mark.parametrize("calls,tokens", [(0, 0), (1, 0), (0, 100)])
 def test_creation_initialization_requires_both_positive_native_dimensions_before_commands(tmp_path, calls, tokens):
     from novel_forge.storage.versioned_policy_repository import policy_hash
