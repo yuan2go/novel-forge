@@ -328,3 +328,79 @@ def test_current_plan_entry_rejects_known_legacy_runtime_projection_before_norma
     )
     with pytest.raises(KernelError, match="CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED"):
         _PlanHandler().execute(request)
+
+
+def execution_style_request(
+    style_version, definition_version="3.8.0", source_version=""
+):
+    from novel_forge.modules.chapter_authority.contracts import (
+        ChapterHandlerRequest,
+        ChapterInputAsset,
+    )
+    from tests.unit.test_chapter_execution_artifacts import _plan
+
+    style = compile_foundation_style(
+        replace(compilation("APPLICABLE"), definition_version=style_version)
+    )
+    plan = {
+        **_plan(),
+        "source_chapter_plan_asset_version_id": "plan:v1",
+        "source_chapter_plan_content_hash": "sha256:" + "a" * 64,
+    }
+    return ChapterHandlerRequest(
+        operation_id="execution-intent",
+        project_id="project-1",
+        workspace_id="workspace",
+        trace_id="trace",
+        correlation_id="correlation",
+        command={"chapter": 5},
+        definition_version=definition_version,
+        source_definition_version=source_version,
+        inputs=(
+            ChapterInputAsset("plan:v1", "chapter_plan", "sha256:" + "a" * 64, plan),
+            ChapterInputAsset("style:v1", "style_policy", "sha256:" + "b" * 64, style),
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "definition,source",
+    [
+        ("3.8.0", ""),
+        ("3.8.0-author-input.v2", ""),
+        ("2.2.0", "3.8.0"),
+    ],
+)
+def test_current_execution_entry_rejects_selected_legacy_style_before_writer(
+    definition, source
+):
+    from novel_forge.modules.chapter_authority.handlers import _ExecutionIntentHandler
+
+    with pytest.raises(KernelError, match="STYLE_PROJECTION_MIGRATION_REQUIRED"):
+        _ExecutionIntentHandler().execute(
+            execution_style_request("2.1.1", definition, source)
+        )
+    output = _ExecutionIntentHandler().execute(
+        execution_style_request("2.1.4", definition, source)
+    )
+    assert output.content["contract_version"] == "chapter-execution-intent-v4"
+
+
+@pytest.mark.parametrize("definition", ["3.6.0", "3.7.0", "3.7.0-author-input.v2"])
+def test_frozen_execution_preserves_selected_legacy_style_without_silent_replacement(
+    definition,
+):
+    from novel_forge.modules.chapter_authority.handlers import _ExecutionIntentHandler
+
+    request = execution_style_request("2.1.1", definition)
+    output = _ExecutionIntentHandler().execute(request)
+    assert (
+        output.content["creative_requirements"]["style"]["policies"][0][
+            "asset_version_id"
+        ]
+        == "style:v1"
+    )
+    assert (
+        request.inputs[1].content["contract_version"]
+        == "foundation-style-projection.v3"
+    )

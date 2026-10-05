@@ -360,6 +360,16 @@ class _ExecutionIntentHandler:
             policies = [
                 item for item in request.inputs if item.asset_type == "style_policy"
             ]
+            if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2"}:
+                if len(policies) != 1 or (
+                    policies[0].content.get("contract_version") != "foundation-style-projection.v4"
+                    or not any(fact.get("key") == "work_applicability"
+                               for fact in policies[0].content.get("structured_facts", []))
+                ):
+                    raise KernelError(
+                        "STYLE_PROJECTION_MIGRATION_REQUIRED",
+                        "Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly",
+                    )
             if len(policies) > 1:
                 raise KernelError(
                     "STYLE_POLICY_INPUT_AMBIGUOUS",

@@ -1563,6 +1563,11 @@ retaining qualification-v2 identities. Qualification profile v3 includes work ap
 semantics in its hash. New longform windows v2 include per-candidate creative baselines;
 legacy v1 source identity must be explicitly selected when checking or resuming a v1 manifest. Screenplay requires prose-generation-v4 or quality-review-v3
 and its separate adaptation schema. Historical artifacts remain available for recovery.
+For new Chapter 3.8 work, selected style must be foundation-style-projection.v4 with
+source-bound Book applicability. An explicit preparation asset override does not waive
+this requirement. STYLE_PROJECTION_MIGRATION_REQUIRED blocks legacy v2/v3 before Writer;
+inspect and explicitly migrate through the owning Content/Book commands. Frozen older
+Chapter tasks retain their exact style and baseline rather than substituting the new one.
 New retrieval plans bind writer_projection_version=accepted-writer-history.v2. Inspect
 the exact semantic view and source/projection hashes: narrative history should contain
 accepted prose and visible facts, with historical review/comparison/Provider evidence

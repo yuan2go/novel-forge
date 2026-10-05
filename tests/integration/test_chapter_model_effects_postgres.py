@@ -1384,13 +1384,13 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "source_use_mode": "generation", "allowed_use": "generation",
                 "retrieval_reasons": ["task_related_episodic_history"],
             }
+            from tests.integration.quality_context_state_fixture import current_state_inputs
+
+            compiled_style_inputs = current_state_inputs(project_id, ())
             candidates = self._release_evidence(
                 project_id, with_mkaos=True, scope_preseeded=True, workspace_id=harness.workspace_id,
                 extra_context_candidates=(history,
-                    {"asset_version_id": f"{project_id}:work-style:v1", "asset_type": "style_policy",
-                     "project_id": project_id, "safe_summary": "Explicit fixture style",
-                     "constraints": ["Concrete witnessed choices"], "structured_facts": [],
-                     "estimated_tokens": 20, "narrative_function": "work_style"}, *(
+                    *compiled_style_inputs, *(
                     {"asset_version_id": f"{project_id}:{kind}:genesis", "asset_type": kind,
                      "project_id": project_id, "safe_summary": "Explicit fixture genesis boundary",
                      "structured_facts": [], "estimated_tokens": 20, "narrative_function": "accepted_boundary"}

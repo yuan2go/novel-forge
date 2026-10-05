@@ -1151,6 +1151,10 @@ bind the exact source Operation semantics separately from their own execution ve
 must agree: neither a generic threshold nor a Chapter NOT_APPLICABLE can override an
 effective requirement. Foundation style compile 2.1.4/v4 binds applicability to the
 selected Book Foundation and its approved source versions; frozen 2.1.1 emits v3.
+New 3.8 ExecutionIntent admission requires that v4 source-bound applicability projection,
+including when preparation explicitly selects an older asset. Legacy v2/v3 styles fail
+with STYLE_PROJECTION_MIGRATION_REQUIRED. A migration must use a new explicit owning
+command; it cannot replace an old task's frozen style or baseline during recovery.
 QualityContext v6 and aggregate v5 keep applicability, semantic verdict, numerical
 score, threshold evaluation, calibration, blocking and required action separate.
 An independent FAILED verdict survives a high score. Unqualified or incomplete
