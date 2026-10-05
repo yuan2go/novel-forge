@@ -1,13 +1,11 @@
 from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
-
 from novel_forge.modules.chapter_authority.contracts import (
+    QUALITY_GROUP_NODES,
     ChapterHandlerRegistry,
     ChapterNode,
-    QUALITY_GROUP_NODES,
 )
 from novel_forge.modules.chapter_authority.export_delivery import (
     ExportDeliveryRequest,
@@ -29,13 +27,13 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
     WorkerResultCommand,
     acquire_attempt_lease,
+    checkpoint_attempt_for_external_reconciliation,
     create_attempt,
+    heartbeat_attempt,
     queue_attempt,
     start_attempt,
-    submit_attempt_result,
     submit_attempt_failure,
-    checkpoint_attempt_for_external_reconciliation,
-    heartbeat_attempt,
+    submit_attempt_result,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
@@ -47,8 +45,8 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapter,
 )
 from novel_forge.modules.command_kernel.external_effect_runtime import (
-    EffectRecoveryDisposition,
     EffectCommandContext,
+    EffectRecoveryDisposition,
     classify_external_effect_recovery,
     reconcile_external_effect,
     resume_operation_from_completed_effect,
@@ -57,8 +55,8 @@ from novel_forge.modules.command_kernel.cancellation import (
     acknowledge_worker_cancellation,
 )
 from novel_forge.modules.canon_graph.approval_authority import (
-    advance_canon_reextraction,
     CanonApprovalContext,
+    advance_canon_reextraction,
     decision_asset_versions,
     ensure_canon_approval_requests,
     pending_canon_reextraction,
@@ -623,7 +621,7 @@ class ChapterAuthorityScheduler:
                     if str(item.get("asset_type") or "")
                     in (
                         {"story_state_snapshot", "canon_snapshot", "style_policy"}
-                        if root["definition_version"] == "3.6.0"
+                        if root["definition_version"] in {"3.6.0", "3.7.0"}
                         else {"story_state_snapshot", "canon_snapshot"}
                     )
                 )

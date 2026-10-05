@@ -1,17 +1,13 @@
 from __future__ import annotations
-
 from .foundation_generation import FOUNDATION_GENERATORS, validate_foundation_payload
-
 from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import asdict, replace
 import re
 from typing import Any
 from uuid import uuid4
-
 from psycopg import sql
 from psycopg.types.json import Jsonb
-
 from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerOutput,
     AuthorityHandlerRegistration,
@@ -47,8 +43,8 @@ from novel_forge.modules.hierarchical_planning import (
     validate_planning_contract,
 )
 from novel_forge.modules.story_design_authority import (
-    DesignTransition,
     GENERATOR_CATALOG,
+    DesignTransition,
     PostgresStoryDesignAssetAuthority,
     StoryDesignTransitionCommand,
 )
@@ -56,42 +52,46 @@ from novel_forge.modules.story_design_authority.validators import (
     validate_story_design_candidate,
 )
 from novel_forge.modules.story_design_authority.qualification import (
+    qualification_profile_options,
     required_qualification_profiles,
     scripted_qualification,
-    uses_work_requirements,
 )
 from novel_forge.modules.story_design_authority.evaluation_runtime import (
     NARRATIVE_EVALUATION_DEFINITION as STORY_PLANNING_EVALUATION_DEFINITION,
-    NARRATIVE_EVALUATION_HANDLER as STORY_PLANNING_EVALUATION_HANDLER,
-    NARRATIVE_EVALUATION_VERSION as STORY_PLANNING_EVALUATION_VERSION,
-    NarrativeSemanticEvaluationApplication,
-    NarrativeSemanticEvaluationCommand,
-    NarrativeSemanticEvaluationExecutionPort,
-    NarrativeSemanticEvaluationResult,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.narrative_realization_repositories import (
     NarrativeRealizationRepository,
 )
-
 from .binder import PlanningExecutionBinder
 from .domain import (
     CHAPTER_READER_SCHEDULE_FIELDS,
     CHAPTER_SCHEDULE_FIELDS,
-    FrozenPlanningInput,
-    PlanningGenerationResult,
-    PlanningGenerationStatus,
     STORY_PLANNING_MAX_ATTEMPTS,
     STORY_PLANNING_OPERATION_DEFINITION_REF,
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
-    StoryPlanningGenerationCommand,
+    FrozenPlanningInput,
+    PlanningGenerationResult,
+    PlanningGenerationStatus,
     StoryPlanningEvaluationCommand,
+    StoryPlanningGenerationCommand,
     build_planning_constraint_envelope,
     canonical_book_volume_allocation,
     canonical_hash,
     require_chapter_schedule_row,
 )
-
+from novel_forge.modules.story_design_authority.evaluation_runtime import (
+    NARRATIVE_EVALUATION_HANDLER as STORY_PLANNING_EVALUATION_HANDLER,
+)
+from novel_forge.modules.story_design_authority.evaluation_runtime import (
+    NARRATIVE_EVALUATION_VERSION as STORY_PLANNING_EVALUATION_VERSION,
+)
+from novel_forge.modules.story_design_authority.evaluation_runtime import (
+    NarrativeSemanticEvaluationApplication,
+    NarrativeSemanticEvaluationCommand,
+    NarrativeSemanticEvaluationExecutionPort,
+    NarrativeSemanticEvaluationResult,
+)
 
 STORY_PLANNING_GENERATION_DEFINITION = "story_planning.generate"
 STORY_PLANNING_GENERATION_VERSION = STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition(
@@ -144,7 +144,10 @@ class _PlanningGenerationHandler:
         self.database_url = database_url
 
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
-        from .result_recovery import PlanningResultValidationError, persist_result_failure
+        from .result_recovery import (
+            PlanningResultValidationError,
+            persist_result_failure,
+        )
 
         try:
             return self._execute(request)
@@ -234,6 +237,7 @@ class _PlanningGenerationHandler:
         craft_strategy = None
         if self.database_url and candidate.evidence.context_bundle_asset_version_id:
             from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
             from .knowledge_translation import validate_knowledge_translations
 
             context = AuthorityAssetQuery(self.database_url).require(
@@ -254,8 +258,8 @@ class _PlanningGenerationHandler:
                     validate_knowledge_translations(candidate.candidate_payload, selection)
                     knowledge_policy = selection["policy_version"]
                     if command.generator_operation_name == "chapter_plan.generate":
-                        from novel_forge.modules.mkaos_authority.craft_selection import build_craft_strategy
                         from novel_forge.modules.mkaos_authority.craft_reselection import validate_concrete_selection
+                        from novel_forge.modules.mkaos_authority.craft_selection import build_craft_strategy
                         validate_concrete_selection(candidate.candidate_payload, selection)
                         craft_strategy = build_craft_strategy(candidate.candidate_payload, selection)
                 except KernelError as error:
@@ -288,7 +292,8 @@ class _PlanningGenerationHandler:
             },
             candidate_payload=candidate.candidate_payload,
             arc_working_set=command.arc_working_set,
-            work_requirements=command.execution_contract_version == "1.17.0",
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
+            aligned_methods=command.execution_contract_version == "1.18.0",
         )
         if envelope.get("author_design"):
             from novel_forge.modules.story_design_authority.author_input import frozen_author_projection
@@ -298,6 +303,7 @@ class _PlanningGenerationHandler:
                 envelope["envelope_digest"] = canonical_hash({key: value for key, value in envelope.items() if key != "envelope_digest"})
         if command.world_preparation_request:
             from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
             from .world_preparation import require_world_action
 
             action = require_world_action(
@@ -927,7 +933,7 @@ class StoryPlanningGenerationApplication:
                 evaluation=(
                     scripted_qualification(
                         generation_command.generator_operation_name,
-                        work_requirements=uses_work_requirements(candidate["content"]),
+                        **qualification_profile_options(candidate["content"]),
                     )
                     if fixture
                     else None
@@ -1783,6 +1789,7 @@ class StoryPlanningGenerationApplication:
                     "1.15.0",
                     "1.16.0",
                     "1.17.0",
+                    "1.18.0",
                 }:
                     definition = GENERATOR_CATALOG[command.generator_operation_name]
                     maximum = (
@@ -3062,7 +3069,7 @@ class StoryPlanningGenerationApplication:
         generator_operation_name: str,
     ) -> dict[str, Any]:
         from novel_forge.modules.story_design_authority.qualification import (
-            uses_work_requirements,
+            qualification_profile_options,
         )
 
         candidate = self._require_asset(
@@ -3070,7 +3077,7 @@ class StoryPlanningGenerationApplication:
         )
         profiles = required_qualification_profiles(
             generator_operation_name,
-            work_requirements=uses_work_requirements(candidate["content"]),
+            **qualification_profile_options(candidate["content"]),
         )
         expected = {profile.layer.value: profile for profile in profiles}
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -3502,7 +3509,7 @@ def story_planning_generation_definition(
             "repair_candidate_asset_input_allowed": True,
             **(
                 {"repair_result_evidence_input_allowed": True}
-                if definition_version in {"1.15.0", "1.16.0", "1.17.0"}
+                if definition_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0"}
                 else {}
             ),
             "capability_pack_attempt_snapshot_required": True,

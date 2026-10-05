@@ -1,14 +1,12 @@
 from __future__ import annotations
-
 from typing import Any
-
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.chapter_quality_authority.generator_reference import generator_reference_contract
 from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_design_authority.qualification import (
+    qualification_profile_options,
     required_qualification_profiles,
-    uses_work_requirements,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -54,7 +52,7 @@ def planning_reference_samples(
             dimensions = [
                 profile.layer.value + ":" + criterion
                 for profile in required_qualification_profiles(
-                    task, work_requirements=uses_work_requirements(content)
+                    task, **qualification_profile_options(content)
                 )
                 for criterion in profile.criteria
             ]

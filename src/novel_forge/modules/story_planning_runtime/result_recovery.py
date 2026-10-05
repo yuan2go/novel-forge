@@ -1,8 +1,6 @@
 from __future__ import annotations
-
 from collections.abc import Mapping
 from typing import Any
-
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_runtime import (
@@ -48,7 +46,7 @@ class PlanningResultValidationError(KernelError):
 
 
 def validate_raw_result(
-    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False
+    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False, aligned_methods: bool = False
 ) -> dict[str, Any]:
     if not isinstance(raw, Mapping):
         raise KernelError(
@@ -74,7 +72,7 @@ def validate_raw_result(
             for key, value in normalized.items()
             if key not in {"author_design_decisions", "knowledge_translations"}
         }
-        envelope = {"foundation_parent_bindings": {}, "contract_version": "foundation-generation.v2" if work_requirements else "foundation-generation.v1"}
+        envelope = {"foundation_parent_bindings": {}, "contract_version": "foundation-generation.v3" if aligned_methods else "foundation-generation.v2" if work_requirements else "foundation-generation.v1"}
         if compiled_scope and generator == "world.design.generate":
             envelope["world_compilation"] = {"compiled_scope": compiled_scope}
         structural.update(constraint_envelope=envelope, foundation_parent_bindings={})
@@ -255,15 +253,17 @@ def require_result_repair_source(
         validate_raw_result(
             command.generator_operation_name,
             raw,
-            work_requirements=command.execution_contract_version == "1.17.0",
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
+            aligned_methods=command.execution_contract_version == "1.18.0",
             compiled_scope="BOOK"
             if command.generator_operation_name == "world.design.generate"
             else None,
         )
         if source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"]["error_code"].startswith(("CRAFT_", "PLANNING_KNOWLEDGE_")):
-            from .knowledge_translation import validate_knowledge_translations
             from novel_forge.modules.mkaos_authority.craft_reselection import validate_concrete_selection
             from novel_forge.modules.mkaos_authority.craft_selection import build_craft_strategy
+
+            from .knowledge_translation import validate_knowledge_translations
             context = AuthorityAssetQuery(database_url).require(project_id=command.project_id, asset_version_id=evidence["context_bundle_asset_version_id"])
             selection = context.content["narrative_intelligence"]
             if (context.content_hash != evidence["context_bundle_hash"] or selection["selection_digest"] != evidence["narrative_intelligence_selection_digest"]):

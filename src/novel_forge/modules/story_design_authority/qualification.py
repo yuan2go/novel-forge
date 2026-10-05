@@ -1,16 +1,12 @@
 """CONSTRAINT: a layer-specific evaluation contract cannot act as a universal narrative judge."""
 
 from __future__ import annotations
-
 from dataclasses import asdict, dataclass, replace
 from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Mapping
-
 from novel_forge.modules.command_kernel.errors import KernelError
-
 from .domain import GENERATOR_CATALOG
-
 
 NARRATIVE_QUALIFICATION_SCHEMA_VERSION = "progressive-narrative-qualification.v1"
 PROVIDER_JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
@@ -42,7 +38,27 @@ class NarrativeQualificationProfile:
 
     @property
     def profile_hash(self) -> str:
-        return _canonical_hash(asdict(self))
+        return _canonical_hash(
+            {
+                **asdict(self),
+                **(
+                    {"criterion_semantics": self.criterion_semantics}
+                    if self.profile_version == "3.0.0"
+                    else {}
+                ),
+            }
+        )
+
+    @property
+    def criterion_semantics(self) -> dict[str, str]:
+        if self.profile_version != "3.0.0":
+            return {}
+        return {
+            criterion: _WORK_METHOD_SEMANTICS.get(
+                criterion, _WORK_APPLICABILITY_SEMANTICS
+            )
+            for criterion in self.criteria
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -418,16 +434,57 @@ GENERATOR_QUALIFICATION_PROFILES: Mapping[
 
 
 def uses_work_requirements(content: Mapping[str, Any]) -> bool:
-    if content.get("schema_version") == "book-design.v6":
+    if content.get("schema_version") in {"book-design.v6", "book-design.v7"}:
         return True
     payload = content.get("candidate_payload", content)
     if not isinstance(payload, Mapping):
         return False
     envelope = payload.get("constraint_envelope")
     return isinstance(envelope, Mapping) and (
-        envelope.get("contract_version") == "foundation-generation.v2"
-        or envelope.get("creative_requirements_contract") == "work-requirements.v1"
+        envelope.get("contract_version")
+        in {"foundation-generation.v2", "foundation-generation.v3"}
+        or envelope.get("creative_requirements_contract")
+        in {"work-requirements.v1", "work-requirements.v2"}
     )
+
+
+_WORK_APPLICABILITY_SEMANTICS = (
+    "Evaluate this criterion against frozen author requirements and this work's valid commitments. "
+    "A method that is absent, explicitly inapplicable or prohibited is not required: validate the "
+    "chosen alternative and record PASS with its input/candidate evidence if coherent, with no "
+    "repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. "
+    "Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution "
+    "is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected "
+    "method as a repair. Unknown applicability does not prove absence or authorize invention."
+)
+_WORK_METHOD_SEMANTICS = {
+    "THEME_METHOD_WORK_ALIGNMENT": _WORK_APPLICABILITY_SEMANTICS
+    + " Theme exploration may use observation, ambiguity, reflection, exposition or choices. "
+    "Check every selected choice test and its consequences when present; empty choice_tests "
+    "can be valid for an observational theme. Characters need not enact competing choices.",
+    "ENDING_THEME_WORK_ALIGNMENT": _WORK_APPLICABILITY_SEMANTICS
+    + " Check intended thematic relation and every selected closure condition. An open or "
+    "unresolved ending with stable characters can align with the theme; closure, transformation "
+    "and protagonist cost are not prerequisites. Do not fill an empty closure_conditions array.",
+}
+
+
+def qualification_profile_options(content: Mapping[str, Any]) -> dict[str, Any]:
+    payload = content.get("candidate_payload", content)
+    envelope = (
+        payload.get("constraint_envelope") if isinstance(payload, Mapping) else None
+    )
+    aligned = content.get("schema_version") == "book-design.v7" or (
+        isinstance(envelope, Mapping)
+        and (
+            envelope.get("contract_version") == "foundation-generation.v3"
+            or envelope.get("creative_requirements_contract") == "work-requirements.v2"
+        )
+    )
+    return {
+        "work_requirements": uses_work_requirements(content),
+        "profile_version": "3.0.0" if aligned else "2.0.0",
+    }
 
 
 _WORK_CRITERIA = {
@@ -490,7 +547,7 @@ def qualification_profiles_for_asset(
             "Profile selection requires the exact immutable candidate within this project",
         )
     return required_qualification_profiles(
-        generator, work_requirements=uses_work_requirements(row[0])
+        generator, **qualification_profile_options(row[0])
     )
 
 
@@ -498,17 +555,31 @@ def required_qualification_profiles(
     generator_operation_name: str,
     *,
     work_requirements: bool = False,
+    profile_version: str = "2.0.0",
 ) -> tuple[NarrativeQualificationProfile, ...]:
+    if profile_version not in {"2.0.0", "3.0.0"}:
+        raise KernelError(
+            "NARRATIVE_QUALIFICATION_PROFILE_UNSUPPORTED",
+            "Unknown frozen work profile version",
+        )
     try:
         profiles = GENERATOR_QUALIFICATION_PROFILES[generator_operation_name]
         return (
             tuple(
                 replace(
                     profile,
-                    profile_id=profile.profile_id + "-work-v2",
-                    profile_version="2.0.0",
+                    profile_id=profile.profile_id
+                    + ("-work-v3" if profile_version == "3.0.0" else "-work-v2"),
+                    profile_version=profile_version,
                     criteria=tuple(
-                        _WORK_CRITERIA.get(criterion, criterion)
+                        (
+                            {
+                                "CHARACTER_CHOICE_RELEVANCE": "THEME_METHOD_WORK_ALIGNMENT",
+                                "THEME_CLOSURE_ALIGNMENT": "ENDING_THEME_WORK_ALIGNMENT",
+                            }.get(criterion, _WORK_CRITERIA.get(criterion, criterion))
+                            if profile_version == "3.0.0"
+                            else _WORK_CRITERIA.get(criterion, criterion)
+                        )
                         for criterion in profile.criteria
                     ),
                 )
@@ -530,9 +601,12 @@ def validate_narrative_qualification(
     value: Any,
     require_pass: bool = True,
     work_requirements: bool = False,
+    profile_version: str = "2.0.0",
 ) -> NarrativeQualificationResult:
     profiles = required_qualification_profiles(
-        generator_operation_name, work_requirements=work_requirements
+        generator_operation_name,
+        work_requirements=work_requirements,
+        profile_version=profile_version,
     )
     if not isinstance(value, Mapping) or (
         value.get("schema_version") != NARRATIVE_QUALIFICATION_SCHEMA_VERSION
@@ -702,7 +776,10 @@ def validate_narrative_qualification(
 
 
 def scripted_qualification(
-    generator_operation_name: str, *, work_requirements: bool = False
+    generator_operation_name: str,
+    *,
+    work_requirements: bool = False,
+    profile_version: str = "2.0.0",
 ) -> dict[str, Any]:
 
     return {
@@ -729,17 +806,24 @@ def scripted_qualification(
                 ],
             }
             for profile in required_qualification_profiles(
-                generator_operation_name, work_requirements=work_requirements
+                generator_operation_name,
+                work_requirements=work_requirements,
+                profile_version=profile_version,
             )
         ],
     }
 
 
 def qualification_provider_schema(
-    generator_operation_name: str, *, work_requirements: bool = False
+    generator_operation_name: str,
+    *,
+    work_requirements: bool = False,
+    profile_version: str = "2.0.0",
 ) -> dict[str, Any]:
     profiles = required_qualification_profiles(
-        generator_operation_name, work_requirements=work_requirements
+        generator_operation_name,
+        work_requirements=work_requirements,
+        profile_version=profile_version,
     )
     string = {"type": "string", "minLength": 1}
     criterion = _strict_object(
@@ -770,7 +854,7 @@ def qualification_provider_schema(
             },
             "profile_version": {
                 "type": "string",
-                "const": "2.0.0" if work_requirements else "1.0.0",
+                "const": profile_version if work_requirements else "1.0.0",
             },
             "profile_hash": {
                 "type": "string",

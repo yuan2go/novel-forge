@@ -1,16 +1,12 @@
 from __future__ import annotations
-
 from novel_forge.modules.story_design_authority.qualification import (
     qualification_profiles_for_asset,
 )
-
 from dataclasses import asdict, dataclass, fields
 from types import MappingProxyType
 from typing import Any, Mapping
 from uuid import uuid4
-
 from psycopg.types.json import Jsonb
-
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_design_authority import (
     FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
@@ -32,7 +28,6 @@ from novel_forge.modules.story_planning_runtime import (
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.foundation_repositories import require_current_foundation_set
-
 
 BOOK_INPUT_RESOLVE_DEFINITION = "book.production_input.resolve"
 BOOK_INPUT_RESOLVE_VERSION = "1.3.0"
@@ -591,7 +586,7 @@ class BookProductionInputResolver:
         typed_design = BookDesignPayload.from_mapping(book_design)
         if (
             typed_design.schema_version
-            not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6"}
+            not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6", "book-design.v7"}
             or typed_design.foundation_set != foundation
         ):
             raise KernelError(
@@ -707,8 +702,8 @@ class BookProductionInputResolver:
             ),
         )
         from novel_forge.modules.book_design_authority.author_supervision import approved_book_design_receipt
-        from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt, reusable_qualified_design_receipt
         from novel_forge.modules.production_execution.author_supervision import selected_book_supervision
+        from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt, reusable_qualified_design_receipt
 
         author_design = approved_book_design_receipt(cursor, project_id=command.project_id,
             book_id=command.book_id, asset_version_id=book_design_version)

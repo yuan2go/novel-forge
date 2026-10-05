@@ -1,11 +1,9 @@
 from __future__ import annotations
-
 from copy import deepcopy
 from dataclasses import dataclass
 import json
 from pathlib import Path
 from typing import Any
-
 from novel_forge.modules.capability_packs.artifacts import (
     ArtifactKind,
     artifact_content_hash,
@@ -32,7 +30,6 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
     NARRATIVE_EVALUATION_VERSION,
 )
 
-
 _BASE_PACK = "config/capability_packs/chapter_generation_pack.json"
 STORY_PLANNING_PROMPT_VERSION = "v8"
 NARRATIVE_EVALUATION_PROMPT_VERSION = "v3"
@@ -50,7 +47,10 @@ class LongformCapabilityPackProfile:
 def build_world_sampling_pack_profile(source: LongformCapabilityPackProfile, *, application_build_id: str,
                                      commit_sha: str, reference_samples: bool = False) -> LongformCapabilityPackProfile:
     from novel_forge.modules.story_planning_runtime.world_sampling import (
-        WORLD_SAMPLE_SCOPE, WORLD_SAMPLE_VERSION, WORLD_REFERENCE_SAMPLE_VERSION, world_sample_definitions,
+        WORLD_REFERENCE_SAMPLE_VERSION,
+        WORLD_SAMPLE_SCOPE,
+        WORLD_SAMPLE_VERSION,
+        world_sample_definitions,
     )
     from novel_forge.storage.authority_repositories import definition_hash
 
@@ -94,11 +94,13 @@ def build_story_planning_pack_profile(
     execution_contract_version: str | None = None,
 ) -> LongformCapabilityPackProfile:
     version = execution_contract_version or STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
-    if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0"}:
+    if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0"}:
         raise ValueError("Unsupported Planning execution contract")
     operation_ref = f"story_planning.generate@{version}"
     root, manifest, artifacts = _base(repository_root, pack_id)
-    from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_CAPABILITIES
+    from novel_forge.modules.story_planning_runtime.foundation_generation import (
+        FOUNDATION_CAPABILITIES,
+    )
 
     capabilities = (
         *FOUNDATION_CAPABILITIES,
@@ -140,7 +142,7 @@ def build_story_planning_pack_profile(
         )
         nodes.append(node)
     manifest["identity"].update(
-        version="2.9.0" if version == "1.17.0" else "2.8.0",
+        version="2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
         name="Story Planning Generator Pack",
         domain="story_planning",
         description="Governed Foundation formation and hierarchical Planning candidate generation.",
@@ -186,8 +188,8 @@ def build_story_planning_pack_profile(
         manifest,
         artifacts,
         skill_ref="long-outline",
-        skill_version="long-outline-v2",
-        skill_path="skills/long-outline/SKILL.md",
+        skill_version="long-outline-v3" if version == "1.18.0" else "long-outline-v2",
+        skill_path="skills/long-outline/SKILL.md" if version == "1.18.0" else "config/capability_packs/artifacts/long_outline_work_v2.md",
         system_ref="prompt-system:story-planning-pack",
         system_path=(
             "config/capability_packs/artifacts/story_planning_system_instruction.md"
@@ -198,7 +200,7 @@ def build_story_planning_pack_profile(
         output_schema_ref="schema:story-planning-pack-output:v1",
         system_version=STORY_PLANNING_PROMPT_VERSION,
     )
-    artifacts = _bind_planning_qualification_skills(root, manifest, artifacts)
+    artifacts = _bind_planning_qualification_skills(root, manifest, artifacts, aligned_methods=version == "1.18.0")
     _update_policy_artifacts(manifest, artifacts)
     for _stage, capability in capabilities:
         _append_capability_schemas(artifacts, capability)
@@ -348,7 +350,7 @@ def build_longform_prose_review_pack_profile(
 ) -> LongformCapabilityPackProfile:
     root, manifest, artifacts = _base(repository_root, pack_id)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.2.0"
+    manifest["identity"]["version"] = "1.3.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -699,6 +701,7 @@ def _bind_planning_qualification_skills(
     root: Path,
     manifest: dict[str, Any],
     artifacts: list[dict[str, Any]],
+    *, aligned_methods: bool = False,
 ) -> list[dict[str, Any]]:
     skill_paths = {
         "topic-development": "skills/topic-development/SKILL.md",
@@ -732,6 +735,11 @@ def _bind_planning_qualification_skills(
             continue
         path = skill_paths[skill_ref]
         version = f"{skill_ref}-qualification-v2"
+        if skill_ref == "narrative-beat-design":
+            if aligned_methods:
+                version = f"{skill_ref}-qualification-v3"
+            else:
+                path = "config/capability_packs/artifacts/narrative_beat_design_work_v2.md"
         content = {"text": _text(root, path)}
         _append_artifact(
             artifacts,

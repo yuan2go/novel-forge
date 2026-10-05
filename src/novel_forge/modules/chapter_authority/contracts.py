@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Protocol
-
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
@@ -306,7 +304,7 @@ class ChapterHandlerRequest:
 
     @property
     def work_requirements_enabled(self) -> bool:
-        return self.definition_version in {"3.6.0", "3.6.0-author-input.v2"}
+        return self.definition_version in {"3.6.0", "3.6.0-author-input.v2", "3.7.0", "3.7.0-author-input.v2"}
 
     def require_input(self, asset_type: str) -> ChapterInputAsset:
         matching = [item for item in self.inputs if item.asset_type == asset_type]

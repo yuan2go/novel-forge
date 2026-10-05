@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from .foundation_generation import FOUNDATION_GENERATORS, FOUNDATION_INPUT_ROLES, foundation_envelope, normalize_foundation_payload
-
 from dataclasses import asdict, dataclass
 from enum import StrEnum
 import hashlib
@@ -9,15 +7,13 @@ import json
 import re
 from types import MappingProxyType
 from typing import Any, Mapping
-
 from novel_forge.modules.story_design_authority import PlanningScope
 from novel_forge.modules.narrative_state.measurements import project_narrative_load
-
 
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.17.0"
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.18.0"
 STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.12.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
@@ -283,12 +279,12 @@ class StoryPlanningGenerationCommand:
     opening_execution_binding: Mapping[str, Any] | None = None
     world_preparation_request: Mapping[str, Any] | None = None
     edition_execution: Mapping[str, Any] | None = None
-    execution_contract_version: str = "1.17.0"
+    execution_contract_version: str = "1.18.0"
 
     def __post_init__(self) -> None:
         if self.edition_execution:
             if (
-                self.execution_contract_version not in {"1.16.0", "1.17.0"}
+                self.execution_contract_version not in {"1.16.0", "1.17.0", "1.18.0"}
                 or self.generator_operation_name
                 not in {"chapter_plan.generate", "chapter_group_plan.generate"}
                 or self.edition_execution.get("contract_version")
@@ -307,7 +303,7 @@ class StoryPlanningGenerationCommand:
             and (
                 not self.routing_bootstrap_authorization_id.strip()
                 or self.auto_approve_low_risk
-                or self.execution_contract_version not in {"1.16.0", "1.17.0"}
+                or self.execution_contract_version not in {"1.16.0", "1.17.0", "1.18.0"}
             )
         ):
             raise ValueError(
@@ -321,6 +317,7 @@ class StoryPlanningGenerationCommand:
             "1.15.0",
             "1.16.0",
             "1.17.0",
+            "1.18.0",
         } or (
             self.execution_contract_version == "1.11.0"
             and self.world_preparation_request
@@ -331,7 +328,7 @@ class StoryPlanningGenerationCommand:
         if (
             self.generator_operation_name in FOUNDATION_GENERATORS
             and self.execution_contract_version
-            not in {"1.14.0", "1.15.0", "1.16.0", "1.17.0"}
+            not in {"1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0"}
         ):
             raise ValueError(
                 "Foundation generation requires its current frozen execution contract"
@@ -475,6 +472,7 @@ class StoryPlanningGenerationCommand:
             "1.15.0",
             "1.16.0",
             "1.17.0",
+            "1.18.0",
         }:
             raise ValueError(
                 "runtime continuation requires its current registered contract"
@@ -1015,7 +1013,7 @@ def build_planning_constraint_envelope(
     input_contents: Mapping[str, Mapping[str, Any]],
     candidate_payload: Mapping[str, Any],
     arc_working_set: Mapping[str, Any] | None = None,
-    work_requirements: bool = False,
+    work_requirements: bool = False, aligned_methods: bool = False,
 ) -> dict[str, Any]:
     if generator_operation_name not in GENERATOR_SCOPE:
         raise ValueError("Planning Generator is not supported")
@@ -1034,7 +1032,7 @@ def build_planning_constraint_envelope(
             **foundation_envelope(
                 generator=generator_operation_name,
                 inputs=frozen_inputs,
-                work_requirements=work_requirements,
+                work_requirements=work_requirements, aligned_methods=aligned_methods,
             ),
             **({"author_design": author_design} if author_design else {}),
             **({"editorial_learning": editorial} if editorial else {}),
@@ -1112,7 +1110,7 @@ def build_planning_constraint_envelope(
     body = {
         "type": "PlanningConstraintEnvelope",
         **(
-            {"creative_requirements_contract": "work-requirements.v1"}
+            {"creative_requirements_contract": "work-requirements.v2" if aligned_methods else "work-requirements.v1"}
             if work_requirements
             else {}
         ),

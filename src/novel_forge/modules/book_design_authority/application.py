@@ -1,11 +1,8 @@
 from __future__ import annotations
-
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
-
 from dataclasses import asdict, dataclass
 from typing import Any
 from uuid import uuid4
-
 from novel_forge.modules.authority_security import (
     Principal,
     require_worker_scoped_auto_decision,
@@ -17,10 +14,10 @@ from novel_forge.modules.book_design_authority.definitions import (
     book_design_definitions,
 )
 from novel_forge.modules.book_design_authority.domain import (
-    BookDesignPayload,
-    BookScope,
     EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
     FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+    BookDesignPayload,
+    BookScope,
 )
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -35,8 +32,8 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
     NarrativeSemanticEvaluationExecutionPort,
 )
 from novel_forge.modules.story_design_authority.qualification import (
+    qualification_profile_options,
     required_qualification_profiles,
-    uses_work_requirements,
     scripted_qualification,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -177,8 +174,9 @@ class BookDesignAuthorityApplication:
             if command.migration_evidence is not None
             else None
         )
-        from .author_supervision import proposed_supervision, approved_book_design_receipt
         from novel_forge.modules.production_execution.author_supervision import selected_book_supervision
+
+        from .author_supervision import proposed_supervision, approved_book_design_receipt
 
         supervision = None
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -365,7 +363,7 @@ class BookDesignAuthorityApplication:
                         if real_provider
                         else scripted_qualification(
                             "book_design.propose",
-                            work_requirements=uses_work_requirements(row[1]),
+                            **qualification_profile_options(row[1]),
                         )
                     ),
                     idempotency_key=f"{command.idempotency_key}:semantic-evaluation",
@@ -480,7 +478,7 @@ class BookDesignAuthorityApplication:
             profile.layer.value: profile
             for profile in required_qualification_profiles(
                 "book_design.propose",
-                work_requirements=uses_work_requirements(
+                **qualification_profile_options(
                     AuthorityAssetQuery(self.database_url)
                     .require(project_id=project_id, asset_version_id=asset_version_id)
                     .content
@@ -774,7 +772,7 @@ class BookDesignAuthorityApplication:
         row = uow.cursor.fetchone()
         if row is None:
             return {}
-        if str(row[1]) in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6"}:
+        if str(row[1]) in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6", "book-design.v7"}:
             bindings = dict(row[0])["foundation_set"]["bindings"]
             source = next(item for item in bindings if item["role"] == "CHARACTER_CAST")
             cast = uow.repositories.asset_documents.require(

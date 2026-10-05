@@ -1,10 +1,7 @@
 from __future__ import annotations
-
 from typing import Any
 from uuid import uuid4
-
 from psycopg.types.json import Jsonb
-
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_authority.completion import _rows
 from novel_forge.modules.book_authority.completion_domain import completion_digest
@@ -14,7 +11,6 @@ from novel_forge.modules.book_authority.evidence_commands import (
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-
 from .application import BookFollowupAdmission, BookFollowupCommand
 from .prose_review import PROSE_REVIEW_DEFINITION, aggregate_reports, freeze_manifest
 
@@ -58,6 +54,7 @@ def load_accepted_sources(
                 "asset_version_id": draft.asset_version_id,
                 "asset_hash": draft.content_hash,
                 "text": draft.content.get("text"),
+                "creative_baseline": draft.content.get("creative_baseline"),
             }
         )
     return sources
@@ -185,6 +182,7 @@ def review_progress(uow: AuthorityUnitOfWork, run: dict[str, Any]) -> dict[str, 
         book_run_id=run["book_run_id"],
         sources=load_accepted_sources(uow, run["book_run_id"], run["project_id"]),
         policy=run["manifest"]["policy"],
+        work_intent=run["manifest"]["schema_version"] == "longform-prose-manifest.v2",
     )
     result.update(
         run_id=run["run_id"],
@@ -267,7 +265,7 @@ class BookProseReviewCoordinator:
             run_id = str(uuid4())
             for window in manifest["windows"]:
                 content = {
-                    "schema_version": "longform-prose-window.v1",
+                    "schema_version": "longform-prose-window.v2" if manifest["schema_version"] == "longform-prose-manifest.v2" else "longform-prose-window.v1",
                     **scope,
                     "manifest_digest": manifest["manifest_digest"],
                     "window": window,
@@ -280,13 +278,13 @@ class BookProseReviewCoordinator:
                         project_id=project_id,
                         asset_id=str(uuid4()),
                         asset_type="longform_prose_review_window",
-                        schema_version="longform-prose-window.v1",
+                        schema_version=content["schema_version"],
                         logical_ref=f"longform_prose/{run_id}/{window['window_id'][7:]}.json",
                         category="longform_prose_review",
                         output_key="longform.prose_review.window",
                         role="source_window",
                         content=content,
-                        qualification_policy="accepted-prose-window.v1",
+                        qualification_policy="accepted-prose-window.v2" if content["schema_version"] == "longform-prose-window.v2" else "accepted-prose-window.v1",
                         trace_id=metadata["trace_id"],
                         correlation_id=metadata["correlation_id"],
                     )
@@ -482,6 +480,7 @@ class BookProseReviewCoordinator:
                 },
                 sources=sources,
                 policy=policy,
+                work_intent=progress["manifest"]["schema_version"] == "longform-prose-manifest.v2",
             )
             previous = progress["manifest"]["sources"]
             if current["sources"][: len(previous)] != previous:
@@ -958,6 +957,7 @@ class BookProseReviewCoordinator:
                     book_run_id=book_run_id,
                     sources=load_accepted_sources(uow, book_run_id, project_id),
                     policy=policy,
+                    work_intent=state["manifest"]["schema_version"] == "longform-prose-manifest.v2",
                 )
                 previous = state["manifest"]["sources"]
                 if not (
@@ -1245,6 +1245,7 @@ class BookProseReviewCoordinator:
         **metadata: Any,
     ) -> dict[str, Any]:
         from dataclasses import asdict
+
         from novel_forge.modules.plan_change_authority.domain import semantic_plan_diff
         from novel_forge.modules.plan_change_authority.semantic_impact import (
             exact_plan_dependency_closure,

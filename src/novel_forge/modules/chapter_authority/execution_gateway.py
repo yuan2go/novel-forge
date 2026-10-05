@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
-
 from dataclasses import dataclass, replace
 import hashlib
 import json
@@ -9,7 +7,6 @@ import re
 from pathlib import Path
 from threading import Lock
 from typing import Any, Callable, Mapping, Protocol
-
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
@@ -29,8 +26,8 @@ from novel_forge.modules.capability_pack_authority.runtime import (
 )
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
-    CapabilityId,
     CancellationOutcome,
+    CapabilityId,
     CommitPolicy,
     ContextPolicy,
     ExecutionHandle,
@@ -41,8 +38,8 @@ from novel_forge.modules.production_execution import (
     FallbackPolicy,
     InputManifest,
     ModelProfile,
-    PromptBundle,
     ProductionExecutionGateway,
+    PromptBundle,
     ResolvedExecutionPayload,
     RoutePolicy,
     RouteSnapshot,
@@ -86,7 +83,9 @@ from novel_forge.storage.authority_asset_store import (
     AuthorityAssetWriter,
 )
 from novel_forge.modules.chapter_authority.context_compression_provider import (
-    CONTEXT_MODEL_STAGES, require_task_reasoning, require_task_output_reserve,
+    CONTEXT_MODEL_STAGES,
+    require_task_output_reserve,
+    require_task_reasoning,
 )
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
@@ -100,7 +99,6 @@ from novel_forge.modules.chapter_authority.provider_views import (
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
 )
-
 
 _STAGES = frozenset(
     {
@@ -847,6 +845,7 @@ class PostgresChapterExecutionContractBinder:
                 "v6",
                 "v7",
                 "v8",
+        "v9",
             },
             "prompt-template:agent-session-pack": {"v1"},
             "prompt-template:story-planning-pack": {"v1"},
@@ -1212,9 +1211,14 @@ class PostgresChapterExecutionContractBinder:
         )
         targeted_revision = bool(
             stage == "revision"
-            and prompt_contract_version in {"v4", "v5", "v6", "v7", "v8"}
+            and prompt_contract_version in {"v4", "v5", "v6", "v7", "v8", "v9"}
             and (
                 inputs.get("quality_edit_contract")
+                or (prompt_contract_version == "v9" and (
+                    inputs.get("cross_chapter_window")
+                    or (inputs.get("review") or {}).get("cross_chapter_window")
+                    or (inputs.get("review") or {}).get("craft_targets")
+                ))
                 or (
                     (
                         (inputs.get("review") or {}).get("issues")
@@ -1233,14 +1237,16 @@ class PostgresChapterExecutionContractBinder:
             causal_batch=causal_batch,
             legacy_contract=legacy_contract,
             targeted_revision=targeted_revision,
-            work_requirements=prompt_contract_version == "v8",
+            work_requirements=prompt_contract_version in {"v8", "v9"},
+            allow_noop_revision=prompt_contract_version == "v9" and not bool(inputs.get("quality_edit_contract")),
         )
         schema_ref = chapter_provider_output_schema_ref(
             stage,
             causal_batch=causal_batch,
             legacy_contract=legacy_contract,
             targeted_revision=targeted_revision,
-            work_requirements=prompt_contract_version == "v8",
+            work_requirements=prompt_contract_version in {"v8", "v9"},
+            allow_noop_revision=prompt_contract_version == "v9" and not bool(inputs.get("quality_edit_contract")),
         )
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
@@ -1249,9 +1255,18 @@ class PostgresChapterExecutionContractBinder:
                 raise KernelError("SCREENPLAY_SOURCE_CONTRACT_UNSUPPORTED", "Provider schema requires the exact frozen source contract")
             schema = screenplay_output_schema(stage, craft=contract == "screenplay-source.v2")
             schema_ref = "schema:chapter-provider-output:" + stage + (":v2" if contract == "screenplay-source.v2" else ":v1")
+        current_review = stage in {"review", "rereview"} and prompt_contract_version == "v9"
+        if current_review:
+            schema_ref = f"schema:chapter-provider-output:{stage}:v6"
         if inputs.get("cross_chapter_window") or (stage == "revision" and inputs.get("required_actions") is None and (inputs.get("review") or {}).get("cross_chapter_window")):
             from novel_forge.modules.review.cross_chapter import extend_provider_schema
-            schema, schema_ref = extend_provider_schema(schema, stage, legacy_contract=legacy_contract), f"schema:chapter-provider-output:{stage}:cross-chapter-{'v2' if legacy_contract else 'v4' if targeted_revision else 'v3'}"
+            cross_version = (
+                "v2" if legacy_contract else "v6" if current_review
+                else "v5" if targeted_revision and prompt_contract_version == "v9" and not inputs.get("quality_edit_contract")
+                else "v4" if targeted_revision else "v3"
+            )
+            schema = extend_provider_schema(schema, stage, legacy_contract=legacy_contract)
+            schema_ref = f"schema:chapter-provider-output:{stage}:cross-chapter-{cross_version}"
         if stage == "revision" and inputs.get("quality_edit_contract"):
             from novel_forge.modules.review.cross_chapter import extend_provider_schema
             schema = extend_provider_schema(schema, stage, legacy_contract=legacy_contract)
@@ -2023,13 +2038,14 @@ class PostgresChapterExecutionContractBinder:
             raise ExternalEffectAdapterError(
                 "Chapter gateway operation has no Authority Saga", request_sent=False
             )
+        from novel_forge.modules.command_kernel.routing_bootstrap import (
+            chapter_sample_definition_supported,
+        )
+
         from .definitions import (
             CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
             CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
             CHAPTER_SLICE_DEFINITION_VERSION,
-        )
-        from novel_forge.modules.command_kernel.routing_bootstrap import (
-            chapter_sample_definition_supported,
         )
 
         compatible = str(row[0]) in {
@@ -2143,8 +2159,8 @@ class PostgresChapterExecutionContractBinder:
     ) -> list[dict[str, Any]]:
         reference_target = None
         if any(item.artifact_type == "chapter_provider_sample" for item in artifacts):
-            from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
             from novel_forge.modules.chapter_quality_authority.reference_subject import require_chapter_sample_target
+            from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
             from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
             with AuthorityUnitOfWork(self.database_url) as uow:
@@ -2156,8 +2172,8 @@ class PostgresChapterExecutionContractBinder:
                     raise KernelError("CHAPTER_CAPABILITY_CONTEXT_INVALID", "sample inputs require the exact native reference evaluation grant")
                 reference_target = require_chapter_sample_target(uow.cursor, project_id=project_id, payload=row[0])
         if any(item.artifact_type == "screenplay_provider_sample" for item in artifacts):
-            from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
             from novel_forge.modules.book_followup_authority.screenplay_sampling import validate_screenplay_sample_origin
+            from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
             from novel_forge.storage.authority_uow import AuthorityUnitOfWork
             with AuthorityUnitOfWork(self.database_url) as uow:
                 snapshot = load_bootstrap_authorization(uow.cursor, project_id=project_id, operation_id=reference_operation_id, check_expiry=False)
@@ -4366,6 +4382,7 @@ def _materialize_production_codex_prompt(
         "v6",
         "v7",
         "v8",
+        "v9",
     }
     context = materialization.get("context_selection")
     knowledge = materialization.get("knowledge_selection")
@@ -4399,7 +4416,7 @@ def _materialize_production_codex_prompt(
     targeted_edits_only = stage == "revision" and is_targeted_revision_schema_ref(
         str(schema.get("ref") or "")
     )
-    project_methods = str(template.get("version") or "") in {"v5", "v6", "v7", "v8"}
+    project_methods = str(template.get("version") or "") in {"v5", "v6", "v7", "v8", "v9"}
     if skill.get("ref") == "prose-generation" and skill.get("version") == "prose-generation-v3":
         skill_text = _project_prose_skill(skill_text, stage=stage, targeted=targeted_edits_only)
     from .prompt_methods import project_planning_system, project_skill_method
@@ -4418,10 +4435,10 @@ def _materialize_production_codex_prompt(
         project_methods=project_methods,
         instruction_cleanup=template.get("ref")
         == "prompt-template:chapter-generation-pack"
-        and template.get("version") in {"v7", "v8"},
+        and template.get("version") in {"v7", "v8", "v9"},
         work_requirements=template.get("ref")
         == "prompt-template:chapter-generation-pack"
-        and template.get("version") == "v8",
+        and template.get("version") in {"v8", "v9"},
     )
     context_view = build_provider_context_view(
         stage,
@@ -4432,7 +4449,7 @@ def _materialize_production_codex_prompt(
         and template.get("version") == "v6",
         writer_projection_version="accepted-writer-history.v2"
         if template.get("ref") == "prompt-template:chapter-generation-pack"
-        and template.get("version") in {"v7", "v8"}
+        and template.get("version") in {"v7", "v8", "v9"}
         else "",
     )
     context_manifest = context_content.get("context_manifest")
@@ -4598,7 +4615,7 @@ def _materialize_production_codex_prompt(
         "required_reader_facing_language": required_language,
         "provider_prompt_projection_version": "authority-projection-work-requirements.v1"
         if template.get("ref") == "prompt-template:chapter-generation-pack"
-        and template.get("version") == "v8"
+        and template.get("version") in {"v8", "v9"}
         else "authority-projection-task-provider-v5"
         if template.get("ref") == "prompt-template:chapter-generation-pack"
         and template.get("version") == "v7"

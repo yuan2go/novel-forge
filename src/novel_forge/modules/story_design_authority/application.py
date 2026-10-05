@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 from dataclasses import asdict, dataclass, replace
 from typing import Any
 from uuid import uuid4
-
 from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerOutput,
     AuthorityHandlerRegistration,
@@ -27,17 +25,18 @@ from novel_forge.modules.content_authority.scheduler import (
     ContentAuthorityScheduler,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-
 from .domain import (
-    DesignTransition,
     GENERATOR_CATALOG,
-    GENERATOR_DESIGN_SCOPE,
     GENERATOR_DEFINITIONS,
+    GENERATOR_DESIGN_SCOPE,
+    DesignTransition,
     PlanningScope,
 )
-from .qualification import required_qualification_profiles, uses_work_requirements
+from .qualification import (
+    qualification_profile_options,
+    required_qualification_profiles,
+)
 from .validators import validate_story_design_candidate
-
 
 STORY_DESIGN_TRANSITION_DEFINITION = "story_design.lifecycle.transition"
 STORY_DESIGN_TRANSITION_VERSION = "1.1.0"
@@ -469,7 +468,7 @@ class PostgresStoryDesignAssetAuthority:
         )
         expected_profiles = required_qualification_profiles(
             command.generator_operation_name,
-            work_requirements=uses_work_requirements(candidate.content),
+            **qualification_profile_options(candidate.content),
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(

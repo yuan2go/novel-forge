@@ -1,12 +1,10 @@
 from __future__ import annotations
-
 from typing import Any
 from uuid import uuid4
-
 from psycopg.types.json import Jsonb
-
 from novel_forge.modules.book_design_authority.domain import (
     FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+    LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION,
     WORK_BOOK_DESIGN_SCHEMA_VERSION,
     BookDesignPayload,
 )
@@ -26,7 +24,6 @@ from novel_forge.modules.book_design_authority.formation_domain import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_design_authority import GENERATOR_DESIGN_SCOPE
-
 
 _STAGE_ROLE = {
     StoryFormationStage.CREATIVE_FOUNDATION: FoundationRole.CREATIVE_FOUNDATION,
@@ -1396,7 +1393,7 @@ class StoryFormationRepository:
         if (
             row is None
             or str(row[1]) != content_hash
-            or str(row[2]) not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION}
+            or str(row[2]) not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION, LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION}
             or tuple(str(item) for item in row[3:6])
             != (
                 "ACTIVE",

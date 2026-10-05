@@ -1,10 +1,8 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
 import hashlib
 from typing import Any
 from uuid import uuid4
-
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.service import (
@@ -16,7 +14,6 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.narrative_realization_repositories import (
     NarrativeRealizationRepository,
 )
-
 from .definitions import (
     NARRATIVE_REALIZATION_DEFINITION_VERSION,
     NARRATIVE_REALIZATION_HANDLER_KEY,
@@ -443,8 +440,9 @@ class PostgresNarrativeRealizationApplication:
                 "NARRATIVE_REALIZATION_INVALID",
                 "frozen ChapterGroup lacks its typed causal event chain",
             )
-        from novel_forge.modules.story_design_authority.qualification import uses_work_requirements
-        work_requirements = uses_work_requirements(group)
+        from novel_forge.modules.story_design_authority.qualification import qualification_profile_options
+        qualification_options = qualification_profile_options(group)
+        work_requirements = qualification_options["work_requirements"]
         working_digest = str(arc_working_set.get("working_set_digest") or "")
         selected = [
             str(item.get("arc_plan_version_id") or "")
@@ -476,13 +474,8 @@ class PostgresNarrativeRealizationApplication:
                 "NARRATIVE_REALIZATION_ARC_STALE",
                 "realization Arc bindings are not exact/current",
             )
-        from novel_forge.modules.story_design_authority.qualification import (
-            uses_work_requirements,
-        )
-
-        work_requirements = uses_work_requirements(group)
         profiles = required_qualification_profiles(
-            "chapter_group_plan.generate", work_requirements=work_requirements
+            "chapter_group_plan.generate", **qualification_options
         )
         from novel_forge.modules.story_design_authority.author_supervision import (
             approved_design_receipt,

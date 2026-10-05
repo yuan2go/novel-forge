@@ -132,7 +132,7 @@ class SynthesisTransport(ScriptedProviderAdapterV2):
                         }
                     ],
                 )
-        if (inputs.get("foundation_task") or {}).get("contract_version") == "foundation-generation.v2":
+        if (inputs.get("foundation_task") or {}).get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3"}:
             result["applicability"] = []
             def declare(value, schema, path="$", parent_present=True):
                 if isinstance(schema.get("type"), list) and "null" in schema["type"]:
@@ -162,7 +162,7 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
                 self.calls.append({"stage": stage, "input": inputs, "output": result})
                 return result
         result = super().planning(stage, inputs)
-        if (inputs.get("planning_command") or {}).get("creative_requirements_contract") == "work-requirements.v1":
+        if (inputs.get("planning_command") or {}).get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}:
             for row in result.get("chapter_function_matrix", []):
                 row["required_state_delta"] = {"status": "CHANGED", **row["required_state_delta"]}
             for event in result.get("narrative_event_chain", []):
@@ -170,4 +170,58 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
             if stage == "chapter_plan.generate":
                 result["chapter_contract_schema_version"] = "chapter-mission-scene.v3"
                 result["required_state_delta"] = {"status": "CHANGED", **result["required_state_delta"]}
+        return result
+
+
+class AdviceOnlySynthesisChapterTransport(SynthesisChapterTransport):
+    def __init__(self):
+        super().__init__(retain_original=True)
+
+    def __call__(self, stage, inputs):
+        from copy import deepcopy
+
+        result = super().__call__(stage, inputs)
+        if stage == "review":
+            text = inputs["draft"]["text"]
+            result["issues"] = [{
+                "code": "OPTIONAL_SHORTER_SENTENCE", "severity": "minor",
+                "category": "STYLE_PREFERENCE", "judgment_kind": "AESTHETIC_SUGGESTION",
+                "message": "A shorter sentence is an optional taste suggestion.",
+                "evidence": {"start": 0, "end": min(30, len(text)), "quote": text[:30]},
+                "violated_constraint": "No selected requirement is violated.",
+                "revision_goal": "Optional suggestion only.",
+                "preserve": ["All accepted author choices and current prose."],
+                "acceptance_criteria": ["Keep current prose unless the author chooses otherwise."],
+                **({"supporting_evidence": [], "lineage_code": None, "confidence": "LOW", "interpretation": "UNCERTAIN"} if inputs.get("cross_chapter_window") else {}),
+            }]
+            if inputs.get("cross_chapter_window"):
+                result["preservation_checks"] = []
+        elif stage == "revision":
+            review = inputs["review"]
+            result = (
+                {"edits": [], "resolved_issue_codes": []}
+                if review.get("cross_chapter_window") or review.get("craft_targets")
+                else {
+                    "text": inputs["draft"]["text"],
+                    "scene_artifacts": deepcopy(inputs["draft"]["scene_artifacts"]),
+                    "resolved_issue_codes": [],
+                }
+            )
+        elif stage == "rereview":
+            result["resolution_checks"] = []
+            if inputs["review"].get("cross_chapter_window"):
+                from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
+
+                text = inputs["revision"]["text"]
+                evidence = {"start": 0, "end": min(30, len(text)), "quote": text[:30]}
+                result["resolution_checks"] = [{
+                    "code": issue["code"], "status": "NOT_APPLICABLE", "preservation": "PRESERVED",
+                    "evidence": evidence, "supporting_evidence": [],
+                    "reason": "Optional taste advice creates no required prose repair.",
+                } for issue in inputs["review"]["issues"]]
+                result["preservation_checks"] = [{
+                    "dimension": dimension, "status": "PRESERVED", "evidence": evidence,
+                    "reason": "The exact source prose and slots are unchanged in this synthetic run.",
+                } for dimension in PRESERVATION_DIMENSIONS]
+        self.calls[-1]["output"] = deepcopy(result)
         return result

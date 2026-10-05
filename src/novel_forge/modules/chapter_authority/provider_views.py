@@ -1,18 +1,15 @@
 """SECURITY: only task-specific projections may expose frozen Chapter inputs to a Provider; audit and duplicate representations stay excluded."""
 
 from __future__ import annotations
-
 from copy import deepcopy
 import hashlib
 import json
 from typing import Any, Iterable, Mapping
-
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state import (
     compact_canon_facts,
     compact_current_state_facts,
 )
-
 
 _MAX_SEGMENTS = 24
 _MAX_FACTS_PER_SEGMENT = 32
@@ -511,7 +508,7 @@ def build_provider_task_view(
         command = inputs.get("planning_command")
         frozen = inputs.get("frozen_inputs")
         task = inputs.get("foundation_task")
-        if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage, work_requirements=command.get("creative_requirements_contract") == "work-requirements.v1"):
+        if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage, work_requirements=command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}, aligned_methods=command.get("creative_requirements_contract") == "work-requirements.v2"):
             raise KernelError("FOUNDATION_PROVIDER_TASK_INVALID", "Foundation Provider task requires exact frozen roles and stage instructions")
         return _task(stage, planning_command=_compact(command), frozen_inputs=_compact(frozen), foundation_task=_compact(task), narrative_intelligence=_compact(inputs.get("narrative_intelligence")))
     if stage in _PLANNING_STAGES:
@@ -1767,7 +1764,7 @@ def _build_narrative_evaluation_context_view(
             candidate_valid
             and candidate.get("asset_type") == "book_design"
             and candidate_content.get("schema_version")
-            in {"book-design.v5", "book-design.v6"}
+            in {"book-design.v5", "book-design.v6", "book-design.v7"}
             and dependency_resolution == "EVALUATOR_RESOLVED_FROM_CANDIDATE_LINEAGE"
             and len(selected) == 1 + len(_NARRATIVE_FOUNDATION_DEPENDENCY_TYPES)
             and isinstance(lineage, list)
@@ -2343,7 +2340,7 @@ def _compact_qualified_foundation_planning(
     source_by_role = {item["role"]: item for item in sources}
     design_source = source_by_role.get("book_design", {})
     design = design_source.get("content", {})
-    if design.get("schema_version") not in {"book-design.v5", "book-design.v6"}:
+    if design.get("schema_version") not in {"book-design.v5", "book-design.v6", "book-design.v7"}:
         return
     foundation = QualifiedFoundationSet.from_mapping(design["foundation_set"])
     segments = {item["role"]: item for item in view["segments"]}
@@ -3005,8 +3002,8 @@ def _cross_chapter_task(inputs: Mapping[str, Any]) -> dict[str, Any]:
     window = inputs.get("cross_chapter_window")
     if window is None:
         return {}
-    from novel_forge.modules.review.prose_window import CROSS_CHAPTER_CATEGORIES, validate_window
     from novel_forge.modules.review.diagnostics import prose_hash
+    from novel_forge.modules.review.prose_window import CROSS_CHAPTER_CATEGORIES, validate_window
     validate_window(window)
     candidate = inputs.get("revision") or inputs.get("draft") or {}
     return {
@@ -3018,7 +3015,7 @@ def _cross_chapter_task(inputs: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def project_longform_prose_review_context_input(asset_type: str, content: Mapping[str, Any]) -> dict[str, Any]:
-    if asset_type != "longform_prose_review_window" or content.get("schema_version") != "longform-prose-window.v1":
+    if asset_type != "longform_prose_review_window" or content.get("schema_version") not in {"longform-prose-window.v1", "longform-prose-window.v2"}:
         raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "only a frozen accepted prose window may enter longform review")
     return {key: content[key] for key in ("schema_version", "manifest_digest", "window", "policy", "source_isolation")}
 
@@ -3029,4 +3026,12 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
     inputs = context_bundle.get("selected_inputs") or []
     if len(inputs) != 1 or inputs[0].get("asset_type") != "longform_prose_review_window":
         raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "exactly one bounded prose window is required")
-    return {"contract_version": "provider-context-view-v2", "stage": "longform_prose_review", "frozen_prose": inputs[0]["projection"], "instruction": "审读实际提供的中文玄幻/武侠正文。逐项检查结构与冲突模式重复、人物目标和关系停滞、铺垫推进兑现、声线表达、弧级节奏、动机与代价。合理变化、有意重复、未到兑现期和证据不足必须区分。只引用给定原文 Unicode code-point 坐标和精确 quote；不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。若窗口含 relation_hypothesis，它只是文本锚点检索得到的未核验关系假设；ISSUE 或 INTENTIONAL 关系判断必须分别引用两个给定片段，区分因果、人物认知、承诺、伏笔与偶然重词，无法核验时输出 INSUFFICIENT_EVIDENCE。所有结论只是待确认审稿意见。不得修改正文、Canon 或计划。"}
+    projection = inputs[0]["projection"]
+    if projection["schema_version"] == "longform-prose-window.v1":
+        # COMPATIBILITY: queued v1 windows retain their original frozen request semantics.
+        return {"contract_version": "provider-context-view-v2", "stage": "longform_prose_review", "frozen_prose": inputs[0]["projection"], "instruction": "审读实际提供的中文玄幻/武侠正文。逐项检查结构与冲突模式重复、人物目标和关系停滞、铺垫推进兑现、声线表达、弧级节奏、动机与代价。合理变化、有意重复、未到兑现期和证据不足必须区分。只引用给定原文 Unicode code-point 坐标和精确 quote；不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。若窗口含 relation_hypothesis，它只是文本锚点检索得到的未核验关系假设；ISSUE 或 INTENTIONAL 关系判断必须分别引用两个给定片段，区分因果、人物认知、承诺、伏笔与偶然重词，无法核验时输出 INSUFFICIENT_EVIDENCE。所有结论只是待确认审稿意见。不得修改正文、Canon 或计划。"}
+    return {
+        "contract_version": "provider-context-view-v3", "stage": "longform_prose_review",
+        "frozen_prose": projection,
+        "instruction": "审读实际提供的原书正文，按每个来源章节冻结的 creative_baseline 检查题材、风格、受众、人物、结构与已选技法。作者有意的稳定、观察、开放结尾或重复不是默认缺陷；选择了变化、压力、伏笔或兑现时才检查相应承诺。UNKNOWN_LEGACY_BASELINE 表示作品目标未知，只判断可由原文证明的客观问题，不能推定玄幻、武侠、转化或商业节奏。逐项区分客观错误、作品目标偏差与审美建议；未到兑现期、合理变化及证据不足不能要求补写。只引用给定原文 Unicode code-point 坐标和精确 quote，不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。relation_hypothesis 是未核验关系假设，ISSUE 或 INTENTIONAL 判断必须分别引用两个给定片段，无法核验时输出 INSUFFICIENT_EVIDENCE。所有结论只是待确认审稿意见，不得修改正文、Canon 或计划。",
+    }

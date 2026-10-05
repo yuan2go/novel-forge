@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
@@ -8,9 +7,7 @@ import hashlib
 import json
 from typing import Any, Protocol
 from uuid import uuid4
-
 from psycopg.types.json import Jsonb
-
 from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerOutput,
     AuthorityHandlerRegistration,
@@ -40,24 +37,24 @@ from novel_forge.modules.command_kernel.service import (
 )
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-
 from .domain import GENERATOR_DESIGN_SCOPE
 from .qualification import (
     NarrativeEvaluationLineage,
     NarrativeQualificationProfile,
     NarrativeQualificationResult,
+    qualification_profile_options,
     required_qualification_profiles,
     validate_narrative_qualification,
-    uses_work_requirements,
 )
 from .evaluation_reference import (
-    reference_command_fields, require_reference_review, reference_agreement,
+    reference_agreement,
+    reference_command_fields,
+    require_reference_review,
 )
 from .replacement_gate import (
     assert_narrative_replacement_execution_gate,
     assert_narrative_replacement_execution_gate_in_uow,
 )
-
 
 NARRATIVE_EVALUATION_DEFINITION = "story_design.semantic_evaluate"
 NARRATIVE_EVALUATION_VERSION = "1.0.0"
@@ -548,7 +545,7 @@ class NarrativeSemanticEvaluationHandler:
                 ),
                 profiles=required_qualification_profiles(
                     str(payload.get("generator_operation_name") or ""),
-                    work_requirements=uses_work_requirements(candidate.content),
+                    **qualification_profile_options(candidate.content),
                 ),
             )
             evaluation = provider_result.evaluation
@@ -581,7 +578,7 @@ class NarrativeSemanticEvaluationHandler:
             generator_operation_name=str(payload.get("generator_operation_name") or ""),
             value=evaluation,
             require_pass=False,
-            work_requirements=uses_work_requirements(candidate.content),
+            **qualification_profile_options(candidate.content),
         )
         reference_result = (reference_agreement(payload=payload, reference=reference, evaluation=evaluation)
                             if reference is not None else None)
@@ -807,7 +804,7 @@ class NarrativeSemanticEvaluationHandler:
             generator_operation_name=expected_target["generator_operation_name"],
             value=source_content.get("evaluation"),
             require_pass=False,
-            work_requirements=uses_work_requirements(candidate.content),
+            **qualification_profile_options(candidate.content),
         )
         if source_content.get("qualification") != qualification.to_evidence():
             raise KernelError(
@@ -1230,7 +1227,7 @@ class NarrativeSemanticEvaluationApplication:
             generator_operation_name=command.generator_operation_name,
             value=content.get("evaluation"),
             require_pass=False,
-            work_requirements=uses_work_requirements(candidate["content"]),
+            **qualification_profile_options(candidate["content"]),
         )
         evaluation_operation_id = operation_id
         evaluation_attempt_id = scheduled.attempt_id
@@ -3164,7 +3161,7 @@ class NarrativeSemanticEvaluationApplication:
             generator_operation_name=generator_operation_name,
             value=dict(provider_result),
             require_pass=False,
-            work_requirements=uses_work_requirements(
+            **qualification_profile_options(
                 uow.repositories.asset_documents.require(
                     project_id=project_id, asset_version_id=candidate_id
                 ).content

@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 import json
 import re
 from typing import Any, Mapping
-
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state.contracts import (
     NarrativeObligationType,
@@ -11,7 +9,6 @@ from novel_forge.modules.narrative_state.contracts import (
     normalize_character_belief_changes,
     normalize_relationship_state_changes,
 )
-
 
 _SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
 _QUALITY_STAGES = {
@@ -229,7 +226,7 @@ def _review_schema(*, legacy: bool = False) -> dict[str, Any]:
     }, required=("score", "issues", "resolution_checks", "knowledge_checks"))
 
 
-def _revision_schema(*, legacy: bool = False, targeted: bool = False) -> dict[str, Any]:
+def _revision_schema(*, legacy: bool = False, targeted: bool = False, allow_noop: bool = False) -> dict[str, Any]:
     if legacy:
         return _object_schema(
             {
@@ -250,7 +247,7 @@ def _revision_schema(*, legacy: bool = False, targeted: bool = False) -> dict[st
     if targeted:
         return _object_schema({
             "resolved_issue_codes": {"type": "array", "items": {"type": "string", "minLength": 1}},
-            "edits": {"type": "array", "minItems": 1, "items": _object_schema({
+            "edits": {"type": "array", "minItems": 0 if allow_noop else 1, "items": _object_schema({
                 "quote": {"type": "string", "minLength": 1},
                 "replacement": {"type": "string"},
                 "issue_codes": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
@@ -883,6 +880,7 @@ def chapter_provider_output_schema(
     legacy_contract: bool = False,
     targeted_revision: bool = False,
     work_requirements: bool = False,
+    allow_noop_revision: bool = False,
 ) -> dict[str, Any]:
 
     if stage == "memo":
@@ -895,7 +893,7 @@ def chapter_provider_output_schema(
     elif stage in {"review", "rereview"}:
         schema = _review_schema(legacy=legacy_contract)
     elif stage == "revision":
-        schema = _revision_schema(legacy=legacy_contract, targeted=targeted_revision)
+        schema = _revision_schema(legacy=legacy_contract, targeted=targeted_revision, allow_noop=allow_noop_revision)
     elif stage == "canon_extraction":
         schema = _canon_schema(causal_batch=causal_batch, legacy=legacy_contract)
     elif stage == "canon_support":
@@ -957,6 +955,7 @@ def chapter_provider_output_schema_ref(
     legacy_contract: bool = False,
     targeted_revision: bool = False,
     work_requirements: bool = False,
+    allow_noop_revision: bool = False,
 ) -> str:
     chapter_provider_output_schema(stage, causal_batch=causal_batch, legacy_contract=legacy_contract, targeted_revision=targeted_revision)
     version = (
@@ -975,6 +974,8 @@ def chapter_provider_output_schema_ref(
         else (
             "v2"
             if legacy_contract
+            else "v5"
+            if targeted_revision and stage == "revision" and allow_noop_revision
             else "v4"
             if targeted_revision and stage == "revision"
             else "v3"
@@ -993,8 +994,24 @@ def chapter_provider_output_schema_ref(
 
 def is_targeted_revision_schema_ref(schema_ref: str) -> bool:
     return re.fullmatch(
-        r"schema:chapter-provider-output:revision:(?:v4|cross-chapter-v4)"
+        r"schema:chapter-provider-output:revision:(?:v[45]|cross-chapter-v[45])"
         r"(?::quality-targeted-v2)?(?::narrative-craft-v[23])?",
+        schema_ref,
+    ) is not None
+
+
+def is_work_review_schema_ref(schema_ref: str) -> bool:
+    return re.fullmatch(
+        r"schema:chapter-provider-output:(?:review|rereview):(?:v6|cross-chapter-v6)"
+        r"(?::quality-resolution-v1)?(?::narrative-craft-v[23])?",
+        schema_ref,
+    ) is not None
+
+
+def allows_empty_revision_schema_ref(schema_ref: str) -> bool:
+    return re.fullmatch(
+        r"schema:chapter-provider-output:revision:(?:v5|cross-chapter-v5)"
+        r"(?::narrative-craft-v[23])?",
         schema_ref,
     ) is not None
 

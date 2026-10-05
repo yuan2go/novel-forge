@@ -1,10 +1,7 @@
 from __future__ import annotations
-
 import hashlib
 from typing import Any
-
 from .prose_window import coverage_report
-
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
@@ -91,7 +88,13 @@ def evaluate_review_result(
                 **({"target_text_hash": prose_hash(str(prose_text))} if actionable else {}),
             }
         )
-    blocking_count = sum(item["severity"] == "blocking" for item in normalized)
+    from .diagnostics import prose_repair_diagnoses
+    work_review = result.get("review_decision_contract") == "work-review-decision.v1"
+    blocking_count = sum(
+        item["severity"] == "blocking" for item in prose_repair_diagnoses(
+            {"issues": normalized}, work_requirements=work_review
+        )
+    )
     if decision == "PASSED" and blocking_count:
         raise KernelError("REVIEW_DECISION_CONFLICT", "PASSED review cannot contain blocking issues")
     from .knowledge import validate_knowledge_checks
@@ -131,6 +134,7 @@ def evaluate_review_result(
         "blocking_issue_count": blocking_count,
         "provider_evidence": dict(provider_evidence),
         "review_contract_version": "review-domain-v2",
+        **({"review_decision_contract": "work-review-decision.v1"} if work_review else {}),
         "knowledge_targets": targets,
         "knowledge_checks": knowledge_checks,
         "knowledge_target_text_hash": prose_hash(str(prose_text or "")),
@@ -215,9 +219,14 @@ def evaluate_rereview_result(
         if code not in initial_by_code:
             new_issues.append(issue)
             regressions.append(code)
+    from .diagnostics import prose_repair_diagnoses
+    remaining_diagnoses = [initial_by_code[code] for code in remaining] + new_issues
     blocking_remaining = sum(
-        initial_by_code[code].get("severity") == "blocking" for code in remaining
-    ) + sum(item.get("severity") == "blocking" for item in new_issues)
+        item.get("severity") == "blocking" for item in prose_repair_diagnoses(
+            {"issues": remaining_diagnoses},
+            work_requirements=reviewed.get("review_decision_contract") == "work-review-decision.v1",
+        )
+    )
     decision = reviewed["decision"]
     if blocking_remaining and decision == "PASSED":
         decision = "NEEDS_REVISION"
