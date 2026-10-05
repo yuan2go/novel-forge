@@ -14,11 +14,15 @@
 | 目标仓库 | `yuan2go/novel-forge` |
 | 规格形成核验日期 | 2026-10-01，UTC+8 |
 | 规格形成核验分支 | `codex/wp-task-context-512k-01` |
-| 当前生命周期代码基线 | `d943e401e8f9599db689895831a662d0b2054990` |
+| 当前生命周期代码基线 | `a57b8dbb959f790c606c59c98fccfbe863434a40` |
 | 规格形成 Git tree | `d21d5d8ba1b152bfb43ea93bb3053b67e434a1a9` |
 | 当前事实核验 | 源代码、冻结合同、正式装配及定向单测/PostgreSQL 回归；现有持久库仅只读核验，未调用真实 Provider |
 | 实现及效果状态 | 规格形成时仅交付需求；后续工程实现已进入正式主链，真实 Provider 与文学收益仍未验证。当前状态以代码、冻结合同和当次验收为准 |
 | 规格边界 | 现有小说生成主链的职责、Prompt、输出、Context、方法及下游消费收敛；不是整个 Industrial Autonomous Novel OS 的一次性交付蓝图 |
+
+2026-10-05 baseline revalidation includes work Quality semantics and Context routing.
+Remaining proposal decisions retain their declared status. MOCK_E2E does not establish
+full backend qualification, real-Provider qualification or literary quality.
 
 <!-- proposal-lifecycle
 {
@@ -28,8 +32,8 @@
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
   "reality_baseline": {
-    "sha": "d943e401e8f9599db689895831a662d0b2054990",
-    "implementation_tree_sha": "sha256:52d03d242189d062a1e56cfb8cba424311bc34c71748fdd77a28316d1fb89edb"
+    "sha": "a57b8dbb959f790c606c59c98fccfbe863434a40",
+    "implementation_tree_sha": "sha256:3b9e80602491186094d5caf94d0556fb65210ba8dc05f9cbc29abc7e0601ff36"
   },
   "scope": [
     "src/novel_forge/modules/chapter_authority",
@@ -116,7 +120,7 @@
   "remaining_work": [
     {
       "id": "real-provider-and-editorial-validation",
-      "description": "在本轮有效作品、模型、预算、期限和人工审批授权下，完成原生真实正文审读、必要修订、接纳后后续 Context 消费，再以有界盲评前后对照验证实际阅读收益。尚无本轮正文和对照，不将工程检查、历史授权或已部署旧 Pack 当成真实作品与质量证据；长期稳定性仍需独立样本。",
+      "description": "\u5728\u672c\u8f6e\u6709\u6548\u4f5c\u54c1\u3001\u6a21\u578b\u3001\u9884\u7b97\u3001\u671f\u9650\u548c\u4eba\u5de5\u5ba1\u6279\u6388\u6743\u4e0b\uff0c\u5b8c\u6210\u539f\u751f\u771f\u5b9e\u6b63\u6587\u5ba1\u8bfb\u3001\u5fc5\u8981\u4fee\u8ba2\u3001\u63a5\u7eb3\u540e\u540e\u7eed Context \u6d88\u8d39\uff0c\u518d\u4ee5\u6709\u754c\u76f2\u8bc4\u524d\u540e\u5bf9\u7167\u9a8c\u8bc1\u5b9e\u9645\u9605\u8bfb\u6536\u76ca\u3002\u5c1a\u65e0\u672c\u8f6e\u6b63\u6587\u548c\u5bf9\u7167\uff0c\u4e0d\u5c06\u5de5\u7a0b\u68c0\u67e5\u3001\u5386\u53f2\u6388\u6743\u6216\u5df2\u90e8\u7f72\u65e7 Pack \u5f53\u6210\u771f\u5b9e\u4f5c\u54c1\u4e0e\u8d28\u91cf\u8bc1\u636e\uff1b\u957f\u671f\u7a33\u5b9a\u6027\u4ecd\u9700\u72ec\u7acb\u6837\u672c\u3002",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
@@ -126,7 +130,7 @@
     },
     {
       "id": "applicable-engineering-qualification",
-      "description": "完整适用验收仍须绑定最终提交通过。旧 0103 数据构造、原窗口断言、真实迁移升级与当前 Runtime 已分开；连续十二章已在原预算下通过任务工作集、依赖闭包和精确来源的定向验证。定向通过不替代完整 P0，旧冻结合同和授权边界保持有效。",
+      "description": "\u5b8c\u6574\u9002\u7528\u9a8c\u6536\u4ecd\u987b\u7ed1\u5b9a\u6700\u7ec8\u63d0\u4ea4\u901a\u8fc7\u3002\u65e7 0103 \u6570\u636e\u6784\u9020\u3001\u539f\u7a97\u53e3\u65ad\u8a00\u3001\u771f\u5b9e\u8fc1\u79fb\u5347\u7ea7\u4e0e\u5f53\u524d Runtime \u5df2\u5206\u5f00\uff1b\u8fde\u7eed\u5341\u4e8c\u7ae0\u5df2\u5728\u539f\u9884\u7b97\u4e0b\u901a\u8fc7\u4efb\u52a1\u5de5\u4f5c\u96c6\u3001\u4f9d\u8d56\u95ed\u5305\u548c\u7cbe\u786e\u6765\u6e90\u7684\u5b9a\u5411\u9a8c\u8bc1\u3002\u5b9a\u5411\u901a\u8fc7\u4e0d\u66ff\u4ee3\u5b8c\u6574 P0\uff0c\u65e7\u51bb\u7ed3\u5408\u540c\u548c\u6388\u6743\u8fb9\u754c\u4fdd\u6301\u6709\u6548\u3002",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/context_builder/reality_projection.py",

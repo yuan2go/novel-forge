@@ -1,0 +1,25 @@
+{
+  "original_checkout": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge",
+  "branch": "codex/wp02-author-approved-run",
+  "head": "ceb69fa2ff1c56f07005154bb5797616e933e8c2",
+  "status": [
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/budget-configure-receipt.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/budget-query.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/direction-approval-receipt.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/direction-receipt.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/live-supervision-after-budget.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/logs/",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/mode-receipt.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/shared-evidence-secret-scan.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/status.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/user-authorization.json"
+  ],
+  "matches_starting_identity_and_status": true,
+  "protection": "No operations wrote/reset/stashed/deleted the original checkout; all implementation changes are isolated",
+  "owned_container_removed": true,
+  "owned_baseline_worktrees_removed": true,
+  "removed_container_id": "7e458a3ea4b43de670d4e035289317680dd963fb6bec4268c4eb773015161d53",
+  "removed_anonymous_volume": "99f8ac5d9ab1c517eee0b622646a0d3fa2013ba1552ec7f424bdf9b8dde19fa6",
+  "isolated_implementation_worktree_retained": "/Users/yuan/.codex/worktrees/work-intent-context-e2e/novel-forge",
+  "user_resources_touched": false
+}

@@ -1,0 +1,104 @@
+{
+  "remote_main_start": "4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52",
+  "remote_main_at_delivery": "4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52",
+  "implementation_commit": "a57b8dbb959f790c606c59c98fccfbe863434a40",
+  "implementation_tree_sha": "sha256:3b9e80602491186094d5caf94d0556fb65210ba8dc05f9cbc29abc7e0601ff36",
+  "delivery_revision": "COMMIT_CONTAINING_THIS_MANIFEST",
+  "branch": "codex/work-intent-context-e2e-20261005",
+  "worktree": "/Users/yuan/.codex/worktrees/work-intent-context-e2e/novel-forge",
+  "pushed": false,
+  "pull_request_created": false,
+  "real_provider_calls": 0,
+  "status_matrix": {
+    "QUALITY_SEMANTICS_CLOSED": "PASS",
+    "CONTEXT_COMPRESSION_PRODUCTION_READY": "PASS",
+    "AUTHOR_INTENT_PROPAGATION": "PASS",
+    "FORMAL_PRODUCTION_E2E": "PASS",
+    "ACCEPTANCE_AND_NEXT_UNIT": "PASS",
+    "RECOVERY_PATH": "PASS",
+    "LEGACY_ASSET_SAFETY": "PASS",
+    "REAL_PROVIDER_VALIDATED": "NOT_VERIFIED",
+    "CREATIVE_QUALITY_PROVEN": "NOT_VERIFIED",
+    "PRODUCTION_READY": "PASS"
+  },
+  "production_ready_scope": "THIS_ENGINEERING_PACKAGE_AT_MOCK_E2E_CEILING; NOT_PRODUCTION_PROVEN",
+  "files": [
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/CHANGED_FILES.txt",
+      "bytes": 2862,
+      "sha256": "32f96b6a9c2ed591010b2d09e24bf8ad1a74c384af702ef753ca6dda8cf3e573"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/CONTEXT_NATIVE_EVIDENCE.json",
+      "bytes": 400073,
+      "sha256": "2237cdf23dfb129d08132e264225d9e86da37913eaace30d449dbd8dd63c0c2a"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/INDEPENDENT_REVIEW.json",
+      "bytes": 1625,
+      "sha256": "56c0fd81c8807277792b8ff20f29006b284c9fb6ecdb42cf1ff5cdc99ec5a36a"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/INPUT_PROPAGATION.json",
+      "bytes": 113135,
+      "sha256": "82553c6d41864b7e57678a8183a7dc12886d7b0e1fc11ff5080308d12e12e497"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/REPORT.md",
+      "bytes": 17697,
+      "sha256": "8af65ff1e43b5ee686bf8750aadae9bd1c64123f8ad436dd9b08584f59eca426"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/RESOURCE_CLEANUP.json",
+      "bytes": 2240,
+      "sha256": "a722acd6fdc504a09a97ede88453dbaed813090b72a2adc9cbdbde3149b024e8"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/RUN_MANIFEST.json",
+      "bytes": 8231,
+      "sha256": "f1fd7cb75b07583e67916d7b14b4ecec0f97a7fd2fb5e3b5354520155101abc3"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/STATIC_GATES.json",
+      "bytes": 1078935,
+      "sha256": "9e387676f86bcb86e858adb0feb01e668a1ba2bafb4b33ab36742b9a8eb9a5e9"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/baseline.json",
+      "bytes": 1765,
+      "sha256": "219566fe7ec761aba268e7e97c21417094d66ace8980e65c0ceaaaa7795c2acf"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/context-native-snapshot.json.gz",
+      "bytes": 2969039,
+      "sha256": "efe6910b36f7f656dd15e0820e93c8120ed08e675bee1b0d0d13f614d3860772"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/implementation-identity.json",
+      "bytes": 427765,
+      "sha256": "305db7555355b31e77cf824be6b9e03f8d6b56ebcfa5aaacf97fd6699e508415"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/mock-artifact-index.json",
+      "bytes": 31717,
+      "sha256": "e083e4585608ad832066264811f7e4b11a533ff297562279b68a42db7e6c732f"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/mock-e2e-artifacts.zip",
+      "bytes": 19536421,
+      "sha256": "5f6146f027083a2a56c64e4f466765cb91e57804bfe1582ed11edac3883e27df"
+    },
+    {
+      "path": "reports/audits/2026-10-05-quality-context-e2e/validation-logs.zip",
+      "bytes": 317385,
+      "sha256": "6f8eb3a2be1d81b8be90048d8145ffd91f48aaf4d8e1dda01494d45ac9db143b"
+    }
+  ],
+  "additional_final_document_changes": [
+    "architecture/proposals/classical-corpus-codex-validation.md",
+    "architecture/proposals/industrial-novel-os-blueprint.md",
+    "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+    "architecture/proposals/prompt-and-generation-contract-convergence-01.md",
+    "architecture/reality-evidence.json"
+  ]
+}
