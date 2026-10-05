@@ -81,7 +81,7 @@ def _require_world_sample_source(cursor: Any, *, project_id: str, book_id: str,
         WHERE operation.project_id=%s AND operation.operation_id=%s AND generation.project_id=operation.project_id
           AND generation.book_id=%s""", [project_id, source_operation_id, book_id])
     row = cursor.fetchone()
-    if (not row or row[:2] != ("story_planning.generate", "1.16.0")
+    if (not row or row[0] != "story_planning.generate" or row[1] not in {"1.16.0", "1.17.0", "1.18.0"}
         or row[2].get("generator_operation_name") != "chapter_plan.generate"
         or not row[2].get("world_preparation_request") or row[2].get("routing_bootstrap_authorization_id")
         or row[2].get("repair_of_candidate_id") or row[2].get("repair_of_operation_id")

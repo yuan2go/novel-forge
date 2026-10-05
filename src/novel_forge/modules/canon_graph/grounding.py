@@ -149,7 +149,12 @@ def extract_grounded_candidates(
         _fail("extraction must explicitly distinguish changes from a successful no-op")
     source = dict(provider_extraction)
     output_schema_ref = str(source.get("provider_output_schema_ref") or "")
-    host_binds_prose_payoff = output_schema_ref.startswith("schema:chapter-provider-output:canon_extraction:v20") or output_schema_ref.startswith("schema:chapter-provider-output:canon_extraction:v21")
+    host_binds_prose_payoff = output_schema_ref in {
+        "schema:chapter-provider-output:canon_extraction:v20",
+        "schema:chapter-provider-output:canon_extraction:v21",
+        "schema:chapter-provider-output:canon_extraction:v22",
+        "schema:chapter-provider-output:canon_extraction:v23",
+    }
     if "facts" in source:
         if "canon_facts" in source:
             _fail("duplicate Canon fact representations")

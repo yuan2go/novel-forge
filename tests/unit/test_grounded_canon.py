@@ -192,8 +192,12 @@ def grounded_payoff():
     return extract(text, output)['obligation_changes'][0]
 
 
-def test_current_contract_binds_prose_payoff_identity_after_semantic_extraction():
-    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_semantics
+@pytest.mark.parametrize("work_requirements", [False, True])
+@pytest.mark.parametrize("causal_batch", [False, True])
+def test_current_contract_binds_prose_payoff_identity_after_semantic_extraction(work_requirements, causal_batch):
+    from novel_forge.modules.chapter_authority.provider_output_contracts import (
+        chapter_provider_output_schema_ref, validate_chapter_provider_output_semantics,
+    )
     text = "她归还了借来的钱。"
     claim = payoff(text, None)
     claim.pop("evidence_start")
@@ -205,15 +209,69 @@ def test_current_contract_binds_prose_payoff_identity_after_semantic_extraction(
         validate_chapter_provider_output_semantics("canon_extraction", {
             "extraction_status": "EXTRACTED", "obligation_changes": [claim],
         })
-    result = extract(text, {
-        "provider_output_schema_ref": "schema:chapter-provider-output:canon_extraction:v20",
+    schema_ref = chapter_provider_output_schema_ref(
+        "canon_extraction", causal_batch=causal_batch, work_requirements=work_requirements,
+    )
+    output = validate_chapter_provider_output_semantics("canon_extraction", {
         "extraction_status": "EXTRACTED",
         "obligation_changes": [claim],
-    })
+    }, output_schema_ref=schema_ref)
+    result = extract_grounded_candidates(
+        project_id="book-project", revision={"chapter": 1, "text": text},
+        revision_asset_version_id="final-candidate", context_bundle_version_id="frozen-context",
+        provider_extraction={**output, "provider_output_schema_ref": schema_ref},
+        work_requirements=work_requirements,
+    )
     bound = result["obligation_changes"][0]
     assert bound["evidence_start"] == 0
     assert bound["payoff_evidence"]["asset_version_id"] == "final-candidate"
     assert bound["payoff_evidence"]["event_id"] == bound["grounded_claim_id"]
+    assert bound["payoff_evidence"]["evidence_mode"] == "GROUNDED_FINAL_CANDIDATE_CLAIM"
+    accepted = payoff_events(bound)[0].payload["payoff_evidence"]
+    assert accepted["asset_version_id"] == "final-candidate"
+    assert accepted["grounded_claim_id"] == bound["grounded_claim_id"]
+
+
+@pytest.mark.parametrize("version", ["v18", "v19", "v24", "v200", "v210", "v22:unknown", ""])
+def test_other_canon_contracts_do_not_acquire_null_payoff_binding(version):
+    text = "她归还了借来的钱。"
+    schema_ref = "schema:chapter-provider-output:canon_extraction:" + version if version else ""
+    with pytest.raises(KernelError, match="typed payoff evidence"):
+        extract(text, {"provider_output_schema_ref": schema_ref, "extraction_status": "EXTRACTED",
+                       "obligation_changes": [payoff(text, None)]})
+    if version in {"v18", "v19", ""}:
+        result = extract(text, {"provider_output_schema_ref": schema_ref, "extraction_status": "EXTRACTED",
+                               "obligation_changes": [payoff(text, {
+                                   "asset_version_id": "$FINAL_CANDIDATE", "event_id": "$CURRENT_CLAIM",
+                               })]})
+        assert result["obligation_changes"][0]["payoff_evidence"]["asset_version_id"] == "final-candidate"
+
+
+@pytest.mark.parametrize("obligation_type,evidence", [
+    ("CAUSAL_DEBT", None), ("PROMISE", {}),
+    ("PROMISE", {"asset_version_id": "provider-authored", "event_id": "invented"}),
+])
+@pytest.mark.parametrize("causal_batch", [False, True])
+def test_work_canon_binding_does_not_replace_required_or_invalid_evidence(obligation_type, evidence, causal_batch):
+    from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema_ref
+    text = "她归还了借来的钱。"
+    claim = {**payoff(text, evidence), "obligation_type": obligation_type}
+    schema_ref = chapter_provider_output_schema_ref("canon_extraction", causal_batch=causal_batch, work_requirements=True)
+    with pytest.raises(KernelError, match="payoff"):
+        extract(text, {"provider_output_schema_ref": schema_ref, "extraction_status": "EXTRACTED",
+                       "obligation_changes": [claim]})
+
+
+def test_work_canon_binding_preserves_accepted_causal_payoff():
+    from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema_ref
+    text = "她归还了借来的钱。"
+    evidence = {"asset_version_id": "accepted:prerequisite", "event_id": "accepted:event"}
+    claim = {**payoff(text, evidence), "obligation_type": "CAUSAL_DEBT"}
+    result = extract(text, {
+        "provider_output_schema_ref": chapter_provider_output_schema_ref("canon_extraction", causal_batch=True, work_requirements=True),
+        "extraction_status": "EXTRACTED", "obligation_changes": [claim],
+    })
+    assert result["obligation_changes"][0]["payoff_evidence"] == evidence
 
 
 def payoff_events(change):
