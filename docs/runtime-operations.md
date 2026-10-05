@@ -822,6 +822,16 @@ independent human input. A coding agent's labels cannot be submitted as human ev
 The software checks provenance and declared independence; it cannot certify a person's
 judgment or turn subjective labels into universal truth.
 
+Model-only references are a separate requested contract, not HumanEvaluation or human
+calibration. The current native reference path requires human annotations, and the current
+Codex composition accepts one explicit model. A frozen model panel requires two isolated
+blind executions and a third adjudication, all binding the exact subject, author baseline,
+policy, Producer, actual ModelCallLog and Kernel receipt. Same-model executions remain
+correlated model consensus; selection alone cannot qualify a model. Do not replace an old
+human reference, frozen route or budget when enabling a model panel. Model reference
+creation, native record/adjudication, task-scoped multi-model routing and reference feedback
+must be implemented and verified before dispatch or production admission can use that basis.
+
 Reference coverage must include every dimension of the selected Quality group; review
 and rereview use respectively `review_decision` and `rereview_decision`. Freeze an explicit
 `REFERENCE_EVALUATION` grant with the exact binding and producer contract. Install the
