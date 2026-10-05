@@ -383,6 +383,15 @@ def build_production_execution_composition(
     router_enabled = bool(router_providers)
     deepseek_enabled = "deepseek" in router_providers
     codex_router_enabled = "codex-cli" in router_providers
+    codex_router_reasoning = "high"
+    if codex_router_enabled:
+        codex_router_reasoning = str(values.get(
+            "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT", "high"
+        )).strip()
+        if codex_router_reasoning not in {"low", "medium", "high", "xhigh", "max"}:
+            raise ValueError(
+                "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT must be low, medium, high, xhigh, or max"
+            )
     if router_enabled:
         templates = dict(values)
         if deepseek_enabled:
@@ -398,7 +407,7 @@ def build_production_execution_composition(
         else:
             provider = "codex-cli"
             model = str(values.get("NOVEL_FORGE_CODEX_ESCALATION_MODEL") or "").strip()
-            reasoning = "high"
+            reasoning = codex_router_reasoning
             context_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0)
             accounting_method = "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"
             accounting_evidence = str(values.get("NOVEL_FORGE_CODEX_CONFIGURATION_REF") or "")
@@ -1258,8 +1267,8 @@ def build_production_execution_composition(
             context_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0)
             output_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT") or 0)
             candidates.append(ModelCandidate(
-                candidate_id=f"codex-cli:{codex_model}:high", provider="codex-cli", model=codex_model,
-                reasoning="high", tier="escalation", capabilities=("structured_output", "text"),
+                candidate_id=f"codex-cli:{codex_model}:{codex_router_reasoning}", provider="codex-cli", model=codex_model,
+                reasoning=codex_router_reasoning, tier="escalation", capabilities=("structured_output", "text"),
                 context_limit=context_limit, output_limit=output_limit,
                 pricing=PricingSnapshot(
                     version=codex_entitlement.configuration_ref,

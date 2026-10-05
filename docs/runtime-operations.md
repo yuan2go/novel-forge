@@ -1007,7 +1007,13 @@ Optional Codex escalation requires `NOVEL_FORGE_ROUTER_CODEX_ESCALATION=true`, a
 `NOVEL_FORGE_CODEX_ESCALATION_MODEL`, positive `NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT`,
 `NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT`, `NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT`,
 and timezone-aware `NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM` / `VALID_UNTIL`, together with
-the existing verified CLI/entitlement configuration. Unavailable configured lanes fail
+the existing verified CLI/entitlement configuration.
+`NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT` selects the
+Codex candidate effort explicitly (`low`, `medium`, `high`, `xhigh`, or `max`). Absence
+retains `high` for historical compatibility; an invalid explicit value must fail closed.
+The selected effort binds candidate identity, the routed request,
+and the frozen creation configuration. A recovery must retain that identity. This does not
+qualify a candidate or waive independent review. Unavailable configured lanes fail
 closed; disabling the lane does not authorize a quality downgrade. Call limits count
 accounted reservation generations, including paid retries, while released unsent calls
 do not consume capacity. Shared usage locks prevent USD and entitlement reservations
