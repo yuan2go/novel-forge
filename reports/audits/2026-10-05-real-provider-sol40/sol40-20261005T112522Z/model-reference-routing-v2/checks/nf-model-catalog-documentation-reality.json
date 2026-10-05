@@ -1,0 +1,25 @@
+{
+  "canonical_document_count": 5,
+  "capability_count": 25,
+  "comment_ratchet": {
+    "base_script_comment_count": 13,
+    "base_sha": "9bd1d34f24ebe302533ffc26c72bda97336c4152",
+    "base_source_comment_count": 515,
+    "base_source_docstring_count": 122,
+    "base_web_comment_count": 5,
+    "status": "FAIL"
+  },
+  "errors": [
+    "comment ratchet increased source comments: 516 > 515"
+  ],
+  "evidence_class": "reality_inventory",
+  "inventory_sha256": "sha256:e341de200c8edfac284bd526f075cbfe0fdd9e8e10a008d7cd2aa913fafd4463",
+  "module_docstring_count": 35,
+  "schema_version": "novel-forge.documentation-reality-check.v1",
+  "script_comment_count": 13,
+  "source_comment_count": 516,
+  "source_docstring_count": 122,
+  "status": "FAIL",
+  "tested_sha": "6d3f67ecc977cce0ceaffcda222844badd952996",
+  "web_comment_count": 5
+}

@@ -1,0 +1,1686 @@
+{
+  "operation_id": "e502e822-c627-4d4e-a976-10870e14a646",
+  "status": "SUCCEEDED",
+  "compilation_id": "112043ea-4a20-4cac-bc17-345902da2da2",
+  "pack_id": "story_planning_pack",
+  "pack_version": "2.10.0",
+  "manifest_hash": "sha256:0d5a1696458356451bfe3ef80fe8012886bb385ffd2b43f80818d97c850a76eb",
+  "compiled_asset_version_id": "c50e2023-93bc-44dd-abfd-be3159df69b6",
+  "compilation_hash": "sha256:75fc6bf010f2e7128fe85e1db982193bf502a5b79b9419f85080474815d3ae7d",
+  "catalog_snapshot_hash": "sha256:f83df4f7e212a7f2e393291a2bf02bb67f4a1b024f58a49a2a6d0a3e3ee08260",
+  "compiler_version": "novel-forge-capability-pack-compiler.v2",
+  "release_sha": "6510ee74099a002f0d84f2c97f36e14ec7a523a0",
+  "novel_forge_version": "7.0.0",
+  "runtime_profile": "validation",
+  "release_channel": "VALIDATION",
+  "compilation_status": "TRUSTED",
+  "compiled_by": "operator:sol40-20261005T112522Z",
+  "compiled": {
+    "pack_id": "story_planning_pack",
+    "release_sha": "6510ee74099a002f0d84f2c97f36e14ec7a523a0",
+    "pack_version": "2.10.0",
+    "manifest_hash": "sha256:0d5a1696458356451bfe3ef80fe8012886bb385ffd2b43f80818d97c850a76eb",
+    "schema_version": "novelos.capability_pack.compiled.v1",
+    "workflow_nodes": [
+      {
+        "node_id": "arc_plan.generate",
+        "ordinal": 1,
+        "depends_on": [],
+        "handler_key": "novel_forge.story_planning.generate",
+        "capability_id": "planning.arc.generate",
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "definition_version": "1.18.0",
+        "agent_definition_ref": "",
+        "capability_contract_hash": "sha256:3c83b922c6ce89dd25628b72a472575c0714271b783ae861e1b0e665579dfa69",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "authoritative_retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "authoritative_timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "authoritative_approval_policy": {
+          "required": false
+        },
+        "authoritative_compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "authoritative_completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        }
+      },
+      {
+        "node_id": "book_plan.generate",
+        "ordinal": 2,
+        "depends_on": [],
+        "handler_key": "novel_forge.story_planning.generate",
+        "capability_id": "planning.book.generate",
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "definition_version": "1.18.0",
+        "agent_definition_ref": "",
+        "capability_contract_hash": "sha256:a56ca4b9cf829fb8239becdca2285fff78f7f6f02308f5abc4bca5b05ddf7214",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "authoritative_retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "authoritative_timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "authoritative_approval_policy": {
+          "required": false
+        },
+        "authoritative_compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "authoritative_completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        }
+      },
+      {
+        "node_id": "chapter_group_plan.generate",
+        "ordinal": 3,
+        "depends_on": [],
+        "handler_key": "novel_forge.story_planning.generate",
+        "capability_id": "planning.chapter_group.generate",
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "definition_version": "1.18.0",
+        "agent_definition_ref": "",
+        "capability_contract_hash": "sha256:66f5517a8cfc4d9043fee76ff38b6d8480f6d20dfbd2fad71577ea0bcf030c17",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "authoritative_retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "authoritative_timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "authoritative_approval_policy": {
+          "required": false
+        },
+        "authoritative_compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "authoritative_completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        }
+      },
+      {
+        "node_id": "chapter_plan.generate",
+        "ordinal": 4,
+        "depends_on": [],
+        "handler_key": "novel_forge.story_planning.generate",
+        "capability_id": "planning.story_chapter.generate",
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "definition_version": "1.18.0",
+        "agent_definition_ref": "",
+        "capability_contract_hash": "sha256:b31ee2f44d780c26ddb5e11292fd549cfd7d8b597fbd4e1e7dfe23489ae4edab",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "authoritative_retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "authoritative_timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "authoritative_approval_policy": {
+          "required": false
+        },
+        "authoritative_compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "authoritative_completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        }
+      },
+      {
+        "node_id": "character.cast.generate",
+        "ordinal": 5,
+        "depends_on": [],
+        "handler_key": "novel_forge.story_planning.generate",
+        "capability_id": "character.cast.generate",
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "definition_version": "1.18.0",
+        "agent_definition_ref": "",
+        "capability_contract_hash": "sha256:34febe5646d2eac95448cd0a6f302cc388d80fd636b05a8805d72ca924791193",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "authoritative_retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "authoritative_timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "authoritative_approval_policy": {
+          "required": false
+        },
+        "authoritative_compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "authoritative_completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        }
+      },
+      {
+        "node_id": "creative.candidates.generate",
+        "ordinal": 6,
+        "depends_on": [],
+        "handler_key": "novel_forge.story_planning.generate",
+        "capability_id": "creative.proposal.generate",
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "definition_version": "1.18.0",
+        "agent_definition_ref": "",
+        "capability_contract_hash": "sha256:b8b9d850b742e57d0814687df80eed109dffc88de406ee984baabb5384c2d32d",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "authoritative_retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "authoritative_timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "authoritative_approval_policy": {
+          "required": false
+        },
+        "authoritative_compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "authoritative_completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        }
+      },
+      {
+        "node_id": "ending.intent.generate",
+        "ordinal": 7,
+        "depends_on": [],
+        "handler_key": "novel_forge.story_planning.generate",
+        "capability_id": "ending.intent.generate",
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "definition_version": "1.18.0",
+        "agent_definition_ref": "",
+        "capability_contract_hash": "sha256:2ba5d4733f48bcac28640fdb08c3f4106ba6f304deb48e2bb86ac0f84b7a27bc",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "authoritative_retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "authoritative_timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "authoritative_approval_policy": {
+          "required": false
+        },
+        "authoritative_compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "authoritative_completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        }
+      },
+      {
+        "node_id": "reader.promise.generate",
+        "ordinal": 8,
+        "depends_on": [],
+        "handler_key": "novel_forge.story_planning.generate",
+        "capability_id": "reader.promise.generate",
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "definition_version": "1.18.0",
+        "agent_definition_ref": "",
+        "capability_contract_hash": "sha256:8595a6750102efd8e532a94ef8ec24a7660e1b18390224ef445e0bd2e8484e55",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "authoritative_retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "authoritative_timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "authoritative_approval_policy": {
+          "required": false
+        },
+        "authoritative_compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "authoritative_completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        }
+      },
+      {
+        "node_id": "theme.candidates.generate",
+        "ordinal": 9,
+        "depends_on": [],
+        "handler_key": "novel_forge.story_planning.generate",
+        "capability_id": "theme.question.generate",
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "definition_version": "1.18.0",
+        "agent_definition_ref": "",
+        "capability_contract_hash": "sha256:b34571029a2334349781ace4b473d7ab0340f70f9f929a46143b090d8cec0c5a",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "authoritative_retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "authoritative_timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "authoritative_approval_policy": {
+          "required": false
+        },
+        "authoritative_compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "authoritative_completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        }
+      },
+      {
+        "node_id": "volume_plan.generate",
+        "ordinal": 10,
+        "depends_on": [],
+        "handler_key": "novel_forge.story_planning.generate",
+        "capability_id": "planning.volume.generate",
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "definition_version": "1.18.0",
+        "agent_definition_ref": "",
+        "capability_contract_hash": "sha256:02b407c81aca2f420e8a89607a77a33dc32793af32fbfabd8a094a8693869fb5",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "authoritative_retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "authoritative_timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "authoritative_approval_policy": {
+          "required": false
+        },
+        "authoritative_compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "authoritative_completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        }
+      },
+      {
+        "node_id": "world.design.generate",
+        "ordinal": 11,
+        "depends_on": [],
+        "handler_key": "novel_forge.story_planning.generate",
+        "capability_id": "world.design.generate",
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "definition_version": "1.18.0",
+        "agent_definition_ref": "",
+        "capability_contract_hash": "sha256:0d2fb604dc74d4dc081c58111be65eecf2af17c8fcc37c9323156c63f47f1948",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "authoritative_retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "authoritative_timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "authoritative_approval_policy": {
+          "required": false
+        },
+        "authoritative_compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "authoritative_completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        }
+      }
+    ],
+    "release_channel": "VALIDATION",
+    "compilation_hash": "sha256:75fc6bf010f2e7128fe85e1db982193bf502a5b79b9419f85080474815d3ae7d",
+    "protocol_version": "novelos.capability_pack.v1",
+    "resolved_artifacts": [
+      {
+        "ref": "chapter-operation-admission:v1",
+        "kind": "APPROVAL_POLICY",
+        "version": "v1",
+        "content_hash": "sha256:282d05c1df84541aab351ba151ff214fed19fa377afc91cb4c3d735e413cb92d",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#APPROVAL_POLICY:chapter-operation-admission:v1@v1"
+      },
+      {
+        "ref": "chapter.stage.route.policy:v1",
+        "kind": "APPROVAL_POLICY",
+        "version": "v1",
+        "content_hash": "sha256:750b4dac19211a00d06879fea1350325bd3dd43ccd5052abef8d21360e7605eb",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#APPROVAL_POLICY:chapter.stage.route.policy:v1@v1"
+      },
+      {
+        "ref": "domain-decision-record:v1",
+        "kind": "APPROVAL_POLICY",
+        "version": "v1",
+        "content_hash": "sha256:f23f495bbc81245ef172fc1e54de2ef2395619c519114d56655f96c279b7a0a4",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#APPROVAL_POLICY:domain-decision-record:v1@v1"
+      },
+      {
+        "ref": "budget:chapter-generation-pack:v1",
+        "kind": "BUDGET_POLICY",
+        "version": "v1",
+        "content_hash": "sha256:55e75983b6c85de1808c06d3b9ea15402d1325e4adfbd14014440b3a28ad74f8",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#BUDGET_POLICY:budget:chapter-generation-pack:v1@v1"
+      },
+      {
+        "ref": "commit:chapter-generation-pack:v1",
+        "kind": "COMMIT_POLICY",
+        "version": "v1",
+        "content_hash": "sha256:c384e0f71b9b40ad94967db61bb3723a388bb49b589c3a73252cb19aaca0abdc",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#COMMIT_POLICY:commit:chapter-generation-pack:v1@v1"
+      },
+      {
+        "ref": "append-only-evidence:v1",
+        "kind": "COMPENSATION_POLICY",
+        "version": "v1",
+        "content_hash": "sha256:ca496cc701d1a49e4a18893d9d25cd94877a31a80b80d85d6b81fdaaa375eba6",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#COMPENSATION_POLICY:append-only-evidence:v1@v1"
+      },
+      {
+        "ref": "append-only-supersede:v1",
+        "kind": "COMPENSATION_POLICY",
+        "version": "v1",
+        "content_hash": "sha256:a824dd00bc9dfafc8ad31d7cc4a58bc9fd3bc233adfec20d43bf8b7bd68221f6",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#COMPENSATION_POLICY:append-only-supersede:v1@v1"
+      },
+      {
+        "ref": "context-policy:chapter-generation-pack:v2",
+        "kind": "CONTEXT_POLICY",
+        "version": "v2",
+        "content_hash": "sha256:36fbd60b845e5db10e4fdc1896acf8d9616f011f6337f65b94c54892f64d5cbe",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#CONTEXT_POLICY:context-policy:chapter-generation-pack:v2@v2"
+      },
+      {
+        "ref": "knowledge:chapter-causal-cost:v2",
+        "kind": "KNOWLEDGE",
+        "version": "v2",
+        "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#KNOWLEDGE:knowledge:chapter-causal-cost:v2@v2"
+      },
+      {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v8",
+        "content_hash": "sha256:063691bd8b0ad08e26c2077e74d14552696a87c573890cba372b8d9615d43238",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction.md"
+      },
+      {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v1",
+        "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template.md"
+      },
+      {
+        "ref": "append-only-supersede.v1",
+        "kind": "PROTOCOL",
+        "version": "v1",
+        "content_hash": "sha256:7aa1c7b97dde01c0d86dabb92db7b0806d232ea7dcc31997624ddff2c9ecaceb",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:append-only-supersede.v1@v1"
+      },
+      {
+        "ref": "authority-audit.v1",
+        "kind": "PROTOCOL",
+        "version": "v1",
+        "content_hash": "sha256:89f7a1017e05a1d432732c12bab9f6cc9f012430fbbf0efe86b3ba1d2ef02701",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:authority-audit.v1@v1"
+      },
+      {
+        "ref": "authority-error.v1",
+        "kind": "PROTOCOL",
+        "version": "v1",
+        "content_hash": "sha256:d01fd990990048ae18349b3b14eefadbdc846a896dd45509b0b62d1607ff239f",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:authority-error.v1@v1"
+      },
+      {
+        "ref": "authority-event.v1",
+        "kind": "PROTOCOL",
+        "version": "v1",
+        "content_hash": "sha256:519002f8a8ca56171d46ae243d0a8b424402fb8680d5105a9b86a04c5fe17485",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:authority-event.v1@v1"
+      },
+      {
+        "ref": "chapter-generation-input.v1",
+        "kind": "PROTOCOL",
+        "version": "v1",
+        "content_hash": "sha256:59885002e252568885154f713aa5adc48d9b2f028b99b05de5f41d4ef6b99142",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:chapter-generation-input.v1@v1"
+      },
+      {
+        "ref": "chapter-generation-output.v1",
+        "kind": "PROTOCOL",
+        "version": "v1",
+        "content_hash": "sha256:3e27c2be000ef57429cfdd2a5304c05d1a5cba5092198a4dcac6ba9ae2a39292",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:chapter-generation-output.v1@v1"
+      },
+      {
+        "ref": "operation-saga-attempt-state.v1",
+        "kind": "PROTOCOL",
+        "version": "v1",
+        "content_hash": "sha256:c5db530e4f6af790fd4c109d986b0295c4806d8831cadf17c1778abdac64c9c1",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:operation-saga-attempt-state.v1@v1"
+      },
+      {
+        "ref": "source-isolation-no-raw-expression:v1",
+        "kind": "RULE",
+        "version": "v1",
+        "content_hash": "sha256:4a80543cc430910c2921e2232930d4db0079c968ef12dea5c3fae2465f5e396c",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#RULE:source-isolation-no-raw-expression:v1@v1"
+      },
+      {
+        "ref": "chapter-plan-authority.v1",
+        "kind": "SCHEMA",
+        "version": "v1",
+        "content_hash": "sha256:5f34516adf67ac9cdf03ede1afbe813d1fc8e1dcac0b5e4f311cd7cdc3159ab5",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:chapter-plan-authority.v1@v1"
+      },
+      {
+        "ref": "operation-saga-attempt-state.v1",
+        "kind": "SCHEMA",
+        "version": "v1",
+        "content_hash": "sha256:2d1a6d21f9ab7a82a159faa1a6eff0e56db30f18a2abe487ccbaf12985faad0f",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:operation-saga-attempt-state.v1@v1"
+      },
+      {
+        "ref": "schema:story-planning-pack-input:v1",
+        "kind": "SCHEMA",
+        "version": "v1",
+        "content_hash": "sha256:c43efe31007a9e115bd11feb38e3af5891b1c2d73acecf049c273b35599e45e3",
+        "source_identity": "generated:longform-pack-domain-schema"
+      },
+      {
+        "ref": "schema:story-planning-pack-output:v1",
+        "kind": "SCHEMA",
+        "version": "v1",
+        "content_hash": "sha256:e22c58b1a9da877efd3a364ed7ae43e752ec9f7465f240cfeb6a39f78a89188b",
+        "source_identity": "generated:longform-pack-domain-schema"
+      },
+      {
+        "ref": "canon-continuity-graph",
+        "kind": "SKILL",
+        "version": "canon-continuity-graph-qualification-v2",
+        "content_hash": "sha256:72cc55db18b93ddd7fefb2d99dbe02f04204fc2c2323bb166c8bb7f186f790f8",
+        "source_identity": "skills/canon-continuity-graph/SKILL.md"
+      },
+      {
+        "ref": "chapter-outline",
+        "kind": "SKILL",
+        "version": "chapter-outline-qualification-v2",
+        "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39",
+        "source_identity": "skills/chapter-outline/SKILL.md"
+      },
+      {
+        "ref": "character-design",
+        "kind": "SKILL",
+        "version": "character-design-qualification-v2",
+        "content_hash": "sha256:ed5a774302d7baa6ea3bf06f6b7327d066a6f67af0c5de81103cc5adefe3f68c",
+        "source_identity": "skills/character-design/SKILL.md"
+      },
+      {
+        "ref": "hot-novel-business-deconstruction",
+        "kind": "SKILL",
+        "version": "hot-novel-business-deconstruction-qualification-v2",
+        "content_hash": "sha256:a876ca898d9662821c24097e6cb6e237e1f40d40d338cec7f0e15ebb9ab43ddc",
+        "source_identity": "skills/hot-novel-business-deconstruction/SKILL.md"
+      },
+      {
+        "ref": "long-outline",
+        "kind": "SKILL",
+        "version": "long-outline-v3",
+        "content_hash": "sha256:e619875c466e7b3b07b93c394c0ecb05414a9bf454ec5e30775a00b0b7fa5e29",
+        "source_identity": "skills/long-outline/SKILL.md"
+      },
+      {
+        "ref": "narrative-beat-design",
+        "kind": "SKILL",
+        "version": "narrative-beat-design-qualification-v3",
+        "content_hash": "sha256:f667dd27fee1ae7e8c147192e2107c820d0b39e1bd00666dfb5bdabc5a92d99b",
+        "source_identity": "skills/narrative-beat-design/SKILL.md"
+      },
+      {
+        "ref": "topic-development",
+        "kind": "SKILL",
+        "version": "topic-development-qualification-v2",
+        "content_hash": "sha256:37069fb5d6947759ef6582a54ac9a7d277adf3c6b2bdaff48109ddc383d706b3",
+        "source_identity": "skills/topic-development/SKILL.md"
+      },
+      {
+        "ref": "worldbuilding",
+        "kind": "SKILL",
+        "version": "worldbuilding-qualification-v2",
+        "content_hash": "sha256:a59488e22b9738805110460ba8fa926e0aea886933af19e525aa131584216663",
+        "source_identity": "skills/worldbuilding/SKILL.md"
+      },
+      {
+        "ref": "source:chapter-generation-pack:v1",
+        "kind": "SOURCE_POLICY",
+        "version": "v1",
+        "content_hash": "sha256:d401ef641c18c8211f5a9f145b8279e64cd3be1e9ce3f2fd148a8ccba246cefb",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SOURCE_POLICY:source:chapter-generation-pack:v1@v1"
+      },
+      {
+        "ref": "timeout:character-cast-generate:v3",
+        "kind": "TIMEOUT_POLICY",
+        "version": "v3",
+        "content_hash": "sha256:ae150a5d5320b735e9a2ced9fe433b3d698ad407cd507f527632db6c23dee57a",
+        "source_identity": "generated:story-planning-pack-profile"
+      },
+      {
+        "ref": "timeout:creative-proposal-generate:v3",
+        "kind": "TIMEOUT_POLICY",
+        "version": "v3",
+        "content_hash": "sha256:d2802f87ef8439438161318fe4fd528327f0bbf8c000f64ffa517b79b8af5c62",
+        "source_identity": "generated:story-planning-pack-profile"
+      },
+      {
+        "ref": "timeout:ending-intent-generate:v3",
+        "kind": "TIMEOUT_POLICY",
+        "version": "v3",
+        "content_hash": "sha256:4935de4c0689973f45b0fa6a3fc013977523c9f38d065f9489a1d3c2e11f8721",
+        "source_identity": "generated:story-planning-pack-profile"
+      },
+      {
+        "ref": "timeout:planning-arc-generate:v3",
+        "kind": "TIMEOUT_POLICY",
+        "version": "v3",
+        "content_hash": "sha256:ed22eb4c73e8affb8ab3da5f551d8aeddde09faa68b2ede864b44b1826c8ffcd",
+        "source_identity": "generated:story-planning-pack-profile"
+      },
+      {
+        "ref": "timeout:planning-book-generate:v3",
+        "kind": "TIMEOUT_POLICY",
+        "version": "v3",
+        "content_hash": "sha256:974ab8230c1e36250b4a8ea09919ced48e07dd96a2db11051ede49aa4e2385a8",
+        "source_identity": "generated:story-planning-pack-profile"
+      },
+      {
+        "ref": "timeout:planning-chapter_group-generate:v3",
+        "kind": "TIMEOUT_POLICY",
+        "version": "v3",
+        "content_hash": "sha256:c47d7ad43f796fb2c3f376381f5ff35e47fce07052c0bae0c993cc3eac1b146f",
+        "source_identity": "generated:story-planning-pack-profile"
+      },
+      {
+        "ref": "timeout:planning-story_chapter-generate:v3",
+        "kind": "TIMEOUT_POLICY",
+        "version": "v3",
+        "content_hash": "sha256:d6ac9b8a1119a13ce8d40979397a6fea388d56709f802a4febe9946b9c25a8cb",
+        "source_identity": "generated:story-planning-pack-profile"
+      },
+      {
+        "ref": "timeout:planning-volume-generate:v3",
+        "kind": "TIMEOUT_POLICY",
+        "version": "v3",
+        "content_hash": "sha256:36c869dfa29f08144d4ef5ef41e97b3a169b6e330a6d061b02442ae04cea5898",
+        "source_identity": "generated:story-planning-pack-profile"
+      },
+      {
+        "ref": "timeout:reader-promise-generate:v3",
+        "kind": "TIMEOUT_POLICY",
+        "version": "v3",
+        "content_hash": "sha256:463439e58987d62b7da2abd0dcbb1437275a7b98b7aa2d774b7f305141941516",
+        "source_identity": "generated:story-planning-pack-profile"
+      },
+      {
+        "ref": "timeout:theme-question-generate:v3",
+        "kind": "TIMEOUT_POLICY",
+        "version": "v3",
+        "content_hash": "sha256:00344f58b9855c67a99be005e3b467913d163f33ccf0f510690c8021497d2696",
+        "source_identity": "generated:story-planning-pack-profile"
+      },
+      {
+        "ref": "timeout:world-design-generate:v3",
+        "kind": "TIMEOUT_POLICY",
+        "version": "v3",
+        "content_hash": "sha256:d1d7f070071d166d327c986435e53527705c4ddfced9df52b374be09fb8175c0",
+        "source_identity": "generated:story-planning-pack-profile"
+      },
+      {
+        "ref": "tools:chapter-generation-pack:v2",
+        "kind": "TOOL_POLICY",
+        "version": "v2",
+        "content_hash": "sha256:b09e28f5c1a575848e315e6d82818fd1ed50e4e35364ee9a0d97a089b378a2f8",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TOOL_POLICY:tools:chapter-generation-pack:v2@v2"
+      },
+      {
+        "ref": "validation:chapter-generation-pack:v1",
+        "kind": "VALIDATION_POLICY",
+        "version": "v1",
+        "content_hash": "sha256:49711dbe12cb7ae9e58604ea94fcdf24149de7dd03c3012e737503b00325694a",
+        "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#VALIDATION_POLICY:validation:chapter-generation-pack:v1@v1"
+      }
+    ],
+    "completion_contract": {
+      "required_evidence": [
+        "trace",
+        "audit"
+      ],
+      "required_terminal_nodes": [
+        "creative.candidates.generate",
+        "theme.candidates.generate",
+        "ending.intent.generate",
+        "reader.promise.generate",
+        "world.design.generate",
+        "character.cast.generate",
+        "book_plan.generate",
+        "volume_plan.generate",
+        "arc_plan.generate",
+        "chapter_group_plan.generate",
+        "chapter_plan.generate"
+      ],
+      "required_output_asset_types": [
+        "planning_generation_candidate"
+      ]
+    },
+    "novel_forge_version": "7.0.0",
+    "resolved_operations": [
+      {
+        "family": "story_planning_runtime",
+        "policy": {
+          "candidate_only": true,
+          "high_risk_auto_approval": false,
+          "agent_runtime_binding_required": false,
+          "story_design_activation_separate": true,
+          "typed_capability_binding_required": true,
+          "repair_candidate_asset_input_allowed": true,
+          "repair_result_evidence_input_allowed": true,
+          "production_execution_gateway_required": true,
+          "semantic_evaluation_operation_separate": true,
+          "capability_pack_attempt_snapshot_required": true
+        },
+        "enabled": true,
+        "handler_key": "novel_forge.story_planning.generate",
+        "permissions": [
+          "story_planning.authority.execute"
+        ],
+        "retry_policy": {
+          "max_attempts": 3,
+          "dead_letter_on_exhausted": true
+        },
+        "result_schema": {
+          "type": "object"
+        },
+        "command_schema": {
+          "type": "object",
+          "required": [
+            "project_id",
+            "input_asset_version_ids",
+            "payload"
+          ],
+          "properties": {
+            "payload": {
+              "type": "object"
+            },
+            "project_id": {
+              "type": "string"
+            },
+            "input_asset_version_ids": {
+              "type": "array",
+              "minItems": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "execution_mode": "worker",
+        "timeout_policy": {
+          "operation_timeout_seconds": 1800
+        },
+        "approval_policy": {
+          "required": false
+        },
+        "definition_hash": "sha256:1fd6ffb0b23468cb8785649fea32badbe45384daee6d57d5e4ac05d16a9a3e45",
+        "definition_name": "story_planning.generate",
+        "idempotency_scope": "book:story-planning-generation",
+        "source_commit_sha": "6510ee74099a002f0d84f2c97f36e14ec7a523a0",
+        "definition_version": "1.18.0",
+        "cancellation_policy": {
+          "mode": "cancel_active_attempt"
+        },
+        "compensation_policy": {
+          "reason": "append-only candidates and validation evidence",
+          "supported": false
+        },
+        "completion_contract": {
+          "version": "story-planning-generation-completion-v1",
+          "required_evidence": [
+            "trace",
+            "audit",
+            "cost_when_provider_used"
+          ],
+          "required_outbox_events": [
+            "story_planning.candidate.materialized"
+          ],
+          "required_asset_selectors": [
+            {
+              "role": "primary",
+              "selector": "planning_generation_candidate",
+              "lifecycle": "CANDIDATE",
+              "governance": "CLEAR",
+              "output_key": "story_planning.candidate",
+              "eligibility": "INELIGIBLE"
+            }
+          ]
+        },
+        "application_build_id": "sol40-20261005T112522Z:model-reference-preparation-v5",
+        "external_capabilities": [
+          "model.planning"
+        ],
+        "concurrency_key_template": "book:{book_id}:planning:{logical_key}",
+        "handler_contract_version": "story-planning-generation-handler-v1",
+        "irreversible_effect_policy": {
+          "allowed": false
+        }
+      }
+    ],
+    "catalog_snapshot_hash": "sha256:f83df4f7e212a7f2e393291a2bf02bb67f4a1b024f58a49a2a6d0a3e3ee08260",
+    "resolved_capabilities": [
+      {
+        "definition": {
+          "domain": "character",
+          "risk_class": "high",
+          "capability_id": "character.cast.generate",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:character-cast-generate:v1",
+          "budget_policy_ref": "budget:character-cast-generate:v1",
+          "commit_policy_ref": "commit:character-cast-generate:v1",
+          "output_schema_ref": "schema:execution-output:character-cast-generate:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:character-cast-generate:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:character-cast-generate:v3",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:character-cast-generate:v1",
+          "validation_policy_ref": "validation:character-cast-generate:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "character.cast.generate",
+        "contract_hash": "sha256:34febe5646d2eac95448cd0a6f302cc388d80fd636b05a8805d72ca924791193"
+      },
+      {
+        "definition": {
+          "domain": "creative",
+          "risk_class": "high",
+          "capability_id": "creative.proposal.generate",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:creative-proposal-generate:v1",
+          "budget_policy_ref": "budget:creative-proposal-generate:v1",
+          "commit_policy_ref": "commit:creative-proposal-generate:v1",
+          "output_schema_ref": "schema:execution-output:creative-proposal-generate:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:creative-proposal-generate:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:creative-proposal-generate:v3",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:creative-proposal-generate:v1",
+          "validation_policy_ref": "validation:creative-proposal-generate:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "creative.proposal.generate",
+        "contract_hash": "sha256:b8b9d850b742e57d0814687df80eed109dffc88de406ee984baabb5384c2d32d"
+      },
+      {
+        "definition": {
+          "domain": "ending",
+          "risk_class": "high",
+          "capability_id": "ending.intent.generate",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:ending-intent-generate:v1",
+          "budget_policy_ref": "budget:ending-intent-generate:v1",
+          "commit_policy_ref": "commit:ending-intent-generate:v1",
+          "output_schema_ref": "schema:execution-output:ending-intent-generate:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:ending-intent-generate:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:ending-intent-generate:v3",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:ending-intent-generate:v1",
+          "validation_policy_ref": "validation:ending-intent-generate:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "ending.intent.generate",
+        "contract_hash": "sha256:2ba5d4733f48bcac28640fdb08c3f4106ba6f304deb48e2bb86ac0f84b7a27bc"
+      },
+      {
+        "definition": {
+          "domain": "planning",
+          "risk_class": "high",
+          "capability_id": "planning.arc.generate",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:planning-arc-generate:v1",
+          "budget_policy_ref": "budget:planning-arc-generate:v1",
+          "commit_policy_ref": "commit:planning-arc-generate:v1",
+          "output_schema_ref": "schema:execution-output:planning-arc-generate:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:planning-arc-generate:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:planning-arc-generate:v3",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:planning-arc-generate:v1",
+          "validation_policy_ref": "validation:planning-arc-generate:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "planning.arc.generate",
+        "contract_hash": "sha256:3c83b922c6ce89dd25628b72a472575c0714271b783ae861e1b0e665579dfa69"
+      },
+      {
+        "definition": {
+          "domain": "planning",
+          "risk_class": "high",
+          "capability_id": "planning.book.generate",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:planning-book-generate:v1",
+          "budget_policy_ref": "budget:planning-book-generate:v1",
+          "commit_policy_ref": "commit:planning-book-generate:v1",
+          "output_schema_ref": "schema:execution-output:planning-book-generate:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:planning-book-generate:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:planning-book-generate:v3",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:planning-book-generate:v1",
+          "validation_policy_ref": "validation:planning-book-generate:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "planning.book.generate",
+        "contract_hash": "sha256:a56ca4b9cf829fb8239becdca2285fff78f7f6f02308f5abc4bca5b05ddf7214"
+      },
+      {
+        "definition": {
+          "domain": "planning",
+          "risk_class": "high",
+          "capability_id": "planning.chapter_group.generate",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:planning-chapter_group-generate:v1",
+          "budget_policy_ref": "budget:planning-chapter_group-generate:v1",
+          "commit_policy_ref": "commit:planning-chapter_group-generate:v1",
+          "output_schema_ref": "schema:execution-output:planning-chapter_group-generate:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:planning-chapter_group-generate:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:planning-chapter_group-generate:v3",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:planning-chapter_group-generate:v1",
+          "validation_policy_ref": "validation:planning-chapter_group-generate:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "planning.chapter_group.generate",
+        "contract_hash": "sha256:66f5517a8cfc4d9043fee76ff38b6d8480f6d20dfbd2fad71577ea0bcf030c17"
+      },
+      {
+        "definition": {
+          "domain": "planning",
+          "risk_class": "high",
+          "capability_id": "planning.story_chapter.generate",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:planning-story_chapter-generate:v1",
+          "budget_policy_ref": "budget:planning-story_chapter-generate:v1",
+          "commit_policy_ref": "commit:planning-story_chapter-generate:v1",
+          "output_schema_ref": "schema:execution-output:planning-story_chapter-generate:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:planning-story_chapter-generate:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:planning-story_chapter-generate:v3",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:planning-story_chapter-generate:v1",
+          "validation_policy_ref": "validation:planning-story_chapter-generate:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "planning.story_chapter.generate",
+        "contract_hash": "sha256:b31ee2f44d780c26ddb5e11292fd549cfd7d8b597fbd4e1e7dfe23489ae4edab"
+      },
+      {
+        "definition": {
+          "domain": "planning",
+          "risk_class": "high",
+          "capability_id": "planning.volume.generate",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:planning-volume-generate:v1",
+          "budget_policy_ref": "budget:planning-volume-generate:v1",
+          "commit_policy_ref": "commit:planning-volume-generate:v1",
+          "output_schema_ref": "schema:execution-output:planning-volume-generate:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:planning-volume-generate:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:planning-volume-generate:v3",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:planning-volume-generate:v1",
+          "validation_policy_ref": "validation:planning-volume-generate:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "planning.volume.generate",
+        "contract_hash": "sha256:02b407c81aca2f420e8a89607a77a33dc32793af32fbfabd8a094a8693869fb5"
+      },
+      {
+        "definition": {
+          "domain": "quality",
+          "risk_class": "high",
+          "capability_id": "quality.originality.judge",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:quality-originality-judge:v1",
+          "budget_policy_ref": "budget:quality-originality-judge:v1",
+          "commit_policy_ref": "commit:quality-originality-judge:v1",
+          "output_schema_ref": "schema:execution-output:quality-originality-judge:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:quality-originality-judge:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:quality-originality-judge:v1",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:quality-originality-judge:v1",
+          "validation_policy_ref": "validation:quality-originality-judge:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "quality.originality.judge",
+        "contract_hash": "sha256:f042ac40a23ddf983c2ed498d54abf0161774eb6738f5c96bd36fd7762f03ea5"
+      },
+      {
+        "definition": {
+          "domain": "creative",
+          "risk_class": "high",
+          "capability_id": "reader.promise.generate",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:reader-promise-generate:v1",
+          "budget_policy_ref": "budget:reader-promise-generate:v1",
+          "commit_policy_ref": "commit:reader-promise-generate:v1",
+          "output_schema_ref": "schema:execution-output:reader-promise-generate:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:reader-promise-generate:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:reader-promise-generate:v3",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:reader-promise-generate:v1",
+          "validation_policy_ref": "validation:reader-promise-generate:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "reader.promise.generate",
+        "contract_hash": "sha256:8595a6750102efd8e532a94ef8ec24a7660e1b18390224ef445e0bd2e8484e55"
+      },
+      {
+        "definition": {
+          "domain": "theme",
+          "risk_class": "high",
+          "capability_id": "theme.question.generate",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:theme-question-generate:v1",
+          "budget_policy_ref": "budget:theme-question-generate:v1",
+          "commit_policy_ref": "commit:theme-question-generate:v1",
+          "output_schema_ref": "schema:execution-output:theme-question-generate:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:theme-question-generate:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:theme-question-generate:v3",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:theme-question-generate:v1",
+          "validation_policy_ref": "validation:theme-question-generate:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "theme.question.generate",
+        "contract_hash": "sha256:b34571029a2334349781ace4b473d7ab0340f70f9f929a46143b090d8cec0c5a"
+      },
+      {
+        "definition": {
+          "domain": "world",
+          "risk_class": "high",
+          "capability_id": "world.design.generate",
+          "supports_query": true,
+          "fixture_allowed": true,
+          "supports_cancel": true,
+          "input_schema_ref": "schema:execution-input:world-design-generate:v1",
+          "budget_policy_ref": "budget:world-design-generate:v1",
+          "commit_policy_ref": "commit:world-design-generate:v1",
+          "output_schema_ref": "schema:execution-output:world-design-generate:v1",
+          "skill_bundle_type": "DOMAIN_SKILL_BUNDLE",
+          "source_policy_ref": "source:world-design-generate:v1",
+          "supports_callback": true,
+          "production_allowed": true,
+          "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+          "timeout_policy_ref": "timeout:world-design-generate:v3",
+          "allowed_backend_ids": [
+            "remote-provider",
+            "remote-provider-*",
+            "codex-cli",
+            "scripted-fixture"
+          ],
+          "permission_policy_ref": "permission:world-design-generate:v1",
+          "validation_policy_ref": "validation:world-design-generate:v1",
+          "allowed_runtime_classes": [
+            "REMOTE_PROVIDER_API",
+            "LOCAL_CLI_REMOTE_INFERENCE",
+            "SCRIPTED_FIXTURE"
+          ],
+          "requires_provider_idempotency": false
+        },
+        "capability_id": "world.design.generate",
+        "contract_hash": "sha256:0d2fb604dc74d4dc081c58111be65eecf2af17c8fcc37c9323156c63f47f1948"
+      }
+    ],
+    "capability_type_policy": {
+      "generation": true,
+      "policy_class": "AUTHORITY_BOUND_GENERATION",
+      "capability_type": "production_workflow",
+      "allows_raw_source": false,
+      "allowed_lifecycles": [
+        "DESIGN",
+        "VALIDATION",
+        "PRODUCTION",
+        "MAINTENANCE",
+        "RETIRED"
+      ],
+      "required_audit_level": "FULL",
+      "requires_attempt_fence": true,
+      "allows_external_effects": true,
+      "allowed_release_channels": [
+        "DEV",
+        "VALIDATION",
+        "CANARY",
+        "PRODUCTION"
+      ],
+      "requires_authority_operation": true,
+      "allowed_status_lifecycle_channels": [
+        [
+          "DRAFT",
+          "DESIGN",
+          "DEV"
+        ],
+        [
+          "DRAFT",
+          "VALIDATION",
+          "DEV"
+        ],
+        [
+          "CANDIDATE",
+          "VALIDATION",
+          "VALIDATION"
+        ],
+        [
+          "ACTIVE",
+          "PRODUCTION",
+          "CANARY"
+        ],
+        [
+          "ACTIVE",
+          "PRODUCTION",
+          "PRODUCTION"
+        ],
+        [
+          "DEPRECATED",
+          "MAINTENANCE",
+          "PRODUCTION"
+        ],
+        [
+          "RETIRED",
+          "RETIRED",
+          "PRODUCTION"
+        ],
+        [
+          "DISABLED",
+          "MAINTENANCE",
+          "DEV"
+        ],
+        [
+          "DISABLED",
+          "MAINTENANCE",
+          "VALIDATION"
+        ],
+        [
+          "DISABLED",
+          "MAINTENANCE",
+          "CANARY"
+        ],
+        [
+          "DISABLED",
+          "MAINTENANCE",
+          "PRODUCTION"
+        ]
+      ]
+    },
+    "target_runtime_profile": "validation",
+    "context_source_snapshot": {
+      "priority": [
+        "chapter_plan",
+        "canon_snapshot",
+        "story_state",
+        "knowledge_pack"
+      ],
+      "freshness": {
+        "reject_stale": true,
+        "reject_unqualified": true,
+        "reject_cross_project": true
+      },
+      "policy_id": "context-policy:chapter-generation-pack:v2",
+      "max_tokens": 512000,
+      "source_isolation": "ABSTRACT_ASSETS_ONLY",
+      "longform_bindings": {
+        "arc": "optional",
+        "book": "required",
+        "canon": "required",
+        "volume": "optional",
+        "chapter": "required",
+        "story_bible": "required",
+        "chapter_group": "required",
+        "reader_feedback": "optional"
+      },
+      "allowed_asset_types": [
+        "book_design",
+        "canon_snapshot",
+        "chapter_execution_intent",
+        "chapter_memo",
+        "chapter_plan",
+        "chapter_plan_version",
+        "context_bundle",
+        "knowledge_pack",
+        "planning_generation_input_snapshot",
+        "story_state"
+      ],
+      "forbidden_asset_types": [
+        "raw_source_document",
+        "raw_source_chunk"
+      ],
+      "required_version_refs": [
+        "chapter_plan_asset_version_id",
+        "canon_snapshot_version_id"
+      ]
+    },
+    "evaluation_gate_snapshot": {
+      "metrics": [],
+      "evaluation_id": "chapter-generation-evaluation-v1",
+      "failure_policy": {
+        "terminal_failures": [
+          "CONTEXT_MANIFEST_CONSISTENCY_FAILED",
+          "SOURCE_LEAKAGE_DETECTED"
+        ],
+        "retryable_failures": [
+          "PROVIDER_TIMEOUT",
+          "OBJECT_STORE_UNAVAILABLE"
+        ],
+        "acceptable_failures": []
+      },
+      "required_gates": [
+        {
+          "gate_id": "planning_source_isolation",
+          "blocking": true,
+          "threshold": 1,
+          "required_evidence": [
+            "planning_generation_candidate"
+          ],
+          "judge_capability_id": "quality.originality.judge"
+        }
+      ]
+    },
+    "tool_permission_snapshot": {
+      "files": {
+        "read_allowed": false,
+        "allowed_roots": [],
+        "write_allowed": false
+      },
+      "tools": [
+        {
+          "tool_ref": "model.provider.invoke",
+          "permission": "EXECUTE",
+          "risk_class": "HIGH",
+          "audit_required": true,
+          "approval_required": false,
+          "budget_policy_ref": "budget:chapter-generation-pack:v1",
+          "allowed_operations": [
+            "creative.candidates.generate",
+            "theme.candidates.generate",
+            "ending.intent.generate",
+            "reader.promise.generate",
+            "world.design.generate",
+            "character.cast.generate",
+            "book_plan.generate",
+            "volume_plan.generate",
+            "arc_plan.generate",
+            "chapter_group_plan.generate",
+            "chapter_plan.generate"
+          ]
+        }
+      ],
+      "default": "DENY",
+      "database": {
+        "read_allowed": false,
+        "write_allowed": false,
+        "allowed_tables": [],
+        "forbidden_tables": [
+          "legacy_assets"
+        ]
+      },
+      "policy_id": "tools:chapter-generation-pack:v2",
+      "retrieval": {
+        "allowed": true,
+        "source_policy_ref": "source:chapter-generation-pack:v1"
+      },
+      "external_models": {
+        "allowed": true,
+        "route_policy_ref": "chapter.stage.route.policy:v1",
+        "context_substages": [
+          "context_compress",
+          "context_fidelity"
+        ]
+      }
+    },
+    "audit_requirement_snapshot": {
+      "audit_level": "FULL",
+      "record_tool_calls": true,
+      "record_cost_receipts": true,
+      "record_input_manifest": true,
+      "record_route_snapshot": true,
+      "record_evaluation_results": true,
+      "record_operation_snapshot": true,
+      "record_pack_manifest_hash": true
+    },
+    "version_resolution_snapshot": {
+      "manifest_hashes": [
+        [
+          "story_planning_pack@2.10.0",
+          "sha256:0d5a1696458356451bfe3ef80fe8012886bb385ffd2b43f80818d97c850a76eb"
+        ]
+      ],
+      "release_channel": "VALIDATION",
+      "runtime_profile": "validation",
+      "dependency_edges": [],
+      "dependency_order": [
+        "story_planning_pack@2.10.0"
+      ],
+      "novel_forge_version": "7.0.0"
+    },
+    "external_input_asset_contract": [
+      "book_design",
+      "canon_snapshot",
+      "chapter_execution_intent",
+      "chapter_memo",
+      "chapter_plan",
+      "chapter_plan_version",
+      "context_bundle",
+      "knowledge_pack",
+      "planning_generation_input_snapshot",
+      "story_state"
+    ]
+  },
+  "replayed": false
+}

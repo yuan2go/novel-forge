@@ -1,0 +1,64 @@
+{
+  "evidence_class": "STATIC",
+  "captured_at": "2026-10-05T15:24:29.841692+00:00",
+  "scope": "caller-owned nonproduction isolated instance; tests ran in a separate database",
+  "project_id": "nf-sol40-20261005T112522Z",
+  "counts": {
+    "authority_external_effect": {
+      "count": 0,
+      "scope": "PROJECT"
+    },
+    "authority_external_effect_dispatch": {
+      "count": 0,
+      "scope": "ISOLATED_INSTANCE"
+    },
+    "authority_budget_reservation": {
+      "count": 0,
+      "scope": "PROJECT"
+    },
+    "authority_provider_cost_ledger": {
+      "status": "TABLE_ABSENT"
+    },
+    "authority_book_chapter_acceptance": {
+      "count": 0,
+      "scope": "PROJECT"
+    },
+    "authority_capability_pack_compilation": {
+      "count": 12,
+      "scope": "ISOLATED_INSTANCE"
+    },
+    "authority_capability_pack_approval": {
+      "count": 0,
+      "scope": "ISOLATED_INSTANCE"
+    },
+    "authority_capability_pack_activation": {
+      "count": 0,
+      "scope": "PROJECT"
+    },
+    "authority_capability_pack_deployment": {
+      "count": 0,
+      "scope": "PROJECT"
+    },
+    "authority_quality_qualification_campaign": {
+      "count": 0,
+      "scope": "PROJECT"
+    },
+    "authority_quality_qualification_decision": {
+      "count": 0,
+      "scope": "PROJECT"
+    },
+    "authority_quality_qualification_evidence": {
+      "count": 0,
+      "scope": "PROJECT"
+    },
+    "authority_quality_qualification_subject": {
+      "count": 0,
+      "scope": "PROJECT"
+    },
+    "model_call_log": 0
+  },
+  "runtime_model_inference_calls": 0,
+  "accepted_chapters": 0,
+  "target_chapters": 40,
+  "pack_approval_blocker": "CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED"
+}
